@@ -31,8 +31,7 @@ export default function Employees(): JSX.Element {
     role: '',
     email: '',
     phone: '',
-    salary: 0,
-    performance: 0
+    salary: 0
   })
 
   useEffect(() => {
@@ -162,8 +161,7 @@ export default function Employees(): JSX.Element {
       role: employee.role,
       email: employee.email,
       phone: employee.phone,
-      salary: employee.salary || 0,
-      performance: employee.performance || 0
+      salary: employee.salary || 0
     })
     setShowEditModal(true)
   }
@@ -174,8 +172,7 @@ export default function Employees(): JSX.Element {
       role: '',
       email: '',
       phone: '',
-      salary: 0,
-      performance: 0
+      salary: 0
     })
   }
 
@@ -240,20 +237,6 @@ export default function Employees(): JSX.Element {
                   <span className="font-medium">{t('salary')}:</span>
                   <span className="ml-1">{emp.salary !== undefined ? `$${Number(emp.salary).toFixed(2)}` : '—'}</span>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-                {emp.performance !== undefined ? (
-                  <div className="flex items-center gap-2">
-                    <Award size={16} className="text-accent" />
-                    <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {emp.performance}%
-                    </span>
-                  </div>
-                ) : (
-                  <div></div>
-                )}
-                <div></div>
               </div>
 
               <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
@@ -356,20 +339,6 @@ export default function Employees(): JSX.Element {
                 placeholder="0.00"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                {t('performancePercent')}
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={formData.performance}
-                onChange={(e) => setFormData({ ...formData, performance: Number(e.target.value) })}
-                className="input-field"
-                placeholder="85"
-              />
-            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
@@ -464,19 +433,6 @@ export default function Employees(): JSX.Element {
                 onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
                 className="input-field"
                 placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                {t('performancePercent')}
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={formData.performance}
-                onChange={(e) => setFormData({ ...formData, performance: Number(e.target.value) })}
-                className="input-field"
               />
             </div>
           </div>

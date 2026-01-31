@@ -266,6 +266,13 @@ export function registerSaleTransactionHandlers(prisma: any) {
               fullName: true
             }
           },
+          customer: {
+            select: {
+              name: true,
+              phone: true,
+              email: true
+            }
+          },
           items: {
             include: {
               product: {
@@ -279,6 +286,16 @@ export function registerSaleTransactionHandlers(prisma: any) {
                   }
                 }
               }
+            }
+          },
+          installments: {
+            orderBy: {
+              dueDate: 'asc'
+            }
+          },
+          deposits: {
+            orderBy: {
+              createdAt: 'desc'
             }
           }
         }

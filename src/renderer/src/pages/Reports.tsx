@@ -236,6 +236,7 @@ const EnhancedReports: React.FC = () => {
               
               // Track variant
               const variantName = item.selectedVariant || 'Base Product';
+              console.log(item);
               const variantId = item.variantId || null;
               const existingVariant = existing.variants?.find(v => 
                 v.variantId === variantId && v.variantName === variantName

@@ -222,6 +222,168 @@ export function registerCustomersHandlers(prisma: any) {
     }
   })
 
+  // Get comprehensive customer profile data
+  ipcMain.handle('customers:getProfile', async (_, customerId) => {
+    try {
+      if (!prisma) return null
+
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        include: {
+          saleTransactions: {
+            include: {
+              items: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      baseSKU: true,
+                      category: { select: { name: true } }
+                    }
+                  }
+                }
+              },
+              user: {
+                select: {
+                  username: true,
+                  fullName: true
+                }
+              }
+            },
+            orderBy: { createdAt: 'desc' }
+          },
+          deposits: {
+            orderBy: { date: 'desc' }
+          },
+          installments: {
+            orderBy: { dueDate: 'asc' },
+            include: {
+              sale: {
+                select: {
+                  id: true,
+                  total: true,
+                  createdAt: true
+                }
+              }
+            }
+          }
+        }
+      })
+
+      if (!customer) return null
+
+      // Calculate statistics
+      const completedTransactions = customer.saleTransactions.filter((t: any) => t.status === 'completed')
+      const partiallyRefundedTransactions = customer.saleTransactions.filter((t: any) => t.status === 'partially_refunded')
+      
+      const totalSpent = completedTransactions.reduce((sum: number, t: any) => sum + t.total, 0) +
+        partiallyRefundedTransactions.reduce((sum: number, tx: any) => {
+          const refundedAmount = tx.items.reduce((itemSum: number, item: any) => {
+            const refunded = item.refundedQuantity || 0
+            return itemSum + (refunded * (item.finalPrice || item.price))
+          }, 0)
+          return sum + (tx.total - refundedAmount)
+        }, 0)
+
+      const totalPurchases = customer.saleTransactions.length
+      const averagePurchase = totalPurchases > 0 ? totalSpent / totalPurchases : 0
+
+      // Calculate total items purchased
+      const totalItems = customer.saleTransactions.reduce((sum: number, t: any) => {
+        return sum + t.items.reduce((itemSum: number, item: any) => {
+          return itemSum + (item.quantity - (item.refundedQuantity || 0))
+        }, 0)
+      }, 0)
+
+      // Find most purchased products
+      const productPurchases: Record<string, { name: string; count: number; spent: number }> = {}
+      customer.saleTransactions.forEach((t: any) => {
+        t.items.forEach((item: any) => {
+          const productName = item.product?.name || 'Unknown'
+          if (!productPurchases[productName]) {
+            productPurchases[productName] = { name: productName, count: 0, spent: 0 }
+          }
+          const quantity = item.quantity - (item.refundedQuantity || 0)
+          productPurchases[productName].count += quantity
+          productPurchases[productName].spent += (item.finalPrice || item.price) * quantity
+        })
+      })
+      const topProducts = Object.values(productPurchases)
+        .sort((a, b) => b.spent - a.spent)
+        .slice(0, 5)
+
+      // Calculate category preferences
+      const categorySpending: Record<string, number> = {}
+      customer.saleTransactions.forEach((t: any) => {
+        t.items.forEach((item: any) => {
+          const category = item.product?.category?.name || 'Uncategorized'
+          const quantity = item.quantity - (item.refundedQuantity || 0)
+          const amount = (item.finalPrice || item.price) * quantity
+          categorySpending[category] = (categorySpending[category] || 0) + amount
+        })
+      })
+
+      // Calculate installment statistics
+      const totalInstallments = customer.installments.length
+      const paidInstallments = customer.installments.filter((i: any) => i.status === 'paid').length
+      const pendingInstallments = customer.installments.filter((i: any) => i.status === 'pending').length
+      const overdueInstallments = customer.installments.filter((i: any) => i.status === 'overdue').length
+      const totalInstallmentAmount = customer.installments.reduce((sum: number, i: any) => sum + i.amount, 0)
+      const paidInstallmentAmount = customer.installments
+        .filter((i: any) => i.status === 'paid')
+        .reduce((sum: number, i: any) => sum + i.amount, 0)
+      const remainingInstallmentAmount = totalInstallmentAmount - paidInstallmentAmount
+
+      // Calculate deposit statistics
+      const totalDeposits = customer.deposits.reduce((sum: number, d: any) => sum + d.amount, 0)
+
+      // Find first and last purchase dates
+      const firstPurchase = customer.saleTransactions.length > 0 
+        ? customer.saleTransactions[customer.saleTransactions.length - 1].createdAt 
+        : null
+      const lastPurchase = customer.saleTransactions.length > 0 
+        ? customer.saleTransactions[0].createdAt 
+        : null
+
+      // Calculate purchase frequency (purchases per month)
+      let purchaseFrequency = 0
+      if (firstPurchase && totalPurchases > 1) {
+        const daysSinceFirst = (Date.now() - new Date(firstPurchase).getTime()) / (1000 * 60 * 60 * 24)
+        const monthsSinceFirst = daysSinceFirst / 30
+        purchaseFrequency = monthsSinceFirst > 0 ? totalPurchases / monthsSinceFirst : 0
+      }
+
+      return {
+        ...customer,
+        statistics: {
+          totalSpent,
+          totalPurchases,
+          averagePurchase,
+          totalItems,
+          totalDeposits,
+          firstPurchase,
+          lastPurchase,
+          purchaseFrequency,
+          installments: {
+            total: totalInstallments,
+            paid: paidInstallments,
+            pending: pendingInstallments,
+            overdue: overdueInstallments,
+            totalAmount: totalInstallmentAmount,
+            paidAmount: paidInstallmentAmount,
+            remainingAmount: remainingInstallmentAmount
+          }
+        },
+        topProducts,
+        categorySpending
+      }
+    } catch (error) {
+      console.error('Error fetching customer profile:', error)
+      throw error
+    }
+  })
+
   // Recalculate totalSpent for a customer (called when transactions change)
   ipcMain.handle('customers:recalculateTotalSpent', async (_, customerId) => {
     try {

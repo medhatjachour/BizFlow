@@ -58,7 +58,8 @@ const api = {
       ipcRenderer.invoke('saleTransactions:getByDateRange', data)
   },
   customers: {
-    getAll: () => ipcRenderer.invoke('customers:getAll')
+    getAll: () => ipcRenderer.invoke('customers:getAll'),
+    getProfile: (customerId: string) => ipcRenderer.invoke('customers:getProfile', customerId)
   },
   inventory: {
     getProducts: () => ipcRenderer.invoke('inventory:getProducts'),

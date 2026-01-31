@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Plus, Search, Mail, Phone, Heart, Edit2, Trash2, TrendingUp, DollarSign, ShoppingCart, Download, FileSpreadsheet, FileText, User, CreditCard } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, Mail, Phone, Heart, Edit2, Trash2, TrendingUp, DollarSign, ShoppingCart, Download, FileSpreadsheet, FileText, User, CreditCard, Eye } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import SmartDeleteDialog from '../components/SmartDeleteDialog'
 import { InstallmentManager } from '../components/InstallmentManager'
@@ -23,6 +24,7 @@ type Customer = {
 export default function Customers(): JSX.Element {
   const { t } = useLanguage()
   const toast = useToast()
+  const navigate = useNavigate()
   const [customers, setCustomers] = useState<Customer[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -612,22 +614,14 @@ export default function Customers(): JSX.Element {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                   <button
-                    onClick={() => openInstallmentManager(customer)}
-                    className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                    title="Manage installments"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                    className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors"
+                    title="View profile"
                   >
-                    <CreditCard size={16} />
-                    <span className="text-xs">{t('installments')}</span>
-                  </button>
-                  <button
-                    onClick={() => openHistoryModal(customer)}
-                    className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-accent/10 text-accent hover:bg-accent/20 rounded-lg transition-colors"
-                    title="View purchase history"
-                  >
-                    <TrendingUp size={16} />
-                    <span className="text-xs">{t('history')}</span>
+                    <Eye size={16} />
+                    <span className="text-xs">{t('profile')}</span>
                   </button>
                   <button
                     onClick={() => openEditModal(customer)}
