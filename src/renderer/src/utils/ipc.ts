@@ -458,6 +458,7 @@ export const ipc = isElectron ? {
   products: {
     getAll: (options?: any) => window.electron.ipcRenderer.invoke('products:getAll', options),
     getById: (id: string) => window.electron.ipcRenderer.invoke('products:getById', id),
+    getVariantById: (id: string) => window.electron.ipcRenderer.invoke('products:getVariantById', id),
     search: (searchTerm: string) => window.electron.ipcRenderer.invoke('products:search', searchTerm),
     getStats: () => window.electron.ipcRenderer.invoke('products:getStats'),
     create: (data: any) => window.electron.ipcRenderer.invoke('products:create', data),

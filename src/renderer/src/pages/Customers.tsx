@@ -246,9 +246,9 @@ export default function Customers(): JSX.Element {
   const openEditModal = (customer: Customer) => {
     setSelectedCustomer(customer)
     setFormData({
-      name: customer.name,
-      email: customer.email,
-      phone: customer.phone,
+      name: customer.name || '',
+      email: customer.email || '',
+      phone: customer.phone || '',
       loyaltyTier: customer.loyaltyTier as 'Bronze' | 'Silver' | 'Gold' | 'Platinum'
     })
     setShowEditModal(true)

@@ -168,6 +168,37 @@ export function registerProductsHandlers(prisma: any) {
   })
 
   /**
+   * Get single product variant by ID
+   */
+  ipcMain.handle('products:getVariantById', async (_, id: string) => {
+    try {
+      if (!prisma) return null
+
+      const variant = await prisma.productVariant.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          productId: true,
+          color: true,
+          size: true,
+          sku: true,
+          barcode: true,
+          price: true,
+          cost: true,
+          stock: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      })
+
+      return variant
+    } catch (error) {
+      console.error('Error fetching product variant:', error)
+      throw error
+    }
+  })
+
+  /**
    * Create product - optimized with transaction
    * Invalidates cache after creation
    */

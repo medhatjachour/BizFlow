@@ -111,6 +111,7 @@ const api = {
       category?: string
     }) => ipcRenderer.invoke('products:getAll', options),
     getById: (id: string) => ipcRenderer.invoke('products:getById', id),
+    getVariantById: (id: string) => ipcRenderer.invoke('products:getVariantById', id),
     getStats: () => ipcRenderer.invoke('products:getStats'),
     search: (term: string) => ipcRenderer.invoke('products:search', term),
     create: (productData: any) => ipcRenderer.invoke('products:create', productData),

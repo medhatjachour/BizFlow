@@ -199,6 +199,30 @@ const EnhancedReports: React.FC = () => {
         })
       ]);
 
+      // Load variant data for all variantIds found in sales
+      const variantIds = new Set<string>();
+      salesData.forEach((sale: any) => {
+        sale.items?.forEach((item: any) => {
+          if (item.variantId) {
+            variantIds.add(item.variantId);
+          }
+        });
+      });
+
+      // Fetch variant details
+      const variantsMap = new Map<string, any>();
+      if (variantIds.size > 0) {
+        const variantPromises = Array.from(variantIds).map(id => 
+          window.api.products.getVariantById(id).catch(() => null)
+        );
+        const variants = await Promise.all(variantPromises);
+        variants.forEach((variant, index) => {
+          if (variant) {
+            variantsMap.set(Array.from(variantIds)[index], variant);
+          }
+        });
+      }
+
       const activities: ActivityItem[] = [];
 
       // Add sales with full data
@@ -235,8 +259,10 @@ const EnhancedReports: React.FC = () => {
               existing.revenue += itemRevenue;
               
               // Track variant
-              const variantName = item.selectedVariant || 'Base Product';
-              console.log(item);
+              const variant = item.variantId ? variantsMap.get(item.variantId) : null;
+              const variantName = variant 
+                ? [variant.color, variant.size].filter(Boolean).join(' / ') || 'Base Product'
+                : 'Base Product';
               const variantId = item.variantId || null;
               const existingVariant = existing.variants?.find(v => 
                 v.variantId === variantId && v.variantName === variantName
@@ -255,7 +281,10 @@ const EnhancedReports: React.FC = () => {
                 });
               }
             } else {
-              const variantName = item.selectedVariant || 'Base Product';
+              const variant = item.variantId ? variantsMap.get(item.variantId) : null;
+              const variantName = variant 
+                ? [variant.color, variant.size].filter(Boolean).join(' / ') || 'Base Product'
+                : 'Base Product';
               const variantId = item.variantId || null;
               
               itemsMap.set(key, {
@@ -1035,7 +1064,7 @@ const EnhancedReports: React.FC = () => {
                             <p className="font-medium text-slate-900 dark:text-white">{item.productName}</p>
                             {hasVariants && (
                               <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                                {item.variants.length} variants
+                                {item.variants?.length} variants
                               </span>
                             )}
                           </div>
@@ -1060,7 +1089,7 @@ const EnhancedReports: React.FC = () => {
                     {isExpanded && hasVariants && (
                       <div className="bg-white dark:bg-slate-800 px-3 pb-3 border-t border-slate-200 dark:border-slate-700">
                         <div className="mt-2 space-y-2">
-                          {item.variants.sort((a, b) => b.quantity - a.quantity).map((variant, vIdx) => (
+                          {item.variants?.sort((a, b) => b.quantity - a.quantity).map((variant, vIdx) => (
                             <div key={vIdx} className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-700/30 p-2 rounded">
                               <div className="flex items-center gap-2 flex-1">
                                 <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px]">

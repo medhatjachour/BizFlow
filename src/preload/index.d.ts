@@ -67,6 +67,7 @@ interface API {
     update: (data: { id: string; productData: any }) => Promise<any>
     delete: (id: string) => Promise<any>
     getById: (id: string) => Promise<any>
+    getVariantById: (id: string) => Promise<any>
   }
   categories: {
     getAll: () => Promise<any>
