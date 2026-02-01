@@ -49,7 +49,7 @@ export class SupplierRepository implements IRepository<SupplierWithRelations> {
    * Find supplier by name
    */
   async findByName(name: string): Promise<SupplierWithRelations | null> {
-    return this.prisma.supplier.findUnique({
+    return this.prisma.supplier.findFirst({
       where: { name },
       include: {
         products: {
