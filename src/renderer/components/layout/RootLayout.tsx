@@ -169,6 +169,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
+      
       <SkipToContent />
       <KeyboardShortcutsHelp />
       
@@ -331,6 +332,11 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
         <main id="main-content" className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-900" tabIndex={-1}>
           {children}
         </main>
+        
+        {/* status bar */}
+        <div className='px-6 py-1  text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700'>
+          © 2026 BizFlow. Made by <a href="https://www.linkedin.com/in/medhatjachour" target="_blank" rel="noopener noreferrer">MedhatJachour</a>
+        </div>
       </div>
     </div>
   )

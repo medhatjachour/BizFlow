@@ -147,6 +147,10 @@ const mockIPC = {
         hasMore: offset + limit < filtered.length
       }
     },
+    getProfile: async (id: string) => {
+      const customers = JSON.parse(localStorage.getItem('customers') || '[]')
+      return customers.find((c: any) => c.id === id) || null
+    },
     create: async (data: any) => {
       const customers = JSON.parse(localStorage.getItem('customers') || '[]')
       const newCustomer = { id: Date.now().toString(), ...data, totalSpent: 0 }
@@ -454,6 +458,7 @@ export const ipc = isElectron ? {
   products: {
     getAll: (options?: any) => window.electron.ipcRenderer.invoke('products:getAll', options),
     getById: (id: string) => window.electron.ipcRenderer.invoke('products:getById', id),
+    getVariantById: (id: string) => window.electron.ipcRenderer.invoke('products:getVariantById', id),
     search: (searchTerm: string) => window.electron.ipcRenderer.invoke('products:search', searchTerm),
     getStats: () => window.electron.ipcRenderer.invoke('products:getStats'),
     create: (data: any) => window.electron.ipcRenderer.invoke('products:create', data),
@@ -480,6 +485,7 @@ export const ipc = isElectron ? {
   // Customer operations
   customers: {
     getAll: (options?: { limit?: number; offset?: number; searchTerm?: string }) => window.electron.ipcRenderer.invoke('customers:getAll', options),
+    getProfile: (customerId: string) => window.electron.ipcRenderer.invoke('customers:getProfile', customerId),
     create: (data: any) => window.electron.ipcRenderer.invoke('customers:create', data),
     update: (id: string, customerData: any) => window.electron.ipcRenderer.invoke('customers:update', { id, customerData }),
     delete: (id: string) => window.electron.ipcRenderer.invoke('customers:delete', id),

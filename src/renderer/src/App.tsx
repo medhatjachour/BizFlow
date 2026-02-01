@@ -33,6 +33,7 @@ const Sales = lazy(() => import('./pages/Sales'))
 const Stores = lazy(() => import('./pages/Stores'))
 const Employees = lazy(() => import('./pages/Employees'))
 const Customers = lazy(() => import('./pages/Customers'))
+const CustomerProfile = lazy(() => import('./pages/CustomerProfile'))
 const Reports = lazy(() => import('./pages/Reports'))
 const Installments = lazy(() => import('./pages/Installments'))
 
@@ -51,10 +52,7 @@ function AppContent() {
 
   return (
     <>
-      <CommandPalette 
-        isOpen={commandPaletteOpen} 
-        onClose={() => setCommandPaletteOpen(false)} 
-      />
+      <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -80,117 +78,129 @@ function AppContent() {
           />
           <Route
             path="/inventory"
-                      element={
-                        <RequireAuth>
-                          <RootLayoutWrapper>
-                            <Inventory />
-                          </RootLayoutWrapper>
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/finance"
-                      element={
-                        <RequireAuth>
-                          <RootLayoutWrapper>
-                            <Finance />
-                          </RootLayoutWrapper>
-                        </RequireAuth>
-                      }
-                    />
-                    <Route
-                      path="/stores"
-                      element={
-                        <RequireAuth>
-                          <RootLayoutWrapper>
-                            <Stores />
-                          </RootLayoutWrapper>
-                        </RequireAuth>
-                      }
-                    />
-            <Route
-              path="/products"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <Products />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/pos"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <POS />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/employees"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <Employees />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/customers"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <Customers />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <Reports />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/expenses"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <Expenses />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/installments"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <Installments />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <RequireAuth>
-                  <RootLayoutWrapper>
-                    <Settings />
-                  </RootLayoutWrapper>
-                </RequireAuth>
-              }
-            />
-            <Route path="*" element={<Navigate to="/login" replace />} />
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Inventory />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/finance"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Finance />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/stores"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Stores />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/products"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Products />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/pos"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <POS />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/employees"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Employees />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/customers"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Customers />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/customers/:id"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <CustomerProfile />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Reports />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/expenses"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Expenses />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/installments"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Installments />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <Settings />
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+         
       </Suspense>
+     
     </>
   )
 }

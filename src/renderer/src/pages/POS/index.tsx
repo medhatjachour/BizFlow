@@ -342,9 +342,9 @@ export default function POS(): JSX.Element {
                 {(() => {
                   const totalDiscount = cart.reduce((sum, item) => {
                     if (item.discountType === 'PERCENTAGE') {
-                      return sum + (item.price * item.quantity * item.discountValue / 100)
-                    } else if (item.discountType === 'FIXED') {
-                      return sum + item.discountValue
+                      return sum + (item.price * item.quantity * (item.discountValue ?? 0) / 100)
+                    } else if (item.discountType??"FIXED" === 'FIXED') {
+                      return sum + (item.discountValue ?? 0 )
                     }
                     return sum
                   }, 0)

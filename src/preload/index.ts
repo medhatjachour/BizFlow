@@ -58,7 +58,8 @@ const api = {
       ipcRenderer.invoke('saleTransactions:getByDateRange', data)
   },
   customers: {
-    getAll: () => ipcRenderer.invoke('customers:getAll')
+    getAll: () => ipcRenderer.invoke('customers:getAll'),
+    getProfile: (customerId: string) => ipcRenderer.invoke('customers:getProfile', customerId)
   },
   inventory: {
     getProducts: () => ipcRenderer.invoke('inventory:getProducts'),
@@ -110,6 +111,7 @@ const api = {
       category?: string
     }) => ipcRenderer.invoke('products:getAll', options),
     getById: (id: string) => ipcRenderer.invoke('products:getById', id),
+    getVariantById: (id: string) => ipcRenderer.invoke('products:getVariantById', id),
     getStats: () => ipcRenderer.invoke('products:getStats'),
     search: (term: string) => ipcRenderer.invoke('products:search', term),
     create: (productData: any) => ipcRenderer.invoke('products:create', productData),
