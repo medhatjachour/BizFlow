@@ -317,6 +317,16 @@ const mockIPC = {
       const suppliers = JSON.parse(localStorage.getItem('suppliers') || '[]')
       const supplier = suppliers.find((s: any) => s.id === supplierId)
       return supplier?.products || []
+    },
+    removeSupplierProduct: async (supplierProductId: string) => {
+      const suppliers = JSON.parse(localStorage.getItem('suppliers') || '[]')
+      for (const supplier of suppliers) {
+        if (supplier.products) {
+          supplier.products = supplier.products.filter((p: any) => p.id !== supplierProductId)
+        }
+      }
+      localStorage.setItem('suppliers', JSON.stringify(suppliers))
+      return { success: true }
     }
   },
   purchaseOrders: {
@@ -524,7 +534,8 @@ export const ipc = isElectron ? {
     update: (id: string, data: any) => window.electron.ipcRenderer.invoke('suppliers:update', id, data),
     delete: (id: string) => window.electron.ipcRenderer.invoke('suppliers:delete', id),
     addSupplierProduct: (supplierId: string, productData: any) => window.electron.ipcRenderer.invoke('suppliers:addSupplierProduct', supplierId, productData),
-    getSupplierProducts: (supplierId: string) => window.electron.ipcRenderer.invoke('suppliers:getSupplierProducts', supplierId)
+    getSupplierProducts: (supplierId: string) => window.electron.ipcRenderer.invoke('suppliers:getSupplierProducts', supplierId),
+    removeSupplierProduct: (supplierProductId: string) => window.electron.ipcRenderer.invoke('suppliers:removeSupplierProduct', supplierProductId)
   },
 
   // Purchase order operations

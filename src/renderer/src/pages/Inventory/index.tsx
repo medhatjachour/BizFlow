@@ -13,7 +13,7 @@
  */
 
 import { useState, useMemo, lazy, Suspense } from 'react'
-import { Search, Filter, Download, Plus, RefreshCw, Package, AlertTriangle, TrendingUp, History } from 'lucide-react'
+import { Search, Filter, Download, Plus, RefreshCw, Package, AlertTriangle, TrendingUp, History, Users, ShoppingCart } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useBackendSearch, useFilterMetadata } from '../../hooks/useBackendSearch'
 import { useDebounce } from '../../hooks/useDebounce'
@@ -46,8 +46,23 @@ const ITEMS_PER_PAGE = 50
 
 type TabType = 'products' | 'analytics' | 'history' | 'reorder' | 'suppliers' | 'purchase-orders'
 
+interface PrefilledPurchaseOrder {
+  productId: string
+  variantId: string
+  productName: string
+  variantName: string
+  suggestedQty: number
+  supplierInfo?: {
+    supplierId?: string
+    supplierName: string
+    cost: number
+    leadTime: number
+  }
+}
+
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<TabType>('products')
+  const [prefilledPurchaseOrder, setPrefilledPurchaseOrder] = useState<PrefilledPurchaseOrder | null>(null)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -79,6 +94,12 @@ export default function InventoryPage() {
   
   // Extract category names from metadata
   const categories = filterMetadata?.categories?.map((c: any) => c.name) || []
+  
+  // Handler for creating purchase order from reorder alert
+  const handleCreatePurchaseOrderFromAlert = (alertData: PrefilledPurchaseOrder) => {
+    setPrefilledPurchaseOrder(alertData)
+    setActiveTab('purchase-orders')
+  }
   
   // Filter state
   const [filters, setFilters] = useState<Filters>({
@@ -396,13 +417,13 @@ export default function InventoryPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-4">
+        <div className="flex gap-2 mb-4">
           <button
             onClick={() => setActiveTab('products')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               activeTab === 'products'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
             }`}
           >
             <Package size={18} />
@@ -410,10 +431,10 @@ export default function InventoryPage() {
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               activeTab === 'analytics'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
             }`}
           >
             <TrendingUp size={18} />
@@ -421,10 +442,10 @@ export default function InventoryPage() {
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               activeTab === 'history'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
             }`}
           >
             <History size={18} />
@@ -432,10 +453,10 @@ export default function InventoryPage() {
           </button>
           <button
             onClick={() => setActiveTab('reorder')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               activeTab === 'reorder'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
             }`}
           >
             <AlertTriangle size={18} />
@@ -443,24 +464,24 @@ export default function InventoryPage() {
           </button>
           <button
             onClick={() => setActiveTab('suppliers')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               activeTab === 'suppliers'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
             }`}
           >
-            <Package size={18} />
+            <Users size={18} />
             {t('inventorySuppliers')}
           </button>
           <button
             onClick={() => setActiveTab('purchase-orders')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
               activeTab === 'purchase-orders'
-                ? 'bg-primary text-white shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
             }`}
           >
-            <Package size={18} />
+            <ShoppingCart size={18} />
             Purchase Orders
           </button>
         </div>
@@ -585,7 +606,7 @@ export default function InventoryPage() {
                 <p className="text-slate-600 dark:text-slate-400">Loading Reorder Alerts...</p>
               </div>
             }>
-              <ReorderAlerts />
+              <ReorderAlerts onCreatePurchaseOrder={handleCreatePurchaseOrderFromAlert} />
             </Suspense>
           </div>
         )}
@@ -611,7 +632,10 @@ export default function InventoryPage() {
                 <p className="text-slate-600 dark:text-slate-400">Loading Purchase Orders...</p>
               </div>
             }>
-              <PurchaseOrders />
+              <PurchaseOrders 
+                prefilledData={prefilledPurchaseOrder}
+                onClearPrefilled={() => setPrefilledPurchaseOrder(null)}
+              />
             </Suspense>
           </div>
         )}

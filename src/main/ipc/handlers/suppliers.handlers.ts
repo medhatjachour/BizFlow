@@ -155,6 +155,40 @@ export function registerSupplierHandlers(prisma: any) {
   })
 
   /**
+   * Add product to supplier (alias for compatibility)
+   */
+  ipcMain.handle('suppliers:addSupplierProduct', async (_, supplierId: string, supplierProductData) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: 'Supplier service not available' }
+      }
+
+      const supplierProduct = await supplierService.addSupplierProduct(supplierProductData)
+      return { success: true, data: supplierProduct }
+    } catch (error) {
+      logger.error('Error adding product to supplier:', error)
+      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  /**
+   * Get supplier products
+   */
+  ipcMain.handle('suppliers:getSupplierProducts', async (_, supplierId: string) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: 'Supplier service not available' }
+      }
+
+      const products = await supplierService.getSupplierProducts(supplierId)
+      return { success: true, data: products }
+    } catch (error) {
+      logger.error('Error getting supplier products:', error)
+      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  /**
    * Update supplier product
    */
   ipcMain.handle('suppliers:updateProduct', async (_, id: string, updateData) => {
@@ -175,6 +209,23 @@ export function registerSupplierHandlers(prisma: any) {
    * Remove product from supplier
    */
   ipcMain.handle('suppliers:removeProduct', async (_, id: string) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: 'Supplier service not available' }
+      }
+
+      const result = await supplierService.removeSupplierProduct(id)
+      return { success: true, data: result }
+    } catch (error) {
+      logger.error('Error removing product from supplier:', error)
+      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  /**
+   * Remove product from supplier (alias for compatibility)
+   */
+  ipcMain.handle('suppliers:removeSupplierProduct', async (_, id: string) => {
     try {
       if (!supplierService) {
         return { success: false, message: 'Supplier service not available' }

@@ -129,6 +129,15 @@ export class PurchaseOrderService {
         }
 
         if (variantId) {
+          // Get current stock before update
+          const variant = await tx.productVariant.findUnique({
+            where: { id: variantId },
+            select: { stock: true }
+          })
+
+          const previousStock = variant?.stock || 0
+          const newStock = previousStock + item.quantity
+
           await tx.productVariant.update({
             where: { id: variantId },
             data: { stock: { increment: item.quantity } }
@@ -142,7 +151,9 @@ export class PurchaseOrderService {
               quantity: item.quantity,
               reason: `PO-${po.poNumber}`,
               notes: `Purchase order receipt`,
-              userId: 'system'
+              userId: null,
+              previousStock,
+              newStock
             }
           })
         }

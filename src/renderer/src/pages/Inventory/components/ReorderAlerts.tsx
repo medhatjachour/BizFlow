@@ -32,7 +32,25 @@ interface ReorderAnalysis {
   };
 }
 
-export default function ReorderAlerts() {
+interface PrefilledPurchaseOrder {
+  productId: string
+  variantId: string
+  productName: string
+  variantName: string
+  suggestedQty: number
+  supplierInfo?: {
+    supplierId?: string
+    supplierName: string
+    cost: number
+    leadTime: number
+  }
+}
+
+interface ReorderAlertsProps {
+  onCreatePurchaseOrder?: (data: PrefilledPurchaseOrder) => void
+}
+
+export default function ReorderAlerts({ onCreatePurchaseOrder }: ReorderAlertsProps) {
   const [analysis, setAnalysis] = useState<ReorderAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'>('all');
@@ -282,8 +300,27 @@ export default function ReorderAlerts() {
                 </div>
 
                 <div className="ml-4">
-                  <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
-                    Create Purchase Order
+                  <button 
+                    onClick={() => {
+                      if (onCreatePurchaseOrder) {
+                        onCreatePurchaseOrder({
+                          productId: alert.productId,
+                          variantId: alert.variantId,
+                          productName: alert.productName,
+                          variantName: alert.variantName,
+                          suggestedQty: alert.suggestedOrderQty,
+                          supplierInfo: alert.supplierInfo ? {
+                            supplierName: alert.supplierInfo.supplierName,
+                            cost: alert.supplierInfo.cost,
+                            leadTime: alert.supplierInfo.leadTime
+                          } : undefined
+                        })
+                      }
+                    }}
+                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95 font-medium flex items-center gap-2"
+                  >
+                    <ShoppingCart size={16} />
+                    Create Order
                   </button>
                 </div>
               </div>
