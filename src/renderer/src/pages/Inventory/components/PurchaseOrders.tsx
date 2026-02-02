@@ -609,7 +609,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
               const StatusIcon = statusConfig.icon
 
               return (
-                <TableRow key={order.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <TableRow key={order.id}>
                   <TableCell className="font-bold text-primary">{order.poNumber}</TableCell>
                   <TableCell className="font-medium">{order.supplier.name}</TableCell>
                   <TableCell>
