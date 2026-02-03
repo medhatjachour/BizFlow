@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { ipc } from '../utils/ipc'
 import { useToast } from '../contexts/ToastContext'
+import { useLanguage } from '../contexts/LanguageContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
 import { ReceiptPreviewModal } from './Sales/ReceiptPreviewModal'
 
@@ -60,6 +61,7 @@ export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const toast = useToast()
+  const { t } = useLanguage()
 
   const [customer, setCustomer] = useState<CustomerProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -155,7 +157,7 @@ export default function CustomerProfile() {
           className="flex items-center gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white mb-4 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Customers
+          {t('backToCustomers')}
         </button>
 
         <div className="glass-card p-6">
@@ -179,7 +181,7 @@ export default function CustomerProfile() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="w-4 h-4" />
-                    <span>Member since {new Date(customer.createdAt).toLocaleDateString()}</span>
+                    <span>{t('memberSince')} {new Date(customer.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
@@ -187,7 +189,7 @@ export default function CustomerProfile() {
             <div className={`px-4 py-2 rounded-lg border ${getLoyaltyTierColor(customer.loyaltyTier)}`}>
               <div className="flex items-center gap-2">
                 <Award className="w-5 h-5" />
-                <span className="font-semibold">{customer.loyaltyTier} Tier</span>
+                <span className="font-semibold">{customer.loyaltyTier} {t('tierLabel')}</span>
               </div>
             </div>
           </div>
@@ -202,7 +204,7 @@ export default function CustomerProfile() {
               <DollarSign className="w-6 h-6 text-success" />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Total Spent</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{t('totalSpentLabel')}</p>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(stats.totalSpent)}</p>
             </div>
           </div>
@@ -214,7 +216,7 @@ export default function CustomerProfile() {
               <ShoppingCart className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Total Purchases</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{t('totalPurchasesLabel')}</p>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalPurchases}</p>
             </div>
           </div>
@@ -226,7 +228,7 @@ export default function CustomerProfile() {
               <Package className="w-6 h-6 text-accent" />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Items Bought</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{t('totalItemsPurchased')}</p>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.totalItems}</p>
             </div>
           </div>
@@ -238,7 +240,7 @@ export default function CustomerProfile() {
               <TrendingUp className="w-6 h-6 text-orange-500" />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">Avg Purchase</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">{t('avgPurchaseValue')}</p>
               <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(stats.averagePurchase)}</p>
             </div>
           </div>
@@ -257,7 +259,7 @@ export default function CustomerProfile() {
                   : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              Overview
+              {t('overviewTab')}
             </button>
             <button
               onClick={() => setActiveTab('transactions')}
@@ -267,7 +269,7 @@ export default function CustomerProfile() {
                   : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              Transactions ({stats.totalPurchases})
+              {t('transactionsTab')} ({stats.totalPurchases})
             </button>
             <button
               onClick={() => setActiveTab('installments')}
@@ -277,7 +279,7 @@ export default function CustomerProfile() {
                   : 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
-              Installments ({stats.installments.total})
+              {t('installmentsTab')} ({stats.installments.total})
             </button>
           </nav>
         </div>
@@ -288,53 +290,53 @@ export default function CustomerProfile() {
               {/* Installment Summary */}
               {stats.installments.total > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Installment Summary</h3>
+                  <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">{t('installmentPayments')}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Total Amount</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">{t('installmentTotalAmount')}</span>
                         <CreditCard className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                       </div>
                       <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(stats.installments.totalAmount)}</p>
                       <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                         <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                           <CheckCircle className="w-3 h-3" />
-                          <span>{stats.installments.paid} paid</span>
+                          <span>{stats.installments.paid} {t('installmentPaidInstallments')}</span>
                         </div>
                         <div className="flex items-center gap-1 text-blue-600 dark:text-primary">
                           <Clock className="w-3 h-3" />
-                          <span>{stats.installments.pending} pending</span>
+                          <span>{stats.installments.pending} {t('installmentPendingInstallments')}</span>
                         </div>
                         <div className="flex items-center gap-1 text-red-600 dark:text-red-400">
                           <AlertCircle className="w-3 h-3" />
-                          <span>{stats.installments.overdue} overdue</span>
+                          <span>{stats.installments.overdue} {t('installmentOverdueInstallments')}</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Paid Amount</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">{t('installmentPaidAmount')}</span>
                         <CheckCircle className="w-5 h-5 text-success" />
                       </div>
                       <p className="text-2xl font-bold text-slate-900 dark:text-white">
                         {formatCurrency(stats.installments.paidAmount)}
                       </p>
                       <p className="text-xs text-success mt-2">
-                        {((stats.installments.paidAmount / stats.installments.totalAmount) * 100).toFixed(1)}% completed
+                        {((stats.installments.paidAmount / stats.installments.totalAmount) * 100).toFixed(1)}% {t('completed')}
                       </p>
                     </div>
 
                     <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">Remaining</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-400">{t('installmentRemainingAmount')}</span>
                         <Clock className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                       </div>
                       <p className="text-2xl font-bold text-slate-900 dark:text-white">
                         {formatCurrency(stats.installments.remainingAmount)}
                       </p>
                       <p className="text-xs text-slate-600 dark:text-slate-400 mt-2">
-                        {stats.installments.pending + stats.installments.overdue} payments due
+                        {stats.installments.pending + stats.installments.overdue} {t('installmentPayments')} {t('dueLabel')}
                       </p>
                     </div>
                   </div>
@@ -343,7 +345,7 @@ export default function CustomerProfile() {
 
               {/* Top Products */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Top Products</h3>
+                <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">{t('topPurchasedProducts')}</h3>
                 <div className="space-y-2">
                   {customer.topProducts.map((product, index) => (
                     <div key={index} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
@@ -353,7 +355,7 @@ export default function CustomerProfile() {
                         </div>
                         <div>
                           <p className="font-medium text-slate-900 dark:text-white">{product.name}</p>
-                          <p className="text-sm text-slate-600 dark:text-slate-400">{product.count} items purchased</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">{product.count} {t('items')} {t('quantityPurchased')}</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -362,14 +364,14 @@ export default function CustomerProfile() {
                     </div>
                   ))}
                   {customer.topProducts.length === 0 && (
-                    <p className="text-slate-500 text-center py-4">No purchase data available</p>
+                    <p className="text-slate-500 text-center py-4">{t('noData')}</p>
                   )}
                 </div>
               </div>
 
               {/* Category Spending */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Spending by Category</h3>
+                <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">{t('spendingByCategory')}</h3>
                 <div className="space-y-3">
                   {Object.entries(customer.categorySpending)
                     .sort(([, a], [, b]) => b - a)
@@ -401,7 +403,7 @@ export default function CustomerProfile() {
               {/* Purchase Activity */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-                  <h4 className="font-medium mb-2 text-slate-900 dark:text-white">First Purchase</h4>
+                  <h4 className="font-medium mb-2 text-slate-900 dark:text-white">{t('firstPurchase')}</h4>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     {stats.firstPurchase
                       ? new Date(stats.firstPurchase).toLocaleDateString('en-US', {
@@ -409,11 +411,11 @@ export default function CustomerProfile() {
                           month: 'long',
                           day: 'numeric'
                         })
-                      : 'No purchases yet'}
+                      : t('noPurchasesYet')}
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
-                  <h4 className="font-medium mb-2 text-slate-900 dark:text-white">Last Purchase</h4>
+                  <h4 className="font-medium mb-2 text-slate-900 dark:text-white">{t('lastPurchase')}</h4>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     {stats.lastPurchase
                       ? new Date(stats.lastPurchase).toLocaleDateString('en-US', {
@@ -421,7 +423,7 @@ export default function CustomerProfile() {
                           month: 'long',
                           day: 'numeric'
                         })
-                      : 'No purchases yet'}
+                      : t('noPurchasesYet')}
                   </p>
                 </div>
               </div>
@@ -430,7 +432,7 @@ export default function CustomerProfile() {
 
           {activeTab === 'transactions' && (
             <div>
-              <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">Transaction History</h3>
+              <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">{t('transactionHistory')}</h3>
               <div className="space-y-3">
                 {customer.saleTransactions.map((transaction) => (
                   <div
@@ -449,25 +451,25 @@ export default function CustomerProfile() {
                               : 'bg-yellow-100 text-yellow-700 border border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-400 dark:border-yellow-500/30'
                           }`}
                         >
-                          {transaction.status}
+                          {t(`saleStatus_${transaction.status}`)}
                         </span>
                       </div>
                       <p className="text-sm text-slate-600 dark:text-slate-400">
                         {new Date(transaction.createdAt).toLocaleString()}
                       </p>
                       <p className="text-xs text-slate-500 mt-1">
-                        {transaction.items.length} items • Sold by {transaction.user?.fullName || transaction.user?.username || 'Unknown'}
+                        {transaction.items.length} {t('items')} • {t('soldBy')} {transaction.user?.fullName || transaction.user?.username || t('unknown')}
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <p className="text-lg font-bold text-slate-900 dark:text-white">{formatCurrency(transaction.total)}</p>
-                        <p className="text-xs text-slate-500">{transaction.paymentMethod}</p>
+                        <p className="text-xs text-slate-500">{t(`paymentMethod_${transaction.paymentMethod}`)}</p>
                       </div>
                       <button
                         onClick={() => viewReceipt(transaction)}
                         className="p-2 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-lg transition-colors border border-primary/30"
-                        title="View Receipt"
+                        title={t('viewReceipt')}
                       >
                         <Eye className="w-5 h-5" />
                       </button>
@@ -475,7 +477,7 @@ export default function CustomerProfile() {
                   </div>
                 ))}
                 {customer.saleTransactions.length === 0 && (
-                  <p className="text-slate-500 text-center py-8">No transactions found</p>
+                  <p className="text-slate-500 text-center py-8">{t('noTransactionsFound')}</p>
                 )}
               </div>
             </div>
@@ -483,7 +485,7 @@ export default function CustomerProfile() {
 
           {activeTab === 'installments' && (
             <div>
-              <h3 className="text-lg font-semibold mb-6 text-slate-900 dark:text-white">Installment Payments</h3>
+              <h3 className="text-lg font-semibold mb-6 text-slate-900 dark:text-white">{t('installmentPayments')}</h3>
               <div className="space-y-4">
                 {customer.installments.map((installment) => (
                   <div 
@@ -520,17 +522,17 @@ export default function CustomerProfile() {
                           <div className="flex items-start justify-between gap-4 mb-2">
                             <div>
                               <h4 className="font-semibold text-slate-900 dark:text-white mb-1">
-                                {installment.sale ? `Sale #${installment.sale.id.slice(0, 8)}` : 'Standalone Payment'}
+                                {installment.sale ? `${t('sale')} #${installment.sale.id.slice(0, 8)}` : t('standalonePayment')}
                               </h4>
                               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-slate-400">
                                 <div className="flex items-center gap-1.5">
                                   <Calendar size={14} />
-                                  <span>Due: {new Date(installment.dueDate).toLocaleDateString()}</span>
+                                  <span>{t('dueLabel')}: {new Date(installment.dueDate).toLocaleDateString()}</span>
                                 </div>
                                 {installment.paidDate && (
                                   <div className="flex items-center gap-1.5 text-success">
                                     <CheckCircle size={14} />
-                                    <span>Paid: {new Date(installment.paidDate).toLocaleDateString()}</span>
+                                    <span>{t('paidLabel')}: {new Date(installment.paidDate).toLocaleDateString()}</span>
                                   </div>
                                 )}
                               </div>
@@ -550,7 +552,7 @@ export default function CustomerProfile() {
                                     : 'bg-primary/20 text-primary'
                                 }`}
                               >
-                                {installment.status}
+                                {t(`installmentStatus_${installment.status}`)}
                               </span>
                             </div>
                           </div>
@@ -574,12 +576,12 @@ export default function CustomerProfile() {
                             {markingPaid === installment.id ? (
                               <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                <span>Processing...</span>
+                                <span>{t('processingPayment')}</span>
                               </>
                             ) : (
                               <>
                                 <CheckCircle size={16} />
-                                <span>Mark as Paid</span>
+                                <span>{t('installmentMarkAsPaid')}</span>
                               </>
                             )}
                           </button>
@@ -593,8 +595,8 @@ export default function CustomerProfile() {
                     <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
                       <CreditCard size={32} className="text-slate-400" />
                     </div>
-                    <p className="text-slate-600 dark:text-slate-400 font-medium">No installments found</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">This customer has no payment installments</p>
+                    <p className="text-slate-600 dark:text-slate-400 font-medium">{t('noInstallmentsFound')}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">{t('noInstallmentsForCustomer')}</p>
                   </div>
                 )}
               </div>

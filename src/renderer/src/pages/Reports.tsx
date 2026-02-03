@@ -726,7 +726,7 @@ const EnhancedReports: React.FC = () => {
       <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 p-6 rounded-xl border border-primary/20">
         <div className="flex items-center gap-2 mb-4">
           <Activity size={24} className="text-primary" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Today's Activity</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('todaysActivity')}</h2>
           <span className="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full text-xs font-medium flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             {t('live')}
@@ -792,14 +792,14 @@ const EnhancedReports: React.FC = () => {
 
           <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm border-2 border-primary">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-slate-600 dark:text-slate-400">Items Sold</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{t('itemsSold')}</span>
               <Package size={18} className="text-primary" />
             </div>
             <p className="text-2xl font-bold text-primary">
               {totalPiecesSold}
             </p>
             <p className="text-xs text-slate-500 mt-1">
-              {itemsSummary.length} {itemsSummary.length === 1 ? 'product' : 'products'}
+              {itemsSummary.length} {itemsSummary.length === 1 ? t('productLabel') : t('productsLabel')}
             </p>
           </div>
         </div>
@@ -836,14 +836,14 @@ const EnhancedReports: React.FC = () => {
         <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Today's Sales Activity</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('todaysSalesActivity')}</h3>
               <span className="px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full text-xs font-medium">
                 {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-500 font-medium">{activityFeed.filter(a => a.type === 'sale').length} Sales</span>
-              <span className="text-xs font-bold text-primary">{totalPiecesSold} Pieces</span>
+              <span className="text-xs text-slate-500 font-medium">{activityFeed.filter(a => a.type === 'sale').length} {t('salesLabel')}</span>
+              <span className="text-xs font-bold text-primary">{totalPiecesSold} {t('pieces')}</span>
             </div>
           </div>
           
@@ -887,7 +887,7 @@ const EnhancedReports: React.FC = () => {
                           <Clock size={12} className="text-slate-400" />
                           <span className="text-xs text-slate-500">{activity.time}</span>
                           {isSale && activity.saleData?.items && (
-                            <span className="text-xs text-slate-500">• {activity.saleData.items.reduce((sum: number, item: any) => sum + (item.quantity - (item.refundedQuantity || 0)), 0)} items</span>
+                            <span className="text-xs text-slate-500">• {activity.saleData.items.reduce((sum: number, item: any) => sum + (item.quantity - (item.refundedQuantity || 0)), 0)} {t('items')}</span>
                           )}
                         </div>
                       </div>
@@ -908,7 +908,7 @@ const EnhancedReports: React.FC = () => {
                               setSelectedReceipt(activity.saleData);
                             }}
                             className="p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                            title="View Receipt"
+                            title={t('viewReceipt')}
                           >
                             <Eye size={16} />
                           </button>
@@ -926,7 +926,7 @@ const EnhancedReports: React.FC = () => {
                             return (
                               <div key={idx} className="flex items-center justify-between text-xs bg-white dark:bg-slate-800 p-2 rounded">
                                 <div className="flex-1">
-                                  <span className="font-medium text-slate-900 dark:text-white">{item.product?.name || 'Unknown'}</span>
+                                  <span className="font-medium text-slate-900 dark:text-white">{item.product?.name || t('unknown')}</span>
                                   {item.product?.category && (
                                     <span className="ml-2 text-slate-500">({item.product.category.name})</span>
                                   )}

@@ -12,6 +12,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Plus, Edit, Trash2, Package, DollarSign, Truck, CheckCircle, XCircle, Clock, RefreshCw, ShoppingCart, Search } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
+import { useLanguage } from '../../../contexts/LanguageContext'
 import { ipc } from '../../../utils/ipc'
 import Button from '../../../components/ui/Button'
 import Modal from '../../../components/ui/Modal'
@@ -69,6 +70,7 @@ interface PurchaseOrdersProps {
 }
 
 export default function PurchaseOrders({ prefilledData, onClearPrefilled }: PurchaseOrdersProps = {}) {
+  const { t } = useLanguage()
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderResponseDTO[]>([])
   const [suppliers, setSuppliers] = useState<SupplierResponseDTO[]>([])
   const [products, setProducts] = useState<ProductResponseDTO[]>([])
@@ -470,7 +472,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-slate-600 dark:text-slate-400">Loading Purchase Orders...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('loadingPurchaseOrders')}</p>
         </div>
       </div>
     )
@@ -484,7 +486,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
           <p className="text-red-600 dark:text-red-400 font-semibold mb-2">{dataError}</p>
           <Button onClick={loadData} variant="primary">
             <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
+            {t('retryButton')}
           </Button>
         </div>
       </div>
@@ -500,8 +502,8 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
             <ShoppingCart className="text-primary" size={28} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Purchase Orders</h1>
-            <p className="text-slate-600 dark:text-slate-400">Manage supplier orders and inventory procurement</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('purchaseOrdersManagement')}</h1>
+            <p className="text-slate-600 dark:text-slate-400">{t('managePurchaseOrders')}</p>
           </div>
         </div>
         <button
@@ -509,7 +511,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
           className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 font-medium"
         >
           <Plus size={20} />
-          Create Order
+          {t('createPurchaseOrder')}
         </button>
       </div>
 
@@ -522,7 +524,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
                 <Package className="text-blue-600 dark:text-blue-400" size={28} />
               </div>
               <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Orders</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('totalOrdersLabel')}</p>
                 <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.total}</p>
               </div>
             </div>
@@ -533,7 +535,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
                 <Clock className="text-yellow-600 dark:text-yellow-400" size={28} />
               </div>
               <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Pending</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('pendingOrdersLabel')}</p>
                 <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.ordered}</p>
               </div>
             </div>
@@ -544,7 +546,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
                 <CheckCircle className="text-green-600 dark:text-green-400" size={28} />
               </div>
               <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Received</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('receivedOrdersLabel')}</p>
                 <p className="text-3xl font-bold text-slate-900 dark:text-white">{summary.received}</p>
               </div>
             </div>

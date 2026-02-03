@@ -656,7 +656,6 @@ export class ThermalPrinterService {
   ): Promise<void> {
     const {
       productName = '',
-      format = 'code128',
       copies = 1,
       width = 2,
       height = 100

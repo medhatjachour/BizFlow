@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { DollarSign, Calendar, CheckCircle, Clock, AlertTriangle, Printer, Check } from 'lucide-react'
+import { DollarSign, Calendar, CheckCircle, Clock, AlertTriangle, Check } from 'lucide-react'
+import { useLanguage } from '../src/contexts/LanguageContext'
 
 export type Deposit = {
   id: string
@@ -28,6 +29,7 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
   const [deposits, setDeposits] = useState<Deposit[]>([])
   const [installments, setInstallments] = useState<Installment[]>([])
   const [loading, setLoading] = useState(true)
+  const { t } = useLanguage()
 
   useEffect(() => {
     const loadData = async () => {
@@ -95,39 +97,62 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
 
   const handleMarkAsPaid = async (installmentId: string) => {
     try {
-      await window.api.installments.markAsPaid(installmentId)
-      // Refresh the data
-      window.location.reload() // Simple refresh for now
+      const result = await window.api.installments.markAsPaid({ 
+        installmentId,
+        paidDate: new Date().toISOString()
+      })
+      
+      if (result.success) {
+        // Refresh the data without full page reload
+        if (customerId && !saleId) {
+          const [depositData, installmentData] = await Promise.all([
+            window.api.deposits.getByCustomer(customerId),
+            window.api.installments.getByCustomer(customerId)
+          ])
+          const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
+          setDeposits(depositData.filter((d: any) => !d.saleId && new Date(d.createdAt) > thirtyMinutesAgo))
+          setInstallments(installmentData.filter((i: any) => !i.saleId && new Date(i.createdAt) > thirtyMinutesAgo))
+        } else if (saleId) {
+          const [depositData, installmentData] = await Promise.all([
+            window.api.deposits.getBySale(saleId),
+            window.api.installments.getBySale(saleId)
+          ])
+          setDeposits(depositData)
+          setInstallments(installmentData)
+        }
+      } else {
+        alert('Failed to mark installment as paid: ' + result.error)
+      }
     } catch (error) {
       console.error('Error marking installment as paid:', error)
       alert('Failed to mark installment as paid')
     }
   }
 
-  const handleGenerateReceipt = async (type: 'deposit' | 'installment', id: string) => {
-    try {
-      let result
-      if (type === 'deposit') {
-        result = await window.api.receipts.generateDeposit(id)
-      } else {
-        result = await window.api.receipts.generateInstallment(id)
-      }
+  // const handleGenerateReceipt = async (type: 'deposit' | 'installment', id: string) => {
+  //   try {
+  //     let result
+  //     if (type === 'deposit') {
+  //       result = await window.api.receipts.generateDeposit(id)
+  //     } else {
+  //       result = await window.api.receipts.generateInstallment(id)
+  //     }
 
-      if (result.success) {
-        // Generate thermal receipt data
-        const thermalResult = await window.api.receipts.generateThermal(result.receipt)
-        if (thermalResult.success) {
-          // For now, just show success message (in a real app, this would be sent to printer)
-          alert('Receipt generated successfully!')
-        }
-      } else {
-        alert('Failed to generate receipt')
-      }
-    } catch (error) {
-      console.error('Error generating receipt:', error)
-      alert('Failed to generate receipt')
-    }
-  }
+  //     if (result.success) {
+  //       // Generate thermal receipt data
+  //       const thermalResult = await window.api.receipts.generateThermal(result.receipt)
+  //       if (thermalResult.success) {
+  //         // For now, just show success message (in a real app, this would be sent to printer)
+  //         alert('Receipt generated successfully!')
+  //       }
+  //     } else {
+  //       alert('Failed to generate receipt')
+  //     }
+  //   } catch (error) {
+  //     console.error('Error generating receipt:', error)
+  //     alert('Failed to generate receipt')
+  //   }
+  // }
 
   const totalDeposits = deposits.reduce((sum, dep) => sum + dep.amount, 0)
   const totalInstallments = installments.reduce((sum, inst) => sum + inst.amount, 0)
@@ -155,19 +180,19 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
       <div className="grid grid-cols-4 gap-2 text-xs">
         <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-2 text-center">
           <div className="font-semibold text-green-800 dark:text-green-200">${totalDeposits.toFixed(2)}</div>
-          <div className="text-green-600 dark:text-green-400">Deposits</div>
+          <div className="text-green-600 dark:text-green-400">{t('deposits')}</div>
         </div>
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 text-center">
           <div className="font-semibold text-blue-800 dark:text-blue-200">${totalInstallments.toFixed(2)}</div>
-          <div className="text-blue-600 dark:text-blue-400">Total Due</div>
+          <div className="text-blue-600 dark:text-blue-400">{t('totalDue')}</div>
         </div>
         <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-2 text-center">
           <div className="font-semibold text-purple-800 dark:text-purple-200">${paidInstallments.toFixed(2)}</div>
-          <div className="text-purple-600 dark:text-purple-400">Paid</div>
+          <div className="text-purple-600 dark:text-purple-400">{t('paid')}</div>
         </div>
         <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-2 text-center">
           <div className="font-semibold text-orange-800 dark:text-orange-200">{pendingInstallments}</div>
-          <div className="text-orange-600 dark:text-orange-400">Pending</div>
+          <div className="text-orange-600 dark:text-orange-400">{t('pending')}</div>
         </div>
       </div>
 
@@ -175,7 +200,7 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
       <div>
         <div className="flex items-center gap-2 mb-2">
           <DollarSign size={14} className="text-green-600" />
-          <h4 className="text-sm font-medium text-slate-900 dark:text-white">Deposits</h4>
+          <h4 className="text-sm font-medium text-slate-900 dark:text-white">{t('deposits')}</h4>
         </div>
         {deposits.length > 0 ? (
           <div className="space-y-2">
@@ -191,20 +216,20 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
                       <div className="text-xs text-green-700 dark:text-green-300 mt-1">{dep.note}</div>
                     )}
                   </div>
-                  <button
+                  {/* <button
                     onClick={() => handleGenerateReceipt('deposit', dep.id)}
                     className="p-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors ml-2"
                     title="Generate Receipt"
                   >
                     <Printer size={12} />
-                  </button>
+                  </button> */}
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
-            No deposits yet
+            {t('noDepositsYet')}
           </div>
         )}
       </div>
@@ -213,7 +238,7 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Calendar size={14} className="text-blue-600" />
-          <h4 className="text-sm font-medium text-slate-900 dark:text-white">Installments</h4>
+          <h4 className="text-sm font-medium text-slate-900 dark:text-white">{t('installments')}</h4>
         </div>
         {installments.length > 0 ? (
           <div className="space-y-2">
@@ -226,10 +251,10 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
                       <span className="font-semibold">${inst.amount.toFixed(2)}</span>
                     </div>
                     <div className="text-xs mt-1">
-                      Due: {new Date(inst.dueDate).toLocaleDateString()}
+                      {t('due')}: {new Date(inst.dueDate).toLocaleDateString()}
                       {inst.paidDate && (
                         <span className="ml-2">
-                          • Paid: {new Date(inst.paidDate).toLocaleDateString()}
+                          • {t('paid')}: {new Date(inst.paidDate).toLocaleDateString()}
                         </span>
                       )}
                     </div>
@@ -242,18 +267,18 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
                       <button
                         onClick={() => handleMarkAsPaid(inst.id)}
                         className="p-1 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                        title="Mark as Paid"
+                        title={t('markAsPaid')}
                       >
                         <Check size={12} />
                       </button>
                     )}
-                    <button
+                    {/* <button
                       onClick={() => handleGenerateReceipt('installment', inst.id)}
                       className="p-1 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                       title="Generate Receipt"
                     >
                       <Printer size={12} />
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>
@@ -261,7 +286,7 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
           </div>
         ) : (
           <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
-            No installments scheduled
+            {t('noInstallmentsScheduled')}
           </div>
         )}
       </div>

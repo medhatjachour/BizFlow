@@ -274,7 +274,7 @@ interface API {
     getByCustomer: (customerId: string) => Promise<any>
     getBySale: (saleId: string) => Promise<any>
     linkToSale: (data: { installmentIds: string[]; saleId: string }) => Promise<any>
-    markAsPaid: (installmentId: string) => Promise<any>
+    markAsPaid: (data: { installmentId: string; paidDate?: string }) => Promise<any>
     markAsOverdue: (installmentId: string) => Promise<any>
     getUpcomingReminders: (days: number) => Promise<any>
     getOverdue: () => Promise<any>
@@ -303,6 +303,13 @@ interface API {
     }) => Promise<{ success: boolean; error?: string; buffer?: string; detectedPrinter?: string; message?: string }>
     detectPrinters: () => Promise<{ success: boolean; printers: any[]; error?: string }>
     testPrint: (settings: any) => Promise<{ success: boolean; message: string }>
+  }
+  migration: {
+    onStarting: (callback: () => void) => () => void
+    onRunning: (callback: () => void) => () => void
+    onValidating: (callback: () => void) => () => void
+    onCompleted: (callback: () => void) => () => void
+    onFailed: (callback: (event: any, error: string) => void) => () => void
   }
 }
 

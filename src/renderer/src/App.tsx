@@ -18,6 +18,7 @@ import { DisplaySettingsProvider } from './contexts/DisplaySettingsContext'
 import PageLoader from './components/ui/PageLoader'
 import ErrorBoundary from './components/ErrorBoundary'
 import CommandPalette from './components/CommandPalette'
+import { MigrationProgress } from './components/MigrationProgress'
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
 import Dashboard from './pages/Dashboard/index'
 import Login from './pages/login'
@@ -52,6 +53,9 @@ function AppContent() {
 
   return (
     <>
+      <ErrorBoundary>
+        <MigrationProgress />
+      </ErrorBoundary>
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
       <Suspense fallback={<PageLoader />}>
         <Routes>

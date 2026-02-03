@@ -10,7 +10,6 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
-  - '!prisma/migrations/**/*'
   - '!prisma/seed*.ts'
   - '!prisma/dev.db-journal'
   - '!prisma/dev.db-wal'
@@ -20,11 +19,14 @@ files:
   - node_modules/**
   - package.json
   - prisma/template.db
+  - prisma/schema.prisma
 extraResources:
   - from: prisma/template.db
     to: prisma/template.db
   - from: prisma/migrations
     to: prisma/migrations
+  - from: prisma/schema.prisma
+    to: prisma/schema.prisma
 asarUnpack:
   - resources/**
   - src/generated/**

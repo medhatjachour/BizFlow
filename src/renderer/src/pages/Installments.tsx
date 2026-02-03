@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { InstallmentManager } from '../components/InstallmentManager'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export default function Installments(): JSX.Element {
   const [showManager, setShowManager] = useState(false)
+  const { t } = useLanguage()
 
   useEffect(() => {
     // Auto-open the installment manager when the page loads
@@ -13,10 +15,10 @@ export default function Installments(): JSX.Element {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Installment Management
+          {t('installmentManagement')}
         </h1>
         <p className="text-slate-600 dark:text-slate-400 mt-1">
-          Manage customer installments and mark payments as received
+          {t('manageInstallments')}
         </p>
       </div>
 
@@ -29,10 +31,10 @@ export default function Installments(): JSX.Element {
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-            Installment Management
+            {t('installmentManagement')}
           </h2>
           <p className="text-slate-600 dark:text-slate-400 mb-6">
-            Loading installment management interface...
+            {t('installmentManagerWillOpen')}
           </p>
         </div>
       </div>
