@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Search, Mail, Phone, Heart, Edit2, Trash2, TrendingUp, DollarSign, ShoppingCart, Download, FileSpreadsheet, FileText, User, CreditCard, Eye } from 'lucide-react'
+import { Plus, Search, Mail, Phone, Heart, Edit2, Trash2, TrendingUp, DollarSign, ShoppingCart, Download, FileSpreadsheet, FileText, User, Eye } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import SmartDeleteDialog from '../components/SmartDeleteDialog'
 import { InstallmentManager } from '../components/InstallmentManager'
@@ -46,7 +46,7 @@ export default function Customers(): JSX.Element {
   
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [selectedCustomerHistory, setSelectedCustomerHistory] = useState<any[]>([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
+  const [loadingHistory] = useState(false)
   
   // Installment manager state
   const [showInstallmentManager, setShowInstallmentManager] = useState(false)
@@ -254,26 +254,28 @@ export default function Customers(): JSX.Element {
     setShowEditModal(true)
   }
 
-  const openHistoryModal = async (customer: Customer) => {
-    setSelectedCustomer(customer)
-    setShowHistoryModal(true)
-    setLoadingHistory(true)
-    
-    try {
-      const history = await ipc.customers.getPurchaseHistory(customer.id)
-      setSelectedCustomerHistory(history)
-    } catch (error) {
-      console.error('Failed to load purchase history:', error)
-      toast.error(t('failedToLoadPurchaseHistory'))
-    } finally {
-      setLoadingHistory(false)
-    }
-  }
+  // TODO: Re-enable when history modal is implemented
+  // const openHistoryModal = async (customer: Customer) => {
+  //   setSelectedCustomer(customer)
+  //   setShowHistoryModal(true)
+  //   setLoadingHistory(true)
+  //   
+  //   try {
+  //     const history = await ipc.customers.getPurchaseHistory(customer.id)
+  //     setSelectedCustomerHistory(history)
+  //   } catch (error) {
+  //     console.error('Failed to load purchase history:', error)
+  //     toast.error(t('failedToLoadPurchaseHistory'))
+  //   } finally {
+  //     setLoadingHistory(false)
+  //   }
+  // }
 
-  const openInstallmentManager = (customer: Customer) => {
-    setSelectedCustomerForInstallments(customer)
-    setShowInstallmentManager(true)
-  }
+  // TODO: Re-enable when installment manager modal is implemented
+  // const openInstallmentManager = (customer: Customer) => {
+  //   setSelectedCustomerForInstallments(customer)
+  //   setShowInstallmentManager(true)
+  // }
 
   const resetForm = () => {
     setFormData({

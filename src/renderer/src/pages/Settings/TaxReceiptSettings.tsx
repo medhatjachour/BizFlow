@@ -30,16 +30,16 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
       {/* Store Information for Receipt */}
       <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
         <h4 className="text-base font-semibold text-slate-900 dark:text-white">
-          Store Information (Receipt)
+          {t('storeInformationReceipt')}
         </h4>
         <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
-          This information will appear on printed receipts
+          {t('receiptInformation')}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Store Name *
+              {t('storeNameLabel')} *
             </label>
             <input
               type="text"
@@ -52,7 +52,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Store Phone *
+              {t('storePhoneLabel')} *
             </label>
             <input
               type="tel"
@@ -65,7 +65,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Store Email
+              {t('storeEmailLabel')}
             </label>
             <input
               type="email"
@@ -78,7 +78,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              Tax Number (الرقم الضريبي) *
+              {t('taxNumberLabel')} *
             </label>
             <input
               type="text"
@@ -92,7 +92,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Store Address *
+            {t('storeAddressLabel')} *
           </label>
           <textarea
             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary resize-none"
@@ -105,7 +105,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Commercial Register Number (optional)
+            {t('commercialRegisterNumber')}
           </label>
           <input
             type="text"
@@ -120,35 +120,35 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
       {/* Printer Settings */}
       <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
         <h4 className="text-base font-semibold text-slate-900 dark:text-white">
-          Thermal Printer Settings
+          {t('thermalPrinterSettings')}
         </h4>
         <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
-          Configure your thermal printer for receipt printing
+          {t('configureThermalPrinter')}
         </p>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Printer Type *
+            {t('printerType')} *
           </label>
           <select
             className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary"
             value={settings.printerType || 'none'}
             onChange={(e) => handleChange('printerType', e.target.value)}
           >
-            <option value="none">No Printer (Manual Print)</option>
-            <option value="usb">USB Thermal Printer</option>
-            <option value="network">Network Thermal Printer (WiFi/Ethernet)</option>
-            <option value="html">System Printer (HTML/PDF)</option>
+            <option value="none">{t('noPrinter')}</option>
+            <option value="usb">{t('usbThermalPrinter')}</option>
+            <option value="network">{t('networkThermalPrinter')}</option>
+            <option value="html">{t('systemPrinter')}</option>
           </select>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            USB: Connect via USB cable • Network: Connect via IP address • HTML: Use system print dialog
+            {t('usbPrinterHelp')}
           </p>
         </div>
 
         {settings.printerType === 'usb' && (
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-              USB Printer Name
+              {t('usbPrinterName')}
             </label>
             <div className="flex gap-2">
               <input
@@ -177,11 +177,11 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
                 }}
                 className="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg text-sm font-medium whitespace-nowrap"
               >
-                Auto-Detect
+                {t('autoDetect')}
               </button>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Click Auto-Detect or enter manually (e.g., /dev/usb/lp0)
+              {t('autoDetectHelp')}
             </p>
           </div>
         )}
@@ -190,7 +190,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Printer IP Address *
+                {t('printerIPAddress')} *
               </label>
               <input
                 type="text"
@@ -200,12 +200,12 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
                 placeholder="e.g., 192.168.1.100"
               />
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Find printer IP from printer settings menu
+                {t('printerIPHelp')}
               </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                Printer Name (optional)
+                {t('printerNameOptional')}
               </label>
               <input
                 type="text"
@@ -220,7 +220,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Paper Width
+            {t('paperWidth')}
           </label>
           <div className="flex gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -232,7 +232,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
                 onChange={(e) => handleChange('paperWidth', e.target.value)}
                 className="w-4 h-4 text-primary focus:ring-primary"
               />
-              <span className="text-sm text-slate-700 dark:text-slate-300">58mm (Small)</span>
+              <span className="text-sm text-slate-700 dark:text-slate-300">{t('paperSmall')}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -243,17 +243,17 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
                 onChange={(e) => handleChange('paperWidth', e.target.value)}
                 className="w-4 h-4 text-primary focus:ring-primary"
               />
-              <span className="text-sm text-slate-700 dark:text-slate-300">80mm (Standard)</span>
+              <span className="text-sm text-slate-700 dark:text-slate-300">{t('paperStandard')}</span>
             </label>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Most Egyptian thermal printers use 80mm paper
+            {t('paperWidthHelp')}
           </p>
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-            Receipt Bottom Spacing (Blank Lines)
+            {t('receiptBottomSpacing')}
           </label>
           <input
             type="number"
@@ -265,7 +265,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
             placeholder="4"
           />
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Number of blank lines at the bottom of receipts (for easy tearing). Recommended: 3-6 lines
+            {t('receiptBottomSpacingHelp')}
           </p>
         </div>
 
@@ -277,7 +277,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
               checked={settings.printLogo || false}
               onChange={(e) => handleChange('printLogo', e.target.checked)}
             />
-            <span className="text-sm text-slate-700 dark:text-slate-300">Print Store Logo</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">{t('printStoreLogo')}</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">
@@ -287,7 +287,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
               checked={settings.printQRCode || false}
               onChange={(e) => handleChange('printQRCode', e.target.checked)}
             />
-            <span className="text-sm text-slate-700 dark:text-slate-300">Print QR Code</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">{t('printQRCode')}</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">
@@ -297,7 +297,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
               checked={settings.printBarcode || false}
               onChange={(e) => handleChange('printBarcode', e.target.checked)}
             />
-            <span className="text-sm text-slate-700 dark:text-slate-300">Print Receipt Barcode</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">{t('printReceiptBarcode')}</span>
           </label>
 
           <label className="flex items-center gap-2 cursor-pointer">

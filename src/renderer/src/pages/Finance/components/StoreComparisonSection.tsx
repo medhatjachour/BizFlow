@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react'
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts'
 import { Store, TrendingUp, DollarSign, ShoppingCart, Package } from 'lucide-react'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface StoreMetrics {
   storeId: string
@@ -28,6 +29,7 @@ interface StoreComparisonProps {
 type ChartMetric = 'revenue' | 'profit' | 'transactions' | 'inventory' | 'profitMargin' | 'avgOrder'
 
 export default function StoreComparisonSection({ startDate, endDate }: StoreComparisonProps) {
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [stores, setStores] = useState<StoreMetrics[]>([])
   const [allStores, setAllStores] = useState<StoreMetrics[]>([])
@@ -167,7 +169,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <Store className="w-6 h-6 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">Store Comparison</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('storeComparison')}</h2>
         </div>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -181,7 +183,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <Store className="w-6 h-6 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">Store Comparison</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('storeComparison')}</h2>
         </div>
         <div className="text-center text-red-500 py-8">{error}</div>
       </div>
@@ -193,10 +195,10 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <Store className="w-6 h-6 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">Store Comparison</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('storeComparison')}</h2>
         </div>
         <div className="text-center text-gray-400 py-8">
-          No stores found or no sales data available for the selected period
+          {t('noStoresFound')}
         </div>
       </div>
     )
@@ -207,10 +209,10 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Store className="w-6 h-6 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">Store Performance Comparison</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('storePerformanceComparison')}</h2>
         </div>
         <span className="text-sm text-gray-400">
-          {stores.length} {stores.length === 1 ? 'Store' : 'Stores'}
+          {stores.length} {stores.length === 1 ? t('storeLabel') : t('storesLabel')}
         </span>
       </div>
 
@@ -218,7 +220,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
       {allStores.length > 1 && (
         <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-gray-400 mr-2">Select Stores:</span>
+            <span className="text-sm font-semibold text-gray-400 mr-2">{t('selectStores')}:</span>
             {allStores.map(store => (
               <button
                 key={store.storeId}
@@ -251,7 +253,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-green-400" />
-                  <span className="text-sm text-gray-400">Revenue</span>
+                  <span className="text-sm text-gray-400">{t('revenueLabel')}</span>
                 </div>
                 <span className="font-bold text-green-400">{formatCurrency(store.revenue)}</span>
               </div>
@@ -259,13 +261,13 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm text-gray-400">Profit</span>
+                  <span className="text-sm text-gray-400">{t('profitLabel')}</span>
                 </div>
                 <span className="font-bold text-blue-400">{formatCurrency(store.profit)}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400 pl-6">Profit Margin</span>
+                <span className="text-sm text-gray-400 pl-6">{t('profitMarginLabel')}</span>
                 <span className={`font-bold ${
                   store.profitMargin >= 20 ? 'text-green-400' : 
                   store.profitMargin >= 10 ? 'text-yellow-400' : 
@@ -278,26 +280,26 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
               <div className="flex justify-between items-center pt-2 border-t border-gray-700/50">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="w-4 h-4 text-purple-400" />
-                  <span className="text-sm text-gray-400">Transactions</span>
+                  <span className="text-sm text-gray-400">{t('transactionsLabel2')}</span>
                 </div>
                 <span className="font-bold text-purple-400">{store.transactions.toLocaleString()}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400 pl-6">Avg Order</span>
+                <span className="text-sm text-gray-400 pl-6">{t('avgOrderValue')}</span>
                 <span className="font-semibold text-gray-300">{formatCurrency(store.averageOrderValue)}</span>
               </div>
               
               <div className="flex justify-between items-center pt-2 border-t border-gray-700/50">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-orange-400" />
-                  <span className="text-sm text-gray-400">Inventory</span>
+                  <span className="text-sm text-gray-400">{t('inventoryValueLabel')}</span>
                 </div>
                 <span className="font-bold text-orange-400">{formatCurrency(store.inventoryValue)}</span>
               </div>
               
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-400 pl-6">Products</span>
+                <span className="text-sm text-gray-400 pl-6">{t('productCountLabel')}</span>
                 <span className="font-semibold text-gray-300">{store.productCount.toLocaleString()}</span>
               </div>
             </div>
@@ -309,11 +311,11 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
       {stores.length >= 1 && (
         <div className="mt-8 glass-card p-5">
           <div className="mb-4">
-            <h3 className="text-lg font-bold text-foreground mb-3">Performance Comparison</h3>
+            <h3 className="text-lg font-bold text-foreground mb-3">{t('storePerformanceComparison')}</h3>
             
             {/* Multi-Metric Selector */}
             <div className="flex flex-wrap gap-2">
-              <span className="text-sm text-gray-400 mr-2 self-center">Compare by:</span>
+              <span className="text-sm text-gray-400 mr-2 self-center">{t('compare')} {t('by')}:</span>
               {(['revenue', 'profit', 'transactions', 'inventory', 'profitMargin', 'avgOrder'] as ChartMetric[]).map(metric => (
                 <button
                   key={metric}

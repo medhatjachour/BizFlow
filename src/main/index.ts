@@ -8,6 +8,7 @@ import icon from '../../resources/icon.png?asset'
 // Import IPC handlers registration function
 import { registerAllHandlers, prisma } from './ipc/handlers/index'
 import { initializeDatabase } from './database/init'
+import { MigrationManager } from './services/MigrationManager'
 
 // Setup daily email reports cron job
 function setupDailyEmailReports() {
@@ -92,12 +93,15 @@ console.warn = (...args) => {
   logToFile('WARN', ...args)
 }
 
-function createWindow(): void {
+let migrationManager: MigrationManager | null = null
+let mainWindow: BrowserWindow | null = null
+
+function createWindow(): BrowserWindow {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
-    show: false,
+    show: false, // Keep hidden until migration completes
     autoHideMenuBar: true,
     backgroundColor: '#ffffff',
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -106,12 +110,12 @@ function createWindow(): void {
       sandbox: false,
       nodeIntegration: false,
       contextIsolation: true,
-      devTools: false // Disable DevTools completely
+      devTools: is.dev // Enable DevTools in development
     }
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow?.show()
   })
 
   // Set a clear, branded window title
@@ -126,14 +130,17 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // Prevent opening DevTools via keyboard shortcuts
-  mainWindow.webContents.on('before-input-event', (event, input) => {
-    const key = input.key?.toLowerCase?.() || ''
-    // Block F12 or Ctrl+Shift+I / Command+Option+I
-    if (key === 'f12' || ((input.control || input.meta) && input.shift && key === 'i')) {
-      event.preventDefault()
-    }
-  })
+  // Allow DevTools in development mode
+  if (!is.dev) {
+    // Only prevent DevTools shortcuts in production
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      const key = input.key?.toLowerCase?.() || ''
+      // Block F12 or Ctrl+Shift+I / Command+Option+I
+      if (key === 'f12' || ((input.control || input.meta) && input.shift && key === 'i')) {
+        event.preventDefault()
+      }
+    })
+  }
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
@@ -156,7 +163,7 @@ function createWindow(): void {
         mainWindow.loadFile(indexPath).catch(err => {
           console.error('[Main] Failed to load index.html:', err)
           const errorHtml = `<!doctype html><html><body><h2>Renderer failed to load</h2><pre>${String(err)}</pre></body></html>`
-          mainWindow.loadURL('data:text/html,' + encodeURIComponent(errorHtml))
+          mainWindow?.loadURL('data:text/html,' + encodeURIComponent(errorHtml))
         })
       }
     } catch (err) {
@@ -179,6 +186,8 @@ function createWindow(): void {
   mainWindow.webContents.on('console-message', (_event, _level, message) => {
     console.log(`[Renderer Console] ${message}`)
   })
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -201,6 +210,22 @@ app.whenReady().then(async () => {
     console.log('[Main] Registering IPC handlers...')
     registerAllHandlers()
 
+    // Create window (hidden initially)
+    mainWindow = createWindow()
+
+    // Run database migrations if needed
+    console.log('[Main] Checking for database migrations...')
+    migrationManager = new MigrationManager()
+    
+    const migrationSuccess = await migrationManager.migrateWithUI(mainWindow)
+    
+    if (!migrationSuccess) {
+      console.log('[Main] Migration failed or cancelled, exiting...')
+      return // App will quit from migration manager
+    }
+
+    console.log('[Main] Migration check complete, showing window...')
+
     // Seed default installment plans
     console.log('[Main] Seeding default installment plans...')
     try {
@@ -216,7 +241,10 @@ app.whenReady().then(async () => {
     console.log('[Main] Setting up daily email reports cron job...')
     setupDailyEmailReports()
 
-    console.log('[Main] ✅ Setup complete, creating window...')
+    console.log('[Main] ✅ Setup complete')
+    
+    // Show window after everything is ready
+    mainWindow.show()
   } catch (error) {
     console.error('[Main] ❌ Setup failed:', error)
   }
@@ -230,12 +258,13 @@ app.whenReady().then(async () => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
 
-  createWindow()
-
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createWindow()
+      mainWindow.show()
+    }
   })
 })
 
@@ -245,6 +274,14 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
+  }
+})
+
+app.on('before-quit', async () => {
+  // Cleanup migration manager
+  if (migrationManager) {
+    console.log('[Main] Cleaning up migration manager...')
+    await migrationManager.cleanup()
   }
 })
 

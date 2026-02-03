@@ -398,6 +398,29 @@ const api = {
     getDeactivatedUsers: () => ipcRenderer.invoke('delete:get-deactivated-users'),
     cleanupUnlinkedDeposits: (customerId: string) => ipcRenderer.invoke('delete:cleanup-unlinked-deposits', customerId),
     cleanupUnlinkedInstallments: (customerId: string) => ipcRenderer.invoke('delete:cleanup-unlinked-installments', customerId)
+  },
+  // Migration event listeners
+  migration: {
+    onStarting: (callback: () => void) => {
+      ipcRenderer.on('migration:starting', callback)
+      return () => ipcRenderer.removeListener('migration:starting', callback)
+    },
+    onRunning: (callback: () => void) => {
+      ipcRenderer.on('migration:running', callback)
+      return () => ipcRenderer.removeListener('migration:running', callback)
+    },
+    onValidating: (callback: () => void) => {
+      ipcRenderer.on('migration:validating', callback)
+      return () => ipcRenderer.removeListener('migration:validating', callback)
+    },
+    onCompleted: (callback: () => void) => {
+      ipcRenderer.on('migration:completed', callback)
+      return () => ipcRenderer.removeListener('migration:completed', callback)
+    },
+    onFailed: (callback: (_event: any, error: string) => void) => {
+      ipcRenderer.on('migration:failed', callback)
+      return () => ipcRenderer.removeListener('migration:failed', callback)
+    }
   }
 }
 

@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../src/contexts/LanguageContext'
-import { preloadData } from '../../src/hooks/useDataCache'
 import SkipToContent from '../../src/components/ui/SkipToContent'
 import KeyboardShortcutsHelp from '../../src/components/KeyboardShortcutsHelp'
 import {
@@ -136,31 +135,30 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   }
 
   // Preload data for heavy pages on hover
-  const handleLinkHover = (href: string) => {
-    // Preload data for pages with heavy data
-    if (href === '/finance') {
-      preloadData('finance-data', async () => {
-        // Get last 30 days of transactions for preload
-        const endDate = new Date()
-        const startDate = new Date()
-        startDate.setDate(startDate.getDate() - 30)
-        
-        const transactions = await window.api.finance.getTransactions({
-          startDate,
-          endDate
-        })
-        const stats = await window.api.finance.getStats()
-        return { transactions, stats }
-      })
-    } else if (href === '/products') {
-      preloadData('products-data', async () => {
-        return await window.api.products.getAll()
-      })
-    } else if (href === '/inventory') {
-      preloadData('inventory-data', async () => {
-        return await window.api.inventory.getAll()
-      })
-    }
+  const handleLinkHover = (_href: string) => {
+    // Preload data for pages with heavy data - temporarily disabled until API is implemented
+    // if (href === '/finance') {
+    //   preloadData('finance-data', async () => {
+    //     const endDate = new Date()
+    //     const startDate = new Date()
+    //     startDate.setDate(startDate.getDate() - 30)
+    //     
+    //     const transactions = await window.api.finance.getTransactions({
+    //       startDate,
+    //       endDate
+    //     })
+    //     const stats = await window.api.finance.getStats()
+    //     return { transactions, stats }
+    //   })
+    // } else if (href === '/products') {
+    //   preloadData('products-data', async () => {
+    //     return await window.api.products.getAll()
+    //   })
+    // } else if (href === '/inventory') {
+    //   preloadData('inventory-data', async () => {
+    //     return await window.api.inventory.getAll()
+    //   })
+    // }
   }
 
   if (location.pathname === '/login') {

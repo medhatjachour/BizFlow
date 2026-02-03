@@ -11,6 +11,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Search, Plus, Edit, Trash2, Package, DollarSign, ShoppingCart, Users, Eye, X } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
+import { useLanguage } from '../../../contexts/LanguageContext'
 import { ipc } from '../../../utils/ipc'
 import Button from '../../../components/ui/Button'
 import Modal from '../../../components/ui/Modal'
@@ -28,6 +29,7 @@ interface SupplierFormData {
 }
 
 export default function Suppliers() {
+  const { t } = useLanguage()
   const [suppliers, setSuppliers] = useState<SupplierResponseDTO[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -368,7 +370,7 @@ export default function Suppliers() {
               <Users className="text-blue-600 dark:text-blue-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Suppliers</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('totalSuppliers')}</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white">{metrics.totalSuppliers}</p>
             </div>
           </div>
@@ -380,7 +382,7 @@ export default function Suppliers() {
               <Users className="text-green-600 dark:text-green-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Active Suppliers</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('activeSuppliers')}</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white">{metrics.activeSuppliers}</p>
             </div>
           </div>
@@ -392,7 +394,7 @@ export default function Suppliers() {
               <ShoppingCart className="text-purple-600 dark:text-purple-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Purchase Orders</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('purchaseOrdersLabel')}</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white">{metrics.totalPurchaseOrders}</p>
             </div>
           </div>
@@ -404,7 +406,7 @@ export default function Suppliers() {
               <DollarSign className="text-orange-600 dark:text-orange-400" size={24} />
             </div>
             <div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Total Purchased</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t('totalPurchasedLabel')}</p>
               <p className="text-3xl font-bold text-slate-900 dark:text-white">
                 ${metrics.totalPurchased.toLocaleString()}
               </p>
@@ -420,7 +422,7 @@ export default function Suppliers() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
             <input
               type="search"
-              placeholder="Search suppliers by name, contact, or email..."
+              placeholder={t('searchSuppliers')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input-field pl-11"
@@ -435,13 +437,13 @@ export default function Suppliers() {
           <table className="w-full">
             <thead className="bg-slate-50 dark:bg-slate-800/50">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">Name</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">Contact</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">Products</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">Purchase Orders</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">Total Purchased</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white w-32">Actions</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">{t('nameLabel')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">{t('contactLabel')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">{t('productsLabel')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">{t('purchaseOrdersLabel')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">{t('totalPurchasedLabel')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white">{t('statusLabel')}</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900 dark:text-white w-32">{t('actionsLabel')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
@@ -474,12 +476,12 @@ export default function Suppliers() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      📦 {supplier.productCount} products
+                      📦 {supplier.productCount} {t('productsLabel')}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                      🛒 {supplier.totalPurchaseOrders} orders
+                      🛒 {supplier.totalPurchaseOrders} {t('ordersLabel')}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -493,7 +495,7 @@ export default function Suppliers() {
                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
                         : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
                     }`}>
-                      {supplier.isActive ? '✓ Active' : '○ Inactive'}
+                      {supplier.isActive ? `✓ ${t('activeStatus')}` : `○ ${t('inactiveStatus')}`}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -501,21 +503,21 @@ export default function Suppliers() {
                       <button
                         onClick={() => openProductsModal(supplier)}
                         className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all hover:scale-110 active:scale-95"
-                        title="View/Manage products"
+                        title={t('viewProducts')}
                       >
                         <Eye size={18} />
                       </button>
                       <button
                         onClick={() => openEditModal(supplier)}
                         className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all hover:scale-110 active:scale-95"
-                        title="Edit supplier"
+                        title={t('editSupplier')}
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         onClick={() => handleDeleteSupplier(supplier)}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all hover:scale-110 active:scale-95"
-                        title="Deactivate supplier"
+                        title={t('deactivateSupplier')}
                       >
                         <Trash2 size={18} />
                       </button>
@@ -534,9 +536,9 @@ export default function Suppliers() {
                 <Package className="h-16 w-16 text-slate-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">No suppliers found</h3>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t('noSuppliersFound')}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {searchQuery ? 'Try adjusting your search terms.' : 'Get started by adding your first supplier.'}
+                  {searchQuery ? t('adjustSearchTerms') : t('addFirstSupplier')}
                 </p>
               </div>
               {!searchQuery && (
@@ -545,7 +547,7 @@ export default function Suppliers() {
                   className="mt-4 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 font-medium flex items-center gap-2"
                 >
                   <Plus size={20} />
-                  Add First Supplier
+                  {t('addFirstSupplier')}
                 </button>
               )}
             </div>

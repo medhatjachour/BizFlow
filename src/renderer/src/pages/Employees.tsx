@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Users, Clock, Award, Mail, Phone, Edit2, Trash2 } from 'lucide-react'
+import { Plus, Users, Clock, Mail, Phone, Edit2, Trash2 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
 import { ipc } from '../utils/ipc'
 import { useToast } from '../contexts/ToastContext'
