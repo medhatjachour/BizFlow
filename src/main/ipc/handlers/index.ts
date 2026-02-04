@@ -38,21 +38,9 @@ import { registerBarcodePrintHandlers } from './barcode.handlers'
 let isSeeded = false
 export let prisma: any = null
 try {
-  // In dev mode, use generated Prisma from src/generated/prisma
-  // In production, use the packed src/generated/prisma (unpacked by electron-builder)
-  const isDev = process.env.NODE_ENV === 'development'
-  let PrismaClient
+  // Use standard @prisma/client import (generated to node_modules/.prisma/client)
+  const { PrismaClient } = require('@prisma/client')
   
-  if (isDev) {
-    const prismaPath = path.resolve(process.cwd(), 'src', 'generated', 'prisma')
-    PrismaClient = require(prismaPath).PrismaClient
-  } else {
-    // In production, use the unpacked src/generated/prisma
-    // __dirname in production is: /opt/BizFlow/resources/app.asar/out/main
-    const prismaPath = path.resolve(__dirname, '..', '..', '..', 'app.asar.unpacked', 'src', 'generated', 'prisma')
-    console.log('[Database] [PROD] Loading Prisma from:', prismaPath)
-    PrismaClient = require(prismaPath).PrismaClient
-  }
   if (PrismaClient) {
     // Use centralized database path function
     const dbPath = getDatabasePath()

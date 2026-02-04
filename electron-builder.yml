@@ -14,8 +14,8 @@ files:
   - '!prisma/dev.db*'
   - '!prisma/*-journal'
   - out/**
-  - src/generated/**
-  - node_modules/**
+  - node_modules/.prisma/**
+  - node_modules/@prisma/**
   - package.json
   - prisma/template.db
   - prisma/schema.prisma
@@ -29,7 +29,6 @@ extraResources:
     to: prisma/schema.prisma
 asarUnpack:
   - resources/**
-  - src/generated/**
   - node_modules/@prisma/client/**
   - node_modules/.prisma/client/**
   - node_modules/prisma/build/**

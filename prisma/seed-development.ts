@@ -6,7 +6,7 @@
  * - Realistic growth patterns and seasonal variations
  */
 
-import { PrismaClient } from '../src/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 import * as bcrypt from 'bcryptjs'
 import * as crypto from 'crypto'
 

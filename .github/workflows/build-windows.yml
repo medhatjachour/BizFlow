@@ -47,18 +47,11 @@ jobs:
         run: |
           Write-Host "Checking generated Prisma binaries..."
           
-          # Check both locations (src/generated and node_modules/.prisma)
-          $srcBinary = "src/generated/prisma/query_engine-windows.dll.node"
           $nodeModulesBinary = "node_modules/.prisma/client/query_engine-windows.dll.node"
-          
-          if (Test-Path $srcBinary) {
-            $size = (Get-Item $srcBinary).Length / 1MB
-            Write-Host "✓ Found in src/generated: $([math]::Round($size, 2)) MB"
-          }
           
           if (Test-Path $nodeModulesBinary) {
             $size = (Get-Item $nodeModulesBinary).Length / 1MB
-            Write-Host "✓ Found in node_modules/.prisma: $([math]::Round($size, 2)) MB"
+            Write-Host "✓ Found Prisma binary: $([math]::Round($size, 2)) MB"
           } else {
             Write-Error "Windows Prisma binary not found in node_modules/.prisma!"
             exit 1
