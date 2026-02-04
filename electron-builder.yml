@@ -57,6 +57,9 @@ nsis:
   allowToChangeInstallationDirectory: true
   deleteAppDataOnUninstall: false  # Keep user data on uninstall
   runAfterFinish: true  # Launch app after installation
+  # Automatically close running app during installation/update
+  warningsAsErrors: false
+  include: build/installer.nsh  # Custom NSIS script to close running app
   # NSIS installer customization
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
