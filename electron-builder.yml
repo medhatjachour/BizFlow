@@ -11,8 +11,7 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
   - '!prisma/seed*.ts'
-  - '!prisma/dev.db-journal'
-  - '!prisma/dev.db-wal'
+  - '!prisma/dev.db*'
   - '!prisma/*-journal'
   - out/**
   - src/generated/**
@@ -20,6 +19,7 @@ files:
   - package.json
   - prisma/template.db
   - prisma/schema.prisma
+  - prisma/migrations/**/*
 extraResources:
   - from: prisma/template.db
     to: prisma/template.db
@@ -30,9 +30,9 @@ extraResources:
 asarUnpack:
   - resources/**
   - src/generated/**
-  - node_modules/@prisma/**
-  - node_modules/.prisma/**
-  - prisma/**
+  - node_modules/@prisma/client/**
+  - node_modules/.prisma/client/**
+  - node_modules/prisma/build/**
 win:
   executableName: BizFlow
   icon: build/icon.ico

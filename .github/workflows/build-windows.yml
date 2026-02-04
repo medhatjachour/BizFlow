@@ -46,14 +46,25 @@ jobs:
       - name: Verify Prisma binaries
         run: |
           Write-Host "Checking generated Prisma binaries..."
-          Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse | ForEach-Object {
-            Write-Host "Found: $($_.Name) - $([math]::Round($_.Length/1MB, 2)) MB"
+          
+          # Check both locations (src/generated and node_modules/.prisma)
+          $srcBinary = "src/generated/prisma/query_engine-windows.dll.node"
+          $nodeModulesBinary = "node_modules/.prisma/client/query_engine-windows.dll.node"
+          
+          if (Test-Path $srcBinary) {
+            $size = (Get-Item $srcBinary).Length / 1MB
+            Write-Host "✓ Found in src/generated: $([math]::Round($size, 2)) MB"
           }
-          if (!(Test-Path "src/generated/prisma/query_engine-windows.dll.node")) {
-            Write-Error "Windows Prisma binary not found!"
+          
+          if (Test-Path $nodeModulesBinary) {
+            $size = (Get-Item $nodeModulesBinary).Length / 1MB
+            Write-Host "✓ Found in node_modules/.prisma: $([math]::Round($size, 2)) MB"
+          } else {
+            Write-Error "Windows Prisma binary not found in node_modules/.prisma!"
             exit 1
           }
-          Write-Host "✓ Windows Prisma binary verified"
+          
+          Write-Host "✓ Windows Prisma binaries verified"
         shell: pwsh
       
       - name: Prepare template database
@@ -188,10 +199,13 @@ jobs:
       - name: Verify Prisma binaries
         run: |
           Write-Host "Verifying Windows Prisma binary..."
-          if (Test-Path "src/generated/prisma/query_engine-windows.dll.node") {
-            Write-Host "✓ Windows Prisma binary found"
+          $nodeModulesBinary = "node_modules/.prisma/client/query_engine-windows.dll.node"
+          
+          if (Test-Path $nodeModulesBinary) {
+            $size = (Get-Item $nodeModulesBinary).Length / 1MB
+            Write-Host "✓ Windows Prisma binary found: $([math]::Round($size, 2)) MB"
           } else {
-            Write-Error "Windows Prisma binary not found!"
+            Write-Error "Windows Prisma binary not found in node_modules/.prisma!"
             exit 1
           }
         shell: pwsh

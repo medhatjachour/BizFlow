@@ -277,16 +277,40 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('before-quit', async () => {
+let isQuitting = false
+
+app.on('before-quit', async (event) => {
+  if (isQuitting) return
+  
+  // Prevent default quit to allow cleanup
+  event.preventDefault()
+  isQuitting = true
+  
+  console.log('[Main] App is quitting, cleaning up...')
+  
   // Cleanup migration manager
   if (migrationManager) {
-    console.log('[Main] Cleaning up migration manager...')
-    await migrationManager.cleanup()
+    try {
+      await migrationManager.cleanup()
+    } catch (error) {
+      console.error('[Main] Cleanup error:', error)
+    }
   }
+  
+  // Force quit after cleanup
+  app.exit(0)
 })
 
 // Handle uncaught errors
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', (error: any) => {
+  // Ignore Prisma cleanup errors during shutdown
+  if (error?.message?.includes('napi ref') || error?.message?.includes('Prisma')) {
+    console.warn('[Main] ⚠️ Non-critical Prisma cleanup error (ignored):', error?.message)
+    if (isQuitting) {
+      app.exit(0)
+    }
+    return
+  }
   console.error('[Main] Uncaught exception:', error)
 })
 

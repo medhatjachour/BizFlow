@@ -18,8 +18,36 @@ import fs from 'fs'
 export class MigrationManager {
   private prisma: PrismaClient
 
+  private isCleanedUp = false
+
   constructor() {
     this.prisma = new PrismaClient()
+  }
+
+  /**
+   * Cleanup Prisma client on app exit
+   */
+  async cleanup(): Promise<void> {
+    if (this.isCleanedUp) {
+      console.log('[Migration] Already cleaned up, skipping')
+      return
+    }
+
+    try {
+      console.log('[Migration] Cleaning up Prisma client...')
+      
+      // Disconnect with timeout to prevent hanging
+      await Promise.race([
+        this.prisma.$disconnect(),
+        new Promise((resolve) => setTimeout(resolve, 2000))
+      ])
+      
+      this.isCleanedUp = true
+      console.log('[Migration] ✅ Cleanup complete')
+    } catch (error: any) {
+      console.warn('[Migration] ⚠️ Cleanup error (non-critical):', error?.message)
+      this.isCleanedUp = true
+    }
   }
 
   /**
@@ -52,12 +80,11 @@ export class MigrationManager {
    * Create a backup of the database before migration
    */
   async backupDatabase(): Promise<string> {
-    const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db')
+    const dbPath = path.join(app.getPath('userData'), 'database.db')
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const backupPath = path.join(
       app.getPath('userData'),
-      'prisma',
-      `dev.db.backup-${timestamp}`
+      `database.db.backup-${timestamp}`
     )
 
     console.log(`[Migration] Creating backup: ${dbPath} -> ${backupPath}`)
@@ -86,7 +113,7 @@ export class MigrationManager {
     try {
       console.log('[Migration] 🔄 Running database migrations...')
 
-      const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db')
+      const dbPath = path.join(app.getPath('userData'), 'database.db')
       // Normalize path for Windows (use forward slashes in URL)
       const normalizedDbPath = dbPath.replace(/\\/g, '/')
       const databaseUrl = `file:${normalizedDbPath}`

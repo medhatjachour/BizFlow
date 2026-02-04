@@ -93,8 +93,14 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
     // Create empty database file
     fs.writeFileSync(dbPath, '')
     
-    // Import Prisma using require (works better in Electron production)
-    const { PrismaClient } = require('@prisma/client')
+    // Import Prisma - use dynamic import path for packaged apps
+    let PrismaClient: any
+    if (app.isPackaged) {
+      const prismaPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@prisma', 'client')
+      PrismaClient = require(prismaPath).PrismaClient
+    } else {
+      PrismaClient = require('@prisma/client').PrismaClient
+    }
     
     const prisma = new PrismaClient({
       datasources: {
