@@ -17,27 +17,15 @@ import { StoreAnalyticsService } from '../../services/StoreAnalyticsService'
 // Initialize Prisma client
 function initializePrisma() {
   try {
-    const isDev = process.env.NODE_ENV === 'development'
-    let PrismaClient
-    
-    if (isDev) {
-      const prismaPath = path.resolve(process.cwd(), 'src', 'generated', 'prisma')
-      PrismaClient = require(prismaPath).PrismaClient
-    } else {
-      const prismaPath = path.resolve(__dirname, '..', '..', '..', 'app.asar.unpacked', 'src', 'generated', 'prisma')
-      PrismaClient = require(prismaPath).PrismaClient
-    }
-    
-    if (PrismaClient) {
-      const dbPath = getDatabasePath()
-      return new PrismaClient({
-        datasources: {
-          db: {
-            url: `file:${dbPath}?connection_limit=1&timeout=60000&journal_mode=WAL`
-          }
+    const { PrismaClient } = require('@prisma/client')
+    const dbPath = getDatabasePath()
+    return new PrismaClient({
+      datasources: {
+        db: {
+          url: `file:${dbPath}?connection_limit=1&timeout=60000&journal_mode=WAL`
         }
-      })
-    }
+      }
+    })
   } catch (error) {
     console.error('❌ Failed to initialize Prisma for analytics:', error)
   }
