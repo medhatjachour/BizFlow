@@ -68,15 +68,33 @@ export async function initializeDatabase(): Promise<void> {
     
     // Copy the template.db from resources to initialize with schema (recommended)
     const templateDbPath = path.join(process.resourcesPath, 'prisma', 'template.db')
+    
+    console.log('[DB Init] Looking for template database at:', templateDbPath)
 
     if (fs.existsSync(templateDbPath)) {
+      const templateSize = fs.statSync(templateDbPath).size
+      console.log(`[DB Init] Found template database (${(templateSize / 1024).toFixed(2)} KB)`)
       console.log('[DB Init] Copying template database from resources...')
       fs.copyFileSync(templateDbPath, dbPath)
-      console.log('[DB Init] ✅ Database initialized from template')
+      
+      const copiedSize = fs.statSync(dbPath).size
+      console.log(`[DB Init] ✅ Database initialized from template (${(copiedSize / 1024).toFixed(2)} KB)`)
+      console.log('[DB Init] Database contains schema and seed data')
     } else {
       // Fallback: create database with schema using Prisma migrations
-      console.log('[DB Init] Template not found, creating database with schema...')
-      await createDatabaseWithSchema(dbPath)
+      console.warn('[DB Init] ⚠️ Template database not found at:', templateDbPath)
+      console.log('[DB Init] Attempting to create database with schema from migrations...')
+      
+      try {
+        await createDatabaseWithSchema(dbPath)
+        console.log('[DB Init] ✅ Database created successfully')
+      } catch (error) {
+        console.error('[DB Init] ❌ Failed to create database:', error)
+        throw new Error(
+          'Failed to initialize database. Template file is missing and migration failed. ' +
+          'Please reinstall the application.'
+        )
+      }
     }
     
     console.log('[DB Init] ℹ️ Default setup user: username="setup", password="setup123"')
