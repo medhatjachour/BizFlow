@@ -114,6 +114,71 @@ export class MigrationManager {
   }
 
   /**
+   * Parse SQL statements properly handling PRAGMA blocks and multi-line statements
+   * SQLite migrations often have PRAGMA ... ON/OFF blocks that must be executed together
+   */
+  private parseSQLStatements(sql: string): string[] {
+    const statements: string[] = []
+    let currentStatement = ''
+    let inPragmaBlock = false
+    
+    // Split by lines to handle PRAGMA blocks
+    const lines = sql.split('\n')
+    
+    for (const line of lines) {
+      const trimmed = line.trim()
+      
+      // Skip comments and empty lines
+      if (trimmed.startsWith('--') || trimmed.length === 0) {
+        continue
+      }
+      
+      // Detect PRAGMA blocks
+      if (trimmed.startsWith('PRAGMA')) {
+        if (trimmed.includes('=ON') || trimmed.includes('= ON')) {
+          // Start of PRAGMA block
+          inPragmaBlock = true
+          // If we have a pending statement, save it first
+          if (currentStatement.trim()) {
+            statements.push(currentStatement.trim())
+            currentStatement = ''
+          }
+        }
+        currentStatement += line + '\n'
+        
+        if (trimmed.includes('=OFF') || trimmed.includes('= OFF')) {
+          // End of PRAGMA block
+          inPragmaBlock = false
+          statements.push(currentStatement.trim())
+          currentStatement = ''
+        }
+        continue
+      }
+      
+      // Add line to current statement
+      currentStatement += line + '\n'
+      
+      // If we're in a PRAGMA block, don't split on semicolon
+      if (inPragmaBlock) {
+        continue
+      }
+      
+      // Check if line ends with semicolon (end of statement)
+      if (trimmed.endsWith(';')) {
+        statements.push(currentStatement.trim())
+        currentStatement = ''
+      }
+    }
+    
+    // Add any remaining statement
+    if (currentStatement.trim()) {
+      statements.push(currentStatement.trim())
+    }
+    
+    return statements.filter(s => s.length > 0)
+  }
+
+  /**
    * Cleanup Prisma client on app exit
    */
   async cleanup(): Promise<void> {
@@ -288,32 +353,45 @@ export class MigrationManager {
             const sql = fs.readFileSync(sqlFile, 'utf-8')
             
             try {
-              // Split by semicolon and execute each statement
-              const statements = sql.split(';').filter(s => s.trim())
+              // Parse SQL statements properly (handle PRAGMA blocks and multi-line statements)
+              const statements = this.parseSQLStatements(sql)
               
-              for (const statement of statements) {
+              console.log(`[Migration]    Found ${statements.length} SQL statements`)
+              
+              let successCount = 0
+              for (let i = 0; i < statements.length; i++) {
+                const statement = statements[i]
                 if (statement.trim()) {
-                  await this.prisma.$executeRawUnsafe(statement)
+                  try {
+                    await this.prisma.$executeRawUnsafe(statement)
+                    successCount++
+                  } catch (error: any) {
+                    // Log the specific statement that failed
+                    console.error(`[Migration]    ❌ Statement ${i + 1} failed:`, error.message)
+                    console.error(`[Migration]    Statement: ${statement.substring(0, 100)}...`)
+                    
+                    // If error is "already exists", continue
+                    if (error.message?.includes('already exists') || 
+                        error.message?.includes('duplicate column name')) {
+                      console.warn(`[Migration]    ⚠️  Already exists, continuing...`)
+                      successCount++
+                      continue
+                    }
+                    
+                    // For other errors, this is a real failure
+                    throw error
+                  }
                 }
               }
               
               // Mark migration as applied
               await this.markMigrationApplied(migDir)
               appliedCount++
-              console.log(`[Migration] ✅ Successfully applied: ${migDir}`)
+              console.log(`[Migration] ✅ Successfully applied: ${migDir} (${successCount}/${statements.length} statements)`)
               
             } catch (error: any) {
-              // If error is "already exists", the migration was partially applied before
-              // Mark it as applied and continue
-              if (error.message?.includes('already exists')) {
-                console.warn(`[Migration] ⚠️  ${migDir} partially applied, marking as complete`)
-                await this.markMigrationApplied(migDir)
-                appliedCount++
-              } else {
-                // For other errors, this is a real failure
-                console.error(`[Migration] ❌ Failed to apply ${migDir}:`, error.message)
-                throw error
-              }
+              console.error(`[Migration] ❌ Failed to apply ${migDir}:`, error.message)
+              throw error
             }
           } else {
             console.warn(`[Migration] ⚠️  No migration.sql found for: ${migDir}`)
