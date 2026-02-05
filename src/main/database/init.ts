@@ -8,6 +8,21 @@ import * as path from 'node:path'
 import { app } from 'electron'
 
 /**
+ * Get Prisma client with correct path for dev/production
+ */
+function getPrismaClient() {
+  const isDev = process.env.NODE_ENV === 'development'
+  
+  if (isDev) {
+    return require('@prisma/client').PrismaClient
+  } else {
+    // Production: load from resources (outside asar)
+    const prismaClientPath = path.join(process.resourcesPath, 'node_modules', '@prisma', 'client')
+    return require(prismaClientPath).PrismaClient
+  }
+}
+
+/**
  * Initialize database file and directory structure
  * Creates empty database on first run in production
  */
@@ -93,8 +108,8 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
     // Create empty database file
     fs.writeFileSync(dbPath, '')
     
-    // Use standard @prisma/client import
-    const { PrismaClient } = require('@prisma/client')
+    // Get Prisma client from correct location
+    const PrismaClient = getPrismaClient()
     
     const prisma = new PrismaClient({
       datasources: {
@@ -285,7 +300,7 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
     
     // Import Prisma and bcrypt dynamically
     const bcrypt = require('bcryptjs')
-    const { PrismaClient } = require(path.join(process.cwd(), 'src', 'generated', 'prisma'))
+    const PrismaClient = getPrismaClient()
     
     const setupPrisma = new PrismaClient({
       datasources: { db: { url: `file:${dbPath}` } }

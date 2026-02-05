@@ -38,8 +38,19 @@ import { registerBarcodePrintHandlers } from './barcode.handlers'
 let isSeeded = false
 export let prisma: any = null
 try {
-  // Use standard @prisma/client import (generated to node_modules/.prisma/client)
-  const { PrismaClient } = require('@prisma/client')
+  // Load Prisma from correct location based on environment
+  const { app } = require('electron')
+  const isDev = process.env.NODE_ENV === 'development'
+  
+  let PrismaClient
+  if (isDev) {
+    // Development: use standard node_modules location
+    PrismaClient = require('@prisma/client').PrismaClient
+  } else {
+    // Production: load from resources (outside asar)
+    const prismaClientPath = path.join(process.resourcesPath, 'node_modules', '@prisma', 'client')
+    PrismaClient = require(prismaClientPath).PrismaClient
+  }
   
   if (PrismaClient) {
     // Use centralized database path function

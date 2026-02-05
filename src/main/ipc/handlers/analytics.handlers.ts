@@ -17,7 +17,17 @@ import { StoreAnalyticsService } from '../../services/StoreAnalyticsService'
 // Initialize Prisma client
 function initializePrisma() {
   try {
-    const { PrismaClient } = require('@prisma/client')
+    const isDev = process.env.NODE_ENV === 'development'
+    let PrismaClient
+    
+    if (isDev) {
+      PrismaClient = require('@prisma/client').PrismaClient
+    } else {
+      // Production: load from resources (outside asar)
+      const prismaClientPath = path.join(process.resourcesPath, 'node_modules', '@prisma', 'client')
+      PrismaClient = require(prismaClientPath).PrismaClient
+    }
+    
     const dbPath = getDatabasePath()
     return new PrismaClient({
       datasources: {

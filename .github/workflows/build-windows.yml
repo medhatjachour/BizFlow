@@ -118,6 +118,48 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+      - name: Verify Prisma in packaged app
+        run: |
+          Write-Host "Verifying Prisma in packaged application..."
+          
+          # Find the unpacked resources folder
+          $unpackedPath = Get-ChildItem -Path "dist\win-unpacked\resources" -Directory | Where-Object { $_.Name -eq "app.asar.unpacked" -or $_.Name -eq "." } | Select-Object -First 1
+          
+          if ($unpackedPath) {
+            Write-Host "Found unpacked resources at: $($unpackedPath.FullName)"
+          }
+          
+          # Check for Prisma in extraResources
+          $prismaClientPath = "dist\win-unpacked\resources\node_modules\@prisma\client"
+          $prismaEnginePath = "dist\win-unpacked\resources\node_modules\.prisma\client"
+          
+          if (Test-Path $prismaClientPath) {
+            $clientSize = (Get-ChildItem -Path $prismaClientPath -Recurse -File | Measure-Object -Property Length -Sum).Sum / 1MB
+            Write-Host "✓ @prisma/client found in resources: $([math]::Round($clientSize, 2)) MB"
+          } else {
+            Write-Error "@prisma/client NOT found in resources at: $prismaClientPath"
+            Write-Host "Listing resources contents:"
+            Get-ChildItem -Path "dist\win-unpacked\resources" -Recurse | Select-Object FullName
+            exit 1
+          }
+          
+          if (Test-Path $prismaEnginePath) {
+            $engineBinary = "$prismaEnginePath\query_engine-windows.dll.node"
+            if (Test-Path $engineBinary) {
+              $engineSize = (Get-Item $engineBinary).Length / 1MB
+              Write-Host "✓ Prisma engine binary found: $([math]::Round($engineSize, 2)) MB"
+            } else {
+              Write-Error "Prisma engine binary NOT found at: $engineBinary"
+              exit 1
+            }
+          } else {
+            Write-Error ".prisma/client NOT found in resources at: $prismaEnginePath"
+            exit 1
+          }
+          
+          Write-Host "✅ Prisma successfully packaged in extraResources"
+        shell: pwsh
+      
       - name: Get version from package.json
         id: package-version
         run: |

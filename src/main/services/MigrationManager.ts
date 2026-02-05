@@ -10,17 +10,30 @@
  */
 
 import { app, dialog, BrowserWindow } from 'electron'
-import { PrismaClient } from '@prisma/client'
 import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 
+// Load Prisma from correct location
+function getPrismaClient() {
+  const isDev = process.env.NODE_ENV === 'development'
+  
+  if (isDev) {
+    return require('@prisma/client').PrismaClient
+  } else {
+    // Production: load from resources (outside asar)
+    const prismaClientPath = path.join(process.resourcesPath, 'node_modules', '@prisma', 'client')
+    return require(prismaClientPath).PrismaClient
+  }
+}
+
 export class MigrationManager {
-  private prisma: PrismaClient
+  private prisma: any
 
   private isCleanedUp = false
 
   constructor() {
+    const PrismaClient = getPrismaClient()
     this.prisma = new PrismaClient()
   }
 
