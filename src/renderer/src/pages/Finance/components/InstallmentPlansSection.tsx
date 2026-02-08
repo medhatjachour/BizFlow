@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react'
 import { Calendar, CreditCard, Plus, Edit, Trash2, CheckCircle, XCircle, Percent, Clock } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface InstallmentPlan {
   id: string
@@ -20,6 +21,7 @@ interface InstallmentPlan {
 
 export default function InstallmentPlansSection() {
   const { success, error } = useToast()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
   const [plans, setPlans] = useState<InstallmentPlan[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -58,10 +60,10 @@ export default function InstallmentPlansSection() {
   }
 
   const getIntervalLabel = (days: number) => {
-    if (days === 7) return 'Weekly'
-    if (days === 14) return 'Bi-weekly'
-    if (days === 30) return 'Monthly'
-    return `Every ${days} days`
+    if (days === 7) return t('weekly')
+    if (days === 14) return t('biweekly')
+    if (days === 30) return t('monthly')
+    return t('everyNDays').replace('{0}', String(days))
   }
 
   if (loading) {
@@ -69,7 +71,7 @@ export default function InstallmentPlansSection() {
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-6">
           <CreditCard className="w-6 h-6 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">Installment Plans</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('installmentPlans')}</h2>
         </div>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -83,22 +85,22 @@ export default function InstallmentPlansSection() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <CreditCard className="w-6 h-6 text-primary" />
-          <h2 className="text-xl font-bold text-foreground">Installment Plans</h2>
+          <h2 className="text-xl font-bold text-foreground">{t('installmentPlans')}</h2>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span>Create Plan</span>
+          <span>{t('createPlan')}</span>
         </button>
       </div>
 
       {plans.length === 0 ? (
         <div className="text-center text-gray-400 py-12">
           <CreditCard className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-          <p className="text-lg mb-2">No installment plans configured</p>
-          <p className="text-sm">Create your first payment plan to get started</p>
+          <p className="text-lg mb-2">{t('noInstallmentPlans')}</p>
+          <p className="text-sm">{t('createFirstPlan')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -115,12 +117,12 @@ export default function InstallmentPlansSection() {
                     {plan.isActive ? (
                       <span className="flex items-center gap-1 text-xs text-green-400">
                         <CheckCircle className="w-3 h-3" />
-                        Active
+                        {t('activePlan')}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 text-xs text-gray-500">
                         <XCircle className="w-3 h-3" />
-                        Inactive
+                        {t('inactivePlan')}
                       </span>
                     )}
                   </div>
@@ -163,7 +165,7 @@ export default function InstallmentPlansSection() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-gray-400">Down Payment</span>
+                    <span className="text-sm text-gray-400">{t('downPayment')}</span>
                   </div>
                   <span className="font-bold text-blue-400">
                     {formatPercent(plan.downPaymentPercent)}
@@ -173,7 +175,7 @@ export default function InstallmentPlansSection() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-gray-400">Payments</span>
+                    <span className="text-sm text-gray-400">{t('paymentsCount')}</span>
                   </div>
                   <span className="font-bold text-green-400">
                     {plan.numberOfPayments}x
@@ -183,7 +185,7 @@ export default function InstallmentPlansSection() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm text-gray-400">Interval</span>
+                    <span className="text-sm text-gray-400">{t('intervalLabel')}</span>
                   </div>
                   <span className="font-semibold text-purple-400">
                     {getIntervalLabel(plan.intervalDays)}
@@ -193,27 +195,27 @@ export default function InstallmentPlansSection() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Percent className="w-4 h-4 text-orange-400" />
-                    <span className="text-sm text-gray-400">Interest Rate</span>
+                    <span className="text-sm text-gray-400">{t('interestRateLabel')}</span>
                   </div>
                   <span className={`font-bold ${plan.interestRate === 0 ? 'text-green-400' : 'text-orange-400'}`}>
                     {formatPercent(plan.interestRate)}
-                    {plan.interestRate === 0 && ' (Interest-free)'}
+                    {plan.interestRate === 0 && ` (${t('interestFree')})`}
                   </span>
                 </div>
               </div>
 
               {/* Example Calculation */}
               <div className="mt-4 pt-4 border-t border-gray-700/50">
-                <p className="text-xs text-gray-500 mb-2">Example for $1,000:</p>
+                <p className="text-xs text-gray-500 mb-2">{t('exampleFor')}</p>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between text-gray-400">
-                    <span>Down Payment:</span>
+                    <span>{t('downPaymentAmount')}</span>
                     <span className="text-gray-300 font-semibold">
                       ${((1000 * plan.downPaymentPercent) / 100).toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between text-gray-400">
-                    <span>Per Payment:</span>
+                    <span>{t('perPayment')}</span>
                     <span className="text-gray-300 font-semibold">
                       ${(((1000 * (100 - plan.downPaymentPercent)) / 100) / plan.numberOfPayments).toFixed(2)}
                     </span>
@@ -231,28 +233,28 @@ export default function InstallmentPlansSection() {
           <div className="text-2xl font-bold text-primary mb-1">
             {plans.filter(p => p.isActive).length}
           </div>
-          <div className="text-sm text-gray-400">Active Plans</div>
+          <div className="text-sm text-gray-400">{t('activePlans')}</div>
         </div>
         
         <div className="glass-card p-4 text-center">
           <div className="text-2xl font-bold text-green-400 mb-1">
             {plans.filter(p => p.interestRate === 0).length}
           </div>
-          <div className="text-sm text-gray-400">Interest-Free</div>
+          <div className="text-sm text-gray-400">{t('interestFreePlans')}</div>
         </div>
         
         <div className="glass-card p-4 text-center">
           <div className="text-2xl font-bold text-blue-400 mb-1">
             {Math.min(...plans.map(p => p.downPaymentPercent))}%
           </div>
-          <div className="text-sm text-gray-400">Min Down Payment</div>
+          <div className="text-sm text-gray-400">{t('minDownPayment')}</div>
         </div>
         
         <div className="glass-card p-4 text-center">
           <div className="text-2xl font-bold text-purple-400 mb-1">
             {Math.max(...plans.map(p => p.numberOfPayments))}
           </div>
-          <div className="text-sm text-gray-400">Max Payments</div>
+          <div className="text-sm text-gray-400">{t('maxPayments')}</div>
         </div>
       </div>
 
@@ -261,23 +263,23 @@ export default function InstallmentPlansSection() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCreateModal(false)}>
           <div className="glass-card p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
             <h3 className="text-xl font-bold text-foreground mb-4">
-              {editingPlan ? 'Edit Plan' : 'Create New Plan'}
+              {editingPlan ? t('editPlanTitle') : t('createNewPlan')}
             </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Plan Name</label>
+                <label className="text-sm text-gray-400 block mb-1">{t('planName')}</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200"
-                  placeholder="e.g., 3-Month Plan"
+                  placeholder={t('planNamePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Down Payment (%)</label>
+                <label className="text-sm text-gray-400 block mb-1">{t('downPaymentPercent')}</label>
                 <input
                   type="number"
                   value={formData.downPaymentPercent}
@@ -289,7 +291,7 @@ export default function InstallmentPlansSection() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Number of Payments</label>
+                <label className="text-sm text-gray-400 block mb-1">{t('numberOfPayments')}</label>
                 <input
                   type="number"
                   value={formData.numberOfPayments}
@@ -300,22 +302,22 @@ export default function InstallmentPlansSection() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Payment Interval (days)</label>
+                <label className="text-sm text-gray-400 block mb-1">{t('paymentInterval')}</label>
                 <select
                   value={formData.intervalDays}
                   onChange={e => setFormData({...formData, intervalDays: Number(e.target.value)})}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200"
                 >
-                  <option value="7">Weekly (7 days)</option>
-                  <option value="14">Bi-weekly (14 days)</option>
-                  <option value="30">Monthly (30 days)</option>
-                  <option value="60">Bi-monthly (60 days)</option>
-                  <option value="90">Quarterly (90 days)</option>
+                  <option value="7">{t('weeklyOption')}</option>
+                  <option value="14">{t('biweeklyOption')}</option>
+                  <option value="30">{t('monthlyOption')}</option>
+                  <option value="60">{t('bimonthlyOption')}</option>
+                  <option value="90">{t('quarterlyOption')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Interest Rate (%)</label>
+                <label className="text-sm text-gray-400 block mb-1">{t('interestRatePercent')}</label>
                 <input
                   type="number"
                   step="0.1"
@@ -335,7 +337,7 @@ export default function InstallmentPlansSection() {
                   onChange={e => setFormData({...formData, isActive: e.target.checked})}
                   className="w-4 h-4"
                 />
-                <label htmlFor="isActive" className="text-sm text-gray-300">Active</label>
+                <label htmlFor="isActive" className="text-sm text-gray-300">{t('activeCheckbox')}</label>
               </div>
             </div>
 
@@ -354,7 +356,7 @@ export default function InstallmentPlansSection() {
                 }}
                 className="flex-1 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors"
               >
-                Cancel
+                {t('cancelButton')}
               </button>
               <button
                 onClick={async () => {
@@ -369,18 +371,18 @@ export default function InstallmentPlansSection() {
                       })
                       
                       if (result.success) {
-                        alert('Plan updated successfully!')
+                        success(t('planUpdatedSuccess'))
                       } else {
-                        throw new Error(result.error || 'Failed to update plan')
+                        throw new Error(result.error || t('failedToUpdatePlan'))
                       }
                     } else {
                       // Create new plan
                       const result = await window.api.installmentPlans.create(formData)
                       
                       if (result.success) {
-                        alert('Plan created successfully!')
+                        success(t('planCreatedSuccess'))
                       } else {
-                        throw new Error(result.error || 'Failed to create plan')
+                        throw new Error(result.error || t('failedToCreatePlan'))
                       }
                     }
                     
@@ -389,12 +391,12 @@ export default function InstallmentPlansSection() {
                     await loadPlans()
                   } catch (err) {
                     console.error('Error creating/updating plan:', err)
-                    alert(`Failed to ${editingPlan ? 'update' : 'create'} plan: ${err instanceof Error ? err.message : 'Unknown error'}`)
+                    error(`${editingPlan ? t('failedToUpdatePlan') : t('failedToCreatePlan')}: ${err instanceof Error ? err.message : 'Unknown error'}`)
                   }
                 }}
                 className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
               >
-                {editingPlan ? 'Update' : 'Create'}
+                {editingPlan ? t('updateButton') : t('createButton')}
               </button>
             </div>
           </div>
@@ -406,10 +408,10 @@ export default function InstallmentPlansSection() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
-              Delete Installment Plan
+              {t('deleteInstallmentPlan')}
             </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              Are you sure you want to delete "<strong>{deletingPlan.name}</strong>"? This action cannot be undone.
+              {t('deleteConfirmMessage').replace('{0}', deletingPlan.name)}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -419,21 +421,21 @@ export default function InstallmentPlansSection() {
                 }}
                 className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
-                Cancel
+                {t('cancelButton')}
               </button>
               <button
                 onClick={async () => {
                   try {
                     const result = await window.api.installmentPlans.delete(deletingPlan.id)
                     if (result.success) {
-                      success('Plan deleted successfully!')
+                      success(t('planDeletedSuccess'))
                       await loadPlans()
                     } else {
-                      throw new Error(result.error || 'Failed to delete plan')
+                      throw new Error(result.error || t('failedToDeletePlan'))
                     }
                   } catch (err) {
                     console.error('Error deleting plan:', err)
-                    error(`Failed to delete plan: ${err instanceof Error ? err.message : 'Unknown error'}`)
+                    error(`${t('failedToDeletePlan')}: ${err instanceof Error ? err.message : 'Unknown error'}`)
                   } finally {
                     setShowDeleteConfirm(false)
                     setDeletingPlan(null)
@@ -441,7 +443,7 @@ export default function InstallmentPlansSection() {
                 }}
                 className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
               >
-                Delete
+                {t('deletePlan')}
               </button>
             </div>
           </div>

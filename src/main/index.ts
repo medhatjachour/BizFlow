@@ -226,15 +226,18 @@ app.whenReady().then(async () => {
 
     console.log('[Main] Migration check complete, showing window...')
 
-    // Seed default installment plans
-    console.log('[Main] Seeding default installment plans...')
+    // Seed default installment plans (only if none exist)
     try {
-      const { InstallmentPlanService } = await import('./services/InstallmentPlanService')
-      const planService = InstallmentPlanService.getInstance(prisma)
-      await planService.seedDefaultPlans()
-      console.log('[Main] ✅ Installment plans initialized')
+      const planCount = await prisma.installmentPlan.count()
+      if (planCount === 0) {
+        console.log('[Main] No installment plans found, seeding defaults...')
+        const { InstallmentPlanService } = await import('./services/InstallmentPlanService')
+        const planService = InstallmentPlanService.getInstance(prisma)
+        await planService.seedDefaultPlans()
+        console.log('[Main] ✅ Installment plans initialized')
+      }
     } catch (error) {
-      console.error('[Main] ⚠️  Failed to seed installment plans:', error)
+      console.error('[Main] ⚠️  Failed to check/seed installment plans:', error)
     }
 
     // Setup daily email reports cron job (runs at 11 PM every day)
