@@ -166,7 +166,9 @@ export class DeleteService {
         isArchived: true,
         archivedAt: new Date(),
         archivedBy,
-        archiveReason: reason
+        archiveReason: reason,
+        deactivatedAt: new Date(),
+        deactivatedBy: archivedBy
       }
     })
   }
@@ -181,7 +183,9 @@ export class DeleteService {
         isArchived: true,
         archivedAt: new Date(),
         archivedBy,
-        archiveReason: reason
+        archiveReason: reason,
+        deactivatedAt: new Date(),
+        deactivatedBy: archivedBy
       }
     })
   }
@@ -210,7 +214,9 @@ export class DeleteService {
         isArchived: false,
         archivedAt: null,
         archivedBy: null,
-        archiveReason: null
+        archiveReason: null,
+        deactivatedAt: null,
+        deactivatedBy: null
       }
     })
   }
@@ -225,7 +231,9 @@ export class DeleteService {
         isArchived: false,
         archivedAt: null,
         archivedBy: null,
-        archiveReason: null
+        archiveReason: null,
+        deactivatedAt: null,
+        deactivatedBy: null
       }
     })
   }
@@ -278,14 +286,30 @@ export class DeleteService {
    * Get archived items for management
    */
   static async getArchivedCustomers() {
-    return await DeleteService.prisma.customer.findMany({
+    const customers = await DeleteService.prisma.customer.findMany({
       where: { isArchived: true },
       orderBy: { archivedAt: 'desc' }
     })
+    
+    // Enrich with deactivator info, handling deleted users
+    return await Promise.all(customers.map(async (customer) => {
+      let deactivatorName = 'Unknown User'
+      if (customer.deactivatedBy) {
+        const deactivator = await DeleteService.prisma.user.findUnique({
+          where: { id: customer.deactivatedBy },
+          select: { fullName: true, username: true }
+        })
+        deactivatorName = deactivator ? (deactivator.fullName || deactivator.username) : 'Deleted User'
+      }
+      return {
+        ...customer,
+        deactivatorName
+      }
+    }))
   }
   
   static async getArchivedProducts() {
-    return await DeleteService.prisma.product.findMany({
+    const products = await DeleteService.prisma.product.findMany({
       where: { isArchived: true },
       include: {
         category: true,
@@ -293,13 +317,45 @@ export class DeleteService {
       },
       orderBy: { archivedAt: 'desc' }
     })
+    
+    // Enrich with deactivator info, handling deleted users
+    return await Promise.all(products.map(async (product) => {
+      let deactivatorName = 'Unknown User'
+      if (product.deactivatedBy) {
+        const deactivator = await DeleteService.prisma.user.findUnique({
+          where: { id: product.deactivatedBy },
+          select: { fullName: true, username: true }
+        })
+        deactivatorName = deactivator ? (deactivator.fullName || deactivator.username) : 'Deleted User'
+      }
+      return {
+        ...product,
+        deactivatorName
+      }
+    }))
   }
   
   static async getDeactivatedUsers() {
-    return await DeleteService.prisma.user.findMany({
+    const users = await DeleteService.prisma.user.findMany({
       where: { isActive: false },
       orderBy: { deactivatedAt: 'desc' }
     })
+    
+    // Enrich with deactivator info, handling deleted users
+    return await Promise.all(users.map(async (user) => {
+      let deactivatorName = 'Unknown User'
+      if (user.deactivatedBy) {
+        const deactivator = await DeleteService.prisma.user.findUnique({
+          where: { id: user.deactivatedBy },
+          select: { fullName: true, username: true }
+        })
+        deactivatorName = deactivator ? (deactivator.fullName || deactivator.username) : 'Deleted User'
+      }
+      return {
+        ...user,
+        deactivatorName
+      }
+    }))
   }
   
   /**
