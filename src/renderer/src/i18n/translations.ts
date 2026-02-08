@@ -900,7 +900,7 @@ export const translations = {
     newStockAmount: 'New Stock Amount',
     
     // Reports - Today's Activity Section
-    todaysActivity: "Today's Activity",
+    todaysActivityReport: "Today's Activity",
     todaysReport: "Today's Report",
     todaysSalesActivity: "Today's Sales Activity",
     itemsSold: 'Items Sold',
@@ -959,11 +959,11 @@ export const translations = {
     failedToLoadStoreComparison: 'Failed to load store comparison data',
     revenueLabel: 'Revenue',
     profitLabel: 'Profit',
-    profitMarginLabel: 'Profit Margin',
+    profitMarginLabelStore: 'Profit Margin',
     transactionsLabel2: 'Transactions',
     inventoryValueLabel: 'Inventory Value',
     productCountLabel: 'Product Count',
-    avgOrderValue: 'Avg Order Value',
+    avgOrderValueStore: 'Avg Order Value',
     
     // Finance - Installments Tab
     installmentsLabel: 'Installments',
@@ -1068,7 +1068,7 @@ export const translations = {
     deactivateSupplier: 'Deactivate',
     nameLabel: 'Name',
     contactLabel: 'Contact',
-    productsLabel: 'Products',
+    productsLabelSupplier: 'Products',
     ordersLabel: 'Orders',
     actionsLabel: 'Actions',
     activeStatus: 'Active',
@@ -1102,7 +1102,7 @@ export const translations = {
     supplierLabel: 'Supplier',
     orderItems: 'Order Items',
     addItem: 'Add Item',
-    removeItem: 'Remove Item',
+    removeItemPO: 'Remove Item',
     unitCost: 'Unit Cost',
     lineTotal: 'Line Total',
     orderSubtotal: 'Order Subtotal',
@@ -1131,7 +1131,7 @@ export const translations = {
     failedToCancelPurchaseOrder: 'Failed to cancel purchase order',
     selectSupplier: 'Select Supplier',
     selectProduct: 'Select Product',
-    selectVariant: 'Select Variant (if applicable)',
+    selectVariantPO: 'Select Variant (if applicable)',
     addToOrder: 'Add to Order',
     orderSummary: 'Order Summary',
     itemsInOrder: 'items in order',
@@ -1182,7 +1182,7 @@ export const translations = {
     left: 'left',
     
     // Sales Page
-    itemsSold: 'Items Sold',
+    itemsSoldSales: 'Items Sold',
     averageSale: 'Average Sale',
     today: 'Today',
     week: 'Week',
@@ -1193,7 +1193,7 @@ export const translations = {
     viewDetails: 'View Details',
     refund: 'Refund',
     partialRefund: 'Partial Refund',
-    completed: 'Completed',
+    completedStatus: 'Completed',
     partiallyRefunded: 'Partially Refunded',
     refunded: 'Refunded',
     // Sale Status
@@ -1233,7 +1233,7 @@ export const translations = {
     startMakingSales: 'Start making sales',
     acrossAllTransactions: 'Across all transactions',
     noItemsSold: 'No items sold',
-    noSalesYet: 'No Sales Yet',
+    noSalesYetEmpty: 'No Sales Yet',
     startMakingSalesToSee: 'Start making sales to see your transaction history and analytics here.',
     goToPointOfSale: 'Go to Point of Sale',
     searchByCustomerOrSaleId: 'Search by customer name or sale ID...',
@@ -1438,7 +1438,7 @@ export const translations = {
     paymentMethodNote: 'At least one payment method must be enabled. Cash is recommended as a fallback option.',
     
     // Deposits and Installments
-    deposits: 'Deposits',
+    depositsPayment: 'Deposits',
     installments: 'Installments',
     deposit: 'Deposit',
     installment: 'Installment',
@@ -1447,8 +1447,8 @@ export const translations = {
     overdue: 'Overdue',
     
     // Tax & Receipt Settings
-    taxReceiptSettings: 'Tax & Receipt Settings',
-    configureTaxReceipt: 'Configure tax rates and receipt printing options',
+    taxReceiptSettingsMain: 'Tax & Receipt Settings',
+    configureTaxReceiptMain: 'Configure tax rates and receipt printing options',
     salesTaxRate: 'Sales Tax Rate (%)',
     example: 'Example',
     taxOnSale: 'tax on a',
@@ -1589,24 +1589,24 @@ export const translations = {
     view: 'View',
     financial: 'Financial',
     transactions: 'transactions',
-    avgLabel: 'Avg',
+    avgLabelFinance: 'Avg',
     notes: 'Notes',
     
     // Payment Plan
-    noDepositsYet: 'No deposits yet',
-    noInstallmentsScheduled: 'No installments scheduled',
-    totalDue: 'Total Due',
-    paid: 'Paid',
-    pending: 'Pending',
+    noDepositsYetPlan: 'No deposits yet',
+    noInstallmentsScheduledPlan: 'No installments scheduled',
+    totalDuePlan: 'Total Due',
+    paidPlan: 'Paid',
+    pendingPlan: 'Pending',
     markAsPaid: 'Mark as Paid',
     due: 'Due',
     
     // Installments Page
-    installmentManagement: 'Installment Management',
-    manageInstallments: 'Manage customer installments and mark payments as received',
-    installmentManagerWillOpen: 'The installment manager will open automatically',
-    noActiveInstallments: 'No active installments found',
-    createInstallments: 'Create installments for your customers through the POS or Sales pages',
+    installmentManagementPage: 'Installment Management',
+    manageInstallmentsPage: 'Manage customer installments and mark payments as received',
+    installmentManagerWillOpenPage: 'The installment manager will open automatically',
+    noActiveInstallmentsPage: 'No active installments found',
+    createInstallmentsPage: 'Create installments for your customers through the POS or Sales pages',
   },
   ar: {
     // Navigation
@@ -2771,10 +2771,10 @@ export const translations = {
     // Reports - Today's Activity Section (Arabic)
     todaysReport: 'تقرير اليوم',
     todaysSalesActivity: 'نشاط مبيعات اليوم',
-    itemsSold: 'العناصر المباعة',
+    itemsSoldSales: 'العناصر المباعة',
     piecesSold: 'القطع المباعة',
     avgLabel: 'متوسط',
-    noSalesYet: 'لا توجد مبيعات بعد',
+    noSalesYetEmpty: 'لا توجد مبيعات بعد',
     pieces: 'قطع',
     productLabel: 'منتج',
     productsLabel: 'منتجات',
@@ -2827,11 +2827,11 @@ export const translations = {
     failedToLoadStoreComparison: 'فشل تحميل بيانات مقارنة المتاجر',
     revenueLabel: 'الإيرادات',
     profitLabel: 'الربح',
-    profitMarginLabel: 'هامش الربح',
+    profitMarginLabelStore: 'هامش الربح',
     transactionsLabel2: 'المعاملات',
     inventoryValueLabel: 'قيمة المخزون',
     productCountLabel: 'عدد المنتجات',
-    avgOrderValue: 'متوسط قيمة الطلب',
+    avgOrderValueStore: 'متوسط قيمة الطلب',
     
     // Finance - Installments Tab (Arabic)
     installmentsLabel: 'الأقساط',
@@ -2870,7 +2870,7 @@ export const translations = {
     standalonePayment: 'دفعة مستقلة',
     processingPayment: 'جاري المعالجة...',
     noInstallmentsFound: 'لا توجد أقساط',
-    completed: 'مكتمل',
+    completedStatus: 'مكتمل',
     paidLabel: 'مدفوع',
     topPurchasedProducts: 'المنتجات الأكثر شراءً',
     productCategory: 'فئة المنتج',
@@ -2936,7 +2936,7 @@ export const translations = {
     deactivateSupplier: 'إلغاء التفعيل',
     nameLabel: 'الاسم',
     contactLabel: 'جهة الاتصال',
-    productsLabel: 'المنتجات',
+    productsLabelSupplier: 'المنتجات',
     ordersLabel: 'الطلبات',
     actionsLabel: 'الإجراءات',
     activeStatus: 'نشط',
@@ -2970,7 +2970,7 @@ export const translations = {
     supplierLabel: 'المورّد',
     orderItems: 'عناصر الطلب',
     addItem: 'إضافة عنصر',
-    removeItem: 'إزالة عنصر',
+    removeItemPO: 'إزالة عنصر',
     unitCost: 'التكلفة لكل وحدة',
     lineTotal: 'إجمالي السطر',
     orderSubtotal: 'المجموع الفرعي للطلب',
@@ -2999,7 +2999,7 @@ export const translations = {
     failedToCancelPurchaseOrder: 'فشل في إلغاء أمر الشراء',
     selectSupplier: 'اختر المورّد',
     selectProduct: 'اختر المنتج',
-    selectVariant: 'اختر المتغير (إن وُجد)',
+    selectVariantPO: 'اختر المتغير (إن وُجد)',
     addToOrder: 'إضافة إلى الطلب',
     orderSummary: 'ملخص الطلب',
     itemsInOrder: 'عناصر في الطلب',
@@ -3048,7 +3048,7 @@ export const translations = {
     paymentMethodNote: 'يجب تفعيل طريقة دفع واحدة على الأقل. يوصى بالنقد كخيار احتياطي.',
     
     // Deposits and Installments
-    deposits: 'الودائع',
+    depositsPayment: 'الودائع',
     installments: 'الأقساط',
     deposit: 'وديعة',
     installment: 'قسط',
@@ -3057,8 +3057,8 @@ export const translations = {
     overdue: 'متأخر',
     
     // Tax & Receipt Settings
-    taxReceiptSettings: 'إعدادات الضرائب والإيصالات',
-    configureTaxReceipt: 'تكوين معدلات الضرائب وخيارات طباعة الإيصالات',
+    taxReceiptSettingsMain: 'إعدادات الضرائب والإيصالات',
+    configureTaxReceiptMain: 'تكوين معدلات الضرائب وخيارات طباعة الإيصالات',
     salesTaxRate: 'معدل ضريبة المبيعات (%)',
     example: 'مثال',
     taxOnSale: 'ضريبة على',
@@ -3198,24 +3198,24 @@ export const translations = {
     view: 'عرض',
     financial: 'مالي',
     transactions: 'المعاملات',
-    avgLabel: 'متوسط',
+    avgLabelFinance: 'متوسط',
     notes: 'ملاحظات',
     
     // Payment Plan
-    noDepositsYet: 'لا توجد ودائع بعد',
-    noInstallmentsScheduled: 'لم يتم جدولة أقساط',
-    totalDue: 'إجمالي المستحق',
-    paid: 'مدفوع',
-    pending: 'قيد الانتظار',
+    noDepositsYetPlan: 'لا توجد ودائع بعد',
+    noInstallmentsScheduledPlan: 'لم يتم جدولة أقساط',
+    totalDuePlan: 'إجمالي المستحق',
+    paidPlan: 'مدفوع',
+    pendingPlan: 'قيد الانتظار',
     markAsPaid: 'وضع علامة كمدفوع',
     due: 'الاستحقاق',
     
     // Installments Page
-    installmentManagement: 'إدارة الأقساط',
-    manageInstallments: 'إدارة أقساط العملاء ووضع علامة على الدفعات المستلمة',
-    installmentManagerWillOpen: 'سيتم فتح مدير الأقساط تلقائياً',
-    noActiveInstallments: 'لم يتم العثور على أقساط نشطة',
-    createInstallments: 'قم بإنشاء أقساط لعملائك من خلال نقاط البيع أو صفحات المبيعات',
+    installmentManagementPage: 'إدارة الأقساط',
+    manageInstallmentsPage: 'إدارة أقساط العملاء ووضع علامة على الدفعات المستلمة',
+    installmentManagerWillOpenPage: 'سيتم فتح مدير الأقساط تلقائياً',
+    noActiveInstallmentsPage: 'لم يتم العثور على أقساط نشطة',
+    createInstallmentsPage: 'قم بإنشاء أقساط لعملائك من خلال نقاط البيع أو صفحات المبيعات',
   }
 }
 
