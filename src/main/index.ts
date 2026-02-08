@@ -6,30 +6,33 @@ import { schedule } from 'node-cron'
 import icon from '../../resources/icon.png?asset'
 
 // Import IPC handlers registration function
-import { registerAllHandlers, prisma } from './ipc/handlers/index'
+import { registerAllHandlers } from './ipc/handlers/index'
 import { initializeDatabase } from './database/init'
-import { MigrationManager } from './services/MigrationManager'
+import { SimpleMigrationManager } from './services/SimpleMigrationManager'
+import { db } from './database/sqlite'
 
 // Setup daily email reports cron job
 function setupDailyEmailReports() {
+  // DISABLED until EmailReportService is converted to better-sqlite3
+  console.log('[Cron] Daily email reports disabled (needs migration to better-sqlite3)')
+  return
+  
+  /*
   // Run at 11:00 PM every day
   schedule('0 23 * * *', async () => {
     console.log('[Cron] Starting daily email reports...')
 
     try {
-      // Import here to avoid circular dependencies
-      const { EmailReportService } = await import('./services/EmailReportService')
-
       // Get all enabled email reports
-      const enabledReports = await prisma.emailReport.findMany({
-        where: { enabled: true }
-      })
+      const enabledReports = db.query(
+        'SELECT * FROM EmailReport WHERE enabled = 1'
+      )
 
       console.log(`[Cron] Found ${enabledReports.length} enabled email reports`)
 
       for (const report of enabledReports) {
         try {
-          const emailService = new EmailReportService(prisma)
+          const emailService = new EmailReportService()
           const data = await emailService.generateDailyReport(report.userId)
           await emailService.sendEmailReport(report.userId, data)
           console.log(`[Cron] Sent daily report to ${report.email}`)
@@ -45,6 +48,7 @@ function setupDailyEmailReports() {
   })
 
   console.log('[Cron] Daily email reports scheduled for 11:00 PM daily')
+  */
 }
 
 // Setup logging to file
@@ -93,7 +97,7 @@ console.warn = (...args) => {
   logToFile('WARN', ...args)
 }
 
-let migrationManager: MigrationManager | null = null
+let migrationManager: SimpleMigrationManager | null = null
 let mainWindow: BrowserWindow | null = null
 
 function createWindow(): BrowserWindow {
@@ -215,7 +219,7 @@ app.whenReady().then(async () => {
 
     // Run database migrations if needed
     console.log('[Main] Checking for database migrations...')
-    migrationManager = new MigrationManager()
+    migrationManager = new SimpleMigrationManager()
     
     const migrationSuccess = await migrationManager.migrateWithUI(mainWindow)
     
@@ -226,16 +230,15 @@ app.whenReady().then(async () => {
 
     console.log('[Main] Migration check complete, showing window...')
 
-    // Seed default installment plans
-    console.log('[Main] Seeding default installment plans...')
-    try {
-      const { InstallmentPlanService } = await import('./services/InstallmentPlanService')
-      const planService = InstallmentPlanService.getInstance(prisma)
-      await planService.seedDefaultPlans()
-      console.log('[Main] ✅ Installment plans initialized')
-    } catch (error) {
-      console.error('[Main] ⚠️  Failed to seed installment plans:', error)
-    }
+    // Seed default installment plans - DISABLED until converted to better-sqlite3
+    // console.log('[Main] Seeding default installment plans...')
+    // try {
+    //   const planService = InstallmentPlanService.getInstance()
+    //   await planService.seedDefaultPlans()
+    //   console.log('[Main] ✅ Installment plans initialized')
+    // } catch (error) {
+    //   console.error('[Main] ⚠️  Failed to seed installment plans:', error)
+    // }
 
     // Setup daily email reports cron job (runs at 11 PM every day)
     console.log('[Main] Setting up daily email reports cron job...')

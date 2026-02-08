@@ -2,27 +2,21 @@
  * Email Report IPC Handlers
  *
  * Handles email report configuration and management
+ * NOTE: Email functionality is currently stubbed out pending full implementation
  */
 
 import { ipcMain } from 'electron'
-import { EmailReportService } from '../../services/EmailReportService'
 
-export function registerEmailHandlers(prisma: any) {
-  const emailService = new EmailReportService(prisma)
+export function registerEmailHandlers() {
 
   /**
    * Configure email report settings
    */
   ipcMain.handle('email:configure', async (_, config) => {
-    try {
-      await emailService.configureEmailReport(config)
-      return { success: true }
-    } catch (error) {
-      console.error('Email configuration error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+    console.warn('Email feature is not yet implemented')
+    return { 
+      success: false, 
+      error: 'Email reporting feature is not yet implemented' 
     }
   })
 
@@ -30,15 +24,10 @@ export function registerEmailHandlers(prisma: any) {
    * Get email report configuration
    */
   ipcMain.handle('email:getConfig', async (_, userId: string) => {
-    try {
-      const config = await emailService.getEmailReportConfig(userId)
-      return { success: true, config }
-    } catch (error) {
-      console.error('Get email config error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+    console.warn('Email feature is not yet implemented')
+    return { 
+      success: false, 
+      error: 'Email reporting feature is not yet implemented' 
     }
   })
 
@@ -46,15 +35,10 @@ export function registerEmailHandlers(prisma: any) {
    * Generate and preview daily report
    */
   ipcMain.handle('email:generatePreview', async (_, userId: string) => {
-    try {
-      const data = await emailService.generateDailyReport(userId)
-      return { success: true, data }
-    } catch (error) {
-      console.error('Generate preview error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+    console.warn('Email feature is not yet implemented')
+    return { 
+      success: false, 
+      error: 'Email reporting feature is not yet implemented' 
     }
   })
 
@@ -62,15 +46,10 @@ export function registerEmailHandlers(prisma: any) {
    * Send test email
    */
   ipcMain.handle('email:testSend', async (_, email: string) => {
-    try {
-      await emailService.testEmailConfig(email)
-      return { success: true }
-    } catch (error) {
-      console.error('Test email error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+    console.warn('Email feature is not yet implemented')
+    return { 
+      success: false, 
+      error: 'Email reporting feature is not yet implemented' 
     }
   })
 
@@ -78,16 +57,10 @@ export function registerEmailHandlers(prisma: any) {
    * Send daily report manually
    */
   ipcMain.handle('email:sendReport', async (_, userId: string) => {
-    try {
-      const data = await emailService.generateDailyReport(userId)
-      await emailService.sendEmailReport(userId, data)
-      return { success: true }
-    } catch (error) {
-      console.error('Send report error:', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+    console.warn('Email feature is not yet implemented')
+    return { 
+      success: false, 
+      error: 'Email reporting feature is not yet implemented' 
     }
   })
 }

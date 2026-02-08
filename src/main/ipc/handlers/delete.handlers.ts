@@ -1,9 +1,8 @@
 import { ipcMain } from 'electron'
+import { db } from '../../database/sqlite'
 import { DeleteService } from '../../services/DeleteService'
 
-export function registerDeleteHandlers(prisma: any) {
-  // Initialize DeleteService with prisma client
-  DeleteService.initialize(prisma)
+export function registerDeleteHandlers() {
   
   // Check if can delete
   ipcMain.handle('delete:check-customer', async (_, data: { customerId: string }) => {

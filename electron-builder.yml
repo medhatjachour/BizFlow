@@ -13,15 +13,15 @@ files:
   - '!prisma/seed*.ts'
   - '!prisma/dev.db*'
   - '!prisma/*-journal'
-  # Exclude Prisma from asar - will be in extraResources instead
-  - '!node_modules/.prisma/**'
-  - '!node_modules/@prisma/**'
-  - '!node_modules/prisma/**'
+  # Include Prisma in asar but unpack it at runtime
   - out/**/*
   - package.json
   - prisma/template.db
   - prisma/schema.prisma
   - prisma/migrations/**/*
+  # Include Prisma modules
+  - node_modules/.prisma/**/*
+  - node_modules/@prisma/client/**/*
 extraResources:
   - from: prisma/template.db
     to: prisma/template.db
@@ -29,7 +29,7 @@ extraResources:
     to: prisma/migrations
   - from: prisma/schema.prisma
     to: prisma/schema.prisma
-  # Put Prisma in extraResources so it's NOT in asar
+  # Put Prisma in extraResources for direct access
   - from: node_modules/.prisma
     to: node_modules/.prisma
     filter:
@@ -40,6 +40,9 @@ extraResources:
       - '**/*'
 asarUnpack:
   - resources/**
+  # Unpack Prisma native binaries from asar
+  - node_modules/.prisma/**/*
+  - node_modules/@prisma/client/**/*
 win:
   executableName: BizFlow
   icon: build/icon.ico

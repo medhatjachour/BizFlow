@@ -1,287 +1,107 @@
-/**
- * User Management IPC Handlers
- * Handles user CRUD operations, password changes, and authentication
- */
-
 import { ipcMain } from 'electron'
-import * as bcrypt from 'bcryptjs'
+import { db } from '../../database/sqlite'
+import bcrypt from 'bcryptjs'
 
-export function registerUserHandlers(prisma: any) {
-  // Get all users
+export function registerUserHandlers() {
   ipcMain.handle('users:getAll', async () => {
     try {
-      const users = await prisma.user.findMany({
-        orderBy: {
-          createdAt: 'desc'
-        },
-        select: {
-          id: true,
-          username: true,
-          role: true,
-          fullName: true,
-          email: true,
-          phone: true,
-          isActive: true,
-          lastLogin: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      })
-
-      return { success: true, data: users }
+      return db.query('SELECT id, username, email, role, isActive, createdAt, lastLoginAt FROM User ORDER BY username')
     } catch (error) {
-      console.error('[Users] Failed to get users:', error)
-      return { success: false, error: 'Failed to load users' }
+      console.error('Error getting all users:', error)
+      throw error
     }
   })
-
-  // Get user by ID
-  ipcMain.handle('users:getById', async (_event, userId: string) => {
+  
+  ipcMain.handle('users:getById', async (_, userId: string) => {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          id: true,
-          username: true,
-          role: true,
-          fullName: true,
-          email: true,
-          phone: true,
-          isActive: true,
-          lastLogin: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      })
-
-      if (!user) {
-        return { success: false, error: 'User not found' }
-      }
-
-      return { success: true, data: user }
+      return db.queryOne('SELECT id, username, email, role, isActive, createdAt, lastLoginAt FROM User WHERE id = ?', [userId])
     } catch (error) {
-      console.error('[Users] Failed to get user:', error)
-      return { success: false, error: 'Failed to load user' }
+      console.error('Error getting user by ID:', error)
+      throw error
     }
   })
-
-  // Create new user
-  ipcMain.handle('users:create', async (_event, userData: {
-    username: string
-    password: string
-    fullName?: string | null
-    email?: string | null
-    phone?: string | null
-    role: string
-  }) => {
+  
+  ipcMain.handle('users:create', async (_, userData: { username: string; email: string; password: string; role: string }) => {
     try {
-      // Check if username already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { username: userData.username }
-      })
-
-      if (existingUser) {
-        return { success: false, error: 'Username already exists' }
-      }
-
-      // Check if email already exists (if provided)
-      if (userData.email) {
-        const existingEmail = await prisma.user.findUnique({
-          where: { email: userData.email }
-        })
-
-        if (existingEmail) {
-          return { success: false, error: 'Email already in use' }
-        }
-      }
-
-      // Hash password
-      const passwordHash = await bcrypt.hash(userData.password, 10)
-
-      // Create user
-      const user = await prisma.user.create({
-        data: {
-          username: userData.username,
-          passwordHash,
-          fullName: userData.fullName || null,
-          email: userData.email || null,
-          phone: userData.phone || null,
-          role: userData.role,
-          isActive: true
-        },
-        select: {
-          id: true,
-          username: true,
-          role: true,
-          fullName: true,
-          email: true,
-          phone: true,
-          isActive: true,
-          createdAt: true
-        }
-      })
-
-      return { success: true, data: user }
+      const hashedPassword = await bcrypt.hash(userData.password, 10)
+      const userId = crypto.randomUUID()
+      
+      db.execute(
+        'INSERT INTO User (id, username, email, password, role, isActive, createdAt) VALUES (?, ?, ?, ?, ?, 1, ?)',
+        [userId, userData.username, userData.email, hashedPassword, userData.role, new Date().toISOString()]
+      )
+      
+      return db.queryOne('SELECT id, username, email, role, isActive, createdAt FROM User WHERE id = ?', [userId])
     } catch (error) {
-      console.error('[Users] Failed to create user:', error)
-      return { success: false, error: 'Failed to create user' }
+      console.error('Error creating user:', error)
+      throw error
     }
   })
-
-  // Update user
-  ipcMain.handle('users:update', async (_event, userId: string, updateData: {
-    fullName?: string | null
-    email?: string | null
-    phone?: string | null
-    role?: string
-    isActive?: boolean
-  }) => {
+  
+  ipcMain.handle('users:update', async (_, userId: string, updates: { username?: string; email?: string; role?: string; isActive?: boolean }) => {
     try {
-      // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { id: userId }
-      })
-
-      if (!existingUser) {
-        return { success: false, error: 'User not found' }
+      const setParts: string[] = []
+      const values: any[] = []
+      
+      if (updates.username !== undefined) {
+        setParts.push('username = ?')
+        values.push(updates.username)
       }
-
-      // Check if email is being changed and is already in use
-      if (updateData.email && updateData.email !== existingUser.email) {
-        const emailInUse = await prisma.user.findFirst({
-          where: {
-            email: updateData.email,
-            NOT: { id: userId }
-          }
-        })
-
-        if (emailInUse) {
-          return { success: false, error: 'Email already in use' }
-        }
+      if (updates.email !== undefined) {
+        setParts.push('email = ?')
+        values.push(updates.email)
       }
-
-      // Update user
-      const user = await prisma.user.update({
-        where: { id: userId },
-        data: {
-          fullName: updateData.fullName !== undefined ? updateData.fullName : undefined,
-          email: updateData.email !== undefined ? updateData.email : undefined,
-          phone: updateData.phone !== undefined ? updateData.phone : undefined,
-          role: updateData.role,
-          isActive: updateData.isActive
-        },
-        select: {
-          id: true,
-          username: true,
-          role: true,
-          fullName: true,
-          email: true,
-          phone: true,
-          isActive: true,
-          updatedAt: true
-        }
-      })
-
-      return { success: true, data: user }
+      if (updates.role !== undefined) {
+        setParts.push('role = ?')
+        values.push(updates.role)
+      }
+      if (updates.isActive !== undefined) {
+        setParts.push('isActive = ?')
+        values.push(updates.isActive ? 1 : 0)
+      }
+      
+      if (setParts.length === 0) {
+        return db.queryOne('SELECT id, username, email, role, isActive, createdAt FROM User WHERE id = ?', [userId])
+      }
+      
+      values.push(userId)
+      db.execute(`UPDATE User SET ${setParts.join(', ')} WHERE id = ?`, values)
+      
+      return db.queryOne('SELECT id, username, email, role, isActive, createdAt FROM User WHERE id = ?', [userId])
     } catch (error) {
-      console.error('[Users] Failed to update user:', error)
-      return { success: false, error: 'Failed to update user' }
+      console.error('Error updating user:', error)
+      throw error
     }
   })
-
-  // Change password
-  ipcMain.handle('users:changePassword', async (_event, userId: string, newPassword: string) => {
+  
+  ipcMain.handle('users:changePassword', async (_, userId: string, newPassword: string) => {
     try {
-      // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { id: userId }
-      })
-
-      if (!existingUser) {
-        return { success: false, error: 'User not found' }
-      }
-
-      // Hash new password
-      const passwordHash = await bcrypt.hash(newPassword, 10)
-
-      // Update password
-      await prisma.user.update({
-        where: { id: userId },
-        data: { passwordHash }
-      })
-
+      const hashedPassword = await bcrypt.hash(newPassword, 10)
+      db.execute('UPDATE User SET password = ? WHERE id = ?', [hashedPassword, userId])
       return { success: true }
     } catch (error) {
-      console.error('[Users] Failed to change password:', error)
-      return { success: false, error: 'Failed to change password' }
+      console.error('Error changing password:', error)
+      throw error
     }
   })
-
-  // Delete user
-  ipcMain.handle('users:delete', async (_event, userId: string) => {
+  
+  ipcMain.handle('users:delete', async (_, userId: string) => {
     try {
-      // Check if user exists
-      const existingUser = await prisma.user.findUnique({
-        where: { id: userId }
-      })
-
-      if (!existingUser) {
-        return { success: false, error: 'User not found' }
-      }
-
-      // Prevent deleting the last admin
-      if (existingUser.role === 'admin') {
-        const adminCount = await prisma.user.count({
-          where: { role: 'admin', isActive: true }
-        })
-
-        if (adminCount <= 1) {
-          return { success: false, error: 'Cannot delete the last admin user' }
-        }
-      }
-
-      // Use transaction to delete user and all related records
-      await prisma.$transaction(async (tx: any) => {
-        // Delete related sale transactions first
-        await tx.saleTransaction.deleteMany({
-          where: { userId }
-        })
-
-        // Delete related old sales
-        await tx.sale.deleteMany({
-          where: { userId }
-        })
-
-        // Delete related financial transactions
-        await tx.financialTransaction.deleteMany({
-          where: { userId }
-        })
-
-        // Finally delete the user
-        await tx.user.delete({
-          where: { id: userId }
-        })
-      })
-
+      db.execute('UPDATE User SET isActive = 0, deactivatedAt = ? WHERE id = ?', [new Date().toISOString(), userId])
       return { success: true }
     } catch (error) {
-      console.error('[Users] Failed to delete user:', error)
-      return { success: false, error: 'Failed to delete user. Please try again.' }
+      console.error('Error deleting user:', error)
+      throw error
     }
   })
-
-  // Update last login
-  ipcMain.handle('users:updateLastLogin', async (_event, userId: string) => {
+  
+  ipcMain.handle('users:updateLastLogin', async (_, userId: string) => {
     try {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { lastLogin: new Date() }
-      })
-
+      db.execute('UPDATE User SET lastLoginAt = ? WHERE id = ?', [new Date().toISOString(), userId])
       return { success: true }
     } catch (error) {
-      console.error('[Users] Failed to update last login:', error)
-      return { success: false, error: 'Failed to update last login' }
+      console.error('Error updating last login:', error)
+      throw error
     }
   })
 }

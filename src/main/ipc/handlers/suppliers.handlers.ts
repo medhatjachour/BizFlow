@@ -1,277 +1,84 @@
-/**
- * Suppliers IPC Handlers
- * Supplier management with product relationships and purchase order tracking
- */
-
 import { ipcMain } from 'electron'
-import { SupplierService } from '../../services/SupplierService'
-import { logger } from '../../../shared/utils/logger'
+import { db } from '../../database/sqlite'
 
-let supplierService: SupplierService | null = null
-
-export function registerSupplierHandlers(prisma: any) {
-  if (!prisma) {
-    logger.error('Prisma not available for supplier handlers')
-    return
-  }
-
-  supplierService = new SupplierService(prisma)
-
-  /**
-   * Get all suppliers with pagination and filtering
-   */
-  ipcMain.handle('suppliers:getAll', async (_, options = {}) => {
+export function registerSupplierHandlers() {
+  ipcMain.handle('suppliers:getAll', async () => {
     try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const {
-        page = 1,
-        pageSize = 20,
-        search,
-        isActive,
-        sortBy,
-        sortOrder
-      } = options
-
-      const query = {
-        page,
-        pageSize,
-        search,
-        isActive,
-        sortBy,
-        sortOrder
-      }
-
-      const result = await supplierService.querySuppliers(query)
-      return { success: true, data: result }
+      return db.query('SELECT * FROM Supplier ORDER BY name')
     } catch (error) {
-      logger.error('Error fetching suppliers:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error getting all suppliers:', error)
+      throw error
     }
   })
-
-  /**
-   * Get single supplier by ID
-   */
+  
   ipcMain.handle('suppliers:getById', async (_, id: string) => {
     try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const supplier = await supplierService.getSupplier(id)
-      return { success: true, data: supplier }
+      return db.queryOne('SELECT * FROM Supplier WHERE id = ?', [id])
     } catch (error) {
-      logger.error('Error fetching supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error getting supplier by ID:', error)
+      throw error
     }
   })
-
-  /**
-   * Create new supplier
-   */
-  ipcMain.handle('suppliers:create', async (_, supplierData) => {
+  
+  ipcMain.handle('suppliers:create', async (_, data: any) => {
     try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const supplier = await supplierService.createSupplier(supplierData)
-      return { success: true, data: supplier }
+      const id = crypto.randomUUID()
+      db.execute(
+        'INSERT INTO Supplier (id, name, contactPerson, email, phone, address, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [id, data.name, data.contactPerson || null, data.email || null, data.phone || null, data.address || null, new Date().toISOString()]
+      )
+      return db.queryOne('SELECT * FROM Supplier WHERE id = ?', [id])
     } catch (error) {
-      logger.error('Error creating supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error creating supplier:', error)
+      throw error
     }
   })
-
-  /**
-   * Update supplier
-   */
-  ipcMain.handle('suppliers:update', async (_, id: string, updateData) => {
+  
+  ipcMain.handle('suppliers:update', async (_, id: string, updates: any) => {
     try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
+      const setParts: string[] = []
+      const values: any[] = []
+      
+      if (updates.name !== undefined) {
+        setParts.push('name = ?')
+        values.push(updates.name)
       }
-
-      const supplier = await supplierService.updateSupplier(id, updateData)
-      return { success: true, data: supplier }
+      if (updates.contactPerson !== undefined) {
+        setParts.push('contactPerson = ?')
+        values.push(updates.contactPerson)
+      }
+      if (updates.email !== undefined) {
+        setParts.push('email = ?')
+        values.push(updates.email)
+      }
+      if (updates.phone !== undefined) {
+        setParts.push('phone = ?')
+        values.push(updates.phone)
+      }
+      if (updates.address !== undefined) {
+        setParts.push('address = ?')
+        values.push(updates.address)
+      }
+      
+      if (setParts.length > 0) {
+        values.push(id)
+        db.execute(`UPDATE Supplier SET ${setParts.join(', ')} WHERE id = ?`, values)
+      }
+      
+      return db.queryOne('SELECT * FROM Supplier WHERE id = ?', [id])
     } catch (error) {
-      logger.error('Error updating supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error updating supplier:', error)
+      throw error
     }
   })
-
-  /**
-   * Delete supplier (deactivate)
-   */
+  
   ipcMain.handle('suppliers:delete', async (_, id: string) => {
     try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const result = await supplierService.deleteSupplier(id)
-      return { success: true, data: result }
+      db.execute('DELETE FROM Supplier WHERE id = ?', [id])
+      return { success: true }
     } catch (error) {
-      logger.error('Error deleting supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error deleting supplier:', error)
+      throw error
     }
   })
-
-  /**
-   * Get supplier products
-   */
-  ipcMain.handle('suppliers:getProducts', async (_, supplierId: string) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const products = await supplierService.getSupplierProducts(supplierId)
-      return { success: true, data: products }
-    } catch (error) {
-      logger.error('Error fetching supplier products:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Add product to supplier
-   */
-  ipcMain.handle('suppliers:addProduct', async (_, supplierProductData) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const supplierProduct = await supplierService.addSupplierProduct(supplierProductData)
-      return { success: true, data: supplierProduct }
-    } catch (error) {
-      logger.error('Error adding product to supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Add product to supplier (alias for compatibility)
-   */
-  ipcMain.handle('suppliers:addSupplierProduct', async (_, supplierId: string, supplierProductData) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const supplierProduct = await supplierService.addSupplierProduct(supplierProductData)
-      return { success: true, data: supplierProduct }
-    } catch (error) {
-      logger.error('Error adding product to supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Get supplier products
-   */
-  ipcMain.handle('suppliers:getSupplierProducts', async (_, supplierId: string) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const products = await supplierService.getSupplierProducts(supplierId)
-      return { success: true, data: products }
-    } catch (error) {
-      logger.error('Error getting supplier products:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Update supplier product
-   */
-  ipcMain.handle('suppliers:updateProduct', async (_, id: string, updateData) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const supplierProduct = await supplierService.updateSupplierProduct(id, updateData)
-      return { success: true, data: supplierProduct }
-    } catch (error) {
-      logger.error('Error updating supplier product:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Remove product from supplier
-   */
-  ipcMain.handle('suppliers:removeProduct', async (_, id: string) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const result = await supplierService.removeSupplierProduct(id)
-      return { success: true, data: result }
-    } catch (error) {
-      logger.error('Error removing product from supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Remove product from supplier (alias for compatibility)
-   */
-  ipcMain.handle('suppliers:removeSupplierProduct', async (_, id: string) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const result = await supplierService.removeSupplierProduct(id)
-      return { success: true, data: result }
-    } catch (error) {
-      logger.error('Error removing product from supplier:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Get preferred suppliers for a product
-   */
-  ipcMain.handle('suppliers:getPreferredForProduct', async (_, productId: string) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const suppliers = await supplierService.getPreferredSuppliersForProduct(productId)
-      return { success: true, data: suppliers }
-    } catch (error) {
-      logger.error('Error fetching preferred suppliers for product:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  /**
-   * Search suppliers
-   */
-  ipcMain.handle('suppliers:search', async (_, query: string) => {
-    try {
-      if (!supplierService) {
-        return { success: false, message: 'Supplier service not available' }
-      }
-
-      const suppliers = await supplierService.querySuppliers({ search: query })
-      return { success: true, data: suppliers.data }
-    } catch (error) {
-      logger.error('Error searching suppliers:', error)
-      return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  logger.info('Supplier IPC handlers registered')
 }

@@ -1,8 +1,10 @@
 import { ipcMain } from 'electron'
+import { db } from '../../database/sqlite'
 import { ReceiptService } from '../../services/ReceiptService'
 
-export function registerReceiptHandlers(prisma: any) {
-  const receiptService = new ReceiptService(prisma)
+const receiptService = new ReceiptService()
+
+export function registerReceiptHandlers() {
 
   ipcMain.handle('receipts:generateDeposit', async (_, depositId) => {
     try {

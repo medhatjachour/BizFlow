@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client'
+import { db } from '../database/sqlite'
 
 export interface DeleteCheckResult {
   canDelete: boolean
@@ -14,24 +14,11 @@ export interface DeleteCheckResult {
 }
 
 export class DeleteService {
-  private static prisma: PrismaClient
-  
-  static initialize(prismaClient: PrismaClient) {
-    DeleteService.prisma = prismaClient
-  }
-  
   /**
    * Check if customer can be deleted
    */
   static async checkCustomerDelete(customerId: string): Promise<DeleteCheckResult> {
-    const customer = await DeleteService.prisma.customer.findUnique({
-      where: { id: customerId },
-      include: {
-        saleTransactions: {
-          select: { id: true, total: true }
-        }
-      }
-    })
+    const customer = db.queryOne('SELECT * FROM Customer WHERE id = ?', [customerId])
     
     if (!customer) {
       return {
@@ -41,8 +28,9 @@ export class DeleteService {
       }
     }
     
-    const transactionCount = customer.saleTransactions.length
-    const totalSpent = customer.saleTransactions.reduce((sum, t) => sum + Number(t.total), 0)
+    const transactions = db.query('SELECT id, total FROM SaleTransaction WHERE customerId = ?', [customerId])
+    const transactionCount = transactions.length
+    const totalSpent = transactions.reduce((sum: number, t: any) => sum + Number(t.total), 0)
     
     if (transactionCount > 0) {
       return {
@@ -64,17 +52,7 @@ export class DeleteService {
    * Check if product can be deleted
    */
   static async checkProductDelete(productId: string): Promise<DeleteCheckResult> {
-    const product = await DeleteService.prisma.product.findUnique({
-      where: { id: productId },
-      include: {
-        variants: {
-          select: { id: true, stock: true }
-        },
-        saleItems: {
-          select: { id: true }
-        }
-      }
-    })
+    const product = db.queryOne('SELECT * FROM Product WHERE id = ?', [productId])
     
     if (!product) {
       return {
@@ -84,11 +62,13 @@ export class DeleteService {
       }
     }
     
-    const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
-    const saleCount = product.saleItems.length
-    const variantCount = product.variants.length
+    const variants = db.query('SELECT id, stock FROM ProductVariant WHERE productId = ?', [productId])
+    const saleItems = db.query('SELECT id FROM SaleItem WHERE productId = ?', [productId])
     
-    // Has sales history - cannot delete
+    const totalStock = variants.reduce((sum: number, v: any) => sum + v.stock, 0)
+    const saleCount = saleItems.length
+    const variantCount = variants.length
+    
     if (saleCount > 0) {
       return {
         canDelete: false,
@@ -102,7 +82,6 @@ export class DeleteService {
       }
     }
     
-    // Has stock - should warn
     if (totalStock > 0) {
       return {
         canDelete: false,
@@ -126,25 +105,21 @@ export class DeleteService {
    * Check if user can be deactivated
    */
   static async checkUserDeactivate(userId: string): Promise<DeleteCheckResult> {
-    const [transactions, discounts] = await Promise.all([
-      DeleteService.prisma.saleTransaction.count({ 
-        where: { userId } 
-      }),
-      DeleteService.prisma.saleItem.count({ 
-        where: { discountAppliedBy: userId } 
-      })
-    ])
+    const transactions = db.queryOne('SELECT COUNT(*) as count FROM SaleTransaction WHERE userId = ?', [userId])
+    const discounts = db.queryOne('SELECT COUNT(*) as count FROM SaleItem WHERE discountAppliedBy = ?', [userId])
     
-    const totalActions = transactions + discounts
+    const transactionCount = transactions?.count || 0
+    const discountCount = discounts?.count || 0
+    const totalActions = transactionCount + discountCount
     
     if (totalActions > 0) {
       return {
         canDelete: false,
         dependencies: {
-          transactions,
-          sales: discounts
+          transactions: transactionCount,
+          sales: discountCount
         },
-        message: `User has ${transactions} transaction(s) and ${discounts} discount(s). Deactivating preserves audit trail while preventing login.`,
+        message: `User has ${transactionCount} transaction(s) and ${discountCount} discount(s). Deactivating preserves audit trail while preventing login.`,
         suggestedAction: 'ARCHIVE'
       }
     }
@@ -160,88 +135,66 @@ export class DeleteService {
    * Archive customer (soft delete)
    */
   static async archiveCustomer(customerId: string, archivedBy: string, reason?: string) {
-    return await DeleteService.prisma.customer.update({
-      where: { id: customerId },
-      data: {
-        isArchived: true,
-        archivedAt: new Date(),
-        archivedBy,
-        archiveReason: reason
-      }
-    })
+    db.execute(
+      'UPDATE Customer SET isArchived = 1, archivedAt = ?, archivedBy = ?, archiveReason = ? WHERE id = ?',
+      [new Date().toISOString(), archivedBy, reason || null, customerId]
+    )
+    return db.queryOne('SELECT * FROM Customer WHERE id = ?', [customerId])
   }
   
   /**
    * Archive product (soft delete)
    */
   static async archiveProduct(productId: string, archivedBy: string, reason?: string) {
-    return await DeleteService.prisma.product.update({
-      where: { id: productId },
-      data: {
-        isArchived: true,
-        archivedAt: new Date(),
-        archivedBy,
-        archiveReason: reason
-      }
-    })
+    db.execute(
+      'UPDATE Product SET isArchived = 1, archivedAt = ?, archivedBy = ?, archiveReason = ? WHERE id = ?',
+      [new Date().toISOString(), archivedBy, reason || null, productId]
+    )
+    return db.queryOne('SELECT * FROM Product WHERE id = ?', [productId])
   }
   
   /**
    * Deactivate user (soft delete)
    */
   static async deactivateUser(userId: string, deactivatedBy: string) {
-    return await DeleteService.prisma.user.update({
-      where: { id: userId },
-      data: {
-        isActive: false,
-        deactivatedAt: new Date(),
-        deactivatedBy
-      }
-    })
+    db.execute(
+      'UPDATE User SET isActive = 0, deactivatedAt = ?, deactivatedBy = ? WHERE id = ?',
+      [new Date().toISOString(), deactivatedBy, userId]
+    )
+    return db.queryOne('SELECT * FROM User WHERE id = ?', [userId])
   }
   
   /**
    * Restore archived customer
    */
   static async restoreCustomer(customerId: string) {
-    return await DeleteService.prisma.customer.update({
-      where: { id: customerId },
-      data: {
-        isArchived: false,
-        archivedAt: null,
-        archivedBy: null,
-        archiveReason: null
-      }
-    })
+    db.execute(
+      'UPDATE Customer SET isArchived = 0, archivedAt = NULL, archivedBy = NULL, archiveReason = NULL WHERE id = ?',
+      [customerId]
+    )
+    return db.queryOne('SELECT * FROM Customer WHERE id = ?', [customerId])
   }
   
   /**
    * Restore archived product
    */
   static async restoreProduct(productId: string) {
-    return await DeleteService.prisma.product.update({
-      where: { id: productId },
-      data: {
-        isArchived: false,
-        archivedAt: null,
-        archivedBy: null,
-        archiveReason: null
-      }
-    })
+    db.execute(
+      'UPDATE Product SET isArchived = 0, archivedAt = NULL, archivedBy = NULL, archiveReason = NULL WHERE id = ?',
+      [productId]
+    )
+    return db.queryOne('SELECT * FROM Product WHERE id = ?', [productId])
   }
   
   /**
    * Reactivate user
    */
   static async reactivateUser(userId: string) {
-    return await DeleteService.prisma.user.update({
-      where: { id: userId },
-      data: {
-        isActive: true,
-        deactivatedAt: null,
-        deactivatedBy: null
-      }
-    })
+    db.execute(
+      'UPDATE User SET isActive = 1, deactivatedAt = NULL, deactivatedBy = NULL WHERE id = ?',
+      [userId]
+    )
+    return db.queryOne('SELECT * FROM User WHERE id = ?', [userId])
   }
   
   /**
@@ -252,7 +205,8 @@ export class DeleteService {
     if (!check.canDelete) {
       throw new Error(check.message)
     }
-    return await DeleteService.prisma.customer.delete({ where: { id: customerId } })
+    db.execute('DELETE FROM Customer WHERE id = ?', [customerId])
+    return { id: customerId }
   }
   
   static async hardDeleteProduct(productId: string) {
@@ -261,9 +215,11 @@ export class DeleteService {
       throw new Error(check.message)
     }
     
-    // Delete variants first (cascade should handle this, but being explicit)
-    await DeleteService.prisma.productVariant.deleteMany({ where: { productId } })
-    return await DeleteService.prisma.product.delete({ where: { id: productId } })
+    db.transaction(() => {
+      db.execute('DELETE FROM ProductVariant WHERE productId = ?', [productId])
+      db.execute('DELETE FROM Product WHERE id = ?', [productId])
+    })
+    return { id: productId }
   }
   
   static async hardDeleteUser(userId: string) {
@@ -271,35 +227,33 @@ export class DeleteService {
     if (!check.canDelete) {
       throw new Error(check.message)
     }
-    return await DeleteService.prisma.user.delete({ where: { id: userId } })
+    db.execute('DELETE FROM User WHERE id = ?', [userId])
+    return { id: userId }
   }
   
   /**
    * Get archived items for management
    */
   static async getArchivedCustomers() {
-    return await DeleteService.prisma.customer.findMany({
-      where: { isArchived: true },
-      orderBy: { archivedAt: 'desc' }
-    })
+    return db.query('SELECT * FROM Customer WHERE isArchived = 1 ORDER BY archivedAt DESC')
   }
   
   static async getArchivedProducts() {
-    return await DeleteService.prisma.product.findMany({
-      where: { isArchived: true },
-      include: {
-        category: true,
-        variants: true
-      },
-      orderBy: { archivedAt: 'desc' }
-    })
+    const query = `
+      SELECT 
+        p.*,
+        c.name as categoryName,
+        (SELECT COUNT(*) FROM ProductVariant WHERE productId = p.id) as variantCount
+      FROM Product p
+      LEFT JOIN Category c ON p.categoryId = c.id
+      WHERE p.isArchived = 1
+      ORDER BY p.archivedAt DESC
+    `
+    return db.query(query)
   }
   
   static async getDeactivatedUsers() {
-    return await DeleteService.prisma.user.findMany({
-      where: { isActive: false },
-      orderBy: { deactivatedAt: 'desc' }
-    })
+    return db.query('SELECT * FROM User WHERE isActive = 0 ORDER BY deactivatedAt DESC')
   }
   
   /**
@@ -308,22 +262,15 @@ export class DeleteService {
    */
   static async deleteUnlinkedDeposits(customerId: string) {
     try {
-      // Find deposits that are not linked to any sale for this customer
-      const deposits = await DeleteService.prisma.deposit.findMany({
-        where: {
-          customerId: customerId,
-          saleId: null
-        }
-      })
+      const deposits = db.query(
+        'SELECT id FROM Deposit WHERE customerId = ? AND saleId IS NULL',
+        [customerId]
+      )
       
       if (deposits.length > 0) {
-        // Delete them individually
-        const deletePromises = deposits.map(deposit => 
-          DeleteService.prisma.deposit.delete({
-            where: { id: deposit.id }
-          })
-        )
-        await Promise.all(deletePromises)
+        deposits.forEach((deposit: any) => {
+          db.execute('DELETE FROM Deposit WHERE id = ?', [deposit.id])
+        })
         console.log(`✅ Deleted ${deposits.length} unlinked deposits for customer ${customerId}`)
         return deposits.length
       }
@@ -337,22 +284,15 @@ export class DeleteService {
   
   static async deleteUnlinkedInstallments(customerId: string) {
     try {
-      // Find installments that are not linked to any sale for this customer
-      const installments = await DeleteService.prisma.installment.findMany({
-        where: {
-          customerId: customerId,
-          saleId: null
-        }
-      })
+      const installments = db.query(
+        'SELECT id FROM Installment WHERE customerId = ? AND saleId IS NULL',
+        [customerId]
+      )
       
       if (installments.length > 0) {
-        // Delete them individually
-        const deletePromises = installments.map(installment => 
-          DeleteService.prisma.installment.delete({
-            where: { id: installment.id }
-          })
-        )
-        await Promise.all(deletePromises)
+        installments.forEach((installment: any) => {
+          db.execute('DELETE FROM Installment WHERE id = ?', [installment.id])
+        })
         console.log(`✅ Deleted ${installments.length} unlinked installments for customer ${customerId}`)
         return installments.length
       }

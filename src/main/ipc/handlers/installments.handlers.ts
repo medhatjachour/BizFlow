@@ -1,234 +1,173 @@
 import { ipcMain } from 'electron'
-import { InstallmentService } from '../../services/InstallmentService'
-import { InstallmentPlanService } from '../../services/InstallmentPlanService'
+import { db } from '../../database/sqlite'
 
-export function registerInstallmentsHandlers(prisma: any) {
-  const installmentService = new InstallmentService(prisma)
-
-  ipcMain.handle('installments:create', async (_, data) => {
+export function registerInstallmentsHandlers() {
+  ipcMain.handle('installments:create', async (_, data: any) => {
     try {
-      const installment = await installmentService.createInstallment(data)
-      return { success: true, installment }
+      const id = crypto.randomUUID()
+      db.execute(
+        'INSERT INTO Installment (id, customerId, saleId, amount, dueDate, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [id, data.customerId, data.saleId || null, data.amount, data.dueDate, 'PENDING', new Date().toISOString()]
+      )
+      return db.queryOne('SELECT * FROM Installment WHERE id = ?', [id])
     } catch (error) {
       console.error('Error creating installment:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      throw error
     }
   })
-
-  ipcMain.handle('installments:list', async (_, options) => {
+  
+  ipcMain.handle('installments:list', async () => {
     try {
-      const result = await installmentService.listInstallments(options)
-      return result
+      const query = `
+        SELECT 
+          i.*,
+          c.name as customerName,
+          st.id as saleTransactionId
+        FROM Installment i
+        JOIN Customer c ON i.customerId = c.id
+        LEFT JOIN SaleTransaction st ON i.saleId = st.id
+        ORDER BY i.dueDate ASC
+      `
+      return db.query(query)
     } catch (error) {
       console.error('Error listing installments:', error)
-      return { installments: [], total: 0, page: 1, limit: 50, totalPages: 0 }
+      throw error
     }
   })
-
-  ipcMain.handle('installments:getByCustomer', async (_, customerId) => {
+  
+  ipcMain.handle('installments:getByCustomer', async (_, customerId: string) => {
     try {
-      const installments = await installmentService.getInstallmentsByCustomer(customerId)
-      return installments
+      const query = `
+        SELECT 
+          i.*,
+          st.id as saleTransactionId,
+          st.total as saleTotal
+        FROM Installment i
+        LEFT JOIN SaleTransaction st ON i.saleId = st.id
+        WHERE i.customerId = ?
+        ORDER BY i.dueDate ASC
+      `
+      return db.query(query, [customerId])
     } catch (error) {
       console.error('Error getting installments by customer:', error)
-      return []
+      throw error
     }
   })
-
-  ipcMain.handle('installments:getBySale', async (_, saleId) => {
+  
+  ipcMain.handle('installments:getBySale', async (_, saleId: string) => {
     try {
-      const installments = await installmentService.getInstallmentsBySale(saleId)
-      return installments
+      return db.query('SELECT * FROM Installment WHERE saleId = ? ORDER BY dueDate ASC', [saleId])
     } catch (error) {
       console.error('Error getting installments by sale:', error)
-      return []
+      throw error
     }
   })
-
-  ipcMain.handle('installments:getUpcomingReminders', async (_, daysAhead) => {
+  
+  ipcMain.handle('installments:getUpcomingReminders', async (_, days = 7) => {
     try {
-      const reminders = await installmentService.getUpcomingReminders(daysAhead)
-      return reminders
+      const query = `
+        SELECT 
+          i.*,
+          c.name as customerName,
+          c.phone as customerPhone,
+          c.email as customerEmail
+        FROM Installment i
+        JOIN Customer c ON i.customerId = c.id
+        WHERE i.status = 'PENDING'
+          AND i.dueDate <= datetime('now', '+' || ? || ' days')
+          AND i.dueDate >= datetime('now')
+        ORDER BY i.dueDate ASC
+      `
+      return db.query(query, [days])
     } catch (error) {
       console.error('Error getting upcoming reminders:', error)
-      return []
+      throw error
     }
   })
-
+  
   ipcMain.handle('installments:getOverdue', async () => {
     try {
-      const overdue = await installmentService.getOverdueInstallments()
-      return overdue
+      const query = `
+        SELECT 
+          i.*,
+          c.name as customerName,
+          c.phone as customerPhone
+        FROM Installment i
+        JOIN Customer c ON i.customerId = c.id
+        WHERE i.status = 'PENDING'
+          AND i.dueDate < datetime('now')
+        ORDER BY i.dueDate ASC
+      `
+      return db.query(query)
     } catch (error) {
       console.error('Error getting overdue installments:', error)
-      return []
+      throw error
     }
   })
-
-  ipcMain.handle('installments:markAsPaid', async (_, { installmentId, paidDate }) => {
+  
+  ipcMain.handle('installments:markAsPaid', async (_, installmentId: string) => {
     try {
-      const installment = await installmentService.markAsPaid(installmentId, paidDate ? new Date(paidDate) : undefined)
-      return { success: true, installment }
+      db.execute(
+        'UPDATE Installment SET status = ?, paidAt = ? WHERE id = ?',
+        ['PAID', new Date().toISOString(), installmentId]
+      )
+      return db.queryOne('SELECT * FROM Installment WHERE id = ?', [installmentId])
     } catch (error) {
       console.error('Error marking installment as paid:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      throw error
     }
   })
-
-  ipcMain.handle('installments:markAsOverdue', async (_, installmentId) => {
+  
+  ipcMain.handle('installments:markAsOverdue', async (_, installmentId: string) => {
     try {
-      const installment = await installmentService.markAsOverdue(installmentId)
-      return { success: true, installment }
+      db.execute('UPDATE Installment SET status = ? WHERE id = ?', ['OVERDUE', installmentId])
+      return db.queryOne('SELECT * FROM Installment WHERE id = ?', [installmentId])
     } catch (error) {
       console.error('Error marking installment as overdue:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      throw error
     }
   })
-
-  ipcMain.handle('installments:linkToSale', async (_, { installmentIds, saleId }) => {
+  
+  ipcMain.handle('installments:linkToSale', async (_, { installmentId, saleId }: any) => {
     try {
-      const result = await installmentService.linkInstallmentsToSale(installmentIds, saleId)
-      return { success: true, result }
+      db.execute('UPDATE Installment SET saleId = ? WHERE id = ?', [saleId, installmentId])
+      return db.queryOne('SELECT * FROM Installment WHERE id = ?', [installmentId])
     } catch (error) {
-      console.error('Error linking installments to sale:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error linking installment to sale:', error)
+      throw error
     }
   })
-
-  // ============================================================================
-  // INSTALLMENT PLAN HANDLERS
-  // ============================================================================
-
-  const planService = InstallmentPlanService.getInstance(prisma)
-
-  // Get all installment plans
-  ipcMain.handle('installment-plans:getAll', async () => {
+  
+  ipcMain.handle('installments:delete', async (_, installmentId: string) => {
     try {
-      const plans = await prisma.installmentPlan.findMany({
-        orderBy: [
-          { isActive: 'desc' },
-          { name: 'asc' }
-        ]
-      })
-      return plans
-    } catch (error) {
-      console.error('Error getting all plans:', error)
-      return []
-    }
-  })
-
-  // Get all active installment plans
-  ipcMain.handle('installment-plans:getActive', async () => {
-    try {
-      const plans = await planService.getActivePlans()
-      return plans
-    } catch (error) {
-      console.error('Error getting active plans:', error)
-      return []
-    }
-  })
-
-  // Create a new installment plan
-  ipcMain.handle('installment-plans:create', async (_, planData) => {
-    try {
-      const plan = await prisma.installmentPlan.create({
-        data: planData
-      })
-      return { success: true, plan }
-    } catch (error) {
-      console.error('Error creating plan:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  // Update an installment plan
-  ipcMain.handle('installment-plans:update', async (_, { id, data }) => {
-    try {
-      const plan = await prisma.installmentPlan.update({
-        where: { id },
-        data
-      })
-      return { success: true, plan }
-    } catch (error) {
-      console.error('Error updating plan:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  // Delete an installment plan
-  ipcMain.handle('installment-plans:delete', async (_, id) => {
-    try {
-      await prisma.installmentPlan.delete({
-        where: { id }
-      })
+      db.execute('DELETE FROM Installment WHERE id = ?', [installmentId])
       return { success: true }
     } catch (error) {
-      console.error('Error deleting plan:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error deleting installment:', error)
+      throw error
     }
   })
-
-  // Calculate payment schedule for a sale
-  ipcMain.handle('installment-plans:calculateSchedule', async (_, { saleTotal, planId, customDownPayment }) => {
+  
+  ipcMain.handle('deposits:create', async (_, data: any) => {
     try {
-      const schedule = await planService.calculateSchedule(saleTotal, planId, customDownPayment)
-      // Convert dates to ISO strings for serialization
-      const serializedSchedule = {
-        ...schedule,
-        installments: schedule.installments.map(inst => ({
-          amount: inst.amount,
-          dueDate: inst.dueDate.toISOString(),
-          paymentNumber: inst.paymentNumber
-        }))
-      }
-      return { success: true, schedule: serializedSchedule }
+      const id = crypto.randomUUID()
+      db.execute(
+        'INSERT INTO Deposit (id, customerId, saleId, amount, status, createdAt) VALUES (?, ?, ?, ?, ?, ?)',
+        [id, data.customerId, data.saleId || null, data.amount, 'PENDING', new Date().toISOString()]
+      )
+      return db.queryOne('SELECT * FROM Deposit WHERE id = ?', [id])
     } catch (error) {
-      console.error('Error calculating schedule:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error creating deposit:', error)
+      throw error
     }
   })
-
-  // Create installments from a schedule
-  ipcMain.handle('installment-plans:createInstallmentsForSale', async (_, { saleId, customerId, schedule }) => {
+  
+  ipcMain.handle('deposits:getByCustomer', async (_, customerId: string) => {
     try {
-      await planService.createInstallmentsForSale(saleId, customerId, schedule)
-      return { success: true }
+      return db.query('SELECT * FROM Deposit WHERE customerId = ? ORDER BY createdAt DESC', [customerId])
     } catch (error) {
-      console.error('Error creating installments for sale:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  // Seed default plans
-  ipcMain.handle('installment-plans:seedDefaults', async () => {
-    try {
-      await planService.seedDefaultPlans()
-      return { success: true }
-    } catch (error) {
-      console.error('Error seeding default plans:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  // Calculate late fees
-  ipcMain.handle('installments:calculateLateFees', async (_, { installmentId, dailyLateFeePercent }) => {
-    try {
-      const lateFee = await planService.calculateLateFees(installmentId, dailyLateFeePercent)
-      return { success: true, lateFee }
-    } catch (error) {
-      console.error('Error calculating late fees:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
-    }
-  })
-
-  // Mark overdue installments (batch operation)
-  ipcMain.handle('installments:markOverdueBatch', async () => {
-    try {
-      const count = await planService.markOverdueInstallments()
-      return { success: true, count }
-    } catch (error) {
-      console.error('Error marking overdue installments:', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      console.error('Error getting deposits by customer:', error)
+      throw error
     }
   })
 }

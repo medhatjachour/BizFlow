@@ -4,34 +4,33 @@
  */
 
 import { ipcMain } from 'electron'
+import { db } from '../../database/sqlite'
 
-export function registerDashboardHandlers(prisma: any) {
+export function registerDashboardHandlers() {
   ipcMain.handle('dashboard:getMetrics', async () => {
     try {
-      if (prisma) {
-        const totalSales = await prisma.saleTransaction.aggregate({ 
-          where: { status: 'completed' },
-          _sum: { total: true },
-          _count: true
-        })
-        
-        // Calculate profit from items
-        const profitData = await prisma.$queryRaw`
-          SELECT SUM((si.price - si.cost) * si.quantity) as profit
-          FROM SaleItem si
-          JOIN SaleTransaction st ON si.transactionId = st.id
-          WHERE st.status = 'completed'
-        `
-        const profit = profitData[0]?.profit || 0
-        
-        return { 
-          sales: totalSales._sum.total || 0, 
-          orders: totalSales._count || 0, 
-          profit: Math.round(profit * 100) / 100
-        }
+      const totalSales = db.queryOne<{ total: number, count: number }>(
+        `SELECT 
+          COALESCE(SUM(total), 0) as total,
+          COUNT(*) as count
+        FROM SaleTransaction 
+        WHERE status = 'completed'`
+      )
+      
+      // Calculate profit from items
+      const profitData = db.queryOne<{ profit: number }>(
+        `SELECT COALESCE(SUM((si.price - si.cost) * si.quantity), 0) as profit
+        FROM SaleItem si
+        JOIN SaleTransaction st ON si.transactionId = st.id
+        WHERE st.status = 'completed'`
+      )
+      const profit = profitData?.profit || 0
+      
+      return { 
+        sales: totalSales?.total || 0, 
+        orders: totalSales?.count || 0, 
+        profit: Math.round(profit * 100) / 100
       }
-
-      return { sales: 0, orders: 0, profit: 0 }
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error)
       throw error

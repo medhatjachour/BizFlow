@@ -2,35 +2,45 @@
  * Receipt Service
  * Handles receipt generation for deposits and installments
  */
-import type { PrismaClient } from '@prisma/client'
+import { db } from '../database/sqlite'
 
 export class ReceiptService {
-  private prisma: PrismaClient
-
-  constructor(prisma: PrismaClient) {
-    this.prisma = prisma
-  }
-
   async generateDepositReceipt(depositId: string) {
-    const deposit = await this.prisma.deposit.findUnique({
-      where: { id: depositId },
-      include: {
-        customer: true,
-        sale: {
-          include: {
-            items: {
-              include: {
-                product: true,
-                variant: true
-              }
-            }
-          }
-        }
-      }
-    })
+    const deposit = db.queryOne(
+      `SELECT d.*, c.id as customer_id, c.name as customer_name, c.phone as customer_phone
+       FROM Deposit d
+       LEFT JOIN Customer c ON d.customerId = c.id
+       WHERE d.id = ?`,
+      [depositId]
+    )
 
     if (!deposit) {
       throw new Error('Deposit not found')
+    }
+
+    // Get sale details if linked
+    let sale = null
+    if (deposit.saleId) {
+      const saleData = db.queryOne(
+        'SELECT id, total FROM SaleTransaction WHERE id = ?',
+        [deposit.saleId]
+      )
+      
+      if (saleData) {
+        const items = db.query(
+          `SELECT si.quantity, si.price, si.total, p.name as productName
+           FROM SaleItem si
+           JOIN Product p ON si.productId = p.id
+           WHERE si.saleId = ?`,
+          [deposit.saleId]
+        )
+        
+        sale = {
+          id: saleData.id,
+          total: saleData.total,
+          items
+        }
+      }
     }
 
     const receipt = {
@@ -40,46 +50,53 @@ export class ReceiptService {
       amount: deposit.amount,
       method: deposit.method,
       note: deposit.note,
-      customer: deposit.customer ? {
-        id: deposit.customer.id,
-        name: deposit.customer.name,
-        phone: deposit.customer.phone
+      customer: deposit.customer_id ? {
+        id: deposit.customer_id,
+        name: deposit.customer_name,
+        phone: deposit.customer_phone
       } : null,
-      sale: deposit.sale ? {
-        id: deposit.sale.id,
-        total: deposit.sale.total,
-        items: deposit.sale.items.map(item => ({
-          productName: item.product.name,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.total
-        }))
-      } : null
+      sale
     }
 
     return receipt
   }
 
   async generateInstallmentReceipt(installmentId: string) {
-    const installment = await this.prisma.installment.findUnique({
-      where: { id: installmentId },
-      include: {
-        customer: true,
-        sale: {
-          include: {
-            items: {
-              include: {
-                product: true,
-                variant: true
-              }
-            }
-          }
-        }
-      }
-    })
+    const installment = db.queryOne(
+      `SELECT i.*, c.id as customer_id, c.name as customer_name, c.phone as customer_phone
+       FROM Installment i
+       LEFT JOIN Customer c ON i.customerId = c.id
+       WHERE i.id = ?`,
+      [installmentId]
+    )
 
     if (!installment) {
       throw new Error('Installment not found')
+    }
+
+    // Get sale details if linked
+    let sale = null
+    if (installment.saleId) {
+      const saleData = db.queryOne(
+        'SELECT id, total FROM SaleTransaction WHERE id = ?',
+        [installment.saleId]
+      )
+      
+      if (saleData) {
+        const items = db.query(
+          `SELECT si.quantity, si.price, si.total, p.name as productName
+           FROM SaleItem si
+           JOIN Product p ON si.productId = p.id
+           WHERE si.saleId = ?`,
+          [installment.saleId]
+        )
+        
+        sale = {
+          id: saleData.id,
+          total: saleData.total,
+          items
+        }
+      }
     }
 
     const receipt = {
@@ -90,21 +107,12 @@ export class ReceiptService {
       amount: installment.amount,
       status: installment.status,
       note: installment.note,
-      customer: installment.customer ? {
-        id: installment.customer.id,
-        name: installment.customer.name,
-        phone: installment.customer.phone
+      customer: installment.customer_id ? {
+        id: installment.customer_id,
+        name: installment.customer_name,
+        phone: installment.customer_phone
       } : null,
-      sale: installment.sale ? {
-        id: installment.sale.id,
-        total: installment.sale.total,
-        items: installment.sale.saleItems.map(item => ({
-          productName: item.product.name,
-          quantity: item.quantity,
-          price: item.price,
-          total: item.total
-        }))
-      } : null
+      sale
     }
 
     return receipt
