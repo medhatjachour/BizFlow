@@ -69,8 +69,8 @@ jobs:
           $dbPath = Join-Path $PWD "prisma" "template.db"
           $env:DATABASE_URL = "file:$dbPath"
           
-          Write-Host "Running Prisma migrations..."
-          npx prisma migrate deploy
+          Write-Host "Applying Prisma schema..."
+          npx prisma db push --accept-data-loss --skip-generate
           
           Write-Host "Seeding database..."
           npx prisma db seed
@@ -199,7 +199,8 @@ jobs:
       - name: Prepare template database
         run: |
           if (!(Test-Path "prisma/template.db")) {
-            npx prisma migrate deploy
+            $env:DATABASE_URL = "file:./prisma/template.db"
+            npx prisma db push --accept-data-loss --skip-generate
             npx prisma db seed
           }
         shell: pwsh
