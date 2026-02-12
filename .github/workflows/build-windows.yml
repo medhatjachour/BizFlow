@@ -54,6 +54,10 @@ jobs:
             exit 1
           }
           Write-Host "✓ Windows Prisma binary verified"
+          
+          Write-Host "Copying Prisma binaries to node_modules..."
+          node scripts/copy-prisma-binaries.js
+          Write-Host "✓ Prisma binaries copied"
         shell: pwsh
       
       - name: Prepare template database
@@ -190,10 +194,20 @@ jobs:
           Write-Host "Verifying Windows Prisma binary..."
           if (Test-Path "src/generated/prisma/query_engine-windows.dll.node") {
             Write-Host "✓ Windows Prisma binary found"
+            node scripts/copy-prisma-binaries.js
           } else {
             Write-Error "Windows Prisma binary not found!"
             exit 1
           }
+        shell: pwsh
+      
+      - name: Verify deployment configuration
+        run: |
+          Write-Host "Running deployment verification..."
+          node scripts/verify-deployment.js
+          
+          Write-Host "`nVerifying template database content..."
+          node scripts/verify-template-db.js
         shell: pwsh
       
       - name: Prepare template database
