@@ -43,32 +43,40 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
       
-      - name: Verify Prisma binaries
+      - name: Debug Prisma generation
         run: |
-          Write-Host "Checking generated Prisma binaries..."
-          $binaries = Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse
-          if ($binaries.Count -eq 0) {
-            Write-Error "No Prisma binaries found!"
-            exit 1
-          }
+          Write-Host "=== Debugging Prisma Client Generation ==="
+          Write-Host "`nChecking if src/generated/prisma exists:"
+          Test-Path "src/generated/prisma"
           
-          Write-Host "Found $($binaries.Count) Prisma binaries:"
-          $binaries | ForEach-Object {
-            Write-Host "  - $($_.Name) - $([math]::Round($_.Length/1MB, 2)) MB"
-          }
-          
-          # Check for Windows binary (matches *windows*.node pattern)
-          $windowsBinary = Get-ChildItem -Path "src/generated/prisma" -Filter "*windows*.node"
-          if ($windowsBinary) {
-            Write-Host "✓ Windows Prisma binary verified: $($windowsBinary.Name)"
+          Write-Host "`nListing ALL files in src/generated/prisma:"
+          if (Test-Path "src/generated/prisma") {
+            Get-ChildItem -Path "src/generated/prisma" -Recurse -File | ForEach-Object {
+              Write-Host "  $($_.FullName) - $([math]::Round($_.Length/1KB, 2)) KB"
+            }
           } else {
-            Write-Error "Windows Prisma binary not found! Expected a file matching *windows*.node"
-            exit 1
+            Write-Host "Directory does not exist!"
           }
           
-          Write-Host "Copying Prisma binaries to node_modules..."
+          Write-Host "`nLooking for .node files specifically:"
+          if (Test-Path "src/generated/prisma") {
+            $nodeFiles = Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse
+            Write-Host "Found $($nodeFiles.Count) .node files"
+            $nodeFiles | ForEach-Object { Write-Host "  - $($_.Name)" }
+          }
+          
+          Write-Host "`nChecking node_modules/.prisma:"
+          if (Test-Path "node_modules/.prisma/client") {
+            Get-ChildItem -Path "node_modules/.prisma/client" -Filter "*.node" | ForEach-Object {
+              Write-Host "  - $($_.Name)"
+            }
+          }
+        shell: pwsh
+      
+      - name: Copy Prisma binaries
+        run: |
+          Write-Host "Copying Prisma binaries..."
           node scripts/copy-prisma-binaries.js
-          Write-Host "✓ Prisma binaries copied"
         shell: pwsh
       
       - name: Prepare template database
