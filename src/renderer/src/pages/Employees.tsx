@@ -332,7 +332,7 @@ export default function Employees(): JSX.Element {
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
                 value={formData.salary}
                 onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
                 className="input-field"
@@ -428,7 +428,7 @@ export default function Employees(): JSX.Element {
               <input
                 type="number"
                 min="0"
-                step="0.01"
+                step="1"
                 value={formData.salary}
                 onChange={(e) => setFormData({ ...formData, salary: Number(e.target.value) })}
                 className="input-field"

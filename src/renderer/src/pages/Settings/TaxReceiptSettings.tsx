@@ -375,7 +375,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
             placeholder="10"
             min="0"
             max="100"
-            step="0.1"
+            step="1"
           />
           <span className="text-slate-600 dark:text-slate-400 font-medium">%</span>
         </div>

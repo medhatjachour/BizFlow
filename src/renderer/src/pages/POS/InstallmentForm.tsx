@@ -81,7 +81,7 @@ const InstallmentForm: React.FC<InstallmentFormProps> = ({
           <FormInput
             label="Amount"
             type="number"
-            step="0.01"
+            step="1"
             min="0"
             value={formData.amount}
             onChange={(value) => setFormData(prev => ({ ...prev, amount: value }))}

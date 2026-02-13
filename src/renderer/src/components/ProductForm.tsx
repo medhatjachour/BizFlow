@@ -266,7 +266,7 @@ export default function ProductForm({
             onChange={(e) => setFormData({ ...formData, basePrice: parseFloat(e.target.value) || 0 })}
             className={`input-field w-full ${errors.basePrice ? 'border-error' : ''}`}
             placeholder="0.00"
-            step="0.01"
+            step="1"
             min="0"
           />
           {errors.basePrice && <p className="text-error text-sm mt-1">{errors.basePrice}</p>}
@@ -281,7 +281,7 @@ export default function ProductForm({
             onChange={(e) => setFormData({ ...formData, baseCost: parseFloat(e.target.value) || 0 })}
             className={`input-field w-full ${errors.baseCost ? 'border-error' : ''}`}
             placeholder="0.00"
-            step="0.01"
+            step="1"
             min="0"
           />
           {errors.baseCost && <p className="text-error text-sm mt-1">{errors.baseCost}</p>}
@@ -415,7 +415,7 @@ export default function ProductForm({
                   onChange={(e) => setNewVariant({ ...newVariant, price: parseFloat(e.target.value) || 0 })}
                   className="input-field"
                   placeholder={t('price')}
-                  step="0.01"
+                  step="1"
                 />
                 <input
                   type="number"
@@ -561,7 +561,7 @@ export default function ProductForm({
                         onChange={(e) => setBatchVariant({ ...batchVariant, price: parseFloat(e.target.value) || 0 })}
                         className="input-field w-full"
                         placeholder="0.00"
-                        step="0.01"
+                        step="1"
                       />
                     </div>
                     <div>
@@ -682,7 +682,7 @@ export default function ProductForm({
                           <input
                             type="number"
                             min="0"
-                            step="0.01"
+                            step="1"
                             value={variant.price}
                             onChange={(e) => onVariantPriceChange?.(index, parseFloat(e.target.value) || 0)}
                             className="w-full px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-600 rounded

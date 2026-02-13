@@ -320,7 +320,7 @@ export default function InstallmentPlansSection() {
                 <label className="text-sm text-gray-400 block mb-1">{t('interestRatePercent')}</label>
                 <input
                   type="number"
-                  step="0.1"
+                  step="1"
                   value={formData.interestRate}
                   onChange={e => setFormData({...formData, interestRate: Number(e.target.value)})}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200"

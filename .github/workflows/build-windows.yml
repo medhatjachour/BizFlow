@@ -46,14 +46,25 @@ jobs:
       - name: Verify Prisma binaries
         run: |
           Write-Host "Checking generated Prisma binaries..."
-          Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse | ForEach-Object {
-            Write-Host "Found: $($_.Name) - $([math]::Round($_.Length/1MB, 2)) MB"
-          }
-          if (!(Test-Path "src/generated/prisma/query_engine-windows.dll.node")) {
-            Write-Error "Windows Prisma binary not found!"
+          $binaries = Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse
+          if ($binaries.Count -eq 0) {
+            Write-Error "No Prisma binaries found!"
             exit 1
           }
-          Write-Host "✓ Windows Prisma binary verified"
+          
+          Write-Host "Found $($binaries.Count) Prisma binaries:"
+          $binaries | ForEach-Object {
+            Write-Host "  - $($_.Name) - $([math]::Round($_.Length/1MB, 2)) MB"
+          }
+          
+          # Check for Windows binary (matches *windows*.node pattern)
+          $windowsBinary = Get-ChildItem -Path "src/generated/prisma" -Filter "*windows*.node"
+          if ($windowsBinary) {
+            Write-Host "✓ Windows Prisma binary verified: $($windowsBinary.Name)"
+          } else {
+            Write-Error "Windows Prisma binary not found! Expected a file matching *windows*.node"
+            exit 1
+          }
           
           Write-Host "Copying Prisma binaries to node_modules..."
           node scripts/copy-prisma-binaries.js
