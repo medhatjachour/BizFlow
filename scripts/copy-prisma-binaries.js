@@ -43,9 +43,17 @@ if (!fs.existsSync(sourceDir)) {
 
 // Copy all files to both locations
 try {
+  // Check if source directory exists after potential generation
+  if (!fs.existsSync(sourceDir)) {
+    console.error('❌ Source directory still not found after generation attempt')
+    process.exit(1)
+  }
+  
   const files = fs.readdirSync(sourceDir)
   let copiedCount = 0
   let binaryCount = 0
+
+  console.log(`\nFound ${files.length} files in source directory`)
 
   files.forEach(file => {
     const sourcePath = path.join(sourceDir, file)
@@ -60,8 +68,13 @@ try {
       fs.copyFileSync(sourcePath, targetPath2)
       copiedCount++
       
-      // Log binary files (engine files) specifically
-      if (file.includes('query_engine') || file.endsWith('.node') || file.endsWith('.dll.node')) {
+      // Log binary/engine files specifically (more flexible pattern matching)
+      if (file.includes('query_engine') || 
+          file.includes('libquery_engine') ||
+          file.endsWith('.node') || 
+          file.endsWith('.dll.node') ||
+          file.endsWith('.so.node') ||
+          file.endsWith('.dylib.node')) {
         const size = (fs.statSync(targetPath1).size / (1024 * 1024)).toFixed(2)
         console.log(`  ✓ Copied engine: ${file} (${size} MB)`)
         binaryCount++
@@ -69,15 +82,24 @@ try {
     }
   })
 
+  if (binaryCount === 0) {
+    console.warn('\n⚠️  Warning: No Prisma engine binaries found!')
+    console.warn('Files in source directory:', files.filter(f => fs.statSync(path.join(sourceDir, f)).isFile()).join(', '))
+  }
+
   console.log(`\n✅ Successfully copied ${copiedCount} files (${binaryCount} engine binaries)`)
   console.log('✅ Prisma binaries ready for packaging\n')
   
-  // Verify critical Windows binary exists (if building on/for Windows)
-  const windowsBinary = files.find(f => f.includes('windows') && f.includes('query_engine'))
+  // Verify critical Windows binary exists (if building on/for Windows) - flexible matching
+  const windowsBinary = files.find(f => 
+    (f.includes('windows') || f.includes('win32')) && 
+    (f.includes('query_engine') || f.includes('libquery_engine'))
+  )
   if (windowsBinary) {
     console.log(`✓ Windows binary verified: ${windowsBinary}`)
   } else if (process.platform === 'win32') {
     console.warn('⚠️  Warning: Windows binary not found. This may cause issues on Windows.')
+    console.warn('Available binaries:', files.filter(f => f.includes('query_engine')).join(', '))
   }
   
 } catch (error) {
