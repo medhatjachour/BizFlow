@@ -29,6 +29,24 @@ export class MigrationManager {
     try {
       console.log('[Migration] Checking if migration is needed...')
       
+      // Get the correct database path based on environment
+      const isDev = process.env.NODE_ENV === 'development'
+      const dbPath = isDev
+        ? path.join(process.cwd(), 'prisma', 'dev.db')
+        : path.join(app.getPath('userData'), 'database.db')
+      
+      // On first run (database just created), skip migration check
+      if (fs.existsSync(dbPath)) {
+        const stats = fs.statSync(dbPath)
+        const ageInSeconds = (Date.now() - stats.birthtimeMs) / 1000
+        
+        // If database was created less than 10 seconds ago, it's likely first run
+        if (ageInSeconds < 10) {
+          console.log('[Migration] Database is brand new (first run), skipping migration check')
+          return false
+        }
+      }
+      
       // Try to query fields that only exist in new schema
       // This will throw if the fields don't exist
       await this.prisma.$queryRaw`SELECT newStock FROM StockMovement LIMIT 1`
@@ -42,9 +60,10 @@ export class MigrationManager {
         return true
       }
       
-      // For other errors, log and assume migration needed to be safe
-      console.warn('[Migration] Error checking schema, assuming migration needed:', error.message)
-      return true
+      // For other errors, log and assume no migration needed (likely first run)
+      console.warn('[Migration] Error checking schema:', error.message)
+      console.log('[Migration] Assuming first run or already up-to-date')
+      return false
     }
   }
 
@@ -52,13 +71,15 @@ export class MigrationManager {
    * Create a backup of the database before migration
    */
   async backupDatabase(): Promise<string> {
-    const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db')
+    // Get the correct database path based on environment
+    const isDev = process.env.NODE_ENV === 'development'
+    const dbPath = isDev
+      ? path.join(process.cwd(), 'prisma', 'dev.db')
+      : path.join(app.getPath('userData'), 'database.db')
+    
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const backupPath = path.join(
-      app.getPath('userData'),
-      'prisma',
-      `dev.db.backup-${timestamp}`
-    )
+    const backupDir = path.dirname(dbPath)
+    const backupPath = path.join(backupDir, `database.backup-${timestamp}`)
 
     console.log(`[Migration] Creating backup: ${dbPath} -> ${backupPath}`)
 
@@ -66,6 +87,11 @@ export class MigrationManager {
       // Ensure source exists
       if (!fs.existsSync(dbPath)) {
         throw new Error(`Database file not found at: ${dbPath}`)
+      }
+
+      // Ensure backup directory exists
+      if (!fs.existsSync(backupDir)) {
+        fs.mkdirSync(backupDir, { recursive: true })
       }
 
       // Copy database file
@@ -86,7 +112,12 @@ export class MigrationManager {
     try {
       console.log('[Migration] 🔄 Running database migrations...')
 
-      const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db')
+      // Get the correct database path based on environment
+      const isDev = process.env.NODE_ENV === 'development'
+      const dbPath = isDev
+        ? path.join(process.cwd(), 'prisma', 'dev.db')
+        : path.join(app.getPath('userData'), 'database.db')
+      
       // Normalize path for Windows (use forward slashes in URL)
       const normalizedDbPath = dbPath.replace(/\\/g, '/')
       const databaseUrl = `file:${normalizedDbPath}`
@@ -198,7 +229,11 @@ export class MigrationManager {
    * Restore database from backup if migration fails
    */
   async restoreFromBackup(backupPath: string): Promise<void> {
-    const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db')
+    // Get the correct database path based on environment
+    const isDev = process.env.NODE_ENV === 'development'
+    const dbPath = isDev
+      ? path.join(process.cwd(), 'prisma', 'dev.db')
+      : path.join(app.getPath('userData'), 'database.db')
 
     console.log(`[Migration] 🔄 Restoring from backup: ${backupPath}`)
 
