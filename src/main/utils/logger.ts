@@ -1,16 +1,17 @@
 /**
  * Main Process Logger
  * Centralised logging via electron-log.
- * Writes to:
- *   Linux  : ~/.config/BizFlow/logs/main.log
- *   Windows: %APPDATA%\BizFlow\logs\main.log
- *   macOS  : ~/Library/Logs/BizFlow/main.log
+ *
+ * One file per day, kept for 30 days, stored in:
+ *   Linux  : ~/.config/BizFlow/logs/YYYY-MM-DD.log
+ *   Windows: %APPDATA%\BizFlow\logs\YYYY-MM-DD.log
+ *   macOS  : ~/Library/Logs/BizFlow/YYYY-MM-DD.log
  *
  * Log levels: error › warn › info › verbose › debug › silly
- * All levels are written to file; console shows everything in dev,
- * only warn+ in production.
  */
 
+import fs from 'fs'
+import path from 'path'
 import log from 'electron-log/main'
 
 // ------------------------------------------------------------------
@@ -18,9 +19,30 @@ import log from 'electron-log/main'
 // ------------------------------------------------------------------
 log.initialize()
 
+// ── Daily rotation ────────────────────────────────────────────────
+// Resolve a dated filename so each calendar day gets its own file.
+log.transports.file.resolvePathFn = (variables) => {
+  const date = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  return path.join(variables.electronDefaultDir!, `${date}.log`)
+}
+
+// Keep last 30 days; delete anything older on startup.
+function pruneOldLogs(logDir: string, keepDays = 30): void {
+  try {
+    if (!fs.existsSync(logDir)) return
+    const cutoff = Date.now() - keepDays * 24 * 60 * 60 * 1000
+    for (const file of fs.readdirSync(logDir)) {
+      if (!/^\d{4}-\d{2}-\d{2}\.log$/.test(file)) continue
+      const fullPath = path.join(logDir, file)
+      if (fs.statSync(fullPath).mtimeMs < cutoff) fs.unlinkSync(fullPath)
+    }
+  } catch {
+    // non-fatal — logging may not be fully ready yet
+  }
+}
+
 // File transport
 log.transports.file.level = 'debug'
-log.transports.file.maxSize = 5 * 1024 * 1024 // 5 MB per file
 log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
 
 // Console transport — always debug in dev, warn+ in prod
@@ -35,6 +57,10 @@ log.errorHandler.startCatching({
     log.error('[Process] Uncaught error:', error)
   }
 })
+
+// Prune logs older than 30 days on every startup
+const logDir = path.dirname(log.transports.file.getFile().path)
+pruneOldLogs(logDir)
 
 export default log
 
