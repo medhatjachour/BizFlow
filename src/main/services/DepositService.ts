@@ -3,6 +3,9 @@
  * Handles business logic for deposits
  */
 import type { PrismaClient } from '@prisma/client'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Deposit')
 
 export class DepositService {
   private prisma: PrismaClient
@@ -20,17 +23,25 @@ export class DepositService {
     customerId?: string
     saleId?: string
   }) {
-    return this.prisma.deposit.create({
-      data: {
-        amount: data.amount,
-        date: data.date ?? new Date(),
-        method: data.method,
-        status: data.status ?? 'paid',
-        note: data.note,
-        customerId: data.customerId ?? null,
-        saleId: data.saleId ?? null,
-      }
-    })
+    log.info(`Creating deposit: amount=${data.amount} method=${data.method} customerId=${data.customerId ?? 'none'}`)
+    try {
+      const deposit = await this.prisma.deposit.create({
+        data: {
+          amount: data.amount,
+          date: data.date ?? new Date(),
+          method: data.method,
+          status: data.status ?? 'paid',
+          note: data.note,
+          customerId: data.customerId ?? null,
+          saleId: data.saleId ?? null,
+        }
+      })
+      log.debug(`Deposit created: id=${deposit.id}`)
+      return deposit
+    } catch (error) {
+      log.error('Failed to create deposit:', error)
+      throw error
+    }
   }
 
   async getDepositsByCustomer(customerId: string) {
@@ -52,12 +63,20 @@ export class DepositService {
   }
 
   async linkDepositsToSale(depositIds: string[], saleId: string) {
-    return this.prisma.deposit.updateMany({
-      where: {
-        id: { in: depositIds },
-        saleId: null // Only update deposits that aren't already linked to a sale
-      },
-      data: { saleId }
-    })
+    log.info(`Linking ${depositIds.length} deposit(s) to saleId=${saleId}`)
+    try {
+      const result = await this.prisma.deposit.updateMany({
+        where: {
+          id: { in: depositIds },
+          saleId: null // Only update deposits that aren't already linked to a sale
+        },
+        data: { saleId }
+      })
+      log.debug(`Linked ${result.count} deposit(s) to saleId=${saleId}`)
+      return result
+    } catch (error) {
+      log.error(`Failed to link deposits to saleId=${saleId}:`, error)
+      throw error
+    }
   }
 }

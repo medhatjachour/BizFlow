@@ -33,6 +33,7 @@ import { registerSupplierHandlers } from './suppliers.handlers'
 import { setupPurchaseOrderHandlers } from './purchase-orders.handlers'
 import { registerReceiptHandlers as registerThermalReceiptHandlers } from './receipt.handlers'
 import { registerBarcodePrintHandlers } from './barcode.handlers'
+import { registerLogHandlers } from './log.handlers'
 
 // Initialize Prisma client
 let isSeeded = false
@@ -165,5 +166,8 @@ export function registerAllHandlers() {
   // Register stock movement handlers (restock, adjustments, etc.)
   registerStockMovementHandlers(prisma)
   
+  // Register log bridge (renderer → main log file)
+  registerLogHandlers()
+
   console.log('✅ All IPC handlers registered successfully')
 }

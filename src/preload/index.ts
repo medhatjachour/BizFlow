@@ -421,6 +421,13 @@ const api = {
       ipcRenderer.on('migration:failed', callback)
       return () => ipcRenderer.removeListener('migration:failed', callback)
     }
+  },
+  // Log bridge: renderer → main process log file
+  log: {
+    info:  (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'info',  message, data }),
+    warn:  (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'warn',  message, data }),
+    error: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'error', message, data }),
+    debug: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'debug', message, data })
   }
 }
 

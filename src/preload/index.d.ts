@@ -311,6 +311,12 @@ interface API {
     onCompleted: (callback: () => void) => () => void
     onFailed: (callback: (event: any, error: string) => void) => () => void
   }
+  log: {
+    info:  (message: string, data?: unknown) => Promise<void>
+    warn:  (message: string, data?: unknown) => Promise<void>
+    error: (message: string, data?: unknown) => Promise<void>
+    debug: (message: string, data?: unknown) => Promise<void>
+  }
 }
 
 declare global {

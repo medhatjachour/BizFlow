@@ -1,63 +1,62 @@
 /**
- * Logger Utility
- * Centralized logging with environment-aware output
+ * Logger Utility — Renderer Process
+ * In development: writes to browser console.
+ * In production: errors/warnings are forwarded to the main-process log file
+ * via the IPC bridge exposed at window.api.log.
  */
+
+type LogFn = (...args: unknown[]) => void
+
+function sendToMain(level: 'info' | 'warn' | 'error' | 'debug', args: unknown[]) {
+  try {
+    const api = (window as any)?.api?.log
+    if (api?.[level]) {
+      const [first, ...rest] = args
+      const message = typeof first === 'string' ? first : JSON.stringify(first)
+      const data = rest.length === 1 ? rest[0] : rest.length > 1 ? rest : undefined
+      api[level](message, data)
+    }
+  } catch {
+    // Never let logging crash the renderer
+  }
+}
 
 const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
 
 export const logger = {
-  /**
-   * Info level logging - general information
-   */
-  info: (...args: any[]) => {
-    if (isDevelopment) {
-      console.log('ℹ️', ...args)
-    }
-  },
+  /** General information */
+  info: ((...args) => {
+    if (isDevelopment) console.log('ℹ️', ...args)
+    else sendToMain('info', args)
+  }) as LogFn,
 
-  /**
-   * Success level logging - successful operations
-   */
-  success: (...args: any[]) => {
-    if (isDevelopment) {
-      console.log('✅', ...args)
-    }
-  },
+  /** Successful operations */
+  success: ((...args) => {
+    if (isDevelopment) console.log('✅', ...args)
+    else sendToMain('info', args)
+  }) as LogFn,
 
-  /**
-   * Error level logging - always logged, even in production
-   */
-  error: (...args: any[]) => {
+  /** Always logged — forwarded to main log file in production */
+  error: ((...args) => {
     console.error('❌', ...args)
-    // TODO: In production, send to error tracking service (Sentry, LogRocket, etc.)
-  },
+    sendToMain('error', args)
+  }) as LogFn,
 
-  /**
-   * Warning level logging
-   */
-  warn: (...args: any[]) => {
-    if (isDevelopment) {
-      console.warn('⚠️', ...args)
-    }
-  },
+  /** Warnings — forwarded to main log file in production */
+  warn: ((...args) => {
+    if (isDevelopment) console.warn('⚠️', ...args)
+    sendToMain('warn', args)
+  }) as LogFn,
 
-  /**
-   * Debug level logging - only when DEBUG flag is set
-   */
-  debug: (...args: any[]) => {
-    if (isDevelopment && process.env.DEBUG) {
-      console.debug('🐛', ...args)
-    }
-  },
+  /** Debug — dev only */
+  debug: ((...args) => {
+    if (isDevelopment) console.debug('🐛', ...args)
+  }) as LogFn,
 
-  /**
-   * Trace level logging - detailed debugging
-   */
-  trace: (...args: any[]) => {
-    if (isDevelopment && process.env.DEBUG) {
-      console.trace('🔍', ...args)
-    }
-  }
+  /** Trace — dev only */
+  trace: ((...args) => {
+    if (isDevelopment) console.trace('🔍', ...args)
+  }) as LogFn
 }
 
 export default logger
