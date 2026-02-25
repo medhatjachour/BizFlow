@@ -5,6 +5,9 @@ import { ProductService } from '../../services/ProductService'
 import { PurchaseOrderRepository } from '../../repositories/PurchaseOrderRepository'
 import { logger } from '../../../shared/utils/logger'
 import type {
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('PurchaseOrders')
   CreatePurchaseOrderDTO,
   UpdatePurchaseOrderDTO,
   PurchaseOrderFilters
@@ -36,7 +39,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.getAllPurchaseOrders(filters)
     } catch (error) {
-      console.error('Error getting purchase orders:', error)
+      log.error('Error getting purchase orders:', error)
       throw error
     }
   })
@@ -47,7 +50,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.getPurchaseOrderById(id)
     } catch (error) {
-      console.error('Error getting purchase order by ID:', error)
+      log.error('Error getting purchase order by ID:', error)
       throw error
     }
   })
@@ -58,7 +61,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.getPurchaseOrderByPoNumber(poNumber)
     } catch (error) {
-      console.error('Error getting purchase order by PO number:', error)
+      log.error('Error getting purchase order by PO number:', error)
       throw error
     }
   })
@@ -71,7 +74,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       const userId = (event.sender as any).session?.userId || 'system'
       return await purchaseOrderService.createPurchaseOrder(data, userId)
     } catch (error) {
-      console.error('Error creating purchase order:', error)
+      log.error('Error creating purchase order:', error)
       throw error
     }
   })
@@ -82,7 +85,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.updatePurchaseOrder(id, data)
     } catch (error) {
-      console.error('Error updating purchase order:', error)
+      log.error('Error updating purchase order:', error)
       throw error
     }
   })
@@ -94,7 +97,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       await purchaseOrderService.deletePurchaseOrder(id)
       return { success: true }
     } catch (error) {
-      console.error('Error deleting purchase order:', error)
+      log.error('Error deleting purchase order:', error)
       throw error
     }
   })
@@ -105,7 +108,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.receivePurchaseOrder(id, receivedDate)
     } catch (error) {
-      console.error('Error receiving purchase order:', error)
+      log.error('Error receiving purchase order:', error)
       throw error
     }
   })
@@ -116,7 +119,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.getPurchaseOrderSummary()
     } catch (error) {
-      console.error('Error getting purchase order summary:', error)
+      log.error('Error getting purchase order summary:', error)
       throw error
     }
   })
@@ -127,7 +130,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.getOverduePurchaseOrders()
     } catch (error) {
-      console.error('Error getting overdue purchase orders:', error)
+      log.error('Error getting overdue purchase orders:', error)
       throw error
     }
   })
@@ -138,7 +141,7 @@ export function setupPurchaseOrderHandlers(prisma: any) {
       if (!purchaseOrderService) throw new Error('Purchase order service not initialized')
       return await purchaseOrderService.getPendingPurchaseOrders()
     } catch (error) {
-      console.error('Error getting pending purchase orders:', error)
+      log.error('Error getting pending purchase orders:', error)
       throw error
     }
   })

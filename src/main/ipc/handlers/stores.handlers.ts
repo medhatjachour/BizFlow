@@ -4,6 +4,9 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Stores')
 
 export function registerStoresHandlers(prisma: any) {
   ipcMain.handle('stores:getAll', async () => {
@@ -13,7 +16,7 @@ export function registerStoresHandlers(prisma: any) {
       }
       return []
     } catch (error) {
-      console.error('Error fetching stores:', error)
+      log.error('Error fetching stores:', error)
       throw error
     }
   })
@@ -26,7 +29,7 @@ export function registerStoresHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error creating store:', error)
+      log.error('Error creating store:', error)
       return { success: false, message: error.message }
     }
   })
@@ -39,7 +42,7 @@ export function registerStoresHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error updating store:', error)
+      log.error('Error updating store:', error)
       return { success: false, message: error.message }
     }
   })
@@ -52,7 +55,7 @@ export function registerStoresHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error deleting store:', error)
+      log.error('Error deleting store:', error)
       return { success: false, message: error.message }
     }
   })

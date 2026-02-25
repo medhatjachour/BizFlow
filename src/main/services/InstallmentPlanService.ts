@@ -4,6 +4,10 @@
  * Supports flexible payment schedules with down payments
  */
 
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('InstallmentPlan')
+
 export interface InstallmentPlan {
   id: string
   name: string
@@ -105,7 +109,7 @@ export class InstallmentPlanService {
         interestAmount: Math.round(interestAmount * 100) / 100
       }
     } catch (error) {
-      console.error('Error calculating schedule:', error)
+      log.error('Error calculating schedule:', error)
       throw error
     }
   }
@@ -148,7 +152,7 @@ export class InstallmentPlanService {
         })
       }
     } catch (error) {
-      console.error('Error creating installments:', error)
+      log.error('Error creating installments:', error)
       throw error
     }
   }
@@ -165,7 +169,7 @@ export class InstallmentPlanService {
 
       return plans
     } catch (error) {
-      console.error('Error fetching plans:', error)
+      log.error('Error fetching plans:', error)
       return []
     }
   }
@@ -179,7 +183,7 @@ export class InstallmentPlanService {
         where: { id }
       })
     } catch (error) {
-      console.error('Error fetching plan:', error)
+      log.error('Error fetching plan:', error)
       return null
     }
   }
@@ -192,7 +196,7 @@ export class InstallmentPlanService {
       const existingPlans = await this.prisma.installmentPlan.count()
 
       if (existingPlans > 0) {
-        console.log('✅ Installment plans already exist')
+        log.info('✅ Installment plans already exist')
         return
       }
 
@@ -248,9 +252,9 @@ export class InstallmentPlanService {
         await this.prisma.installmentPlan.create({ data: plan })
       }
 
-      console.log('✅ Created default installment plans')
+      log.info('✅ Created default installment plans')
     } catch (error) {
-      console.error('Error seeding plans:', error)
+      log.error('Error seeding plans:', error)
     }
   }
 
@@ -281,7 +285,7 @@ export class InstallmentPlanService {
 
       return Math.round(lateFee * 100) / 100
     } catch (error) {
-      console.error('Error calculating late fees:', error)
+      log.error('Error calculating late fees:', error)
       return 0
     }
   }
@@ -307,7 +311,7 @@ export class InstallmentPlanService {
 
       return result.count
     } catch (error) {
-      console.error('Error marking overdue installments:', error)
+      log.error('Error marking overdue installments:', error)
       return 0
     }
   }

@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron'
 import { ReceiptService } from '../../services/ReceiptService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Receipts')
 
 export function registerReceiptHandlers(prisma: any) {
   const receiptService = new ReceiptService(prisma)
@@ -9,7 +12,7 @@ export function registerReceiptHandlers(prisma: any) {
       const receipt = await receiptService.generateDepositReceipt(depositId)
       return { success: true, receipt }
     } catch (error) {
-      console.error('Error generating deposit receipt:', error)
+      log.error('Error generating deposit receipt:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -19,7 +22,7 @@ export function registerReceiptHandlers(prisma: any) {
       const receipt = await receiptService.generateInstallmentReceipt(installmentId)
       return { success: true, receipt }
     } catch (error) {
-      console.error('Error generating installment receipt:', error)
+      log.error('Error generating installment receipt:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -29,7 +32,7 @@ export function registerReceiptHandlers(prisma: any) {
       const thermalData = receiptService.generateThermalReceipt(receipt)
       return { success: true, thermalData }
     } catch (error) {
-      console.error('Error generating thermal receipt:', error)
+      log.error('Error generating thermal receipt:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })

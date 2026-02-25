@@ -10,6 +10,9 @@ import { promisify } from 'util'
 import { promises as fs } from 'fs'
 import * as path from 'path'
 import * as os from 'os'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('ThermalPrinter')
 
 const execAsync = promisify(exec)
 
@@ -140,7 +143,7 @@ export class ThermalPrinterService {
       try {
         await fs.unlink(tempFile)
       } catch (e) {
-        console.error(`Failed to delete temporary print file "${tempFile}":`, e)
+        log.error(`Failed to delete temporary print file "${tempFile}":`, e)
       }
     }
   }
@@ -490,7 +493,7 @@ export class ThermalPrinterService {
       const printer = this.createPrinter(settings)
       await this.formatAndPrintReceipt(printer, data, settings)
     } catch (error: any) {
-      console.error('❌ Print error:', error)
+      log.error('❌ Print error:', error)
       throw new Error(`Failed to print: ${error.message}`)
     }
   }
@@ -583,9 +586,9 @@ export class ThermalPrinterService {
         message: 'Test print sent successfully. Check printer output.'
       }
     } catch (error: any) {
-      console.error('❌ Test print failed:', error)
+      log.error('❌ Test print failed:', error)
       const errorMessage = error.message || error.toString()
-      console.error('Full error:', errorMessage)
+      log.error('Full error:', errorMessage)
       
       return {
         success: false,
@@ -627,7 +630,7 @@ export class ThermalPrinterService {
       // Return detected printers or empty array
       return printers
     } catch (error) {
-      console.error('Error detecting USB printers:', error)
+      log.error('Error detecting USB printers:', error)
       return []
     }
   }
@@ -719,11 +722,11 @@ export class ThermalPrinterService {
         commands.push(Buffer.from([0x00])) // NUL terminator
         
         // Debug: Log barcode command being sent
-        console.log(`📋 Barcode print debug:`)
-        console.log(`   - Text: ${barcodeText}`)
-        console.log(`   - Length: ${barcodeData.length}`)
-        console.log(`   - Height: ${height}, Width: ${width}`)
-        console.log(`   - Command: GS k 73 (CODE128 Type B)`)
+        log.info(`📋 Barcode print debug:`)
+        log.info(`   - Text: ${barcodeText}`)
+        log.info(`   - Length: ${barcodeData.length}`)
+        log.info(`   - Height: ${height}, Width: ${width}`)
+        log.info(`   - Command: GS k 73 (CODE128 Type B)`)
         
         // Add 0.5cm bottom margin (approximately 6 lines for thermal printers)
         commands.push(Buffer.from('\n\n\n\n\n\n'))
@@ -754,7 +757,7 @@ export class ThermalPrinterService {
 
       // Clean up temp file after a delay
       setTimeout(() => {
-        fs.unlink(tempFile).catch(err => console.error('Failed to delete temp file:', err))
+        fs.unlink(tempFile).catch(err => log.error('Failed to delete temp file:', err))
       }, 5000)
 
     } catch (error) {
@@ -811,7 +814,7 @@ export class ThermalPrinterService {
 
       // Clean up
       setTimeout(() => {
-        fs.unlink(tempFile).catch(err => console.error('Failed to delete temp file:', err))
+        fs.unlink(tempFile).catch(err => log.error('Failed to delete temp file:', err))
       }, 5000)
 
     } catch (error) {

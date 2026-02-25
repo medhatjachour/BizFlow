@@ -4,6 +4,9 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Reports')
 
 export function registerReportsHandlers(prisma: any) {
   // Get Sales Report Data
@@ -159,7 +162,7 @@ export function registerReportsHandlers(prisma: any) {
         }
       }
     } catch (error) {
-      console.error('[Reports] Error generating sales report:', error)
+      log.error('[Reports] Error generating sales report:', error)
       return { success: false, error: 'Failed to generate sales report' }
     }
   })
@@ -271,7 +274,7 @@ export function registerReportsHandlers(prisma: any) {
         }
       }
     } catch (error) {
-      console.error('[Reports] Error generating inventory report:', error)
+      log.error('[Reports] Error generating inventory report:', error)
       return { success: false, error: 'Failed to generate inventory report' }
     }
   })
@@ -474,7 +477,7 @@ export function registerReportsHandlers(prisma: any) {
         }
       }
     } catch (error) {
-      console.error('[Reports] Error generating financial report:', error)
+      log.error('[Reports] Error generating financial report:', error)
       return { success: false, error: 'Failed to generate financial report' }
     }
   })
@@ -552,7 +555,7 @@ export function registerReportsHandlers(prisma: any) {
         }
       }
     } catch (error) {
-      console.error('[Reports] Error generating customer report:', error)
+      log.error('[Reports] Error generating customer report:', error)
       return { success: false, error: 'Failed to generate customer report' }
     }
   })
@@ -616,7 +619,7 @@ export function registerReportsHandlers(prisma: any) {
         }
       }
     } catch (error) {
-      console.error('[Reports] Error getting quick insights:', error)
+      log.error('[Reports] Error getting quick insights:', error)
       return { success: false, error: 'Failed to get quick insights' }
     }
   })

@@ -5,6 +5,9 @@
 
 import { ipcMain } from 'electron'
 import * as bcrypt from 'bcryptjs'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Users')
 
 export function registerUserHandlers(prisma: any) {
   // Get all users
@@ -30,7 +33,7 @@ export function registerUserHandlers(prisma: any) {
 
       return { success: true, data: users }
     } catch (error) {
-      console.error('[Users] Failed to get users:', error)
+      log.error('[Users] Failed to get users:', error)
       return { success: false, error: 'Failed to load users' }
     }
   })
@@ -60,7 +63,7 @@ export function registerUserHandlers(prisma: any) {
 
       return { success: true, data: user }
     } catch (error) {
-      console.error('[Users] Failed to get user:', error)
+      log.error('[Users] Failed to get user:', error)
       return { success: false, error: 'Failed to load user' }
     }
   })
@@ -123,7 +126,7 @@ export function registerUserHandlers(prisma: any) {
 
       return { success: true, data: user }
     } catch (error) {
-      console.error('[Users] Failed to create user:', error)
+      log.error('[Users] Failed to create user:', error)
       return { success: false, error: 'Failed to create user' }
     }
   })
@@ -184,7 +187,7 @@ export function registerUserHandlers(prisma: any) {
 
       return { success: true, data: user }
     } catch (error) {
-      console.error('[Users] Failed to update user:', error)
+      log.error('[Users] Failed to update user:', error)
       return { success: false, error: 'Failed to update user' }
     }
   })
@@ -212,7 +215,7 @@ export function registerUserHandlers(prisma: any) {
 
       return { success: true }
     } catch (error) {
-      console.error('[Users] Failed to change password:', error)
+      log.error('[Users] Failed to change password:', error)
       return { success: false, error: 'Failed to change password' }
     }
   })
@@ -265,7 +268,7 @@ export function registerUserHandlers(prisma: any) {
 
       return { success: true }
     } catch (error) {
-      console.error('[Users] Failed to delete user:', error)
+      log.error('[Users] Failed to delete user:', error)
       return { success: false, error: 'Failed to delete user. Please try again.' }
     }
   })
@@ -280,7 +283,7 @@ export function registerUserHandlers(prisma: any) {
 
       return { success: true }
     } catch (error) {
-      console.error('[Users] Failed to update last login:', error)
+      log.error('[Users] Failed to update last login:', error)
       return { success: false, error: 'Failed to update last login' }
     }
   })

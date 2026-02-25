@@ -34,6 +34,9 @@ import { setupPurchaseOrderHandlers } from './purchase-orders.handlers'
 import { registerReceiptHandlers as registerThermalReceiptHandlers } from './receipt.handlers'
 import { registerBarcodePrintHandlers } from './barcode.handlers'
 import { registerLogHandlers } from './log.handlers'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Database')
 
 // Initialize Prisma client
 let isSeeded = false
@@ -51,7 +54,7 @@ try {
     // In production, use the unpacked src/generated/prisma
     // __dirname in production is: /opt/BizFlow/resources/app.asar/out/main
     const prismaPath = path.resolve(__dirname, '..', '..', '..', 'app.asar.unpacked', 'src', 'generated', 'prisma')
-    console.log('[Database] [PROD] Loading Prisma from:', prismaPath)
+    log.info('[Database] [PROD] Loading Prisma from:', prismaPath)
     PrismaClient = require(prismaPath).PrismaClient
   }
   if (PrismaClient) {
@@ -86,18 +89,18 @@ try {
           await seedProductionDatabase(prisma)
           isSeeded = true
         } catch (error) {
-          console.error('[Database] Failed to seed database:', error)
+          log.error('[Database] Failed to seed database:', error)
         }
       }, 1000)
     }
   }
 } catch (e) {
-  console.error('[Database] ⚠️  Error initializing Prisma:', e)
-  console.warn('[Database] Using mock fallbacks')
+  log.error('[Database] ⚠️  Error initializing Prisma:', e)
+  log.warn('[Database] Using mock fallbacks')
 }
 
 if (!prisma) {
-  console.warn('[Dev Mode] 🔄 Prisma client disabled - IPC handlers using mock data')
+  log.warn('[Dev Mode] 🔄 Prisma client disabled - IPC handlers using mock data')
 }
 
 /**
@@ -169,5 +172,5 @@ export function registerAllHandlers() {
   // Register log bridge (renderer → main log file)
   registerLogHandlers()
 
-  console.log('✅ All IPC handlers registered successfully')
+  log.info('✅ All IPC handlers registered successfully')
 }

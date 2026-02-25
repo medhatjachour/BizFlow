@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron'
 import { DeleteService } from '../../services/DeleteService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Delete')
 
 export function registerDeleteHandlers(prisma: any) {
   // Initialize DeleteService with prisma client
@@ -11,7 +14,7 @@ export function registerDeleteHandlers(prisma: any) {
       const result = await DeleteService.checkCustomerDelete(data.customerId)
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error checking customer delete:', error)
+      log.error('Error checking customer delete:', error)
       return {
         success: false,
         error: error.message || 'Failed to check customer'
@@ -24,7 +27,7 @@ export function registerDeleteHandlers(prisma: any) {
       const result = await DeleteService.checkProductDelete(data.productId)
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error checking product delete:', error)
+      log.error('Error checking product delete:', error)
       return {
         success: false,
         error: error.message || 'Failed to check product'
@@ -37,7 +40,7 @@ export function registerDeleteHandlers(prisma: any) {
       const result = await DeleteService.checkUserDeactivate(data.userId)
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error checking user deactivate:', error)
+      log.error('Error checking user deactivate:', error)
       return {
         success: false,
         error: error.message || 'Failed to check user'
@@ -59,7 +62,7 @@ export function registerDeleteHandlers(prisma: any) {
       )
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error archiving customer:', error)
+      log.error('Error archiving customer:', error)
       return { success: false, error: error.message }
     }
   })
@@ -77,7 +80,7 @@ export function registerDeleteHandlers(prisma: any) {
       )
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error archiving product:', error)
+      log.error('Error archiving product:', error)
       return { success: false, error: error.message }
     }
   })
@@ -93,7 +96,7 @@ export function registerDeleteHandlers(prisma: any) {
       )
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error deactivating user:', error)
+      log.error('Error deactivating user:', error)
       return { success: false, error: error.message }
     }
   })
@@ -104,7 +107,7 @@ export function registerDeleteHandlers(prisma: any) {
       const result = await DeleteService.restoreCustomer(data.customerId)
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error restoring customer:', error)
+      log.error('Error restoring customer:', error)
       return { success: false, error: error.message }
     }
   })
@@ -114,7 +117,7 @@ export function registerDeleteHandlers(prisma: any) {
       const result = await DeleteService.restoreProduct(data.productId)
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error restoring product:', error)
+      log.error('Error restoring product:', error)
       return { success: false, error: error.message }
     }
   })
@@ -124,7 +127,7 @@ export function registerDeleteHandlers(prisma: any) {
       const result = await DeleteService.reactivateUser(data.userId)
       return { success: true, data: result }
     } catch (error: any) {
-      console.error('Error reactivating user:', error)
+      log.error('Error reactivating user:', error)
       return { success: false, error: error.message }
     }
   })
@@ -135,7 +138,7 @@ export function registerDeleteHandlers(prisma: any) {
       await DeleteService.hardDeleteCustomer(data.customerId)
       return { success: true }
     } catch (error: any) {
-      console.error('Error hard deleting customer:', error)
+      log.error('Error hard deleting customer:', error)
       return { success: false, error: error.message }
     }
   })
@@ -145,7 +148,7 @@ export function registerDeleteHandlers(prisma: any) {
       await DeleteService.hardDeleteProduct(data.productId)
       return { success: true }
     } catch (error: any) {
-      console.error('Error hard deleting product:', error)
+      log.error('Error hard deleting product:', error)
       return { success: false, error: error.message }
     }
   })
@@ -155,7 +158,7 @@ export function registerDeleteHandlers(prisma: any) {
       await DeleteService.hardDeleteUser(data.userId)
       return { success: true }
     } catch (error: any) {
-      console.error('Error hard deleting user:', error)
+      log.error('Error hard deleting user:', error)
       return { success: false, error: error.message }
     }
   })
@@ -166,7 +169,7 @@ export function registerDeleteHandlers(prisma: any) {
       const data = await DeleteService.getArchivedCustomers()
       return { success: true, data }
     } catch (error: any) {
-      console.error('Error getting archived customers:', error)
+      log.error('Error getting archived customers:', error)
       return { success: false, error: error.message, data: [] }
     }
   })
@@ -176,7 +179,7 @@ export function registerDeleteHandlers(prisma: any) {
       const data = await DeleteService.getArchivedProducts()
       return { success: true, data }
     } catch (error: any) {
-      console.error('Error getting archived products:', error)
+      log.error('Error getting archived products:', error)
       return { success: false, error: error.message, data: [] }
     }
   })
@@ -186,7 +189,7 @@ export function registerDeleteHandlers(prisma: any) {
       const data = await DeleteService.getDeactivatedUsers()
       return { success: true, data }
     } catch (error: any) {
-      console.error('Error getting deactivated users:', error)
+      log.error('Error getting deactivated users:', error)
       return { success: false, error: error.message, data: [] }
     }
   })
@@ -197,7 +200,7 @@ export function registerDeleteHandlers(prisma: any) {
       const deletedCount = await DeleteService.deleteUnlinkedDeposits(customerId)
       return { success: true, deletedCount }
     } catch (error: any) {
-      console.error('Error cleaning up unlinked deposits:', error)
+      log.error('Error cleaning up unlinked deposits:', error)
       return { success: false, error: error.message }
     }
   })
@@ -207,7 +210,7 @@ export function registerDeleteHandlers(prisma: any) {
       const deletedCount = await DeleteService.deleteUnlinkedInstallments(customerId)
       return { success: true, deletedCount }
     } catch (error: any) {
-      console.error('Error cleaning up unlinked installments:', error)
+      log.error('Error cleaning up unlinked installments:', error)
       return { success: false, error: error.message }
     }
   })

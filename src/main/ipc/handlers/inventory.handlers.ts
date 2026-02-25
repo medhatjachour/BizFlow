@@ -6,6 +6,9 @@
 
 import { ipcMain } from 'electron'
 import { InventoryService } from '../../services/InventoryService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Inventory')
 
 export function registerInventoryHandlers(prisma: any) {
   const inventoryService = InventoryService.getInstance(prisma)
@@ -16,7 +19,7 @@ export function registerInventoryHandlers(prisma: any) {
       // Include images for inventory modal display
       return await inventoryService.getAllInventory({ includeImages: true })
     } catch (error) {
-      console.error('Error fetching inventory:', error)
+      log.error('Error fetching inventory:', error)
       throw error
     }
   })
@@ -26,7 +29,7 @@ export function registerInventoryHandlers(prisma: any) {
     try {
       return await inventoryService.getInventoryMetrics()
     } catch (error) {
-      console.error('Error fetching metrics:', error)
+      log.error('Error fetching metrics:', error)
       throw error
     }
   })
@@ -36,7 +39,7 @@ export function registerInventoryHandlers(prisma: any) {
     try {
       return await inventoryService.getTopStockedItems(limit)
     } catch (error) {
-      console.error('Error fetching top stocked items:', error)
+      log.error('Error fetching top stocked items:', error)
       throw error
     }
   })
@@ -46,7 +49,7 @@ export function registerInventoryHandlers(prisma: any) {
     try {
       return await inventoryService.getLowStockItems(threshold)
     } catch (error) {
-      console.error('Error fetching low stock items:', error)
+      log.error('Error fetching low stock items:', error)
       throw error
     }
   })
@@ -56,7 +59,7 @@ export function registerInventoryHandlers(prisma: any) {
     try {
       return await inventoryService.getOutOfStockItems()
     } catch (error) {
-      console.error('Error fetching out of stock items:', error)
+      log.error('Error fetching out of stock items:', error)
       throw error
     }
   })
@@ -66,7 +69,7 @@ export function registerInventoryHandlers(prisma: any) {
     try {
       return await inventoryService.searchInventory(query)
     } catch (error) {
-      console.error('Error searching inventory:', error)
+      log.error('Error searching inventory:', error)
       throw error
     }
   })
@@ -76,7 +79,7 @@ export function registerInventoryHandlers(prisma: any) {
     try {
       return await inventoryService.getStockMovementHistory(productId)
     } catch (error) {
-      console.error('Error fetching stock history:', error)
+      log.error('Error fetching stock history:', error)
       throw error
     }
   })
@@ -87,7 +90,7 @@ export function registerInventoryHandlers(prisma: any) {
       await inventoryService.updateVariantStock(variantId, stock)
       return { success: true }
     } catch (error) {
-      console.error('Error updating stock:', error)
+      log.error('Error updating stock:', error)
       throw error
     }
   })
@@ -97,7 +100,7 @@ export function registerInventoryHandlers(prisma: any) {
     try {
       return await inventoryService.getAllInventory()
     } catch (error) {
-      console.error('Error fetching products:', error)
+      log.error('Error fetching products:', error)
       throw error
     }
   })
@@ -206,7 +209,7 @@ export function registerInventoryHandlers(prisma: any) {
       // Not found
       return null
     } catch (error) {
-      console.error('Error searching by barcode:', error)
+      log.error('Error searching by barcode:', error)
       return null
     }
   })

@@ -14,6 +14,9 @@ import { PrismaClient } from '@prisma/client'
 import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Migration')
 
 export class MigrationManager {
   private prisma: PrismaClient
@@ -27,7 +30,7 @@ export class MigrationManager {
    */
   async needsMigration(): Promise<boolean> {
     try {
-      console.log('[Migration] Checking if migration is needed...')
+      log.info('[Migration] Checking if migration is needed...')
       
       // Get the correct database path based on environment
       const isDev = process.env.NODE_ENV === 'development'
@@ -42,7 +45,7 @@ export class MigrationManager {
         
         // If database was created less than 10 seconds ago, it's likely first run
         if (ageInSeconds < 10) {
-          console.log('[Migration] Database is brand new (first run), skipping migration check')
+          log.info('[Migration] Database is brand new (first run), skipping migration check')
           return false
         }
       }
@@ -51,18 +54,18 @@ export class MigrationManager {
       // This will throw if the fields don't exist
       await this.prisma.$queryRaw`SELECT newStock FROM StockMovement LIMIT 1`
       
-      console.log('[Migration] Database schema is up to date')
+      log.info('[Migration] Database schema is up to date')
       return false
     } catch (error: any) {
       // Check if error is due to missing column (SQLite error)
       if (error.message?.includes('no such column') || error.message?.includes('newStock')) {
-        console.log('[Migration] Migration needed: new fields detected')
+        log.info('[Migration] Migration needed: new fields detected')
         return true
       }
       
       // For other errors, log and assume no migration needed (likely first run)
-      console.warn('[Migration] Error checking schema:', error.message)
-      console.log('[Migration] Assuming first run or already up-to-date')
+      log.warn('[Migration] Error checking schema:', error.message)
+      log.info('[Migration] Assuming first run or already up-to-date')
       return false
     }
   }
@@ -81,7 +84,7 @@ export class MigrationManager {
     const backupDir = path.dirname(dbPath)
     const backupPath = path.join(backupDir, `database.backup-${timestamp}`)
 
-    console.log(`[Migration] Creating backup: ${dbPath} -> ${backupPath}`)
+    log.info(`[Migration] Creating backup: ${dbPath} -> ${backupPath}`)
 
     try {
       // Ensure source exists
@@ -97,10 +100,10 @@ export class MigrationManager {
       // Copy database file
       fs.copyFileSync(dbPath, backupPath)
       
-      console.log(`[Migration] ✅ Backup created successfully: ${backupPath}`)
+      log.info(`[Migration] ✅ Backup created successfully: ${backupPath}`)
       return backupPath
     } catch (error: any) {
-      console.error('[Migration] ❌ Backup failed:', error)
+      log.error('[Migration] ❌ Backup failed:', error)
       throw new Error(`Failed to backup database: ${error.message}`)
     }
   }
@@ -110,7 +113,7 @@ export class MigrationManager {
    */
   async runMigrations(): Promise<void> {
     try {
-      console.log('[Migration] 🔄 Running database migrations...')
+      log.info('[Migration] 🔄 Running database migrations...')
 
       // Get the correct database path based on environment
       const isDev = process.env.NODE_ENV === 'development'
@@ -126,15 +129,15 @@ export class MigrationManager {
         // Production: Use prisma migrate deploy
         const prismaPath = path.join(process.resourcesPath, 'prisma')
         
-        console.log('[Migration] Running in production mode')
-        console.log('[Migration] Platform:', process.platform)
-        console.log('[Migration] Prisma path:', prismaPath)
-        console.log('[Migration] Database URL:', databaseUrl)
+        log.info('[Migration] Running in production mode')
+        log.info('[Migration] Platform:', process.platform)
+        log.info('[Migration] Prisma path:', prismaPath)
+        log.info('[Migration] Database URL:', databaseUrl)
 
         // Check if migrations folder exists
         const migrationsPath = path.join(prismaPath, 'migrations')
         if (fs.existsSync(migrationsPath)) {
-          console.log('[Migration] Migrations folder found, running migrate deploy...')
+          log.info('[Migration] Migrations folder found, running migrate deploy...')
           
           // Use cross-platform command
           const cmd = process.platform === 'win32' 
@@ -151,7 +154,7 @@ export class MigrationManager {
             shell: true
           } as any)
         } else {
-          console.log('[Migration] No migrations folder, using db push...')
+          log.info('[Migration] No migrations folder, using db push...')
           
           const cmd = process.platform === 'win32'
             ? 'npx.cmd prisma db push --accept-data-loss'
@@ -169,8 +172,8 @@ export class MigrationManager {
         }
       } else {
         // Development: Use prisma db push
-        console.log('[Migration] Running in development mode')
-        console.log('[Migration] Using db push...')
+        log.info('[Migration] Running in development mode')
+        log.info('[Migration] Using db push...')
         
         const cmd = process.platform === 'win32'
           ? 'npx.cmd prisma db push --accept-data-loss'
@@ -186,9 +189,9 @@ export class MigrationManager {
         } as any)
       }
 
-      console.log('[Migration] ✅ Migrations completed successfully')
+      log.info('[Migration] ✅ Migrations completed successfully')
     } catch (error: any) {
-      console.error('[Migration] ❌ Migration failed:', error)
+      log.error('[Migration] ❌ Migration failed:', error)
       throw new Error(`Migration failed: ${error.message}`)
     }
   }
@@ -198,29 +201,29 @@ export class MigrationManager {
    */
   async validateMigration(): Promise<boolean> {
     try {
-      console.log('[Migration] 🔍 Validating migration...')
+      log.info('[Migration] 🔍 Validating migration...')
 
       // Test 1: Check new schema fields exist
       await this.prisma.$queryRaw`SELECT newStock FROM StockMovement LIMIT 1`
-      console.log('[Migration] ✅ New schema fields validated')
+      log.info('[Migration] ✅ New schema fields validated')
 
       // Test 2: Verify existing data is accessible
       const customerCount = await this.prisma.customer.count()
       const productCount = await this.prisma.product.count()
       const saleCount = await this.prisma.saleTransaction.count()
 
-      console.log(`[Migration] ✅ Data integrity check:`)
-      console.log(`  - ${customerCount} customers`)
-      console.log(`  - ${productCount} products`)
-      console.log(`  - ${saleCount} sales`)
+      log.info(`[Migration] ✅ Data integrity check:`)
+      log.info(`  - ${customerCount} customers`)
+      log.info(`  - ${productCount} products`)
+      log.info(`  - ${saleCount} sales`)
 
       // Test 3: Basic query operations
       await this.prisma.user.findMany({ take: 1 })
-      console.log('[Migration] ✅ Query operations validated')
+      log.info('[Migration] ✅ Query operations validated')
 
       return true
     } catch (error: any) {
-      console.error('[Migration] ❌ Validation failed:', error)
+      log.error('[Migration] ❌ Validation failed:', error)
       return false
     }
   }
@@ -235,7 +238,7 @@ export class MigrationManager {
       ? path.join(process.cwd(), 'prisma', 'dev.db')
       : path.join(app.getPath('userData'), 'database.db')
 
-    console.log(`[Migration] 🔄 Restoring from backup: ${backupPath}`)
+    log.info(`[Migration] 🔄 Restoring from backup: ${backupPath}`)
 
     try {
       if (!fs.existsSync(backupPath)) {
@@ -248,9 +251,9 @@ export class MigrationManager {
       // Restore backup
       fs.copyFileSync(backupPath, dbPath)
 
-      console.log('[Migration] ✅ Database restored from backup successfully')
+      log.info('[Migration] ✅ Database restored from backup successfully')
     } catch (error: any) {
-      console.error('[Migration] ❌ Restore failed:', error)
+      log.error('[Migration] ❌ Restore failed:', error)
       throw new Error(`Failed to restore database: ${error.message}`)
     }
   }
@@ -262,17 +265,17 @@ export class MigrationManager {
     let backupPath: string | null = null
 
     try {
-      console.log('[Migration] Starting migration process...')
+      log.info('[Migration] Starting migration process...')
 
       // Step 1: Check if migration is needed
       const needsMigration = await this.needsMigration()
 
       if (!needsMigration) {
-        console.log('[Migration] ✅ Database is already up to date')
+        log.info('[Migration] ✅ Database is already up to date')
         return true
       }
 
-      console.log('[Migration] Migration required, proceeding...')
+      log.info('[Migration] Migration required, proceeding...')
 
       // Step 2: Notify renderer process
       mainWindow.webContents.send('migration:starting')
@@ -281,7 +284,7 @@ export class MigrationManager {
       try {
         backupPath = await this.backupDatabase()
       } catch (error: any) {
-        console.error('[Migration] Failed to create backup:', error)
+        log.error('[Migration] Failed to create backup:', error)
         throw new Error('Cannot proceed without backup. Please ensure you have write permissions.')
       }
 
@@ -298,19 +301,19 @@ export class MigrationManager {
       })
 
       if (response.response === 1) {
-        console.log('[Migration] ❌ User cancelled migration')
+        log.info('[Migration] ❌ User cancelled migration')
         app.quit()
         return false
       }
 
       // Step 5: Run migrations
-      console.log('[Migration] User approved, running migrations...')
+      log.info('[Migration] User approved, running migrations...')
       mainWindow.webContents.send('migration:running')
       
       await this.runMigrations()
 
       // Step 6: Validate
-      console.log('[Migration] Validating migration...')
+      log.info('[Migration] Validating migration...')
       mainWindow.webContents.send('migration:validating')
       
       const isValid = await this.validateMigration()
@@ -320,7 +323,7 @@ export class MigrationManager {
       }
 
       // Step 7: Success!
-      console.log('[Migration] ✅ Migration completed successfully!')
+      log.info('[Migration] ✅ Migration completed successfully!')
       mainWindow.webContents.send('migration:completed')
 
       await dialog.showMessageBox(mainWindow, {
@@ -333,7 +336,7 @@ export class MigrationManager {
 
       return true
     } catch (error: any) {
-      console.error('[Migration] ❌ Migration process failed:', error)
+      log.error('[Migration] ❌ Migration process failed:', error)
 
       // Notify renderer
       mainWindow.webContents.send('migration:failed', error.message)
@@ -362,7 +365,7 @@ export class MigrationManager {
             buttons: ['OK']
           })
         } catch (restoreError: any) {
-          console.error('[Migration] ❌ Restore also failed:', restoreError)
+          log.error('[Migration] ❌ Restore also failed:', restoreError)
 
           await dialog.showMessageBox(mainWindow, {
             type: 'error',
@@ -385,9 +388,9 @@ export class MigrationManager {
   async cleanup(): Promise<void> {
     try {
       await this.prisma.$disconnect()
-      console.log('[Migration] Cleanup completed')
+      log.info('[Migration] Cleanup completed')
     } catch (error) {
-      console.error('[Migration] Cleanup error:', error)
+      log.error('[Migration] Cleanup error:', error)
     }
   }
 }

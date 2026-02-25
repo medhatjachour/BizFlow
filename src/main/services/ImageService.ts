@@ -7,6 +7,9 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as crypto from 'crypto'
 import { app } from 'electron'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Image')
 
 export class ImageService {
   private imagesDir: string
@@ -75,7 +78,7 @@ export class ImageService {
 
       return filename
     } catch (error) {
-      console.error('[ImageService] Failed to save image:', error)
+      log.error('[ImageService] Failed to save image:', error)
       throw new Error('Failed to save image')
     }
   }
@@ -90,7 +93,7 @@ export class ImageService {
       const filePath = path.join(this.imagesDir, filename)
 
       if (!fs.existsSync(filePath)) {
-        console.warn(`[ImageService] Image not found: ${filename}`)
+        log.warn(`[ImageService] Image not found: ${filename}`)
         return null
       }
 
@@ -104,7 +107,7 @@ export class ImageService {
 
       return `data:${mimeType};base64,${base64}`
     } catch (error) {
-      console.error(`[ImageService] Failed to read image ${filename}:`, error)
+      log.error(`[ImageService] Failed to read image ${filename}:`, error)
       return null
     }
   }
@@ -130,7 +133,7 @@ export class ImageService {
         fs.unlinkSync(filePath)
       }
     } catch (error) {
-      console.error(`[ImageService] Failed to delete image ${filename}:`, error)
+      log.error(`[ImageService] Failed to delete image ${filename}:`, error)
       throw error
     }
   }
@@ -156,7 +159,7 @@ export class ImageService {
 
       return deletedCount
     } catch (error) {
-      console.error('[ImageService] Cleanup failed:', error)
+      log.error('[ImageService] Cleanup failed:', error)
       throw error
     }
   }
@@ -178,7 +181,7 @@ export class ImageService {
 
       return totalSize
     } catch (error) {
-      console.error('[ImageService] Failed to get disk usage:', error)
+      log.error('[ImageService] Failed to get disk usage:', error)
       return 0
     }
   }

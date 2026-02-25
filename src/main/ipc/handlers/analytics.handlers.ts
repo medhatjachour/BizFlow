@@ -13,6 +13,9 @@ import { ipcMain } from 'electron'
 import path from 'node:path'
 import { getDatabasePath } from '../../database/init'
 import { StoreAnalyticsService } from '../../services/StoreAnalyticsService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Analytics')
 
 // Initialize Prisma client
 function initializePrisma() {
@@ -39,7 +42,7 @@ function initializePrisma() {
       })
     }
   } catch (error) {
-    console.error('❌ Failed to initialize Prisma for analytics:', error)
+    log.error('❌ Failed to initialize Prisma for analytics:', error)
   }
   return null
 }
@@ -51,7 +54,7 @@ export function registerAnalyticsHandlers() {
   prisma = initializePrisma()
   
   if (!prisma) {
-    console.warn('⚠️  Analytics handlers registered but Prisma client unavailable')
+    log.warn('⚠️  Analytics handlers registered but Prisma client unavailable')
     return
   }
 
@@ -125,7 +128,7 @@ ipcMain.handle('analytics:recordStockMovement', async (_, data: {
 
     return movement
   } catch (error) {
-    console.error('❌ Error recording stock movement:', error)
+    log.error('❌ Error recording stock movement:', error)
     throw error
   }
 })
@@ -172,7 +175,7 @@ ipcMain.handle('analytics:getStockMovementHistory', async (_, variantId: string,
 
     return movements
   } catch (error) {
-    console.error('❌ Error fetching movement history:', error)
+    log.error('❌ Error fetching movement history:', error)
     throw error
   }
 })
@@ -242,7 +245,7 @@ ipcMain.handle('analytics:getStockoutHistory', async (_, variantId: string) => {
       history: stockoutHistory
     }
   } catch (error) {
-    console.error('❌ Error fetching stockout history:', error)
+    log.error('❌ Error fetching stockout history:', error)
     throw error
   }
 })
@@ -286,7 +289,7 @@ ipcMain.handle('analytics:getRestockHistory', async (_, variantId: string, limit
       restocks
     }
   } catch (error) {
-    console.error('❌ Error fetching restock history:', error)
+    log.error('❌ Error fetching restock history:', error)
     throw error
   }
 })
@@ -363,7 +366,7 @@ ipcMain.handle('analytics:getProductSalesStats', async (_, productId: string, op
       turnoverRate: totalStock > 0 ? (totalUnitsSold / totalStock) : 0
     }
   } catch (error) {
-    console.error('❌ Error fetching product sales stats:', error)
+    log.error('❌ Error fetching product sales stats:', error)
     throw error
   }
 })
@@ -435,7 +438,7 @@ ipcMain.handle('analytics:getProductSalesTrend', async (_, productId: string, op
     
     return serializedTrend
   } catch (error) {
-    console.error('❌ Error fetching sales trend:', error)
+    log.error('❌ Error fetching sales trend:', error)
     throw error
   }
 })
@@ -502,7 +505,7 @@ ipcMain.handle('analytics:getTopSellingProducts', async (_, options: {
     
     return serializedProducts
   } catch (error) {
-    console.error('❌ Error fetching top selling products:', error)
+    log.error('❌ Error fetching top selling products:', error)
     throw error
   }
 })
@@ -548,7 +551,7 @@ ipcMain.handle('analytics:getOverallStats', async (_, options: {
     
     return finalStats
   } catch (error) {
-    console.error('❌ Error fetching overall stats:', error)
+    log.error('❌ Error fetching overall stats:', error)
     throw error
   }
 })
@@ -639,7 +642,7 @@ ipcMain.handle('analytics:getAllStockMovements', async (_, options?: {
       } : null
     }))
   } catch (error) {
-    console.error('❌ Error fetching all stock movements:', error)
+    log.error('❌ Error fetching all stock movements:', error)
     throw error
   }
 })
@@ -659,7 +662,7 @@ ipcMain.handle('analytics:compareStores', async (_, options: {
 }) => {
   try {
     if (!prisma) {
-      console.error('❌ Prisma not initialized for store comparison')
+      log.error('❌ Prisma not initialized for store comparison')
       return { stores: [], dateRange: { startDate: new Date(), endDate: new Date() } }
     }
 
@@ -673,7 +676,7 @@ ipcMain.handle('analytics:compareStores', async (_, options: {
     
     return comparison
   } catch (error) {
-    console.error('❌ Error comparing stores:', error)
+    log.error('❌ Error comparing stores:', error)
     throw error
   }
 })
@@ -689,7 +692,7 @@ ipcMain.handle('analytics:getStoreMetrics', async (_, options: {
 }) => {
   try {
     if (!prisma) {
-      console.error('❌ Prisma not initialized for store metrics')
+      log.error('❌ Prisma not initialized for store metrics')
       return null
     }
 
@@ -703,7 +706,7 @@ ipcMain.handle('analytics:getStoreMetrics', async (_, options: {
     
     return metrics
   } catch (error) {
-    console.error('❌ Error getting store metrics:', error)
+    log.error('❌ Error getting store metrics:', error)
     throw error
   }
 })
@@ -718,7 +721,7 @@ ipcMain.handle('analytics:getTopStores', async (_, options: {
 }) => {
   try {
     if (!prisma) {
-      console.error('❌ Prisma not initialized for top stores')
+      log.error('❌ Prisma not initialized for top stores')
       return []
     }
 
@@ -732,7 +735,7 @@ ipcMain.handle('analytics:getTopStores', async (_, options: {
     
     return topStores
   } catch (error) {
-    console.error('❌ Error getting top stores:', error)
+    log.error('❌ Error getting top stores:', error)
     throw error
   }
 })
@@ -747,7 +750,7 @@ ipcMain.handle('analytics:getStoreTrends', async (_, options: {
 }) => {
   try {
     if (!prisma) {
-      console.error('❌ Prisma not initialized for store trends')
+      log.error('❌ Prisma not initialized for store trends')
       return []
     }
 
@@ -758,7 +761,7 @@ ipcMain.handle('analytics:getStoreTrends', async (_, options: {
     
     return trends
   } catch (error) {
-    console.error('❌ Error getting store trends:', error)
+    log.error('❌ Error getting store trends:', error)
     throw error
   }
 })

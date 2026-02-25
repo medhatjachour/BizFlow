@@ -7,6 +7,9 @@
  */
 
 import type { PrismaClient } from '@prisma/client'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Authz')
 
 // Permission enum matching frontend
 export enum Permission {
@@ -143,7 +146,7 @@ async function getUserRole(prisma: PrismaClient, userId: string): Promise<string
       return user.role
     }
   } catch (error) {
-    console.error('[Authz] Error fetching user role:', error)
+    log.error('[Authz] Error fetching user role:', error)
   }
   
   return null
@@ -164,7 +167,7 @@ export function requirePermission(
       const userId = extractUserId(args)
       
       if (!userId) {
-        console.error('[Authz] No userId provided in request')
+        log.error('[Authz] No userId provided in request')
         throw new Error('Authentication required')
       }
       
@@ -172,13 +175,13 @@ export function requirePermission(
       const role = await getUserRole(prisma, userId)
       
       if (!role) {
-        console.error('[Authz] User not found:', userId)
+        log.error('[Authz] User not found:', userId)
         throw new Error('User not found')
       }
       
       // Check permission
       if (!hasPermission(role, permission)) {
-        console.warn(`[Authz] Permission denied: ${role} lacks ${permission}`)
+        log.warn(`[Authz] Permission denied: ${role} lacks ${permission}`)
         throw new Error(`Insufficient permissions: ${permission} required`)
       }
       
