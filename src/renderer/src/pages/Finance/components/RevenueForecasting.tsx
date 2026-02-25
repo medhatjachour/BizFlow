@@ -13,7 +13,6 @@ import { TrendingUp, TrendingDown, Minus, AlertCircle, Calendar, HelpCircle } fr
 import { useLanguage } from '../../../contexts/LanguageContext'
 import { Line } from 'react-chartjs-2'
 import {
-import logger from '../../../../../shared/utils/logger'
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -24,6 +23,8 @@ import logger from '../../../../../shared/utils/logger'
   Legend,
   Filler
 } from 'chart.js'
+import logger from '../../../../../shared/utils/logger'
+
 
 // Register ChartJS components
 ChartJS.register(
