@@ -5,6 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { Calendar, DollarSign, CheckCircle, Edit } from 'lucide-react'
+import logger from '../../../../shared/utils/logger'
 
 interface InstallmentPlan {
   id: string
@@ -69,7 +70,7 @@ export default function InstallmentPlanSelector({
         if (plan) setSelectedPlan(plan)
       }
     } catch (err) {
-      console.error('Error loading installment plans:', err)
+      logger.error('Error loading installment plans:', err)
       setPlans([]) // Ensure empty array on error
     } finally {
       setLoading(false)
@@ -92,15 +93,15 @@ export default function InstallmentPlanSelector({
           setSchedule(result)
           onPlanSelect(plan.id, result)
         } else {
-          console.error('Invalid schedule result:', result)
+          logger.error('Invalid schedule result:', result)
           setSchedule(null)
         }
       } else {
-        console.error('Failed to calculate schedule:', response?.error)
+        logger.error('Failed to calculate schedule:', response?.error)
         setSchedule(null)
       }
     } catch (err) {
-      console.error('Error calculating schedule:', err)
+      logger.error('Error calculating schedule:', err)
       setSchedule(null)
     }
   }

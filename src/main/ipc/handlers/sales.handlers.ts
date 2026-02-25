@@ -5,12 +5,15 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Sales')
 
 export function registerSalesHandlers(prisma: any) {
   // Legacy handler - use sale-transactions:create instead
   ipcMain.handle('sales:create', async (_, saleData) => {
     try {
-      console.warn('sales:create is deprecated - use sale-transactions:create instead')
+      log.warn('sales:create is deprecated - use sale-transactions:create instead')
       const { productId, variantId, userId, quantity, price, total, paymentMethod } = saleData
       
       if (prisma) {
@@ -63,14 +66,14 @@ export function registerSalesHandlers(prisma: any) {
       // Mock fallback
       return { success: true, sale: { id: 's_mock', ...saleData, status: 'completed' } }
     } catch (error) {
-      console.error('Error creating sale:', error)
+      log.error('Error creating sale:', error)
       throw error
     }
   })
 
   ipcMain.handle('sales:getAll', async () => {
     try {
-      console.warn('sales:getAll is deprecated - use sale-transactions:getAll instead')
+      log.warn('sales:getAll is deprecated - use sale-transactions:getAll instead')
       if (prisma) {
         const transactions = await prisma.saleTransaction.findMany({
           include: {
@@ -96,7 +99,7 @@ export function registerSalesHandlers(prisma: any) {
       }
       return []
     } catch (error) {
-      console.error('Error fetching sales:', error)
+      log.error('Error fetching sales:', error)
       throw error
     }
   })
@@ -107,7 +110,7 @@ export function registerSalesHandlers(prisma: any) {
    */
   ipcMain.handle('sales:getByDateRange', async (_, options = {}) => {
     try {
-      console.warn('sales:getByDateRange is deprecated - use sale-transactions:getByDateRange instead')
+      log.warn('sales:getByDateRange is deprecated - use sale-transactions:getByDateRange instead')
       const { startDate, endDate } = options
       
       if (!prisma) return []
@@ -144,7 +147,7 @@ export function registerSalesHandlers(prisma: any) {
 
       return transactions
     } catch (error) {
-      console.error('Error fetching sales by date range:', error)
+      log.error('Error fetching sales by date range:', error)
       throw error
     }
   })
@@ -154,7 +157,7 @@ export function registerSalesHandlers(prisma: any) {
    */
   ipcMain.handle('sales:getStats', async (_, options = {}) => {
     try {
-      console.warn('sales:getStats is deprecated - use analytics:getOverallStats instead')
+      log.warn('sales:getStats is deprecated - use analytics:getOverallStats instead')
       if (!prisma) return null
 
       const { startDate, endDate } = options
@@ -185,14 +188,14 @@ export function registerSalesHandlers(prisma: any) {
         totalRevenue: revenue._sum.total || 0
       }
     } catch (error) {
-      console.error('Error fetching sales stats:', error)
+      log.error('Error fetching sales stats:', error)
       throw error
     }
   })
 
   ipcMain.handle('sales:refund', async (_, saleId) => {
     try {
-      console.warn('sales:refund is deprecated - use sale-transactions:refund instead')
+      log.warn('sales:refund is deprecated - use sale-transactions:refund instead')
       if (prisma) {
         const transaction = await prisma.saleTransaction.update({
           where: { id: saleId },
@@ -252,7 +255,7 @@ export function registerSalesHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error) {
-      console.error('Error refunding sale:', error)
+      log.error('Error refunding sale:', error)
       throw error
     }
   })

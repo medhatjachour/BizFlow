@@ -18,7 +18,8 @@ import type {
   BulkUpdateStockDTO
 } from '../../shared/dtos/product.dto'
 import { EntityNotFoundError, DuplicateEntityError } from '../../shared/interfaces/IRepository'
-import { logger } from '../../shared/utils/logger'
+import { createLogger } from '../utils/logger'
+const log = createLogger('Products')
 import { eventBus } from '../../shared/events/EventBus'
 
 /**
@@ -46,7 +47,7 @@ export class ProductService {
    */
   async createProduct(dto: CreateProductDTO): Promise<ProductResponseDTO> {
     try {
-      logger.info('Creating product', { sku: dto.baseSKU })
+      log.info('Creating product', { sku: dto.baseSKU })
 
       // Validate business rules
       this.validateProductData(dto)
@@ -68,7 +69,7 @@ export class ProductService {
       // Create product
       const product = await this.productRepository.create(createData)
 
-      logger.info('Product created', { id: product.id, sku: product.baseSKU })
+      log.info('Product created', { id: product.id, sku: product.baseSKU })
 
       // Emit event
       await eventBus.emit('product:created', {
@@ -79,7 +80,7 @@ export class ProductService {
       // Map to response DTO
       return ProductMapper.toResponseDTO(product)
     } catch (error) {
-      logger.error('Failed to create product', { error, dto })
+      log.error('Failed to create product', { error, dto })
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof ProductServiceError) {
         throw error
       }
@@ -100,7 +101,7 @@ export class ProductService {
       }
       return ProductMapper.toResponseDTO(product)
     } catch (error) {
-      logger.error('Failed to get product', { error, id })
+      log.error('Failed to get product', { error, id })
       throw error
     }
   }
@@ -116,7 +117,7 @@ export class ProductService {
       }
       return ProductMapper.toResponseDTO(product)
     } catch (error) {
-      logger.error('Failed to get product by SKU', { error, sku })
+      log.error('Failed to get product by SKU', { error, sku })
       throw error
     }
   }
@@ -180,7 +181,7 @@ export class ProductService {
         hasPrevious: result.hasPrevious
       }
     } catch (error) {
-      logger.error('Failed to query products', { error, query })
+      log.error('Failed to query products', { error, query })
       throw error
     }
   }
@@ -190,7 +191,7 @@ export class ProductService {
    */
   async updateProduct(id: string, dto: UpdateProductDTO): Promise<ProductResponseDTO> {
     try {
-      logger.info('Updating product', { id })
+      log.info('Updating product', { id })
 
       // Validate business rules if applicable
       if (dto.basePrice !== undefined && dto.basePrice < 0) {
@@ -215,7 +216,7 @@ export class ProductService {
       // Update product
       const product = await this.productRepository.update(id, updateData)
 
-      logger.info('Product updated', { id })
+      log.info('Product updated', { id })
 
       // Emit event
       await eventBus.emit('product:updated', {
@@ -225,7 +226,7 @@ export class ProductService {
 
       return ProductMapper.toResponseDTO(product)
     } catch (error) {
-      logger.error('Failed to update product', { error, id, dto })
+      log.error('Failed to update product', { error, id, dto })
       throw error
     }
   }
@@ -235,12 +236,12 @@ export class ProductService {
    */
   async deleteProduct(id: string): Promise<boolean> {
     try {
-      logger.info('Deleting product', { id })
+      log.info('Deleting product', { id })
 
       const deleted = await this.productRepository.delete(id)
 
       if (deleted) {
-        logger.info('Product deleted', { id })
+        log.info('Product deleted', { id })
         
         // Emit event
         await eventBus.emit('product:deleted', {
@@ -251,7 +252,7 @@ export class ProductService {
 
       return deleted
     } catch (error) {
-      logger.error('Failed to delete product', { error, id })
+      log.error('Failed to delete product', { error, id })
       throw error
     }
   }
@@ -261,7 +262,7 @@ export class ProductService {
    */
   async updateStock(dto: UpdateStockDTO): Promise<void> {
     try {
-      logger.info('Updating stock', { variantId: dto.variantId, stock: dto.stock })
+      log.info('Updating stock', { variantId: dto.variantId, stock: dto.stock })
 
       if (dto.stock < 0) {
         throw new ProductServiceError('Stock cannot be negative', 'INVALID_STOCK')
@@ -269,7 +270,7 @@ export class ProductService {
 
       await this.productRepository.updateVariantStock(dto.variantId, dto.stock)
 
-      logger.info('Stock updated', { variantId: dto.variantId, stock: dto.stock })
+      log.info('Stock updated', { variantId: dto.variantId, stock: dto.stock })
 
       // Emit event
       await eventBus.emit('stock:updated', {
@@ -278,7 +279,7 @@ export class ProductService {
         newStock: dto.stock
       })
     } catch (error) {
-      logger.error('Failed to update stock', { error, dto })
+      log.error('Failed to update stock', { error, dto })
       throw error
     }
   }
@@ -288,7 +289,7 @@ export class ProductService {
    */
   async bulkUpdateStock(dto: BulkUpdateStockDTO): Promise<void> {
     try {
-      logger.info('Bulk updating stock', { count: dto.updates.length })
+      log.info('Bulk updating stock', { count: dto.updates.length })
 
       for (const update of dto.updates) {
         if (update.stock < 0) {
@@ -297,9 +298,9 @@ export class ProductService {
         await this.productRepository.updateVariantStock(update.variantId, update.stock)
       }
 
-      logger.info('Bulk stock update complete')
+      log.info('Bulk stock update complete')
     } catch (error) {
-      logger.error('Failed to bulk update stock', { error, dto })
+      log.error('Failed to bulk update stock', { error, dto })
       throw error
     }
   }
@@ -312,7 +313,7 @@ export class ProductService {
       const products = await this.productRepository.findLowStock(threshold)
       return ProductMapper.toResponseDTOs(products)
     } catch (error) {
-      logger.error('Failed to get low stock products', { error, threshold })
+      log.error('Failed to get low stock products', { error, threshold })
       throw error
     }
   }
@@ -325,7 +326,7 @@ export class ProductService {
       const products = await this.productRepository.findOutOfStock()
       return ProductMapper.toResponseDTOs(products)
     } catch (error) {
-      logger.error('Failed to get out of stock products', { error })
+      log.error('Failed to get out of stock products', { error })
       throw error
     }
   }
@@ -337,7 +338,7 @@ export class ProductService {
     try {
       return await this.productRepository.getCategories()
     } catch (error) {
-      logger.error('Failed to get categories', { error })
+      log.error('Failed to get categories', { error })
       throw error
     }
   }
@@ -347,11 +348,11 @@ export class ProductService {
    */
   async addImage(productId: string, imageData: string, order: number): Promise<void> {
     try {
-      logger.info('Adding product image', { productId, order })
+      log.info('Adding product image', { productId, order })
       await this.productRepository.addImage(productId, imageData, order)
-      logger.info('Product image added', { productId })
+      log.info('Product image added', { productId })
     } catch (error) {
-      logger.error('Failed to add product image', { error, productId })
+      log.error('Failed to add product image', { error, productId })
       throw error
     }
   }
@@ -361,11 +362,11 @@ export class ProductService {
    */
   async deleteImage(imageId: string): Promise<void> {
     try {
-      logger.info('Deleting product image', { imageId })
+      log.info('Deleting product image', { imageId })
       await this.productRepository.deleteImage(imageId)
-      logger.info('Product image deleted', { imageId })
+      log.info('Product image deleted', { imageId })
     } catch (error) {
-      logger.error('Failed to delete product image', { error, imageId })
+      log.error('Failed to delete product image', { error, imageId })
       throw error
     }
   }

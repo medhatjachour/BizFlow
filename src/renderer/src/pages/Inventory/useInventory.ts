@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { InventoryItem, InventoryMetrics } from '../../../../shared/types'
+import logger from '../../../../shared/utils/logger'
 
 export function useInventory() {
   const [items, setItems] = useState<InventoryItem[]>([])
@@ -31,7 +32,7 @@ export function useInventory() {
       setItems(inventoryData)
       setMetrics(metricsData)
     } catch (err) {
-      console.error('Error loading inventory:', err)
+      logger.error('Error loading inventory:', err)
       setError(err instanceof Error ? err.message : 'Failed to load inventory')
     } finally {
       setLoading(false)

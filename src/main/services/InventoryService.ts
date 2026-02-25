@@ -26,6 +26,9 @@ import type {
   InventoryMetrics,
   StockMovement
 } from '../../shared/types'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Inventory')
 
 interface InventoryQueryOptions {
   includeImages?: boolean
@@ -348,10 +351,17 @@ export class InventoryService {
    * Update stock for a variant
    */
   async updateVariantStock(variantId: string, newStock: number): Promise<void> {
-    await this.prisma.productVariant.update({
-      where: { id: variantId },
-      data: { stock: newStock }
-    })
+    log.info(`Updating variant stock: variantId=${variantId} newStock=${newStock}`)
+    try {
+      await this.prisma.productVariant.update({
+        where: { id: variantId },
+        data: { stock: newStock }
+      })
+      log.debug(`Stock updated: variantId=${variantId} -> ${newStock}`)
+    } catch (error) {
+      log.error(`Failed to update stock for variantId=${variantId}:`, error)
+      throw error
+    }
   }
 
   /**

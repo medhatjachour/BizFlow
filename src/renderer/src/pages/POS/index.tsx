@@ -26,6 +26,7 @@ import { useBarcodeScanner } from '../../hooks/useBarcodeScanner'
 import { useToast } from '../../contexts/ToastContext'
 import { ipc } from '../../utils/ipc'
 import type { Customer } from './types'
+import logger from '../../../../shared/utils/logger'
 
 type ViewMode = 'grid' | 'quick'
 
@@ -98,7 +99,7 @@ export default function POS(): JSX.Element {
         setCartOpen(true)
       }
     } catch (error) {
-      console.error('Error scanning barcode:', error)
+      logger.error('Error scanning barcode:', error)
       toast.error('Failed to add product')
     }
   }, [addToCart, toast, viewMode, cartOpen, setCartOpen])
@@ -163,7 +164,7 @@ export default function POS(): JSX.Element {
         setShowReceiptModal(true)
       }
     } catch (error) {
-      console.error('Quick checkout failed:', error)
+      logger.error('Quick checkout failed:', error)
     } finally {
       setIsCompletingSale(false)
     }

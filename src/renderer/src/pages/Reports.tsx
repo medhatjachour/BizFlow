@@ -26,6 +26,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ReceiptPreviewModal } from './Sales/ReceiptPreviewModal';
+import logger from '../../../shared/utils/logger'
 
 interface TodayStats {
   revenue: number;
@@ -175,7 +176,7 @@ const EnhancedReports: React.FC = () => {
         revenueChange: 12.5 // TODO: Calculate vs yesterday
       });
     } catch (err) {
-      console.error('Failed to load today stats:', err);
+      logger.error('Failed to load today stats:', err);
     }
   };
 
@@ -335,7 +336,7 @@ const EnhancedReports: React.FC = () => {
 
       setActivityFeed(activities.slice(0, 10)); // Show latest 10
     } catch (err) {
-      console.error('Failed to load activity feed:', err);
+      logger.error('Failed to load activity feed:', err);
     }
   };
 
@@ -373,7 +374,7 @@ const EnhancedReports: React.FC = () => {
         error(response.error || 'Failed to generate report');
       }
     } catch (err) {
-      console.error('Failed to generate report:', err);
+      logger.error('Failed to generate report:', err);
       error('Failed to generate report');
     } finally {
       setLoading(false);
@@ -537,7 +538,7 @@ const EnhancedReports: React.FC = () => {
       doc.save(fileName);
       success(`PDF report saved: ${fileName}`);
     } catch (err) {
-      console.error('Export error:', err);
+      logger.error('Export error:', err);
       error('Failed to export PDF');
     }
   };
@@ -615,7 +616,7 @@ const EnhancedReports: React.FC = () => {
       
       success('CSV file downloaded successfully');
     } catch (err) {
-      console.error('Export error:', err);
+      logger.error('Export error:', err);
       error('Failed to export CSV');
     }
   };

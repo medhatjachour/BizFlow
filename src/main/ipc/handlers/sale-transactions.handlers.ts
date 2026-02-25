@@ -1,4 +1,7 @@
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('SaleTransactions')
 
 /**
  * Sale Transaction Handlers
@@ -196,14 +199,14 @@ export function registerSaleTransactionHandlers(prisma: any) {
           })
           
         } catch (error) {
-          console.error('Error updating customer totalSpent:', error)
+          log.error('Error updating customer totalSpent:', error)
           // Don't fail the transaction if this update fails
         }
       }
 
       return { success: true, transaction: transactionWithUser, items: result.items }
     } catch (error) {
-      console.error('Error creating sale transaction:', error)
+      log.error('Error creating sale transaction:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -245,7 +248,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
 
       return transactions
     } catch (error) {
-      console.error('Error fetching sale transactions:', error)
+      log.error('Error fetching sale transactions:', error)
       throw error
     }
   })
@@ -303,7 +306,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
 
       return transaction
     } catch (error) {
-      console.error('Error fetching sale transaction:', error)
+      log.error('Error fetching sale transaction:', error)
       throw error
     }
   })
@@ -378,11 +381,11 @@ export function registerSaleTransactionHandlers(prisma: any) {
                 })
                
               } else {
-                console.error(`[REFUND-ALL] ERROR: Variant ${item.variantId} not found!`)
+                log.error(`[REFUND-ALL] ERROR: Variant ${item.variantId} not found!`)
               }
             } else {
               // Handle legacy sales with null variantId - find the default variant
-              console.warn(`[REFUND-ALL] Item ${item.id} has no variantId, searching for default variant...`)
+              log.warn(`[REFUND-ALL] Item ${item.id} has no variantId, searching for default variant...`)
               
               const product = await tx.product.findUnique({
                 where: { id: item.productId },
@@ -423,7 +426,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
                 })
                 
               } else {
-                console.error(`[REFUND-ALL] ERROR: Could not find product or variants for item ${item.id}`)
+                log.error(`[REFUND-ALL] ERROR: Could not find product or variants for item ${item.id}`)
               }
             }
             return Promise.resolve()
@@ -450,13 +453,13 @@ export function registerSaleTransactionHandlers(prisma: any) {
           })
           
         } catch (error) {
-          console.error('Error updating customer totalSpent after refund:', error)
+          log.error('Error updating customer totalSpent after refund:', error)
         }
       }
 
       return { success: true, transaction: result }
     } catch (error) {
-      console.error('Error refunding transaction:', error)
+      log.error('Error refunding transaction:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -535,7 +538,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
             })
             
             if (variant) {
-              console.log(`[REFUND] Variant found:`, {
+              log.info(`[REFUND] Variant found:`, {
                 id: variant.id,
                 sku: variant.sku,
                 product: variant.product.name,
@@ -567,11 +570,11 @@ export function registerSaleTransactionHandlers(prisma: any) {
               })
               
             } else {
-              console.error(`[REFUND] ERROR: Variant ${saleItem.variantId} not found in database!`)
+              log.error(`[REFUND] ERROR: Variant ${saleItem.variantId} not found in database!`)
             }
           } else {
             // Handle legacy sales with null variantId
-            console.warn(`[REFUND] Sale item ${saleItem.id} has no variantId, searching for default variant...`)
+            log.warn(`[REFUND] Sale item ${saleItem.id} has no variantId, searching for default variant...`)
             
             const product = await tx.product.findUnique({
               where: { id: saleItem.productId },
@@ -613,7 +616,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
               })
               
             } else {
-              console.error(`[REFUND] ERROR: Could not find product or variants for sale item ${saleItem.id}`)
+              log.error(`[REFUND] ERROR: Could not find product or variants for sale item ${saleItem.id}`)
             }
           }
         }
@@ -686,13 +689,13 @@ export function registerSaleTransactionHandlers(prisma: any) {
             data: { totalSpent }
           })
         } catch (error) {
-          console.error('Error updating customer totalSpent:', error)
+          log.error('Error updating customer totalSpent:', error)
         }
       }
 
       return { success: true, transaction: result }
     } catch (error) {
-      console.error('Error refunding items:', error)
+      log.error('Error refunding items:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -740,7 +743,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
 
       return transactions
     } catch (error) {
-      console.error('Error fetching transactions by date range:', error)
+      log.error('Error fetching transactions by date range:', error)
       throw error
     }
   })

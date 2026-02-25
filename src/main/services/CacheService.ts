@@ -17,6 +17,10 @@ interface CacheEntry<T> {
   ttl: number
 }
 
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Cache')
+
 export class CacheService {
   private static instance: CacheService
   private cache = new Map<string, CacheEntry<any>>()
@@ -26,6 +30,7 @@ export class CacheService {
   private constructor() {
     // Start cleanup interval
     setInterval(() => this.cleanup(), 60 * 1000) // Every minute
+    log.debug('CacheService initialised (max entries: 100, default TTL: 60s)')
   }
 
   /**
@@ -46,15 +51,18 @@ export class CacheService {
     const entry = this.cache.get(key)
     
     if (!entry) {
+      log.debug('Cache miss', { key })
       return null
     }
     
     // Check if expired
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key)
+      log.debug('Cache expired', { key })
       return null
     }
     
+    log.debug('Cache hit', { key })
     return entry.data as T
   }
 
@@ -64,6 +72,7 @@ export class CacheService {
   set<T>(key: string, data: T, ttl?: number): void {
     // Enforce max entries limit
     if (this.cache.size >= this.MAX_ENTRIES && !this.cache.has(key)) {
+      log.warn('Cache full, evicting oldest entry', { size: this.cache.size })
       this.evictOldest()
     }
     
@@ -72,6 +81,7 @@ export class CacheService {
       timestamp: Date.now(),
       ttl: ttl || this.DEFAULT_TTL
     })
+    log.debug('Cache set', { key, ttlMs: ttl || this.DEFAULT_TTL })
   }
 
   /**
@@ -101,12 +111,14 @@ export class CacheService {
    */
   invalidatePattern(pattern: string): void {
     const regex = new RegExp(pattern.replace('*', '.*'))
-    
+    let deleted = 0
     for (const key of this.cache.keys()) {
       if (regex.test(key)) {
         this.cache.delete(key)
+        deleted++
       }
     }
+    log.debug('Cache invalidated by pattern', { pattern, deleted })
   }
 
   /**
@@ -135,12 +147,14 @@ export class CacheService {
    */
   private cleanup(): void {
     const now = Date.now()
-    
+    let deleted = 0
     for (const [key, entry] of this.cache.entries()) {
       if (now - entry.timestamp > entry.ttl) {
         this.cache.delete(key)
+        deleted++
       }
     }
+    if (deleted > 0) log.debug('Cache cleanup', { deleted, remaining: this.cache.size })
   }
 
   /**

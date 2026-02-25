@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, Package } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 export default function TopProducts() {
   const { t } = useLanguage()
@@ -57,7 +58,7 @@ export default function TopProducts() {
 
       setTopProducts(sorted)
     } catch (error) {
-      console.error('Error loading top products:', error)
+      logger.error('Error loading top products:', error)
     } finally {
       setLoading(false)
     }

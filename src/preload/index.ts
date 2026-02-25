@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import log from 'electron-log/preload'
 
 // Custom APIs for renderer
 const api = {
@@ -421,6 +422,13 @@ const api = {
       ipcRenderer.on('migration:failed', callback)
       return () => ipcRenderer.removeListener('migration:failed', callback)
     }
+  },
+  // Log bridge: renderer → main process log file
+  log: {
+    info:  (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'info',  message, data }),
+    warn:  (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'warn',  message, data }),
+    error: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'error', message, data }),
+    debug: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'debug', message, data })
   }
 }
 
@@ -432,7 +440,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
-    console.error(error)
+    log.error('contextBridge setup failed:', error)
   }
 } else {
   // @ts-ignore (define in dts)

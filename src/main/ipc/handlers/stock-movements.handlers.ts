@@ -4,6 +4,9 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('StockMovements')
 
 export function registerStockMovementHandlers(prisma: any) {
   /**
@@ -110,7 +113,7 @@ export function registerStockMovementHandlers(prisma: any) {
         data: result 
       }
     } catch (error: any) {
-      console.error('Error recording stock movement:', error)
+      log.error('Error recording stock movement:', error)
       return { 
         success: false, 
         error: error.message 
@@ -160,7 +163,7 @@ export function registerStockMovementHandlers(prisma: any) {
         movements 
       }
     } catch (error: any) {
-      console.error('Error getting stock movement history:', error)
+      log.error('Error getting stock movement history:', error)
       return { 
         success: false, 
         error: error.message 
@@ -220,7 +223,7 @@ export function registerStockMovementHandlers(prisma: any) {
         movements 
       }
     } catch (error: any) {
-      console.error('Error getting product stock movement history:', error)
+      log.error('Error getting product stock movement history:', error)
       return { 
         success: false, 
         error: error.message 
@@ -273,7 +276,7 @@ export function registerStockMovementHandlers(prisma: any) {
         movements 
       }
     } catch (error: any) {
-      console.error('Error getting recent stock movements:', error)
+      log.error('Error getting recent stock movements:', error)
       return { 
         success: false, 
         error: error.message 
@@ -385,7 +388,7 @@ export function registerStockMovementHandlers(prisma: any) {
         data: results 
       }
     } catch (error: any) {
-      console.error('Error recording bulk stock movements:', error)
+      log.error('Error recording bulk stock movements:', error)
       return { 
         success: false, 
         error: error.message 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AlertTriangle, Archive, Trash2, Info, X } from 'lucide-react'
+import logger from '../../../shared/utils/logger'
 
 interface DeleteCheckResult {
   canDelete: boolean
@@ -44,7 +45,7 @@ export default function SmartDeleteDialog({
       await onDelete()
       onClose()
     } catch (error) {
-      console.error('Delete failed:', error)
+      logger.error('Delete failed:', error)
     } finally {
       setLoading(false)
     }
@@ -57,7 +58,7 @@ export default function SmartDeleteDialog({
       onClose()
       setArchiveReason('')
     } catch (error) {
-      console.error('Archive failed:', error)
+      logger.error('Archive failed:', error)
     } finally {
       setLoading(false)
     }

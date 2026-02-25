@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import type { Product, ProductFilters } from './types'
+import logger from '../../../../shared/utils/logger'
 
 export function useProductFilters(products: Product[], filters: ProductFilters) {
   // Load categories from database
@@ -19,7 +20,7 @@ export function useProductFilters(products: Product[], filters: ProductFilters) 
           setDbCategories(result.categories || [])
         }
       } catch (error) {
-        console.error('Failed to load categories:', error)
+        logger.error('Failed to load categories:', error)
       }
     }
     loadCategories()

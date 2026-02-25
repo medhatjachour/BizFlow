@@ -24,6 +24,7 @@ import {
   Legend,
   Filler
 } from 'chart.js'
+import logger from '../../../../../shared/utils/logger'
 
 // Register ChartJS components
 ChartJS.register(
@@ -68,7 +69,7 @@ export default function CashFlowProjection() {
       const data = await window.api['forecast:cashflow']({ days })
       setCashFlow(data)
     } catch (error) {
-      console.error('Error loading cash flow:', error)
+      logger.error('Error loading cash flow:', error)
     } finally {
       setLoading(false)
     }

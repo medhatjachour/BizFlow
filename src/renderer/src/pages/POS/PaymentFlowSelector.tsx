@@ -6,6 +6,7 @@ import InstallmentForm from './InstallmentForm'
 import CustomerSelect from './CustomerSelect'
 import InstallmentPlanSelector from './InstallmentPlanSelector'
 import type { Customer } from './types'
+import logger from '../../../../shared/utils/logger'
 
 interface PaymentFlowSelectorProps {
   customerId?: string
@@ -54,7 +55,7 @@ export const PaymentFlowSelector: React.FC<PaymentFlowSelectorProps> = ({
     if (selectedCustomer) {
       const cleanupUnlinkedPayments = async () => {
         try {
-          console.log('🧹 Cleaning up unlinked payments for customer:', selectedCustomer.id)
+          logger.info('🧹 Cleaning up unlinked payments for customer:', selectedCustomer.id)
           
           // Clean up unlinked deposits
           const depositResult = await (window as any).api.delete.cleanupUnlinkedDeposits(selectedCustomer.id)
@@ -65,13 +66,13 @@ export const PaymentFlowSelector: React.FC<PaymentFlowSelectorProps> = ({
           if (depositResult.success && installmentResult.success) {
             const totalCleaned = (depositResult.deletedCount || 0) + (installmentResult.deletedCount || 0)
             if (totalCleaned > 0) {
-              console.log(`✅ Cleaned up ${totalCleaned} unlinked payments for customer ${selectedCustomer.name}`)
+              logger.info(`✅ Cleaned up ${totalCleaned} unlinked payments for customer ${selectedCustomer.name}`)
               // Refresh the payment plan display
               setRefreshTrigger(prev => prev + 1)
             }
           }
         } catch (error) {
-          console.error('❌ Error cleaning up unlinked payments:', error)
+          logger.error('❌ Error cleaning up unlinked payments:', error)
         }
       }
       
@@ -309,13 +310,13 @@ export const PaymentFlowSelector: React.FC<PaymentFlowSelectorProps> = ({
             <InstallmentPlanSelector
               totalAmount={total}
               onPlanSelect={async (planId, schedule) => {
-                console.log('📋 Plan selected:', { planId, schedule })
+                logger.info('📋 Plan selected:', { planId, schedule })
                 setSelectedPlanId(planId) // Track selected plan
                 // Auto-create deposit and installments based on schedule
                 if (selectedCustomer && !saleId) {
                   try {
                     // FIRST: Clean up any existing unlinked deposits/installments for this customer
-                    console.log('🧹 Cleaning up old unlinked payments before creating new plan...')
+                    logger.info('🧹 Cleaning up old unlinked payments before creating new plan...')
                     await Promise.all([
                       (window as any).api.delete.cleanupUnlinkedDeposits(selectedCustomer.id),
                       (window as any).api.delete.cleanupUnlinkedInstallments(selectedCustomer.id)
@@ -345,7 +346,7 @@ export const PaymentFlowSelector: React.FC<PaymentFlowSelectorProps> = ({
                     // Refresh the payment plan display
                     setRefreshTrigger(prev => prev + 1)
                   } catch (error) {
-                    console.error('Failed to create payment schedule:', error)
+                    logger.error('Failed to create payment schedule:', error)
                   }
                 }
               }}

@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react'
 import { Lightbulb, TrendingUp, TrendingDown, Minus, AlertTriangle, Sparkles, HelpCircle } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 type ProductInsight = {
   productId: string
@@ -44,7 +45,7 @@ export default function ProductInsights() {
       const data = await window.api['insights:products']({ limit: 20 })
       setInsights(data)
     } catch (error) {
-      console.error('Error loading insights:', error)
+      logger.error('Error loading insights:', error)
     } finally {
       setLoading(false)
     }

@@ -4,6 +4,9 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Finance')
 
 export function registerFinanceHandlers(prisma: any) {
   ipcMain.handle('finance:addTransaction', async (_, { type, amount, description, userId }) => {
@@ -16,7 +19,7 @@ export function registerFinanceHandlers(prisma: any) {
       }
       return { success: true, transaction: { id: 't_mock', type, amount, description, userId } }
     } catch (error) {
-      console.error('Error adding transaction:', error)
+      log.error('Error adding transaction:', error)
       throw error
     }
   })
@@ -38,7 +41,7 @@ export function registerFinanceHandlers(prisma: any) {
       }
       return []
     } catch (error) {
-      console.error('Error fetching transactions:', error)
+      log.error('Error fetching transactions:', error)
       throw error
     }
   })
@@ -75,7 +78,7 @@ export function registerFinanceHandlers(prisma: any) {
         transactionCount: 0
       }
     } catch (error) {
-      console.error('Error fetching finance stats:', error)
+      log.error('Error fetching finance stats:', error)
       throw error
     }
   })
@@ -95,7 +98,7 @@ export function registerFinanceHandlers(prisma: any) {
       }
       return { success: true, transaction: { id, ...data } }
     } catch (error) {
-      console.error('Error updating transaction:', error)
+      log.error('Error updating transaction:', error)
       throw error
     }
   })
@@ -110,7 +113,7 @@ export function registerFinanceHandlers(prisma: any) {
       }
       return { success: true }
     } catch (error) {
-      console.error('Error deleting transaction:', error)
+      log.error('Error deleting transaction:', error)
       throw error
     }
   })

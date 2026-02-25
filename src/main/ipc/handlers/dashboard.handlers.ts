@@ -4,6 +4,9 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Dashboard')
 
 export function registerDashboardHandlers(prisma: any) {
   ipcMain.handle('dashboard:getMetrics', async () => {
@@ -33,7 +36,7 @@ export function registerDashboardHandlers(prisma: any) {
 
       return { sales: 0, orders: 0, profit: 0 }
     } catch (error) {
-      console.error('Error fetching dashboard metrics:', error)
+      log.error('Error fetching dashboard metrics:', error)
       throw error
     }
   })

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { X, Printer } from 'lucide-react'
 import { useToast } from '../../contexts/ToastContext'
+import logger from '../../../../shared/utils/logger'
 
 interface ReceiptPreviewModalProps {
   transaction: any
@@ -149,7 +150,7 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
         }
       }
     } catch (err: any) {
-      console.error('Print error:', err)
+      logger.error('Print error:', err)
       error(err.message || 'Failed to print receipt')
       if (settings.printerType === 'none' || settings.printerType === 'html') {
         handleBrowserPrint()

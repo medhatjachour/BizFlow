@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { Package, TrendingUp, TrendingDown, AlertTriangle, RotateCcw, Activity } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 type StockMovement = {
   id: string
@@ -79,7 +80,7 @@ export default function StockHistory() {
       const data = await window.api?.analytics?.getAllStockMovements(options)
       setMovements(data || [])
     } catch (error) {
-      console.error('Error loading stock movements:', error)
+      logger.error('Error loading stock movements:', error)
       setMovements([])
     } finally {
       setLoading(false)

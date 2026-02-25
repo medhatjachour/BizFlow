@@ -5,6 +5,9 @@
  */
 
 import { QueryCache } from '../database/optimization'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('StoreAnalytics')
 
 export interface StoreMetrics {
   storeId: string
@@ -89,7 +92,7 @@ export class StoreAnalyticsService {
 
       return result
     } catch (error) {
-      console.error('Error comparing stores:', error)
+      log.error('Error comparing stores:', error)
       throw error
     }
   }
@@ -185,7 +188,7 @@ export class StoreAnalyticsService {
         averageOrderValue: Math.round(averageOrderValue * 100) / 100
       }
     } catch (error) {
-      console.error(`Error getting metrics for store ${storeId}:`, error)
+      log.error(`Error getting metrics for store ${storeId}:`, error)
       // Return zero metrics on error
       return {
         storeId,
@@ -274,7 +277,7 @@ export class StoreAnalyticsService {
         transactions: Number(row.transactions) || 0
       }))
     } catch (error) {
-      console.error('Error getting store trends:', error)
+      log.error('Error getting store trends:', error)
       return []
     }
   }

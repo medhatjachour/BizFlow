@@ -8,7 +8,8 @@
 import type { PrismaClient } from '@prisma/client'
 import nodemailer from 'nodemailer'
 import type { Transporter } from 'nodemailer'
-import { logger } from '../../shared/utils/logger'
+import { createLogger } from '../utils/logger'
+const log = createLogger('EmailReport')
 
 export interface EmailReportConfig {
   userId: string
@@ -70,9 +71,9 @@ export class EmailReportService {
           pass: process.env.EMAIL_APP_PASSWORD
         }
       })
-      logger.info('Email transporter initialized')
+      log.info('Email transporter initialized')
     } catch (error) {
-      logger.error('Failed to initialize email transporter', { error })
+      log.error('Failed to initialize email transporter', { error })
       this.transporter = null
     }
   }
@@ -82,7 +83,7 @@ export class EmailReportService {
    */
   async configureEmailReport(config: EmailReportConfig): Promise<void> {
     try {
-      logger.info('Configuring email report', { userId: config.userId, email: config.email })
+      log.info('Configuring email report', { userId: config.userId, email: config.email })
 
       await this.prisma.emailReport.upsert({
         where: {
@@ -102,9 +103,9 @@ export class EmailReportService {
         }
       })
 
-      logger.info('Email report configured successfully', { userId: config.userId })
+      log.info('Email report configured successfully', { userId: config.userId })
     } catch (error) {
-      logger.error('Failed to configure email report', { error, userId: config.userId })
+      log.error('Failed to configure email report', { error, userId: config.userId })
       throw new EmailReportServiceError('Failed to configure email report')
     }
   }
@@ -127,7 +128,7 @@ export class EmailReportService {
         enabled: report.enabled
       }
     } catch (error) {
-      logger.error('Failed to get email report config', { error, userId })
+      log.error('Failed to get email report config', { error, userId })
       throw new EmailReportServiceError('Failed to get email report configuration')
     }
   }
@@ -141,7 +142,7 @@ export class EmailReportService {
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
       const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
 
-      logger.info('Generating daily report', { userId, date: startOfDay.toISOString() })
+      log.info('Generating daily report', { userId, date: startOfDay.toISOString() })
 
       // Get sales data for today
       const sales = await this.prisma.saleTransaction.findMany({
@@ -239,7 +240,7 @@ export class EmailReportService {
         pendingInstallments
       }
     } catch (error) {
-      logger.error('Failed to generate daily report', { error, userId })
+      log.error('Failed to generate daily report', { error, userId })
       throw new EmailReportServiceError('Failed to generate daily report')
     }
   }
@@ -255,7 +256,7 @@ export class EmailReportService {
     try {
       const config = await this.getEmailReportConfig(userId)
       if (!config || !config.enabled) {
-        logger.info('Email report not enabled for user', { userId })
+        log.info('Email report not enabled for user', { userId })
         return
       }
 
@@ -276,9 +277,9 @@ export class EmailReportService {
         data: { lastSent: new Date() }
       })
 
-      logger.info('Email report sent successfully', { userId, email: config.email })
+      log.info('Email report sent successfully', { userId, email: config.email })
     } catch (error) {
-      logger.error('Failed to send email report', { error, userId })
+      log.error('Failed to send email report', { error, userId })
       throw new EmailReportServiceError('Failed to send email report')
     }
   }
@@ -409,9 +410,9 @@ export class EmailReportService {
       }
 
       await this.transporter.sendMail(mailOptions)
-      logger.info('Test email sent successfully', { email })
+      log.info('Test email sent successfully', { email })
     } catch (error) {
-      logger.error('Failed to send test email', { error, email })
+      log.error('Failed to send test email', { error, email })
       throw new EmailReportServiceError('Failed to send test email')
     }
   }

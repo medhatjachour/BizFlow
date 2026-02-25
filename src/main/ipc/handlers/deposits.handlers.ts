@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron'
 import { DepositService } from '../../services/DepositService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Deposits')
 
 export function registerDepositsHandlers(prisma: any) {
   const depositService = new DepositService(prisma)
@@ -9,7 +12,7 @@ export function registerDepositsHandlers(prisma: any) {
       const deposit = await depositService.createDeposit(data)
       return { success: true, deposit }
     } catch (error) {
-      console.error('Error creating deposit:', error)
+      log.error('Error creating deposit:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -19,7 +22,7 @@ export function registerDepositsHandlers(prisma: any) {
       const deposits = await depositService.listDeposits()
       return deposits
     } catch (error) {
-      console.error('Error listing deposits:', error)
+      log.error('Error listing deposits:', error)
       return []
     }
   })
@@ -29,7 +32,7 @@ export function registerDepositsHandlers(prisma: any) {
       const deposits = await depositService.getDepositsByCustomer(customerId)
       return deposits
     } catch (error) {
-      console.error('Error getting deposits by customer:', error)
+      log.error('Error getting deposits by customer:', error)
       return []
     }
   })
@@ -39,7 +42,7 @@ export function registerDepositsHandlers(prisma: any) {
       const deposits = await depositService.getDepositsBySale(saleId)
       return deposits
     } catch (error) {
-      console.error('Error getting deposits by sale:', error)
+      log.error('Error getting deposits by sale:', error)
       return []
     }
   })
@@ -49,7 +52,7 @@ export function registerDepositsHandlers(prisma: any) {
       const result = await depositService.linkDepositsToSale(depositIds, saleId)
       return { success: true, result }
     } catch (error) {
-      console.error('Error linking deposits to sale:', error)
+      log.error('Error linking deposits to sale:', error)
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
   })

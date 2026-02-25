@@ -6,6 +6,9 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { app } from 'electron'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('DBInit')
 
 /**
  * Initialize database file and directory structure
@@ -15,12 +18,12 @@ export async function initializeDatabase(): Promise<void> {
   const isDev = process.env.NODE_ENV === 'development'
   
   if (isDev) {
-    console.log('[DB Init] Running in development mode, using project database')
+    log.info('[DB Init] Running in development mode, using project database')
     
     // Check if dev database exists and has tables
     const devDbPath = path.resolve(process.cwd(), 'prisma', 'dev.db')
     if (!fs.existsSync(devDbPath) || fs.statSync(devDbPath).size < 1024) {
-      console.log('[DB Init] 🔧 Dev database missing or empty, initializing...')
+      log.info('[DB Init] 🔧 Dev database missing or empty, initializing...')
       await initializeDevelopmentDatabase(devDbPath)
     }
     
@@ -31,13 +34,13 @@ export async function initializeDatabase(): Promise<void> {
   const appDataPath = app.getPath('userData')
   const dbPath = path.join(appDataPath, 'database.db')
   
-  console.log('[DB Init] Production mode - App data directory:', appDataPath)
-  console.log('[DB Init] Database path:', dbPath)
+  log.info('[DB Init] Production mode - App data directory:', appDataPath)
+  log.info('[DB Init] Database path:', dbPath)
   
   try {
     // Ensure app data directory exists
     if (!fs.existsSync(appDataPath)) {
-      console.log('[DB Init] Creating app data directory...')
+      log.info('[DB Init] Creating app data directory...')
       fs.mkdirSync(appDataPath, { recursive: true })
     }
 
@@ -45,44 +48,44 @@ export async function initializeDatabase(): Promise<void> {
     const isFirstRun = !fs.existsSync(dbPath)
     
     if (!isFirstRun) {
-      console.log('[DB Init] Database already exists')
+      log.info('[DB Init] Database already exists')
       return
     }
 
-    console.log('[DB Init] 🎉 First run detected - Creating new database with schema...')
+    log.info('[DB Init] 🎉 First run detected - Creating new database with schema...')
     
     // Copy the template.db from resources to initialize with schema (recommended)
     const templateDbPath = path.join(process.resourcesPath, 'prisma', 'template.db')
     
     // Debug: Log resource paths to diagnose issues
-    console.log('[DB Init] Resource path:', process.resourcesPath)
-    console.log('[DB Init] Looking for template at:', templateDbPath)
+    log.info('[DB Init] Resource path:', process.resourcesPath)
+    log.info('[DB Init] Looking for template at:', templateDbPath)
     
     // Check if template exists
     if (fs.existsSync(templateDbPath)) {
       const templateSize = fs.statSync(templateDbPath).size
-      console.log(`[DB Init] Found template database (${(templateSize / 1024).toFixed(2)} KB)`)
+      log.info(`[DB Init] Found template database (${(templateSize / 1024).toFixed(2)} KB)`)
       
       // Verify template has content
       if (templateSize < 10240) { // Less than 10KB
-        console.warn('[DB Init] ⚠️  Template database seems empty, falling back to schema creation')
+        log.warn('[DB Init] ⚠️  Template database seems empty, falling back to schema creation')
         await createDatabaseWithSchema(dbPath)
       } else {
-        console.log('[DB Init] Copying template database to user data...')
+        log.info('[DB Init] Copying template database to user data...')
         fs.copyFileSync(templateDbPath, dbPath)
         
         // Verify copy succeeded
         if (fs.existsSync(dbPath) && fs.statSync(dbPath).size > 10240) {
-          console.log('[DB Init] ✅ Database initialized from template')
+          log.info('[DB Init] ✅ Database initialized from template')
         } else {
-          console.error('[DB Init] ❌ Copy failed, creating from scratch')
+          log.error('[DB Init] ❌ Copy failed, creating from scratch')
           await createDatabaseWithSchema(dbPath)
         }
       }
     } else {
       // Fallback: create database with schema using Prisma migrations
-      console.warn('[DB Init] ⚠️  Template not found at expected location')
-      console.log('[DB Init] Checking alternative locations...')
+      log.warn('[DB Init] ⚠️  Template not found at expected location')
+      log.info('[DB Init] Checking alternative locations...')
       
       // Try alternative locations
       const altPaths = [
@@ -92,9 +95,9 @@ export async function initializeDatabase(): Promise<void> {
       
       let templateFound = false
       for (const altPath of altPaths) {
-        console.log('[DB Init] Checking:', altPath)
+        log.info('[DB Init] Checking:', altPath)
         if (fs.existsSync(altPath)) {
-          console.log('[DB Init] ✅ Found template at alternative location')
+          log.info('[DB Init] ✅ Found template at alternative location')
           fs.copyFileSync(altPath, dbPath)
           templateFound = true
           break
@@ -102,15 +105,15 @@ export async function initializeDatabase(): Promise<void> {
       }
       
       if (!templateFound) {
-        console.log('[DB Init] Creating database with schema from migrations...')
+        log.info('[DB Init] Creating database with schema from migrations...')
         await createDatabaseWithSchema(dbPath)
       }
     }
     
-    console.log('[DB Init] ℹ️ Default setup user: username="setup", password="setup123"')
+    log.info('[DB Init] ℹ️ Default setup user: username="setup", password="setup123"')
     
   } catch (error) {
-    console.error('[DB Init] ❌ Error initializing database:', error)
+    log.error('[DB Init] ❌ Error initializing database:', error)
     throw error
   }
 }
@@ -131,7 +134,7 @@ export function getDatabasePath(): string {
  */
 async function createDatabaseWithSchema(dbPath: string): Promise<void> {
   try {
-    console.log('[DB Init] 🔧 Creating database with schema from migrations...')
+    log.info('[DB Init] 🔧 Creating database with schema from migrations...')
     
     // Create empty database file
     fs.writeFileSync(dbPath, '')
@@ -142,11 +145,11 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
       PrismaClient = require('@prisma/client').PrismaClient
     } catch (requireError) {
       // Try custom generated path
-      console.warn('[DB Init] Standard @prisma/client not found, trying custom location...')
+      log.warn('[DB Init] Standard @prisma/client not found, trying custom location...')
       try {
         PrismaClient = require(path.join(__dirname, '..', '..', 'generated', 'prisma')).PrismaClient
       } catch (customError) {
-        console.error('[DB Init] ❌ Could not load PrismaClient from any location')
+        log.error('[DB Init] ❌ Could not load PrismaClient from any location')
         throw new Error('Prisma client not found. Please ensure the app is properly packaged.')
       }
     }
@@ -164,20 +167,20 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
       // This reads from the migration files bundled with the app
       const migrationsPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'prisma', 'migrations')
       
-      console.log('[DB Init] Looking for migrations in:', migrationsPath)
+      log.info('[DB Init] Looking for migrations in:', migrationsPath)
       
       if (fs.existsSync(migrationsPath)) {
         const migrationDirs = fs.readdirSync(migrationsPath).filter(f => 
           fs.statSync(path.join(migrationsPath, f)).isDirectory()
         ).sort()
         
-        console.log(`[DB Init] Found ${migrationDirs.length} migrations to apply`)
+        log.info(`[DB Init] Found ${migrationDirs.length} migrations to apply`)
         
         for (const migDir of migrationDirs) {
           const sqlFile = path.join(migrationsPath, migDir, 'migration.sql')
           if (fs.existsSync(sqlFile)) {
             const sql = fs.readFileSync(sqlFile, 'utf-8')
-            console.log(`[DB Init] Applying migration: ${migDir}`)
+            log.info(`[DB Init] Applying migration: ${migDir}`)
             
             // Split SQL by statements and execute each
             const statements = sql.split(';').filter(s => s.trim())
@@ -189,9 +192,9 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
           }
         }
         
-        console.log('[DB Init] ✅ Schema created successfully from migrations')
+        log.info('[DB Init] ✅ Schema created successfully from migrations')
       } else {
-        console.log('[DB Init] ⚠️ Migrations folder not found, attempting direct schema creation...')
+        log.info('[DB Init] ⚠️ Migrations folder not found, attempting direct schema creation...')
         // Fallback: Create basic tables manually
         await createBasicSchema(prisma)
       }
@@ -203,10 +206,10 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
       await prisma.$disconnect()
     }
     
-    console.log('[DB Init] 🎉 Database initialization complete!')
+    log.info('[DB Init] 🎉 Database initialization complete!')
     
   } catch (error) {
-    console.error('[DB Init] ❌ Failed to create database:', error)
+    log.error('[DB Init] ❌ Failed to create database:', error)
     throw error
   }
 }
@@ -215,7 +218,7 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
  * Create basic schema tables (fallback method)
  */
 async function createBasicSchema(prisma: any): Promise<void> {
-  console.log('[DB Init] Creating basic schema tables...')
+  log.info('[DB Init] Creating basic schema tables...')
   
   // Execute raw SQL to create essential tables
   const schema = `
@@ -245,7 +248,7 @@ async function createBasicSchema(prisma: any): Promise<void> {
     }
   }
   
-  console.log('[DB Init] ✅ Basic schema created')
+  log.info('[DB Init] ✅ Basic schema created')
 }
 
 /**
@@ -257,7 +260,7 @@ async function createDefaultAdminUser(prisma: any): Promise<void> {
     
     const userCount = await prisma.user.count()
     if (userCount === 0) {
-      console.log('[DB Init] Creating default setup user...')
+      log.info('[DB Init] Creating default setup user...')
       const passwordHash = await bcrypt.hash('setup123', 10)
       
       await prisma.user.create({
@@ -272,12 +275,12 @@ async function createDefaultAdminUser(prisma: any): Promise<void> {
         }
       })
       
-      console.log('[DB Init] ✅ Default setup user created')
-      console.log('[DB Init] 📝 Login: username="setup", password="setup123"')
-      console.log('[DB Init] ⚠️  SECURITY: Change this password after first login!')
+      log.info('[DB Init] ✅ Default setup user created')
+      log.info('[DB Init] 📝 Login: username="setup", password="setup123"')
+      log.info('[DB Init] ⚠️  SECURITY: Change this password after first login!')
     }
   } catch (error) {
-    console.error('[DB Init] ⚠️ Failed to create setup user:', error)
+    log.error('[DB Init] ⚠️ Failed to create setup user:', error)
   }
 }
 
@@ -292,8 +295,8 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
       fs.mkdirSync(prismaDir, { recursive: true })
     }
 
-    console.log('[DB Init] 🔧 Creating database schema...')
-    console.log('[DB Init] ℹ️  This will run "prisma db push" - please wait...')
+    log.info('[DB Init] 🔧 Creating database schema...')
+    log.info('[DB Init] ℹ️  This will run "prisma db push" - please wait...')
     
     // Run Prisma DB push to create schema (non-blocking)
     const { spawn } = require('node:child_process')
@@ -312,7 +315,7 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
         const text = data.toString()
         output += text
         if (text.includes('Your database is now in sync')) {
-          console.log('[DB Init] ✅ Schema created successfully')
+          log.info('[DB Init] ✅ Schema created successfully')
         }
       })
 
@@ -320,7 +323,7 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
         const text = data.toString()
         // Prisma outputs info to stderr too, so don't treat all as errors
         if (!text.includes('Prisma schema loaded') && !text.includes('Datasource')) {
-          console.error('[DB Init] Warning:', text)
+          log.error('[DB Init] Warning:', text)
         }
       })
 
@@ -336,7 +339,7 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
     })
 
     // Now create the setup admin user
-    console.log('[DB Init] Creating default setup admin user...')
+    log.info('[DB Init] Creating default setup admin user...')
     
     // Import Prisma and bcrypt dynamically
     const bcrypt = require('bcryptjs')
@@ -349,7 +352,7 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
     try {
       const existing = await setupPrisma.user.count()
       if (existing > 0) {
-        console.log('[DB Init] ℹ️  Users already exist, skipping setup user creation')
+        log.info('[DB Init] ℹ️  Users already exist, skipping setup user creation')
       } else {
         const passwordHash = await bcrypt.hash('setup123', 10)
         await setupPrisma.user.create({
@@ -364,21 +367,21 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
           }
         })
         
-        console.log('[DB Init] ✅ Created setup admin user')
-        console.log('[DB Init] 📝 Login credentials:')
-        console.log('[DB Init]    Username: setup')
-        console.log('[DB Init]    Password: setup123')
-        console.log('[DB Init] ⚠️  SECURITY: Change this password after first login!')
+        log.info('[DB Init] ✅ Created setup admin user')
+        log.info('[DB Init] 📝 Login credentials:')
+        log.info('[DB Init]    Username: setup')
+        log.info('[DB Init]    Password: setup123')
+        log.info('[DB Init] ⚠️  SECURITY: Change this password after first login!')
       }
     } finally {
       await setupPrisma.$disconnect()
     }
 
-    console.log('[DB Init] 🎉 Database initialization complete!')
+    log.info('[DB Init] 🎉 Database initialization complete!')
     
   } catch (error) {
-    console.error('[DB Init] ❌ Failed to initialize database:', error)
-    console.error('[DB Init] 💡 You can manually run: npm run prisma:push && npm run prisma:seed')
+    log.error('[DB Init] ❌ Failed to initialize database:', error)
+    log.error('[DB Init] 💡 You can manually run: npm run prisma:push && npm run prisma:seed')
     throw error
   }
 }

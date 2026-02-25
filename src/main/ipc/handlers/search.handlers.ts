@@ -19,6 +19,9 @@ import { ipcMain } from 'electron'
 import { InventoryService } from '../../services/InventoryService'
 import { PredictionService } from '../../services/PredictionService'
 import { getImageService } from '../../services/ImageService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Search')
 
 interface SearchFilters {
   query?: string
@@ -49,7 +52,7 @@ export function registerSearchHandlers(prisma: any) {
   ipcMain.handle('search:products', async (_, options: SearchOptions) => {
     try {
       if (!prisma) {
-        console.warn('[search:products] Prisma not initialized - returning empty results')
+        log.warn('[search:products] Prisma not initialized - returning empty results')
         return { 
           items: [], 
           totalCount: 0,
@@ -72,7 +75,7 @@ export function registerSearchHandlers(prisma: any) {
       
       // Log search parameters in development only
       if (process.env.NODE_ENV === 'development' && filters.query) {
-        console.log('[search:products] Searching for:', filters.query.substring(0, 20))
+        log.info('[search:products] Searching for:', filters.query.substring(0, 20))
       }
 
       // Execute query with pagination
@@ -157,7 +160,7 @@ export function registerSearchHandlers(prisma: any) {
         hasMore: pagination.page < totalPages
       }
     } catch (error) {
-      console.error('Error in search:products:', error)
+      log.error('Error in search:products:', error)
       throw error
     }
   })
@@ -291,7 +294,7 @@ export function registerSearchHandlers(prisma: any) {
         metrics
       }
     } catch (error) {
-      console.error('Error in search:inventory:', error)
+      log.error('Error in search:inventory:', error)
       throw error
     }
   })
@@ -351,7 +354,7 @@ export function registerSearchHandlers(prisma: any) {
         }
       }
     } catch (error) {
-      console.error('Error getting filter metadata:', error)
+      log.error('Error getting filter metadata:', error)
       throw error
     }
   })
@@ -471,7 +474,7 @@ export function registerSearchHandlers(prisma: any) {
         hasMore: pagination.page < totalPages
       }
     } catch (error) {
-      console.error('Error searching sales:', error)
+      log.error('Error searching sales:', error)
       throw error
     }
   })
@@ -771,7 +774,7 @@ export function registerSearchHandlers(prisma: any) {
         salesByCategory
       }
     } catch (error) {
-      console.error('Error fetching finance data:', error)
+      log.error('Error fetching finance data:', error)
       throw error
     }
   })
@@ -796,7 +799,7 @@ export function registerSearchHandlers(prisma: any) {
       
       return forecast
     } catch (error) {
-      console.error('Error forecasting revenue:', error)
+      log.error('Error forecasting revenue:', error)
       throw error
     }
   })
@@ -813,7 +816,7 @@ export function registerSearchHandlers(prisma: any) {
       
       return projection
     } catch (error) {
-      console.error('Error projecting cash flow:', error)
+      log.error('Error projecting cash flow:', error)
       throw error
     }
   })
@@ -830,7 +833,7 @@ export function registerSearchHandlers(prisma: any) {
       
       return insights
     } catch (error) {
-      console.error('Error generating product insights:', error)
+      log.error('Error generating product insights:', error)
       throw error
     }
   })
@@ -847,7 +850,7 @@ export function registerSearchHandlers(prisma: any) {
       
       return health
     } catch (error) {
-      console.error('Error calculating financial health:', error)
+      log.error('Error calculating financial health:', error)
       throw error
     }
   })

@@ -6,6 +6,9 @@
 
 import { ipcMain } from 'electron'
 import { EmailReportService } from '../../services/EmailReportService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Email')
 
 export function registerEmailHandlers(prisma: any) {
   const emailService = new EmailReportService(prisma)
@@ -18,7 +21,7 @@ export function registerEmailHandlers(prisma: any) {
       await emailService.configureEmailReport(config)
       return { success: true }
     } catch (error) {
-      console.error('Email configuration error:', error)
+      log.error('Email configuration error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -34,7 +37,7 @@ export function registerEmailHandlers(prisma: any) {
       const config = await emailService.getEmailReportConfig(userId)
       return { success: true, config }
     } catch (error) {
-      console.error('Get email config error:', error)
+      log.error('Get email config error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -50,7 +53,7 @@ export function registerEmailHandlers(prisma: any) {
       const data = await emailService.generateDailyReport(userId)
       return { success: true, data }
     } catch (error) {
-      console.error('Generate preview error:', error)
+      log.error('Generate preview error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -66,7 +69,7 @@ export function registerEmailHandlers(prisma: any) {
       await emailService.testEmailConfig(email)
       return { success: true }
     } catch (error) {
-      console.error('Test email error:', error)
+      log.error('Test email error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -83,7 +86,7 @@ export function registerEmailHandlers(prisma: any) {
       await emailService.sendEmailReport(userId, data)
       return { success: true }
     } catch (error) {
-      console.error('Send report error:', error)
+      log.error('Send report error:', error)
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'

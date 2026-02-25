@@ -19,7 +19,8 @@ import type {
   SupplierProductResponseDTO
 } from '../../shared/dtos/supplier.dto'
 import { EntityNotFoundError, DuplicateEntityError } from '../../shared/interfaces/IRepository'
-import { logger } from '../../shared/utils/logger'
+import { createLogger } from '../utils/logger'
+const log = createLogger('Suppliers')
 import { eventBus } from '../../shared/events/EventBus'
 
 /**
@@ -47,7 +48,7 @@ export class SupplierService {
    */
   async createSupplier(dto: CreateSupplierDTO): Promise<SupplierResponseDTO> {
     try {
-      logger.info('Creating supplier', { name: dto.name })
+      log.info('Creating supplier', { name: dto.name })
 
       // Validate business rules
       this.validateSupplierData(dto)
@@ -64,7 +65,7 @@ export class SupplierService {
       // Create supplier
       const supplier = await this.supplierRepository.create(createData)
 
-      logger.info('Supplier created', { id: supplier.id, name: supplier.name })
+      log.info('Supplier created', { id: supplier.id, name: supplier.name })
 
       // Emit event
       await eventBus.emit('supplier:created', {
@@ -75,7 +76,7 @@ export class SupplierService {
       // Map to response DTO
       return SupplierMapper.toResponseDTO(supplier)
     } catch (error) {
-      logger.error('Failed to create supplier', { error, dto })
+      log.error('Failed to create supplier', { error, dto })
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
         throw error
       }
@@ -96,7 +97,7 @@ export class SupplierService {
       }
       return SupplierMapper.toResponseDTO(supplier)
     } catch (error) {
-      logger.error('Failed to get supplier', { error, id })
+      log.error('Failed to get supplier', { error, id })
       throw error
     }
   }
@@ -148,7 +149,7 @@ export class SupplierService {
         hasPrevious: result.hasPrevious
       }
     } catch (error) {
-      logger.error('Failed to query suppliers', { error, query })
+      log.error('Failed to query suppliers', { error, query })
       throw error
     }
   }
@@ -158,7 +159,7 @@ export class SupplierService {
    */
   async updateSupplier(id: string, dto: UpdateSupplierDTO): Promise<SupplierResponseDTO> {
     try {
-      logger.info('Updating supplier', { id })
+      log.info('Updating supplier', { id })
 
       // Validate business rules if applicable
       if (dto.email && !this.isValidEmail(dto.email)) {
@@ -171,7 +172,7 @@ export class SupplierService {
       // Update supplier
       const supplier = await this.supplierRepository.update(id, updateData)
 
-      logger.info('Supplier updated', { id, name: supplier.name })
+      log.info('Supplier updated', { id, name: supplier.name })
 
       // Emit event
       await eventBus.emit('supplier:updated', {
@@ -182,7 +183,7 @@ export class SupplierService {
       // Map to response DTO
       return SupplierMapper.toResponseDTO(supplier)
     } catch (error) {
-      logger.error('Failed to update supplier', { error, id, dto })
+      log.error('Failed to update supplier', { error, id, dto })
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
         throw error
       }
@@ -197,12 +198,12 @@ export class SupplierService {
    */
   async deleteSupplier(id: string): Promise<boolean> {
     try {
-      logger.info('Deleting supplier', { id })
+      log.info('Deleting supplier', { id })
 
       // Instead of hard delete, we'll deactivate the supplier
       const supplier = await this.supplierRepository.update(id, { isActive: false })
 
-      logger.info('Supplier deactivated', { id, name: supplier.name })
+      log.info('Supplier deactivated', { id, name: supplier.name })
 
       // Emit event
       await eventBus.emit('supplier:deleted', {
@@ -212,7 +213,7 @@ export class SupplierService {
 
       return true
     } catch (error) {
-      logger.error('Failed to delete supplier', { error, id })
+      log.error('Failed to delete supplier', { error, id })
       if (error instanceof EntityNotFoundError) {
         throw error
       }
@@ -227,7 +228,7 @@ export class SupplierService {
    */
   async addSupplierProduct(dto: CreateSupplierProductDTO): Promise<SupplierProductResponseDTO> {
     try {
-      logger.info('Adding product to supplier', { supplierId: dto.supplierId, productId: dto.productId })
+      log.info('Adding product to supplier', { supplierId: dto.supplierId, productId: dto.productId })
 
       // Validate data
       if (dto.cost < 0) {
@@ -244,7 +245,7 @@ export class SupplierService {
       // Add supplier product
       const supplierProduct = await this.supplierRepository.addSupplierProduct(createData)
 
-      logger.info('Product added to supplier', {
+      log.info('Product added to supplier', {
         supplierId: supplierProduct.supplierId,
         productId: supplierProduct.productId
       })
@@ -258,7 +259,7 @@ export class SupplierService {
       // Map to response DTO
       return SupplierMapper.toSupplierProductDTO(supplierProduct)
     } catch (error) {
-      logger.error('Failed to add supplier product', { error, dto })
+      log.error('Failed to add supplier product', { error, dto })
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
         throw error
       }
@@ -273,7 +274,7 @@ export class SupplierService {
    */
   async updateSupplierProduct(id: string, dto: UpdateSupplierProductDTO): Promise<SupplierProductResponseDTO> {
     try {
-      logger.info('Updating supplier product', { id })
+      log.info('Updating supplier product', { id })
 
       // Validate data
       if (dto.cost !== undefined && dto.cost < 0) {
@@ -290,7 +291,7 @@ export class SupplierService {
       // Update supplier product
       const supplierProduct = await this.supplierRepository.updateSupplierProduct(id, updateData)
 
-      logger.info('Supplier product updated', { id })
+      log.info('Supplier product updated', { id })
 
       // Emit event
       await eventBus.emit('supplier:product-updated', {
@@ -301,7 +302,7 @@ export class SupplierService {
       // Map to response DTO
       return SupplierMapper.toSupplierProductDTO(supplierProduct)
     } catch (error) {
-      logger.error('Failed to update supplier product', { error, id, dto })
+      log.error('Failed to update supplier product', { error, id, dto })
       if (error instanceof EntityNotFoundError || error instanceof SupplierServiceError) {
         throw error
       }
@@ -316,18 +317,18 @@ export class SupplierService {
    */
   async removeSupplierProduct(id: string): Promise<boolean> {
     try {
-      logger.info('Removing product from supplier', { id })
+      log.info('Removing product from supplier', { id })
 
       const result = await this.supplierRepository.removeSupplierProduct(id)
 
-      logger.info('Product removed from supplier', { id })
+      log.info('Product removed from supplier', { id })
 
       // Emit event
       await eventBus.emit('supplier:product-removed', { supplierProductId: id })
 
       return result
     } catch (error) {
-      logger.error('Failed to remove supplier product', { error, id })
+      log.error('Failed to remove supplier product', { error, id })
       if (error instanceof EntityNotFoundError) {
         throw error
       }
@@ -345,7 +346,7 @@ export class SupplierService {
       const supplierProducts = await this.supplierRepository.findSupplierProducts(supplierId)
       return SupplierMapper.toSupplierProductDTOs(supplierProducts)
     } catch (error) {
-      logger.error('Failed to get supplier products', { error, supplierId })
+      log.error('Failed to get supplier products', { error, supplierId })
       throw error
     }
   }
@@ -358,7 +359,7 @@ export class SupplierService {
       const suppliers = await this.supplierRepository.getPreferredSuppliersForProduct(productId)
       return SupplierMapper.toResponseDTOs(suppliers)
     } catch (error) {
-      logger.error('Failed to get preferred suppliers for product', { error, productId })
+      log.error('Failed to get preferred suppliers for product', { error, productId })
       throw error
     }
   }

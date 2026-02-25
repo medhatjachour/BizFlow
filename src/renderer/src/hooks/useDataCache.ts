@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import logger from '../../../shared/utils/logger'
 
 type CacheEntry<T> = {
   data: T
@@ -118,7 +119,7 @@ export function preloadData<T>(key: string, fetcher: () => Promise<T>, ttl = CAC
         timestamp: Date.now()
       }
     }).catch(err => {
-      console.warn(`Failed to preload ${key}:`, err)
+      logger.warn(`Failed to preload ${key}:`, err)
     })
   }
 }

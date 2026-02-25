@@ -1,4 +1,7 @@
 import { PrismaClient } from '../../generated/prisma';
+import { createLogger } from '../utils/logger';
+
+const log = createLogger('ReorderAnalysis');
 
 export interface ReorderAlert {
   productId: string;
@@ -37,6 +40,7 @@ export class ReorderAnalysisService {
    * Analyze inventory levels and generate reorder alerts
    */
   async analyzeReorderNeeds(): Promise<ReorderAnalysis> {
+    log.info('Starting reorder analysis');
     // Get all product variants with their current stock and reorder points
     const variants = await this.prisma.productVariant.findMany({
       where: {
@@ -88,6 +92,15 @@ export class ReorderAnalysisService {
       mediumCount: alerts.filter(a => a.priority === 'MEDIUM').length,
       lowCount: alerts.filter(a => a.priority === 'LOW').length
     };
+
+    log.info('Reorder analysis complete', summary);
+    if (summary.criticalCount > 0) {
+      const criticalItems = alerts
+        .filter(a => a.priority === 'CRITICAL')
+        .map(a => `${a.productName} (stock: ${a.currentStock})`)
+        .join(', ');
+      log.warn(`${summary.criticalCount} CRITICAL reorder alert(s): ${criticalItems}`);
+    }
 
     return { alerts, summary };
   }

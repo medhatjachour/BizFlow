@@ -4,6 +4,7 @@ import Modal from '../components/ui/Modal'
 import { ipc } from '../utils/ipc'
 import { useToast } from '../contexts/ToastContext'
 import { useLanguage } from '../contexts/LanguageContext'
+import logger from '../../../shared/utils/logger'
 
 type Employee = {
   id: string
@@ -44,7 +45,7 @@ export default function Employees(): JSX.Element {
       const data = await ipc.employees.getAll()
       setEmployees(data)
     } catch (error) {
-      console.error('Failed to load employees:', error)
+      logger.error('Failed to load employees:', error)
       toast.error('Failed to load employees')
       setEmployees([])
     } finally {
@@ -111,7 +112,7 @@ export default function Employees(): JSX.Element {
         toast.error(t('employeeAddFailed'))
       }
     } catch (error) {
-      console.error('Error adding employee:', error)
+      logger.error('Error adding employee:', error)
       toast.error(t('employeeAddFailed'))
     }
   }
@@ -132,7 +133,7 @@ export default function Employees(): JSX.Element {
         toast.error(t('employeeUpdateFailed'))
       }
     } catch (error) {
-      console.error('Error updating employee:', error)
+      logger.error('Error updating employee:', error)
       toast.error(t('employeeUpdateFailed'))
     }
   }
@@ -149,7 +150,7 @@ export default function Employees(): JSX.Element {
         toast.error(t('employeeDeleteFailed'))
       }
     } catch (error) {
-      console.error('Error deleting employee:', error)
+      logger.error('Error deleting employee:', error)
       toast.error(t('employeeDeleteFailed'))
     }
   }

@@ -21,6 +21,7 @@ import Badge from '../../../components/ui/Badge'
 import type { PurchaseOrderResponseDTO, CreatePurchaseOrderDTO, UpdatePurchaseOrderDTO, PurchaseOrderSummaryDTO } from '../../../../../shared/dtos/purchase-order.dto'
 import type { SupplierResponseDTO } from '../../../../../shared/dtos/supplier.dto'
 import type { ProductResponseDTO } from '../../../../../shared/dtos/product.dto'
+import logger from '../../../../../shared/utils/logger'
 
 interface PurchaseOrderFormData {
   supplierId: string
@@ -128,7 +129,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
             setSupplierProducts([])
           }
         } catch (error) {
-          console.error('Error loading supplier products:', error)
+          logger.error('Error loading supplier products:', error)
           setSupplierProducts([])
         }
       } else {
@@ -207,7 +208,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
       } else if (Array.isArray(suppliersResult)) {
         setSuppliers(suppliersResult)
       } else {
-        console.warn('Unexpected suppliers format:', suppliersResult)
+        logger.warn('Unexpected suppliers format:', suppliersResult)
         setSuppliers([])
       }
       
@@ -217,13 +218,13 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
       } else if (Array.isArray(productsResult)) {
         setProducts(productsResult)
       } else {
-        console.warn('Unexpected products format:', productsResult)
+        logger.warn('Unexpected products format:', productsResult)
         setProducts([])
       }
       
       setSummary(summaryResult)
     } catch (error) {
-      console.error('Error loading purchase orders data:', error)
+      logger.error('Error loading purchase orders data:', error)
       setDataError('Failed to load purchase orders data')
       showToast('error', 'Failed to load purchase orders data')
     } finally {
@@ -275,7 +276,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
       resetForm()
       showToast('success', 'Purchase order created successfully')
     } catch (error) {
-      console.error('Error creating purchase order:', error)
+      logger.error('Error creating purchase order:', error)
       const errorMessage = error instanceof Error ? error.message : 'Failed to create purchase order'
       
       // Check if it's a supplier-product relationship error
@@ -308,7 +309,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
       resetForm()
       showToast('success', 'Purchase order updated successfully')
     } catch (error) {
-      console.error('Error updating purchase order:', error)
+      logger.error('Error updating purchase order:', error)
       showToast('error', 'Failed to update purchase order')
     }
   }
@@ -335,7 +336,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
       setSelectedOrder(null)
       showToast('success', 'Purchase order received and inventory updated')
     } catch (error) {
-      console.error('Error receiving purchase order:', error)
+      logger.error('Error receiving purchase order:', error)
       showToast('error', 'Failed to receive purchase order')
     }
   }
@@ -361,7 +362,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
 
       showToast('success', 'Purchase order deleted successfully')
     } catch (error) {
-      console.error('Error deleting purchase order:', error)
+      logger.error('Error deleting purchase order:', error)
       showToast('error', 'Failed to delete purchase order')
     }
   }
@@ -385,7 +386,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
 
       showToast('success', `Purchase order status updated to ${newStatus}`)
     } catch (error) {
-      console.error('Error updating purchase order status:', error)
+      logger.error('Error updating purchase order status:', error)
       showToast('error', 'Failed to update purchase order status')
     }
   }

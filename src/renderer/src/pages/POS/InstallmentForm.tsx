@@ -4,6 +4,7 @@ import Modal from '../../components/ui/Modal'
 import Button from '../../components/ui/Button'
 import FormInput from '../../components/ui/FormInput'
 import FormTextarea from '../../components/ui/FormTextarea'
+import logger from '../../../../shared/utils/logger'
 
 interface InstallmentFormProps {
   isOpen: boolean
@@ -57,7 +58,7 @@ const InstallmentForm: React.FC<InstallmentFormProps> = ({
         alert('Error creating installment: ' + result.error)
       }
     } catch (error) {
-      console.error('Error creating installment:', error)
+      logger.error('Error creating installment:', error)
       alert('Error creating installment')
     } finally {
       setIsSubmitting(false)

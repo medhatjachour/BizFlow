@@ -4,6 +4,9 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Categories')
 
 export function registerCategoriesHandlers(prisma: any) {
   /**
@@ -35,7 +38,7 @@ export function registerCategoriesHandlers(prisma: any) {
 
       return { success: true, categories: categoriesWithCount }
     } catch (error: any) {
-      console.error('Error fetching categories:', error)
+      log.error('Error fetching categories:', error)
       return { success: false, message: error.message }
     }
   })
@@ -70,7 +73,7 @@ export function registerCategoriesHandlers(prisma: any) {
         }
       }
     } catch (error: any) {
-      console.error('Error fetching category:', error)
+      log.error('Error fetching category:', error)
       return { success: false, message: error.message }
     }
   })
@@ -95,7 +98,7 @@ export function registerCategoriesHandlers(prisma: any) {
 
       return { success: true, category: newCategory }
     } catch (error: any) {
-      console.error('Error creating category:', error)
+      log.error('Error creating category:', error)
       
       // Handle unique constraint violation
       if (error.code === 'P2002') {
@@ -127,7 +130,7 @@ export function registerCategoriesHandlers(prisma: any) {
 
       return { success: true, category: updated }
     } catch (error: any) {
-      console.error('Error updating category:', error)
+      log.error('Error updating category:', error)
       
       if (error.code === 'P2002') {
         return { success: false, message: 'A category with this name already exists' }
@@ -178,7 +181,7 @@ export function registerCategoriesHandlers(prisma: any) {
 
       return { success: true, message: 'Category deleted successfully' }
     } catch (error: any) {
-      console.error('Error deleting category:', error)
+      log.error('Error deleting category:', error)
       return { success: false, message: error.message }
     }
   })

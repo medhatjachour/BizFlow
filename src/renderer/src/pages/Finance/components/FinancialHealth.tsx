@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react'
 import { Activity, TrendingUp, Package, DollarSign, AlertCircle, CheckCircle, HelpCircle } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 type FinancialHealth = {
   score: number
@@ -39,7 +40,7 @@ export default function FinancialHealthDashboard() {
       const data = await window.api['health:financial']()
       setHealth(data)
     } catch (error) {
-      console.error('Error loading financial health:', error)
+      logger.error('Error loading financial health:', error)
     } finally {
       setLoading(false)
     }

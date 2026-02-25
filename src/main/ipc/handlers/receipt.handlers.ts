@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron'
 import { ThermalPrinterService, ReceiptData, PrinterSettings } from '../../services/ThermalPrinterService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Receipt')
 
 /**
  * Receipt printing IPC handlers
@@ -22,7 +25,7 @@ export function registerReceiptHandlers(): void {
         throw new Error('Invalid printer IP type')
       }
       
-      console.log('📄 Receipt print requested:', {
+      log.info('📄 Receipt print requested:', {
         type: settings.printerType,
         name: settings.printerName,
         items: receiptData.items?.length || 0
@@ -30,12 +33,12 @@ export function registerReceiptHandlers(): void {
       
       // Auto-detect USB printer if not configured
       if (settings.printerType === 'usb' && (!settings.printerName || settings.printerName === '/dev/usb/lp0')) {
-        console.log('🔍 Auto-detecting USB printer...')
+        log.info('🔍 Auto-detecting USB printer...')
         const printers = await ThermalPrinterService.detectUSBPrinters()
         
         if (printers.length > 0) {
           const detectedPrinter = printers[0]
-          console.log('✅ Auto-detected:', detectedPrinter.name, '→', detectedPrinter.path)
+          log.info('✅ Auto-detected:', detectedPrinter.name, '→', detectedPrinter.path)
           settings.printerName = detectedPrinter.path
           
           // Return detected printer info to save in UI
@@ -57,20 +60,20 @@ export function registerReceiptHandlers(): void {
       // Use updated ThermalPrinterService
       await ThermalPrinterService.printReceipt(receiptData, settings)
       
-      console.log('✅ Receipt printed successfully')
+      log.info('✅ Receipt printed successfully')
       return { success: true }
     } catch (error: any) {
-      console.error('❌ Receipt print error:', error)
+      log.error('❌ Receipt print error:', error)
       
       // If print fails with USB, try auto-detection as fallback
       if (data.settings.printerType === 'usb') {
-        console.log('🔄 Print failed, attempting auto-detection...')
+        log.info('🔄 Print failed, attempting auto-detection...')
         try {
           const printers = await ThermalPrinterService.detectUSBPrinters()
           
           if (printers.length > 0) {
             const detectedPrinter = printers[0]
-            console.log('✅ Auto-detected:', detectedPrinter.name)
+            log.info('✅ Auto-detected:', detectedPrinter.name)
             data.settings.printerName = detectedPrinter.path
             
             // Retry print with detected printer
@@ -83,7 +86,7 @@ export function registerReceiptHandlers(): void {
             }
           }
         } catch (retryError) {
-          console.error('❌ Auto-detection failed:', retryError)
+          log.error('❌ Auto-detection failed:', retryError)
         }
       }
       
@@ -100,7 +103,7 @@ export function registerReceiptHandlers(): void {
       const printers = await ThermalPrinterService.detectUSBPrinters()
       return { success: true, printers }
     } catch (error: any) {
-      console.error('Detect printers error:', error)
+      log.error('Detect printers error:', error)
       return { 
         success: false, 
         error: error.message,
@@ -115,7 +118,7 @@ export function registerReceiptHandlers(): void {
       const result = await ThermalPrinterService.testPrinter(settings)
       return result
     } catch (error: any) {
-      console.error('Test print error:', error)
+      log.error('Test print error:', error)
       return { 
         success: false, 
         message: error.message || 'Test print failed'

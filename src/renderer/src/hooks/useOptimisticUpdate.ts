@@ -7,8 +7,8 @@
  * @example
  * ```tsx
  * const { execute, isOptimistic } = useOptimisticUpdate({
- *   onSuccess: () => console.log('Success!'),
- *   onError: (error) => console.error(error)
+ *   onSuccess: () => logger.info('Success!'),
+ *   onError: (error) => logger.error(error)
  * })
  * 
  * await execute({

@@ -5,6 +5,9 @@
 
 import { ipcMain } from 'electron'
 import * as XLSX from 'xlsx'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Customers')
 
 export function registerCustomersHandlers(prisma: any) {
   // Helper function to recalculate customer totalSpent from transactions
@@ -30,7 +33,7 @@ export function registerCustomersHandlers(prisma: any) {
       })
       
     } catch (error) {
-      console.error('Error recalculating customer totalSpent:', error)
+      log.error('Error recalculating customer totalSpent:', error)
     }
   }
 
@@ -100,7 +103,7 @@ export function registerCustomersHandlers(prisma: any) {
       }
       return { customers: [], totalCount: 0, hasMore: false }
     } catch (error) {
-      console.error('Error fetching customers:', error)
+      log.error('Error fetching customers:', error)
       throw error
     }
   })
@@ -132,7 +135,7 @@ export function registerCustomersHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error creating customer:', error)
+      log.error('Error creating customer:', error)
       if (error.code === 'P2002') {
         return { success: false, message: 'A customer with this phone number already exists' }
       }
@@ -169,7 +172,7 @@ export function registerCustomersHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error updating customer:', error)
+      log.error('Error updating customer:', error)
       if (error.code === 'P2002') {
         return { success: false, message: 'A customer with this phone number already exists' }
       }
@@ -185,7 +188,7 @@ export function registerCustomersHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error deleting customer:', error)
+      log.error('Error deleting customer:', error)
       return { success: false, message: error.message }
     }
   })
@@ -217,7 +220,7 @@ export function registerCustomersHandlers(prisma: any) {
       }
       return []
     } catch (error) {
-      console.error('Error fetching purchase history:', error)
+      log.error('Error fetching purchase history:', error)
       throw error
     }
   })
@@ -379,7 +382,7 @@ export function registerCustomersHandlers(prisma: any) {
         categorySpending
       }
     } catch (error) {
-      console.error('Error fetching customer profile:', error)
+      log.error('Error fetching customer profile:', error)
       throw error
     }
   })
@@ -390,7 +393,7 @@ export function registerCustomersHandlers(prisma: any) {
       await recalculateCustomerTotalSpent(customerId)
       return { success: true }
     } catch (error: any) {
-      console.error('Error recalculating totalSpent:', error)
+      log.error('Error recalculating totalSpent:', error)
       return { success: false, message: error.message }
     }
   })
@@ -559,7 +562,7 @@ export function registerCustomersHandlers(prisma: any) {
         return { success: false, message: 'Invalid export format' }
       }
     } catch (error: any) {
-      console.error('Error exporting customers:', error)
+      log.error('Error exporting customers:', error)
       return { success: false, message: error.message }
     }
   })

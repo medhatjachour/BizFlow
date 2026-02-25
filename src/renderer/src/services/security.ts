@@ -6,6 +6,7 @@
 
 import { Role } from '../../../shared/types'
 import CryptoJS from 'crypto-js'
+import logger from '../../../shared/utils/logger'
 
 /**
  * Permission System
@@ -197,7 +198,7 @@ export class EncryptionService {
     try {
       return CryptoJS.AES.encrypt(data, this.SECRET_KEY).toString()
     } catch (error) {
-      console.error('Encryption failed:', error)
+      logger.error('Encryption failed:', error)
       throw new Error('Failed to encrypt data')
     }
   }
@@ -210,7 +211,7 @@ export class EncryptionService {
       const bytes = CryptoJS.AES.decrypt(encryptedData, this.SECRET_KEY)
       return bytes.toString(CryptoJS.enc.Utf8)
     } catch (error) {
-      console.error('Decryption failed:', error)
+      logger.error('Decryption failed:', error)
       throw new Error('Failed to decrypt data')
     }
   }
@@ -271,7 +272,7 @@ export class SecureStorageService {
       const encrypted = this.encryption.encryptObject(value)
       localStorage.setItem(key, encrypted)
     } catch (error) {
-      console.error('SecureStorage.setItem failed:', error)
+      logger.error('SecureStorage.setItem failed:', error)
       throw error
     }
   }
@@ -286,7 +287,7 @@ export class SecureStorageService {
 
       return this.encryption.decryptObject<T>(encrypted)
     } catch (error) {
-      console.error('SecureStorage.getItem failed:', error)
+      logger.error('SecureStorage.getItem failed:', error)
       return null
     }
   }
@@ -395,7 +396,7 @@ export class AuditLogger {
         this.logs = JSON.parse(stored)
       }
     } catch (error) {
-      console.error('Failed to load audit logs:', error)
+      logger.error('Failed to load audit logs:', error)
     }
   }
 
@@ -403,7 +404,7 @@ export class AuditLogger {
     try {
       localStorage.setItem('audit_logs', JSON.stringify(this.logs))
     } catch (error) {
-      console.error('Failed to save audit logs:', error)
+      logger.error('Failed to save audit logs:', error)
     }
   }
 }

@@ -3,6 +3,7 @@ import { Plus, Store, MapPin, Phone, Clock, ArrowRightLeft, Edit2, Trash2 } from
 import Modal from '../components/ui/Modal'
 import { ipc } from '../utils/ipc'
 import { useLanguage } from '../contexts/LanguageContext'
+import logger from '../../../shared/utils/logger'
 
 type StoreType = {
   id: string
@@ -40,7 +41,7 @@ export default function Stores(): JSX.Element {
       const data = await ipc.stores.getAll()
       setStores(data)
     } catch (error) {
-      console.error('Failed to load stores:', error)
+      logger.error('Failed to load stores:', error)
     } finally {
       setLoading(false)
     }
@@ -66,7 +67,7 @@ export default function Stores(): JSX.Element {
         resetForm()
       }
     } catch (error) {
-      console.error('Failed to add store:', error)
+      logger.error('Failed to add store:', error)
       alert(t('failedToAddStore'))
     }
   }
@@ -83,7 +84,7 @@ export default function Stores(): JSX.Element {
         resetForm()
       }
     } catch (error) {
-      console.error('Failed to update store:', error)
+      logger.error('Failed to update store:', error)
       alert(t('failedToUpdateStore'))
     }
   }
@@ -97,7 +98,7 @@ export default function Stores(): JSX.Element {
         await loadStores()
       }
     } catch (error) {
-      console.error('Failed to delete store:', error)
+      logger.error('Failed to delete store:', error)
       alert(t('failedToDeleteStore'))
     }
   }
@@ -110,7 +111,7 @@ export default function Stores(): JSX.Element {
         await loadStores()
       }
     } catch (error) {
-      console.error('Failed to toggle store status:', error)
+      logger.error('Failed to toggle store status:', error)
       alert(t('failedToToggleStatus'))
     }
   }

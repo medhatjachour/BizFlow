@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import logger from '../../../shared/utils/logger'
 
 type MovementMode = 'add' | 'set' | 'remove'
 
@@ -107,7 +108,7 @@ export default function StockMovementDialog({
       })
       onClose()
     } catch (error) {
-      console.error('Failed to record stock movement:', error)
+      logger.error('Failed to record stock movement:', error)
     } finally {
       setLoading(false)
     }

@@ -15,6 +15,9 @@
 import { ipcMain } from 'electron'
 import { cacheService, CacheKeys } from '../../services/CacheService'
 import { getImageService } from '../../services/ImageService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Products')
 
 export function registerProductsHandlers(prisma: any) {
   /**
@@ -107,7 +110,7 @@ export function registerProductsHandlers(prisma: any) {
         hasMore: offset + limit < totalCount
       }
     } catch (error) {
-      console.error('Error fetching products:', error)
+      log.error('Error fetching products:', error)
       throw error
     }
   })
@@ -162,7 +165,7 @@ export function registerProductsHandlers(prisma: any) {
 
       return product
     } catch (error) {
-      console.error('Error fetching product:', error)
+      log.error('Error fetching product:', error)
       throw error
     }
   })
@@ -193,7 +196,7 @@ export function registerProductsHandlers(prisma: any) {
 
       return variant
     } catch (error) {
-      console.error('Error fetching product variant:', error)
+      log.error('Error fetching product variant:', error)
       throw error
     }
   })
@@ -266,7 +269,7 @@ export function registerProductsHandlers(prisma: any) {
             const filename = await imageService.saveImage(base64Data)
             imageFilenames.push({ filename, order: idx })
           } catch (error) {
-            console.error(`Failed to save image ${idx}:`, error)
+            log.error(`Failed to save image ${idx}:`, error)
           }
         }
       }
@@ -331,7 +334,7 @@ export function registerProductsHandlers(prisma: any) {
       
       return { success: true, product: newProduct }
     } catch (error: any) {
-      console.error('Error creating product:', error)
+      log.error('Error creating product:', error)
       
       // Check for duplicate barcode error
       if (error.code === 'P2002' && error.meta?.target?.includes('barcode')) {
@@ -448,10 +451,10 @@ export function registerProductsHandlers(prisma: any) {
               const filename = await imageService.saveImage(imageData)
               imageFilenames.push({ filename, order: idx })
             } catch (error) {
-              console.error(`Failed to save new image ${idx}:`, error)
+              log.error(`Failed to save new image ${idx}:`, error)
             }
           } else {
-            console.warn(`[products:update] Unrecognized image format at index ${idx}`)
+            log.warn(`[products:update] Unrecognized image format at index ${idx}`)
           }
         }
       }
@@ -597,15 +600,15 @@ export function registerProductsHandlers(prisma: any) {
           .map(img => img.filename)
         
         if (filesToDelete.length > 0) {
-          console.log(`[products:update] Scheduling deletion of ${filesToDelete.length} unused images`)
+          log.info(`[products:update] Scheduling deletion of ${filesToDelete.length} unused images`)
           // Small delay to ensure UI has updated before deleting
           setTimeout(async () => {
             for (const filename of filesToDelete) {
               try {
                 await imageService.deleteImage(filename)
-                console.log(`[products:update] Deleted old image: ${filename}`)
+                log.info(`[products:update] Deleted old image: ${filename}`)
               } catch (err) {
-                console.error(`Failed to delete old image ${filename}:`, err)
+                log.error(`Failed to delete old image ${filename}:`, err)
               }
             }
           }, 2000)
@@ -629,7 +632,7 @@ export function registerProductsHandlers(prisma: any) {
       
       return { success: true, product: updated }
     } catch (error: any) {
-      console.error('Error updating product:', error)
+      log.error('Error updating product:', error)
       
       // Check for duplicate barcode error
       if (error.code === 'P2002' && error.meta?.target?.includes('barcode')) {
@@ -684,7 +687,7 @@ export function registerProductsHandlers(prisma: any) {
             try {
               await imageService.deleteImage(image.filename)
             } catch (error) {
-              console.error(`Failed to delete image file ${image.filename}:`, error)
+              log.error(`Failed to delete image file ${image.filename}:`, error)
             }
           }
         }
@@ -697,7 +700,7 @@ export function registerProductsHandlers(prisma: any) {
       
       return { success: true }
     } catch (error: any) {
-      console.error('Error deleting product:', error)
+      log.error('Error deleting product:', error)
       return { success: false, message: error.message }
     }
   })
@@ -737,7 +740,7 @@ export function registerProductsHandlers(prisma: any) {
         60 * 1000 // Cache for 1 minute
       )
     } catch (error) {
-      console.error('Error fetching product stats:', error)
+      log.error('Error fetching product stats:', error)
       throw error
     }
   })
@@ -789,7 +792,7 @@ export function registerProductsHandlers(prisma: any) {
         imageUrl: null // Can be enhanced later
       }))
     } catch (error) {
-      console.error('Error searching products:', error)
+      log.error('Error searching products:', error)
       throw error
     }
   })
@@ -898,7 +901,7 @@ export function registerProductsHandlers(prisma: any) {
         }
       }
     } catch (error) {
-      console.error('Error searching products with pagination:', error)
+      log.error('Error searching products with pagination:', error)
       throw error
     }
   })
@@ -919,7 +922,7 @@ export function registerProductsHandlers(prisma: any) {
 
       return categories.map(c => c.category).filter(Boolean)
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      log.error('Error fetching categories:', error)
       throw error
     }
   })
@@ -978,7 +981,7 @@ export function registerProductsHandlers(prisma: any) {
         message: `Successfully created ${results.length} products`
       }
     } catch (error: any) {
-      console.error('Error batch creating products:', error)
+      log.error('Error batch creating products:', error)
       return { success: false, message: error.message }
     }
   })
@@ -1017,7 +1020,7 @@ export function registerProductsHandlers(prisma: any) {
         message: `Successfully updated ${results.length} products`
       }
     } catch (error: any) {
-      console.error('Error batch updating products:', error)
+      log.error('Error batch updating products:', error)
       return { success: false, message: error.message }
     }
   })
@@ -1053,7 +1056,7 @@ export function registerProductsHandlers(prisma: any) {
         message: `Successfully deleted ${result.count} products`
       }
     } catch (error: any) {
-      console.error('Error batch deleting products:', error)
+      log.error('Error batch deleting products:', error)
       return { success: false, message: error.message }
     }
   })

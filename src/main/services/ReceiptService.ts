@@ -3,6 +3,9 @@
  * Handles receipt generation for deposits and installments
  */
 import type { PrismaClient } from '@prisma/client'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Receipt')
 
 export class ReceiptService {
   private prisma: PrismaClient
@@ -12,6 +15,7 @@ export class ReceiptService {
   }
 
   async generateDepositReceipt(depositId: string) {
+    log.info(`Generating deposit receipt: depositId=${depositId}`)
     const deposit = await this.prisma.deposit.findUnique({
       where: { id: depositId },
       include: {
@@ -30,6 +34,7 @@ export class ReceiptService {
     })
 
     if (!deposit) {
+      log.error(`Deposit not found: depositId=${depositId}`)
       throw new Error('Deposit not found')
     }
 
@@ -61,6 +66,7 @@ export class ReceiptService {
   }
 
   async generateInstallmentReceipt(installmentId: string) {
+    log.info(`Generating installment receipt: installmentId=${installmentId}`)
     const installment = await this.prisma.installment.findUnique({
       where: { id: installmentId },
       include: {
@@ -79,6 +85,7 @@ export class ReceiptService {
     })
 
     if (!installment) {
+      log.error(`Installment not found: installmentId=${installmentId}`)
       throw new Error('Installment not found')
     }
 

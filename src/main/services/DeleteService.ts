@@ -1,4 +1,7 @@
 import type { PrismaClient } from '@prisma/client'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Delete')
 
 export interface DeleteCheckResult {
   canDelete: boolean
@@ -380,13 +383,13 @@ export class DeleteService {
           })
         )
         await Promise.all(deletePromises)
-        console.log(`✅ Deleted ${deposits.length} unlinked deposits for customer ${customerId}`)
+        log.info(`✅ Deleted ${deposits.length} unlinked deposits for customer ${customerId}`)
         return deposits.length
       }
       
       return 0
     } catch (error) {
-      console.error('❌ Error deleting unlinked deposits:', error)
+      log.error('❌ Error deleting unlinked deposits:', error)
       throw error
     }
   }
@@ -409,13 +412,13 @@ export class DeleteService {
           })
         )
         await Promise.all(deletePromises)
-        console.log(`✅ Deleted ${installments.length} unlinked installments for customer ${customerId}`)
+        log.info(`✅ Deleted ${installments.length} unlinked installments for customer ${customerId}`)
         return installments.length
       }
       
       return 0
     } catch (error) {
-      console.error('❌ Error deleting unlinked installments:', error)
+      log.error('❌ Error deleting unlinked installments:', error)
       throw error
     }
   }

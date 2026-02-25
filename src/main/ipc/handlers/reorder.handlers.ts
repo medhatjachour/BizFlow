@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron';
 import { ReorderAnalysisService } from '../../services/ReorderAnalysisService';
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Reorder')
 
 export function setupReorderHandlers(prisma: any) {
   const reorderService = new ReorderAnalysisService(prisma);
@@ -9,7 +12,7 @@ export function setupReorderHandlers(prisma: any) {
       const analysis = await reorderService.analyzeReorderNeeds();
       return { success: true, data: analysis };
     } catch (error) {
-      console.error('Error getting reorder alerts:', error);
+      log.error('Error getting reorder alerts:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   });
@@ -20,7 +23,7 @@ export function setupReorderHandlers(prisma: any) {
       const alerts = await reorderService.getProductReorderAlerts(productId);
       return { success: true, data: alerts };
     } catch (error) {
-      console.error('Error getting product reorder alerts:', error);
+      log.error('Error getting product reorder alerts:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   });
@@ -31,7 +34,7 @@ export function setupReorderHandlers(prisma: any) {
       const alerts = await reorderService.getAlertsByPriority(priority);
       return { success: true, data: alerts };
     } catch (error) {
-      console.error('Error getting alerts by priority:', error);
+      log.error('Error getting alerts by priority:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   });
@@ -42,7 +45,7 @@ export function setupReorderHandlers(prisma: any) {
       const alerts = await reorderService.getUrgentAlerts();
       return { success: true, data: alerts };
     } catch (error) {
-      console.error('Error getting urgent alerts:', error);
+      log.error('Error getting urgent alerts:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   });
@@ -53,7 +56,7 @@ export function setupReorderHandlers(prisma: any) {
       const analysis = await reorderService.analyzeReorderNeeds();
       return { success: true, data: analysis.summary };
     } catch (error) {
-      console.error('Error getting reorder summary:', error);
+      log.error('Error getting reorder summary:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   });

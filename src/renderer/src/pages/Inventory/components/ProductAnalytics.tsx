@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, DollarSign, Package, ShoppingCart, Calendar } from 'lucide-react'
 import { formatLargeNumber, formatCurrency } from '@renderer/utils/formatNumber'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 type TopProduct = {
   productId: string
@@ -75,7 +76,7 @@ export default function ProductAnalytics() {
         avgOrderValue: 0
       })
     } catch (error) {
-      console.error('Error loading analytics:', error)
+      logger.error('Error loading analytics:', error)
       setTopProducts([])
       setOverallStats({
         totalUnitsSold: 0,

@@ -4,6 +4,9 @@
  */
 
 import { ipcMain } from 'electron'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Employees')
 
 export function registerEmployeesHandlers(prisma: any) {
   ipcMain.handle('employees:getAll', async () => {
@@ -13,7 +16,7 @@ export function registerEmployeesHandlers(prisma: any) {
       }
       return []
     } catch (error) {
-      console.error('Error fetching employees:', error)
+      log.error('Error fetching employees:', error)
       throw error
     }
   })
@@ -26,7 +29,7 @@ export function registerEmployeesHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error creating employee:', error)
+      log.error('Error creating employee:', error)
       return { success: false, message: error.message }
     }
   })
@@ -39,7 +42,7 @@ export function registerEmployeesHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error updating employee:', error)
+      log.error('Error updating employee:', error)
       return { success: false, message: error.message }
     }
   })
@@ -52,7 +55,7 @@ export function registerEmployeesHandlers(prisma: any) {
       }
       return { success: false, message: 'Database not available' }
     } catch (error: any) {
-      console.error('Error deleting employee:', error)
+      log.error('Error deleting employee:', error)
       return { success: false, message: error.message }
     }
   })

@@ -8,6 +8,9 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import { app } from 'electron'
 import { getDatabasePath } from '../../database/init'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Backup')
 
 // Prisma client will be passed from the main handlers if needed
 // For backup/restore, we work directly with database files
@@ -83,7 +86,7 @@ ipcMain.handle('backup:create', async (_event, options?: { customPath?: string }
       }
     }
   } catch (error) {
-    console.error('Backup creation failed:', error)
+    log.error('Backup creation failed:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create backup'
@@ -132,7 +135,7 @@ ipcMain.handle('backup:list', async (_event, customPath?: string) => {
       }
     }
   } catch (error) {
-    console.error('Failed to list backups:', error)
+    log.error('Failed to list backups:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to list backups'
@@ -168,7 +171,7 @@ ipcMain.handle('backup:restore', async (_event, backupPath: string) => {
     try {
       await fs.copyFile(dbPath, emergencyBackupPath)
     } catch (error) {
-      console.warn('Failed to create emergency backup:', error)
+      log.warn('Failed to create emergency backup:', error)
     }
     
     // Replace current database with backup
@@ -183,7 +186,7 @@ ipcMain.handle('backup:restore', async (_event, backupPath: string) => {
       }
     }
   } catch (error) {
-    console.error('Restore failed:', error)
+    log.error('Restore failed:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to restore backup'
@@ -202,7 +205,7 @@ ipcMain.handle('backup:delete', async (_event, backupPath: string) => {
       data: { deleted: backupPath }
     }
   } catch (error) {
-    console.error('Failed to delete backup:', error)
+    log.error('Failed to delete backup:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to delete backup'
@@ -232,7 +235,7 @@ ipcMain.handle('backup:select-directory', async () => {
       data: { path: result.filePaths[0] }
     }
   } catch (error) {
-    console.error('Failed to select directory:', error)
+    log.error('Failed to select directory:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to select directory'
@@ -285,7 +288,7 @@ ipcMain.handle('backup:clean', async (_event, options: { keepCount: number, cust
       }
     }
   } catch (error) {
-    console.error('Failed to clean backups:', error)
+    log.error('Failed to clean backups:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to clean backups'
@@ -310,7 +313,7 @@ ipcMain.handle('backup:info', async (_event, backupPath: string) => {
       }
     }
   } catch (error) {
-    console.error('Failed to get backup info:', error)
+    log.error('Failed to get backup info:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get backup info'

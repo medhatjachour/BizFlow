@@ -32,6 +32,7 @@ import BackupSettings from './BackupSettings'
 import ArchiveManagementSettings from './ArchiveManagementSettings'
 import EmailSettings from './EmailSettings'
 import type { SettingsTab } from './types'
+import logger from '../../../../shared/utils/logger'
 
 export default function Settings() {
   const { theme, setTheme, actualTheme } = useTheme()
@@ -81,7 +82,7 @@ export default function Settings() {
         setTimeout(() => setSaveSuccess(false), 3000)
       }
     } catch (error) {
-      console.error('Failed to save settings:', error)
+      logger.error('Failed to save settings:', error)
       // Could show toast here if needed
     }
   }

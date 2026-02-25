@@ -1,7 +1,10 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'node:path'
-import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import log, { createLogger } from './utils/logger'
+
+const mainLog = createLogger('Main')
 import { schedule, ScheduledTask } from 'node-cron'
 import icon from '../../resources/icon.png?asset'
 
@@ -27,11 +30,13 @@ app.commandLine.appendSwitch('disable-features', 'UseChromeOSDirectVideoDecoder'
 // Cron task reference — stored so we can clean up on quit
 let dailyEmailCronTask: ScheduledTask | null = null
 
+const cronLog = createLogger('Cron')
+
 // Setup daily email reports cron job
 function setupDailyEmailReports(): void {
   // Run at 11:00 PM every day
   dailyEmailCronTask = schedule('0 23 * * *', async () => {
-    console.log('[Cron] Starting daily email reports...')
+    cronLog.info('Starting daily email reports...')
 
     try {
       // Reuse the already-imported EmailReportService (no dynamic import needed)
@@ -39,73 +44,37 @@ function setupDailyEmailReports(): void {
         where: { enabled: true }
       })
 
-      console.log(`[Cron] Found ${enabledReports.length} enabled email reports`)
+      cronLog.info(`Found ${enabledReports.length} enabled email reports`)
 
       for (const report of enabledReports) {
         try {
           const emailService = new EmailReportService(prisma)
           const data = await emailService.generateDailyReport(report.userId)
           await emailService.sendEmailReport(report.userId, data)
-          console.log(`[Cron] Sent daily report to ${report.email}`)
+          cronLog.info(`Sent daily report to ${report.email}`)
         } catch (error) {
-          console.error(`[Cron] Failed to send report to ${report.email}:`, error)
+          cronLog.error(`Failed to send report to ${report.email}:`, error)
         }
       }
 
-      console.log('[Cron] Daily email reports completed')
+      cronLog.info('Daily email reports completed')
     } catch (error) {
-      console.error('[Cron] Failed to run daily email reports:', error)
+      cronLog.error('Failed to run daily email reports:', error)
     }
   })
 
-  console.log('[Cron] Daily email reports scheduled for 11:00 PM daily')
+  cronLog.info('Daily email reports scheduled for 11:00 PM daily')
 }
 
-// Setup logging to file
-const logDir = join(app.getPath('userData'), 'logs')
-if (!existsSync(logDir)) {
-  mkdirSync(logDir, { recursive: true })
-}
-const logFile = join(logDir, `app-${new Date().toISOString().split('T')[0]}.log`)
-
-// Save original console methods BEFORE overriding
-const originalConsoleLog = console.log
-const originalConsoleError = console.error
-const originalConsoleWarn = console.warn
-
-function logToFile(level: string, ...args: any[]) {
-  const timestamp = new Date().toISOString()
-  const message = args.map(a => {
-    try {
-      return typeof a === 'string' ? a : JSON.stringify(a)
-    } catch {
-      return String(a)
-    }
-  }).join(' ')
-  const logMessage = `[${timestamp}] [${level}] ${message}\n`
-  
-  try {
-    appendFileSync(logFile, logMessage)
-  } catch (err) {
-    originalConsoleError('Failed to write to log file:', err)
-  }
-}
-
-// Override console methods to also log to file
-console.log = (...args) => {
-  originalConsoleLog(...args)
-  logToFile('INFO', ...args)
-}
-
-console.error = (...args) => {
-  originalConsoleError(...args)
-  logToFile('ERROR', ...args)
-}
-
-console.warn = (...args) => {
-  originalConsoleWarn(...args)
-  logToFile('WARN', ...args)
-}
+// electron-log is already configured in utils/logger.ts.
+// It writes to the platform log directory automatically.
+// Override console.* so any remaining console calls in third-party
+// code or handlers are also captured in the log file.
+log.transports.console.level = is.dev ? 'debug' : 'warn'
+console.log   = (...args) => log.info(...args)
+console.error = (...args) => log.error(...args)
+console.warn  = (...args) => log.warn(...args)
+console.debug = (...args) => log.debug(...args)
 
 let migrationManager: MigrationManager | null = null
 let mainWindow: BrowserWindow | null = null
@@ -136,7 +105,7 @@ function createWindow(): BrowserWindow {
   try {
     mainWindow.setTitle('BizFlow')
   } catch (err) {
-    console.warn('Could not set window title:', err)
+    mainLog.warn('Could not set window title:', err)
   }
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -160,28 +129,28 @@ function createWindow(): BrowserWindow {
   // Load the remote URL for development or the local html file for production.
   // Load renderer: prefer dev URL in development, otherwise load local file.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    console.log('[Main] Loading renderer from URL:', process.env['ELECTRON_RENDERER_URL'])
+    mainLog.info('Loading renderer from URL:', process.env['ELECTRON_RENDERER_URL'])
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']).catch(err => {
-      console.error('[Main] Failed to load renderer URL:', err)
+      mainLog.error('Failed to load renderer URL:', err)
     })
   } else {
     const indexPath = join(__dirname, '../renderer/index.html')
     // Safety: check file exists before loading to avoid white screen + silent fail
     try {
       if (!existsSync(indexPath)) {
-        console.error('[Main] Renderer index.html not found at:', indexPath)
+        mainLog.error('Renderer index.html not found at:', indexPath)
         // Print a small error HTML to help users debug a missing build
         const errorHtml = `<!doctype html><html><body><h2>Missing renderer build</h2><p>Expected file not found: ${indexPath}</p></body></html>`
         mainWindow.loadURL('data:text/html,' + encodeURIComponent(errorHtml))
       } else {
         mainWindow.loadFile(indexPath).catch(err => {
-          console.error('[Main] Failed to load index.html:', err)
+          mainLog.error('Failed to load index.html:', err)
           const errorHtml = `<!doctype html><html><body><h2>Renderer failed to load</h2><pre>${String(err)}</pre></body></html>`
           mainWindow?.loadURL('data:text/html,' + encodeURIComponent(errorHtml))
         })
       }
     } catch (err) {
-      console.error('[Main] Error while attempting to load renderer:', err)
+      mainLog.error('Error while attempting to load renderer:', err)
       const errorHtml = `<!doctype html><html><body><h2>Renderer load error</h2><pre>${String(err)}</pre></body></html>`
       mainWindow.loadURL('data:text/html,' + encodeURIComponent(errorHtml))
     }
@@ -189,16 +158,19 @@ function createWindow(): BrowserWindow {
 
   // Log any renderer errors
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
-    console.error('[Renderer] Page failed to load:', errorCode, errorDescription)
+    mainLog.error('Renderer page failed to load:', errorCode, errorDescription)
   })
 
   mainWindow.webContents.on('render-process-gone', (_event, details) => {
-    console.error('[Renderer] Process gone:', details.reason, details.exitCode)
+    mainLog.error('Renderer process gone:', details.reason, 'exitCode:', details.exitCode)
   })
 
   // Console message logging for debugging
-  mainWindow.webContents.on('console-message', (_event, _level, message) => {
-    console.log(`[Renderer Console] ${message}`)
+  mainWindow.webContents.on('console-message', (_event, level, message) => {
+    const rendererLog = createLogger('Renderer')
+    if (level >= 3) rendererLog.error(message)       // level 3 = error
+    else if (level >= 2) rendererLog.warn(message)   // level 2 = warning
+    else rendererLog.verbose(message)
   })
 
   return mainWindow
@@ -211,59 +183,60 @@ app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.bizflow.app')
 
-  console.log('[Main] Starting application...')
-  console.log('[Main] Environment:', is.dev ? 'development' : 'production')
-  console.log('[Main] User data path:', app.getPath('userData'))
+  mainLog.info('Starting application...')
+  mainLog.info('Environment:', is.dev ? 'development' : 'production')
+  mainLog.info('Version:', app.getVersion())
+  mainLog.info('User data path:', app.getPath('userData'))
+  mainLog.info('Log file:', log.transports.file.getFile().path)
 
   try {
     // Initialize database (create in userData on first run)
-    console.log('[Main] Initializing database...')
+    mainLog.info('Initializing database...')
     await initializeDatabase()
 
     // Register all IPC handlers BEFORE creating windows
-    console.log('[Main] Registering IPC handlers...')
+    mainLog.info('Registering IPC handlers...')
     registerAllHandlers()
 
     // Create window (hidden initially)
     mainWindow = createWindow()
 
     // Run database migrations if needed
-    console.log('[Main] Checking for database migrations...')
+    mainLog.info('Checking for database migrations...')
     migrationManager = new MigrationManager()
     
     const migrationSuccess = await migrationManager.migrateWithUI(mainWindow)
     
     if (!migrationSuccess) {
-      console.log('[Main] Migration failed or cancelled, exiting...')
+      mainLog.warn('Migration failed or cancelled, exiting...')
       return // App will quit from migration manager
     }
 
-    console.log('[Main] Migration check complete, showing window...')
+    mainLog.info('Migration check complete, showing window...')
 
     // Seed default installment plans (only if none exist)
     try {
       const planCount = await prisma.installmentPlan.count()
       if (planCount === 0) {
-        console.log('[Main] No installment plans found, seeding defaults...')
-        // Reuse the already-imported InstallmentPlanService (no dynamic import needed)
+        mainLog.info('No installment plans found, seeding defaults...')
         const planService = InstallmentPlanService.getInstance(prisma)
         await planService.seedDefaultPlans()
-        console.log('[Main] ✅ Installment plans initialized')
+        mainLog.info('Installment plans initialized')
       }
     } catch (error) {
-      console.error('[Main] ⚠️  Failed to check/seed installment plans:', error)
+      mainLog.error('Failed to check/seed installment plans:', error)
     }
 
     // Setup daily email reports cron job (runs at 11 PM every day)
-    console.log('[Main] Setting up daily email reports cron job...')
+    mainLog.info('Setting up daily email reports cron job...')
     setupDailyEmailReports()
 
-    console.log('[Main] ✅ Setup complete')
+    mainLog.info('Setup complete')
     
     // Show window after everything is ready
     mainWindow.show()
   } catch (error) {
-    console.error('[Main] ❌ Setup failed:', error)
+    mainLog.error('Setup failed:', error)
   }
 
   // Default open or close DevTools by F12 in development
@@ -273,7 +246,7 @@ app.whenReady().then(async () => {
   })
 
   // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.on('ping', () => mainLog.debug('pong'))
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -297,24 +270,26 @@ app.on('window-all-closed', () => {
 app.on('before-quit', async () => {
   // Stop cron job to prevent callbacks firing after process teardown
   if (dailyEmailCronTask) {
-    console.log('[Main] Stopping daily email cron task...')
+    mainLog.info('Stopping daily email cron task...')
     dailyEmailCronTask.stop()
     dailyEmailCronTask = null
   }
   // Cleanup migration manager
   if (migrationManager) {
-    console.log('[Main] Cleaning up migration manager...')
+    mainLog.info('Cleaning up migration manager...')
     await migrationManager.cleanup()
   }
+  mainLog.info('Application quitting')
 })
 
-// Handle uncaught errors
+// Handle uncaught errors (electron-log.errorHandler also catches these,
+// but keep explicit handlers for custom formatting)
 process.on('uncaughtException', (error) => {
-  console.error('[Main] Uncaught exception:', error)
+  mainLog.error('Uncaught exception:', error)
 })
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[Main] Unhandled rejection at:', promise, 'reason:', reason)
+  mainLog.error('Unhandled rejection at:', promise, 'reason:', reason)
 })
 
 // In this file you can include the rest of your app's specific main process

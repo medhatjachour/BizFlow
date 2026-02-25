@@ -12,7 +12,8 @@
  */
 
 import type { PrismaClient } from '@prisma/client'
-import logger from '../../shared/utils/logger'
+import { createLogger } from '../utils/logger'
+const log = createLogger('Predictions')
 
 export interface ForecastResult {
   predictions: Array<{
@@ -252,7 +253,7 @@ export class PredictionService {
         growthRate
       }
     } catch (error) {
-      logger.error('Error forecasting revenue:', error)
+      log.error('Error forecasting revenue:', error)
       throw error
     }
   }
@@ -359,7 +360,7 @@ export class PredictionService {
         recommendation
       }
     } catch (error) {
-      logger.error('Error projecting cash flow:', error)
+      log.error('Error projecting cash flow:', error)
       throw error
     }
   }
@@ -602,7 +603,7 @@ export class PredictionService {
 
       return insights.slice(0, limit)
     } catch (error) {
-      logger.error('Error generating product insights:', error)
+      log.error('Error generating product insights:', error)
       throw error
     }
   }
@@ -801,7 +802,7 @@ export class PredictionService {
         recommendations
       }
     } catch (error) {
-      logger.error('Error calculating financial health:', error)
+      log.error('Error calculating financial health:', error)
       throw error
     }
   }

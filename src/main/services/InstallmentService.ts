@@ -3,6 +3,9 @@
  * Handles business logic for installments
  */
 import type { PrismaClient } from '@prisma/client'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('Installment')
 
 export class InstallmentService {
   private prisma: PrismaClient
@@ -20,17 +23,25 @@ export class InstallmentService {
     customerId?: string
     saleId?: string
   }) {
-    return this.prisma.installment.create({
-      data: {
-        amount: data.amount,
-        dueDate: data.dueDate,
-        paidDate: data.paidDate ?? null,
-        status: data.status ?? 'pending',
-        note: data.note,
-        customerId: data.customerId ?? null,
-        saleId: data.saleId ?? null,
-      }
-    })
+    log.info(`Creating installment: amount=${data.amount} dueDate=${data.dueDate.toISOString()} customerId=${data.customerId ?? 'none'}`)
+    try {
+      const result = await this.prisma.installment.create({
+        data: {
+          amount: data.amount,
+          dueDate: data.dueDate,
+          paidDate: data.paidDate ?? null,
+          status: data.status ?? 'pending',
+          note: data.note,
+          customerId: data.customerId ?? null,
+          saleId: data.saleId ?? null,
+        }
+      })
+      log.debug(`Installment created: id=${result.id}`)
+      return result
+    } catch (error) {
+      log.error('Failed to create installment:', error)
+      throw error
+    }
   }
 
   async getInstallmentsByCustomer(customerId: string) {
@@ -160,29 +171,52 @@ export class InstallmentService {
   }
 
   async markAsPaid(installmentId: string, paidDate?: Date) {
-    return this.prisma.installment.update({
-      where: { id: installmentId },
-      data: {
-        status: 'paid',
-        paidDate: paidDate ?? new Date()
-      }
-    })
+    log.info(`Marking installment as paid: id=${installmentId}`)
+    try {
+      const result = await this.prisma.installment.update({
+        where: { id: installmentId },
+        data: {
+          status: 'paid',
+          paidDate: paidDate ?? new Date()
+        }
+      })
+      log.debug(`Installment marked paid: id=${installmentId}`)
+      return result
+    } catch (error) {
+      log.error(`Failed to mark installment as paid: id=${installmentId}:`, error)
+      throw error
+    }
   }
 
   async markAsOverdue(installmentId: string) {
-    return this.prisma.installment.update({
-      where: { id: installmentId },
-      data: { status: 'overdue' }
-    })
+    log.info(`Marking installment as overdue: id=${installmentId}`)
+    try {
+      const result = await this.prisma.installment.update({
+        where: { id: installmentId },
+        data: { status: 'overdue' }
+      })
+      return result
+    } catch (error) {
+      log.error(`Failed to mark installment as overdue: id=${installmentId}:`, error)
+      throw error
+    }
   }
 
   async linkInstallmentsToSale(installmentIds: string[], saleId: string) {
-    return this.prisma.installment.updateMany({
-      where: {
-        id: { in: installmentIds },
-        saleId: null // Only update installments that aren't already linked to a sale
-      },
-      data: { saleId }
-    })
+    log.info(`Linking ${installmentIds.length} installment(s) to saleId=${saleId}`)
+    try {
+      const result = await this.prisma.installment.updateMany({
+        where: {
+          id: { in: installmentIds },
+          saleId: null // Only update installments that aren't already linked to a sale
+        },
+        data: { saleId }
+      })
+      log.debug(`Linked ${result.count} installment(s) to saleId=${saleId}`)
+      return result
+    } catch (error) {
+      log.error(`Failed to link installments to saleId=${saleId}:`, error)
+      throw error
+    }
   }
 }

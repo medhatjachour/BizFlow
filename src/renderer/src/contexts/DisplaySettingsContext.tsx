@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import logger from '../../../shared/utils/logger'
 
 interface DisplaySettings {
   showImagesInProductCards: boolean
@@ -29,7 +30,7 @@ export function DisplaySettingsProvider({ children }: { children: ReactNode }) {
         return { ...DEFAULT_SETTINGS, ...parsed }
       }
     } catch (error) {
-      console.error('Failed to parse displaySettings from localStorage:', error)
+      logger.error('Failed to parse displaySettings from localStorage:', error)
     }
     return DEFAULT_SETTINGS
   })

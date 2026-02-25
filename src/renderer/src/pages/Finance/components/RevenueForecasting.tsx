@@ -23,6 +23,8 @@ import {
   Legend,
   Filler
 } from 'chart.js'
+import logger from '../../../../../shared/utils/logger'
+
 
 // Register ChartJS components
 ChartJS.register(
@@ -67,7 +69,7 @@ export default function RevenueForecasting() {
       const data = await window.api['forecast:revenue']({ days, historicalDays: 90 })
       setForecast(data)
     } catch (error) {
-      console.error('Error loading forecast:', error)
+      logger.error('Error loading forecast:', error)
     } finally {
       setLoading(false)
     }

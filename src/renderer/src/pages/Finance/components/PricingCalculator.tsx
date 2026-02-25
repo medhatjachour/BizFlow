@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react'
 import { Calculator, TrendingUp, TrendingDown, DollarSign, Percent, Users, AlertCircle, CheckCircle, Download, HelpCircle, Search } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 type Product = {
   id: string
@@ -183,7 +184,7 @@ export default function PricingCalculator() {
       setExpenses(prev => ({ ...prev, totalSalaries }))
       
     } catch (error) {
-      console.error('Error loading pricing data:', error)
+      logger.error('Error loading pricing data:', error)
     } finally {
       setLoading(false)
     }
@@ -258,7 +259,7 @@ export default function PricingCalculator() {
       
       setResults(calculatedResults)
     } catch (error) {
-      console.error('Error calculating pricing:', error)
+      logger.error('Error calculating pricing:', error)
     } finally {
       setCalculating(false)
     }

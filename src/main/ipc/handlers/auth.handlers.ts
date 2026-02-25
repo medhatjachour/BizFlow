@@ -5,6 +5,9 @@
 
 import { ipcMain } from 'electron'
 import bcrypt from 'bcryptjs'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Auth')
 
 export function registerAuthHandlers(prisma: any) {
   ipcMain.handle('auth:login', async (_, { username, password }) => {
@@ -12,19 +15,19 @@ export function registerAuthHandlers(prisma: any) {
       if (prisma) {
         const user = await prisma.user.findUnique({ where: { username } })
         if (!user) {
-          console.log(`❌ Login failed: User '${username}' not found`)
+          log.info(`❌ Login failed: User '${username}' not found`)
           return { success: false, message: 'Invalid username or password' }
         }
 
         const isValid = await bcrypt.compare(password, user.passwordHash)
         if (!isValid) {
-          console.log(`❌ Login failed: Invalid password for user '${username}'`)
+          log.info(`❌ Login failed: Invalid password for user '${username}'`)
           return { success: false, message: 'Invalid username or password' }
         }
 
         // Check if user is active
         if (!user.isActive) {
-          console.log(`❌ Login failed: User '${username}' is inactive`)
+          log.info(`❌ Login failed: User '${username}' is inactive`)
           return { success: false, message: 'Account is inactive. Contact administrator.' }
         }
 
@@ -34,15 +37,15 @@ export function registerAuthHandlers(prisma: any) {
           data: { lastLogin: new Date() }
         })
 
-        console.log(`✅ Login successful: ${user.username} (${user.role}) - ID: ${user.id}`)
+        log.info(`✅ Login successful: ${user.username} (${user.role}) - ID: ${user.id}`)
         return { success: true, user: { id: user.id, username: user.username, role: user.role } }
       }
 
       // Mock fallback
-      console.warn('⚠️ Using mock login - database not available')
+      log.warn('⚠️ Using mock login - database not available')
       return { success: true, user: { id: '1', username, role: 'admin' } }
     } catch (error) {
-      console.error('❌ Login error:', error)
+      log.error('❌ Login error:', error)
       return { success: false, message: 'An error occurred during login' }
     }
   })
@@ -66,7 +69,7 @@ export function registerAuthHandlers(prisma: any) {
 
       return { success: true, user: { id: user.id, username: user.username, role: user.role } }
     } catch (error) {
-      console.error('❌ Create user error:', error)
+      log.error('❌ Create user error:', error)
       return { success: false, message: 'Failed to create user' }
     }
   })

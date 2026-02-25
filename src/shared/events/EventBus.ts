@@ -1,3 +1,5 @@
+import logger from '../utils/logger'
+
 /**
  * Event Bus
  * 
@@ -140,7 +142,7 @@ export class EventBus {
     if (eventHandlers) {
       const promises = Array.from(eventHandlers).map(handler =>
         Promise.resolve(handler(data)).catch(error => {
-          console.error(`Error in handler for event "${String(event)}":`, error)
+          logger.error(`Error in handler for event "${String(event)}":`, error)
         })
       )
       await Promise.all(promises)
@@ -150,7 +152,7 @@ export class EventBus {
     if (this.wildcardHandlers.size > 0) {
       const promises = Array.from(this.wildcardHandlers).map(handler =>
         Promise.resolve(handler({ event, data })).catch(error => {
-          console.error(`Error in wildcard handler for event "${String(event)}":`, error)
+          logger.error(`Error in wildcard handler for event "${String(event)}":`, error)
         })
       )
       await Promise.all(promises)
@@ -168,7 +170,7 @@ export class EventBus {
         try {
           handler(data)
         } catch (error) {
-          console.error(`Error in handler for event "${String(event)}":`, error)
+          logger.error(`Error in handler for event "${String(event)}":`, error)
         }
       })
     }
@@ -178,7 +180,7 @@ export class EventBus {
       try {
         handler({ event, data })
       } catch (error) {
-        console.error(`Error in wildcard handler for event "${String(event)}":`, error)
+        logger.error(`Error in wildcard handler for event "${String(event)}":`, error)
       }
     })
   }

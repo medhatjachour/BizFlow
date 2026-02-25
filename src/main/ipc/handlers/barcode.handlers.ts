@@ -5,6 +5,9 @@
 
 import { ipcMain } from 'electron'
 import { ThermalPrinterService } from '../../services/ThermalPrinterService'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Barcode')
 
 export function registerBarcodePrintHandlers() {
   /**
@@ -21,7 +24,7 @@ export function registerBarcodePrintHandlers() {
         }))
       }
     } catch (error: any) {
-      console.error('Error detecting printers:', error)
+      log.error('Error detecting printers:', error)
       return {
         success: false,
         message: error.message || 'Failed to detect printers'
@@ -40,7 +43,7 @@ export function registerBarcodePrintHandlers() {
         message: 'Barcode printed successfully'
       }
     } catch (error: any) {
-      console.error('Error printing barcode:', error)
+      log.error('Error printing barcode:', error)
       
       // Provide user-friendly error messages
       let message = 'Failed to print barcode'
@@ -73,7 +76,7 @@ export function registerBarcodePrintHandlers() {
         message: 'Test page sent to printer'
       }
     } catch (error: any) {
-      console.error('Error testing printer:', error)
+      log.error('Error testing printer:', error)
       return {
         success: false,
         message: error.message || 'Failed to send test page'
@@ -81,5 +84,5 @@ export function registerBarcodePrintHandlers() {
     }
   })
 
-  console.log('✅ Barcode print handlers registered')
+  log.info('✅ Barcode print handlers registered')
 }

@@ -10,6 +10,7 @@ import { calculateRefundedAmount } from '@/shared/utils/refundCalculations'
 import { useLanguage } from '../contexts/LanguageContext'
 import { useToast } from '../contexts/ToastContext'
 import { useLocation } from 'react-router-dom'
+import logger from '../../../shared/utils/logger'
 
 type SaleItem = {
   id: string
@@ -196,7 +197,7 @@ export default function Sales(): JSX.Element {
       })
       setTransactions(data)
     } catch (error) {
-      console.error('Failed to load transactions:', error)
+      logger.error('Failed to load transactions:', error)
       showToast('error', 'Failed to load transactions')
     } finally {
       setLoading(false)
@@ -219,7 +220,7 @@ export default function Sales(): JSX.Element {
       setInstallmentTotalPages(result.totalPages || 1)
       setInstallmentCurrentPage(page)
     } catch (error) {
-      console.error('Failed to load installments:', error)
+      logger.error('Failed to load installments:', error)
       setInstallments([])
       setInstallmentTotalItems(0)
       setInstallmentTotalPages(1)
@@ -406,7 +407,7 @@ export default function Sales(): JSX.Element {
         alert('Failed to refund transaction: ' + result.message)
       }
     } catch (error) {
-      console.error('Failed to refund transaction:', error)
+      logger.error('Failed to refund transaction:', error)
       alert('Failed to process refund. Please try again.')
     }
   }
@@ -433,7 +434,7 @@ export default function Sales(): JSX.Element {
         throw new Error(result.error || t('failedToRefundItems'))
       }
     } catch (error: any) {
-      console.error('Failed to refund items:', error)
+      logger.error('Failed to refund items:', error)
       showToast('error', error.message || t('failedToRefundItems'))
     }
   }
@@ -459,7 +460,7 @@ export default function Sales(): JSX.Element {
       showToast('success', 'Installment marked as paid successfully')
       loadInstallments(installmentCurrentPage) // Refresh the current page
     } catch (error) {
-      console.error('Error marking installment as paid:', error)
+      logger.error('Error marking installment as paid:', error)
       showToast('error', 'Failed to mark installment as paid')
     }
   }
@@ -505,7 +506,7 @@ export default function Sales(): JSX.Element {
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Failed to export:', error)
+      logger.error('Failed to export:', error)
       alert('Failed to export sales report')
     }
   }
@@ -552,7 +553,7 @@ export default function Sales(): JSX.Element {
       document.body.removeChild(a)
       window.URL.revokeObjectURL(url)
     } catch (error) {
-      console.error('Failed to export installments:', error)
+      logger.error('Failed to export installments:', error)
       alert('Failed to export installments report')
     }
   }
