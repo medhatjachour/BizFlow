@@ -43,17 +43,40 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
       
-      - name: Verify Prisma binaries
+      - name: Debug Prisma generation
         run: |
-          Write-Host "Checking generated Prisma binaries..."
-          Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse | ForEach-Object {
-            Write-Host "Found: $($_.Name) - $([math]::Round($_.Length/1MB, 2)) MB"
+          Write-Host "=== Debugging Prisma Client Generation ==="
+          Write-Host "`nChecking if src/generated/prisma exists:"
+          Test-Path "src/generated/prisma"
+          
+          Write-Host "`nListing ALL files in src/generated/prisma:"
+          if (Test-Path "src/generated/prisma") {
+            Get-ChildItem -Path "src/generated/prisma" -Recurse -File | ForEach-Object {
+              Write-Host "  $($_.FullName) - $([math]::Round($_.Length/1KB, 2)) KB"
+            }
+          } else {
+            Write-Host "Directory does not exist!"
           }
-          if (!(Test-Path "src/generated/prisma/query_engine-windows.dll.node")) {
-            Write-Error "Windows Prisma binary not found!"
-            exit 1
+          
+          Write-Host "`nLooking for .node files specifically:"
+          if (Test-Path "src/generated/prisma") {
+            $nodeFiles = Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse
+            Write-Host "Found $($nodeFiles.Count) .node files"
+            $nodeFiles | ForEach-Object { Write-Host "  - $($_.Name)" }
           }
-          Write-Host "✓ Windows Prisma binary verified"
+          
+          Write-Host "`nChecking node_modules/.prisma:"
+          if (Test-Path "node_modules/.prisma/client") {
+            Get-ChildItem -Path "node_modules/.prisma/client" -Filter "*.node" | ForEach-Object {
+              Write-Host "  - $($_.Name)"
+            }
+          }
+        shell: pwsh
+      
+      - name: Copy Prisma binaries
+        run: |
+          Write-Host "Copying Prisma binaries..."
+          node scripts/copy-prisma-binaries.js
         shell: pwsh
       
       - name: Prepare template database
@@ -69,8 +92,8 @@ jobs:
           $dbPath = Join-Path $PWD "prisma" "template.db"
           $env:DATABASE_URL = "file:$dbPath"
           
-          Write-Host "Running Prisma migrations..."
-          npx prisma migrate deploy
+          Write-Host "Applying Prisma schema..."
+          npx prisma db push --accept-data-loss --skip-generate
           
           Write-Host "Seeding database..."
           npx prisma db seed
@@ -190,16 +213,27 @@ jobs:
           Write-Host "Verifying Windows Prisma binary..."
           if (Test-Path "src/generated/prisma/query_engine-windows.dll.node") {
             Write-Host "✓ Windows Prisma binary found"
+            node scripts/copy-prisma-binaries.js
           } else {
             Write-Error "Windows Prisma binary not found!"
             exit 1
           }
         shell: pwsh
       
+      - name: Verify deployment configuration
+        run: |
+          Write-Host "Running deployment verification..."
+          node scripts/verify-deployment.js
+          
+          Write-Host "`nVerifying template database content..."
+          node scripts/verify-template-db.js
+        shell: pwsh
+      
       - name: Prepare template database
         run: |
           if (!(Test-Path "prisma/template.db")) {
-            npx prisma migrate deploy
+            $env:DATABASE_URL = "file:./prisma/template.db"
+            npx prisma db push --accept-data-loss --skip-generate
             npx prisma db seed
           }
         shell: pwsh

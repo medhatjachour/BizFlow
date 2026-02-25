@@ -814,12 +814,17 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
           </div>
           <div className="relative group">
             <Info size={20} className="text-slate-400 hover:text-primary cursor-help" />
-            <div className="absolute right-0 top-8 w-72 p-3 bg-slate-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <div className="absolute inset-x-0 top-8 w-72 max-w-[calc(100vw-2rem)] mx-auto p-3 bg-slate-800 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 
+                        ltr:right-0 ltr:left-auto 
+                        rtl:left-0 rtl:right-auto 
+                        sm:inset-x-auto sm:w-72
+                        sm:ltr:right-0 sm:ltr:left-auto
+                        sm:rtl:left-0 sm:rtl:right-auto">
               <div className="font-semibold mb-2">📱 Barcode Scanner Usage:</div>
               <ul className="space-y-1 list-disc list-inside">
-                <li><strong>To scan:</strong> Click outside the search box or press ESC, then scan</li>
-                <li><strong>To type:</strong> Click inside the search box and type normally</li>
-                <li><strong>Quick tip:</strong> Scanner only works when search box is NOT focused</li>
+                <li><strong>{t('toScanQuick')}:</strong> {t('scanningAdv')}</li>
+                <li><strong>{t('toTypeQuick')}:</strong> {t('typingAdv')}</li>
+                <li><strong>{t('QuickTipQuick')}:</strong> {t('quickTipAdv')}</li>
               </ul>
             </div>
           </div>

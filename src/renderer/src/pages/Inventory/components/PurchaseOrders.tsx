@@ -954,7 +954,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
+                    step="1"
                     placeholder="0.00"
                     value={itemForm.unitCost}
                     onChange={(e) => setItemForm(prev => ({ ...prev, unitCost: Number(e.target.value) }))}
@@ -982,7 +982,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tax Amount</label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 value={formData.taxAmount}
                 onChange={(e) => setFormData(prev => ({ ...prev, taxAmount: Number(e.target.value) }))}
                 className="input-field"
@@ -992,7 +992,7 @@ export default function PurchaseOrders({ prefilledData, onClearPrefilled }: Purc
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Shipping Cost</label>
               <input
                 type="number"
-                step="0.01"
+                step="1"
                 value={formData.shippingCost}
                 onChange={(e) => setFormData(prev => ({ ...prev, shippingCost: Number(e.target.value) }))}
                 className="input-field"

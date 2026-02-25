@@ -1,42 +1,76 @@
 /**
  * Main Application Component
  * Features:
- * - Lazy Loading for Code Splitting
- * - Error Boundaries for graceful error handling
- * - Performance Monitoring
+ * - Lazy Loading for Code Splitting (all pages)
+ * - Per-route Error Boundaries for granular error handling
  * - Route-based Code Splitting
  */
 
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Suspense, lazy, ReactNode, useState } from 'react'
-import RootLayout from '../components/layout/RootLayout'
+import { Suspense, lazy, ReactNode } from 'react'
+import { useState } from 'react'
+import RootLayout from './components/layout/RootLayout'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { DisplaySettingsProvider } from './contexts/DisplaySettingsContext'
 import PageLoader from './components/ui/PageLoader'
-import ErrorBoundary from './components/ErrorBoundary'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import CommandPalette from './components/CommandPalette'
 import { MigrationProgress } from './components/MigrationProgress'
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
-import Dashboard from './pages/Dashboard/index'
-import Login from './pages/login'
-import Finance from './pages/Finance/index'
-import Products from './pages/Products/index'
-import Settings from './pages/Settings/index'
-import POS from './pages/POS/index'
-import Inventory from './pages/Inventory/index'
-import Expenses from './pages/Expenses/index'
 
-// Lazy load pages for optimal performance (code splitting)
-const Sales = lazy(() => import('./pages/Sales'))
-const Stores = lazy(() => import('./pages/Stores'))
-const Employees = lazy(() => import('./pages/Employees'))
-const Customers = lazy(() => import('./pages/Customers'))
+// Lazy-load ALL pages for maximum code splitting and fast initial load
+const Dashboard    = lazy(() => import('./pages/Dashboard/index'))
+const Login        = lazy(() => import('./pages/login'))
+const Finance      = lazy(() => import('./pages/Finance/index'))
+const Products     = lazy(() => import('./pages/Products/index'))
+const Settings     = lazy(() => import('./pages/Settings/index'))
+const POS          = lazy(() => import('./pages/POS/index'))
+const Inventory    = lazy(() => import('./pages/Inventory/index'))
+const Expenses     = lazy(() => import('./pages/Expenses/index'))
+const Sales        = lazy(() => import('./pages/Sales'))
+const Stores       = lazy(() => import('./pages/Stores'))
+const Employees    = lazy(() => import('./pages/Employees'))
+const Customers    = lazy(() => import('./pages/Customers'))
 const CustomerProfile = lazy(() => import('./pages/CustomerProfile'))
-const Reports = lazy(() => import('./pages/Reports'))
+const Reports      = lazy(() => import('./pages/Reports'))
 const Installments = lazy(() => import('./pages/Installments'))
+
+// ------------------------------------------------------------------
+// Per-route error boundary — wraps each page in isolation so one
+// broken page never crashes the whole app or the sidebar/layout.
+// ------------------------------------------------------------------
+function RouteErrorBoundary({ name, children }: { name: string; children: ReactNode }) {
+  return (
+    <ErrorBoundary
+      fallback={
+        <div className="flex flex-col items-center justify-center h-full min-h-[60vh] gap-4 text-center p-8">
+          <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
+              {name} failed to load
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              An unexpected error occurred. Your data is safe.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Reload page
+            </button>
+          </div>
+        </div>
+      }
+    >
+      {children}
+    </ErrorBoundary>
+  )
+}
 
 function AppContent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
@@ -65,7 +99,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Dashboard />
+                  <RouteErrorBoundary name="Dashboard"><Dashboard /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -75,7 +109,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Sales />
+                  <RouteErrorBoundary name="Sales"><Sales /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -85,7 +119,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Inventory />
+                  <RouteErrorBoundary name="Inventory"><Inventory /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -95,7 +129,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Finance />
+                  <RouteErrorBoundary name="Finance"><Finance /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -105,7 +139,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Stores />
+                  <RouteErrorBoundary name="Stores"><Stores /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -115,7 +149,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Products />
+                  <RouteErrorBoundary name="Products"><Products /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -125,7 +159,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <POS />
+                  <RouteErrorBoundary name="POS"><POS /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -135,7 +169,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Employees />
+                  <RouteErrorBoundary name="Employees"><Employees /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -145,7 +179,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Customers />
+                  <RouteErrorBoundary name="Customers"><Customers /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -155,7 +189,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <CustomerProfile />
+                  <RouteErrorBoundary name="Customer Profile"><CustomerProfile /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -165,7 +199,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Reports />
+                  <RouteErrorBoundary name="Reports"><Reports /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -175,7 +209,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Expenses />
+                  <RouteErrorBoundary name="Expenses"><Expenses /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -185,7 +219,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Installments />
+                  <RouteErrorBoundary name="Installments"><Installments /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -195,7 +229,7 @@ function AppContent() {
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
-                  <Settings />
+                  <RouteErrorBoundary name="Settings"><Settings /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }

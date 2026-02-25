@@ -15,8 +15,9 @@ files:
   - '!prisma/dev.db-wal'
   - '!prisma/*-journal'
   - out/**
-  - src/generated/**
-  - node_modules/**
+  - src/generated/**/*.{js,node,d.ts}
+  - node_modules/.prisma/**
+  - node_modules/@prisma/client/**
   - package.json
   - prisma/template.db
   - prisma/schema.prisma
@@ -29,9 +30,10 @@ extraResources:
     to: prisma/schema.prisma
 asarUnpack:
   - resources/**
-  - src/generated/**
-  - node_modules/@prisma/**
+  - src/generated/prisma/**
+  - node_modules/@prisma/client/**
   - node_modules/.prisma/**
+  - node_modules/@prisma/engines/**
   - prisma/**
 win:
   executableName: BizFlow

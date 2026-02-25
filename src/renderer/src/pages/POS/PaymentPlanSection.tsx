@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Calendar, DollarSign } from 'lucide-react'
-import { PaymentPlan } from '../../../components/PaymentPlan'
+import { PaymentPlan } from '../../components/PaymentPlan'
 import DepositForm from './DepositForm'
 import InstallmentForm from './InstallmentForm'
 

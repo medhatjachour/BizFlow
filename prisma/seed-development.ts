@@ -949,6 +949,221 @@ async function main() {
   
   console.log(`✅ Created ${financialTransactionCount} financial transactions\n`)
 
+  // ==================== SUPPLIERS ====================
+  console.log('📦 Creating suppliers...')
+  const suppliers = await Promise.all([
+    prisma.supplier.create({
+      data: {
+        name: 'ABC Electronics Supply',
+        contactName: 'John Smith',
+        email: 'john@abcelectronics.com',
+        phone: '+1-555-7000',
+        address: '123 Supplier St, City',
+        paymentTerms: 'Net 30',
+        isActive: true,
+        notes: 'Primary electronics supplier'
+      }
+    }),
+    prisma.supplier.create({
+      data: {
+        name: 'Global Clothing Distributors',
+        contactName: 'Sarah Johnson',
+        email: 'sarah@globalclothing.com',
+        phone: '+1-555-8000',
+        address: '456 Fashion Ave, City',
+        paymentTerms: 'Net 45',
+        isActive: true,
+        notes: 'Quality clothing supplier'
+      }
+    }),
+    prisma.supplier.create({
+      data: {
+        name: 'Home & Kitchen Wholesale',
+        contactName: 'Mike Brown',
+        email: 'mike@homekitchen.com',
+        phone: '+1-555-9000',
+        address: '789 Kitchen Blvd, City',
+        paymentTerms: 'Net 60',
+        isActive: true
+      }
+    })
+  ])
+  console.log(`✅ Created ${suppliers.length} suppliers\n`)
+
+  // ==================== SUPPLIER PRODUCTS ====================
+  console.log('🔗 Linking products to suppliers...')
+  let supplierProductCount = 0
+  
+  // Link first 100 products to suppliers randomly
+  const productsToLink = products.slice(0, 100)
+  
+  for (const product of productsToLink) {
+    const supplier = suppliers[randomInt(0, suppliers.length - 1)]
+    const baseCost = product.baseCost || product.basePrice * 0.6
+    
+    await prisma.supplierProduct.create({
+      data: {
+        supplierId: supplier.id,
+        productId: product.id,
+        sku: `SUP-${product.baseSKU}`,
+        cost: baseCost,
+        leadTime: randomInt(7, 30),
+        minOrderQty: randomInt(10, 50),
+        isPreferred: Math.random() > 0.7
+      }
+    })
+    supplierProductCount++
+  }
+  
+  console.log(`✅ Created ${supplierProductCount} supplier-product links\n`)
+
+  // ==================== PURCHASE ORDERS ====================
+  console.log('📝 Creating purchase orders...')
+  let purchaseOrderCount = 0
+  const poStatuses = ['draft', 'ordered', 'received', 'cancelled']
+  
+  // Create 20 purchase orders over the past year
+  for (let i = 0; i < 20; i++) {
+    const supplier = suppliers[randomInt(0, suppliers.length - 1)]
+    const poDate = randomDate(
+      new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+      new Date()
+    )
+    
+    // Get 2-5 random products from this supplier
+    const supplierProducts = await prisma.supplierProduct.findMany({
+      where: { supplierId: supplier.id },
+      take: randomInt(2, 5),
+      include: { product: { include: { variants: true } } }
+    })
+    
+    if (supplierProducts.length === 0) continue
+    
+    const status = weightedRandom(poStatuses, [0.1, 0.3, 0.5, 0.1])
+    
+    // Calculate items and total
+    const items = supplierProducts.map(sp => {
+      const quantity = randomInt(10, 100)
+      const unitCost = sp.cost
+      const totalCost = quantity * unitCost
+      const variant = sp.product.variants[0] // Use first variant
+      
+      return {
+        productId: sp.productId,
+        variantId: variant?.id || null,
+        quantity,
+        unitCost,
+        totalCost,
+        receivedQty: status === 'received' ? quantity : 0
+      }
+    })
+    
+    const subtotal = items.reduce((sum, item) => sum + item.totalCost, 0)
+    const taxAmount = subtotal * 0.08
+    const shippingCost = randomPrice(50, 200)
+    const totalAmount = subtotal + taxAmount + shippingCost
+    
+    const po = await prisma.purchaseOrder.create({
+      data: {
+        poNumber: `PO-${String(i + 1).padStart(6, '0')}`,
+        supplierId: supplier.id,
+        status,
+        orderDate: poDate,
+        expectedDate: status !== 'cancelled' ? new Date(poDate.getTime() + randomInt(7, 21) * 24 * 60 * 60 * 1000) : null,
+        receivedDate: status === 'received' ? new Date(poDate.getTime() + randomInt(7, 14) * 24 * 60 * 60 * 1000) : null,
+        totalAmount,
+        taxAmount,
+        shippingCost,
+        notes: `Purchase order for ${supplier.name}`,
+        orderedBy: users[0].id,
+        approvedBy: status !== 'draft' ? users[1].id : null,
+        items: {
+          create: items
+        }
+      }
+    })
+    
+    purchaseOrderCount++
+  }
+  
+  console.log(`✅ Created ${purchaseOrderCount} purchase orders\n`)
+
+  // ==================== DEPOSITS & INSTALLMENTS ====================
+  console.log('💰 Creating deposits and installments...')
+  
+  // Get some recent customers with significant spending
+  const customersWithSales = await prisma.customer.findMany({
+    where: {
+      totalSpent: { gt: 1000 },
+      saleTransactions: { some: {} }
+    },
+    include: {
+      saleTransactions: {
+        take: 1,
+        orderBy: { createdAt: 'desc' }
+      }
+    },
+    take: 30
+  })
+  
+  let depositCount = 0
+  let installmentCount = 0
+  
+  // Get installment plans
+  const allPlans = await prisma.installmentPlan.findMany()
+  
+  for (let i = 0; i < Math.min(15, customersWithSales.length); i++) {
+    const customer = customersWithSales[i]
+    const sale = customer.saleTransactions[0]
+    const plan = allPlans[randomInt(0, allPlans.length - 1)]
+    
+    if (!sale || !plan) continue
+    
+    // Calculate payment schedule
+    const downPayment = sale.total * (plan.downPaymentPercent / 100)
+    const remaining = sale.total - downPayment
+    const installmentAmount = remaining / plan.numberOfPayments
+    
+    // Create deposit
+    await prisma.deposit.create({
+      data: {
+        amount: downPayment,
+        date: sale.createdAt,
+        method: sale.paymentMethod,
+        status: 'paid',
+        note: `Down payment (${plan.downPaymentPercent}%)`,
+        customerId: customer.id,
+        saleId: sale.id
+      }
+    })
+    depositCount++
+    
+    // Create installments
+    for (let j = 0; j < plan.numberOfPayments; j++) {
+      const dueDate = new Date(sale.createdAt)
+      dueDate.setDate(dueDate.getDate() + (plan.intervalDays * (j + 1)))
+      
+      // Randomly mark some as paid
+      const isPaid = j < 2 && Math.random() > 0.3
+      
+      await prisma.installment.create({
+        data: {
+          amount: installmentAmount,
+          dueDate,
+          paidDate: isPaid ? new Date(dueDate.getTime() - randomInt(0, 5) * 24 * 60 * 60 * 1000) : null,
+          status: isPaid ? 'paid' : (dueDate < new Date() ? 'overdue' : 'pending'),
+          note: `Payment ${j + 1} of ${plan.numberOfPayments}`,
+          customerId: customer.id,
+          saleId: sale.id,
+          planId: plan.id
+        }
+      })
+      installmentCount++
+    }
+  }
+  
+  console.log(`✅ Created ${depositCount} deposits and ${installmentCount} installments\n`)
+
   // ==================== INSTALLMENT PLANS ====================
   console.log('💳 Creating installment plans...')
   const installmentPlans = await prisma.installmentPlan.createMany({
@@ -1019,6 +1234,11 @@ async function main() {
   console.log(`   • ${totalStockMovements.toLocaleString()} sale-related stock movements`)
   console.log(`   • ${additionalStockMovements.toLocaleString()} additional stock movements`)
   console.log(`   • ${financialTransactionCount} financial transactions`)
+  console.log(`   • ${suppliers.length} suppliers`)
+  console.log(`   • ${supplierProductCount} supplier-product links`)
+  console.log(`   • ${purchaseOrderCount} purchase orders`)
+  console.log(`   • ${depositCount} deposits`)
+  console.log(`   • ${installmentCount} installments`)
   console.log(`   • ${installmentPlans.count} installment plans`)
   console.log(`\n⏱️  Completed in ${duration}s`)
   console.log('\n🔐 Login Credentials:')

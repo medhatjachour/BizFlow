@@ -85,24 +85,9 @@ export default function Customers(): JSX.Element {
       setCustomers(Array.isArray(data.customers) ? data.customers : [])
       setTotalCount(data.totalCount || 0)
       setHasMore(data.hasMore || false)
-      
-      if (data.customers.length === 0 && page === 0 && !debouncedSearch) {
-        const localCustomers = localStorage.getItem('customers')
-        if (localCustomers) {
-          const parsed = JSON.parse(localCustomers)
-          setCustomers(parsed)
-          setTotalCount(parsed.length)
-        }
-      }
     } catch (error) {
       console.error('Failed to load customers:', error)
-      const localCustomers = localStorage.getItem('customers')
-      if (localCustomers) {
-        const parsed = JSON.parse(localCustomers)
-        setCustomers(parsed)
-        setTotalCount(parsed.length)
-        toast.warning(t('usingLocalBackup'))
-      }
+      toast.error(t('failedToLoadCustomers'))
     } finally {
       setLoading(false)
     }
@@ -137,10 +122,6 @@ export default function Customers(): JSX.Element {
       
       if (result.success) {
         await loadCustomers()
-        if (Array.isArray(customers)) {
-          const updatedCustomers = [...customers, result.customer]
-          localStorage.setItem('customers', JSON.stringify(updatedCustomers))
-        }
         
         setShowAddModal(false)
         resetForm()

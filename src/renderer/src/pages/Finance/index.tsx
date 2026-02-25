@@ -306,12 +306,6 @@ export default function Finance() {
             badge="AI"
           />
           <TabButton
-            active={activeTab === 'health'}
-            onClick={() => setActiveTab('health')}
-            icon={<Activity size={18} />}
-            label={t('financeHealth')}
-          />
-          <TabButton
             active={activeTab === 'pricing'}
             onClick={() => setActiveTab('pricing')}
             icon={<Calculator size={18} />}
@@ -322,8 +316,14 @@ export default function Finance() {
             active={activeTab === 'installments'}
             onClick={() => setActiveTab('installments')}
             icon={<CreditCard size={18} />}
-            label="Installments"
+            label={t('financeInstallments')}
             badge="NEW"
+          />
+          <TabButton
+            active={activeTab === 'health'}
+            onClick={() => setActiveTab('health')}
+            icon={<Activity size={18} />}
+            label={t('financeHealth')}
           />
         </div>
       </div>

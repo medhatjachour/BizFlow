@@ -53,15 +53,58 @@ export async function initializeDatabase(): Promise<void> {
     
     // Copy the template.db from resources to initialize with schema (recommended)
     const templateDbPath = path.join(process.resourcesPath, 'prisma', 'template.db')
-
+    
+    // Debug: Log resource paths to diagnose issues
+    console.log('[DB Init] Resource path:', process.resourcesPath)
+    console.log('[DB Init] Looking for template at:', templateDbPath)
+    
+    // Check if template exists
     if (fs.existsSync(templateDbPath)) {
-      console.log('[DB Init] Copying template database from resources...')
-      fs.copyFileSync(templateDbPath, dbPath)
-      console.log('[DB Init] ✅ Database initialized from template')
+      const templateSize = fs.statSync(templateDbPath).size
+      console.log(`[DB Init] Found template database (${(templateSize / 1024).toFixed(2)} KB)`)
+      
+      // Verify template has content
+      if (templateSize < 10240) { // Less than 10KB
+        console.warn('[DB Init] ⚠️  Template database seems empty, falling back to schema creation')
+        await createDatabaseWithSchema(dbPath)
+      } else {
+        console.log('[DB Init] Copying template database to user data...')
+        fs.copyFileSync(templateDbPath, dbPath)
+        
+        // Verify copy succeeded
+        if (fs.existsSync(dbPath) && fs.statSync(dbPath).size > 10240) {
+          console.log('[DB Init] ✅ Database initialized from template')
+        } else {
+          console.error('[DB Init] ❌ Copy failed, creating from scratch')
+          await createDatabaseWithSchema(dbPath)
+        }
+      }
     } else {
       // Fallback: create database with schema using Prisma migrations
-      console.log('[DB Init] Template not found, creating database with schema...')
-      await createDatabaseWithSchema(dbPath)
+      console.warn('[DB Init] ⚠️  Template not found at expected location')
+      console.log('[DB Init] Checking alternative locations...')
+      
+      // Try alternative locations
+      const altPaths = [
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'prisma', 'template.db'),
+        path.join(__dirname, '..', '..', 'prisma', 'template.db')
+      ]
+      
+      let templateFound = false
+      for (const altPath of altPaths) {
+        console.log('[DB Init] Checking:', altPath)
+        if (fs.existsSync(altPath)) {
+          console.log('[DB Init] ✅ Found template at alternative location')
+          fs.copyFileSync(altPath, dbPath)
+          templateFound = true
+          break
+        }
+      }
+      
+      if (!templateFound) {
+        console.log('[DB Init] Creating database with schema from migrations...')
+        await createDatabaseWithSchema(dbPath)
+      }
     }
     
     console.log('[DB Init] ℹ️ Default setup user: username="setup", password="setup123"')
@@ -94,7 +137,19 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
     fs.writeFileSync(dbPath, '')
     
     // Import Prisma using require (works better in Electron production)
-    const { PrismaClient } = require('@prisma/client')
+    let PrismaClient
+    try {
+      PrismaClient = require('@prisma/client').PrismaClient
+    } catch (requireError) {
+      // Try custom generated path
+      console.warn('[DB Init] Standard @prisma/client not found, trying custom location...')
+      try {
+        PrismaClient = require(path.join(__dirname, '..', '..', 'generated', 'prisma')).PrismaClient
+      } catch (customError) {
+        console.error('[DB Init] ❌ Could not load PrismaClient from any location')
+        throw new Error('Prisma client not found. Please ensure the app is properly packaged.')
+      }
+    }
     
     const prisma = new PrismaClient({
       datasources: {

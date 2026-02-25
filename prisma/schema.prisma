@@ -1,7 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
   output        = "../src/generated/prisma"
-  binaryTargets = ["native", "debian-openssl-3.0.x", "windows", "darwin-arm64", "darwin"]
+  binaryTargets = ["native", "windows", "darwin-arm64", "darwin", "linux-musl", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -10,26 +10,33 @@ datasource db {
 }
 
 model User {
-  id                    String                 @id @default(uuid())
-  username              String                 @unique
-  passwordHash          String
-  role                  String                 @default("sales") // admin, manager, sales, inventory, finance
-  fullName              String?                // Full display name
-  email                 String?                @unique
-  phone                 String?
-  isActive              Boolean                @default(true) // Can disable users without deleting
-  lastLogin             DateTime?              // Track last login time
-  saleTransactions      SaleTransaction[]      // New transaction-based sales
-  financialTransactions FinancialTransaction[] // Financial records
-  stockMovements        StockMovement[]        // Inventory changes made by this user
-  emailReports          EmailReport[]          // Email report subscriptions
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
+  id                      String                 @id @default(uuid())
+  username                String                 @unique
+  passwordHash            String
+  role                    String                 @default("sales") // admin, manager, sales, inventory, finance
+  fullName                String?                // Full display name
+  email                   String?                @unique
+  phone                   String?
+  isActive                Boolean                @default(true) // Can disable users without deleting
+  lastLogin               DateTime?              // Track last login time
+  deactivatedAt           DateTime?              // When user was deactivated
+  deactivatedBy           String?                // User ID who deactivated this user
+  deactivatedByUser       User?                  @relation("UserDeactivations", fields: [deactivatedBy], references: [id], onDelete: SetNull)
+  deactivatedUsers        User[]                 @relation("UserDeactivations") // Users this user has deactivated
+  deactivatedProducts     Product[]              @relation("ProductDeactivations") // Products this user has deactivated
+  deactivatedCustomers    Customer[]             @relation("CustomerDeactivations") // Customers this user has deactivated
+  saleTransactions        SaleTransaction[]      // New transaction-based sales
+  financialTransactions   FinancialTransaction[] // Financial records
+  stockMovements          StockMovement[]        // Inventory changes made by this user
+  emailReports            EmailReport[]          // Email report subscriptions
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
   
   @@index([role])
   @@index([createdAt])
   @@index([username])
   @@index([isActive])
+  @@index([deactivatedBy])
 }
 
 model Category {
@@ -46,29 +53,32 @@ model Category {
 }
 
 model Product {
-  id            String           @id @default(uuid())
-  name          String
-  baseSKU       String           @unique
-  baseBarcode   String?          @unique // Barcode for products without variants
-  categoryId    String
-  category      Category         @relation(fields: [categoryId], references: [id])
-  description   String?
-  basePrice     Float
-  baseCost      Float
-  hasVariants   Boolean          @default(false)
-  isArchived    Boolean          @default(false) // Soft delete flag
-  archivedAt    DateTime?        // When product was archived
-  archivedBy    String?          // User ID who archived this product
-  archiveReason String?          // Why product was archived
-  storeId       String?          // Optional: Products can be assigned to specific stores
-  store         Store?           @relation(fields: [storeId], references: [id])
-  images        ProductImage[]
-  variants      ProductVariant[]
-  saleItems     SaleItem[]       // New transaction-based sale items
-  supplierProducts SupplierProduct[] // Supplier offerings for this product
+  id                 String           @id @default(uuid())
+  name               String
+  baseSKU            String           @unique
+  baseBarcode        String?          @unique // Barcode for products without variants
+  categoryId         String
+  category           Category         @relation(fields: [categoryId], references: [id])
+  description        String?
+  basePrice          Float
+  baseCost           Float
+  hasVariants        Boolean          @default(false)
+  isArchived         Boolean          @default(false) // Soft delete flag
+  archivedAt         DateTime?        // When product was archived
+  archivedBy         String?          // User ID who archived this product
+  archiveReason      String?          // Why product was archived
+  deactivatedAt      DateTime?        // When product was deactivated (alias for archivedAt for consistency)
+  deactivatedBy      String?          // User ID who deactivated this product
+  deactivatedByUser  User?            @relation("ProductDeactivations", fields: [deactivatedBy], references: [id], onDelete: SetNull) // User who deactivated, with safe deletion
+  storeId            String?          // Optional: Products can be assigned to specific stores
+  store              Store?           @relation(fields: [storeId], references: [id])
+  images             ProductImage[]
+  variants           ProductVariant[]
+  saleItems          SaleItem[]       // New transaction-based sale items
+  supplierProducts   SupplierProduct[] // Supplier offerings for this product
   purchaseOrderItems PurchaseOrderItem[] // Purchase order items for this product
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
   
   // Single-column indexes
   @@index([createdAt])
@@ -85,6 +95,7 @@ model Product {
   @@index([hasVariants, categoryId])
   @@index([basePrice, categoryId])
   @@index([isArchived, categoryId])
+  @@index([deactivatedBy])
 }
 
 model ProductImage {
@@ -262,8 +273,11 @@ model Customer {
   isArchived       Boolean           @default(false) // Soft delete flag
   archivedAt       DateTime?         // When customer was archived
   archivedBy       String?           // User ID who archived this customer
-  archiveReason    String?           // Why customer was archived
-  saleTransactions SaleTransaction[] // Sales linked to this customer
+  archiveReason      String?           // Why customer was archived
+  deactivatedAt      DateTime?         // When customer was deactivated (alias for archivedAt for consistency)
+  deactivatedBy      String?           // User ID who deactivated this customer
+  deactivatedByUser  User?             @relation("CustomerDeactivations", fields: [deactivatedBy], references: [id], onDelete: SetNull) // User who deactivated, with safe deletion
+  saleTransactions   SaleTransaction[] // Sales linked to this customer
   deposits         Deposit[]         // Deposits made by this customer
   installments     Installment[]     // Installments made by this customer
   createdAt        DateTime          @default(now())
@@ -274,6 +288,7 @@ model Customer {
   @@index([phone])
   @@index([loyaltyTier])
   @@index([isArchived])
+  @@index([deactivatedBy])
 }
 
 // Deposit model: upfront payment, optionally linked to a sale and/or customer
