@@ -17,6 +17,7 @@ import Button from '../../../components/ui/Button'
 import Modal from '../../../components/ui/Modal'
 import type { SupplierResponseDTO, CreateSupplierDTO, UpdateSupplierDTO, CreateSupplierProductDTO, SupplierProductResponseDTO } from '../../../../../shared/dtos/supplier.dto'
 import type { ProductResponseDTO } from '../../../../../shared/dtos/product.dto'
+import logger from '../../../../../shared/utils/logger'
 
 interface SupplierFormData {
   name: string
@@ -78,7 +79,7 @@ export default function Suppliers() {
         toast.error(`Failed to load suppliers: ${result.message}`)
       }
     } catch (error) {
-      console.error('Error loading suppliers:', error)
+      logger.error('Error loading suppliers:', error)
       toast.error('Failed to load suppliers')
     } finally {
       setLoading(false)
@@ -97,7 +98,7 @@ export default function Suppliers() {
         setProducts(result.products)
       }
     } catch (error) {
-      console.error('Error loading products:', error)
+      logger.error('Error loading products:', error)
     }
   }
 
@@ -113,7 +114,7 @@ export default function Suppliers() {
         setSupplierProducts([])
       }
     } catch (error) {
-      console.error('Error loading supplier products:', error)
+      logger.error('Error loading supplier products:', error)
       setSupplierProducts([])
     }
   }
@@ -160,7 +161,7 @@ export default function Suppliers() {
         toast.error(`Failed to create supplier: ${result.message}`)
       }
     } catch (error) {
-      console.error('Error creating supplier:', error)
+      logger.error('Error creating supplier:', error)
       toast.error('Failed to create supplier')
     }
   }
@@ -192,7 +193,7 @@ export default function Suppliers() {
         toast.error(`Failed to update supplier: ${result.message}`)
       }
     } catch (error) {
-      console.error('Error updating supplier:', error)
+      logger.error('Error updating supplier:', error)
       toast.error('Failed to update supplier')
     }
   }
@@ -213,7 +214,7 @@ export default function Suppliers() {
         toast.error(`Failed to deactivate supplier: ${result.message}`)
       }
     } catch (error) {
-      console.error('Error deactivating supplier:', error)
+      logger.error('Error deactivating supplier:', error)
       toast.error('Failed to deactivate supplier')
     }
   }
@@ -269,7 +270,7 @@ export default function Suppliers() {
         toast.error(`Failed to add product: ${result?.message || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Error adding product to supplier:', error)
+      logger.error('Error adding product to supplier:', error)
       toast.error('Failed to add product to supplier')
     }
   }
@@ -293,7 +294,7 @@ export default function Suppliers() {
         toast.error(`Failed to remove product: ${result?.message || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Error removing product from supplier:', error)
+      logger.error('Error removing product from supplier:', error)
       toast.error('Failed to remove product from supplier')
     }
   }

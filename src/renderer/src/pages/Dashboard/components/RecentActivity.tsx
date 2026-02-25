@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { Clock, DollarSign, ShoppingCart } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 export default function RecentActivity() {
   const { t } = useLanguage()
@@ -40,7 +41,7 @@ export default function RecentActivity() {
 
       setActivities(recentActivities)
     } catch (error) {
-      console.error('Error loading activities:', error)
+      logger.error('Error loading activities:', error)
     } finally {
       setLoading(false)
     }

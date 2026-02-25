@@ -12,6 +12,7 @@ import ProductForm from '../../components/ProductForm'
 import { PRODUCT_DEFAULTS } from '../../../../shared/constants'
 import StockMovementDialog from '../../components/StockMovementDialog'
 import type { Product } from './types'
+import logger from '../../../../shared/utils/logger'
 
 type Store = {
   id: string
@@ -207,7 +208,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         toast.error(result?.error || 'Failed to record stock movement')
       }
     } catch (error) {
-      console.error('Error recording stock movement:', error)
+      logger.error('Error recording stock movement:', error)
       toast.error('Failed to record stock movement')
     }
   }
@@ -259,7 +260,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
       const data = await ipc.stores.getAll()
       setStores(data.filter((s: any) => s.status === 'active'))
     } catch (error) {
-      console.error('Failed to load stores:', error)
+      logger.error('Failed to load stores:', error)
     }
   }
 
@@ -270,7 +271,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         setCategories(result.categories)
       }
     } catch (error) {
-      console.error('Failed to load categories:', error)
+      logger.error('Failed to load categories:', error)
     }
   }
 
@@ -392,7 +393,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         return
       }
     } catch (error) {
-      console.error('Error checking barcode uniqueness:', error)
+      logger.error('Error checking barcode uniqueness:', error)
       toast.error('Failed to validate barcode uniqueness')
       return
     }
@@ -601,7 +602,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         }
       }
     } catch (error) {
-      console.error('Error checking barcode uniqueness:', error)
+      logger.error('Error checking barcode uniqueness:', error)
       toast.error('Failed to validate barcode uniqueness')
       return
     }
@@ -688,7 +689,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         toast.error(errorMsg, 8000) // 8 seconds for longer error messages
       }
     } catch (error: any) {
-      console.error('Failed to save product:', error)
+      logger.error('Failed to save product:', error)
       // Show detailed error with stack trace if available
       const errorMsg = error?.message || error?.toString() || 'Failed to save product'
       toast.error(`Error: ${errorMsg}`, 8000)

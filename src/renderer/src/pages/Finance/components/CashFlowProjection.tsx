@@ -13,6 +13,7 @@ import { DollarSign, TrendingDown, TrendingUp, AlertTriangle, CheckCircle, HelpC
 import { useLanguage } from '../../../contexts/LanguageContext'
 import { Chart } from 'react-chartjs-2'
 import {
+import logger from '../../../../../shared/utils/logger'
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -68,7 +69,7 @@ export default function CashFlowProjection() {
       const data = await window.api['forecast:cashflow']({ days })
       setCashFlow(data)
     } catch (error) {
-      console.error('Error loading cash flow:', error)
+      logger.error('Error loading cash flow:', error)
     } finally {
       setLoading(false)
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, Package, TrendingDown, Clock, RefreshCw, ShoppingCart } from 'lucide-react';
 import { useToast } from '../../../contexts/ToastContext';
+import logger from '../../../../../shared/utils/logger'
 
 interface ReorderAlert {
   productId: string;
@@ -70,7 +71,7 @@ export default function ReorderAlerts({ onCreatePurchaseOrder }: ReorderAlertsPr
         showToast('error', result.error || 'Failed to load reorder alerts');
       }
     } catch (error) {
-      console.error('Error loading reorder alerts:', error);
+      logger.error('Error loading reorder alerts:', error);
       showToast('error', 'Failed to load reorder alerts');
     } finally {
       setLoading(false);

@@ -22,6 +22,7 @@ import { useToast } from '../contexts/ToastContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
 import { ReceiptPreviewModal } from './Sales/ReceiptPreviewModal'
+import logger from '../../../shared/utils/logger'
 
 type CustomerProfile = {
   id: string
@@ -86,7 +87,7 @@ export default function CustomerProfile() {
         navigate('/customers')
       }
     } catch (error) {
-      console.error('Error loading customer profile:', error)
+      logger.error('Error loading customer profile:', error)
       toast?.showToast( 'error','Customer not found')
     } finally {
       setLoading(false)
@@ -107,7 +108,7 @@ export default function CustomerProfile() {
       const receiptData = await ipc.saleTransactions.getById(transaction.id)
       setSelectedReceipt(receiptData)
     } catch (error) {
-      console.error('Error loading receipt:', error)
+      logger.error('Error loading receipt:', error)
       toast?.showToast( 'error','Failed to load receipt')
     }
   }
@@ -128,7 +129,7 @@ export default function CustomerProfile() {
         throw new Error(result.error || 'Failed to mark installment as paid')
       }
     } catch (error) {
-      console.error('Error marking installment as paid:', error)
+      logger.error('Error marking installment as paid:', error)
       toast?.showToast('error','Failed to mark installment as paid')
     } finally {
       setMarkingPaid(null)

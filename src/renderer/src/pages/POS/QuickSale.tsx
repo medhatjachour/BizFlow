@@ -17,6 +17,7 @@ import { PaymentFlowSelector } from './PaymentFlowSelector'
 import { ReceiptPreviewModal } from '../Sales/ReceiptPreviewModal'
 import type { Customer } from './types'
 import { BARCODE_PATTERNS, SEARCH_CONFIG } from '../../../../shared/constants'
+import logger from '../../../../shared/utils/logger'
 
 type ProductVariant = {
   id: string
@@ -146,7 +147,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
         setCustomers([])
       }
     } catch (error) {
-      console.error('Error loading customers:', error)
+      logger.error('Error loading customers:', error)
       setCustomers([])
     }
   }
@@ -182,7 +183,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
         }
       }
     } catch (error) {
-      console.error('Error refreshing stock:', error)
+      logger.error('Error refreshing stock:', error)
     }
   }
 
@@ -266,7 +267,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
         // DON'T refocus - scanner works when input is NOT focused
       }
     } catch (error) {
-      console.error('Search error:', error)
+      logger.error('Search error:', error)
       setSearchResults([])
       setShowDropdown(false)
       setSelectedIndex(-1)
@@ -399,7 +400,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
       // DON'T refocus search input - scanner works when input is NOT focused
       // This prevents barcode characters from leaking into search field
     } catch (error) {
-      console.error('Error scanning barcode:', error)
+      logger.error('Error scanning barcode:', error)
       showToast('error', 'Failed to add product')
     }
   }, [addToCart, showToast])
@@ -675,7 +676,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
               saleId: result.transaction.id
             })
           } catch (linkError) {
-            console.error('Failed to link deposits/installments to sale:', linkError)
+            logger.error('Failed to link deposits/installments to sale:', linkError)
           }
         }
 
@@ -763,7 +764,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
       setShowPaymentOptions(false)
       
     } catch (error) {
-      console.error('Sale error:', error)
+      logger.error('Sale error:', error)
       showToast('error', 'Sale failed')
     }
   }

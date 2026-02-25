@@ -7,6 +7,7 @@ import { Database, Download, Upload, HardDrive, Trash2, RefreshCw } from 'lucide
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useToast } from '../../contexts/ToastContext'
 import type { BackupSettings } from './types'
+import logger from '../../../../shared/utils/logger'
 
 type Backup = {
   filename: string
@@ -44,7 +45,7 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         toast.error(result.error || 'Failed to load backups')
       }
     } catch (error) {
-      console.error('Failed to load backups:', error)
+      logger.error('Failed to load backups:', error)
       toast.error('Failed to load backups')
     } finally {
       setLoading(false)
@@ -81,7 +82,7 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         toast.error(result.error || 'Failed to create backup')
       }
     } catch (error) {
-      console.error('Backup failed:', error)
+      logger.error('Backup failed:', error)
       toast.error('Failed to create backup')
     } finally {
       setLoading(false)
@@ -118,7 +119,7 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         toast.error(result.error || 'Failed to restore backup')
       }
     } catch (error) {
-      console.error('Restore failed:', error)
+      logger.error('Restore failed:', error)
       toast.error('Failed to restore backup')
     } finally {
       setLoading(false)
@@ -140,7 +141,7 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         toast.error(result.error || 'Failed to delete backup')
       }
     } catch (error) {
-      console.error('Delete failed:', error)
+      logger.error('Delete failed:', error)
       toast.error('Failed to delete backup')
     }
   }
@@ -154,7 +155,7 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         toast.success('Backup location updated')
       }
     } catch (error) {
-      console.error('Failed to select directory:', error)
+      logger.error('Failed to select directory:', error)
       toast.error('Failed to select directory')
     }
   }

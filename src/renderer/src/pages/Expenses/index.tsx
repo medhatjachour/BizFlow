@@ -39,6 +39,7 @@ import { useToast } from '../../contexts/ToastContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import * as XLSX from 'xlsx'
 import { Pie, Bar } from 'react-chartjs-2'
+import logger from '../../../../shared/utils/logger'
 
 type ExpenseCategory = 
   | 'rent'
@@ -119,7 +120,7 @@ export default function Expenses() {
       setTotalSalaries(activeSalaries)
       setEmployeeCount(employees.length)
     } catch (err) {
-      console.error('Failed to load salary data:', err)
+      logger.error('Failed to load salary data:', err)
     }
   }
 
@@ -166,7 +167,7 @@ export default function Expenses() {
 
       setTotalCOGS(totalCOGS)
     } catch (err) {
-      console.error('Failed to load COGS data:', err)
+      logger.error('Failed to load COGS data:', err)
     }
   }
 
@@ -205,7 +206,7 @@ export default function Expenses() {
       const expenseData = data.filter((t: any) => t.type === 'expense')
       setExpenses(expenseData)
     } catch (err) {
-      console.error('Error loading expenses:', err)
+      logger.error('Error loading expenses:', err)
       error(t('failedToLoadData'))
     } finally {
       setLoading(false)
@@ -272,7 +273,7 @@ export default function Expenses() {
       setFormData({ amount: 0, description: '', category: 'other' })
       loadExpenses()
     } catch (err) {
-      console.error('Error saving expense:', err)
+      logger.error('Error saving expense:', err)
       error(t('failedToSaveExpense'))
     }
   }
@@ -285,7 +286,7 @@ export default function Expenses() {
       success(t('expenseDeleted'))
       loadExpenses()
     } catch (err) {
-      console.error('Error deleting expense:', err)
+      logger.error('Error deleting expense:', err)
       error(t('failedToDeleteExpense'))
     }
   }
@@ -310,7 +311,7 @@ export default function Expenses() {
 
       success(t('expensesExported'))
     } catch (err) {
-      console.error('Export error:', err)
+      logger.error('Export error:', err)
       error(t('failedToExportExpenses'))
     }
   }

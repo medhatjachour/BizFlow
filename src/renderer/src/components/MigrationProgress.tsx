@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { Loader2, CheckCircle, XCircle, Database, AlertTriangle } from 'lucide-react'
+import logger from '../../../shared/utils/logger'
 
 type MigrationStatus = 'starting' | 'running' | 'validating' | 'completed' | 'failed' | null
 
@@ -16,34 +17,34 @@ export function MigrationProgress() {
   useEffect(() => {
     // Check if migration API is available
     if (!window.api?.migration) {
-      console.warn('[MigrationUI] Migration API not available')
+      logger.warn('[MigrationUI] Migration API not available')
       return undefined
     }
 
     const handleMigrationStarting = () => {
-      console.log('[MigrationUI] Starting migration...')
+      logger.info('[MigrationUI] Starting migration...')
       setStatus('starting')
     }
 
     const handleMigrationRunning = () => {
-      console.log('[MigrationUI] Running migration...')
+      logger.info('[MigrationUI] Running migration...')
       setStatus('running')
     }
 
     const handleMigrationValidating = () => {
-      console.log('[MigrationUI] Validating migration...')
+      logger.info('[MigrationUI] Validating migration...')
       setStatus('validating')
     }
 
     const handleMigrationCompleted = () => {
-      console.log('[MigrationUI] Migration completed!')
+      logger.info('[MigrationUI] Migration completed!')
       setStatus('completed')
       // Auto-hide after 3 seconds
       setTimeout(() => setStatus(null), 3000)
     }
 
     const handleMigrationFailed = (_event: any, errorMsg: string) => {
-      console.error('[MigrationUI] Migration failed:', errorMsg)
+      logger.error('[MigrationUI] Migration failed:', errorMsg)
       setStatus('failed')
       setError(errorMsg)
     }
@@ -65,7 +66,7 @@ export function MigrationProgress() {
         unsubscribeFailed()
       }
     } catch (err) {
-      console.error('[MigrationUI] Error setting up migration listeners:', err)
+      logger.error('[MigrationUI] Error setting up migration listeners:', err)
       return undefined
     }
   }, [])

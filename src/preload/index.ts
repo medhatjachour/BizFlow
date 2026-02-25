@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import log from 'electron-log/preload'
 
 // Custom APIs for renderer
 const api = {
@@ -439,7 +440,7 @@ if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
-    console.error(error)
+    log.error('contextBridge setup failed:', error)
   }
 } else {
   // @ts-ignore (define in dts)

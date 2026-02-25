@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { CheckCircle, Clock, Calendar, AlertCircle, Search, X } from 'lucide-react'
 import { useToast } from '../contexts/ToastContext'
 import { ipc } from '../utils/ipc'
+import logger from '../../../shared/utils/logger'
 
 interface Installment {
   id: string
@@ -65,7 +66,7 @@ export const InstallmentManager: React.FC<InstallmentManagerProps> = ({
         setInstallments([])
       }
     } catch (error) {
-      console.error('Error loading installments:', error)
+      logger.error('Error loading installments:', error)
       showToast('error', `Failed to load installments: ${error}`)
       setInstallments([])
     } finally {
@@ -95,7 +96,7 @@ export const InstallmentManager: React.FC<InstallmentManagerProps> = ({
         throw new Error(result.error || 'Failed to mark installment as paid')
       }
     } catch (error) {
-      console.error('Error marking installment as paid:', error)
+      logger.error('Error marking installment as paid:', error)
       showToast('error', 'Failed to mark installment as paid')
     } finally {
       setMarkingPaid(null)

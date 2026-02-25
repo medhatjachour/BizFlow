@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { TrendingUp, TrendingDown, Calendar, DollarSign, ShoppingBag, Percent } from 'lucide-react'
 import { formatCurrency, formatLargeNumber } from '@renderer/utils/formatNumber'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 export default function SalesChart() {
   const { t } = useLanguage()
@@ -71,7 +72,7 @@ export default function SalesChart() {
 
       setChartData(data)
     } catch (error) {
-      console.error('Error loading chart data:', error)
+      logger.error('Error loading chart data:', error)
     } finally {
       setLoading(false)
     }

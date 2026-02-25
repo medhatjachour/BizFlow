@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { UserPlus, Edit2, Shield, Lock, Eye, EyeOff, CheckCircle, XCircle, UserX } from 'lucide-react'
 import SmartDeleteDialog from '../../components/SmartDeleteDialog'
 import { useAuth } from '../../../hooks/useAuth'
+import logger from '../../../../shared/utils/logger'
 
 interface User {
   id: string
@@ -85,7 +86,7 @@ export default function UserManagementSettings() {
         setUsers(result.data)
       }
     } catch (error) {
-      console.error('Failed to load users:', error)
+      logger.error('Failed to load users:', error)
     } finally {
       setLoading(false)
     }
@@ -133,7 +134,7 @@ export default function UserManagementSettings() {
         alert(`Failed to create user: ${result.error}`)
       }
     } catch (error) {
-      console.error('Failed to create user:', error)
+      logger.error('Failed to create user:', error)
       alert('Failed to create user')
     }
   }
@@ -159,7 +160,7 @@ export default function UserManagementSettings() {
         alert(`Failed to update user: ${result.error}`)
       }
     } catch (error) {
-      console.error('Failed to update user:', error)
+      logger.error('Failed to update user:', error)
       alert('Failed to update user')
     }
   }
@@ -189,7 +190,7 @@ export default function UserManagementSettings() {
         alert(`Failed to change password: ${result.error}`)
       }
     } catch (error) {
-      console.error('Failed to change password:', error)
+      logger.error('Failed to change password:', error)
       alert('Failed to change password')
     }
   }
@@ -204,7 +205,7 @@ export default function UserManagementSettings() {
         await loadUsers()
       }
     } catch (error) {
-      console.error('Failed to toggle user status:', error)
+      logger.error('Failed to toggle user status:', error)
     }
   }
 
@@ -223,7 +224,7 @@ export default function UserManagementSettings() {
         alert('Failed to check user dependencies')
       }
     } catch (error) {
-      console.error('Failed to check user:', error)
+      logger.error('Failed to check user:', error)
       alert('Failed to check user')
     }
   }
@@ -243,7 +244,7 @@ export default function UserManagementSettings() {
         alert(result.error || 'Failed to delete user')
       }
     } catch (error) {
-      console.error('Failed to delete user:', error)
+      logger.error('Failed to delete user:', error)
       alert('Failed to delete user')
     }
   }
@@ -264,7 +265,7 @@ export default function UserManagementSettings() {
         alert('Failed to deactivate user')
       }
     } catch (error) {
-      console.error('Failed to deactivate user:', error)
+      logger.error('Failed to deactivate user:', error)
       alert('Failed to deactivate user')
     }
   }

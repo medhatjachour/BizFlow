@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { Mail, Send, Eye, TestTube, Clock, CheckCircle, XCircle } from 'lucide-react'
+import logger from '../../../../shared/utils/logger'
 
 interface EmailSettingsData {
   userId: string
@@ -43,7 +44,7 @@ export default function EmailSettings({ onSave }: Props) {
         setSettings(result.config)
       }
     } catch (error) {
-      console.error('Failed to load email settings:', error)
+      logger.error('Failed to load email settings:', error)
     } finally {
       setLoading(false)
     }
@@ -62,7 +63,7 @@ export default function EmailSettings({ onSave }: Props) {
         setMessage({ type: 'error', text: result.error || 'Failed to save settings' })
       }
     } catch (error) {
-      console.error('Failed to save email settings:', error)
+      logger.error('Failed to save email settings:', error)
       setMessage({ type: 'error', text: 'Failed to save email settings' })
     } finally {
       setSaving(false)
@@ -86,7 +87,7 @@ export default function EmailSettings({ onSave }: Props) {
         setMessage({ type: 'error', text: result.error || 'Failed to send test email' })
       }
     } catch (error) {
-      console.error('Failed to send test email:', error)
+      logger.error('Failed to send test email:', error)
       setMessage({ type: 'error', text: 'Failed to send test email' })
     } finally {
       setTesting(false)
@@ -103,7 +104,7 @@ export default function EmailSettings({ onSave }: Props) {
         setMessage({ type: 'error', text: result.error || 'Failed to generate preview' })
       }
     } catch (error) {
-      console.error('Failed to generate preview:', error)
+      logger.error('Failed to generate preview:', error)
       setMessage({ type: 'error', text: 'Failed to generate preview' })
     } finally {
       setLoading(false)
@@ -122,7 +123,7 @@ export default function EmailSettings({ onSave }: Props) {
         setMessage({ type: 'error', text: result.error || 'Failed to send report' })
       }
     } catch (error) {
-      console.error('Failed to send report:', error)
+      logger.error('Failed to send report:', error)
       setMessage({ type: 'error', text: 'Failed to send report' })
     } finally {
       setLoading(false)

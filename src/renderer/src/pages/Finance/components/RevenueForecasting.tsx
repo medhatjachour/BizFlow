@@ -13,6 +13,7 @@ import { TrendingUp, TrendingDown, Minus, AlertCircle, Calendar, HelpCircle } fr
 import { useLanguage } from '../../../contexts/LanguageContext'
 import { Line } from 'react-chartjs-2'
 import {
+import logger from '../../../../../shared/utils/logger'
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -67,7 +68,7 @@ export default function RevenueForecasting() {
       const data = await window.api['forecast:revenue']({ days, historicalDays: 90 })
       setForecast(data)
     } catch (error) {
-      console.error('Error loading forecast:', error)
+      logger.error('Error loading forecast:', error)
     } finally {
       setLoading(false)
     }

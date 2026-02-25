@@ -38,6 +38,7 @@ import FinancialHealthDashboard from './components/FinancialHealth'
 import PricingCalculator from './components/PricingCalculator'
 import StoreComparisonSection from './components/StoreComparisonSection'
 import InstallmentPlansSection from './components/InstallmentPlansSection'
+import logger from '../../../../shared/utils/logger'
 
 // Register ChartJS components
 ChartJS.register(
@@ -183,10 +184,10 @@ export default function Finance() {
         setSalesByCategory(data.salesByCategory || [])
       }
     } catch (error) {
-      console.error('Error loading finance data:', error)
+      logger.error('Error loading finance data:', error)
       // Show error without including toast in dependencies
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error('Failed to load finance data:', errorMessage)
+      logger.error('Failed to load finance data:', errorMessage)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -230,7 +231,7 @@ export default function Finance() {
 
       toast.success(`${t('financeExportSuccess')}: ${t('financeReportExported')} ${filename}`)
     } catch (error) {
-      console.error('Export error:', error)
+      logger.error('Export error:', error)
       toast.error(`${t('financeExportFailed')}: ${error instanceof Error ? error.message : t('financeUnknownError')}`)
     } finally {
       setExporting(false)

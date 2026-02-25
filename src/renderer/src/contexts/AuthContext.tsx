@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useMemo } from 'react'
+import logger from '../../../shared/utils/logger'
 
 type User = { id: string; username: string; role: string } | null
 
@@ -51,12 +52,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (e) {
-      console.error('API login failed', e)
+      logger.error('API login failed', e)
       throw e
     }
 
     // Fallback: mock user (should not happen if database works)
-    console.warn('⚠️ Using fallback mock login - database API not available')
+    logger.warn('⚠️ Using fallback mock login - database API not available')
     const mock = { id: 'mock-' + Date.now(), username, role: 'admin' }
     setUser(mock)
     localStorage.setItem('user', JSON.stringify(mock))
@@ -75,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.error('logout IPC failed', e)
+      logger.error('logout IPC failed', e)
     }
   }
 

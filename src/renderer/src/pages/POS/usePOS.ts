@@ -7,6 +7,7 @@ import { ipc } from '../../utils/ipc'
 import { useDisplaySettings } from '../../contexts/DisplaySettingsContext'
 import type { Product, Customer, CartItem, PaymentMethod } from './types'
 import type { DiscountData } from '../../components/DiscountModal'
+import logger from '../../../../shared/utils/logger'
 
 export function usePOS() {
   const [products, setProducts] = useState<Product[]>([])
@@ -51,7 +52,7 @@ export function usePOS() {
       }))
       setProducts(productsWithStock)
     } catch (error) {
-      console.error('Failed to load products:', error)
+      logger.error('Failed to load products:', error)
       setProducts([])
     } finally {
       setLoading(false)
@@ -65,7 +66,7 @@ export function usePOS() {
       const customersList = Array.isArray(data) ? data : (data?.customers || [])
       setCustomers(Array.isArray(customersList) ? customersList : [])
     } catch (error) {
-      console.error('Failed to load customers:', error)
+      logger.error('Failed to load customers:', error)
       setCustomers([])
     }
   }
@@ -170,7 +171,7 @@ export function usePOS() {
     // Use override customer if provided, otherwise use state
     const currentCustomer = overrideCustomer !== undefined ? overrideCustomer : selectedCustomer
     
-    console.log('🛒 completeSale called:', { 
+    logger.info('🛒 completeSale called:', { 
       selectedCustomer, 
       overrideCustomer, 
       currentCustomer,
@@ -232,7 +233,7 @@ export function usePOS() {
       const finalCustomerName = currentCustomer?.name || customerQuery.trim() || null
       const finalCustomerId = currentCustomer?.id || null
       
-      console.log('💰 Preparing transaction:', {
+      logger.info('💰 Preparing transaction:', {
         finalCustomerId,
         finalCustomerName,
         items: cart.length,
@@ -300,9 +301,9 @@ export function usePOS() {
             })
           }
           
-          console.log(`✅ Linked ${unlinkedDeposits.length} deposits and ${unlinkedInstallments.length} installments to sale ${result.transaction.id}`)
+          logger.info(`✅ Linked ${unlinkedDeposits.length} deposits and ${unlinkedInstallments.length} installments to sale ${result.transaction.id}`)
         } catch (linkError) {
-          console.error('⚠️ Failed to link deposits/installments to sale:', linkError)
+          logger.error('⚠️ Failed to link deposits/installments to sale:', linkError)
           // Don't fail the sale for this - it's not critical
         }
       }
@@ -330,7 +331,7 @@ export function usePOS() {
       }
       
     } catch (error) {
-      console.error('❌ Failed to complete sale:', error)
+      logger.error('❌ Failed to complete sale:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       
       if (errorMessage.includes('Foreign key constraint failed') || errorMessage.includes('userId')) {
@@ -479,7 +480,7 @@ export function usePOS() {
       }, 2000)
       
     } catch (error) {
-      console.error('❌ Failed to complete sale:', error)
+      logger.error('❌ Failed to complete sale:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
       
       if (errorMessage.includes('Foreign key constraint failed') || errorMessage.includes('userId')) {

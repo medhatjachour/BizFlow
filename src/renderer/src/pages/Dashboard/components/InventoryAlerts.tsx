@@ -9,6 +9,7 @@ import { AlertTriangle, Package, ArrowRight } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 export default function InventoryAlerts() {
   const { user } = useAuth()
@@ -29,7 +30,7 @@ export default function InventoryAlerts() {
       const lowStock = await (globalThis as any).api?.inventory?.getLowStock(10)
       setAlerts((lowStock || []).slice(0, 5))
     } catch (error) {
-      console.error('Error loading alerts:', error)
+      logger.error('Error loading alerts:', error)
     } finally {
       setLoading(false)
     }

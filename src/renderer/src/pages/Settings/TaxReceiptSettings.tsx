@@ -4,6 +4,7 @@
 
 import { useLanguage } from '../../contexts/LanguageContext'
 import type { TaxReceiptSettings } from './types'
+import logger from '../../../../shared/utils/logger'
 
 type Props = {
   settings: TaxReceiptSettings
@@ -171,7 +172,7 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
                       alert('No USB printers detected')
                     }
                   } catch (error) {
-                    console.error('Detection error:', error)
+                    logger.error('Detection error:', error)
                     alert('Failed to detect printers')
                   }
                 }}

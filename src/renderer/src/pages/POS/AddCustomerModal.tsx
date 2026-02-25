@@ -10,6 +10,7 @@ import { ipc } from '../../utils/ipc'
 import { useToast } from '../../contexts/ToastContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import type { Customer } from './types'
+import logger from '../../../../shared/utils/logger'
 
 type Props = {
   show: boolean
@@ -63,7 +64,7 @@ export default function AddCustomerModal({ show, onClose, onCustomerAdded }: Pro
         }
       }
     } catch (error: any) {
-      console.error('Failed to add customer:', error)
+      logger.error('Failed to add customer:', error)
       toast.error(error?.message || t('failedToAddCustomer'))
     } finally {
       setLoading(false)

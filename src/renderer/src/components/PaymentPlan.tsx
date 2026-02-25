@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { DollarSign, Calendar, CheckCircle, Clock, AlertTriangle, Check } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import logger from '../../../shared/utils/logger'
 
 export type Deposit = {
   id: string
@@ -64,7 +65,7 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
           setInstallments(installmentData)
         }
       } catch (error) {
-        console.error('Error loading payment plan:', error)
+        logger.error('Error loading payment plan:', error)
       } finally {
         setLoading(false)
       }
@@ -124,7 +125,7 @@ export const PaymentPlan: React.FC<PaymentPlanProps> = ({ customerId, saleId, re
         alert('Failed to mark installment as paid: ' + result.error)
       }
     } catch (error) {
-      console.error('Error marking installment as paid:', error)
+      logger.error('Error marking installment as paid:', error)
       alert('Failed to mark installment as paid')
     }
   }

@@ -21,6 +21,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useDebounce } from './useDebounce'
+import logger from '../../../shared/utils/logger'
 
 interface SearchFilters {
   query?: string
@@ -157,7 +158,7 @@ export function useBackendSearch<T = any>(params: SearchParams): SearchResult<T>
       }
 
       if (isMountedRef.current) {
-        console.error('Backend search error:', err)
+        logger.error('Backend search error:', err)
         setError(err.message || 'Failed to search')
         setData([])
       }
@@ -261,7 +262,7 @@ export function useFilterMetadata() {
         const result = await api['search:getFilterMetadata']()
         setMetadata(result)
       } catch (err: any) {
-        console.error('Failed to load filter metadata:', err)
+        logger.error('Failed to load filter metadata:', err)
         setError(err.message)
       } finally {
         setLoading(false)

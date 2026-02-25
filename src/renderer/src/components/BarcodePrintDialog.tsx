@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import Modal from './ui/Modal'
 import { useToast } from '../contexts/ToastContext'
 import { Printer, RefreshCw } from 'lucide-react'
+import logger from '../../../shared/utils/logger'
 
 interface Props {
   isOpen: boolean
@@ -45,7 +46,7 @@ export default function BarcodePrintDialog({ isOpen, onClose, barcode, productNa
         toast.error(result.message || 'Failed to detect printers')
       }
     } catch (error: any) {
-      console.error('Error detecting printers:', error)
+      logger.error('Error detecting printers:', error)
       toast.error('Failed to detect printers')
     } finally {
       setDetecting(false)
@@ -76,7 +77,7 @@ export default function BarcodePrintDialog({ isOpen, onClose, barcode, productNa
         toast.error(result.message || 'Failed to send test page')
       }
     } catch (error: any) {
-      console.error('Error testing printer:', error)
+      logger.error('Error testing printer:', error)
       toast.error('Failed to test printer')
     } finally {
       setLoading(false)
@@ -120,7 +121,7 @@ export default function BarcodePrintDialog({ isOpen, onClose, barcode, productNa
         toast.error(result.message || 'Failed to print barcode', 8000)
       }
     } catch (error: any) {
-      console.error('Error printing barcode:', error)
+      logger.error('Error printing barcode:', error)
       toast.error('Failed to print barcode')
     } finally {
       setLoading(false)

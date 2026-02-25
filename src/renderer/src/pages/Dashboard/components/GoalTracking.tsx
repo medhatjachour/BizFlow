@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { Target, TrendingUp, Edit2, Plus, X, Save } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 type Goal = {
   id: string
@@ -29,7 +30,7 @@ export default function GoalTracking() {
         return Array.isArray(parsed) ? parsed : []
       }
     } catch (error) {
-      console.error('Error loading goals from localStorage:', error)
+      logger.error('Error loading goals from localStorage:', error)
     }
     
     // Return default goals if nothing saved
@@ -71,7 +72,7 @@ export default function GoalTracking() {
     try {
       localStorage.setItem('dashboard-goals', JSON.stringify(goals))
     } catch (error) {
-      console.error('Error saving goals to localStorage:', error)
+      logger.error('Error saving goals to localStorage:', error)
     }
   }, [goals])
 
@@ -122,14 +123,14 @@ export default function GoalTracking() {
             return createdAt >= startOfMonth && createdAt <= endOfMonth
           }).length
           
-          console.log('📊 Goal Tracking - New Customers:', {
+          logger.info('📊 Goal Tracking - New Customers:', {
             total: customersResponse.customers.length,
             newInPeriod: newCustomersCount,
             period: { start: startOfMonth, end: endOfMonth }
           })
         }
       } catch (error) {
-        console.error('Error loading customer data for goals:', error)
+        logger.error('Error loading customer data for goals:', error)
       }
 
       if (financeData) {
@@ -147,7 +148,7 @@ export default function GoalTracking() {
         }))
       }
     } catch (error) {
-      console.error('Error loading goal progress:', error)
+      logger.error('Error loading goal progress:', error)
     } finally {
       setLoading(false)
     }

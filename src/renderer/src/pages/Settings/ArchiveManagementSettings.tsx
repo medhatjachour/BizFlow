@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Archive, RefreshCw, Trash2, Search, Package, Users, User } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import logger from '../../../../shared/utils/logger'
 
 type ArchiveTab = 'products' | 'customers' | 'users'
 
@@ -65,11 +66,11 @@ export default function ArchiveManagementSettings() {
         
         setItems(transformedItems)
       } else {
-        console.error(`Failed to load archived ${activeTab}:`, result.error || 'Unknown error')
+        logger.error(`Failed to load archived ${activeTab}:`, result.error || 'Unknown error')
         setItems([])
       }
     } catch (error) {
-      console.error(`Failed to load archived ${activeTab}:`, error)
+      logger.error(`Failed to load archived ${activeTab}:`, error)
       setItems([])
     } finally {
       setLoading(false)
@@ -98,7 +99,7 @@ export default function ArchiveManagementSettings() {
         alert(`Failed to ${t('restore').toLowerCase()}: ${result.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Restore failed:', error)
+      logger.error('Restore failed:', error)
       alert('Failed to restore item')
     } finally {
       setActionLoading(null)
@@ -130,7 +131,7 @@ export default function ArchiveManagementSettings() {
         alert(`${t('cannotPermanentlyDelete')}: ${result.error}\n\nTip: ${t('mayHaveDependencies')}`)
       }
     } catch (error: any) {
-      console.error('Permanent delete failed:', error)
+      logger.error('Permanent delete failed:', error)
       alert(`${t('deleteFailed')}: ${error.message || 'Unknown error'}`)
     } finally {
       setActionLoading(null)

@@ -5,6 +5,7 @@
  */
 
 import { Product } from '../../../shared/types'
+import logger from '../../../shared/utils/logger'
 
 // Extended types for services
 interface Employee {
@@ -64,7 +65,7 @@ class IPCClient {
       }
       throw new Error('IPC not available')
     } catch (error) {
-      console.error(`IPC Error [${channel}]:`, error)
+      logger.error(`IPC Error [${channel}]:`, error)
       throw error
     }
   }
@@ -84,7 +85,7 @@ export class ProductService implements IBaseService<Product> {
       const products = await this.ipc.invoke<Product[]>('products:list')
       return products || []
     } catch (error) {
-      console.error('ProductService.getAll failed:', error)
+      logger.error('ProductService.getAll failed:', error)
       return this.getFallbackProducts()
     }
   }
@@ -103,7 +104,7 @@ export class ProductService implements IBaseService<Product> {
       }
       return product
     } catch (error) {
-      console.error('ProductService.getById failed:', error)
+      logger.error('ProductService.getById failed:', error)
       return null
     }
   }
@@ -113,7 +114,7 @@ export class ProductService implements IBaseService<Product> {
       const product = await this.ipc.invoke<Product>('products:create', data)
       return product
     } catch (error) {
-      console.error('ProductService.create failed:', error)
+      logger.error('ProductService.create failed:', error)
       throw error
     }
   }
@@ -125,7 +126,7 @@ export class ProductService implements IBaseService<Product> {
       this.cache.delete(id)
       return product
     } catch (error) {
-      console.error('ProductService.update failed:', error)
+      logger.error('ProductService.update failed:', error)
       throw error
     }
   }
@@ -135,7 +136,7 @@ export class ProductService implements IBaseService<Product> {
       await this.ipc.invoke('products:delete', { id })
       this.cache.delete(id)
     } catch (error) {
-      console.error('ProductService.delete failed:', error)
+      logger.error('ProductService.delete failed:', error)
       throw error
     }
   }
@@ -148,7 +149,7 @@ export class ProductService implements IBaseService<Product> {
         p.baseSKU?.toLowerCase().includes(query.toLowerCase())
       )
     } catch (error) {
-      console.error('ProductService.search failed:', error)
+      logger.error('ProductService.search failed:', error)
       return []
     }
   }

@@ -20,6 +20,7 @@ import ProductActions from './ProductActions'
 import ProductFilters from './ProductFilters'
 import ProductGrid from './ProductGrid'
 import type { Product, ProductFilters as Filters } from './types'
+import logger from '../../../../shared/utils/logger'
 
 export default function Products() {
   const { t } = useLanguage()
@@ -86,12 +87,12 @@ export default function Products() {
           setSelectedProduct({ ...fullProduct, totalStock })
           setShowViewModal(true)
         } catch (error) {
-          console.error('Failed to load product details:', error)
+          logger.error('Failed to load product details:', error)
           toast.error('Failed to load product details')
         }
       }, 100)
     } catch (error) {
-      console.error('Error scanning barcode:', error)
+      logger.error('Error scanning barcode:', error)
       toast.error('Failed to search product')
     }
   }, [toast])
@@ -203,7 +204,7 @@ export default function Products() {
           name: s.name
         })))
       } catch (error) {
-        console.error('Failed to load stores:', error)
+        logger.error('Failed to load stores:', error)
       }
     }
     loadStores()
@@ -239,7 +240,7 @@ export default function Products() {
       setSelectedProduct({ ...fullProduct, totalStock })
       setShowViewModal(true)
     } catch (error) {
-      console.error('Failed to load product details:', error)
+      logger.error('Failed to load product details:', error)
       toast.error('Failed to load product details')
     }
   }, [toast])
@@ -251,7 +252,7 @@ export default function Products() {
       setSelectedProduct(fullProduct)
       setShowEditModal(true)
     } catch (error) {
-      console.error('Failed to load product details:', error)
+      logger.error('Failed to load product details:', error)
       toast.error('Failed to load product details')
     }
   }, [toast])
@@ -271,7 +272,7 @@ export default function Products() {
         toast.error('Failed to check product dependencies')
       }
     } catch (error) {
-      console.error('Failed to check product:', error)
+      logger.error('Failed to check product:', error)
       toast.error('Failed to check product')
     }
   }, [toast])
@@ -291,7 +292,7 @@ export default function Products() {
         toast.error(result.error || 'Failed to delete product')
       }
     } catch (error) {
-      console.error('Failed to delete product:', error)
+      logger.error('Failed to delete product:', error)
       toast.error('Failed to delete product')
     }
   }, [productToDelete, toast, refetch])
@@ -313,7 +314,7 @@ export default function Products() {
         toast.error('Failed to archive product')
       }
     } catch (error) {
-      console.error('Failed to archive product:', error)
+      logger.error('Failed to archive product:', error)
       toast.error('Failed to archive product')
     }
   }, [productToDelete, toast, refetch])

@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import FormInput from '../../components/ui/FormInput'
 import SelectWithIcons from '../../components/ui/SelectWithIcons'
 import FormTextarea from '../../components/ui/FormTextarea'
+import logger from '../../../../shared/utils/logger'
 
 interface DepositFormProps {
   isOpen: boolean
@@ -61,7 +62,7 @@ const DepositForm: React.FC<DepositFormProps> = ({
         alert('Error creating deposit: ' + result.error)
       }
     } catch (error) {
-      console.error('Error creating deposit:', error)
+      logger.error('Error creating deposit:', error)
       alert('Error creating deposit')
     } finally {
       setIsSubmitting(false)

@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart } from 'recharts'
 import { Store, TrendingUp, DollarSign, ShoppingCart, Package } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 interface StoreMetrics {
   storeId: string
@@ -46,7 +47,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
       const newMetrics = prev.includes(metric) 
         ? prev.filter(m => m !== metric)
         : [...prev, metric]
-      console.log('📊 Selected metrics:', newMetrics)
+      logger.info('📊 Selected metrics:', newMetrics)
       return newMetrics
     })
   }
@@ -75,7 +76,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
         setStores(filtered)
       }
     } catch (err) {
-      console.error('Error loading store comparison:', err)
+      logger.error('Error loading store comparison:', err)
       setError('Failed to load store comparison data')
     } finally {
       setLoading(false)
@@ -146,7 +147,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
   })
   
   // Debug log
-  console.log('📈 Chart data:', { 
+  logger.info('📈 Chart data:', { 
     selectedMetrics, 
     chartData,
     storesCount: stores.length 

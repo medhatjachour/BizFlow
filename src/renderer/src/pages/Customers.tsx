@@ -8,6 +8,7 @@ import { ipc } from '../utils/ipc'
 import { useToast } from '../contexts/ToastContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
 import { useLanguage } from '../contexts/LanguageContext'
+import logger from '../../../shared/utils/logger'
 
 type Customer = {
   id: string
@@ -86,7 +87,7 @@ export default function Customers(): JSX.Element {
       setTotalCount(data.totalCount || 0)
       setHasMore(data.hasMore || false)
     } catch (error) {
-      console.error('Failed to load customers:', error)
+      logger.error('Failed to load customers:', error)
       toast.error(t('failedToLoadCustomers'))
     } finally {
       setLoading(false)
@@ -133,7 +134,7 @@ export default function Customers(): JSX.Element {
         }
       }
     } catch (error: any) {
-      console.error('Error adding customer:', error)
+      logger.error('Error adding customer:', error)
       toast.error(error?.message || t('failedToAddCustomer'))
     }
   }
@@ -157,7 +158,7 @@ export default function Customers(): JSX.Element {
         }
       }
     } catch (error: any) {
-      console.error('Error updating customer:', error)
+      logger.error('Error updating customer:', error)
       toast.error(error?.message || t('failedToUpdateCustomer'))
     }
   }
@@ -177,7 +178,7 @@ export default function Customers(): JSX.Element {
         toast.error(t('failedToCheckDependencies'))
       }
     } catch (error) {
-      console.error('Failed to check customer:', error)
+      logger.error('Failed to check customer:', error)
       toast.error(t('failedToCheckCustomer'))
     }
   }
@@ -197,7 +198,7 @@ export default function Customers(): JSX.Element {
         toast.error(result.error || t('failedToDeleteCustomer'))
       }
     } catch (error) {
-      console.error('Failed to delete customer:', error)
+      logger.error('Failed to delete customer:', error)
       toast.error(t('failedToDeleteCustomer'))
     }
   }
@@ -219,7 +220,7 @@ export default function Customers(): JSX.Element {
         toast.error(t('failedToArchiveCustomer'))
       }
     } catch (error) {
-      console.error('Failed to archive customer:', error)
+      logger.error('Failed to archive customer:', error)
       toast.error(t('failedToArchiveCustomer'))
     }
   }
@@ -245,7 +246,7 @@ export default function Customers(): JSX.Element {
   //     const history = await ipc.customers.getPurchaseHistory(customer.id)
   //     setSelectedCustomerHistory(history)
   //   } catch (error) {
-  //     console.error('Failed to load purchase history:', error)
+  //     logger.error('Failed to load purchase history:', error)
   //     toast.error(t('failedToLoadPurchaseHistory'))
   //   } finally {
   //     setLoadingHistory(false)
@@ -296,7 +297,7 @@ export default function Customers(): JSX.Element {
         toast.error(result.message || 'Failed to export customers')
       }
     } catch (error) {
-      console.error('Export error:', error)
+      logger.error('Export error:', error)
       toast.error('Failed to export customers')
     }
   }

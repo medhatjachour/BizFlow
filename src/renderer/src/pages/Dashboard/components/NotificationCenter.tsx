@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
+import logger from '../../../../../shared/utils/logger'
 
 type Notification = {
   id: string
@@ -150,7 +151,7 @@ export default function NotificationCenter() {
 
       setNotifications(newNotifications)
     } catch (error) {
-      console.error('Error loading notifications:', error)
+      logger.error('Error loading notifications:', error)
     }
   }
 

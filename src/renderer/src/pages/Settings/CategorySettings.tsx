@@ -7,6 +7,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, X, Edit2, Check, Tag, Loader2, AlertCircle } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import logger from '../../../../shared/utils/logger'
 
 interface Category {
   id: string
@@ -48,7 +49,7 @@ export default function CategorySettings() {
       }
     } catch (err: any) {
       setError(err.message || t('failedToLoadCategories'))
-      console.error('Error loading categories:', err)
+      logger.error('Error loading categories:', err)
     } finally {
       setLoading(false)
     }
@@ -80,7 +81,7 @@ export default function CategorySettings() {
       }
     } catch (err: any) {
       setError(err.message || t('failedToAddCategory'))
-      console.error('Error adding category:', err)
+      logger.error('Error adding category:', err)
     }
   }
 
@@ -106,7 +107,7 @@ export default function CategorySettings() {
       }
     } catch (err: any) {
       setError(err.message || t('failedToDeleteCategory'))
-      console.error('Error deleting category:', err)
+      logger.error('Error deleting category:', err)
     }
   }
 
@@ -141,7 +142,7 @@ export default function CategorySettings() {
       }
     } catch (err: any) {
       setError(err.message || t('failedToUpdateCategory'))
-      console.error('Error updating category:', err)
+      logger.error('Error updating category:', err)
     }
   }
 

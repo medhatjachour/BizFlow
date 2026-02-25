@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { Calendar, CreditCard, Plus, Edit, Trash2, CheckCircle, XCircle, Percent, Clock } from 'lucide-react'
 import { useToast } from '../../../contexts/ToastContext'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import logger from '../../../../../shared/utils/logger'
 
 interface InstallmentPlan {
   id: string
@@ -49,7 +50,7 @@ export default function InstallmentPlansSection() {
       const allPlans = await window.api.installmentPlans.getAll()
       setPlans(allPlans)
     } catch (err) {
-      console.error('Error loading installment plans:', err)
+      logger.error('Error loading installment plans:', err)
     } finally {
       setLoading(false)
     }
@@ -361,7 +362,7 @@ export default function InstallmentPlansSection() {
               <button
                 onClick={async () => {
                   try {
-                    console.log('Creating plan:', JSON.stringify(formData, null, 2))
+                    logger.info('Creating plan:', JSON.stringify(formData, null, 2))
                     
                     if (editingPlan) {
                       // Update existing plan
@@ -390,7 +391,7 @@ export default function InstallmentPlansSection() {
                     setEditingPlan(null)
                     await loadPlans()
                   } catch (err) {
-                    console.error('Error creating/updating plan:', err)
+                    logger.error('Error creating/updating plan:', err)
                     error(`${editingPlan ? t('failedToUpdatePlan') : t('failedToCreatePlan')}: ${err instanceof Error ? err.message : 'Unknown error'}`)
                   }
                 }}
@@ -434,7 +435,7 @@ export default function InstallmentPlansSection() {
                       throw new Error(result.error || t('failedToDeletePlan'))
                     }
                   } catch (err) {
-                    console.error('Error deleting plan:', err)
+                    logger.error('Error deleting plan:', err)
                     error(`${t('failedToDeletePlan')}: ${err instanceof Error ? err.message : 'Unknown error'}`)
                   } finally {
                     setShowDeleteConfirm(false)
