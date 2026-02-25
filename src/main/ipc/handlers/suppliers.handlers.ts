@@ -5,13 +5,15 @@
 
 import { ipcMain } from 'electron'
 import { SupplierService } from '../../services/SupplierService'
-import { logger } from '../../../shared/utils/logger'
+import { createLogger } from '../../utils/logger'
+
+const log = createLogger('Suppliers')
 
 let supplierService: SupplierService | null = null
 
 export function registerSupplierHandlers(prisma: any) {
   if (!prisma) {
-    logger.error('Prisma not available for supplier handlers')
+    log.error('Prisma not available for supplier handlers')
     return
   }
 
@@ -47,7 +49,7 @@ export function registerSupplierHandlers(prisma: any) {
       const result = await supplierService.querySuppliers(query)
       return { success: true, data: result }
     } catch (error) {
-      logger.error('Error fetching suppliers:', error)
+      log.error('Error fetching suppliers:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -64,7 +66,7 @@ export function registerSupplierHandlers(prisma: any) {
       const supplier = await supplierService.getSupplier(id)
       return { success: true, data: supplier }
     } catch (error) {
-      logger.error('Error fetching supplier:', error)
+      log.error('Error fetching supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -81,7 +83,7 @@ export function registerSupplierHandlers(prisma: any) {
       const supplier = await supplierService.createSupplier(supplierData)
       return { success: true, data: supplier }
     } catch (error) {
-      logger.error('Error creating supplier:', error)
+      log.error('Error creating supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -98,7 +100,7 @@ export function registerSupplierHandlers(prisma: any) {
       const supplier = await supplierService.updateSupplier(id, updateData)
       return { success: true, data: supplier }
     } catch (error) {
-      logger.error('Error updating supplier:', error)
+      log.error('Error updating supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -115,7 +117,7 @@ export function registerSupplierHandlers(prisma: any) {
       const result = await supplierService.deleteSupplier(id)
       return { success: true, data: result }
     } catch (error) {
-      logger.error('Error deleting supplier:', error)
+      log.error('Error deleting supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -132,7 +134,7 @@ export function registerSupplierHandlers(prisma: any) {
       const products = await supplierService.getSupplierProducts(supplierId)
       return { success: true, data: products }
     } catch (error) {
-      logger.error('Error fetching supplier products:', error)
+      log.error('Error fetching supplier products:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -149,7 +151,7 @@ export function registerSupplierHandlers(prisma: any) {
       const supplierProduct = await supplierService.addSupplierProduct(supplierProductData)
       return { success: true, data: supplierProduct }
     } catch (error) {
-      logger.error('Error adding product to supplier:', error)
+      log.error('Error adding product to supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -166,7 +168,7 @@ export function registerSupplierHandlers(prisma: any) {
       const supplierProduct = await supplierService.addSupplierProduct(supplierProductData)
       return { success: true, data: supplierProduct }
     } catch (error) {
-      logger.error('Error adding product to supplier:', error)
+      log.error('Error adding product to supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -183,7 +185,7 @@ export function registerSupplierHandlers(prisma: any) {
       const products = await supplierService.getSupplierProducts(supplierId)
       return { success: true, data: products }
     } catch (error) {
-      logger.error('Error getting supplier products:', error)
+      log.error('Error getting supplier products:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -200,7 +202,7 @@ export function registerSupplierHandlers(prisma: any) {
       const supplierProduct = await supplierService.updateSupplierProduct(id, updateData)
       return { success: true, data: supplierProduct }
     } catch (error) {
-      logger.error('Error updating supplier product:', error)
+      log.error('Error updating supplier product:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -217,7 +219,7 @@ export function registerSupplierHandlers(prisma: any) {
       const result = await supplierService.removeSupplierProduct(id)
       return { success: true, data: result }
     } catch (error) {
-      logger.error('Error removing product from supplier:', error)
+      log.error('Error removing product from supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -234,7 +236,7 @@ export function registerSupplierHandlers(prisma: any) {
       const result = await supplierService.removeSupplierProduct(id)
       return { success: true, data: result }
     } catch (error) {
-      logger.error('Error removing product from supplier:', error)
+      log.error('Error removing product from supplier:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -251,7 +253,7 @@ export function registerSupplierHandlers(prisma: any) {
       const suppliers = await supplierService.getPreferredSuppliersForProduct(productId)
       return { success: true, data: suppliers }
     } catch (error) {
-      logger.error('Error fetching preferred suppliers for product:', error)
+      log.error('Error fetching preferred suppliers for product:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
@@ -268,10 +270,10 @@ export function registerSupplierHandlers(prisma: any) {
       const suppliers = await supplierService.querySuppliers({ search: query })
       return { success: true, data: suppliers.data }
     } catch (error) {
-      logger.error('Error searching suppliers:', error)
+      log.error('Error searching suppliers:', error)
       return { success: false, message: error instanceof Error ? error.message : 'Unknown error' }
     }
   })
 
-  logger.info('Supplier IPC handlers registered')
+  log.info('Supplier IPC handlers registered')
 }

@@ -3,21 +3,20 @@ import { PurchaseOrderService } from '../../services/PurchaseOrderService'
 import { SupplierService } from '../../services/SupplierService'
 import { ProductService } from '../../services/ProductService'
 import { PurchaseOrderRepository } from '../../repositories/PurchaseOrderRepository'
-import { logger } from '../../../shared/utils/logger'
-import type {
 import { createLogger } from '../../utils/logger'
-
-const log = createLogger('PurchaseOrders')
+import type {
   CreatePurchaseOrderDTO,
   UpdatePurchaseOrderDTO,
   PurchaseOrderFilters
 } from '../../../shared/dtos/purchase-order.dto'
 
+const log = createLogger('PurchaseOrders')
+
 let purchaseOrderService: PurchaseOrderService | null = null
 
 export function setupPurchaseOrderHandlers(prisma: any) {
   if (!prisma) {
-    logger.error('Prisma not available for purchase order handlers')
+    log.error('Prisma not available for purchase order handlers')
     return
   }
 

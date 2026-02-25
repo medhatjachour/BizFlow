@@ -5,7 +5,8 @@
  */
 
 import type { PrismaClient } from '@prisma/client'
-import { logger } from '../../shared/utils/logger'
+import { createLogger } from '../utils/logger'
+const log = createLogger('DBOptimize')
 
 /**
  * Query Batcher
@@ -62,7 +63,7 @@ export class QueryBatcher {
     const batch = this.queries.splice(0)
     this.timeout = null
 
-    logger.debug('Executing query batch', { count: batch.length })
+    log.debug('Executing query batch', { count: batch.length })
 
     await Promise.all(batch.map(query => query()))
   }
@@ -215,7 +216,7 @@ export class OptimizedPrismaClient {
     // Check cache
     const cached = this.cache.get<T>(cacheKey)
     if (cached !== null) {
-      logger.debug('Cache hit', { key: cacheKey })
+      log.debug('Cache hit', { key: cacheKey })
       return cached
     }
 
@@ -230,7 +231,7 @@ export class OptimizedPrismaClient {
     // Cache result
     this.cache.set(cacheKey, result, ttl)
 
-    logger.debug('Query executed', { key: cacheKey, duration: `${duration.toFixed(2)}ms` })
+    log.debug('Query executed', { key: cacheKey, duration: `${duration.toFixed(2)}ms` })
 
     return result
   }
@@ -246,7 +247,7 @@ export class OptimizedPrismaClient {
    * Invalidate cache by pattern
    */
   invalidateCache(pattern: string): void {
-    logger.debug('Invalidating cache', { pattern })
+    log.debug('Invalidating cache', { pattern })
     // Simple pattern matching - could be enhanced
     this.cache.clear()
   }
@@ -276,7 +277,7 @@ export const optimizationQueries = {
   createIndexes: async (_prisma: PrismaClient) => {
     // Note: These would normally be in migrations
     // This is for documentation purposes
-    logger.info('Database indexes should be created via migrations')
+    log.info('Database indexes should be created via migrations')
     
     // Example indexes that should exist:
     // - Product.baseSKU (unique)
@@ -296,7 +297,7 @@ export const optimizationQueries = {
    */
   analyzeSlowQueries: async (_prisma: PrismaClient) => {
     // This would require query logging to be enabled
-    logger.info('Enable Prisma query logging to analyze slow queries')
+    log.info('Enable Prisma query logging to analyze slow queries')
   }
 }
 

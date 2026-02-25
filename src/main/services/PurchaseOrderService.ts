@@ -1,6 +1,9 @@
 import { PurchaseOrderRepository } from '../repositories/PurchaseOrderRepository'
 import { SupplierService } from './SupplierService'
 import { ProductService } from './ProductService'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('PurchaseOrders')
 import type {
   PurchaseOrderResponseDTO,
   CreatePurchaseOrderDTO,
@@ -18,6 +21,7 @@ export class PurchaseOrderService {
   ) {}
 
   async getAllPurchaseOrders(filters?: PurchaseOrderFilters): Promise<PurchaseOrderResponseDTO[]> {
+    log.debug('Fetching all purchase orders', { filters })
     return this.purchaseOrderRepository.findAll(filters)
   }
 
@@ -30,9 +34,11 @@ export class PurchaseOrderService {
   }
 
   async createPurchaseOrder(data: CreatePurchaseOrderDTO, orderedBy: string): Promise<PurchaseOrderResponseDTO> {
+    log.info('Creating purchase order', { supplierId: data.supplierId, itemCount: data.items.length, orderedBy })
     // Validate supplier exists
     const supplier = await this.supplierService.getSupplier(data.supplierId)
     if (!supplier) {
+      log.warn('Purchase order creation failed: supplier not found', { supplierId: data.supplierId })
       throw new Error('Supplier not found')
     }
 
@@ -67,12 +73,16 @@ export class PurchaseOrderService {
       }
     }
 
-    return this.purchaseOrderRepository.create(data, orderedBy)
+    const result = await this.purchaseOrderRepository.create(data, orderedBy)
+    log.info('Purchase order created', { id: result.id, poNumber: result.poNumber, supplier: supplier.name })
+    return result
   }
 
   async updatePurchaseOrder(id: string, data: UpdatePurchaseOrderDTO): Promise<PurchaseOrderResponseDTO> {
+    log.info('Updating purchase order', { id, status: data.status })
     const existingPO = await this.purchaseOrderRepository.findById(id)
     if (!existingPO) {
+      log.warn('Purchase order not found for update', { id })
       throw new Error('Purchase order not found')
     }
 
@@ -81,30 +91,39 @@ export class PurchaseOrderService {
       await this.receivePurchaseOrder(id, data.receivedDate)
     }
 
-    return this.purchaseOrderRepository.update(id, data)
+    const result = await this.purchaseOrderRepository.update(id, data)
+    log.info('Purchase order updated', { id, newStatus: data.status })
+    return result
   }
 
   async deletePurchaseOrder(id: string): Promise<void> {
+    log.info('Deleting purchase order', { id })
     const existingPO = await this.purchaseOrderRepository.findById(id)
     if (!existingPO) {
+      log.warn('Purchase order not found for deletion', { id })
       throw new Error('Purchase order not found')
     }
 
     // Only allow deletion of draft orders
     if (existingPO.status !== 'draft') {
+      log.warn('Attempted to delete non-draft purchase order', { id, status: existingPO.status })
       throw new Error('Only draft purchase orders can be deleted')
     }
 
     await this.purchaseOrderRepository.delete(id)
+    log.info('Purchase order deleted', { id })
   }
 
   async receivePurchaseOrder(id: string, receivedDate?: Date): Promise<PurchaseOrderResponseDTO> {
+    log.info('Receiving purchase order', { id })
     const po = await this.purchaseOrderRepository.findById(id)
     if (!po) {
+      log.warn('Purchase order not found for receipt', { id })
       throw new Error('Purchase order not found')
     }
 
     if (po.status !== 'ordered') {
+      log.warn('Cannot receive purchase order in current status', { id, status: po.status })
       throw new Error('Only ordered purchase orders can be received')
     }
 
@@ -161,10 +180,12 @@ export class PurchaseOrderService {
     })
 
     // Update the PO status and received date
-    return this.purchaseOrderRepository.update(id, {
+    const result = await this.purchaseOrderRepository.update(id, {
       status: 'received',
       receivedDate: receivedDate || new Date()
     })
+    log.info('Purchase order received and stock updated', { id, itemCount: po.items.length })
+    return result
   }
 
   async getPurchaseOrderSummary(): Promise<PurchaseOrderSummaryDTO> {
