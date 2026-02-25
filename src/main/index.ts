@@ -2,25 +2,39 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'node:path'
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { schedule } from 'node-cron'
+import { schedule, ScheduledTask } from 'node-cron'
 import icon from '../../resources/icon.png?asset'
 
 // Import IPC handlers registration function
 import { registerAllHandlers, prisma } from './ipc/handlers/index'
 import { initializeDatabase } from './database/init'
 import { MigrationManager } from './services/MigrationManager'
+// Static imports — fixes "dynamically and statically imported" Vite warnings
+import { EmailReportService } from './services/EmailReportService'
+import { InstallmentPlanService } from './services/InstallmentPlanService'
+
+// ------------------------------------------------------------------
+// Suppress VSync / GPU errors on Linux (non-critical rendering glitches)
+// Must run BEFORE app.whenReady()
+// ------------------------------------------------------------------
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('disable-gpu-vsync')
+  app.commandLine.appendSwitch('disable-frame-rate-limit')
+}
+// Suppress the GetVSyncParametersIfAvailable OpenGL warning on all platforms
+app.commandLine.appendSwitch('disable-features', 'UseChromeOSDirectVideoDecoder')
+
+// Cron task reference — stored so we can clean up on quit
+let dailyEmailCronTask: ScheduledTask | null = null
 
 // Setup daily email reports cron job
-function setupDailyEmailReports() {
+function setupDailyEmailReports(): void {
   // Run at 11:00 PM every day
-  schedule('0 23 * * *', async () => {
+  dailyEmailCronTask = schedule('0 23 * * *', async () => {
     console.log('[Cron] Starting daily email reports...')
 
     try {
-      // Import here to avoid circular dependencies
-      const { EmailReportService } = await import('./services/EmailReportService')
-
-      // Get all enabled email reports
+      // Reuse the already-imported EmailReportService (no dynamic import needed)
       const enabledReports = await prisma.emailReport.findMany({
         where: { enabled: true }
       })
@@ -231,7 +245,7 @@ app.whenReady().then(async () => {
       const planCount = await prisma.installmentPlan.count()
       if (planCount === 0) {
         console.log('[Main] No installment plans found, seeding defaults...')
-        const { InstallmentPlanService } = await import('./services/InstallmentPlanService')
+        // Reuse the already-imported InstallmentPlanService (no dynamic import needed)
         const planService = InstallmentPlanService.getInstance(prisma)
         await planService.seedDefaultPlans()
         console.log('[Main] ✅ Installment plans initialized')
@@ -281,6 +295,12 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', async () => {
+  // Stop cron job to prevent callbacks firing after process teardown
+  if (dailyEmailCronTask) {
+    console.log('[Main] Stopping daily email cron task...')
+    dailyEmailCronTask.stop()
+    dailyEmailCronTask = null
+  }
   // Cleanup migration manager
   if (migrationManager) {
     console.log('[Main] Cleaning up migration manager...')

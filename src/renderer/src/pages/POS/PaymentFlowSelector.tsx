@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { DollarSign, CreditCard, Calendar, CheckCircle, Clock, ArrowRight, User } from 'lucide-react'
-import { PaymentPlan } from '../../../components/PaymentPlan'
+import { PaymentPlan } from '../../components/PaymentPlan'
 import DepositForm from './DepositForm'
 import InstallmentForm from './InstallmentForm'
 import CustomerSelect from './CustomerSelect'

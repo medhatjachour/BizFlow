@@ -539,7 +539,7 @@ export default function Expenses() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* Pie Chart */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-4">{t('expensesByCategoryIncludingSalariesAndCOGS')}</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-4"> { includeCOGS ? t('expensesByCategoryIncludingSalariesAndCOGS') : t('expensesByCategoryExcludingSalariesAndCOGS') }</h3>
             <div className="h-64">
               <Pie
                 data={{

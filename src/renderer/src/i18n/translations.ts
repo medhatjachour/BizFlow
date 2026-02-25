@@ -206,7 +206,6 @@ export const translations = {
     phoneNumberIsRequired: 'Phone number is required',
     nameIsRequired: 'Name is required',
     selectAVariant: 'Select a variant to add to cart',
-    
     // Sales
     saleDate: 'Sale Date',
     saleId: 'Sale ID',
@@ -336,6 +335,7 @@ export const translations = {
     financeInsights: 'Insights',
     financeHealth: 'Health',
     financePricing: 'Pricing',
+    financeInstallments: 'Installments',
     financeRevenue: 'Revenue',
     financeTransactions: 'Transactions',
     financeAvgOrder: 'Avg Order Value',
@@ -602,6 +602,8 @@ export const translations = {
     pricingExpensesAllocationDesc: 'total expenses distributed across products based on sales volume ratio.',
     
     // Expenses Page
+    operationalExpenses : "Operational Expenses",
+    costOfGoodsSold : "Cost of Goods Sold",
     expensesManagement: 'Expenses Management',
     trackBusinessExpenses: 'Track and manage business expenses',
     expenseHistory: 'Expense History',
@@ -617,6 +619,8 @@ export const translations = {
     expenseLast90Days: 'Last 90 Days',
     expenseAllTime: 'All Time',
     expensesByCategoryIncludingSalaries: 'Expenses by Category (Including Salaries)',
+    expensesByCategoryIncludingSalariesAndCOGS: 'Expenses by Category (Including Salaries & COGS)',
+    expensesByCategoryExcludingSalariesAndCOGS: 'Expenses by Category (Including Salaries)',
     categoryBreakdown: 'Category Breakdown',
     amountLabel: 'Amount ($)',
     recordedBy: 'Recorded By',
@@ -1374,7 +1378,12 @@ export const translations = {
     hold: 'Hold',
     selectVariantToAdd: 'Select a variant to add to cart',
     inCart: 'In cart',
-    
+    toScanQuick: 'To scan',
+    toTypeQuick: 'To type',
+    QuickTipQuick: 'Quick tip',
+    scanningAdv:' Click outside the search box or press ESC, then scan',
+    typingAdv:' Click inside the search box and type normally or click on /',
+    quickTipAdv:' Scanner only works when search box is NOT focused',
     // Products Page
     loadingProducts: 'Loading products...',
     addNewProduct: 'Add New Product',
@@ -1996,6 +2005,7 @@ export const translations = {
     financeInsights: 'الرؤى',
     financeHealth: 'الصحة المالية',
     financePricing: 'التسعير',
+    financeInstallments: 'الاقساط',
     financeRevenue: 'الإيرادات',
     financeTransactions: 'المعاملات',
     financeAvgOrder: 'متوسط قيمة الطلب',
@@ -2262,6 +2272,8 @@ export const translations = {
     pricingExpensesAllocationDesc: 'إجمالي النفقات موزع عبر المنتجات بناءً على نسبة حجم المبيعات.',
     
     // Expenses Page
+    operationalExpenses : "النفقات التشغيلية",
+    costOfGoodsSold : "تكلفة البضائع المباعة",
     expensesManagement: 'إدارة المصروفات',
     trackBusinessExpenses: 'تتبع وإدارة مصروفات الأعمال',
     expenseHistory: 'سجل المصروفات',
@@ -2277,6 +2289,8 @@ export const translations = {
     expenseLast90Days: 'آخر 90 يوماً',
     expenseAllTime: 'كل الوقت',
     expensesByCategoryIncludingSalaries: 'المصروفات حسب الفئة (شاملة الرواتب)',
+    expensesByCategoryIncludingSalariesAndCOGS: 'المصروفات حسب الفئة (شاملة الرواتب وتكلفة البضائع المباعة)',
+    expensesByCategoryExcludingSalariesAndCOGS: 'المصروفات حسب الفئة (شاملة الرواتب)',
     categoryBreakdown: 'تفصيل الفئات',
     amountLabel: 'المبلغ ($)',
     recordedBy: 'مُسجل بواسطة',
@@ -2744,6 +2758,12 @@ export const translations = {
     hold: 'تعليق',
     selectVariantToAdd: 'اختر متغير لإضافته إلى السلة',
     inCart: 'في السلة',
+    toScanQuick: 'للمسح',
+    toTypeQuick: 'للكتابة',
+    QuickTipQuick: 'نصيحة سريعة',
+    scanningAdv:'اضغط خارج صندوق البحث او اضغط علي <ESC> قبل البدا في البحث ',
+    typingAdv:' يمكنك كتابة اسم المنتج او رمز المنتج لاضافته الي السلة او اضغط علي / لبدء البحث السريع',
+    quickTipAdv:'الماسح يعمل بكفائة فقط عندما يكون صندوق البحث غير نشط',
     
     // Products Page
     loadingProducts: 'جاري تحميل المنتجات...',
