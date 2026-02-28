@@ -60,7 +60,8 @@ export function useSettings() {
       printLogo: localStorage.getItem('printLogo') === 'true',
       printQRCode: localStorage.getItem('printQRCode') === 'true',
       printBarcode: localStorage.getItem('printBarcode') === 'true',
-      openCashDrawer: localStorage.getItem('openCashDrawer') === 'true'
+      openCashDrawer: localStorage.getItem('openCashDrawer') === 'true',
+      receiptLanguage: (localStorage.getItem('receiptLanguage') as 'en' | 'ar') || 'en'
     }
   })
 

@@ -13,6 +13,83 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
   const [settings, setSettings] = useState<any>(null)
   const [isPrinting, setIsPrinting] = useState(false)
   const [autoPrintTriggered, setAutoPrintTriggered] = useState(false)
+  const [receiptLang, setReceiptLang] = useState<'en' | 'ar'>(
+    () => (localStorage.getItem('receiptLanguage') as 'en' | 'ar') || 'en'
+  )
+
+  const L = receiptLang === 'ar' ? {
+    receiptPreview: 'معاينة الإيصال',
+    tel: 'هاتف',
+    taxNo: 'الرقم الضريبي',
+    commReg: 'السجل التجاري',
+    receiptNum: 'رقم الإيصال',
+    date: 'التاريخ',
+    cashier: 'الكاشير',
+    customer: 'العميل',
+    phone: 'الهاتف',
+    item: 'الصنف',
+    qty: 'الكمية',
+    price: 'السعر',
+    total: 'الإجمالي',
+    subtotal: 'المجموع الفرعي',
+    vat: 'ضريبة القيمة المضافة',
+    grandTotal: 'الإجمالي الكلي',
+    payment: 'طريقة الدفع',
+    cash: 'نقدي',
+    card: 'بطاقة بنكية',
+    installmentLabel: 'تقسيط',
+    other: 'أخرى',
+    afterDiscount: 'بعد الخصم',
+    fixedDiscount: 'خصم ثابت',
+    percentOff: '% خصم',
+    installmentPlan: 'خطة الأقساط',
+    depositPaid: 'الدفعة المقدمة',
+    remaining: 'المتبقي',
+    installmentPayment: 'قسط',
+    walkIn: 'زبون عابر',
+    unknown: 'غير معروف',
+    thankYou: 'شكراً لزيارتكم!',
+    appreciate: 'نقدر تعاملكم معنا',
+    printBrowser: 'طباعة (متصفح)',
+    printThermal: 'طباعة (حراري)',
+    printing: 'جارِ الطباعة...',
+  } : {
+    receiptPreview: 'Receipt Preview',
+    tel: 'Tel',
+    taxNo: 'Tax No',
+    commReg: 'Comm Reg',
+    receiptNum: 'Receipt #',
+    date: 'Date',
+    cashier: 'Cashier',
+    customer: 'Customer',
+    phone: 'Phone',
+    item: 'Item',
+    qty: 'Qty',
+    price: 'Price',
+    total: 'Total',
+    subtotal: 'Subtotal',
+    vat: 'VAT',
+    grandTotal: 'TOTAL',
+    payment: 'Payment',
+    cash: 'Cash',
+    card: 'Card',
+    installmentLabel: 'Installment',
+    other: 'Other',
+    afterDiscount: 'After Discount',
+    fixedDiscount: 'Fixed Discount',
+    percentOff: '% off',
+    installmentPlan: 'INSTALLMENT PLAN',
+    depositPaid: 'Deposit Paid',
+    remaining: 'Remaining',
+    installmentPayment: 'Payment',
+    walkIn: 'Walk-in Customer',
+    unknown: 'Unknown',
+    thankYou: 'Thank you for your visit!',
+    appreciate: 'We appreciate your business',
+    printBrowser: 'Print (Browser)',
+    printThermal: 'Print (Thermal)',
+    printing: 'Printing...',
+  }
 
   // Load settings on mount
   useEffect(() => {
@@ -122,8 +199,8 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
 
       const shouldForceThermal = settings.printerType === 'none' || settings.printerType === 'html'
       const effectiveSettings = shouldForceThermal
-        ? { ...settings, printerType: 'usb' }
-        : settings
+        ? { ...settings, printerType: 'usb', receiptLanguage: receiptLang }
+        : { ...settings, receiptLanguage: receiptLang }
 
       // Print via IPC (auto-detect thermal on first print or fallback)
       const result = await window.api.thermalReceipts.print({
@@ -181,61 +258,76 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Receipt Preview</h2>
-          <button
-            onClick={onClose}
-            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-600 dark:text-slate-300"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{L.receiptPreview}</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const newLang = receiptLang === 'en' ? 'ar' : 'en'
+                setReceiptLang(newLang)
+                localStorage.setItem('receiptLanguage', newLang)
+              }}
+              className="px-2.5 py-1 text-xs font-bold bg-slate-100 dark:bg-slate-700 hover:bg-primary/10 dark:hover:bg-primary/20 text-slate-700 dark:text-slate-200 rounded border border-slate-300 dark:border-slate-600 transition-colors"
+              title="Toggle receipt language"
+            >
+              {receiptLang === 'en' ? 'عربي' : 'EN'}
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-600 dark:text-slate-300"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Receipt Preview */}
         <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
           <div 
-            className="bg-white shadow-lg mx-auto p-6 text-sm font-mono text-black"
-            style={{ width: settings.paperWidth === '80mm' ? '302px' : '203px' }}
+            className="bg-white shadow-lg mx-auto p-6 text-sm text-black"
+            style={{
+              width: settings.paperWidth === '80mm' ? '302px' : '203px',
+              direction: receiptLang === 'ar' ? 'rtl' : 'ltr',
+              fontFamily: receiptLang === 'ar' ? 'Arial, Tahoma, sans-serif' : 'monospace',
+            }}
             id="receipt-preview"
           >
             {/* Store Name */}
             <div className="text-center mb-4">
               <h1 className="text-xl font-bold mb-1">{settings.storeName}</h1>
               <p className="text-xs">{settings.storeAddress}</p>
-              <p className="text-xs">Tel: {settings.storePhone}</p>
+              <p className="text-xs">{L.tel}: {settings.storePhone}</p>
               {settings.storeEmail && <p className="text-xs">{settings.storeEmail}</p>}
             </div>
 
             {/* Tax Info */}
             <div className="border-t border-b border-gray-300 py-2 mb-3 text-xs">
-              <p>Tax No: {settings.taxNumber}</p>
-              {settings.commercialRegister && <p>Comm Reg: {settings.commercialRegister}</p>}
+              <p>{L.taxNo}: {settings.taxNumber}</p>
+              {settings.commercialRegister && <p>{L.commReg}: {settings.commercialRegister}</p>}
             </div>
 
             {/* Receipt Details */}
             <div className="mb-3 text-xs space-y-1">
-              <p>Receipt #: {transaction.id.substring(0, 8).toUpperCase()}</p>
-              <p>Date: {new Date(transaction.createdAt).toLocaleString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-              })}</p>
-              <p>Cashier: {transaction.user?.username || transaction.user?.fullName || 'Unknown'}</p>
-              <p>Customer: {transaction.Customer?.name || transaction.customerName || 'Walk-in Customer'}</p>              {(transaction.Customer?.phone || transaction.customer?.phone) && (
-                <p>Phone: {transaction.Customer?.phone || transaction.customer?.phone}</p>
-              )}            </div>
+              <p>{L.receiptNum}: {transaction.id.substring(0, 8).toUpperCase()}</p>
+              <p>{L.date}: {new Date(transaction.createdAt).toLocaleString(
+                receiptLang === 'ar' ? 'ar-EG' : 'en-US',
+                { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }
+              )}</p>
+              <p>{L.cashier}: {transaction.user?.username || transaction.user?.fullName || L.unknown}</p>
+              <p>{L.customer}: {transaction.Customer?.name || transaction.customerName || L.walkIn}</p>
+              {(transaction.Customer?.phone || transaction.customer?.phone) && (
+                <p>{L.phone}: {transaction.Customer?.phone || transaction.customer?.phone}</p>
+              )}
+            </div>
 
             {/* Items Table */}
             <div className="border-t border-b border-gray-300 py-2 mb-3">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-300">
-                    <th className="text-left pb-1">Item</th>
-                    <th className="text-center pb-1">Qty</th>
-                    <th className="text-center pb-1">Price</th>
-                    <th className="text-right pb-1">Total</th>
+                    <th className="text-left pb-1">{L.item}</th>
+                    <th className="text-center pb-1">{L.qty}</th>
+                    <th className="text-center pb-1">{L.price}</th>
+                    <th className="text-right pb-1">{L.total}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -272,9 +364,9 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
                         </tr>
                         {hasDiscount && (
                           <tr className="border-b border-dashed border-gray-200 text-red-600">
-                            <td className="text-left py-1 text-xs">After Discount: {finalTotal.toFixed(2)} EGP</td>
+                            <td className="text-left py-1 text-xs">{L.afterDiscount}: {finalTotal.toFixed(2)} EGP</td>
                             <td colSpan={2} className="text-center py-1 text-xs italic">
-                              {item.discountType === 'PERCENTAGE' ? `${item.discountValue}% off` : 'Fixed Discount'}
+                              {item.discountType === 'PERCENTAGE' ? `${item.discountValue}${L.percentOff}` : L.fixedDiscount}
                             </td>
                             <td className="text-right py-1">-{itemDiscount.toFixed(2)} EGP</td>
                           </tr>
@@ -289,36 +381,36 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
             {/* Totals */}
             <div className="text-xs space-y-1 mb-3">
               <div className="flex justify-between">
-                <span className="font-bold">Subtotal:</span>
+                <span className="font-bold">{L.subtotal}:</span>
                 <span>{transaction.subtotal.toFixed(2)} EGP</span>
               </div>
               <div className="flex justify-between">
-                <span>VAT ({settings.taxRate }%):</span>
+                <span>{L.vat} ({settings.taxRate}%):</span>
                 <span>{transaction.tax.toFixed(2)} EGP</span>
               </div>
               <div className="flex justify-between border-t border-gray-300 pt-1 text-base font-bold">
-                <span>TOTAL:</span>
+                <span>{L.grandTotal}:</span>
                 <span>{transaction.total.toFixed(2)} EGP</span>
               </div>
             </div>
 
             {/* Payment Method */}
             <div className="text-center text-xs mb-3">
-              <p>Payment: {
-                transaction.paymentMethod === 'cash' ? 'Cash' :
-                transaction.paymentMethod === 'card' ? 'Card' :
-                transaction.paymentMethod === 'installment' ? 'Installment' : 'Other'
+              <p>{L.payment}: {
+                transaction.paymentMethod === 'cash' ? L.cash :
+                transaction.paymentMethod === 'card' ? L.card :
+                transaction.paymentMethod === 'installment' ? L.installmentLabel : L.other
               }</p>
             </div>
 
             {/* Installment Details */}
             {transaction.installments && transaction.installments.length > 0 && (
               <div className="border-t border-gray-300 pt-3 mb-3">
-                <p className="text-xs font-bold mb-2 text-center">INSTALLMENT PLAN</p>
+                <p className="text-xs font-bold mb-2 text-center">{L.installmentPlan}</p>
                 {transaction.deposits && transaction.deposits.length > 0 && (
                   <div className="text-xs mb-2 bg-gray-100 p-2 rounded">
                     <div className="flex justify-between">
-                      <span>Deposit Paid:</span>
+                      <span>{L.depositPaid}:</span>
                       <span className="font-bold">{transaction.deposits[0].amount.toFixed(2)} EGP</span>
                     </div>
                   </div>
@@ -326,14 +418,14 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
                 <div className="text-xs space-y-1">
                   {transaction.installments.map((inst: any, idx: number) => (
                     <div key={idx} className="flex justify-between items-center py-1 border-b border-dashed border-gray-200">
-                      <span>Payment {idx + 1}: {new Date(inst.dueDate).toLocaleDateString()}</span>
+                      <span>{L.installmentPayment} {idx + 1}: {new Date(inst.dueDate).toLocaleDateString(receiptLang === 'ar' ? 'ar-EG' : 'en-US')}</span>
                       <span className={`font-bold ${inst.status === 'paid' ? 'text-green-600' : inst.status === 'overdue' ? 'text-red-600' : ''}`}>
                         {inst.amount.toFixed(2)} EGP {inst.status === 'paid' ? '✓' : ''}
                       </span>
                     </div>
                   ))}
                   <div className="flex justify-between pt-2 font-bold">
-                    <span>Remaining:</span>
+                    <span>{L.remaining}:</span>
                     <span>{transaction.installments.filter((i: any) => i.status !== 'paid').reduce((sum: number, i: any) => sum + i.amount, 0).toFixed(2)} EGP</span>
                   </div>
                 </div>
@@ -342,8 +434,8 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
 
             {/* Footer */}
             <div className="text-center text-xs border-t border-gray-300 pt-3">
-              <p>Thank you for your visit!</p>
-              <p>We appreciate your business</p>
+              <p>{L.thankYou}</p>
+              <p>{L.appreciate}</p>
             </div>
           </div>
         </div>
@@ -355,7 +447,7 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded transition-colors font-medium"
           >
             <Printer className="w-4 h-4" />
-            Print (Browser)
+            {L.printBrowser}
           </button>
           
           <button
@@ -364,7 +456,7 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 disabled:bg-slate-400 dark:disabled:bg-slate-600 text-white rounded transition-colors font-medium"
           >
             <Printer className="w-4 h-4" />
-            {isPrinting ? 'Printing...' : 'Print (Thermal)'}
+            {isPrinting ? L.printing : L.printThermal}
           </button>
         </div>
       </div>
