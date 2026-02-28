@@ -26,6 +26,7 @@ export interface PrinterSettings {
   printQRCode?: boolean
   printBarcode?: boolean
   openCashDrawer?: boolean
+  receiptLanguage?: 'en' | 'ar'
 }
 
 export interface ReceiptData {
@@ -149,9 +150,67 @@ export class ThermalPrinterService {
   }
 
   /**
+   * Get receipt label strings in English or Arabic
+   */
+  private static getReceiptLabels(lang: 'en' | 'ar') {
+    if (lang === 'ar') {
+      return {
+        tel: 'هاتف',
+        taxNo: 'الرقم الضريبي',
+        commReg: 'السجل التجاري',
+        receiptNum: 'رقم الإيصال',
+        date: 'التاريخ',
+        cashier: 'الكاشير',
+        customer: 'العميل',
+        phone: 'الهاتف',
+        subtotal: 'المجموع الفرعي',
+        vat: 'ضريبة القيمة المضافة',
+        total: 'الاجمالي الكلي',
+        payment: 'طريقة الدفع',
+        discount: 'خصم',
+        afterDiscount: 'بعد الخصم',
+        fixedDiscount: 'خصم ثابت',
+        installmentPlan: 'خطة الاقساط',
+        depositPaid: 'الدفعة المقدمة',
+        remaining: 'المتبقي',
+        statusPaid: 'مدفوع',
+        statusOverdue: 'متاخر',
+        thankYou: 'شكرا لزيارتكم!',
+        appreciate: 'نقدر تعاملكم معنا',
+      }
+    }
+    return {
+      tel: 'Tel',
+      taxNo: 'Tax No',
+      commReg: 'Comm Reg',
+      receiptNum: 'Receipt #',
+      date: 'Date',
+      cashier: 'Cashier',
+      customer: 'Customer',
+      phone: 'Phone',
+      subtotal: 'Subtotal',
+      vat: 'VAT',
+      total: 'TOTAL',
+      payment: 'Payment',
+      discount: 'Discount',
+      afterDiscount: 'After Discount',
+      fixedDiscount: 'Fixed Discount',
+      installmentPlan: 'INSTALLMENT PLAN',
+      depositPaid: 'Deposit Paid',
+      remaining: 'Remaining',
+      statusPaid: 'PAID',
+      statusOverdue: 'OVERDUE',
+      thankYou: 'Thank you for your visit!',
+      appreciate: 'We appreciate your business',
+    }
+  }
+
+  /**
    * Format receipt as plain text for thermal printing
    */
   private static formatReceiptText(data: ReceiptData, settings: PrinterSettings): string {
+    const lbl = this.getReceiptLabels(settings.receiptLanguage || 'en')
+    const locale = settings.receiptLanguage === 'ar' ? 'ar-EG' : 'en-US'
     const width = settings.paperWidth === '80mm' ? 48 : 32
     const line = '='.repeat(width)
     const dashes = '-'.repeat(width)
@@ -161,20 +220,20 @@ export class ThermalPrinterService {
     // Store name (centered)
     text += data.storeName.toUpperCase() + '\n'
     text += data.storeAddress + '\n'
-    text += `Tel: ${data.storePhone}\n`
+    text += `${lbl.tel}: ${data.storePhone}\n`
     if (data.storeEmail) text += data.storeEmail + '\n'
     text += '\n'
     
     // Tax info
     text += dashes + '\n'
-    text += `Tax No: ${data.taxNumber}\n`
-    if (data.commercialRegister) text += `Comm Reg: ${data.commercialRegister}\n`
+    text += `${lbl.taxNo}: ${data.taxNumber}\n`
+    if (data.commercialRegister) text += `${lbl.commReg}: ${data.commercialRegister}\n`
     text += dashes + '\n'
     text += '\n'
     
     // Receipt info
-    text += `Receipt #: ${data.receiptNumber}\n`
-    text += `Date: ${data.date.toLocaleString('en-US', {
+    text += `${lbl.receiptNum}: ${data.receiptNumber}\n`
+    text += `${lbl.date}: ${data.date.toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -182,9 +241,9 @@ export class ThermalPrinterService {
       minute: '2-digit',
       hour12: true
     })}\n`
-    if (data.username) text += `Cashier: ${data.username}\n`
-    if (data.customerName) text += `Customer: ${data.customerName}\n`
-    if (data.customerPhone) text += `Phone: ${data.customerPhone}\n`
+    if (data.username) text += `${lbl.cashier}: ${data.username}\n`
+    if (data.customerName) text += `${lbl.customer}: ${data.customerName}\n`
+    if (data.customerPhone) text += `${lbl.phone}: ${data.customerPhone}\n`
     text += dashes + '\n'
     
     // Items with discount calculation
@@ -212,11 +271,11 @@ export class ThermalPrinterService {
       text += `${item.quantity} x ${originalPrice.toFixed(2)} = ${originalTotal.toFixed(2)} EGP\n`
       
       if (hasDiscount) {
-        const discountLabel = item.discountType === 'PERCENTAGE' 
-          ? `Discount ${item.discountValue}%` 
-          : 'Fixed Discount'
+        const discountLabel = item.discountType === 'PERCENTAGE'
+          ? `${lbl.discount} ${item.discountValue}%`
+          : lbl.fixedDiscount
         text += `${discountLabel}: -${itemDiscount.toFixed(2)} EGP\n`
-        text += `After Discount: ${finalTotal.toFixed(2)} EGP\n`
+        text += `${lbl.afterDiscount}: ${finalTotal.toFixed(2)} EGP\n`
       }
       
       text += dashes + '\n'
@@ -224,31 +283,31 @@ export class ThermalPrinterService {
     
     // Totals
     text += '\n'
-    text += `Subtotal: ${data.subtotal.toFixed(2)} EGP\n`
-    text += `VAT (${data.taxRate}%): ${data.tax.toFixed(2)} EGP\n`
+    text += `${lbl.subtotal}: ${data.subtotal.toFixed(2)} EGP\n`
+    text += `${lbl.vat} (${data.taxRate}%): ${data.tax.toFixed(2)} EGP\n`
     text += line + '\n'
-    text += `TOTAL: ${data.total.toFixed(2)} EGP\n`
+    text += `${lbl.total}: ${data.total.toFixed(2)} EGP\n`
     text += line + '\n'
     text += '\n'
     
     // Payment
-    text += `Payment: ${data.paymentMethod}\n`
+    text += `${lbl.payment}: ${data.paymentMethod}\n`
     
     // Installments
     if (data.installments && data.installments.length > 0) {
       text += '\n'
       text += dashes + '\n'
-      text += 'INSTALLMENT PLAN\n'
+      text += `${lbl.installmentPlan}\n`
       text += dashes + '\n'
       
       if (data.depositAmount) {
-        text += `Deposit Paid: ${data.depositAmount.toFixed(2)} EGP\n`
+        text += `${lbl.depositPaid}: ${data.depositAmount.toFixed(2)} EGP\n`
         text += '\n'
       }
       
       data.installments.forEach((inst, idx) => {
-        const status = inst.status === 'paid' ? ' PAID' : inst.status === 'overdue' ? ' OVERDUE' : ''
-        const dateStr = inst.dueDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
+        const status = inst.status === 'paid' ? ` ${lbl.statusPaid}` : inst.status === 'overdue' ? ` ${lbl.statusOverdue}` : ''
+        const dateStr = inst.dueDate.toLocaleDateString(locale, { month: '2-digit', day: '2-digit', year: '2-digit' })
         text += `#${idx + 1} ${dateStr}\n`
         text += `   ${inst.amount.toFixed(2)} EGP${status}\n`
       })
@@ -258,12 +317,12 @@ export class ThermalPrinterService {
         .reduce((sum, i) => sum + i.amount, 0)
       
       text += dashes + '\n'
-      text += `Remaining: ${remaining.toFixed(2)} EGP\n`
+      text += `${lbl.remaining}: ${remaining.toFixed(2)} EGP\n`
     }
     
     text += '\n'
-    text += 'Thank you for your visit!\n'
-    text += 'We appreciate your business\n'
+    text += `${lbl.thankYou}\n`
+    text += `${lbl.appreciate}\n`
     
     // Add blank lines for easy tearing
     const blankLines = settings.receiptBottomSpacing ?? 4
@@ -310,7 +369,9 @@ export class ThermalPrinterService {
    * Format and print receipt
    */
   private static async formatAndPrintReceipt(printer: ThermalPrinter, data: ReceiptData, settings: PrinterSettings): Promise<void> {
-    
+    const lbl = this.getReceiptLabels(settings.receiptLanguage || 'en')
+    const locale = settings.receiptLanguage === 'ar' ? 'ar-EG' : 'en-US'
+
     // Store info
     printer.alignCenter()
     printer.bold(true)
@@ -319,7 +380,7 @@ export class ThermalPrinterService {
     printer.bold(false)
     printer.setTextNormal()
     printer.println(data.storeAddress)
-    printer.println(`Tel: ${data.storePhone}`)
+    printer.println(`${lbl.tel}: ${data.storePhone}`)
     if (data.storeEmail) {
       printer.println(data.storeEmail)
     }
@@ -327,17 +388,17 @@ export class ThermalPrinterService {
 
     // Tax info
     printer.drawLine()
-    printer.println(`Tax No: ${data.taxNumber}`)
+    printer.println(`${lbl.taxNo}: ${data.taxNumber}`)
     if (data.commercialRegister) {
-      printer.println(`Comm Reg: ${data.commercialRegister}`)
+      printer.println(`${lbl.commReg}: ${data.commercialRegister}`)
     }
     printer.drawLine()
     printer.newLine()
 
     // Receipt info
     printer.alignLeft()
-    printer.println(`Receipt #: ${data.receiptNumber}`)
-    printer.println(`Date: ${data.date.toLocaleString('en-US', {
+    printer.println(`${lbl.receiptNum}: ${data.receiptNumber}`)
+    printer.println(`${lbl.date}: ${data.date.toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -346,13 +407,13 @@ export class ThermalPrinterService {
       hour12: true
     })}`)
     if (data.username) {
-      printer.println(`Cashier: ${data.username}`)
+      printer.println(`${lbl.cashier}: ${data.username}`)
     }
     if (data.customerName) {
-      printer.println(`Customer: ${data.customerName}`)
+      printer.println(`${lbl.customer}: ${data.customerName}`)
     }
     if (data.customerPhone) {
-      printer.println(`Phone: ${data.customerPhone}`)
+      printer.println(`${lbl.phone}: ${data.customerPhone}`)
     }
     printer.drawLine()
 
@@ -381,11 +442,11 @@ export class ThermalPrinterService {
       printer.println(`${item.quantity} x ${originalPrice.toFixed(2)} = ${originalTotal.toFixed(2)} EGP`)
       
       if (hasDiscount && item.discountValue !== undefined) {
-        const discountLabel = item.discountType === 'PERCENTAGE' 
-          ? `Discount ${item.discountValue}%` 
-          : 'Fixed Discount'
+        const discountLabel = item.discountType === 'PERCENTAGE'
+          ? `${lbl.discount} ${item.discountValue}%`
+          : lbl.fixedDiscount
         printer.println(`${discountLabel}: -${itemDiscount.toFixed(2)} EGP`)
-        printer.println(`After Discount: ${finalTotal.toFixed(2)} EGP`)
+        printer.println(`${lbl.afterDiscount}: ${finalTotal.toFixed(2)} EGP`)
       }
       
       printer.drawLine()
@@ -393,12 +454,12 @@ export class ThermalPrinterService {
 
     // Totals
     printer.newLine()
-    printer.println(`Subtotal: ${data.subtotal.toFixed(2)} EGP`)
-    printer.println(`VAT (${data.taxRate}%): ${data.tax.toFixed(2)} EGP`)
+    printer.println(`${lbl.subtotal}: ${data.subtotal.toFixed(2)} EGP`)
+    printer.println(`${lbl.vat} (${data.taxRate}%): ${data.tax.toFixed(2)} EGP`)
     printer.drawLine()
     printer.bold(true)
     printer.setTextSize(1, 1)
-    printer.println(`TOTAL: ${data.total.toFixed(2)} EGP`)
+    printer.println(`${lbl.total}: ${data.total.toFixed(2)} EGP`)
     printer.bold(false)
     printer.setTextNormal()
     printer.drawLine()
@@ -406,7 +467,7 @@ export class ThermalPrinterService {
     // Payment
     printer.newLine()
     printer.alignCenter()
-    printer.println(`Payment: ${data.paymentMethod}`)
+    printer.println(`${lbl.payment}: ${data.paymentMethod}`)
     
     // Installments
     if (data.installments && data.installments.length > 0) {
@@ -414,19 +475,19 @@ export class ThermalPrinterService {
       printer.drawLine()
       printer.alignCenter()
       printer.bold(true)
-      printer.println('INSTALLMENT PLAN')
+      printer.println(lbl.installmentPlan)
       printer.bold(false)
       printer.drawLine()
       printer.alignLeft()
       
       if (data.depositAmount) {
-        printer.println(`Deposit: ${data.depositAmount.toFixed(2)} EGP`)
+        printer.println(`${lbl.depositPaid}: ${data.depositAmount.toFixed(2)} EGP`)
         printer.drawLine()
       }
       
       data.installments.forEach((inst, idx) => {
-        const status = inst.status === 'paid' ? 'PAID' : inst.status === 'overdue' ? 'OVER' : 'DUE'
-        const dateStr = inst.dueDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' })
+        const status = inst.status === 'paid' ? lbl.statusPaid : inst.status === 'overdue' ? lbl.statusOverdue : 'DUE'
+        const dateStr = inst.dueDate.toLocaleDateString(locale, { month: '2-digit', day: '2-digit', year: '2-digit' })
         printer.println(`#${idx + 1} ${dateStr}`)
         printer.println(`   ${inst.amount.toFixed(2)} EGP - ${status}`)
       })
@@ -437,14 +498,14 @@ export class ThermalPrinterService {
       
       printer.drawLine()
       printer.bold(true)
-      printer.println(`Remaining: ${remaining.toFixed(2)} EGP`)
+      printer.println(`${lbl.remaining}: ${remaining.toFixed(2)} EGP`)
       printer.bold(false)
     }
     
     printer.newLine()
     printer.alignCenter()
-    printer.println('Thank you for your visit!')
-    printer.println('We appreciate your business')
+    printer.println(lbl.thankYou)
+    printer.println(lbl.appreciate)
 
     // Add spacing
     const blankLines = settings.receiptBottomSpacing ?? 4

@@ -270,6 +270,40 @@ export default function TaxReceiptSettings({ settings, onChange }: Props) {
           </p>
         </div>
 
+        {/* Receipt Language */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+            Receipt Language / لغة الإيصال
+          </label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="receiptLanguage"
+                value="en"
+                checked={(settings.receiptLanguage || 'en') === 'en'}
+                onChange={(e) => handleChange('receiptLanguage', e.target.value)}
+                className="w-4 h-4 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-slate-700 dark:text-slate-300">English</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="receiptLanguage"
+                value="ar"
+                checked={settings.receiptLanguage === 'ar'}
+                onChange={(e) => handleChange('receiptLanguage', e.target.value)}
+                className="w-4 h-4 text-primary focus:ring-primary"
+              />
+              <span className="text-sm text-slate-700 dark:text-slate-300" dir="rtl">العربية</span>
+            </label>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Choose the language used for all receipt labels (thermal &amp; print preview).
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="flex items-center gap-2 cursor-pointer">
             <input

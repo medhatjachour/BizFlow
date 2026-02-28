@@ -43,6 +43,7 @@ export interface TaxReceiptSettings {
   printQRCode: boolean
   printBarcode: boolean
   openCashDrawer: boolean
+  receiptLanguage: 'en' | 'ar'
 }
 
 export interface NotificationSettings {
