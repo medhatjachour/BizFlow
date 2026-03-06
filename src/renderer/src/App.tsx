@@ -33,9 +33,9 @@ const Expenses     = lazy(() => import('./pages/Expenses/index'))
 const Sales        = lazy(() => import('./pages/Sales'))
 const Stores       = lazy(() => import('./pages/Stores'))
 const Employees    = lazy(() => import('./pages/Employees'))
-const Customers    = lazy(() => import('./pages/Customers'))
-const CustomerProfile = lazy(() => import('./pages/CustomerProfile'))
-const Reports      = lazy(() => import('./pages/Reports'))
+const Customers    = lazy(() => import('./pages/Customers/Customers'))
+const CustomerProfile = lazy(() => import('./pages/Customers/CustomerProfile'))
+const Reports      = lazy(() => import('./pages/Reports/Reports'))
 const Installments = lazy(() => import('./pages/Installments'))
 
 // ------------------------------------------------------------------

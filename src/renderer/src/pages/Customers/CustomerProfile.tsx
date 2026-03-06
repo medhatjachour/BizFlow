@@ -17,46 +17,13 @@ import {
   Award,
   Eye
 } from 'lucide-react'
-import { ipc } from '../utils/ipc'
-import { useToast } from '../contexts/ToastContext'
-import { useLanguage } from '../contexts/LanguageContext'
+import { ipc } from '../../utils/ipc'
+import { useToast } from '../../contexts/ToastContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
-import { ReceiptPreviewModal } from './Sales/ReceiptPreviewModal'
-import logger from '../../../shared/utils/logger'
-
-type CustomerProfile = {
-  id: string
-  name: string
-  email: string | null
-  phone: string
-  loyaltyTier: string
-  totalSpent: number
-  createdAt: string
-  saleTransactions: any[]
-  deposits: any[]
-  installments: any[]
-  statistics: {
-    totalSpent: number
-    totalPurchases: number
-    averagePurchase: number
-    totalItems: number
-    totalDeposits: number
-    firstPurchase: string | null
-    lastPurchase: string | null
-    purchaseFrequency: number
-    installments: {
-      total: number
-      paid: number
-      pending: number
-      overdue: number
-      totalAmount: number
-      paidAmount: number
-      remainingAmount: number
-    }
-  }
-  topProducts: Array<{ name: string; count: number; spent: number }>
-  categorySpending: Record<string, number>
-}
+import { ReceiptPreviewModal } from '../Sales/ReceiptPreviewModal'
+import logger from '../../../../shared/utils/logger'
+import type { CustomerProfile } from './types'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()
