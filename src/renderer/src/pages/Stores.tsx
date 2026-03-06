@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Plus, Store, MapPin, Phone, Clock, ArrowRightLeft, Edit2, Trash2 } from 'lucide-react'
 import Modal from '../components/ui/Modal'
+import AddStoreDialog from '../components/AddStoreDialog'
+import type { NewStore } from '../components/AddStoreDialog'
 import { ipc } from '../utils/ipc'
 import { useLanguage } from '../contexts/LanguageContext'
 import logger from '../../../shared/utils/logger'
@@ -58,18 +60,9 @@ export default function Stores(): JSX.Element {
     })
   }
 
-  const handleAddStore = async () => {
-    try {
-      const result = await ipc.stores.create(formData)
-      if (result.success) {
-        await loadStores()
-        setShowAddModal(false)
-        resetForm()
-      }
-    } catch (error) {
-      logger.error('Failed to add store:', error)
-      alert(t('failedToAddStore'))
-    }
+  const handleAddStore = async (store: NewStore) => {
+    // Store was already created by AddStoreDialog; just refresh the list
+    await loadStores()
   }
 
   const handleEditStore = async () => {
@@ -223,95 +216,12 @@ export default function Stores(): JSX.Element {
         )}
       </div>
 
-      {/* Add Store Modal */}
-      <Modal 
-        isOpen={showAddModal} 
-        onClose={() => {
-          setShowAddModal(false)
-          resetForm()
-        }} 
-        title={t('addNewStore')}
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('storeName')}
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="input-field w-full"
-              placeholder={t('enterStoreName')}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('storeLocation')}
-            </label>
-            <input
-              type="text"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="input-field w-full"
-              placeholder={t('enterAddress')}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('phone')}
-            </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="input-field w-full"
-              placeholder="(555) 123-4567"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('hours')}
-            </label>
-            <input
-              type="text"
-              value={formData.hours}
-              onChange={(e) => setFormData({ ...formData, hours: e.target.value })}
-              className="input-field w-full"
-              placeholder="9 AM - 9 PM"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('manager')}
-            </label>
-            <input
-              type="text"
-              value={formData.manager}
-              onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-              className="input-field w-full"
-              placeholder={t('managerName')}
-            />
-          </div>
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={handleAddStore}
-              className="btn-primary flex-1"
-            >
-              {t('addStore')}
-            </button>
-            <button
-              onClick={() => {
-                setShowAddModal(false)
-                resetForm()
-              }}
-              className="btn-secondary flex-1"
-            >
-              {t('cancel')}
-            </button>
-          </div>
-        </div>
-      </Modal>
+      {/* Add Store Dialog (reusable component) */}
+      <AddStoreDialog
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onCreated={handleAddStore}
+      />
 
       {/* Edit Store Modal */}
       <Modal 

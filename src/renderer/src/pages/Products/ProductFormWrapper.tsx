@@ -12,6 +12,8 @@ import ProductForm from '../../components/ProductForm'
 import { PRODUCT_DEFAULTS } from '../../../../shared/constants'
 import StockMovementDialog from '../../components/StockMovementDialog'
 import type { Product } from './types'
+import type { NewCategory } from '../../components/AddCategoryDialog'
+import type { NewStore } from '../../components/AddStoreDialog'
 import logger from '../../../../shared/utils/logger'
 
 type Store = {
@@ -273,6 +275,18 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
     } catch (error) {
       logger.error('Failed to load categories:', error)
     }
+  }
+
+  /** Optimistically append a newly-created category and auto-select it */
+  const handleCategoryCreated = (category: NewCategory) => {
+    setCategories((prev) => [...prev, { id: category.id, name: category.name, description: category.description }])
+    setFormData((prev) => ({ ...prev, categoryId: category.id }))
+  }
+
+  /** Optimistically append a newly-created store and auto-select it */
+  const handleStoreCreated = (store: NewStore) => {
+    setStores((prev) => [...prev, { id: store.id, name: store.name, location: store.location }])
+    setFormData((prev) => ({ ...prev, storeId: store.id }))
   }
 
   const validateForm = (): boolean => {
@@ -729,6 +743,8 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         onVariantPriceChange={handleVariantPriceChange}
         onVariantStockChange={handleVariantStockChange}
         onOpenStockDialog={handleOpenStockDialog}
+        onCategoryCreated={handleCategoryCreated}
+        onStoreCreated={handleStoreCreated}
       />
 
       {/* Stock Movement Dialog */}
