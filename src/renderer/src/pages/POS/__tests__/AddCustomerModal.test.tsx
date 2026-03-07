@@ -34,6 +34,7 @@ import { useLanguage } from '../../../contexts/LanguageContext'
 const mockIpc = {
   customers: {
     getAll: vi.fn(),
+    getProfile: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
