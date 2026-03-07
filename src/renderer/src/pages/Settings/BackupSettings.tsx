@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Database, Download, Upload, HardDrive, Trash2, RefreshCw } from 'lucide-react'
+import { Database, Download, HardDrive, Trash2, RefreshCw, RotateCcw, Clock, MapPin, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useToast } from '../../contexts/ToastContext'
 import type { BackupSettings } from './types'
@@ -14,7 +14,7 @@ type Backup = {
   path: string
   size: number
   createdAt: string
-  modifiedAt: string
+  missing?: boolean
 }
 
 type Props = {
@@ -27,20 +27,21 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
   const toast = useToast()
   const [backups, setBackups] = useState<Backup[]>([])
   const [loading, setLoading] = useState(false)
-  const [backupDirectory, setBackupDirectory] = useState('')
-  
+  const [creating, setCreating] = useState(false)
+  const [restoringPath, setRestoringPath] = useState<string | null>(null)
+  const [deletingPath, setDeletingPath] = useState<string | null>(null)
+
   const handleChange = (field: keyof BackupSettings, value: boolean | string | number) => {
     onChange({ ...settings, [field]: value })
   }
 
-  // Load backups list
+  // Load all backups from the registry (cross-location)
   const loadBackups = async () => {
     try {
       setLoading(true)
-      const result = await window.electron.ipcRenderer.invoke('backup:list', settings.backupLocation)
+      const result = await window.electron.ipcRenderer.invoke('backup:list')
       if (result.success) {
         setBackups(result.data.backups)
-        setBackupDirectory(result.data.directory)
       } else {
         toast.error(result.error || 'Failed to load backups')
       }
@@ -52,32 +53,26 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
     }
   }
 
-  // Load backups on mount and when backup location changes
   useEffect(() => {
     loadBackups()
-  }, [settings.backupLocation])
+  }, [])
 
+  // Ask user WHERE to save, then create the backup there
   const handleBackup = async () => {
     try {
-      setLoading(true)
-      toast.info('Creating backup...')
-      
+      const dirResult = await window.electron.ipcRenderer.invoke('backup:select-directory')
+      if (!dirResult.success) return // user cancelled
+
+      setCreating(true)
+      toast.info('Creating backup…')
+
       const result = await window.electron.ipcRenderer.invoke('backup:create', {
-        customPath: settings.backupLocation
+        customPath: dirResult.data.path
       })
-      
+
       if (result.success) {
-        toast.success(`Backup created successfully: ${result.data.filename}`)
-        await loadBackups()
-        
-        // Clean old backups if auto-cleanup is enabled
-        if (settings.autoBackup && settings.keepBackups) {
-          await window.electron.ipcRenderer.invoke('backup:clean', {
-            keepCount: settings.keepBackups,
-            customPath: settings.backupLocation
-          })
-          await loadBackups()
-        }
+        toast.success(`Backup saved: ${result.data.filename}`)
+        setBackups((prev) => [result.data, ...prev])
       } else {
         toast.error(result.error || 'Failed to create backup')
       }
@@ -85,34 +80,21 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
       logger.error('Backup failed:', error)
       toast.error('Failed to create backup')
     } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleRestoreClick = async () => {
-    // Open file dialog to select backup file
-    const result = await window.electron.ipcRenderer.invoke('dialog:openFile', {
-      title: 'Select Backup File',
-      filters: [{ name: 'Database Backup', extensions: ['db'] }],
-      properties: ['openFile']
-    })
-
-    if (result && result.length > 0) {
-      await handleRestore(result[0])
+      setCreating(false)
     }
   }
 
   const handleRestore = async (backupPath: string) => {
-    if (!confirm('Are you sure you want to restore from this backup? Your current database will be replaced.')) {
+    if (!confirm('Are you sure you want to restore from this backup? Your current database will be replaced. The application will need to restart.')) {
       return
     }
-    
+
     try {
-      setLoading(true)
-      toast.info('Restoring backup...')
-      
+      setRestoringPath(backupPath)
+      toast.info('Restoring backup…')
+
       const result = await window.electron.ipcRenderer.invoke('backup:restore', backupPath)
-      
+
       if (result.success) {
         toast.success('Backup restored successfully! Please restart the application.')
       } else {
@@ -122,53 +104,48 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
       logger.error('Restore failed:', error)
       toast.error('Failed to restore backup')
     } finally {
-      setLoading(false)
+      setRestoringPath(null)
     }
   }
 
   const handleDeleteBackup = async (backupPath: string) => {
-    if (!confirm('Are you sure you want to delete this backup?')) {
+    if (!confirm('Are you sure you want to delete this backup? This cannot be undone.')) {
       return
     }
-    
+
     try {
+      setDeletingPath(backupPath)
       const result = await window.electron.ipcRenderer.invoke('backup:delete', backupPath)
-      
+
       if (result.success) {
-        toast.success('Backup deleted successfully')
-        await loadBackups()
+        toast.success('Backup removed')
+        setBackups((prev) => prev.filter((b) => b.path !== backupPath))
       } else {
         toast.error(result.error || 'Failed to delete backup')
       }
     } catch (error) {
       logger.error('Delete failed:', error)
       toast.error('Failed to delete backup')
+    } finally {
+      setDeletingPath(null)
     }
   }
 
-  const handleSelectLocation = async () => {
-    try {
-      const result = await window.electron.ipcRenderer.invoke('backup:select-directory')
-      
-      if (result.success) {
-        handleChange('backupLocation', result.data.path)
-        toast.success('Backup location updated')
-      }
-    } catch (error) {
-      logger.error('Failed to select directory:', error)
-      toast.error('Failed to select directory')
-    }
-  }
-  
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return bytes + ' B'
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
   }
-  
+
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString)
-    return date.toLocaleString()
+    return new Date(dateString).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
   }
 
   return (
@@ -182,34 +159,37 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         </p>
       </div>
 
-      {/* Manual Backup/Restore */}
+      {/* Create Backup */}
       <div className="glass-card p-6 space-y-4">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 bg-primary/20 text-primary rounded-lg flex items-center justify-center">
             <Database size={20} />
           </div>
-          <h4 className="font-semibold text-slate-900 dark:text-white">{t('manualBackup')}</h4>
+          <div>
+            <h4 className="font-semibold text-slate-900 dark:text-white">{t('manualBackup')}</h4>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              You will be asked to choose where to save the backup file.
+            </p>
+          </div>
         </div>
 
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          {t('createBackupProtect')}
-        </p>
-
-        <div className="flex gap-3">
-          <button onClick={handleBackup} className="btn-primary flex items-center gap-2">
+        <button
+          onClick={handleBackup}
+          disabled={creating}
+          className="btn-primary flex items-center gap-2 disabled:opacity-60"
+        >
+          {creating ? (
+            <RefreshCw size={18} className="animate-spin" />
+          ) : (
             <Download size={18} />
-            {t('createBackupNow')}
-          </button>
-          <button onClick={handleRestoreClick} className="btn-secondary flex items-center gap-2">
-            <Upload size={18} />
-            {t('restoreFromBackup')}
-          </button>
-        </div>
+          )}
+          {creating ? 'Creating…' : t('createBackupNow')}
+        </button>
       </div>
 
       {/* Automatic Backup */}
       <div className="glass-card p-6 space-y-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-success/20 text-success rounded-lg flex items-center justify-center">
               <HardDrive size={20} />
@@ -236,8 +216,7 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         </div>
 
         {settings.autoBackup && (
-          <div className="space-y-4">
-            {/* Backup Frequency */}
+          <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-700">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 {t('backupFrequency')}
@@ -253,27 +232,6 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
               </select>
             </div>
 
-            {/* Backup Location */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                {t('backupLocation')}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  className="input-field flex-1"
-                  value={settings.backupLocation || t('defaultLocation')}
-                  onChange={(e) => handleChange('backupLocation', e.target.value)}
-                  placeholder={t('selectBackupFolder')}
-                  readOnly
-                />
-                <button onClick={handleSelectLocation} className="btn-secondary px-4">
-                  {t('browse')}
-                </button>
-              </div>
-            </div>
-
-            {/* Keep Backups */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 {t('numberOfBackupsToKeep')}
@@ -286,80 +244,127 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
                 min="1"
                 max="30"
               />
-              <p className="text-xs text-slate-500">
-                {t('olderBackupsDeleted')}
-              </p>
+              <p className="text-xs text-slate-500">{t('olderBackupsDeleted')}</p>
             </div>
           </div>
         )}
       </div>
 
-      {/* Backup List */}
+      {/* All Backups (registry) */}
       <div className="glass-card p-6 space-y-4">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="font-semibold text-slate-900 dark:text-white">
-            Available Backups ({backups.length})
-          </h4>
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="font-semibold text-slate-900 dark:text-white">
+              All Backups{backups.length > 0 && ` (${backups.length})`}
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Every backup ever created by this app, across all locations
+            </p>
+          </div>
           <button
             onClick={loadBackups}
             disabled={loading}
-            className="btn-secondary flex items-center gap-2 px-3 py-2"
+            className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm"
           >
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
             Refresh
           </button>
         </div>
-        
-        {backupDirectory && (
-          <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-            Location: {backupDirectory}
-          </p>
-        )}
-        
+
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Loading backups...</p>
+          <div className="text-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
+            <p className="text-sm text-slate-500">Loading backups…</p>
           </div>
         ) : backups.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-            <Database size={48} className="mx-auto mb-3 opacity-50" />
-            <p>No backups found</p>
-            <p className="text-sm mt-2">Create your first backup to get started</p>
+          <div className="text-center py-10 text-slate-500 dark:text-slate-400">
+            <Database size={44} className="mx-auto mb-3 opacity-40" />
+            <p className="font-medium">No backups yet</p>
+            <p className="text-sm mt-1">Click "Create Backup Now" to get started</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {backups.map((backup) => (
-              <div
-                key={backup.path}
-                className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-slate-900 dark:text-white">
-                    {backup.filename}
+          <div className="space-y-3">
+            {backups.map((backup, index) => {
+              const isRestoring = restoringPath === backup.path
+              const isDeleting = deletingPath === backup.path
+              const isBusy = isRestoring || isDeleting
+
+              return (
+                <div
+                  key={backup.path}
+                  className={`rounded-xl border p-4 transition-shadow hover:shadow-md ${
+                    backup.missing
+                      ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                  }`}
+                >
+                  {/* Top row */}
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium text-slate-900 dark:text-white truncate">
+                        {backup.filename}
+                      </span>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 rounded px-2 py-0.5">
+                      {formatFileSize(backup.size)}
+                    </span>
                   </div>
-                  <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                    {formatDate(backup.createdAt)} • {formatFileSize(backup.size)}
+
+                  {/* Date */}
+                  <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 mb-2">
+                    <Clock size={13} className="shrink-0" />
+                    <span>{formatDate(backup.createdAt)}</span>
+                  </div>
+
+                  {/* Path */}
+                  <div className="flex items-start gap-1.5 text-xs text-slate-400 dark:text-slate-500 mb-3">
+                    <MapPin size={12} className="mt-0.5 shrink-0" />
+                    <span className="break-all">{backup.path}</span>
+                  </div>
+
+                  {/* Missing file warning */}
+                  {backup.missing && (
+                    <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 rounded-lg px-3 py-2 mb-3">
+                      <AlertTriangle size={14} className="shrink-0" />
+                      <span>File not found on disk — it may have been moved or deleted outside the app.</span>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                    {!backup.missing && (
+                      <button
+                        onClick={() => handleRestore(backup.path)}
+                        disabled={isBusy || creating}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+                      >
+                        {isRestoring ? (
+                          <RefreshCw size={14} className="animate-spin" />
+                        ) : (
+                          <RotateCcw size={14} />
+                        )}
+                        {isRestoring ? 'Restoring…' : 'Restore'}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDeleteBackup(backup.path)}
+                      disabled={isBusy || creating}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                    >
+                      {isDeleting ? (
+                        <RefreshCw size={14} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={14} />
+                      )}
+                      {isDeleting ? 'Removing…' : backup.missing ? 'Remove from list' : 'Delete'}
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleRestore(backup.path)}
-                    disabled={loading}
-                    className="px-3 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
-                  >
-                    <Upload size={16} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteBackup(backup.path)}
-                    disabled={loading}
-                    className="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -377,3 +382,4 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
     </div>
   )
 }
+

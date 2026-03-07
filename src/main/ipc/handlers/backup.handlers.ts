@@ -12,26 +12,50 @@ import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Backup')
 
-// Prisma client will be passed from the main handlers if needed
-// For backup/restore, we work directly with database files
+// ---------------------------------------------------------------------------
+// Registry helpers
+// A single JSON file in userData tracks every backup ever created by this app,
+// regardless of where on disk each file was saved.
+// ---------------------------------------------------------------------------
 
-// Get app data directory for backups
-const getBackupDirectory = async (customPath?: string): Promise<string> => {
-  if (customPath) {
-    return customPath
-  }
-  const userDataPath = app.getPath('userData')
-  const backupDir = path.join(userDataPath, 'backups')
-  
-  // Ensure backup directory exists
-  try {
-    await fs.access(backupDir)
-  } catch {
-    await fs.mkdir(backupDir, { recursive: true })
-  }
-  
-  return backupDir
+type RegistryEntry = {
+  filename: string
+  path: string
+  size: number
+  createdAt: string
 }
+
+type Registry = { backups: RegistryEntry[] }
+
+const getRegistryPath = (): string =>
+  path.join(app.getPath('userData'), 'backup-registry.json')
+
+const readRegistry = async (): Promise<Registry> => {
+  try {
+    const raw = await fs.readFile(getRegistryPath(), 'utf-8')
+    return JSON.parse(raw) as Registry
+  } catch {
+    return { backups: [] }
+  }
+}
+
+const writeRegistry = async (registry: Registry): Promise<void> => {
+  await fs.writeFile(getRegistryPath(), JSON.stringify(registry, null, 2), 'utf-8')
+}
+
+const addToRegistry = async (entry: RegistryEntry): Promise<void> => {
+  const registry = await readRegistry()
+  registry.backups.unshift(entry) // newest first
+  await writeRegistry(registry)
+}
+
+const removeFromRegistry = async (backupPath: string): Promise<void> => {
+  const registry = await readRegistry()
+  registry.backups = registry.backups.filter((b) => b.path !== backupPath)
+  await writeRegistry(registry)
+}
+
+// ---------------------------------------------------------------------------
 
 // Format date for backup filename
 const formatBackupFilename = (): string => {
@@ -47,44 +71,45 @@ const formatBackupFilename = (): string => {
 
 /**
  * Create Database Backup
+ * Saves the file to the user-chosen directory and registers it globally.
  */
 ipcMain.handle('backup:create', async (_event, options?: { customPath?: string }) => {
   try {
-    // Get database path using centralized function
     const dbPath = getDatabasePath()
-    
-    // Check if database exists
+
     try {
       await fs.access(dbPath)
     } catch {
-      return {
-        success: false,
-        error: `Database file not found at: ${dbPath}`
-      }
+      return { success: false, error: `Database file not found at: ${dbPath}` }
     }
 
-    // Get backup directory
-    const backupDir = await getBackupDirectory(options?.customPath)
-    
-    // Generate backup filename
-    const backupFilename = formatBackupFilename()
-    const backupPath = path.join(backupDir, backupFilename)
-    
-    // Copy database file to backup location
-    await fs.copyFile(dbPath, backupPath)
-    
-    // Get backup file stats
-    const stats = await fs.stat(backupPath)
-    
-    return {
-      success: true,
-      data: {
-        path: backupPath,
-        filename: backupFilename,
-        size: stats.size,
-        createdAt: new Date().toISOString()
-      }
+    // Destination folder — must be provided (UI always asks the user first)
+    const destDir = options?.customPath
+    if (!destDir) {
+      return { success: false, error: 'No destination folder provided' }
     }
+
+    // Ensure destination exists
+    await fs.mkdir(destDir, { recursive: true })
+
+    const backupFilename = formatBackupFilename()
+    const backupPath = path.join(destDir, backupFilename)
+
+    await fs.copyFile(dbPath, backupPath)
+    const stats = await fs.stat(backupPath)
+    const createdAt = new Date().toISOString()
+
+    const entry: RegistryEntry = {
+      filename: backupFilename,
+      path: backupPath,
+      size: stats.size,
+      createdAt
+    }
+
+    await addToRegistry(entry)
+
+    log.info(`Backup created and registered: ${backupPath}`)
+    return { success: true, data: entry }
   } catch (error) {
     log.error('Backup creation failed:', error)
     return {
@@ -95,45 +120,28 @@ ipcMain.handle('backup:create', async (_event, options?: { customPath?: string }
 })
 
 /**
- * List Available Backups
+ * List All Backups (registry-based, cross-location)
+ * Each entry includes a `missing` flag if the file no longer exists on disk.
  */
-ipcMain.handle('backup:list', async (_event, customPath?: string) => {
+ipcMain.handle('backup:list', async () => {
   try {
-    const backupDir = await getBackupDirectory(customPath)
-    
-    // Read directory contents
-    const files = await fs.readdir(backupDir)
-    
-    // Filter and map backup files
+    const registry = await readRegistry()
+
     const backups = await Promise.all(
-      files
-        .filter(file => file.startsWith('backup-') && file.endsWith('.db'))
-        .map(async (file) => {
-          const filePath = path.join(backupDir, file)
-          const stats = await fs.stat(filePath)
-          
-          return {
-            filename: file,
-            path: filePath,
-            size: stats.size,
-            createdAt: stats.birthtime.toISOString(),
-            modifiedAt: stats.mtime.toISOString()
-          }
-        })
+      registry.backups.map(async (entry) => {
+        let missing = false
+        let size = entry.size
+        try {
+          const stats = await fs.stat(entry.path)
+          size = stats.size
+        } catch {
+          missing = true
+        }
+        return { ...entry, size, missing }
+      })
     )
-    
-    // Sort by creation date (newest first)
-    backups.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    
-    return {
-      success: true,
-      data: {
-        backups,
-        directory: backupDir
-      }
-    }
+
+    return { success: true, data: { backups } }
   } catch (error) {
     log.error('Failed to list backups:', error)
     return {
@@ -195,15 +203,22 @@ ipcMain.handle('backup:restore', async (_event, backupPath: string) => {
 })
 
 /**
- * Delete Backup File
+ * Delete Backup File + remove from registry
  */
 ipcMain.handle('backup:delete', async (_event, backupPath: string) => {
   try {
-    await fs.unlink(backupPath)
-    return {
-      success: true,
-      data: { deleted: backupPath }
+    // Try to delete the file (it might already be missing from disk)
+    try {
+      await fs.unlink(backupPath)
+    } catch (e: unknown) {
+      const err = e as NodeJS.ErrnoException
+      if (err.code !== 'ENOENT') throw e // re-throw unexpected errors
+      // file was already gone — that's fine, still remove from registry
     }
+
+    await removeFromRegistry(backupPath)
+
+    return { success: true, data: { deleted: backupPath } }
   } catch (error) {
     log.error('Failed to delete backup:', error)
     return {
