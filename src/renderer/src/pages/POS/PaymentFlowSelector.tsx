@@ -44,7 +44,7 @@ export const PaymentFlowSelector: React.FC<PaymentFlowSelectorProps> = ({
   onDepositAdded,
   onInstallmentAdded
 }) => {
-  const [paymentFlow, setPaymentFlow] = useState<PaymentFlow>('full-payment')
+  const [paymentFlow, setPaymentFlow] = useState<PaymentFlow>('select')
   const [showDepositForm, setShowDepositForm] = useState(false)
   const [showInstallmentForm, setShowInstallmentForm] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
