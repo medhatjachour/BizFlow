@@ -39,7 +39,18 @@ import { useToast } from '../../contexts/ToastContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import * as XLSX from 'xlsx'
 import { Pie, Bar } from 'react-chartjs-2'
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement
+} from 'chart.js'
 import logger from '../../../../shared/utils/logger'
+
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement)
 
 type ExpenseCategory = 
   | 'rent'
