@@ -87,10 +87,10 @@ export const LazyRoutes = {
   Dashboard: lazyLoad(() => import('../pages/Dashboard')),
   Inventory: lazyLoad(() => import('../pages/Inventory')),
   Sales: lazyLoad(() => import('../pages/Sales')),
-  Customers: lazyLoad(() => import('../pages/Customers')),
+  Customers: lazyLoad(() => import('../pages/Customers/Customers')),
   Employees: lazyLoad(() => import('../pages/Employees')),
   Stores: lazyLoad(() => import('../pages/Stores')),
-  Reports: lazyLoad(() => import('../pages/Reports')),
+  Reports: lazyLoad(() => import('../pages/Reports/Reports')),
   Settings: lazyLoad(() => import('../pages/Settings'))
 }
 

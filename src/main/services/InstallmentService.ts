@@ -16,20 +16,24 @@ export class InstallmentService {
 
   async createInstallment(data: {
     amount: number
-    dueDate: Date
-    paidDate?: Date
+    dueDate: Date | string
+    paidDate?: Date | string | null
     status?: string
     note?: string
     customerId?: string
     saleId?: string
   }) {
-    log.info(`Creating installment: amount=${data.amount} dueDate=${data.dueDate.toISOString()} customerId=${data.customerId ?? 'none'}`)
+    // IPC passes dates as strings — normalise to Date objects before use
+    const dueDate = data.dueDate instanceof Date ? data.dueDate : new Date(data.dueDate)
+    const paidDate = data.paidDate ? (data.paidDate instanceof Date ? data.paidDate : new Date(data.paidDate)) : null
+
+    log.info(`Creating installment: amount=${data.amount} dueDate=${dueDate.toISOString()} customerId=${data.customerId ?? 'none'}`)
     try {
       const result = await this.prisma.installment.create({
         data: {
           amount: data.amount,
-          dueDate: data.dueDate,
-          paidDate: data.paidDate ?? null,
+          dueDate,
+          paidDate: paidDate ?? null,
           status: data.status ?? 'pending',
           note: data.note,
           customerId: data.customerId ?? null,

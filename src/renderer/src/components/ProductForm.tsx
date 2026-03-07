@@ -1,5 +1,10 @@
+import { useState } from 'react'
 import { X, Plus, Trash2, Package } from 'lucide-react'
 import { useLanguage } from '../contexts/LanguageContext'
+import AddCategoryDialog from './AddCategoryDialog'
+import AddStoreDialog from './AddStoreDialog'
+import type { NewCategory } from './AddCategoryDialog'
+import type { NewStore } from './AddStoreDialog'
 
 type ProductVariant = {
   id: string
@@ -85,6 +90,10 @@ type ProductFormProps = {
   onVariantPriceChange?: (index: number, newPrice: number) => void
   onVariantStockChange?: (index: number, newStock: number) => void
   onOpenStockDialog?: (index: number, variant: any) => void
+  /** Called after a new category is created inline so the parent refreshes its list */
+  onCategoryCreated?: (category: NewCategory) => void
+  /** Called after a new store is created inline so the parent refreshes its list */
+  onStoreCreated?: (store: NewStore) => void
 }
 
 export default function ProductForm({
@@ -115,9 +124,23 @@ export default function ProductForm({
   isEditMode = false,
   onVariantPriceChange,
   onVariantStockChange,
-  onOpenStockDialog
+  onOpenStockDialog,
+  onCategoryCreated,
+  onStoreCreated
 }: Readonly<ProductFormProps>): JSX.Element {
   const { t } = useLanguage()
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [showAddStore, setShowAddStore] = useState(false)
+
+  const handleCategoryCreated = (category: NewCategory) => {
+    setFormData({ ...formData, categoryId: category.id })
+    onCategoryCreated?.(category)
+  }
+
+  const handleStoreCreated = (store: NewStore) => {
+    setFormData({ ...formData, storeId: store.id })
+    onStoreCreated?.(store)
+  }
   
   return (
     <div className="space-y-6">
@@ -219,9 +242,19 @@ export default function ProductForm({
 
       <div className="grid grid-cols-4 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            {t('categoryRequired')}
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              {t('categoryRequired')}
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowAddCategory(true)}
+              title={t('addNewCategory') || 'Add new category'}
+              className="p-1 rounded-md text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
           <select
             value={formData.categoryId}
             onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
@@ -237,9 +270,19 @@ export default function ProductForm({
           {errors.categoryId && <p className="text-error text-sm mt-1">{errors.categoryId}</p>}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            {t('storeAssignment')}
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              {t('storeAssignment')}
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowAddStore(true)}
+              title={t('addNewStore') || 'Add new store'}
+              className="p-1 rounded-md text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
           <select
             value={formData.storeId}
             onChange={(e) => setFormData({ ...formData, storeId: e.target.value })}
@@ -735,6 +778,18 @@ export default function ProductForm({
           </div>
         )}
       </div>
+
+      {/* Inline quick-add dialogs */}
+      <AddCategoryDialog
+        isOpen={showAddCategory}
+        onClose={() => setShowAddCategory(false)}
+        onCreated={handleCategoryCreated}
+      />
+      <AddStoreDialog
+        isOpen={showAddStore}
+        onClose={() => setShowAddStore(false)}
+        onCreated={handleStoreCreated}
+      />
     </div>
   )
 }
