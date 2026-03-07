@@ -10,7 +10,7 @@
  * - usePOS: Business logic and state management
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Grid, Zap } from 'lucide-react'
 import ProductSearch from './ProductSearch'
 import QuickSale from './QuickSale'
@@ -73,6 +73,26 @@ export default function POS(): JSX.Element {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
   const [customerQuery, setCustomerQuery] = useState('')
 
+  // Keep a ref to the current selectedCustomer so we can access it in cleanup effects
+  // without stale closure issues
+  const selectedCustomerRef = useRef<Customer | null>(null)
+  useEffect(() => {
+    selectedCustomerRef.current = selectedCustomer
+  }, [selectedCustomer])
+
+  // Cleanup orphaned installments/deposits when navigating away from POS
+  useEffect(() => {
+    return () => {
+      const customer = selectedCustomerRef.current
+      if (customer) {
+        Promise.all([
+          (window as any).api.delete.cleanupUnlinkedDeposits(customer.id),
+          (window as any).api.delete.cleanupUnlinkedInstallments(customer.id)
+        ]).catch(() => {})
+      }
+    }
+  }, [])
+
   // Barcode scanner integration - add products directly to cart
   const handleBarcodeScan = useCallback(async (barcode: string) => {
     try {
@@ -119,6 +139,23 @@ export default function POS(): JSX.Element {
       setCustomerQuery('')
     }
   }, [showSuccess])
+
+  // Cancel payment modal — clean up any orphaned installments/deposits that were
+  // pre-created for the live preview but whose sale was never completed
+  const handleCancelPaymentModal = async () => {
+    if (selectedCustomer) {
+      try {
+        await Promise.all([
+          (window as any).api.delete.cleanupUnlinkedDeposits(selectedCustomer.id),
+          (window as any).api.delete.cleanupUnlinkedInstallments(selectedCustomer.id)
+        ])
+        logger.info('🧹 Cleaned up unlinked payments on modal cancel for customer:', selectedCustomer.id)
+      } catch (error) {
+        logger.error('Failed to cleanup unlinked payments on modal cancel:', error)
+      }
+    }
+    setShowPaymentModal(false)
+  }
 
   const handleCustomerAdded = (newCustomer: Customer) => {
     // Refresh customers list and select the new customer immediately
@@ -430,7 +467,7 @@ export default function POS(): JSX.Element {
                 {isCompletingSale ? 'Processing Payment...' : t('paymentOptions')}
               </h2>
               <button
-                onClick={() => setShowPaymentModal(false)}
+                onClick={handleCancelPaymentModal}
                 disabled={isCompletingSale}
                 className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
