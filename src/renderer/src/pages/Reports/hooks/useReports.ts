@@ -74,12 +74,16 @@ export const useReports = () => {
         window.api.finance.getTransactions({ startDate: todayStart, endDate: todayEnd })
       ]);
 
-      let totalRevenue = 0;
+      let totalRevenue = 0;   // pre-tax (subtotal) — used for profit & margin
+      let totalCashIn = 0;    // post-tax (total) — used for cashInSafe
       let totalCOGS = 0;
 
       salesData.forEach((sale: any) => {
         const refundedAmount = calculateRefundedAmount(sale.items || []);
-        const netSaleTotal = sale.total - refundedAmount;
+        // Use subtotal (pre-tax) for revenue — tax is collected for the govt, not business income
+        const netRevenue = (sale.subtotal ?? sale.total) - refundedAmount;
+        // Cash in safe uses total (actual money received including tax collected)
+        const netCash = sale.total - refundedAmount;
 
         let saleCOGS = 0;
         sale.items?.forEach((item: any) => {
@@ -90,7 +94,8 @@ export const useReports = () => {
           }
         });
 
-        totalRevenue += netSaleTotal;
+        totalRevenue += netRevenue;
+        totalCashIn += netCash;
         totalCOGS += saleCOGS;
       });
 
@@ -99,14 +104,17 @@ export const useReports = () => {
         .filter((t: any) => t.type === 'expense')
         .reduce((sum: number, t: any) => sum + t.amount, 0);
 
-      const includeCOGS = localStorage.getItem('includeCOGSInCalculations') !== 'false';
-      const totalExpenses = includeCOGS ? totalCOGS + expenses : expenses;
-      const netProfit = includeCOGS ? grossProfit - expenses : totalRevenue - expenses;
+      // Always include COGS — profit = revenue(excl. tax) - COGS - operational expenses
+      const netProfit = grossProfit - expenses;
+      // Cash in safe = actual cash collected (incl. tax) minus cash paid out as expenses
+      const cashInSafe = totalCashIn - expenses;
 
       setTodayStats({
         revenue: totalRevenue,
-        expenses: totalExpenses,
+        expenses,
+        cogs: totalCOGS,
         profit: netProfit,
+        cashInSafe,
         salesCount: salesData.length,
         expensesCount: financeData.filter((t: any) => t.type === 'expense').length,
         topProduct: 'Product X', // TODO: calculate from sales data
