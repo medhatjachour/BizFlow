@@ -488,7 +488,6 @@ export function registerSearchHandlers(prisma: any) {
     endDate?: string
     previousStartDate?: string
     previousEndDate?: string
-    includeCOGS?: boolean
   }) => {
     try {
       if (!prisma) {
@@ -501,7 +500,7 @@ export function registerSearchHandlers(prisma: any) {
         }
       }
 
-      const { startDate, endDate, previousStartDate, previousEndDate, includeCOGS = true } = options
+      const { startDate, endDate, previousStartDate, previousEndDate } = options
 
       // Build date filters
       const currentWhere: any = {}
@@ -549,6 +548,7 @@ export function registerSearchHandlers(prisma: any) {
           select: {
             id: true,
             total: true,
+            subtotal: true,
             createdAt: true,
             items: {
               select: {
@@ -589,8 +589,9 @@ export function registerSearchHandlers(prisma: any) {
         }, 0)
         
         totalRefundedAmount += refundedAmount
-        // Net revenue = total - refunded
-        currentRevenue += (txn.total - refundedAmount)
+        // Net revenue = subtotal (pre-tax) - refunded
+        // Tax is collected for the government, not business income
+        currentRevenue += ((txn.subtotal ?? txn.total) - refundedAmount)
       })
       
       const currentTransactionCount = currentTransactions.length
@@ -606,7 +607,8 @@ export function registerSearchHandlers(prisma: any) {
         }, 0)
         
         previousRefundedAmount += refundedAmount
-        previousRevenue += (txn.total - refundedAmount)
+        // Use subtotal (pre-tax) for revenue calculation
+        previousRevenue += ((txn.subtotal ?? txn.total) - refundedAmount)
       })
       
       const previousTransactionCount = previousTransactions.length
@@ -719,15 +721,14 @@ export function registerSearchHandlers(prisma: any) {
 
 
       // Calculate profit metrics from ALL sales INCLUDING operational expenses
-      // If includeCOGS is false, don't subtract totalCost from calculations
-      const grossProfit = includeCOGS ? (totalRevenue - totalCost) : totalRevenue
+      // Always include COGS in calculations - COGS is a real business cost
+      const grossProfit = totalRevenue - totalCost
       const totalProfit = grossProfit - totalOperationalExpenses
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
       // Calculate previous period profit for comparison
-      const previousGrossProfit = includeCOGS 
-        ? (previousRevenue - (previousRevenue * (totalCost / totalRevenue || 0)))
-        : previousRevenue
+      const costRatio = totalRevenue > 0 ? totalCost / totalRevenue : 0
+      const previousGrossProfit = previousRevenue - (previousRevenue * costRatio)
       const previousTotalProfit = previousGrossProfit - previousTotalExpenses
       const profitChange = previousTotalProfit > 0 
         ? ((totalProfit - previousTotalProfit) / previousTotalProfit) * 100 

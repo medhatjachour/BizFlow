@@ -46,9 +46,14 @@ const TodayStatsGrid: React.FC<TodayStatsGridProps> = ({
           <p className="text-2xl font-bold text-slate-900 dark:text-white">
             {todayStats ? formatCurrency(todayStats.revenue) : '$0.00'}
           </p>
-          <div className="flex items-center gap-1 mt-1 text-xs text-green-600 dark:text-green-400">
-            <ArrowUpRight size={14} />
-            <span>{todayStats?.revenueChange || 0}% {t('vsYesterday')}</span>
+          <div className="flex flex-col gap-0.5 mt-1">
+            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+              <ArrowUpRight size={14} />
+              <span>{todayStats?.revenueChange || 0}% {t('vsYesterday')}</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              {todayStats ? formatCurrency(todayStats.revenueWithTax) : '$0.00'} with tax
+            </p>
           </div>
         </div>
 

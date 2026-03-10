@@ -111,6 +111,7 @@ export const useReports = () => {
 
       setTodayStats({
         revenue: totalRevenue,
+        revenueWithTax: totalCashIn,
         expenses,
         cogs: totalCOGS,
         profit: netProfit,
