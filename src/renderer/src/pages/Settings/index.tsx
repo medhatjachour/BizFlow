@@ -15,7 +15,8 @@ import {
   Tag,
   Users,
   Archive,
-  Mail
+  Mail,
+  Puzzle
 } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -31,6 +32,7 @@ import NotificationsSettings from './NotificationsSettings'
 import BackupSettings from './BackupSettings'
 import ArchiveManagementSettings from './ArchiveManagementSettings'
 import EmailSettings from './EmailSettings'
+import ModulesSettings from './ModulesSettings'
 import type { SettingsTab } from './types'
 import logger from '../../../../shared/utils/logger'
 
@@ -72,6 +74,7 @@ export default function Settings() {
     { id: 'email' as SettingsTab, name: 'Email Reports', icon: Mail },
     { id: 'backup' as SettingsTab, name: t('backup'), icon: Database },
     { id: 'archive' as SettingsTab, name: t('archive'), icon: Archive },
+    { id: 'modules' as SettingsTab, name: 'Modules', icon: Puzzle },
   ]
 
   const handleSave = () => {
@@ -207,6 +210,10 @@ export default function Settings() {
 
           {activeTab === 'archive' && (
             <ArchiveManagementSettings />
+          )}
+
+          {activeTab === 'modules' && (
+            <ModulesSettings />
           )}
         </div>
       </div>

@@ -34,6 +34,9 @@ import { setupPurchaseOrderHandlers } from './purchase-orders.handlers'
 import { registerReceiptHandlers as registerThermalReceiptHandlers } from './receipt.handlers'
 import { registerBarcodePrintHandlers } from './barcode.handlers'
 import { registerLogHandlers } from './log.handlers'
+import { registerModuleHandlers } from './module.handlers'
+import { registerBakeryHandlers } from '../../../plugins/bakery/handlers'
+import { ensureBakerySchema } from '../../../plugins/bakery/migrate'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Database')
@@ -171,6 +174,19 @@ export function registerAllHandlers() {
   
   // Register log bridge (renderer → main log file)
   registerLogHandlers()
+
+  // Register module feature-flag handlers
+  registerModuleHandlers()
+
+  // ── Module Handlers (always registered — tables exist after migration) ───
+  // UI visibility is controlled by feature flags; handlers are always ready.
+  // Ensure bakery tables exist in the DB before registering handlers.
+  const dbPath = getDatabasePath()
+  const dbUrl = `file:${dbPath}`
+  ensureBakerySchema(prisma, dbUrl, process.cwd()).catch((e) =>
+    log.error('[Bakery] Schema migration failed:', e)
+  )
+  registerBakeryHandlers(prisma)
 
   log.info('✅ All IPC handlers registered successfully')
 }

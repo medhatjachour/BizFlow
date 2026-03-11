@@ -8,6 +8,8 @@ out
 # Prisma generated client
 /src/generated/prisma
 /out/generated/prisma
+# Auto-generated merged schema (rebuilt by scripts/merge-schemas.js)
+prisma/merged.prisma
 
 # Database files
 *.db

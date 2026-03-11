@@ -7,8 +7,9 @@
  */
 
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Suspense, lazy, ReactNode } from 'react'
-import { useState } from 'react'
+import { Suspense, lazy, ReactNode, useState } from 'react'
+import { useModuleEnabled } from './hooks/useModuleEnabled'
+import { MODULE_IDS } from '@/shared/modules'
 import RootLayout from './components/layout/RootLayout'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
@@ -37,6 +38,7 @@ const Customers    = lazy(() => import('./pages/Customers/Customers'))
 const CustomerProfile = lazy(() => import('./pages/Customers/CustomerProfile'))
 const Reports      = lazy(() => import('./pages/Reports/Reports'))
 const Installments = lazy(() => import('./pages/Installments'))
+const Bakery       = lazy(() => import('./plugins/bakery/pages/index'))
 
 // ------------------------------------------------------------------
 // Per-route error boundary — wraps each page in isolation so one
@@ -74,6 +76,7 @@ function RouteErrorBoundary({ name, children }: { name: string; children: ReactN
 
 function AppContent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
 
   // Global keyboard shortcuts
   useKeyboardShortcuts([
@@ -234,6 +237,18 @@ function AppContent() {
               </RequireAuth>
             }
           />
+          {bakeryEnabled && (
+            <Route
+              path="/bakery"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Bakery"><Bakery /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
          

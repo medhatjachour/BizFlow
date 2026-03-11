@@ -301,7 +301,8 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
     // Run Prisma DB push to create schema (non-blocking)
     const { spawn } = require('node:child_process')
     
-    const pushProcess = spawn('npx', ['prisma', 'db', 'push', '--accept-data-loss', '--skip-generate'], {
+    // Use merged.prisma so plugin tables (bakery, etc.) are included
+    const pushProcess = spawn('npx', ['prisma', 'db', 'push', '--schema=prisma/merged.prisma', '--accept-data-loss', '--skip-generate'], {
       cwd: process.cwd(),
       shell: true,
       env: { ...process.env, DATABASE_URL: `file:${dbPath}` }

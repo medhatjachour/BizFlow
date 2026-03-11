@@ -317,6 +317,40 @@ interface API {
     error: (message: string, data?: unknown) => Promise<void>
     debug: (message: string, data?: unknown) => Promise<void>
   }
+  modules: {
+    getEnabled: () => Promise<string[]>
+    setEnabled: (moduleId: string, enabled: boolean) => Promise<void>
+  }
+  // ─── Plugin APIs ────────────────────────────────────────────────────────
+  bakery: {
+    getRecipes: () => Promise<any>
+    createRecipe: (data: any) => Promise<any>
+    updateRecipe: (data: any) => Promise<any>
+    deleteRecipe: (id: string) => Promise<any>
+    getProductionBatches: (options?: any) => Promise<any>
+    createProductionBatch: (data: any) => Promise<any>
+    deleteProductionBatch: (id: string) => Promise<any>
+    getAvailableBatches: () => Promise<any>
+    getPantry: () => Promise<any>
+    upsertPantryIngredient: (data: any) => Promise<any>
+    adjustPantryStock: (data: any) => Promise<any>
+    deletePantryIngredient: (id: string) => Promise<any>
+    markPantryReordered: (data: any) => Promise<any>
+    getWasteLogs: (options?: any) => Promise<any>
+    createWasteLog: (data: any) => Promise<any>
+    deleteWasteLog: (id: string) => Promise<any>
+    getWasteSummary: (options?: any) => Promise<any>
+    getSchedule: (options?: any) => Promise<any>
+    createScheduleItem: (data: any) => Promise<any>
+    updateScheduleItem: (data: any) => Promise<any>
+    deleteScheduleItem: (id: string) => Promise<any>
+    getDailyOverview: () => Promise<any>
+    getProfitLoss: (options: any) => Promise<any>
+    getProfitLossTrend: (options?: any) => Promise<any>
+    getExpiringBatches: (daysAhead?: number) => Promise<any>
+    getProductionRequirements: (data: any) => Promise<any>
+    getEndOfDaySuggestion: () => Promise<any>
+  }
 }
 
 declare global {
