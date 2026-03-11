@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, AlertCircle, ChevronDown, ChevronUp, UtensilsCrossed, X, Clock } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface OrderItem { id: string; itemName: string; quantity: number; unitPrice: number; status: string; notes: string | null }
 interface Order { id: string; tableId: string; tableNumber?: number; status: string; serverName: string; subtotal: number; tax: number; total: number; openedAt: string; closedAt: string | null; items?: OrderItem[] }
@@ -35,6 +36,7 @@ export default function OrdersTab() {
   const [filterStatus, setFilterStatus] = useState('open')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [orderDetail, setOrderDetail] = useState<Order | null>(null)
+  const { t } = useLanguage()
 
   // New order modal
   const [showNewOrder, setShowNewOrder] = useState(false)
@@ -47,13 +49,13 @@ export default function OrdersTab() {
   const load = async () => {
     setLoading(true); setError('')
     try {
-      const [o, t, m] = await Promise.all([
+      const [o, tb, m] = await Promise.all([
         window.api.restaurant.getOrders({ status: filterStatus || undefined }),
         window.api.restaurant.getTables({}),
         window.api.restaurant.getMenuItems()
       ])
-      setOrders(o); setTables(t); setMenuItems(m)
-    } catch { setError('Failed to load orders') }
+      setOrders(o); setTables(tb); setMenuItems(m)
+    } catch { setError(t('restaurantLoadOrdersFailed')) }
     finally { setLoading(false) }
   }
 
@@ -88,7 +90,7 @@ export default function OrdersTab() {
   }
 
   const closeOrder = async (id: string, action: 'pay' | 'void') => {
-    if (!confirm(`${action === 'pay' ? 'Mark as paid' : 'Void this order'}?`)) return
+    if (!confirm(action === 'pay' ? t('restaurantMarkPaidConfirm') : t('restaurantVoidConfirm'))) return
     try { await window.api.restaurant.closeOrder({ id, status: action === 'pay' ? 'paid' : 'voided' }); load() }
     catch (err: any) { alert(err?.message || 'Failed') }
   }
@@ -108,16 +110,16 @@ export default function OrdersTab() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap justify-between">
         <div className="flex gap-2">
-          {['open','ready','paid','voided'].map(s => (
+          {(['open','ready','paid','voided'] as const).map(s => (
             <button key={s} onClick={() => setFilterStatus(s)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${filterStatus === s ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}>
-              {s}
+              {t(`restaurantOrderStatus${s.charAt(0).toUpperCase() + s.slice(1)}` as any)}
             </button>
           ))}
         </div>
         <div className="flex gap-2">
           <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
-          <button onClick={() => setShowNewOrder(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Open Order</button>
+          <button onClick={() => setShowNewOrder(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('restaurantOpenOrder')}</button>
         </div>
       </div>
 
@@ -128,7 +130,7 @@ export default function OrdersTab() {
       ) : orders.length === 0 ? (
         <div className="text-center py-12 text-slate-400 dark:text-slate-500 flex flex-col items-center gap-2">
           <UtensilsCrossed className="w-10 h-10 opacity-30" />
-          <span>No {filterStatus} orders</span>
+          <span>{t('restaurantNoOrders').replace('{status}', filterStatus)}</span>
         </div>
       ) : (
         <div className="space-y-3">
@@ -153,7 +155,7 @@ export default function OrdersTab() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <div className="font-semibold text-slate-900 dark:text-white">{order.total.toFixed(2)}</div>
-                    <div className="text-xs text-slate-400">{order.items?.length ?? 0} items</div>
+                    <div className="text-xs text-slate-400">{order.items?.length ?? 0} {t('restaurantItems')}</div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {order.status === 'open' && (
@@ -161,9 +163,9 @@ export default function OrdersTab() {
                         <button onClick={() => { setShowAddItem(order.id); setAddItemForm({ menuItemId: '', quantity: '1', notes: '' }) }}
                           className="px-2 py-1 text-xs rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">+ Item</button>
                         <button onClick={() => closeOrder(order.id, 'pay')}
-                          className="px-2 py-1 text-xs rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 transition-colors">Pay</button>
+                          className="px-2 py-1 text-xs rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 transition-colors">{t('restaurantPay')}</button>
                         <button onClick={() => closeOrder(order.id, 'void')}
-                          className="px-2 py-1 text-xs rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 transition-colors">Void</button>
+                          className="px-2 py-1 text-xs rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 transition-colors">{t('restaurantVoid')}</button>
                       </>
                     )}
                     <button onClick={() => loadDetail(order.id)} className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
@@ -176,7 +178,7 @@ export default function OrdersTab() {
                 {isExpanded && orderDetail && orderDetail.id === order.id && (
                   <div className="border-t border-slate-100 dark:border-slate-700 px-4 py-3 space-y-2">
                     {(orderDetail.items || []).length === 0 ? (
-                      <p className="text-sm text-slate-400">No items yet</p>
+                      <p className="text-sm text-slate-400">{t('restaurantNoItemsYet')}</p>
                     ) : (
                       (orderDetail.items || []).map(item => (
                         <div key={item.id} className="flex items-center gap-3 text-sm">
@@ -191,9 +193,9 @@ export default function OrdersTab() {
                       ))
                     )}
                     <div className="pt-2 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-400 flex justify-end gap-4">
-                      <span>Subtotal: {order.subtotal.toFixed(2)}</span>
-                      <span>Tax: {order.tax.toFixed(2)}</span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">Total: {order.total.toFixed(2)}</span>
+                      <span>{t('restaurantSubtotal')}: {order.subtotal.toFixed(2)}</span>
+                      <span>{t('restaurantTax')}: {order.tax.toFixed(2)}</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{t('restaurantTotal')}: {order.total.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
@@ -208,26 +210,26 @@ export default function OrdersTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={openOrder} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Open New Order</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('restaurantOpenNewOrder')}</h3>
               <button type="button" onClick={() => setShowNewOrder(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Table *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantTable')} *</span>
               <select required value={newOrderForm.tableId} onChange={e => setNewOrderForm(f => ({ ...f, tableId: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm">
-                <option value="">Select table...</option>
-                {availableTables.map(t => <option key={t.id} value={t.id}>Table {t.number} ({t.capacity} seats){t.section ? ` — ${t.section}` : ''}</option>)}
+                <option value="">{t('restaurantSelectTable')}</option>
+                {availableTables.map(tb => <option key={tb.id} value={tb.id}>{t('restaurantTable')} {tb.number} ({tb.capacity} {t('restaurantSeats')}){tb.section ? ` — ${tb.section}` : ''}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Server Name *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantServerName')} *</span>
               <input required value={newOrderForm.serverName} onChange={e => setNewOrderForm(f => ({ ...f, serverName: e.target.value }))}
-                placeholder="e.g. Alice"
+                placeholder={t('restaurantServerNamePlaceholder')}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <div className="flex gap-3 pt-1">
-              <button type="button" onClick={() => setShowNewOrder(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium">Open Order</button>
+              <button type="button" onClick={() => setShowNewOrder(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">{t('restaurantCancel')}</button>
+              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium">{t('restaurantOpenOrder')}</button>
             </div>
           </form>
         </div>
@@ -238,31 +240,31 @@ export default function OrdersTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={addItem} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Add Item</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('restaurantAddItemToOrder')}</h3>
               <button type="button" onClick={() => setShowAddItem(null)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Menu Item *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantMenuItemSelect')} *</span>
               <select required value={addItemForm.menuItemId} onChange={e => setAddItemForm(f => ({ ...f, menuItemId: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm">
-                <option value="">Select item...</option>
+                <option value="">{t('restaurantSelectItem')}</option>
                 {menuItems.filter(m => m.isAvailable).map(m => <option key={m.id} value={m.id}>{m.name} — {m.price.toFixed(2)}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Quantity</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantQuantity')}</span>
               <input type="number" min="1" value={addItemForm.quantity} onChange={e => setAddItemForm(f => ({ ...f, quantity: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notes</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantNotes')}</span>
               <input value={addItemForm.notes} onChange={e => setAddItemForm(f => ({ ...f, notes: e.target.value }))}
                 placeholder="e.g. no onions"
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <div className="flex gap-3 pt-1">
-              <button type="button" onClick={() => setShowAddItem(null)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium">Add to Order</button>
+              <button type="button" onClick={() => setShowAddItem(null)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">{t('restaurantCancel')}</button>
+              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium">{t('restaurantAddToOrder')}</button>
             </div>
           </form>
         </div>

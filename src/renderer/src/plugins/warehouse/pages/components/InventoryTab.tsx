@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { RefreshCw, AlertCircle, Plus, Minus, Edit2, Trash2, AlertTriangle } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Location { id: string; name: string; code: string; type: string }
 interface StockEntry { id: string; locationId: string; productName: string; productId: string | null; sku: string; quantity: number; unit: string; minQuantity: number }
@@ -21,6 +22,8 @@ export default function InventoryTab() {
   const [editing, setEditing] = useState<StockEntry | null>(null)
   const [editForm, setEditForm] = useState({ quantity: '0', unit: 'pcs', minQuantity: '0', sku: '' })
 
+  const { t } = useLanguage()
+
   const loadLocations = async () => {
     try { setLocations(await window.api.warehouse.getLocations()) }
     catch { /* ignore */ }
@@ -32,7 +35,7 @@ export default function InventoryTab() {
     try {
       if (showLow) setLowStock(await window.api.warehouse.getLowStock())
       else setStock(await window.api.warehouse.getStock({ locationId: selectedLocation }))
-    } catch { setError('Failed to load stock') }
+    } catch { setError(t('warehouseLoadStockFailed')) }
     finally { setLoading(false) }
   }
 
@@ -64,7 +67,7 @@ export default function InventoryTab() {
   }
 
   const del = async (id: string) => {
-    if (!confirm('Delete this stock entry?')) return
+    if (!confirm(t('warehouseDeleteStockConfirm'))) return
     try { await window.api.warehouse.deleteStock(id); loadStock() }
     catch (err: any) { alert(err?.message || 'Failed') }
   }
@@ -83,15 +86,15 @@ export default function InventoryTab() {
               else { setShowLow(false); setSelectedLocation(e.target.value) }
             }}
             className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white px-3 py-2 text-sm min-w-[200px]">
-            <option value="">Select a location...</option>
+            <option value="">{t('warehouseSelectLocationPrompt')}</option>
             {locations.map(l => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
-            <option value="__low__">⚠ Low Stock Items</option>
+            <option value="__low__">{t('warehouseLowStockItems')}</option>
           </select>
         </div>
         <div className="flex gap-2">
           <button onClick={loadStock} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
           {selectedLocation && !showLow && (
-            <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Add Stock</button>
+            <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('warehouseAddStock')}</button>
           )}
         </div>
       </div>
@@ -99,22 +102,22 @@ export default function InventoryTab() {
       {error && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="w-4 h-4" />{error}</div>}
 
       {(!selectedLocation && !showLow) ? (
-        <div className="text-center py-12 text-slate-400 dark:text-slate-500">Select a location to view stock</div>
+        <div className="text-center py-12 text-slate-400 dark:text-slate-500">{t('warehouseSelectLocation')}</div>
       ) : loading ? (
         <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400 w-6 h-6" /></div>
       ) : displayEntries.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 dark:text-slate-500">{showLow ? 'No low stock items' : 'No stock entries for this location'}</div>
+        <div className="text-center py-12 text-slate-400 dark:text-slate-500">{showLow ? t('warehouseNoLowStock') : t('warehouseNoStockEntries')}</div>
       ) : (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-700">
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Product</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">SKU</th>
-                {showLow && <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Location</th>}
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Qty</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Min</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseProduct')}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseSKU')}</th>
+                {showLow && <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseLocation')}</th>}
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseQty')}</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseMin')}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
@@ -156,20 +159,20 @@ export default function InventoryTab() {
       {showAdd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={handleAdd} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Add Stock Entry</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('warehouseAddStockEntry')}</h3>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Product Name *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseProductName')} *</span>
               <input required value={addForm.productName} onChange={e => setAddForm(f => ({ ...f, productName: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">SKU</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseSKU')}</span>
                 <input value={addForm.sku} onChange={e => setAddForm(f => ({ ...f, sku: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm font-mono" />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Unit</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseUnit')}</span>
                 <input value={addForm.unit} onChange={e => setAddForm(f => ({ ...f, unit: e.target.value }))}
                   placeholder="pcs, kg, box..."
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
@@ -177,19 +180,19 @@ export default function InventoryTab() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Quantity</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseQuantity')}</span>
                 <input type="number" min="0" value={addForm.quantity} onChange={e => setAddForm(f => ({ ...f, quantity: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Min Qty</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseMinQty')}</span>
                 <input type="number" min="0" value={addForm.minQuantity} onChange={e => setAddForm(f => ({ ...f, minQuantity: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
               </label>
             </div>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowAdd(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">Add</button>
+              <button type="button" onClick={() => setShowAdd(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">{t('warehouseCancel')}</button>
+              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">{t('warehouseSave')}</button>
             </div>
           </form>
         </div>
@@ -199,15 +202,15 @@ export default function InventoryTab() {
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={handleEditSave} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-xs p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Edit — {editing.productName}</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('edit')} — {editing.productName}</h3>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Quantity</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseQuantity')}</span>
               <input type="number" min="0" value={editForm.quantity} onChange={e => setEditForm(f => ({ ...f, quantity: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setEditing(null)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">Save</button>
+              <button type="button" onClick={() => setEditing(null)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">{t('warehouseCancel')}</button>
+              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">{t('warehouseSave')}</button>
             </div>
           </form>
         </div>

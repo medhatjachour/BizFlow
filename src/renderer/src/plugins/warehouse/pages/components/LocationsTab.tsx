@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, AlertCircle, Edit2, Trash2, ChevronRight } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Location { id: string; name: string; code: string; type: string; parentId: string | null; isActive: boolean; children?: Location[] }
 
@@ -23,7 +24,7 @@ function buildTree(locations: Location[]): Location[] {
   return roots
 }
 
-function LocationRow({ loc, depth, onEdit, onDelete }: { loc: Location; depth: number; onEdit: (l: Location) => void; onDelete: (l: Location) => void }) {
+function LocationRow({ loc, depth, onEdit, onDelete, t }: { loc: Location; depth: number; onEdit: (l: Location) => void; onDelete: (l: Location) => void; t: (key: string) => string }) {
   const [expanded, setExpanded] = useState(depth < 2)
   const hasChildren = (loc.children?.length ?? 0) > 0
   return (
@@ -37,7 +38,7 @@ function LocationRow({ loc, depth, onEdit, onDelete }: { loc: Location; depth: n
           <div className="flex items-center gap-2">
             <span className="font-medium text-slate-900 dark:text-white text-sm">{loc.name}</span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${TYPE_COLORS[loc.type]}`}>{loc.type}</span>
-            {!loc.isActive && <span className="text-xs text-slate-400 dark:text-slate-500">(inactive)</span>}
+            {!loc.isActive && <span className="text-xs text-slate-400 dark:text-slate-500">{t('warehouseInactive')}</span>}
           </div>
           <div className="text-xs text-slate-400 font-mono">{loc.code}</div>
         </div>
@@ -47,7 +48,7 @@ function LocationRow({ loc, depth, onEdit, onDelete }: { loc: Location; depth: n
         </div>
       </div>
       {expanded && hasChildren && loc.children!.map(child => (
-        <LocationRow key={child.id} loc={child} depth={depth + 1} onEdit={onEdit} onDelete={onDelete} />
+        <LocationRow key={child.id} loc={child} depth={depth + 1} onEdit={onEdit} onDelete={onDelete} t={t} />
       ))}
     </>
   )
@@ -60,11 +61,12 @@ export default function LocationsTab() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Location | null>(null)
   const [form, setForm] = useState({ name: '', code: '', type: 'bin', parentId: '' })
+  const { t } = useLanguage()
 
   const load = async () => {
     setLoading(true); setError('')
     try { setLocations(await window.api.warehouse.getLocations()) }
-    catch { setError('Failed to load locations') }
+    catch { setError(t('warehouseLoadLocationsFailed')) }
     finally { setLoading(false) }
   }
 
@@ -84,7 +86,7 @@ export default function LocationsTab() {
   }
 
   const del = async (l: Location) => {
-    if (!confirm(`Delete location "${l.name}"?`)) return
+    if (!confirm(t('warehouseDeleteLocationConfirm').replace('{name}', l.name))) return
     try { await window.api.warehouse.deleteLocation(l.id); load() }
     catch (err: any) { alert(err?.message || 'Failed to delete') }
   }
@@ -94,10 +96,10 @@ export default function LocationsTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500 dark:text-slate-400">{locations.length} location{locations.length !== 1 ? 's' : ''}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{locations.length} {locations.length !== 1 ? t('warehouseLocationsCountPlural') : t('warehouseLocationsCount')}</p>
         <div className="flex gap-2">
           <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
-          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Add Location</button>
+          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('warehouseAddLocation')}</button>
         </div>
       </div>
 
@@ -106,48 +108,48 @@ export default function LocationsTab() {
       {loading ? (
         <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400 w-6 h-6" /></div>
       ) : tree.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 dark:text-slate-500">No locations yet. Add zones, aisles, shelves, and bins.</div>
+        <div className="text-center py-12 text-slate-400 dark:text-slate-500">{t('warehouseNoLocations')}</div>
       ) : (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-          {tree.map(loc => <LocationRow key={loc.id} loc={loc} depth={0} onEdit={openEdit} onDelete={del} />)}
+          {tree.map(loc => <LocationRow key={loc.id} loc={loc} depth={0} onEdit={openEdit} onDelete={del} t={t} />)}
         </div>
       )}
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{editing ? 'Edit Location' : 'New Location'}</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{editing ? t('warehouseEditLocation') : t('warehouseNewLocation')}</h3>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Name *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseLocationName')} *</span>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Code * <span className="text-xs text-slate-400">(unique)</span></span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseLocationCode')} * <span className="text-xs text-slate-400">({t('warehouseLocationCodeHint')})</span></span>
                 <input required value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
                   placeholder="e.g. A-01-03"
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm font-mono" />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Type *</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseLocationType')} *</span>
                 <select required value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm capitalize">
-                  {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {TYPES.map(tp => <option key={tp} value={tp}>{t(`warehouseType${tp.charAt(0).toUpperCase() + tp.slice(1)}` as any)}</option>)}
                 </select>
               </label>
             </div>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Parent Location</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseParentLocation')}</span>
               <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm">
-                <option value="">None (top-level)</option>
+                <option value="">{t('warehouseNoParent')}</option>
                 {locations.filter(l => l.id !== editing?.id).map(l => <option key={l.id} value={l.id}>[{l.type}] {l.name} ({l.code})</option>)}
               </select>
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowForm(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
-              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">Save</button>
+              <button type="button" onClick={() => setShowForm(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">{t('warehouseCancel')}</button>
+              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">{t('warehouseSave')}</button>
             </div>
           </form>
         </div>

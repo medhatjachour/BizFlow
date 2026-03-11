@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, RefreshCw, AlertCircle, Trash2, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Reservation {
   id: string; customerName: string; customerPhone: string | null; partySize: number
@@ -28,16 +29,17 @@ export default function ReservationsTab() {
   const [showForm, setShowForm] = useState(false)
   const [filterDate, setFilterDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [form, setForm] = useState({ tableId: '', customerName: '', customerPhone: '', partySize: '2', date: new Date().toISOString().slice(0, 16), notes: '' })
+  const { t } = useLanguage()
 
   const load = async () => {
     setLoading(true); setError('')
     try {
-      const [r, t] = await Promise.all([
+      const [r, res] = await Promise.all([
         window.api.restaurant.getReservations({ date: filterDate }),
         window.api.restaurant.getTables()
       ])
-      setReservations(r); setTables(t)
-    } catch { setError('Failed to load reservations') }
+      setReservations(r); setTables(res)
+    } catch { setError(t('restaurantLoadReservationsFailed')) }
     finally { setLoading(false) }
   }
 
@@ -60,7 +62,7 @@ export default function ReservationsTab() {
   }
 
   const remove = async (id: string) => {
-    if (!confirm('Delete this reservation?')) return
+    if (!confirm(t('restaurantDeleteReservationConfirm'))) return
     await window.api.restaurant.deleteReservation(id); load()
   }
 
@@ -74,7 +76,7 @@ export default function ReservationsTab() {
         </div>
         <div className="flex gap-2">
           <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
-          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Add Reservation</button>
+          <button onClick={() => setShowForm(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('restaurantAddReservation')}</button>
         </div>
       </div>
 
@@ -83,7 +85,7 @@ export default function ReservationsTab() {
       {loading ? (
         <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400 w-6 h-6" /></div>
       ) : reservations.length === 0 ? (
-        <div className="text-center py-12 text-slate-400 dark:text-slate-500">No reservations for this date.</div>
+        <div className="text-center py-12 text-slate-400 dark:text-slate-500">{t('restaurantNoReservations')}</div>
       ) : (
         <div className="space-y-3">
           {reservations.map(r => (
@@ -94,7 +96,7 @@ export default function ReservationsTab() {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[r.status] || ''}`}>{r.status}</span>
                 </div>
                 <div className="text-sm text-slate-500 dark:text-slate-400 space-y-0.5">
-                  <div>Table {r.table.number} · {r.partySize} guests · {fmt(r.date)}</div>
+                  <div>{t('restaurantTable')} {r.table.number} · {r.partySize} {t('restaurantGuests')} · {fmt(r.date)}</div>
                   {r.customerPhone && <div>{r.customerPhone}</div>}
                   {r.notes && <div className="italic">{r.notes}</div>}
                 </div>
@@ -127,46 +129,46 @@ export default function ReservationsTab() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">New Reservation</h3>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('restaurantNewReservation')}</h3>
 
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Table *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantTable')} *</span>
               <select required value={form.tableId} onChange={e => setForm(f => ({ ...f, tableId: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm">
-                <option value="">Select table…</option>
-                {tables.map(t => <option key={t.id} value={t.id}>Table {t.number} ({t.capacity} seats){t.section ? ` — ${t.section}` : ''}</option>)}
+                <option value="">{t('restaurantSelectTable')}</option>
+                {tables.map(tb => <option key={tb.id} value={tb.id}>{t('restaurantTable')} {tb.number} ({tb.capacity} {t('restaurantSeats')}){tb.section ? ` — ${tb.section}` : ''}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Customer Name *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantCustomerName')} *</span>
               <input required value={form.customerName} onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Phone</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantPhone')}</span>
                 <input type="tel" value={form.customerPhone} onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
               </label>
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Party Size</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantPartySize')}</span>
                 <input type="number" min="1" value={form.partySize} onChange={e => setForm(f => ({ ...f, partySize: e.target.value }))}
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
               </label>
             </div>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Date & Time *</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantDateAndTime')} *</span>
               <input type="datetime-local" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notes</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('restaurantNotes')}</span>
               <textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm resize-none" />
             </label>
             <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setShowForm(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
-              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium transition-colors">Book</button>
+              <button type="button" onClick={() => setShowForm(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('restaurantCancel')}</button>
+              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium transition-colors">{t('restaurantBook')}</button>
             </div>
           </form>
         </div>

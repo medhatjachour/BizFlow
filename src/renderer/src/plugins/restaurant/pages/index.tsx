@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { UtensilsCrossed, Table2, CalendarDays, BookOpen, ClipboardList, LayoutDashboard } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import OverviewTab  from './components/OverviewTab'
 import TablesTab    from './components/TablesTab'
 import ReservationsTab from './components/ReservationsTab'
@@ -10,13 +11,14 @@ type Tab = 'overview' | 'tables' | 'reservations' | 'menu' | 'orders'
 
 export default function RestaurantPage() {
   const [active, setActive] = useState<Tab>('overview')
+  const { t } = useLanguage()
 
   const tabs: { key: Tab; label: string; Icon: typeof LayoutDashboard }[] = [
-    { key: 'overview',     label: 'Overview',     Icon: LayoutDashboard },
-    { key: 'tables',       label: 'Floor Plan',   Icon: Table2 },
-    { key: 'reservations', label: 'Reservations', Icon: CalendarDays },
-    { key: 'menu',         label: 'Menu',         Icon: BookOpen },
-    { key: 'orders',       label: 'Orders',       Icon: ClipboardList }
+    { key: 'overview',     label: t('restaurantOverviewTab'),     Icon: LayoutDashboard },
+    { key: 'tables',       label: t('restaurantTablesTab'),       Icon: Table2 },
+    { key: 'reservations', label: t('restaurantReservationsTab'), Icon: CalendarDays },
+    { key: 'menu',         label: t('restaurantMenuTab'),         Icon: BookOpen },
+    { key: 'orders',       label: t('restaurantOrdersTab'),       Icon: ClipboardList }
   ]
 
   return (
@@ -28,8 +30,8 @@ export default function RestaurantPage() {
             <UtensilsCrossed className="h-6 w-6 text-orange-600 dark:text-orange-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Restaurant</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Table management, reservations & orders</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('restaurantTitle')}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('restaurantSubtitle')}</p>
           </div>
         </div>
 

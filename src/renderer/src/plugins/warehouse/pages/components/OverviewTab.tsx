@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Warehouse, Package, ArrowRightLeft, AlertTriangle, RefreshCw } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Overview {
   totalLocations: number
@@ -21,6 +22,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [data, setData] = useState<Overview | null>(null)
   const [loading, setLoading] = useState(true)
+  const { t } = useLanguage()
 
   const load = async () => {
     setLoading(true)
@@ -35,10 +37,10 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
   if (!data) return null
 
   const stats = [
-    { label: 'Total Locations', value: data.totalLocations, icon: <Warehouse className="w-5 h-5" />, color: 'blue', onClick: () => onNavigate('locations') },
-    { label: 'Total SKUs', value: data.totalSkus, icon: <Package className="w-5 h-5" />, color: 'indigo', onClick: () => onNavigate('inventory') },
-    { label: 'Low Stock Alerts', value: data.lowStockCount, icon: <AlertTriangle className="w-5 h-5" />, color: data.lowStockCount > 0 ? 'red' : 'slate', onClick: () => onNavigate('inventory') },
-    { label: 'Pending Transfers', value: data.pendingTransfers, icon: <ArrowRightLeft className="w-5 h-5" />, color: 'amber', onClick: () => onNavigate('transfers') }
+    { label: t('warehouseTotalLocations'), value: data.totalLocations, icon: <Warehouse className="w-5 h-5" />, color: 'blue', onClick: () => onNavigate('locations') },
+    { label: t('warehouseTotalSKUs'), value: data.totalSkus, icon: <Package className="w-5 h-5" />, color: 'indigo', onClick: () => onNavigate('inventory') },
+    { label: t('warehouseLowStockAlerts'), value: data.lowStockCount, icon: <AlertTriangle className="w-5 h-5" />, color: data.lowStockCount > 0 ? 'red' : 'slate', onClick: () => onNavigate('inventory') },
+    { label: t('warehousePendingTransfers'), value: data.pendingTransfers, icon: <ArrowRightLeft className="w-5 h-5" />, color: 'amber', onClick: () => onNavigate('transfers') }
   ]
 
   const colorClasses: Record<string, string> = {
@@ -65,24 +67,24 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900 dark:text-white">Recent Transfers</h3>
-          <button onClick={() => onNavigate('transfers')} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">View all</button>
+          <h3 className="font-semibold text-slate-900 dark:text-white">{t('warehouseRecentTransfers')}</h3>
+          <button onClick={() => onNavigate('transfers')} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">{t('warehouseViewAll')}</button>
         </div>
         <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
           {data.recentTransfers.length === 0 ? (
-            <div className="px-5 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">No transfers yet</div>
-          ) : data.recentTransfers.map(t => (
-            <div key={t.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+            <div className="px-5 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">{t('warehouseNoTransfersYet')}</div>
+          ) : data.recentTransfers.map(tr => (
+            <div key={tr.id} className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
               <ArrowRightLeft className="w-4 h-4 text-slate-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                  <span className="text-slate-500 dark:text-slate-400">{t.fromLocation}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{tr.fromLocation}</span>
                   <span className="text-slate-400">→</span>
-                  <span>{t.toLocation}</span>
+                  <span>{tr.toLocation}</span>
                 </div>
-                <div className="text-xs text-slate-400">{t.itemCount} item{t.itemCount !== 1 ? 's' : ''} · {new Date(t.transferDate).toLocaleDateString()}</div>
+                <div className="text-xs text-slate-400">{tr.itemCount} {tr.itemCount !== 1 ? t('warehouseLocationsCountPlural') : t('warehouseLocationsCount')} · {new Date(tr.transferDate).toLocaleDateString()}</div>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_COLORS[t.status]}`}>{t.status.replace('_', ' ')}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_COLORS[tr.status]}`}>{tr.status.replace('_', ' ')}</span>
             </div>
           ))}
         </div>

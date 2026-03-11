@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Table2, CalendarDays, ClipboardList, BookOpen, RefreshCw, AlertCircle } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Overview {
   totalTables: number; available: number; occupied: number; reserved: number; cleaning: number
@@ -17,11 +18,12 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: any) => 
   const [data, setData] = useState<Overview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const { t } = useLanguage()
 
   const load = async () => {
     setLoading(true); setError('')
     try { setData(await window.api.restaurant.getOverview()) }
-    catch { setError('Failed to load overview') }
+    catch { setError(t('restaurantOverviewLoadFailed')) }
     finally { setLoading(false) }
   }
 
@@ -32,10 +34,10 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: any) => 
   if (!data)   return null
 
   const stats = [
-    { label: 'Total Tables',     value: data.totalTables,        icon: Table2,        color: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300', nav: 'tables' },
-    { label: 'Open Orders',      value: data.openOrders,         icon: ClipboardList, color: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',       nav: 'orders' },
-    { label: "Today's Reserv.",  value: data.todayReservations,  icon: CalendarDays,  color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', nav: 'reservations' },
-    { label: 'Menu Items',       value: data.availableMenuItems, icon: BookOpen,      color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400', nav: 'menu' },
+    { label: t('restaurantTotalTables'),     value: data.totalTables,        icon: Table2,        color: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300', nav: 'tables' },
+    { label: t('restaurantOpenOrders'),      value: data.openOrders,         icon: ClipboardList, color: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',       nav: 'orders' },
+    { label: t('restaurantTodayReservations'),  value: data.todayReservations,  icon: CalendarDays,  color: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400', nav: 'reservations' },
+    { label: t('restaurantMenuItems'),       value: data.availableMenuItems, icon: BookOpen,      color: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400', nav: 'menu' },
   ]
 
   return (
@@ -56,14 +58,17 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: any) => 
 
       {/* Table status breakdown */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Table Status</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white mb-4">{t('restaurantTableStatus')}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {(['available','occupied','reserved','cleaning'] as const).map(s => (
+          {(['available','occupied','reserved','cleaning'] as const).map(s => {
+            const labelKey = `restaurant${s.charAt(0).toUpperCase() + s.slice(1)}` as any
+            return (
             <div key={s} className={`p-4 rounded-xl text-center ${STATUS_COLOR[s]}`}>
               <div className="text-2xl font-bold">{(data as any)[s]}</div>
-              <div className="text-xs font-medium capitalize mt-0.5">{s}</div>
+              <div className="text-xs font-medium capitalize mt-0.5">{t(labelKey)}</div>
             </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

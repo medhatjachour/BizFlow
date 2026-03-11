@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Warehouse, Package, MapPin, ArrowRightLeft } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import OverviewTab from './components/OverviewTab'
 import LocationsTab from './components/LocationsTab'
 import InventoryTab from './components/InventoryTab'
@@ -7,15 +8,16 @@ import TransfersTab from './components/TransfersTab'
 
 type Tab = 'overview' | 'locations' | 'inventory' | 'transfers'
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'overview', label: 'Overview', icon: <Warehouse className="w-4 h-4" /> },
-  { id: 'locations', label: 'Locations', icon: <MapPin className="w-4 h-4" /> },
-  { id: 'inventory', label: 'Inventory', icon: <Package className="w-4 h-4" /> },
-  { id: 'transfers', label: 'Transfers', icon: <ArrowRightLeft className="w-4 h-4" /> }
-]
-
 export default function WarehousePage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const { t } = useLanguage()
+
+  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'overview', label: t('warehouseOverviewTab'), icon: <Warehouse className="w-4 h-4" /> },
+    { id: 'locations', label: t('warehouseLocationsTab'), icon: <MapPin className="w-4 h-4" /> },
+    { id: 'inventory', label: t('warehouseInventoryTab'), icon: <Package className="w-4 h-4" /> },
+    { id: 'transfers', label: t('warehouseTransfersTab'), icon: <ArrowRightLeft className="w-4 h-4" /> }
+  ]
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -25,8 +27,8 @@ export default function WarehousePage() {
           <Warehouse className="w-5 h-5 text-blue-600 dark:text-blue-400" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Warehouse</h1>
-          <p className="text-sm text-slate-400 dark:text-slate-500">Manage stock locations and transfers</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('warehouseTitle')}</h1>
+          <p className="text-sm text-slate-400 dark:text-slate-500">{t('warehouseSubtitle')}</p>
         </div>
       </div>
 
