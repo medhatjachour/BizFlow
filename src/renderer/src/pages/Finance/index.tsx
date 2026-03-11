@@ -55,7 +55,8 @@ ChartJS.register(
 )
 
 type FinanceMetrics = {
-  revenue: number
+  revenue: number // Pre-tax
+  revenueWithTax?: number // With tax
   transactions: number
   avgOrderValue: number
   revenueChange: number
@@ -68,7 +69,8 @@ type FinanceMetrics = {
   grossProfit?: number
   profitChange?: number
   // Refund statistics
-  totalRefunded?: number
+  totalRefunded?: number // Pre-tax
+  totalRefundedWithTax?: number // With tax
   refundedItems?: number
   refundedTransactions?: number
   refundRate?: number
@@ -383,8 +385,12 @@ export default function Finance() {
               change={currentMetrics?.revenueChange || 0}
               icon={<DollarSign size={24} />}
               color="blue"
-              subtitle={`${currentMetrics?.transactions || 0} ${t('financeTransactions')}`}
-              tooltip={t('financeTooltipRevenue')}
+              subtitle={
+                currentMetrics?.revenueWithTax 
+                  ? `${currentMetrics.transactions || 0} ${t('financeTransactions')} | With Tax: $${currentMetrics.revenueWithTax.toFixed(2)}`
+                  : `${currentMetrics?.transactions || 0} ${t('financeTransactions')}`
+              }
+              tooltip={`Total income from all sales before deducting costs. This represents the gross amount received from customers (pre-tax). Tax collected: $${((currentMetrics?.revenueWithTax || 0) - (currentMetrics?.revenue || 0)).toFixed(2)}`}
             />
             <KPICard
               title={t('financeGrossProfit')}
@@ -405,9 +411,13 @@ export default function Finance() {
               change={-(currentMetrics?.refundRate || 0)}
               icon={<TrendingDown size={24} />}
               color="red"
-              subtitle={`${currentMetrics?.refundedTransactions || 0} ${t('financeTransactions')} | ${currentMetrics?.refundedItems || 0} ${t('financeItems')}`}
+              subtitle={
+                currentMetrics?.totalRefundedWithTax
+                  ? `${currentMetrics.refundedTransactions || 0} ${t('financeTransactions')} | ${currentMetrics.refundedItems || 0} ${t('financeItems')} | With Tax: $${currentMetrics.totalRefundedWithTax.toFixed(2)}`
+                  : `${currentMetrics?.refundedTransactions || 0} ${t('financeTransactions')} | ${currentMetrics?.refundedItems || 0} ${t('financeItems')}`
+              }
               showChange={true}
-              tooltip={`${t('financeTooltipRefunds')} ${currentMetrics?.refundRate?.toFixed(1) || 0}% ${t('financeOf')} ${t('financeTransactions')} ${t('financeHadRefunds')}.`}
+              tooltip={`Total refunded amount and refund rate. All revenue figures in this dashboard are NET values after deducting refunds. ${currentMetrics?.refundRate?.toFixed(1) || 0}% of Transactions had refunds. (Pre-tax: $${currentMetrics?.totalRefunded?.toFixed(2) || '0.00'}, With tax: $${currentMetrics?.totalRefundedWithTax?.toFixed(2) || '0.00'})`}
             />
             <KPICard
               title={t('financeProfitMargin')}
@@ -415,9 +425,9 @@ export default function Finance() {
               change={0}
               icon={<Percent size={24} />}
               color="purple"
-              subtitle={t('financeAverage')}
+              subtitle={`${t('financeAverage')} (Based on pre-tax revenue)`}
               showChange={false}
-              tooltip={t('financeTooltipMargin')}
+              tooltip={`Percentage of revenue that becomes profit, calculated as (Profit ÷ Revenue) × 100. Higher percentages indicate better profitability. Uses pre-tax revenue ($${currentMetrics?.revenue.toFixed(2) || '0.00'}) since tax is collected for the government, not business income.`}
             />
             <KPICard
               title={t('financeAvgOrder')}

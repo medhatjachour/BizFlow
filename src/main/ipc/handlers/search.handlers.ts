@@ -573,8 +573,10 @@ export function registerSearchHandlers(prisma: any) {
       ])
 
       // Calculate current metrics accounting for refunds
-      let currentRevenue = 0
-      let totalRefundedAmount = 0
+      let currentRevenue = 0 // Pre-tax (subtotal)
+      let currentRevenueWithTax = 0 // With tax (total)
+      let totalRefundedAmount = 0 // Pre-tax refunds
+      let totalRefundedAmountWithTax = 0 // With tax refunds
       let totalRefundedItems = 0
       
       currentTransactions.forEach(txn => {
@@ -589,16 +591,29 @@ export function registerSearchHandlers(prisma: any) {
         }, 0)
         
         totalRefundedAmount += refundedAmount
+        
+        // Calculate refunds with tax (proportional to transaction tax)
+        const txnSubtotal = txn.subtotal ?? txn.total
+        const txnTax = txn.total - txnSubtotal
+        const refundedWithTax = txnSubtotal > 0 
+          ? refundedAmount + (refundedAmount / txnSubtotal) * txnTax
+          : refundedAmount
+        totalRefundedAmountWithTax += refundedWithTax
+        
         // Net revenue = subtotal (pre-tax) - refunded
         // Tax is collected for the government, not business income
-        currentRevenue += ((txn.subtotal ?? txn.total) - refundedAmount)
+        currentRevenue += (txnSubtotal - refundedAmount)
+        // Revenue with tax
+        currentRevenueWithTax += (txn.total - refundedWithTax)
       })
       
       const currentTransactionCount = currentTransactions.length
 
       // Calculate previous metrics accounting for refunds
-      let previousRevenue = 0
-      let previousRefundedAmount = 0
+      let previousRevenue = 0 // Pre-tax
+      let previousRevenueWithTax = 0 // With tax
+      let previousRefundedAmount = 0 // Pre-tax
+      let previousRefundedAmountWithTax = 0 // With tax
       
       previousTransactions.forEach(txn => {
         const refundedAmount = txn.items.reduce((sum, item) => {
@@ -607,8 +622,18 @@ export function registerSearchHandlers(prisma: any) {
         }, 0)
         
         previousRefundedAmount += refundedAmount
+        
+        // Calculate refunds with tax
+        const txnSubtotal = txn.subtotal ?? txn.total
+        const txnTax = txn.total - txnSubtotal
+        const refundedWithTax = txnSubtotal > 0
+          ? refundedAmount + (refundedAmount / txnSubtotal) * txnTax
+          : refundedAmount
+        previousRefundedAmountWithTax += refundedWithTax
+        
         // Use subtotal (pre-tax) for revenue calculation
-        previousRevenue += ((txn.subtotal ?? txn.total) - refundedAmount)
+        previousRevenue += (txnSubtotal - refundedAmount)
+        previousRevenueWithTax += (txn.total - refundedWithTax)
       })
       
       const previousTransactionCount = previousTransactions.length
@@ -746,7 +771,8 @@ export function registerSearchHandlers(prisma: any) {
 
       return {
         currentMetrics: {
-          revenue: currentRevenue,
+          revenue: currentRevenue, // Pre-tax
+          revenueWithTax: currentRevenueWithTax, // With tax
           transactions: currentTransactionCount,
           avgOrderValue,
           revenueChange,
@@ -759,16 +785,19 @@ export function registerSearchHandlers(prisma: any) {
           grossProfit,
           profitChange,
           // Refund statistics
-          totalRefunded: totalRefundedAmount,
+          totalRefunded: totalRefundedAmount, // Pre-tax
+          totalRefundedWithTax: totalRefundedAmountWithTax, // With tax
           refundedItems: totalRefundedItems,
           refundedTransactions: refundedTransactionsCount,
           refundRate
         },
         previousMetrics: {
           revenue: previousRevenue,
+          revenueWithTax: previousRevenueWithTax,
           transactions: previousTransactionCount,
           avgOrderValue: previousAvgOrderValue,
-          totalRefunded: previousRefundedAmount
+          totalRefunded: previousRefundedAmount,
+          totalRefundedWithTax: previousRefundedAmountWithTax
         },
         topProducts,
         salesByDay: salesByDayArray,
