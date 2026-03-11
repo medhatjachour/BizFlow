@@ -22,12 +22,20 @@ function resolveEnabledPlugins(): string[] {
 
 const enabledPlugins = resolveEnabledPlugins()
 
+const pluginDefineFlags = {
+  __PLUGIN_BAKERY__: enabledPlugins.includes('bakery'),
+  __PLUGIN_RESTAURANT__: enabledPlugins.includes('restaurant'),
+  __PLUGIN_WAREHOUSE__: enabledPlugins.includes('warehouse')
+}
+
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    define: pluginDefineFlags
   },
   preload: {
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    define: pluginDefineFlags
   },
   renderer: {
     base: './',
@@ -46,11 +54,7 @@ export default defineConfig({
       }
     },
     /** Build-time plugin feature flags — Rollup tree-shakes disabled branches. */
-    define: {
-      __PLUGIN_BAKERY__: enabledPlugins.includes('bakery'),
-      __PLUGIN_RESTAURANT__: enabledPlugins.includes('restaurant'),
-      __PLUGIN_WAREHOUSE__: enabledPlugins.includes('warehouse')
-    },
+    define: pluginDefineFlags,
     plugins: [react()],
     server: {
       hmr: true
