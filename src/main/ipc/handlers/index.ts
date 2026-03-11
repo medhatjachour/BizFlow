@@ -37,6 +37,10 @@ import { registerLogHandlers } from './log.handlers'
 import { registerModuleHandlers } from './module.handlers'
 import { registerBakeryHandlers } from '../../../plugins/bakery/handlers'
 import { ensureBakerySchema } from '../../../plugins/bakery/migrate'
+import { registerRestaurantHandlers } from '../../../plugins/restaurant/handlers'
+import { ensureRestaurantSchema } from '../../../plugins/restaurant/migrate'
+import { registerWarehouseHandlers } from '../../../plugins/warehouse/handlers'
+import { ensureWarehouseSchema } from '../../../plugins/warehouse/migrate'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Database')
@@ -187,6 +191,16 @@ export function registerAllHandlers() {
     log.error('[Bakery] Schema migration failed:', e)
   )
   registerBakeryHandlers(prisma)
+
+  ensureRestaurantSchema(prisma, dbUrl, process.cwd()).catch((e) =>
+    log.error('[Restaurant] Schema migration failed:', e)
+  )
+  registerRestaurantHandlers(prisma)
+
+  ensureWarehouseSchema(prisma, dbUrl, process.cwd()).catch((e) =>
+    log.error('[Warehouse] Schema migration failed:', e)
+  )
+  registerWarehouseHandlers(prisma)
 
   log.info('✅ All IPC handlers registered successfully')
 }

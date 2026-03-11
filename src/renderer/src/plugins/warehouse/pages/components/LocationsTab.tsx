@@ -1,0 +1,157 @@
+import { useEffect, useState } from 'react'
+import { Plus, RefreshCw, AlertCircle, Edit2, Trash2, ChevronRight } from 'lucide-react'
+
+interface Location { id: string; name: string; code: string; type: string; parentId: string | null; isActive: boolean; children?: Location[] }
+
+const TYPE_COLORS: Record<string, string> = {
+  zone: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  aisle: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  shelf: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  bin: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+}
+
+const TYPES = ['zone', 'aisle', 'shelf', 'bin']
+
+function buildTree(locations: Location[]): Location[] {
+  const map = new Map<string, Location>()
+  locations.forEach(l => map.set(l.id, { ...l, children: [] }))
+  const roots: Location[] = []
+  locations.forEach(l => {
+    if (l.parentId && map.has(l.parentId)) map.get(l.parentId)!.children!.push(map.get(l.id)!)
+    else roots.push(map.get(l.id)!)
+  })
+  return roots
+}
+
+function LocationRow({ loc, depth, onEdit, onDelete }: { loc: Location; depth: number; onEdit: (l: Location) => void; onDelete: (l: Location) => void }) {
+  const [expanded, setExpanded] = useState(depth < 2)
+  const hasChildren = (loc.children?.length ?? 0) > 0
+  return (
+    <>
+      <div className={`flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors border-b border-slate-50 dark:border-slate-700/30`}
+        style={{ paddingLeft: `${16 + depth * 24}px` }}>
+        <button onClick={() => setExpanded(e => !e)} className={`w-5 h-5 flex items-center justify-center flex-shrink-0 text-slate-400 transition-transform ${hasChildren ? '' : 'invisible'} ${expanded ? 'rotate-90' : ''}`}>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-slate-900 dark:text-white text-sm">{loc.name}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${TYPE_COLORS[loc.type]}`}>{loc.type}</span>
+            {!loc.isActive && <span className="text-xs text-slate-400 dark:text-slate-500">(inactive)</span>}
+          </div>
+          <div className="text-xs text-slate-400 font-mono">{loc.code}</div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => onEdit(loc)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><Edit2 className="w-3.5 h-3.5" /></button>
+          <button onClick={() => onDelete(loc)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+        </div>
+      </div>
+      {expanded && hasChildren && loc.children!.map(child => (
+        <LocationRow key={child.id} loc={child} depth={depth + 1} onEdit={onEdit} onDelete={onDelete} />
+      ))}
+    </>
+  )
+}
+
+export default function LocationsTab() {
+  const [locations, setLocations] = useState<Location[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<Location | null>(null)
+  const [form, setForm] = useState({ name: '', code: '', type: 'bin', parentId: '' })
+
+  const load = async () => {
+    setLoading(true); setError('')
+    try { setLocations(await window.api.warehouse.getLocations()) }
+    catch { setError('Failed to load locations') }
+    finally { setLoading(false) }
+  }
+
+  useEffect(() => { load() }, [])
+
+  const openAdd = () => { setEditing(null); setForm({ name: '', code: '', type: 'bin', parentId: '' }); setShowForm(true) }
+  const openEdit = (l: Location) => { setEditing(l); setForm({ name: l.name, code: l.code, type: l.type, parentId: l.parentId || '' }); setShowForm(true) }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const data = { name: form.name, code: form.code, type: form.type, parentId: form.parentId || undefined }
+      if (editing) await window.api.warehouse.updateLocation({ id: editing.id, ...data })
+      else await window.api.warehouse.createLocation(data)
+      setShowForm(false); load()
+    } catch (err: any) { alert(err?.message || 'Failed to save') }
+  }
+
+  const del = async (l: Location) => {
+    if (!confirm(`Delete location "${l.name}"?`)) return
+    try { await window.api.warehouse.deleteLocation(l.id); load() }
+    catch (err: any) { alert(err?.message || 'Failed to delete') }
+  }
+
+  const tree = buildTree(locations)
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-slate-500 dark:text-slate-400">{locations.length} location{locations.length !== 1 ? 's' : ''}</p>
+        <div className="flex gap-2">
+          <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
+          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> Add Location</button>
+        </div>
+      </div>
+
+      {error && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="w-4 h-4" />{error}</div>}
+
+      {loading ? (
+        <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400 w-6 h-6" /></div>
+      ) : tree.length === 0 ? (
+        <div className="text-center py-12 text-slate-400 dark:text-slate-500">No locations yet. Add zones, aisles, shelves, and bins.</div>
+      ) : (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          {tree.map(loc => <LocationRow key={loc.id} loc={loc} depth={0} onEdit={openEdit} onDelete={del} />)}
+        </div>
+      )}
+
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{editing ? 'Edit Location' : 'New Location'}</h3>
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Name *</span>
+              <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm" />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Code * <span className="text-xs text-slate-400">(unique)</span></span>
+                <input required value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
+                  placeholder="e.g. A-01-03"
+                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm font-mono" />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Type *</span>
+                <select required value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                  className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm capitalize">
+                  {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </label>
+            </div>
+            <label className="block">
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Parent Location</span>
+              <select value={form.parentId} onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm">
+                <option value="">None (top-level)</option>
+                {locations.filter(l => l.id !== editing?.id).map(l => <option key={l.id} value={l.id}>[{l.type}] {l.name} ({l.code})</option>)}
+              </select>
+            </label>
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={() => setShowForm(false)} className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700">Cancel</button>
+              <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">Save</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}

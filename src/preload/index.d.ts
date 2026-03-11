@@ -351,6 +351,44 @@ interface API {
     getProductionRequirements: (data: any) => Promise<any>
     getEndOfDaySuggestion: () => Promise<any>
   }
+  restaurant: {
+    getTables: (options?: any) => Promise<any>
+    createTable: (data: any) => Promise<any>
+    updateTable: (data: any) => Promise<any>
+    deleteTable: (id: string) => Promise<any>
+    getReservations: (options?: any) => Promise<any>
+    createReservation: (data: any) => Promise<any>
+    updateReservation: (data: any) => Promise<any>
+    deleteReservation: (id: string) => Promise<any>
+    getMenuItems: (options?: any) => Promise<any>
+    createMenuItem: (data: any) => Promise<any>
+    updateMenuItem: (data: any) => Promise<any>
+    deleteMenuItem: (id: string) => Promise<any>
+    getOrders: (options?: any) => Promise<any>
+    getOrder: (id: string) => Promise<any>
+    openOrder: (data: any) => Promise<any>
+    addOrderItem: (data: any) => Promise<any>
+    removeOrderItem: (id: string) => Promise<any>
+    updateOrderItemStatus: (data: any) => Promise<any>
+    closeOrder: (data: any) => Promise<any>
+    getOverview: () => Promise<any>
+  }
+  warehouse: {
+    getLocations: (options?: any) => Promise<any>
+    createLocation: (data: any) => Promise<any>
+    updateLocation: (data: any) => Promise<any>
+    deleteLocation: (id: string) => Promise<any>
+    getStock: (options?: any) => Promise<any>
+    upsertStock: (data: any) => Promise<any>
+    adjustStock: (data: any) => Promise<any>
+    deleteStock: (id: string) => Promise<any>
+    getLowStock: () => Promise<any>
+    getTransfers: (options?: any) => Promise<any>
+    createTransfer: (data: any) => Promise<any>
+    updateTransferStatus: (data: any) => Promise<any>
+    deleteTransfer: (id: string) => Promise<any>
+    getOverview: () => Promise<any>
+  }
 }
 
 declare global {

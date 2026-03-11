@@ -54,7 +54,7 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     name: 'Restaurant',
     description: 'Table management, reservations and kitchen order routing for restaurants.',
     icon: '🍽️',
-    status: 'planned',
+    status: 'active',
     models: ['Table', 'Reservation', 'KitchenOrder'],
     ipcPrefix: 'restaurant',
     routePrefix: '/restaurant'
@@ -64,7 +64,7 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     name: 'Warehouse',
     description: 'Multi-location inventory with bin/location tracking and stock transfers.',
     icon: '🏭',
-    status: 'future',
+    status: 'active',
     models: ['Location', 'Transfer', 'StockLevel'],
     ipcPrefix: 'warehouse',
     routePrefix: '/warehouse'

@@ -1,52 +1,42 @@
 /**
- * useModuleEnabled
+ * useModuleEnabled / useEnabledModules
  *
- * Returns true if the given module ID is in the list of enabled modules
- * fetched from the main process.  The result is cached for the session;
- * pass `refresh = true` to re-fetch (e.g. after a settings change).
+ * Thin wrappers around ModuleContext so components only need to know about
+ * these hooks and not the context internals.
+ *
+ * Because they read from React state (the context), toggling a module in
+ * ModulesSettings → calling refreshModules() → updates the context state →
+ * causes all consumers to re-render automatically.
  */
-import { useEffect, useState } from 'react'
 import type { ModuleId } from '@/shared/modules'
+import { useModuleContext } from '../contexts/ModuleContext'
 
-// Cache so every component doesn't fire a separate IPC call
-const cache: { ids: string[] | null } = { ids: null }
-
-async function fetchEnabledIds(): Promise<string[]> {
-  if (cache.ids !== null) return cache.ids
-  try {
-    const ids: string[] = await window.api.modules.getEnabled()
-    cache.ids = ids
-    return ids
-  } catch {
-    cache.ids = []
-    return []
-  }
-}
-
-/** Invalidate the in-memory cache (call after toggling a module in settings). */
-export function invalidateModuleCache(): void {
-  cache.ids = null
-}
-
+/** Returns true if the given module ID is currently enabled. */
 export function useModuleEnabled(moduleId: ModuleId): boolean {
-  const [enabled, setEnabled] = useState<boolean>(false)
-
-  useEffect(() => {
-    fetchEnabledIds().then((ids) => {
-      setEnabled(ids.includes(moduleId))
-    })
-  }, [moduleId])
-
-  return enabled
+  const { enabledIds } = useModuleContext()
+  return enabledIds.includes(moduleId)
 }
 
 /** Returns all enabled module IDs. */
 export function useEnabledModules(): string[] {
-  const [ids, setIds] = useState<string[]>([])
+  const { enabledIds } = useModuleContext()
+  return enabledIds
+}
 
-  useEffect(() => {
-    fetchEnabledIds().then(setIds)
-  }, [])
+/**
+ * Returns a stable async function that re-fetches the enabled-module list
+ * from the main process and updates the context, triggering re-renders in
+ * every consumer (nav, routes, settings).
+ */
+export function useRefreshModules(): () => Promise<void> {
+  const { refreshModules } = useModuleContext()
+  return refreshModules
+}
 
-  return ids
+/**
+ * @deprecated Use useRefreshModules() instead.
+ * Kept so existing callers compile without changes.
+ */
+export function invalidateModuleCache(): void {
+  // No-op: the old cache is gone.  Callers should migrate to useRefreshModules().
 }

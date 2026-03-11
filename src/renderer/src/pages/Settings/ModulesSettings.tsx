@@ -2,14 +2,21 @@
  * ModulesSettings
  *
  * Lets the admin enable / disable optional business modules.
- * Changes are persisted immediately via IPC; the nav link appears / disappears
- * on the next render cycle (useModuleEnabled re-fetches after invalidation).
+ * Changes are persisted immediately via IPC and propagated via ModuleContext,
+ * so the nav link and routes update in the same render cycle — no restart needed.
  */
 
 import { useState, useEffect } from 'react'
 import { MODULE_REGISTRY } from '@/shared/modules'
-import { useEnabledModules, invalidateModuleCache } from '../../hooks/useModuleEnabled'
+import { useEnabledModules, useRefreshModules } from '../../hooks/useModuleEnabled'
 import { ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react'
+
+/** Map of module id → build-time flag. Only bundled plugins are shown. */
+const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
+  bakery:     typeof __PLUGIN_BAKERY__     !== 'undefined' && __PLUGIN_BAKERY__,
+  restaurant: typeof __PLUGIN_RESTAURANT__ !== 'undefined' && __PLUGIN_RESTAURANT__,
+  warehouse:  typeof __PLUGIN_WAREHOUSE__  !== 'undefined' && __PLUGIN_WAREHOUSE__,
+}
 
 const STATUS_BADGE: Record<string, string> = {
   active:  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -19,6 +26,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default function ModulesSettings() {
   const enabledIds = useEnabledModules()
+  const refreshModules = useRefreshModules()
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState<string | null>(null)
   const [restartNeeded, setRestartNeeded] = useState(false)
@@ -34,7 +42,7 @@ export default function ModulesSettings() {
     setSaving(moduleId)
     try {
       await window.api.modules.setEnabled(moduleId, !currentlyEnabled)
-      invalidateModuleCache()
+      await refreshModules()
       setPendingIds(prev => {
         const next = new Set(prev)
         if (currentlyEnabled) next.delete(moduleId)
@@ -49,7 +57,7 @@ export default function ModulesSettings() {
     }
   }
 
-  const modules = Object.values(MODULE_REGISTRY)
+  const modules = Object.values(MODULE_REGISTRY).filter(mod => BUNDLED_PLUGIN_FLAGS[mod.id])
 
   return (
     <div>
@@ -73,7 +81,6 @@ export default function ModulesSettings() {
         {modules.map(mod => {
           const isEnabled = pendingIds.has(mod.id)
           const isSaving = saving === mod.id
-          const isAlreadyActive = mod.status === 'active'
 
           return (
             <div
@@ -104,8 +111,7 @@ export default function ModulesSettings() {
 
               <button
                 onClick={() => handleToggle(mod.id, isEnabled)}
-                disabled={isSaving || isAlreadyActive}
-                title={isAlreadyActive ? 'Core module — always enabled' : undefined}
+                disabled={isSaving}
                 className={`flex-shrink-0 ml-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   isEnabled
                     ? 'text-primary hover:text-primary/80'

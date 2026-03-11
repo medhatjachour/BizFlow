@@ -10,6 +10,8 @@ export const translations = {
     sales: 'Sales',
     employees: 'Employees',
     bakery: 'Bakery',
+    restaurant: 'Restaurant',
+    warehouse: 'Warehouse',
     // ── Bakery Plugin ──────────────────────────────────────────────────────
     bakerySubtitle: 'Bakery Management',
     bakeryOverviewTab: 'Overview',
@@ -1949,6 +1951,8 @@ export const translations = {
     sales: 'المبيعات',
     employees: 'الموظفون',
     bakery: 'المخبز',
+    restaurant: 'المطعم',
+    warehouse: 'المستودع',
     // ── Bakery Plugin ──────────────────────────────────────────────────────
     bakerySubtitle: 'إدارة المخبز',
     bakeryOverviewTab: 'نظرة عامة',

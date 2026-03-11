@@ -42,23 +42,35 @@ const MODULE_REGISTRY = {
         '  wasteLogs          WasteLog[]  @relation("ProductWasteLogs")    // Waste records for this product'
       ]
     }
-  }
-  // restaurant: { file: 'restaurant.prisma', injectFields: { ... } },
-  // warehouse:  { file: 'warehouse.prisma',  injectFields: { ... } },
+  },
+  restaurant: {
+    file: 'schema.prisma',
+    injectFields: {}
+  },
+  warehouse: {
+    file: 'schema.prisma',
+    injectFields: {}
+  },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Resolve which modules to merge (CLI > env > all-in-dir). */
+/** Resolve which modules to merge (CLI > env > .env.build > all-in-dir). */
 function resolveModules() {
   // --modules bakery,restaurant
   const cliIdx = process.argv.indexOf('--modules')
   if (cliIdx !== -1 && process.argv[cliIdx + 1]) {
     return process.argv[cliIdx + 1].split(',').map((m) => m.trim())
   }
-  // ENABLED_MODULES=bakery,restaurant
+  // ENABLED_MODULES=bakery,restaurant (shell env)
   if (process.env.ENABLED_MODULES) {
     return process.env.ENABLED_MODULES.split(',').map((m) => m.trim())
+  }
+  // .env.build (written by scripts/configure-build.js)
+  const envBuildPath = path.join(ROOT, '.env.build')
+  if (fs.existsSync(envBuildPath)) {
+    const match = fs.readFileSync(envBuildPath, 'utf-8').match(/^ENABLED_MODULES=(.+)$/m)
+    if (match) return match[1].split(',').map((m) => m.trim())
   }
   // Default: merge every plugin that has a schema.prisma
   if (!fs.existsSync(PLUGINS_DIR)) return []

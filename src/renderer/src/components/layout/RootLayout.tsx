@@ -23,7 +23,9 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  ChefHat
+  ChefHat,
+  UtensilsCrossed,
+  Warehouse as WarehouseIcon
 } from 'lucide-react'
 
 interface NavItem {
@@ -133,15 +135,31 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
+  const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
+  const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
 
   // Build dynamic nav — inject module items after Employees
   const navItems: NavItem[] = [
     ...navigation.slice(0, navigation.findIndex(n => n.href === '/employees') + 1),
-    ...(bakeryEnabled ? [{
+    ...(__PLUGIN_BAKERY__ && bakeryEnabled ? [{
       name: 'Bakery',
       translationKey: 'bakery',
       href: '/bakery',
       icon: ChefHat,
+      roles: ['admin', 'manager', 'inventory']
+    }] : []),
+    ...(__PLUGIN_RESTAURANT__ && restaurantEnabled ? [{
+      name: 'Restaurant',
+      translationKey: 'restaurant',
+      href: '/restaurant',
+      icon: UtensilsCrossed,
+      roles: ['admin', 'manager', 'sales']
+    }] : []),
+    ...(__PLUGIN_WAREHOUSE__ && warehouseEnabled ? [{
+      name: 'Warehouse',
+      translationKey: 'warehouse',
+      href: '/warehouse',
+      icon: WarehouseIcon,
       roles: ['admin', 'manager', 'inventory']
     }] : []),
     ...navigation.slice(navigation.findIndex(n => n.href === '/employees') + 1)
