@@ -488,7 +488,6 @@ export function registerSearchHandlers(prisma: any) {
     endDate?: string
     previousStartDate?: string
     previousEndDate?: string
-    includeCOGS?: boolean
   }) => {
     try {
       if (!prisma) {
@@ -501,7 +500,7 @@ export function registerSearchHandlers(prisma: any) {
         }
       }
 
-      const { startDate, endDate, previousStartDate, previousEndDate, includeCOGS = true } = options
+      const { startDate, endDate, previousStartDate, previousEndDate } = options
 
       // Build date filters
       const currentWhere: any = {}
@@ -549,6 +548,7 @@ export function registerSearchHandlers(prisma: any) {
           select: {
             id: true,
             total: true,
+            subtotal: true,
             createdAt: true,
             items: {
               select: {
@@ -573,8 +573,10 @@ export function registerSearchHandlers(prisma: any) {
       ])
 
       // Calculate current metrics accounting for refunds
-      let currentRevenue = 0
-      let totalRefundedAmount = 0
+      let currentRevenue = 0 // Pre-tax (subtotal)
+      let currentRevenueWithTax = 0 // With tax (total)
+      let totalRefundedAmount = 0 // Pre-tax refunds
+      let totalRefundedAmountWithTax = 0 // With tax refunds
       let totalRefundedItems = 0
       
       currentTransactions.forEach(txn => {
@@ -589,15 +591,29 @@ export function registerSearchHandlers(prisma: any) {
         }, 0)
         
         totalRefundedAmount += refundedAmount
-        // Net revenue = total - refunded
-        currentRevenue += (txn.total - refundedAmount)
+        
+        // Calculate refunds with tax (proportional to transaction tax)
+        const txnSubtotal = txn.subtotal ?? txn.total
+        const txnTax = txn.total - txnSubtotal
+        const refundedWithTax = txnSubtotal > 0 
+          ? refundedAmount + (refundedAmount / txnSubtotal) * txnTax
+          : refundedAmount
+        totalRefundedAmountWithTax += refundedWithTax
+        
+        // Net revenue = subtotal (pre-tax) - refunded
+        // Tax is collected for the government, not business income
+        currentRevenue += (txnSubtotal - refundedAmount)
+        // Revenue with tax
+        currentRevenueWithTax += (txn.total - refundedWithTax)
       })
       
       const currentTransactionCount = currentTransactions.length
 
       // Calculate previous metrics accounting for refunds
-      let previousRevenue = 0
-      let previousRefundedAmount = 0
+      let previousRevenue = 0 // Pre-tax
+      let previousRevenueWithTax = 0 // With tax
+      let previousRefundedAmount = 0 // Pre-tax
+      let previousRefundedAmountWithTax = 0 // With tax
       
       previousTransactions.forEach(txn => {
         const refundedAmount = txn.items.reduce((sum, item) => {
@@ -606,7 +622,18 @@ export function registerSearchHandlers(prisma: any) {
         }, 0)
         
         previousRefundedAmount += refundedAmount
-        previousRevenue += (txn.total - refundedAmount)
+        
+        // Calculate refunds with tax
+        const txnSubtotal = txn.subtotal ?? txn.total
+        const txnTax = txn.total - txnSubtotal
+        const refundedWithTax = txnSubtotal > 0
+          ? refundedAmount + (refundedAmount / txnSubtotal) * txnTax
+          : refundedAmount
+        previousRefundedAmountWithTax += refundedWithTax
+        
+        // Use subtotal (pre-tax) for revenue calculation
+        previousRevenue += (txnSubtotal - refundedAmount)
+        previousRevenueWithTax += (txn.total - refundedWithTax)
       })
       
       const previousTransactionCount = previousTransactions.length
@@ -719,15 +746,14 @@ export function registerSearchHandlers(prisma: any) {
 
 
       // Calculate profit metrics from ALL sales INCLUDING operational expenses
-      // If includeCOGS is false, don't subtract totalCost from calculations
-      const grossProfit = includeCOGS ? (totalRevenue - totalCost) : totalRevenue
+      // Always include COGS in calculations - COGS is a real business cost
+      const grossProfit = totalRevenue - totalCost
       const totalProfit = grossProfit - totalOperationalExpenses
       const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
 
       // Calculate previous period profit for comparison
-      const previousGrossProfit = includeCOGS 
-        ? (previousRevenue - (previousRevenue * (totalCost / totalRevenue || 0)))
-        : previousRevenue
+      const costRatio = totalRevenue > 0 ? totalCost / totalRevenue : 0
+      const previousGrossProfit = previousRevenue - (previousRevenue * costRatio)
       const previousTotalProfit = previousGrossProfit - previousTotalExpenses
       const profitChange = previousTotalProfit > 0 
         ? ((totalProfit - previousTotalProfit) / previousTotalProfit) * 100 
@@ -745,7 +771,8 @@ export function registerSearchHandlers(prisma: any) {
 
       return {
         currentMetrics: {
-          revenue: currentRevenue,
+          revenue: currentRevenue, // Pre-tax
+          revenueWithTax: currentRevenueWithTax, // With tax
           transactions: currentTransactionCount,
           avgOrderValue,
           revenueChange,
@@ -758,16 +785,19 @@ export function registerSearchHandlers(prisma: any) {
           grossProfit,
           profitChange,
           // Refund statistics
-          totalRefunded: totalRefundedAmount,
+          totalRefunded: totalRefundedAmount, // Pre-tax
+          totalRefundedWithTax: totalRefundedAmountWithTax, // With tax
           refundedItems: totalRefundedItems,
           refundedTransactions: refundedTransactionsCount,
           refundRate
         },
         previousMetrics: {
           revenue: previousRevenue,
+          revenueWithTax: previousRevenueWithTax,
           transactions: previousTransactionCount,
           avgOrderValue: previousAvgOrderValue,
-          totalRefunded: previousRefundedAmount
+          totalRefunded: previousRefundedAmount,
+          totalRefundedWithTax: previousRefundedAmountWithTax
         },
         topProducts,
         salesByDay: salesByDayArray,

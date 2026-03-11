@@ -1,7 +1,10 @@
 export interface TodayStats {
   revenue: number;
-  expenses: number;
+  revenueWithTax: number; // total revenue including tax collected
+  expenses: number;  // operational expenses only (no COGS)
+  cogs: number;      // cost of goods sold
   profit: number;
+  cashInSafe: number; // revenue - operational expenses (cash actually in the drawer)
   salesCount: number;
   expensesCount: number;
   topProduct: string;
