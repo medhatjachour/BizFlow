@@ -63,11 +63,10 @@ export interface ProductResponseDTO {
  * Create Variant Request
  */
 export interface CreateVariantDTO {
-  color?: string
-  size?: string
   sku: string
   price: number
   stock: number
+  attributes?: { name: string; value: string }[]
 }
 
 /**
@@ -75,11 +74,10 @@ export interface CreateVariantDTO {
  */
 export interface VariantResponseDTO {
   id: string
-  color: string | null
-  size: string | null
   sku: string
   price: number
   stock: number
+  attributeValues?: { attributeId: string; value: string; attribute?: { name: string } }[]
   createdAt: string
   updatedAt: string
 }

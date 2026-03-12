@@ -30,8 +30,8 @@ interface SearchFilters {
   stockStatus?: ('out' | 'low' | 'normal' | 'high')[]
   priceRange?: { min: number; max: number }
   stockRange?: { min: number; max: number }
-  colors?: string[]
-  sizes?: string[]
+  colors?: never
+  sizes?: never
   storeId?: string
 }
 
@@ -94,14 +94,15 @@ export function registerSearchHandlers(prisma: any) {
             variants: {
               select: {
                 id: true,
-                color: true,
-                size: true,
                 sku: true,
                 barcode: true,
                 price: true,
                 stock: true,
                 createdAt: true,
-                updatedAt: true
+                updatedAt: true,
+                attributeValues: {
+                  include: { attribute: { select: { name: true } } }
+                }
               },
               orderBy: { createdAt: 'asc' }
             },
@@ -209,14 +210,15 @@ export function registerSearchHandlers(prisma: any) {
             variants: {
               select: {
                 id: true,
-                color: true,
-                size: true,
                 sku: true,
                 barcode: true,
                 price: true,
                 stock: true,
                 createdAt: true,
-                updatedAt: true
+                updatedAt: true,
+                attributeValues: {
+                  include: { attribute: { select: { name: true } } }
+                }
               },
               orderBy: { createdAt: 'asc' }
             },
@@ -322,13 +324,13 @@ export function registerSearchHandlers(prisma: any) {
           orderBy: { name: 'asc' }
         }),
 
-        // Get unique colors and sizes
-        prisma.productVariant.findMany({
+        // Get unique attribute values for filter dropdowns
+        prisma.variantAttributeValue.findMany({
           select: {
-            color: true,
-            size: true
+            value: true,
+            attribute: { select: { name: true } }
           },
-          distinct: ['color', 'size']
+          distinct: ['value', 'attributeId']
         }),
 
         // Get price range
@@ -340,14 +342,25 @@ export function registerSearchHandlers(prisma: any) {
         `
       ])
 
-      // Extract unique colors and sizes
-      const colors = [...new Set(variants.map(v => v.color).filter(Boolean))].sort()
-      const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))].sort()
+      // Build attribute map: { name -> uniqueValues[] }
+      const attributeMap = new Map<string, Set<string>>()
+      for (const av of variants as any[]) {
+        const name = av.attribute?.name
+        if (!name) continue
+        if (!attributeMap.has(name)) attributeMap.set(name, new Set())
+        attributeMap.get(name)!.add(av.value)
+      }
+      const attributes = [...attributeMap.entries()].map(([name, vals]) => ({
+        name,
+        values: [...vals].sort()
+      }))
 
       return {
         categories,
-        colors,
-        sizes,
+        attributes,
+        // Keep for backward compat (empty — no longer hardcoded color/size)
+        colors: [],
+        sizes: [],
         priceRange: {
           min: priceStats[0]?.min || 0,
           max: priceStats[0]?.max || 1000
@@ -967,27 +980,7 @@ function buildWhereClause(filters: SearchFilters): any {
     }
   }
 
-  // Color filter (variant-based)
-  if (filters.colors && filters.colors.length > 0) {
-    andConditions.push({
-      variants: {
-        some: {
-          color: { in: filters.colors }
-        }
-      }
-    })
-  }
-
-  // Size filter (variant-based)
-  if (filters.sizes && filters.sizes.length > 0) {
-    andConditions.push({
-      variants: {
-        some: {
-          size: { in: filters.sizes }
-        }
-      }
-    })
-  }
+  // (color/size filters removed — use EAV attribute value filter if needed)
 
   // Stock status filter (OR within this group for multiple statuses)
   if (filters.stockStatus && filters.stockStatus.length > 0) {

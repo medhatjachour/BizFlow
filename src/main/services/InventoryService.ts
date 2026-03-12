@@ -84,15 +84,8 @@ export class InventoryService {
       include: {
         variants: { 
           orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            sku: true,
-            color: true,
-            size: true,
-            price: true,
-            stock: true,
-            createdAt: true,
-            updatedAt: true
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
           }
         },
         // Include all images when requested (not just first one)
@@ -173,15 +166,8 @@ export class InventoryService {
       include: {
         variants: { 
           orderBy: { stock: 'desc' },
-          select: {
-            id: true,
-            sku: true,
-            color: true,
-            size: true,
-            price: true,
-            stock: true,
-            createdAt: true,
-            updatedAt: true
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
           }
         },
         images: false, // Don't load images
@@ -216,15 +202,8 @@ export class InventoryService {
       },
       include: {
         variants: {
-          select: {
-            id: true,
-            sku: true,
-            color: true,
-            size: true,
-            price: true,
-            stock: true,
-            createdAt: true,
-            updatedAt: true
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
           }
         },
         images: false, // Don't load images
@@ -254,15 +233,8 @@ export class InventoryService {
       },
       include: {
         variants: {
-          select: {
-            id: true,
-            sku: true,
-            color: true,
-            size: true,
-            price: true,
-            stock: true,
-            createdAt: true,
-            updatedAt: true
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
           }
         },
         images: false,
@@ -325,15 +297,8 @@ export class InventoryService {
       include: {
         variants: {
           orderBy: { createdAt: 'asc' },
-          select: {
-            id: true,
-            sku: true,
-            color: true,
-            size: true,
-            price: true,
-            stock: true,
-            createdAt: true,
-            updatedAt: true
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
           }
         },
         images: false, // Don't load images for search

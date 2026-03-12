@@ -23,10 +23,18 @@ type ProductVariant = {
   id: string
   color?: string
   size?: string
+  attributeValues?: Array<{ attribute: { name: string }; value: string }>
   sku: string
   barcode?: string
   price: number
   stock: number
+}
+
+function getVariantLabel(variant: ProductVariant): string {
+  if (variant.attributeValues && variant.attributeValues.length > 0) {
+    return variant.attributeValues.map(av => `${av.attribute.name}: ${av.value}`).join(' / ')
+  }
+  return [variant.color, variant.size].filter(Boolean).join(' / ')
 }
 
 type Product = {
@@ -305,7 +313,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
       addToCart(product, variant)
       // Show toast for manual selection
       if (variant) {
-        showToast('success', `Added ${product.name} (${variant.color || ''} ${variant.size || ''})`)
+        showToast('success', `Added ${product.name} (${getVariantLabel(variant)})`)
       } else {
         showToast('success', `Added ${product.name}`)
       }
@@ -318,7 +326,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
     const price = variant ? variant.price : product.basePrice
     const sku = variant ? variant.sku : product.baseSKU
     const variantLabel = variant 
-      ? [variant.color, variant.size].filter(Boolean).join(' / ')
+      ? getVariantLabel(variant)
       : undefined
     
     if (stock === 0) {
@@ -390,7 +398,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
       if (result.selectedVariant) {
         // Product with variant
         addToCart(result, result.selectedVariant)
-        showToast('success', `Added ${result.name} (${result.selectedVariant.color || ''} ${result.selectedVariant.size || ''})`)
+        showToast('success', `Added ${result.name} (${getVariantLabel(result.selectedVariant)})`)
       } else {
         // Product without variant
         addToCart(result)
@@ -955,7 +963,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
                     {isExpanded && hasMultipleVariants && (
                       <div className="bg-slate-50 dark:bg-slate-900/50 px-3 py-2 space-y-1">
                         {product.variants?.map((variant, variantIdx) => {
-                          const variantLabel = [variant.color, variant.size].filter(Boolean).join(' / ')
+                          const variantLabel = getVariantLabel(variant)
                           const variantInCart = cartItems.find(item => item.variantId === variant.id)
                           const isVariantSelected = index === selectedIndex && variantIdx === selectedVariantIndex
                           
@@ -1298,7 +1306,7 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
             <div className="flex-1 overflow-auto p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {selectedProduct.variants?.map((variant) => {
-                  const variantLabel = [variant.color, variant.size].filter(Boolean).join(' / ')
+                  const variantLabel = getVariantLabel(variant)
                   const inCart = cartItems.find(item => item.variantId === variant.id)
                   
                   return (

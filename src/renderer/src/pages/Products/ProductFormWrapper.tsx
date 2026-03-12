@@ -42,8 +42,7 @@ type FormData = {
   hasVariants: boolean
   variants: Array<{
     id: string
-    color?: string
-    size?: string
+    attributes: { name: string; value: string }[]
     sku: string
     barcode?: string
     price: number
@@ -94,8 +93,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
 
   // Variant form state
   const [newVariant, setNewVariant] = useState({
-    color: '',
-    size: '',
+    attributes: [] as { name: string; value: string }[],
     sku: '',
     barcode: '',
     price: 0,
@@ -105,8 +103,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
   // Batch variant creation state
   const [batchMode, setBatchMode] = useState(false)
   const [batchVariant, setBatchVariant] = useState({
-    colors: [] as string[],
-    sizes: [] as string[],
+    attributes: [] as { name: string; values: string[] }[],
     baseSKU: '',
     baseBarcode: '',
     price: 0,
@@ -129,9 +126,6 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
     variantLabel: '', 
     currentStock: 0 
   })
-  const [colorInput, setColorInput] = useState('')
-  const [sizeInput, setSizeInput] = useState('')
-
   // Load stores and categories
   useEffect(() => {
     loadStores()
@@ -155,8 +149,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         hasVariants: product.hasVariants,
         variants: product.variants?.map(v => ({
           id: v.id,
-          color: v.color || undefined,
-          size: v.size || undefined,
+          attributes: (v as any).attributeValues?.map((av: any) => ({name: av.attribute?.name || '', value: av.value})) || [],
           sku: v.sku,
           barcode: v.barcode || undefined,
           price: v.price,
@@ -245,7 +238,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
   const handleOpenStockDialog = (index: number, variant: any) => {
     // Only open dialog for existing variants with valid IDs
     if (product && variant.id && !variant.id.startsWith('temp-')) {
-      const variantLabel = [variant.color, variant.size].filter(Boolean).join(' • ')
+      const variantLabel = variant.attributes?.map((a: any) => `${a.name}: ${a.value}`).join(' • ') || variant.sku
       setStockMovementDialog({
         isOpen: true,
         variantId: variant.id,
@@ -353,8 +346,8 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
   }
 
   const handleAddVariant = async () => {
-    if (!newVariant.color || !newVariant.size || !newVariant.sku) {
-      toast.error('Please fill all variant fields')
+    if (newVariant.attributes.length === 0 || !newVariant.sku) {
+      toast.error('Please add at least one attribute and enter a SKU')
       return
     }
 
@@ -368,12 +361,13 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
       return
     }
 
+    const attrKey = newVariant.attributes.map(a => `${a.name}:${a.value}`).sort().join('|')
     const variantExists = formData.variants.some(
-      v => v.color === newVariant.color && v.size === newVariant.size
+      v => v.attributes.map(a => `${a.name}:${a.value}`).sort().join('|') === attrKey
     )
 
     if (variantExists) {
-      toast.error('A variant with this color and size already exists')
+      toast.error('A variant with this attribute combination already exists')
       return
     }
 
@@ -402,7 +396,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
     // Check for global barcode uniqueness
     try {
       const existingProduct = await window.api.inventory.searchByBarcode(barcode)
-      if (existingProduct && existingProduct.id !== productId) {
+      if (existingProduct && existingProduct.id !== product?.id) {
         toast.error(`Barcode "${barcode}" is already used by another product: ${existingProduct.name}`)
         return
       }
@@ -418,8 +412,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         ...prev.variants,
         {
           id: `temp-${Date.now()}`,
-          color: newVariant.color,
-          size: newVariant.size,
+          attributes: newVariant.attributes,
           sku: newVariant.sku,
           barcode: barcode,
           price: newVariant.price,
@@ -429,8 +422,7 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
     }))
 
     setNewVariant({
-      color: '',
-      size: '',
+      attributes: [],
       sku: '',
       barcode: '',
       price: 0,
@@ -448,52 +440,46 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
     toast.success('Variant removed')
   }
 
-  // Batch variant handlers
-  const handleAddColor = () => {
-    const trimmed = colorInput.trim()
-    if (!trimmed) {
-      toast.error('Please enter a color')
-      return
-    }
-    if (batchVariant.colors.includes(trimmed)) {
-      toast.error('Color already added')
+  // Batch attribute handlers (EAV)
+  const handleAddBatchAttribute = (name: string) => {
+    if (!name.trim()) return
+    if (batchVariant.attributes.some(a => a.name.toLowerCase() === name.trim().toLowerCase())) {
+      toast.error('Attribute already exists')
       return
     }
     setBatchVariant(prev => ({
       ...prev,
-      colors: [...prev.colors, trimmed]
-    }))
-    setColorInput('')
-  }
-
-  const handleAddSize = () => {
-    const trimmed = sizeInput.trim()
-    if (!trimmed) {
-      toast.error('Please enter a size')
-      return
-    }
-    if (batchVariant.sizes.includes(trimmed)) {
-      toast.error('Size already added')
-      return
-    }
-    setBatchVariant(prev => ({
-      ...prev,
-      sizes: [...prev.sizes, trimmed]
-    }))
-    setSizeInput('')
-  }
-
-  const handleRemoveColor = (color: string) => {
-    setBatchVariant(prev => ({
-      ...prev,
-      colors: prev.colors.filter(c => c !== color)
+      attributes: [...prev.attributes, { name: name.trim(), values: [] }]
     }))
   }
 
-  const handleRemoveSize = (size: string) => {
+  const handleAddAttributeValue = (attrName: string, value: string) => {
+    if (!value.trim()) return
     setBatchVariant(prev => ({
       ...prev,
-      sizes: prev.sizes.filter(s => s !== size)
+      attributes: prev.attributes.map(a =>
+        a.name === attrName && !a.values.includes(value.trim())
+          ? { ...a, values: [...a.values, value.trim()] }
+          : a
+      )
+    }))
+  }
+
+  const handleRemoveAttributeValue = (attrName: string, value: string) => {
+    setBatchVariant(prev => ({
+      ...prev,
+      attributes: prev.attributes.map(a =>
+        a.name === attrName
+          ? { ...a, values: a.values.filter(v => v !== value) }
+          : a
+      )
+    }))
+  }
+
+  const handleRemoveBatchAttribute = (name: string) => {
+    setBatchVariant(prev => ({
+      ...prev,
+      attributes: prev.attributes.filter(a => a.name !== name)
     }))
   }
 
@@ -514,89 +500,59 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
       return
     }
 
-    if (batchVariant.colors.length === 0 && batchVariant.sizes.length === 0) {
-      toast.error('Please add at least one color or size')
+    if (batchVariant.attributes.length === 0) {
+      toast.error('Please add at least one attribute')
       return
     }
 
-    // Generate all combinations
-    const newVariants: Array<{
-      id: string
-      color?: string
-      size?: string
-      sku: string
-      barcode?: string
-      price: number
-      stock: number
-    }> = []
+    const emptyAttr = batchVariant.attributes.find(a => a.values.length === 0)
+    if (emptyAttr) {
+      toast.error(`Attribute "${emptyAttr.name}" has no values`)
+      return
+    }
 
+    // Cartesian product of all attribute values
+    const cartesian = (attrs: { name: string; values: string[] }[]): { name: string; value: string }[][] => {
+      return attrs.reduce<{ name: string; value: string }[][]>((acc, attr) => {
+        return acc.flatMap(combo => attr.values.map(v => [...combo, { name: attr.name, value: v }]))
+      }, [[]])
+    }
+
+    const combos = cartesian(batchVariant.attributes)
     let counter = 1
     const baseSKU = batchVariant.baseSKU.trim().toUpperCase()
 
-    // If both colors and sizes are provided, create all combinations
-    if (batchVariant.colors.length > 0 && batchVariant.sizes.length > 0) {
-      batchVariant.colors.forEach(color => {
-        batchVariant.sizes.forEach(size => {
-          const sku = `${baseSKU}-${counter}`
-          const barcode = batchVariant.baseBarcode 
-            ? `${batchVariant.baseBarcode}-${counter}` 
-            : `BAR${sku}`
-          newVariants.push({
-            id: `temp-${Date.now()}-${counter}`,
-            color,
-            size,
-            sku,
-            barcode,
-            price: batchVariant.price,
-            stock: batchVariant.stock
-          })
-          counter++
-        })
-      })
-    }
-    // If only colors
-    else if (batchVariant.colors.length > 0) {
-      batchVariant.colors.forEach(color => {
-        const sku = `${baseSKU}-${counter}`
-        const barcode = batchVariant.baseBarcode 
-          ? `${batchVariant.baseBarcode}-${counter}` 
-          : `BAR${sku}`
-        newVariants.push({
-          id: `temp-${Date.now()}-${counter}`,
-          color,
-          sku,
-          barcode,
-          price: batchVariant.price,
-          stock: batchVariant.stock
-        })
-        counter++
-      })
-    }
-    // If only sizes
-    else if (batchVariant.sizes.length > 0) {
-      batchVariant.sizes.forEach(size => {
-        const sku = `${baseSKU}-${counter}`
-        const barcode = batchVariant.baseBarcode 
-          ? `${batchVariant.baseBarcode}-${counter}` 
-          : `BAR${sku}`
-        newVariants.push({
-          id: `temp-${Date.now()}-${counter}`,
-          size,
-          sku,
-          barcode,
-          price: batchVariant.price,
-          stock: batchVariant.stock
-        })
-        counter++
-      })
-    }
+    const newVariants: Array<{
+      id: string
+      attributes: { name: string; value: string }[]
+      sku: string
+      barcode: string
+      price: number
+      stock: number
+    }> = combos.map(attrs => {
+      const sku = `${baseSKU}-${counter}`
+      const barcode = batchVariant.baseBarcode
+        ? `${batchVariant.baseBarcode}-${counter}`
+        : `BAR${sku}`
+      counter++
+      return {
+        id: `temp-${Date.now()}-${counter}`,
+        attributes: attrs,
+        sku,
+        barcode,
+        price: batchVariant.price,
+        stock: batchVariant.stock
+      }
+    })
 
-    // Check for duplicate variants
-    const existingCombos = new Set(
-      formData.variants.map(v => `${v.color || ''}-${v.size || ''}`)
+    // Check for duplicate attribute combinations
+    const existingKeys = new Set(
+      formData.variants.map(v =>
+        v.attributes.map(a => `${a.name}:${a.value}`).sort().join('|')
+      )
     )
-    const duplicates = newVariants.filter(v => 
-      existingCombos.has(`${v.color || ''}-${v.size || ''}`)
+    const duplicates = newVariants.filter(v =>
+      existingKeys.has(v.attributes.map(a => `${a.name}:${a.value}`).sort().join('|'))
     )
 
     if (duplicates.length > 0) {
@@ -604,15 +560,13 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
       return
     }
 
-    // Check for global barcode uniqueness for all generated barcodes
+    // Check for global barcode uniqueness
     try {
       for (const variant of newVariants) {
-        if (variant.barcode) {
-          const existingProduct = await window.api.inventory.searchByBarcode(variant.barcode)
-          if (existingProduct && existingProduct.id !== productId) {
-            toast.error(`Barcode "${variant.barcode}" is already used by another product: ${existingProduct.name}`)
-            return
-          }
+        const existingProduct = await window.api.inventory.searchByBarcode(variant.barcode)
+        if (existingProduct && existingProduct.id !== product?.id) {
+          toast.error(`Barcode "${variant.barcode}" is already used by another product: ${existingProduct.name}`)
+          return
         }
       }
     } catch (error) {
@@ -629,15 +583,12 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
 
     // Reset batch form
     setBatchVariant({
-      colors: [],
-      sizes: [],
+      attributes: [],
       baseSKU: '',
       baseBarcode: '',
       price: 0,
       stock: 0
     })
-    setColorInput('')
-    setSizeInput('')
 
     toast.success(`${newVariants.length} variants created successfully`)
   }
@@ -674,12 +625,11 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         storeId: formData.storeId || undefined, // Include storeId
         images: formData.images,
         variants: formData.hasVariants ? formData.variants.map(v => ({
-          color: v.color,
-          size: v.size,
+          attributes: v.attributes,
           sku: v.sku,
           barcode: v.barcode,
           price: v.price,
-          cost: PRODUCT_DEFAULTS.calculateDefaultCost(v.price), // Default cost from constant
+          cost: PRODUCT_DEFAULTS.calculateDefaultCost(v.price),
           stock: v.stock
         })) : [],
         baseStock: formData.baseStock
@@ -730,14 +680,10 @@ export default function ProductFormWrapper({ product, onSuccess, onCancel }: Pro
         setBatchMode={setBatchMode}
         batchVariant={batchVariant}
         setBatchVariant={setBatchVariant}
-        colorInput={colorInput}
-        setColorInput={setColorInput}
-        sizeInput={sizeInput}
-        setSizeInput={setSizeInput}
-        onAddColor={handleAddColor}
-        onAddSize={handleAddSize}
-        onRemoveColor={handleRemoveColor}
-        onRemoveSize={handleRemoveSize}
+        onAddBatchAttribute={handleAddBatchAttribute}
+        onAddAttributeValue={handleAddAttributeValue}
+        onRemoveAttributeValue={handleRemoveAttributeValue}
+        onRemoveBatchAttribute={handleRemoveBatchAttribute}
         onGenerateBatchVariants={handleGenerateBatchVariants}
         isEditMode={!!product}
         onVariantPriceChange={handleVariantPriceChange}

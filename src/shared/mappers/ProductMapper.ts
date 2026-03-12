@@ -74,11 +74,10 @@ export class ProductMapper {
   static toVariantDTO(variant: ProductVariant): VariantResponseDTO {
     return {
       id: variant.id,
-      color: variant.color,
-      size: variant.size,
       sku: variant.sku,
       price: variant.price,
       stock: variant.stock,
+      attributeValues: (variant as any).attributeValues,
       createdAt: variant.createdAt.toISOString(),
       updatedAt: variant.updatedAt.toISOString()
     }
@@ -110,11 +109,10 @@ export class ProductMapper {
       hasVariants: dto.hasVariants,
       storeId: dto.storeId,
       variants: dto.variants?.map(v => ({
-        color: v.color?.trim(),
-        size: v.size?.trim(),
         sku: v.sku.trim().toUpperCase(),
         price: Number(v.price),
-        stock: Number(v.stock)
+        stock: Number(v.stock),
+        attributes: v.attributes
       })),
       images: dto.images?.map(img => ({
         imageData: img.imageData,

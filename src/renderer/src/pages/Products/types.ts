@@ -42,16 +42,13 @@ export interface ProductFormErrors {
 export interface ProductFilters {
   searchQuery: string
   category: string
-  color: string
-  size: string
   store: string
   stockStatus: string
 }
 
 export interface VariantFormData {
-  color: string
-  size: string
   sku: string
   price: number
   stock: number
+  attributes?: { name: string; value: string }[]
 }
