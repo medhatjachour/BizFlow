@@ -216,7 +216,7 @@ export function registerRestaurantHandlers(prisma: any) {
         prisma.menuItem.count({ where: { isAvailable: true } })
       ])
 
-      const statusCounts = tables.reduce<Record<string, number>>((acc, t) => {
+      const statusCounts = tables.reduce((acc: Record<string, number>, t) => {
         acc[t.status] = (acc[t.status] || 0) + 1; return acc
       }, {})
 
