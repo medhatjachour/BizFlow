@@ -128,3 +128,4 @@ export type SettingsTab =
   | 'security' 
   | 'backup'
   | 'archive'
+  | 'modules'

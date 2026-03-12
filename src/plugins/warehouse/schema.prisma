@@ -1,0 +1,81 @@
+// ─── Warehouse Module ────────────────────────────────────────────────────────
+// Module: warehouse
+// Use Case: Multi-location inventory with bin/location tracking and transfers
+//
+// NOTE: Merged into prisma/merged.prisma at build time via merge-schemas.js
+// ─────────────────────────────────────────────────────────────────────────────
+
+model WarehouseLocation {
+  id            String              @id @default(uuid())
+  name          String
+  code          String              @unique
+  type          String              @default("zone") // zone | aisle | shelf | bin
+  parentId      String?
+  parent        WarehouseLocation?  @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      WarehouseLocation[] @relation("LocationHierarchy")
+  notes         String?
+  isActive      Boolean             @default(true)
+  stockEntries  WarehouseStock[]
+  transfersFrom StockTransfer[]     @relation("TransferFrom")
+  transfersTo   StockTransfer[]     @relation("TransferTo")
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([code])
+  @@index([parentId])
+  @@index([type])
+}
+
+model WarehouseStock {
+  id          String            @id @default(uuid())
+  locationId  String
+  location    WarehouseLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  productId   String?           // Optional link to core Product
+  productName String            // Snapshot name
+  sku         String?
+  quantity    Float             @default(0)
+  unit        String            @default("pcs")
+  minQuantity Float             @default(0)
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([locationId, productName])
+  @@index([locationId])
+  @@index([productId])
+}
+
+model StockTransfer {
+  id             String            @id @default(uuid())
+  fromLocationId String
+  fromLocation   WarehouseLocation @relation("TransferFrom", fields: [fromLocationId], references: [id], onDelete: Cascade)
+  toLocationId   String
+  toLocation     WarehouseLocation @relation("TransferTo", fields: [toLocationId], references: [id], onDelete: Cascade)
+  status         String            @default("draft") // draft | in_transit | completed | cancelled
+  notes          String?
+  transferDate   DateTime          @default(now())
+  completedAt    DateTime?
+  items          StockTransferItem[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([fromLocationId])
+  @@index([toLocationId])
+  @@index([status])
+  @@index([transferDate])
+}
+
+model StockTransferItem {
+  id          String        @id @default(uuid())
+  transferId  String
+  transfer    StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  productName String
+  sku         String?
+  quantity    Float
+  unit        String        @default("pcs")
+  notes       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([transferId])
+}

@@ -34,9 +34,25 @@ import { setupPurchaseOrderHandlers } from './purchase-orders.handlers'
 import { registerReceiptHandlers as registerThermalReceiptHandlers } from './receipt.handlers'
 import { registerBarcodePrintHandlers } from './barcode.handlers'
 import { registerLogHandlers } from './log.handlers'
+import { registerModuleHandlers } from './module.handlers'
+import type { IPlugin } from '../../../shared/interfaces/IPlugin'
+import BakeryPlugin from '../../../plugins/bakery/index'
+import RestaurantPlugin from '../../../plugins/restaurant/index'
+import WarehousePlugin from '../../../plugins/warehouse/index'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Database')
+
+/**
+ * Plugins that were compiled into this build (controlled by ENABLED_MODULES
+ * at build time via electron.vite.config.ts define flags).
+ * Dead-code elimination removes entries for disabled plugins.
+ */
+const ALL_PLUGINS: IPlugin[] = [
+  ...(__PLUGIN_BAKERY__     ? [BakeryPlugin]     : []),
+  ...(__PLUGIN_RESTAURANT__ ? [RestaurantPlugin] : []),
+  ...(__PLUGIN_WAREHOUSE__  ? [WarehousePlugin]  : []),
+]
 
 // Initialize Prisma client
 let isSeeded = false
@@ -171,6 +187,22 @@ export function registerAllHandlers() {
   
   // Register log bridge (renderer → main log file)
   registerLogHandlers()
+
+  // Register module feature-flag handlers
+  registerModuleHandlers()
+
+  // ── Plugin Handlers ──────────────────────────────────────────────────────
+  // Only plugins compiled into this build (via ENABLED_MODULES) are in
+  // ALL_PLUGINS.  Each plugin ensures its DB tables exist then registers
+  // its ipcMain.handle channels.
+  const dbPath = getDatabasePath()
+  const dbUrl = `file:${dbPath}`
+  for (const plugin of ALL_PLUGINS) {
+    plugin
+      .ensureSchema(prisma, dbUrl, process.cwd())
+      .catch((e) => log.error(`[${plugin.id}] Schema migration failed:`, e))
+    plugin.registerHandlers(prisma)
+  }
 
   log.info('✅ All IPC handlers registered successfully')
 }

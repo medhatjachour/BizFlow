@@ -3,6 +3,8 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 import SkipToContent from '../ui/SkipToContent'
 import KeyboardShortcutsHelp from '../KeyboardShortcutsHelp'
+import { useModuleEnabled } from '../../hooks/useModuleEnabled'
+import { MODULE_IDS } from '@/shared/modules'
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -20,7 +22,10 @@ import {
   Menu,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChefHat,
+  UtensilsCrossed,
+  Warehouse as WarehouseIcon
 } from 'lucide-react'
 
 interface NavItem {
@@ -129,6 +134,36 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const { t } = useLanguage()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
+  const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
+  const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
+
+  // Build dynamic nav — inject module items after Employees
+  const navItems: NavItem[] = [
+    ...navigation.slice(0, navigation.findIndex(n => n.href === '/employees') + 1),
+    ...(__PLUGIN_BAKERY__ && bakeryEnabled ? [{
+      name: 'Bakery',
+      translationKey: 'bakery',
+      href: '/bakery',
+      icon: ChefHat,
+      roles: ['admin', 'manager', 'inventory']
+    }] : []),
+    ...(__PLUGIN_RESTAURANT__ && restaurantEnabled ? [{
+      name: 'Restaurant',
+      translationKey: 'restaurant',
+      href: '/restaurant',
+      icon: UtensilsCrossed,
+      roles: ['admin', 'manager', 'sales']
+    }] : []),
+    ...(__PLUGIN_WAREHOUSE__ && warehouseEnabled ? [{
+      name: 'Warehouse',
+      translationKey: 'warehouse',
+      href: '/warehouse',
+      icon: WarehouseIcon,
+      roles: ['admin', 'manager', 'inventory']
+    }] : []),
+    ...navigation.slice(navigation.findIndex(n => n.href === '/employees') + 1)
+  ]
 
   const handleLogout = async () => {
     navigate('/login')
@@ -200,7 +235,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-3 overflow-y-auto" aria-label="Main navigation">
-          {navigation
+          {navItems
             .filter(item => item.roles.includes(userRole))
             .map(item => {
               const isActive = location.pathname === item.href
@@ -281,7 +316,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {t((navigation.find(item => item.href === location.pathname)?.translationKey || 'dashboard') as any)}
+                  {t((navItems.find(item => item.href === location.pathname)?.translationKey || 'dashboard') as any)}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
                   Point of Sale Management System

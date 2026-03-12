@@ -1,0 +1,15 @@
+import { registerRecipeHandlers } from './recipes'
+import { registerProductionHandlers } from './production'
+import { registerPantryHandlers } from './pantry'
+import { registerWasteHandlers } from './waste'
+import { registerScheduleHandlers } from './schedule'
+import { registerAnalyticsHandlers } from './analytics'
+
+export function registerBakeryHandlers(prisma: any) {
+  registerRecipeHandlers(prisma)
+  registerProductionHandlers(prisma)
+  registerPantryHandlers(prisma)
+  registerWasteHandlers(prisma)
+  registerScheduleHandlers(prisma)
+  registerAnalyticsHandlers(prisma)
+}

@@ -317,6 +317,78 @@ interface API {
     error: (message: string, data?: unknown) => Promise<void>
     debug: (message: string, data?: unknown) => Promise<void>
   }
+  modules: {
+    getEnabled: () => Promise<string[]>
+    setEnabled: (moduleId: string, enabled: boolean) => Promise<void>
+  }
+  // ─── Plugin APIs ────────────────────────────────────────────────────────
+  bakery: {
+    getRecipes: () => Promise<any>
+    createRecipe: (data: any) => Promise<any>
+    updateRecipe: (data: any) => Promise<any>
+    deleteRecipe: (id: string) => Promise<any>
+    getProductionBatches: (options?: any) => Promise<any>
+    createProductionBatch: (data: any) => Promise<any>
+    deleteProductionBatch: (id: string) => Promise<any>
+    getAvailableBatches: () => Promise<any>
+    getPantry: () => Promise<any>
+    upsertPantryIngredient: (data: any) => Promise<any>
+    adjustPantryStock: (data: any) => Promise<any>
+    deletePantryIngredient: (id: string) => Promise<any>
+    markPantryReordered: (data: any) => Promise<any>
+    getWasteLogs: (options?: any) => Promise<any>
+    createWasteLog: (data: any) => Promise<any>
+    deleteWasteLog: (id: string) => Promise<any>
+    getWasteSummary: (options?: any) => Promise<any>
+    getSchedule: (options?: any) => Promise<any>
+    createScheduleItem: (data: any) => Promise<any>
+    updateScheduleItem: (data: any) => Promise<any>
+    deleteScheduleItem: (id: string) => Promise<any>
+    getDailyOverview: () => Promise<any>
+    getProfitLoss: (options: any) => Promise<any>
+    getProfitLossTrend: (options?: any) => Promise<any>
+    getExpiringBatches: (daysAhead?: number) => Promise<any>
+    getProductionRequirements: (data: any) => Promise<any>
+    getEndOfDaySuggestion: () => Promise<any>
+  }
+  restaurant: {
+    getTables: (options?: any) => Promise<any>
+    createTable: (data: any) => Promise<any>
+    updateTable: (data: any) => Promise<any>
+    deleteTable: (id: string) => Promise<any>
+    getReservations: (options?: any) => Promise<any>
+    createReservation: (data: any) => Promise<any>
+    updateReservation: (data: any) => Promise<any>
+    deleteReservation: (id: string) => Promise<any>
+    getMenuItems: (options?: any) => Promise<any>
+    createMenuItem: (data: any) => Promise<any>
+    updateMenuItem: (data: any) => Promise<any>
+    deleteMenuItem: (id: string) => Promise<any>
+    getOrders: (options?: any) => Promise<any>
+    getOrder: (id: string) => Promise<any>
+    openOrder: (data: any) => Promise<any>
+    addOrderItem: (data: any) => Promise<any>
+    removeOrderItem: (id: string) => Promise<any>
+    updateOrderItemStatus: (data: any) => Promise<any>
+    closeOrder: (data: any) => Promise<any>
+    getOverview: () => Promise<any>
+  }
+  warehouse: {
+    getLocations: (options?: any) => Promise<any>
+    createLocation: (data: any) => Promise<any>
+    updateLocation: (data: any) => Promise<any>
+    deleteLocation: (id: string) => Promise<any>
+    getStock: (options?: any) => Promise<any>
+    upsertStock: (data: any) => Promise<any>
+    adjustStock: (data: any) => Promise<any>
+    deleteStock: (id: string) => Promise<any>
+    getLowStock: () => Promise<any>
+    getTransfers: (options?: any) => Promise<any>
+    createTransfer: (data: any) => Promise<any>
+    updateTransferStatus: (data: any) => Promise<any>
+    deleteTransfer: (id: string) => Promise<any>
+    getOverview: () => Promise<any>
+  }
 }
 
 declare global {

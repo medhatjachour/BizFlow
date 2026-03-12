@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import log from 'electron-log/preload'
+import { bakeryPreload } from '../plugins/bakery/preload'
+import { restaurantPreload } from '../plugins/restaurant/preload'
+import { warehousePreload } from '../plugins/warehouse/preload'
 
 // Custom APIs for renderer
 const api = {
@@ -429,7 +432,19 @@ const api = {
     warn:  (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'warn',  message, data }),
     error: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'error', message, data }),
     debug: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'debug', message, data })
-  }
+  },
+  // Module feature flags
+  modules: {
+    getEnabled: (): Promise<string[]> => ipcRenderer.invoke('module:getEnabled'),
+    setEnabled: (moduleId: string, enabled: boolean): Promise<void> =>
+      ipcRenderer.invoke('module:setEnabled', { moduleId, enabled })
+  },
+  // ─── Plugin APIs ──────────────────────────────────────────────────────────
+  // Each plugin exposes its IPC bindings under its own namespace.
+  // Adding a plugin: import its preload and add it here.
+  bakery: bakeryPreload,
+  restaurant: restaurantPreload,
+  warehouse: warehousePreload
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

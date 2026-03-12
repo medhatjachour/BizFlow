@@ -7,14 +7,16 @@
  */
 
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { Suspense, lazy, ReactNode } from 'react'
-import { useState } from 'react'
+import { Suspense, lazy, ReactNode, useState } from 'react'
+import { useModuleEnabled } from './hooks/useModuleEnabled'
+import { MODULE_IDS } from '@/shared/modules'
 import RootLayout from './components/layout/RootLayout'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { DisplaySettingsProvider } from './contexts/DisplaySettingsContext'
+import { ModuleProvider } from './contexts/ModuleContext'
 import PageLoader from './components/ui/PageLoader'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import CommandPalette from './components/CommandPalette'
@@ -37,6 +39,9 @@ const Customers    = lazy(() => import('./pages/Customers/Customers'))
 const CustomerProfile = lazy(() => import('./pages/Customers/CustomerProfile'))
 const Reports      = lazy(() => import('./pages/Reports/Reports'))
 const Installments = lazy(() => import('./pages/Installments'))
+const Bakery       = __PLUGIN_BAKERY__ ? lazy(() => import('./plugins/bakery/pages/index')) : null
+const Restaurant   = __PLUGIN_RESTAURANT__ ? lazy(() => import('./plugins/restaurant/pages/index')) : null
+const Warehouse    = __PLUGIN_WAREHOUSE__ ? lazy(() => import('./plugins/warehouse/pages/index')) : null
 
 // ------------------------------------------------------------------
 // Per-route error boundary — wraps each page in isolation so one
@@ -74,6 +79,9 @@ function RouteErrorBoundary({ name, children }: { name: string; children: ReactN
 
 function AppContent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
+  const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
+  const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
 
   // Global keyboard shortcuts
   useKeyboardShortcuts([
@@ -234,6 +242,42 @@ function AppContent() {
               </RequireAuth>
             }
           />
+          {__PLUGIN_BAKERY__ && bakeryEnabled && Bakery && (
+            <Route
+              path="/bakery"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Bakery"><Bakery /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_RESTAURANT__ && restaurantEnabled && Restaurant && (
+            <Route
+              path="/restaurant"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Restaurant"><Restaurant /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_WAREHOUSE__ && warehouseEnabled && Warehouse && (
+            <Route
+              path="/warehouse"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Warehouse"><Warehouse /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
          
@@ -246,19 +290,21 @@ function AppContent() {
 export default function AppRoutes() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <LanguageProvider>
-          <DisplaySettingsProvider>
-            <ToastProvider>
-              <AuthProvider>
-                <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-                  <AppContent />
-                </HashRouter>
-              </AuthProvider>
-            </ToastProvider>
-          </DisplaySettingsProvider>
-        </LanguageProvider>
-      </ThemeProvider>
+      <ModuleProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <DisplaySettingsProvider>
+              <ToastProvider>
+                <AuthProvider>
+                  <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+                    <AppContent />
+                  </HashRouter>
+                </AuthProvider>
+              </ToastProvider>
+            </DisplaySettingsProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </ModuleProvider>
     </ErrorBoundary>
   )
 }
