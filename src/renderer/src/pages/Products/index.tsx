@@ -567,7 +567,7 @@ export default function Products() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-medium">{(variant as any).attributeValues?.map((av: any) => av.value).join(' / ') || variant.sku}</span>
+                            <span className="font-medium">{(variant as any).attributeValues?.map((av: any) => `${av.attribute?.name}: ${av.value}`).join(' / ') || variant.sku}</span>
                             <span className="text-sm text-slate-500">{t('sku')}: {variant.sku}</span>
                           </div>
                           {variant.barcode && (

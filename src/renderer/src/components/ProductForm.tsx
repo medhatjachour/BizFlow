@@ -484,6 +484,9 @@ export default function ProductForm({
                     onChange={(e) => setAttrValueInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && attrNameInput.trim() && attrValueInput.trim()) {
+                        if (newVariant.attributes.some(a => a.name.toLowerCase() === attrNameInput.trim().toLowerCase())) {
+                          return
+                        }
                         setNewVariant({ ...newVariant, attributes: [...newVariant.attributes, { name: attrNameInput.trim(), value: attrValueInput.trim() }] })
                         setAttrNameInput('')
                         setAttrValueInput('')
@@ -496,6 +499,9 @@ export default function ProductForm({
                     type="button"
                     onClick={() => {
                       if (attrNameInput.trim() && attrValueInput.trim()) {
+                        if (newVariant.attributes.some(a => a.name.toLowerCase() === attrNameInput.trim().toLowerCase())) {
+                          return
+                        }
                         setNewVariant({ ...newVariant, attributes: [...newVariant.attributes, { name: attrNameInput.trim(), value: attrValueInput.trim() }] })
                         setAttrNameInput('')
                         setAttrValueInput('')

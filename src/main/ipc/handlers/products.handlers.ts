@@ -41,7 +41,21 @@ async function createVariantAttributes(
 ): Promise<void> {
   if (!attributes || attributes.length === 0) return
 
+  // Deduplicate by name (last value wins) to prevent unique constraint violations
+  const seen = new Map<string, string>()
   for (const attr of attributes) {
+    seen.set(attr.name.toLowerCase(), attr.value)
+  }
+  const deduped = attributes.filter(attr => {
+    const key = attr.name.toLowerCase()
+    if (seen.has(key)) {
+      seen.delete(key)
+      return true
+    }
+    return false
+  })
+
+  for (const attr of deduped) {
     // Find or create the attribute definition on the product
     let prodAttr = await tx.productAttribute.findFirst({
       where: { productId, name: attr.name }
