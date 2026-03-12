@@ -144,8 +144,9 @@ export function registerStockMovementHandlers(prisma: any) {
           variant: {
             select: {
               sku: true,
-              color: true,
-              size: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              },
               product: {
                 select: {
                   name: true
@@ -204,8 +205,9 @@ export function registerStockMovementHandlers(prisma: any) {
           variant: {
             select: {
               sku: true,
-              color: true,
-              size: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              },
               product: {
                 select: {
                   name: true
@@ -256,8 +258,9 @@ export function registerStockMovementHandlers(prisma: any) {
           variant: {
             select: {
               sku: true,
-              color: true,
-              size: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              },
               stock: true,
               product: {
                 select: {

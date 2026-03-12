@@ -13,8 +13,6 @@ interface ProductFiltersProps {
   onFiltersChange: (filters: Partial<Filters>) => void
   onClearFilters: () => void
   categories: string[]
-  colors: string[]
-  sizes: string[]
   stores: Array<{ id: string; name: string }>
   showAdvanced: boolean
   onToggleAdvanced: () => void
@@ -25,8 +23,6 @@ function ProductFilters({
   onFiltersChange,
   onClearFilters,
   categories,
-  colors,
-  sizes,
   stores,
   showAdvanced,
   onToggleAdvanced
@@ -54,7 +50,7 @@ function ProductFilters({
           <Filter className="w-4 h-4" />
           {t('filters')}
         </button>
-        {(filters.category || filters.color || filters.size || filters.store || filters.stockStatus) && (
+        {(filters.category || filters.store || filters.stockStatus) && (
           <button
             onClick={onClearFilters}
             className="px-4 py-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors flex items-center gap-2"
@@ -67,7 +63,7 @@ function ProductFilters({
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               {t('category')}
@@ -97,38 +93,6 @@ function ProductFilters({
               <option value="in-stock">{t('inStock')}</option>
               <option value="low-stock">{t('lowStock')} (≤10)</option>
               <option value="out-of-stock">{t('outOfStock')}</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('color')}
-            </label>
-            <select
-              value={filters.color}
-              onChange={(e) => onFiltersChange({ color: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-            >
-              <option value="">{t('allColors')}</option>
-              {colors.map(color => (
-                <option key={color} value={color}>{color}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('size')}
-            </label>
-            <select
-              value={filters.size}
-              onChange={(e) => onFiltersChange({ size: e.target.value })}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-            >
-              <option value="">{t('allSizes')}</option>
-              {sizes.map(size => (
-                <option key={size} value={size}>{size}</option>
-              ))}
             </select>
           </div>
 

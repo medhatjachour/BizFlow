@@ -178,7 +178,11 @@ export function registerReportsHandlers(prisma: any) {
         },
         include: {
           category: true,
-          variants: true,
+          variants: {
+            include: {
+              attributeValues: { include: { attribute: { select: { name: true } } } }
+            }
+          },
           images: {
             take: 1,
             orderBy: { order: 'asc' }
@@ -216,8 +220,7 @@ export function registerReportsHandlers(prisma: any) {
             hasVariants: true,
             variants: product.variants.map(v => ({
               sku: v.sku,
-              color: v.color,
-              size: v.size,
+              attributeValues: v.attributeValues,
               stock: v.stock,
               price: v.price
             }))

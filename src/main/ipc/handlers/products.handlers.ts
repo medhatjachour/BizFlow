@@ -19,6 +19,45 @@ import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Products')
 
+/** Attribute include clause reused across queries */
+const ATTR_INCLUDE = {
+  attributeValues: {
+    include: {
+      attribute: { select: { name: true } }
+    }
+  }
+} as const
+
+/**
+ * Ensure ProductAttribute records exist for the given names on a product,
+ * then create VariantAttributeValue rows for the variant.
+ * Must be called inside a Prisma transaction.
+ */
+async function createVariantAttributes(
+  tx: any,
+  productId: string,
+  variantId: string,
+  attributes: { name: string; value: string }[]
+): Promise<void> {
+  if (!attributes || attributes.length === 0) return
+
+  for (const attr of attributes) {
+    // Find or create the attribute definition on the product
+    let prodAttr = await tx.productAttribute.findFirst({
+      where: { productId, name: attr.name }
+    })
+    if (!prodAttr) {
+      prodAttr = await tx.productAttribute.create({
+        data: { productId, name: attr.name, position: 0 }
+      })
+    }
+    // Create the value for this variant
+    await tx.variantAttributeValue.create({
+      data: { variantId, attributeId: prodAttr.id, value: attr.value }
+    })
+  }
+}
+
 export function registerProductsHandlers(prisma: any) {
   /**
    * Get all products - OPTIMIZED for large datasets
@@ -65,12 +104,13 @@ export function registerProductsHandlers(prisma: any) {
               id: true,
               sku: true,
               barcode: true,
-              color: true,
-              size: true,
               price: true,
               stock: true,
               createdAt: true,
-              updatedAt: true
+              updatedAt: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              }
             }
           },
           store: {
@@ -132,15 +172,16 @@ export function registerProductsHandlers(prisma: any) {
             select: {
               id: true,
               productId: true,
-              color: true,
-              size: true,
               sku: true,
               barcode: true,
               price: true,
               cost: true,
               stock: true,
               createdAt: true,
-              updatedAt: true
+              updatedAt: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              }
             }
           },
           store: true,
@@ -182,15 +223,16 @@ export function registerProductsHandlers(prisma: any) {
         select: {
           id: true,
           productId: true,
-          color: true,
-          size: true,
           sku: true,
           barcode: true,
           price: true,
           cost: true,
           stock: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          attributeValues: {
+            include: { attribute: { select: { name: true } } }
+          }
         }
       })
 
@@ -276,42 +318,43 @@ export function registerProductsHandlers(prisma: any) {
 
       // Use transaction for atomic operation
       const newProduct = await prisma.$transaction(async (tx: any) => {
-        return await tx.product.create({
+        // Create the product first (without variants so we have the product ID)
+        const created = await tx.product.create({
           data: {
             ...product,
-            categoryId, // Use the resolved categoryId
+            categoryId,
             images: imageFilenames.length ? {
-              create: imageFilenames.map(({ filename, order }) => ({
-                filename,
-                order
-              }))
-            } : undefined,
-            variants: variants?.length ? {
-              create: variants.map((v: any) => ({
-                color: v.color,
-                size: v.size,
-                sku: v.sku,
-                barcode: v.barcode || undefined,
-                price: v.price,
-                cost: v.cost || undefined,
-                stock: v.stock
-              }))
-            } : product.hasVariants === false && baseStock !== undefined ? {
-              // Auto-create default variant for simple products
-              create: [{
-                sku: product.baseSKU,
-                barcode: product.baseBarcode || undefined,
-                color: 'Default',
-                size: 'Default',
-                price: product.basePrice,
-                cost: product.baseCost || undefined,
-                stock: baseStock
-              }]
+              create: imageFilenames.map(({ filename, order }) => ({ filename, order }))
             } : undefined
-          },
+          }
+        })
+
+        // Create variants with attribute values
+        const variantList: any[] = variants?.length
+          ? variants
+          : product.hasVariants === false && baseStock !== undefined
+          ? [{ sku: product.baseSKU, barcode: product.baseBarcode || undefined, price: product.basePrice, cost: product.baseCost || undefined, stock: baseStock, attributes: [] }]
+          : []
+
+        for (const v of variantList) {
+          const newVariant = await tx.productVariant.create({
+            data: {
+              productId: created.id,
+              sku: v.sku,
+              barcode: v.barcode || undefined,
+              price: v.price,
+              cost: v.cost || undefined,
+              stock: v.stock
+            }
+          })
+          await createVariantAttributes(tx, created.id, newVariant.id, v.attributes || [])
+        }
+
+        return await tx.product.findUnique({
+          where: { id: created.id },
           include: {
             images: true,
-            variants: true,
+            variants: { include: ATTR_INCLUDE },
             store: true,
             category: true
           }
@@ -461,130 +504,77 @@ export function registerProductsHandlers(prisma: any) {
 
       // Use transaction for atomic operation
       const updated = await prisma.$transaction(async (tx: any) => {
-        // Get existing variants to track stock changes
+        // Get existing variants to track changes
         const existingVariants = await tx.productVariant.findMany({
           where: { productId: id },
-          select: { id: true, sku: true, stock: true, color: true, size: true, price: true, barcode: true }
+          select: { id: true, sku: true, stock: true, price: true, barcode: true }
         })
         
         // Build map of existing variants by SKU for comparison
-        const existingVariantMap = new Map(existingVariants.map(v => [v.sku, v]))
+        const existingVariantMap = new Map(existingVariants.map((v: any) => [v.sku, v]))
         
         // Delete existing images from database
         await tx.productImage.deleteMany({ where: { productId: id } })
         
-        // Handle variants
-        let variantData: any = undefined
-        
         if (variants?.length) {
-          // Process each variant
-          const variantsToCreate: any[] = []
-          const variantsToUpdate: any[] = []
-          const skusToKeep = new Set<string>()
-          
-          for (const v of variants) {
-            skusToKeep.add(v.sku)
-            const existing = existingVariantMap.get(v.sku)
-            
-            if (existing) {
-              // Update existing variant
-              const updates: any = {}
-              let needsUpdate = false
-              
-              // Check for changes (excluding stock - stock is only modified via stock movement dialog)
-              if (v.color !== (existing as any).color) { updates.color = v.color; needsUpdate = true }
-              if (v.size !== (existing as any).size) { updates.size = v.size; needsUpdate = true }
-              if (v.price !== (existing as any).price) { updates.price = v.price; needsUpdate = true }
-              if (v.barcode !== (existing as any).barcode) { updates.barcode = v.barcode; needsUpdate = true }
-              // Stock is NOT updated here - use stock movement dialog to change stock
-              
-              if (needsUpdate) {
-                variantsToUpdate.push({ sku: v.sku, updates })
-              }
-            } else {
-              // New variant
-              variantsToCreate.push({
-                color: v.color,
-                size: v.size,
-                sku: v.sku,
-                barcode: v.barcode,
-                price: v.price,
-                stock: v.stock
-              })
-            }
-          }
-          
-          // Delete variants that are no longer present
+          const skusToKeep = new Set<string>(variants.map((v: any) => v.sku))
+
+          // Delete variants no longer present (cascade removes attribute values)
           const skusToDelete = existingVariants
-            .filter(v => !skusToKeep.has(v.sku))
-            .map(v => v.sku)
-          
+            .filter((v: any) => !skusToKeep.has(v.sku))
+            .map((v: any) => v.sku)
           if (skusToDelete.length > 0) {
-            await tx.productVariant.deleteMany({
-              where: { productId: id, sku: { in: skusToDelete } }
-            })
+            await tx.productVariant.deleteMany({ where: { productId: id, sku: { in: skusToDelete } } })
           }
-          
-          // Apply variant updates
-          for (const { sku, updates } of variantsToUpdate) {
-            await tx.productVariant.updateMany({
-              where: { productId: id, sku },
-              data: updates
-            })
-          }
-          
-          // Create new variants
-          if (variantsToCreate.length > 0) {
-            variantData = { create: variantsToCreate }
+
+          for (const v of variants) {
+            const existing = existingVariantMap.get(v.sku) as any
+            if (existing) {
+              // Update scalar fields if changed
+              const updates: any = {}
+              if (v.price !== existing.price) updates.price = v.price
+              if (v.barcode !== existing.barcode) updates.barcode = v.barcode
+              if (Object.keys(updates).length > 0) {
+                await tx.productVariant.updateMany({ where: { productId: id, sku: v.sku }, data: updates })
+              }
+              // Refresh attribute values: delete old, recreate new
+              await tx.variantAttributeValue.deleteMany({ where: { variantId: existing.id } })
+              await createVariantAttributes(tx, id, existing.id, v.attributes || [])
+            } else {
+              // Create new variant
+              const newV = await tx.productVariant.create({
+                data: { productId: id, sku: v.sku, barcode: v.barcode || undefined, price: v.price, stock: v.stock }
+              })
+              await createVariantAttributes(tx, id, newV.id, v.attributes || [])
+            }
           }
         } else if (product.hasVariants === false && baseStock !== undefined) {
-          // Handle simple product (no variants) - check if default variant exists
-          const defaultVariant = existingVariants.find(v => v.sku === product.baseSKU)
-          
+          const defaultVariant = existingVariants.find((v: any) => v.sku === product.baseSKU) as any
           if (defaultVariant) {
-            // Update default variant (excluding stock - use stock movement dialog)
-            // Also update barcode and cost if product has them
             await tx.productVariant.updateMany({
               where: { productId: id, sku: product.baseSKU },
-              data: { 
-                price: product.basePrice,
-                barcode: product.baseBarcode || undefined,
-                cost: product.baseCost || undefined
-              }
+              data: { price: product.basePrice, barcode: product.baseBarcode || undefined, cost: product.baseCost || undefined }
             })
-          } else if (!defaultVariant) {
-            // Create default variant
-            variantData = {
-              create: [{
-                sku: product.baseSKU,
-                barcode: product.baseBarcode || undefined,
-                color: 'Default',
-                size: 'Default',
-                price: product.basePrice,
-                cost: product.baseCost || undefined,
-                stock: baseStock
-              }]
-            }
+          } else {
+            await tx.productVariant.create({
+              data: { productId: id, sku: product.baseSKU, barcode: product.baseBarcode || undefined, price: product.basePrice, cost: product.baseCost || undefined, stock: baseStock }
+            })
           }
         }
         
-        // Update product with new data
+        // Update product scalar fields + images
         return await tx.product.update({
           where: { id },
           data: {
             ...product,
-            categoryId, // Use the resolved categoryId
+            categoryId,
             images: imageFilenames.length ? {
-              create: imageFilenames.map(({ filename, order }) => ({
-                filename,
-                order
-              }))
-            } : undefined,
-            variants: variantData
+              create: imageFilenames.map(({ filename, order }) => ({ filename, order }))
+            } : undefined
           },
           include: {
             images: true,
-            variants: true,
+            variants: { include: ATTR_INCLUDE },
             store: true,
             category: true
           }
@@ -868,11 +858,12 @@ export function registerProductsHandlers(prisma: any) {
             variants: {
               select: {
                 id: true,
-                color: true,
-                size: true,
                 sku: true,
                 price: true,
-                stock: true
+                stock: true,
+                attributeValues: {
+                  include: { attribute: { select: { name: true } } }
+                }
               },
               orderBy: { createdAt: 'asc' }
             }
@@ -942,34 +933,20 @@ export function registerProductsHandlers(prisma: any) {
       }
 
       // Use transaction to create all products atomically
-      const results = await prisma.$transaction(
-        productsData.map((productData) => {
+      const results: any[] = []
+      await prisma.$transaction(async (tx: any) => {
+        for (const productData of productsData) {
           const { images, variants, baseStock, ...product } = productData
-          
-          return prisma.product.create({
-            data: {
-              ...product,
-              images: images?.length ? {
-                create: images.map((img: string, idx: number) => ({
-                  imageData: img,
-                  order: idx
-                }))
-              } : undefined,
-              variants: variants?.length ? {
-                create: variants.map((v: any) => ({
-                  color: v.color,
-                  size: v.size,
-                  sku: v.sku,
-                  barcode: v.barcode || undefined,
-                  price: v.price,
-                  cost: v.cost || undefined,
-                  stock: v.stock
-                }))
-              } : undefined
-            }
-          })
-        })
-      )
+          const created = await tx.product.create({ data: { ...product } })
+          for (const v of variants || []) {
+            const newV = await tx.productVariant.create({
+              data: { productId: created.id, sku: v.sku, barcode: v.barcode || undefined, price: v.price, cost: v.cost || undefined, stock: v.stock }
+            })
+            await createVariantAttributes(tx, created.id, newV.id, v.attributes || [])
+          }
+          results.push(created)
+        }
+      })
 
       // Invalidate caches
       cacheService.invalidatePattern('products:*')

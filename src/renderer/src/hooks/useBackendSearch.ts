@@ -29,8 +29,8 @@ interface SearchFilters {
   stockStatus?: ('out' | 'low' | 'normal' | 'high')[]
   priceRange?: { min: number; max: number }
   stockRange?: { min: number; max: number }
-  colors?: string[]
-  sizes?: string[]
+  colors?: never
+  sizes?: never
   storeId?: string
 }
 

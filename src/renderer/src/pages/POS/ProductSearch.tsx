@@ -30,8 +30,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
   
   // Filter states
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
-  const [selectedColors, setSelectedColors] = useState<string[]>([])
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([])
+  // Color/size filter state removed (EAV — handled dynamically if needed)
   const [selectedStoreId, setSelectedStoreId] = useState<string>('')
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'low-stock'>('in-stock')
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 10000 })
@@ -70,10 +69,10 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
                    stockFilter === 'in-stock' ? ['low', 'normal', 'high'] as any : 
                    ['low'] as any,
       priceRange: priceRange.min > 0 || priceRange.max < 10000 ? priceRange : undefined,
-      colors: selectedColors.length > 0 ? selectedColors : undefined,
-      sizes: selectedSizes.length > 0 ? selectedSizes : undefined
+      colors: undefined,
+      sizes: undefined
     }
-  }, [debouncedSearchQuery, isBarcodeQuery, selectedCategoryIds, selectedStoreId, stockFilter, priceRange, selectedColors, selectedSizes])
+  }, [debouncedSearchQuery, isBarcodeQuery, selectedCategoryIds, selectedStoreId, stockFilter, priceRange])
 
   // Memoize sort options - if no sort selected, default to newest first
   const sortOptions = useMemo(() => {
@@ -139,16 +138,12 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
     if (!filterMetadata) {
       return {
         categories: [],
-        colors: [],
-        sizes: [],
         maxPrice: 10000
       }
     }
     
     return {
       categories: (filterMetadata.categories || []).map((cat: any) => cat.name),
-      colors: filterMetadata.colors || [],
-      sizes: filterMetadata.sizes || [],
       maxPrice: filterMetadata.priceRange?.max || 10000
     }
   }, [filterMetadata])
@@ -171,16 +166,14 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
   const clearAllFilters = () => {
     setSearchQuery('')
     setSelectedCategoryIds([])
-    setSelectedColors([])
-    setSelectedSizes([])
     setSelectedStoreId('')
     setStockFilter('in-stock')
     setPriceRange({ min: 0, max: filterOptions.maxPrice })
     setSortBy('name')
   }
 
-  const hasActiveFilters = selectedCategoryIds.length > 0 || selectedColors.length > 0 || 
-                          selectedSizes.length > 0 || selectedStoreId || stockFilter !== 'in-stock' || 
+  const hasActiveFilters = selectedCategoryIds.length > 0 || 
+                          selectedStoreId || stockFilter !== 'in-stock' || 
                           priceRange.min > 0 || priceRange.max < filterOptions.maxPrice
 
   const handleAddToCart = (product: Product, variant?: ProductVariant) => {
@@ -332,49 +325,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
                 </div>
               )}
               
-              {/* Color Filter */}
-              {filterOptions.colors.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                    {t('color')}
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedColors[0] || ''}
-                      onChange={(e) => setSelectedColors(e.target.value ? [e.target.value] : [])}
-                      className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">{t('allColors')}</option>
-                      {filterOptions.colors.map(color => (
-                        <option key={color} value={color}>{color}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
-                  </div>
-                </div>
-              )}
-
-              {/* Size Filter */}
-              {filterOptions.sizes.length > 0 && (
-                <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                    {t('size')}
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedSizes[0] || ''}
-                      onChange={(e) => setSelectedSizes(e.target.value ? [e.target.value] : [])}
-                      className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">{t('allSizes')}</option>
-                      {filterOptions.sizes.map(size => (
-                        <option key={size} value={size}>{size}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
-                  </div>
-                </div>
-              )}
+              {/* Color/Size filters removed — variants now use dynamic EAV attributes */}
 
               {/* Price Range */}
               <div className="sm:col-span-2">
@@ -524,7 +475,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
                     >
                       <div className="flex justify-between items-center gap-2">
                         <span className="truncate flex-1 font-medium text-slate-800 dark:text-slate-200">
-                          {[variant.color, variant.size].filter(Boolean).join(' • ')}
+                          {(variant as any).attributeValues?.map((av: any) => av.value).join(' • ') || variant.sku}
                         </span>
                         <div className="flex items-center justify-between">
                           <span className="font-semibold">${variant.price.toFixed(2)}</span>

@@ -115,15 +115,13 @@ export default function Products() {
   const searchFilters = useMemo(() => ({
     query: debouncedSearch,
     categoryIds: filters.category ? [filters.category] : undefined,
-    colors: filters.color ? [filters.color] : undefined,
-    sizes: filters.size ? [filters.size] : undefined,
     storeId: filters.store || undefined,
     stockStatus: filters.stockStatus ? 
       filters.stockStatus === 'in-stock' ? ['low', 'normal', 'high'] as any :
       filters.stockStatus === 'low-stock' ? ['low'] as any :
       filters.stockStatus === 'out-of-stock' ? ['out'] as any :
       undefined : undefined
-  }), [debouncedSearch, filters.category, filters.color, filters.size, filters.store, filters.stockStatus])
+  }), [debouncedSearch, filters.category, filters.store, filters.stockStatus])
 
   // Memoize sort options
   const searchSort = useMemo(() => ({
@@ -177,17 +175,13 @@ export default function Products() {
     if (!filterMetadata) {
       return {
         categories: [],
-        colors: [],
-        sizes: [],
         stores: []
       }
     }
     
     return {
       categories: (filterMetadata.categories || []).map((cat: any) => cat.name),
-      colors: filterMetadata.colors || [],
-      sizes: filterMetadata.sizes || [],
-      stores: [] // Will be loaded separately
+      stores: []
     }
   }, [filterMetadata])
 
@@ -391,8 +385,6 @@ export default function Products() {
         onFiltersChange={handleFiltersChange}
         onClearFilters={handleClearFilters}
         categories={filterOptions.categories}
-        colors={filterOptions.colors}
-        sizes={filterOptions.sizes}
         stores={stores}
         showAdvanced={showAdvancedFilters}
         onToggleAdvanced={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -575,7 +567,7 @@ export default function Products() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-medium">{variant.color} {variant.size}</span>
+                            <span className="font-medium">{(variant as any).attributeValues?.map((av: any) => av.value).join(' / ') || variant.sku}</span>
                             <span className="text-sm text-slate-500">{t('sku')}: {variant.sku}</span>
                           </div>
                           {variant.barcode && (
@@ -597,7 +589,7 @@ export default function Products() {
                               onClick={() => {
                                 setPrintBarcode({
                                   code: variant.barcode!,
-                                  name: `${selectedProduct.name} - ${variant.color} ${variant.size}`
+                                  name: `${selectedProduct.name} - ${(variant as any).attributeValues?.map((av: any) => av.value).join(' / ') || variant.sku}`
                                 })
                                 setShowPrintDialog(true)
                               }}

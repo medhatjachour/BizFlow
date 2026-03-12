@@ -118,11 +118,16 @@ export function registerInventoryHandlers(prisma: any) {
       const variant = await prisma.productVariant.findUnique({
         where: { barcode: trimmedBarcode },
         include: {
+          attributeValues: { include: { attribute: { select: { name: true } } } },
           product: {
             include: {
               category: true,
               images: true,
-              variants: true // Include all variants for the product
+              variants: {
+                include: {
+                  attributeValues: { include: { attribute: { select: { name: true } } } }
+                }
+              }
             }
           }
         }
@@ -142,8 +147,7 @@ export function registerInventoryHandlers(prisma: any) {
             id: variant.id,
             sku: variant.sku,
             barcode: variant.barcode,
-            color: variant.color,
-            size: variant.size,
+            attributeValues: variant.attributeValues,
             stock: variant.stock,
             price: variant.price,
             cost: variant.cost
@@ -159,7 +163,11 @@ export function registerInventoryHandlers(prisma: any) {
         include: {
           category: true,
           images: true,
-          variants: true
+          variants: {
+            include: {
+              attributeValues: { include: { attribute: { select: { name: true } } } }
+            }
+          }
         }
       })
 
@@ -180,8 +188,7 @@ export function registerInventoryHandlers(prisma: any) {
               id: firstVariant.id,
               sku: firstVariant.sku,
               barcode: firstVariant.barcode,
-              color: firstVariant.color,
-              size: firstVariant.size,
+              attributeValues: firstVariant.attributeValues,
               stock: firstVariant.stock,
               price: firstVariant.price,
               cost: firstVariant.cost

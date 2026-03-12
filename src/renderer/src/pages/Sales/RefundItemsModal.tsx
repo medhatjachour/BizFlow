@@ -21,8 +21,7 @@ type SaleItem = {
     baseSKU: string
   }
   variant?: {
-    size?: string
-    color?: string
+    attributeValues?: { value: string; attribute?: { name: string } }[]
   }
 }
 
@@ -191,8 +190,9 @@ export default function RefundItemsModal({ show, transaction, onClose, onRefund 
                           </h4>
                           <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 dark:text-slate-400">
                             <span>SKU: {item.product?.baseSKU}</span>
-                            {item.variant?.color && <span>Color: {item.variant.color}</span>}
-                            {item.variant?.size && <span>Size: {item.variant.size}</span>}
+                            {item.variant?.attributeValues?.map((av, i) => (
+                              <span key={i}>{av.attribute?.name || ''}: {av.value}</span>
+                            ))}
                           </div>
                         </div>
                         <div className="text-right">

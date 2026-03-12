@@ -4,12 +4,11 @@
 
 export type ProductVariant = {
   id: string
-  color?: string
-  size?: string
   sku: string
   barcode?: string
   price: number
   stock: number
+  attributeValues?: { attributeId: string; value: string; attribute?: { name: string } }[]
 }
 
 export type Product = {

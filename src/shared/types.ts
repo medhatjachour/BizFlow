@@ -50,15 +50,20 @@ export interface Product {
   retailValue?: number
 }
 
+export interface VariantAttributeValue {
+  attributeId: string
+  value: string
+  attribute?: { name: string }
+}
+
 export interface ProductVariant {
   id: string
   productId: string
-  color: string | null
-  size: string | null
   sku: string
   barcode?: string | null
   price: number
   stock: number
+  attributeValues?: VariantAttributeValue[]
   createdAt: Date | string
   updatedAt: Date | string
 }

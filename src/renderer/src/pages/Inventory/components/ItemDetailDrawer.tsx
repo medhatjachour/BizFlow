@@ -55,8 +55,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
               allMovements.push(...movements.map((m: any) => ({
                 ...m,
                 variantInfo: {
-                  color: variant.color,
-                  size: variant.size,
+                  attributeValues: variant.attributeValues,
                   sku: variant.sku
                 }
               })))
@@ -318,7 +317,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <p className="text-sm font-medium text-slate-900 dark:text-white">
-                          {[variant.color, variant.size].filter(Boolean).join(' • ')}
+                          {(variant as any).attributeValues?.map((av: any) => av.value).join(' • ') || variant.sku}
                         </p>
                         <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">SKU: {variant.sku}</p>
                       </div>
@@ -342,7 +341,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          const variantLabel = [variant.color, variant.size].filter(Boolean).join(' • ')
+                          const variantLabel = (variant as any).attributeValues?.map((av: any) => av.value).join(' • ') || variant.sku
                           onAdjustStock(variant.id, item.name, variantLabel, variant.stock)
                         }}
                         className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 
@@ -463,7 +462,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
                                   {/* Variant Badge */}
                                   {movement.variantInfo && (
                                     <span className="text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded">
-                                      {[movement.variantInfo.color, movement.variantInfo.size].filter(Boolean).join(' • ')}
+                                      {movement.variantInfo.attributeValues?.map((av: any) => av.value).join(' • ') || movement.variantInfo.sku}
                                     </span>
                                   )}
                                 </div>

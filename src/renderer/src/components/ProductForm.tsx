@@ -8,8 +8,7 @@ import type { NewStore } from './AddStoreDialog'
 
 type ProductVariant = {
   id: string
-  color?: string
-  size?: string
+  attributes: { name: string; value: string }[]
   sku: string
   barcode?: string
   price: number
@@ -60,7 +59,7 @@ type ProductFormProps = {
   categories: Category[]
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveImage: (index: number) => void
-  newVariant: { color: string; size: string; sku: string; barcode: string; price: number; stock: number }
+  newVariant: { attributes: { name: string; value: string }[]; sku: string; barcode: string; price: number; stock: number }
   setNewVariant: (v: any) => void
   onAddVariant: () => void
   onRemoveVariant: (id: string) => void
@@ -68,22 +67,17 @@ type ProductFormProps = {
   batchMode: boolean
   setBatchMode: (mode: boolean) => void
   batchVariant: {
-    colors: string[]
-    sizes: string[]
+    attributes: { name: string; values: string[] }[]
     baseSKU: string
     baseBarcode: string
     price: number
     stock: number
   }
   setBatchVariant: (v: any) => void
-  colorInput: string
-  setColorInput: (v: string) => void
-  sizeInput: string
-  setSizeInput: (v: string) => void
-  onAddColor: () => void
-  onAddSize: () => void
-  onRemoveColor: (color: string) => void
-  onRemoveSize: (size: string) => void
+  onAddBatchAttribute: (name: string) => void
+  onAddAttributeValue: (attrName: string, value: string) => void
+  onRemoveAttributeValue: (attrName: string, value: string) => void
+  onRemoveBatchAttribute: (name: string) => void
   onGenerateBatchVariants: () => void
   // New props for inline variant editing
   isEditMode?: boolean
@@ -94,6 +88,40 @@ type ProductFormProps = {
   onCategoryCreated?: (category: NewCategory) => void
   /** Called after a new store is created inline so the parent refreshes its list */
   onStoreCreated?: (store: NewStore) => void
+}
+
+/** Small inline input for adding values to a batch attribute */
+function AttrValueInput({ attrName, onAdd }: { attrName: string; onAdd: (name: string, value: string) => void }) {
+  const [val, setVal] = useState('')
+  return (
+    <div className="flex gap-2 mt-1">
+      <input
+        type="text"
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && val.trim()) {
+            onAdd(attrName, val.trim())
+            setVal('')
+          }
+        }}
+        className="input-field flex-1 text-sm py-1"
+        placeholder={`Add value for ${attrName}`}
+      />
+      <button
+        type="button"
+        onClick={() => {
+          if (val.trim()) {
+            onAdd(attrName, val.trim())
+            setVal('')
+          }
+        }}
+        className="px-3 py-1 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+      >
+        <Plus size={14} />
+      </button>
+    </div>
+  )
 }
 
 export default function ProductForm({
@@ -112,14 +140,10 @@ export default function ProductForm({
   setBatchMode,
   batchVariant,
   setBatchVariant,
-  colorInput,
-  setColorInput,
-  sizeInput,
-  setSizeInput,
-  onAddColor,
-  onAddSize,
-  onRemoveColor,
-  onRemoveSize,
+  onAddBatchAttribute,
+  onAddAttributeValue,
+  onRemoveAttributeValue,
+  onRemoveBatchAttribute,
   onGenerateBatchVariants,
   isEditMode = false,
   onVariantPriceChange,
@@ -131,6 +155,11 @@ export default function ProductForm({
   const { t } = useLanguage()
   const [showAddCategory, setShowAddCategory] = useState(false)
   const [showAddStore, setShowAddStore] = useState(false)
+  // Local state for inline attribute input (single variant mode)
+  const [attrNameInput, setAttrNameInput] = useState('')
+  const [attrValueInput, setAttrValueInput] = useState('')
+  // Local state for batch attribute input
+  const [batchAttrNameInput, setBatchAttrNameInput] = useState('')
 
   const handleCategoryCreated = (category: NewCategory) => {
     setFormData({ ...formData, categoryId: category.id })
@@ -422,144 +451,171 @@ export default function ProductForm({
 
             {/* Single Variant Mode */}
             {!batchMode && (
-              <div className="grid grid-cols-7 gap-3">
-                <input
-                  type="text"
-                  value={newVariant.color}
-                  onChange={(e) => setNewVariant({ ...newVariant, color: e.target.value })}
-                  className="input-field"
-                  placeholder={t('colorOptional')}
-                />
-                <input
-                  type="text"
-                  value={newVariant.size}
-                  onChange={(e) => setNewVariant({ ...newVariant, size: e.target.value })}
-                  className="input-field"
-                  placeholder={t('sizeOptional')}
-                />
-                <input
-                  type="text"
-                  value={newVariant.sku}
-                  onChange={(e) => setNewVariant({ ...newVariant, sku: e.target.value.toUpperCase() })}
-                  className="input-field"
-                  placeholder={t('sku')}
-                />
-                <input
-                  type="text"
-                  value={newVariant.barcode}
-                  onChange={(e) => setNewVariant({ ...newVariant, barcode: e.target.value.toUpperCase() })}
-                  onFocus={(e) => e.target.select()}
-                  className="input-field"
-                  placeholder="Barcode (optional)"
-                />
-                <input
-                  type="number"
-                  value={newVariant.price || ''}
-                  onChange={(e) => setNewVariant({ ...newVariant, price: parseFloat(e.target.value) || 0 })}
-                  className="input-field"
-                  placeholder={t('price')}
-                  step="1"
-                />
-                <input
-                  type="number"
-                  value={newVariant.stock || ''}
-                  onChange={(e) => setNewVariant({ ...newVariant, stock: parseInt(e.target.value) || 0 })}
-                  className="input-field"
-                  placeholder={t('stock')}
-                />
-                <button
-                  onClick={onAddVariant}
-                  className="btn-primary flex items-center justify-center gap-2"
-                >
-                  <Plus size={18} />
-                  {t('add')}
-                </button>
+              <div className="space-y-3">
+                {/* Current attributes list */}
+                {newVariant.attributes.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {newVariant.attributes.map((attr, i) => (
+                      <span key={i} className="px-2 py-1 bg-primary/10 text-primary rounded text-sm flex items-center gap-1.5">
+                        <span className="font-medium">{attr.name}:</span> {attr.value}
+                        <button
+                          type="button"
+                          onClick={() => setNewVariant({ ...newVariant, attributes: newVariant.attributes.filter((_, j) => j !== i) })}
+                          className="hover:text-primary/60"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Add attribute row */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={attrNameInput}
+                    onChange={(e) => setAttrNameInput(e.target.value)}
+                    className="input-field flex-1"
+                    placeholder="Attribute name (e.g. Color, RAM)"
+                  />
+                  <input
+                    type="text"
+                    value={attrValueInput}
+                    onChange={(e) => setAttrValueInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && attrNameInput.trim() && attrValueInput.trim()) {
+                        setNewVariant({ ...newVariant, attributes: [...newVariant.attributes, { name: attrNameInput.trim(), value: attrValueInput.trim() }] })
+                        setAttrNameInput('')
+                        setAttrValueInput('')
+                      }
+                    }}
+                    className="input-field flex-1"
+                    placeholder="Value (e.g. Red, 8GB)"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (attrNameInput.trim() && attrValueInput.trim()) {
+                        setNewVariant({ ...newVariant, attributes: [...newVariant.attributes, { name: attrNameInput.trim(), value: attrValueInput.trim() }] })
+                        setAttrNameInput('')
+                        setAttrValueInput('')
+                      }
+                    }}
+                    className="px-3 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
+                    title="Add attribute"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+                {/* SKU, barcode, price, stock + add button */}
+                <div className="grid grid-cols-5 gap-3">
+                  <input
+                    type="text"
+                    value={newVariant.sku}
+                    onChange={(e) => setNewVariant({ ...newVariant, sku: e.target.value.toUpperCase() })}
+                    className="input-field"
+                    placeholder={t('sku')}
+                  />
+                  <input
+                    type="text"
+                    value={newVariant.barcode}
+                    onChange={(e) => setNewVariant({ ...newVariant, barcode: e.target.value.toUpperCase() })}
+                    onFocus={(e) => e.target.select()}
+                    className="input-field"
+                    placeholder="Barcode (optional)"
+                  />
+                  <input
+                    type="number"
+                    value={newVariant.price || ''}
+                    onChange={(e) => setNewVariant({ ...newVariant, price: parseFloat(e.target.value) || 0 })}
+                    className="input-field"
+                    placeholder={t('price')}
+                    step="1"
+                  />
+                  <input
+                    type="number"
+                    value={newVariant.stock || ''}
+                    onChange={(e) => setNewVariant({ ...newVariant, stock: parseInt(e.target.value) || 0 })}
+                    className="input-field"
+                    placeholder={t('stock')}
+                  />
+                  <button
+                    onClick={onAddVariant}
+                    className="btn-primary flex items-center justify-center gap-2"
+                  >
+                    <Plus size={18} />
+                    {t('add')}
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Batch Variant Mode */}
             {batchMode && (
               <div className="space-y-4">
-                {/* Colors Section */}
+                {/* Dynamic Attributes Section */}
                 <div className="bg-white dark:bg-slate-700 p-4 rounded-lg">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    {t('colorsOptional')}
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                    Attributes
                   </label>
-                  <div className="flex gap-2 mb-3">
+
+                  {/* Existing attribute definitions */}
+                  {batchVariant.attributes.map((attr) => (
+                    <div key={attr.name} className="mb-4 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{attr.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveBatchAttribute(attr.name)}
+                          className="p-1 hover:bg-error/10 text-error rounded transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                      {/* Values */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {attr.values.map(val => (
+                          <span key={val} className="px-2 py-1 bg-primary/10 text-primary rounded-full text-sm flex items-center gap-1.5">
+                            {val}
+                            <button type="button" onClick={() => onRemoveAttributeValue(attr.name, val)} className="hover:text-primary/60">
+                              <X size={12} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      {/* Add value inline */}
+                      <AttrValueInput attrName={attr.name} onAdd={onAddAttributeValue} />
+                    </div>
+                  ))}
+
+                  {/* Add new attribute */}
+                  <div className="flex gap-2 mt-2">
                     <input
                       type="text"
-                      value={colorInput}
-                      onChange={(e) => setColorInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && onAddColor()}
+                      value={batchAttrNameInput}
+                      onChange={(e) => setBatchAttrNameInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && batchAttrNameInput.trim()) {
+                          onAddBatchAttribute(batchAttrNameInput)
+                          setBatchAttrNameInput('')
+                        }
+                      }}
                       className="input-field flex-1"
-                      placeholder={t('enterColor')}
+                      placeholder="New attribute name (e.g. Color, RAM, Storage)"
                     />
                     <button
-                      onClick={onAddColor}
+                      type="button"
+                      onClick={() => {
+                        if (batchAttrNameInput.trim()) {
+                          onAddBatchAttribute(batchAttrNameInput)
+                          setBatchAttrNameInput('')
+                        }
+                      }}
                       className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/90 transition-colors"
                     >
                       <Plus size={18} />
                     </button>
                   </div>
-                  {batchVariant.colors.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {batchVariant.colors.map((color) => (
-                        <span
-                          key={color}
-                          className="px-3 py-1 bg-secondary/10 text-secondary rounded-full text-sm font-medium flex items-center gap-2"
-                        >
-                          {color}
-                          <button
-                            onClick={() => onRemoveColor(color)}
-                            className="hover:text-secondary/70"
-                          >
-                            <X size={14} />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Sizes Section */}
-                <div className="bg-white dark:bg-slate-700 p-4 rounded-lg">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    {t('sizesOptional')}
-                  </label>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      value={sizeInput}
-                      onChange={(e) => setSizeInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && onAddSize()}
-                      className="input-field flex-1"
-                      placeholder={t('enterSize')}
-                    />
-                    <button
-                      onClick={onAddSize}
-                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                    >
-                      <Plus size={18} />
-                    </button>
-                  </div>
-                  {batchVariant.sizes.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {batchVariant.sizes.map((size) => (
-                        <span
-                          key={size}
-                          className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium flex items-center gap-2"
-                        >
-                          {size}
-                          <button
-                            onClick={() => onRemoveSize(size)}
-                            className="hover:text-primary/70"
-                          >
-                            <X size={14} />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {/* Common Fields */}
@@ -623,21 +679,15 @@ export default function ProductForm({
                 </div>
 
                 {/* Preview */}
-                {(batchVariant.colors.length > 0 || batchVariant.sizes.length > 0) && (
+                {batchVariant.attributes.length > 0 && batchVariant.attributes.every(a => a.values.length > 0) && (
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
                       {t('willCreateVariants', {
-                        count: batchVariant.colors.length > 0 && batchVariant.sizes.length > 0
-                          ? batchVariant.colors.length * batchVariant.sizes.length
-                          : batchVariant.colors.length + batchVariant.sizes.length
-                      })}
+                        count: batchVariant.attributes.reduce((acc, a) => acc * a.values.length, 1)
+                      })} variants
                     </p>
                     <p className="text-xs text-amber-700 dark:text-amber-300">
-                      {batchVariant.colors.length > 0 && batchVariant.sizes.length > 0
-                        ? t('allCombinations', { colors: batchVariant.colors.length, sizes: batchVariant.sizes.length })
-                        : batchVariant.colors.length > 0
-                        ? t('colorVariants', { count: batchVariant.colors.length })
-                        : t('sizeVariants', { count: batchVariant.sizes.length })}
+                      {batchVariant.attributes.map(a => `${a.name}: [${a.values.join(', ')}]`).join(' × ')}
                     </p>
                   </div>
                 )}
@@ -664,16 +714,11 @@ export default function ProductForm({
                       {/* Compact Header */}
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          {variant.color && (
-                            <span className="px-1.5 py-0.5 bg-secondary/10 text-secondary rounded text-xs font-medium">
-                              {variant.color}
+                          {(variant.attributes || []).map((attr, i) => (
+                            <span key={i} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
+                              {attr.name}: {attr.value}
                             </span>
-                          )}
-                          {variant.size && (
-                            <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs font-medium">
-                              {variant.size}
-                            </span>
-                          )}
+                          ))}
                           <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-xs font-mono">
                             {variant.sku}
                           </span>
