@@ -198,10 +198,15 @@ export function registerAllHandlers() {
   const dbPath = getDatabasePath()
   const dbUrl = `file:${dbPath}`
   for (const plugin of ALL_PLUGINS) {
+    // Ensure schema first, then register handlers so they are never called
+    // before the tables exist in the database.
     plugin
       .ensureSchema(prisma, dbUrl, process.cwd())
-      .catch((e) => log.error(`[${plugin.id}] Schema migration failed:`, e))
-    plugin.registerHandlers(prisma)
+      .then(() => plugin.registerHandlers(prisma))
+      .catch((e) => {
+        log.error(`[${plugin.id}] Schema migration failed, registering handlers anyway:`, e)
+        plugin.registerHandlers(prisma)
+      })
   }
 
   log.info('✅ All IPC handlers registered successfully')

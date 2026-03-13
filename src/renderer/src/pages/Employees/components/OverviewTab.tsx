@@ -16,9 +16,10 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 interface Props {
   emp: EmployeeProfile
   calendar: { date: string; att: EmployeeAttendance | null }[]
+  onLogDate: (date: string, att: EmployeeAttendance | null) => void
 }
 
-export default function OverviewTab({ emp, calendar }: Props) {
+export default function OverviewTab({ emp, calendar, onLogDate }: Props) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Attendance summary + calendar */}
@@ -44,10 +45,12 @@ export default function OverviewTab({ emp, calendar }: Props) {
         <div>
           <div className="flex flex-wrap gap-1 mt-2">
             {calendar.map(({ date, att }) => (
-              <div
+              <button
                 key={date}
-                title={`${date}: ${att ? ATTENDANCE_LABELS[att.status as AttendanceStatus] : 'No record'}`}
-                className={`w-4 h-4 rounded-sm ${att ? ATTENDANCE_COLORS[att.status as AttendanceStatus] : 'bg-slate-200 dark:bg-slate-700'}`}
+                type="button"
+                title={`${new Date(date).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}: ${att ? ATTENDANCE_LABELS[att.status as AttendanceStatus] : 'No record — click to log'}`}
+                onClick={() => onLogDate(date, att)}
+                className={`w-4 h-4 rounded-sm transition-transform hover:scale-125 hover:ring-2 hover:ring-offset-1 hover:ring-primary/60 ${att ? ATTENDANCE_COLORS[att.status as AttendanceStatus] : 'bg-slate-200 dark:bg-slate-700'}`}
               />
             ))}
           </div>

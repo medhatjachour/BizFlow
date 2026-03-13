@@ -1,5 +1,5 @@
 import { LogIn, LogOut, Edit2, Plus } from 'lucide-react'
-import type { EmployeeProfile } from '../types'
+import type { EmployeeProfile, EmployeeAttendance } from '../types'
 
 const STATUS_BADGE: Record<string, string> = {
   active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -21,13 +21,18 @@ import { Mail, Phone, Briefcase, Calendar, Star } from 'lucide-react'
 
 interface Props {
   emp: EmployeeProfile
+  todayAtt: EmployeeAttendance | null
+  checkingIn: boolean
+  checkingOut: boolean
   onCheckIn: () => void
   onCheckOut: () => void
   onLogAttendance: () => void
   onAddNote: () => void
 }
 
-export default function EmployeeHero({ emp, onCheckIn, onCheckOut, onLogAttendance, onAddNote }: Props) {
+export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, onCheckIn, onCheckOut, onLogAttendance, onAddNote }: Props) {
+  const alreadyIn  = !!todayAtt?.checkIn
+  const alreadyOut = !!todayAtt?.checkOut
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div className="h-24 bg-gradient-to-r from-primary/80 to-secondary/80" />
@@ -78,15 +83,55 @@ export default function EmployeeHero({ emp, onCheckIn, onCheckOut, onLogAttendan
         </div>
 
         {emp.status === 'active' && (
-          <div className="flex gap-2 mt-4 flex-wrap">
-            <button onClick={onCheckIn} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-sm font-medium transition-colors">
-              <LogIn size={15} /> Check In
-            </button>
-            <button onClick={onCheckOut} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-sm font-medium transition-colors">
-              <LogOut size={15} /> Check Out
-            </button>
+          <div className="flex items-center gap-2 mt-4 flex-wrap">
+            {/* Today's status pill */}
+            {todayAtt && (
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                todayAtt.status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                : todayAtt.status === 'absent'  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                : todayAtt.status === 'late'    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                : todayAtt.status === 'leave'   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+              }`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                Today: {todayAtt.status === 'half-day' ? 'Half Day' : todayAtt.status.charAt(0).toUpperCase() + todayAtt.status.slice(1)}
+                {todayAtt.checkIn && (
+                  <span className="opacity-70 ml-1">
+                    · In {new Date(todayAtt.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+                {todayAtt.checkOut && (
+                  <span className="opacity-70">
+                    {' '}· Out {new Date(todayAtt.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Check In — hide if already checked in */}
+            {!alreadyIn && (
+              <button
+                onClick={onCheckIn}
+                disabled={checkingIn}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <LogIn size={15} /> {checkingIn ? 'Checking in…' : 'Check In'}
+              </button>
+            )}
+
+            {/* Check Out — only show if checked in but not yet out */}
+            {alreadyIn && !alreadyOut && (
+              <button
+                onClick={onCheckOut}
+                disabled={checkingOut}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <LogOut size={15} /> {checkingOut ? 'Checking out…' : 'Check Out'}
+              </button>
+            )}
+
             <button onClick={onLogAttendance} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 text-sm font-medium transition-colors">
-              <Edit2 size={14} /> Log Attendance
+              <Edit2 size={14} /> {todayAtt ? 'Edit Today' : 'Log Attendance'}
             </button>
             <button onClick={onAddNote} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">
               <Plus size={14} /> Add Note

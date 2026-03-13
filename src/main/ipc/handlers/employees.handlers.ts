@@ -167,6 +167,19 @@ export function registerEmployeesHandlers(prisma: any) {
       const now = new Date()
       const dayStart = new Date(now)
       dayStart.setHours(0, 0, 0, 0)
+
+      // Guard: only allow one check-in per day
+      const existing = await prisma.employeeAttendance.findUnique({
+        where: { employeeId_date: { employeeId, date: dayStart } }
+      })
+      if (existing?.checkIn) {
+        return {
+          success: false,
+          alreadyIn: true,
+          message: `Already checked in today at ${new Date(existing.checkIn).toLocaleTimeString()}`
+        }
+      }
+
       const record = await prisma.employeeAttendance.upsert({
         where: { employeeId_date: { employeeId, date: dayStart } },
         create: { employeeId, date: dayStart, status: 'present', checkIn: now },
@@ -189,8 +202,24 @@ export function registerEmployeesHandlers(prisma: any) {
       const now = new Date()
       const dayStart = new Date(now)
       dayStart.setHours(0, 0, 0, 0)
-      const record = await prisma.employeeAttendance.updateMany({
-        where: { employeeId, date: dayStart },
+
+      // Guard: must have checked in, and must not have checked out yet
+      const existing = await prisma.employeeAttendance.findUnique({
+        where: { employeeId_date: { employeeId, date: dayStart } }
+      })
+      if (!existing?.checkIn) {
+        return { success: false, message: 'Employee has not checked in today' }
+      }
+      if (existing.checkOut) {
+        return {
+          success: false,
+          alreadyOut: true,
+          message: `Already checked out today at ${new Date(existing.checkOut).toLocaleTimeString()}`
+        }
+      }
+
+      const record = await prisma.employeeAttendance.update({
+        where: { employeeId_date: { employeeId, date: dayStart } },
         data: { checkOut: now }
       })
       await prisma.employeeActivityLog.create({

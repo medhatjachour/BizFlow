@@ -42,6 +42,10 @@ export function useEmployeeProfile(id: string | undefined) {
   // ── Confirm dialog ────────────────────────────────────────────────────────
   const [confirm, setConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
+  // ── Check-in/out loading guard ────────────────────────────────────────────
+  const [checkingIn, setCheckingIn] = useState(false)
+  const [checkingOut, setCheckingOut] = useState(false)
+
   // ── Shift modal ──────────────────────────────────────────────────────────
   const [showShiftModal, setShowShiftModal] = useState(false)
   const [shiftForm, setShiftForm] = useState({
@@ -102,17 +106,23 @@ export function useEmployeeProfile(id: string | undefined) {
   }
 
   const handleCheckIn = async () => {
-    if (!emp) return
-    const res = await ipc.employees.attendance.checkIn(emp.id)
-    if (res?.success) { toast.success?.('Checked in'); load() }
-    else toast.error?.(res?.message || 'Failed')
+    if (!emp || checkingIn) return
+    setCheckingIn(true)
+    try {
+      const res = await ipc.employees.attendance.checkIn(emp.id)
+      if (res?.success) { toast.success?.('Checked in'); load() }
+      else toast.error?.(res?.message || 'Failed')
+    } finally { setCheckingIn(false) }
   }
 
   const handleCheckOut = async () => {
-    if (!emp) return
-    const res = await ipc.employees.attendance.checkOut(emp.id)
-    if (res?.success) { toast.success?.('Checked out'); load() }
-    else toast.error?.(res?.message || 'Failed')
+    if (!emp || checkingOut) return
+    setCheckingOut(true)
+    try {
+      const res = await ipc.employees.attendance.checkOut(emp.id)
+      if (res?.success) { toast.success?.('Checked out'); load() }
+      else toast.error?.(res?.message || 'Failed')
+    } finally { setCheckingOut(false) }
   }
 
   // ── Payroll ───────────────────────────────────────────────────────────────
@@ -219,6 +229,20 @@ export function useEmployeeProfile(id: string | undefined) {
   const toDateKey = (d: string | Date) =>
     (d instanceof Date ? d : new Date(d)).toISOString().split('T')[0]
 
+  const todayKey = new Date().toISOString().split('T')[0]
+  const todayAtt = emp?.attendance.find(a => toDateKey(a.date) === todayKey) ?? null
+
+  const openAttendanceFor = (date: string, existing?: EmployeeAttendance | null) => {
+    setAttForm({
+      date,
+      status: (existing?.status as AttendanceStatus) ?? 'present',
+      checkIn: existing?.checkIn ? new Date(existing.checkIn).toTimeString().slice(0, 5) : '',
+      checkOut: existing?.checkOut ? new Date(existing.checkOut).toTimeString().slice(0, 5) : '',
+      notes: existing?.notes ?? ''
+    })
+    setShowAttModal(true)
+  }
+
   const buildCalendar = () => {
     if (!emp) return []
     const map: Record<string, EmployeeAttendance> = {}
@@ -239,7 +263,7 @@ export function useEmployeeProfile(id: string | undefined) {
     emp, loading, tab, setTab,
     // attendance
     showAttModal, setShowAttModal, attForm, setAttForm, savingAtt, saveAttendance,
-    handleCheckIn, handleCheckOut,
+    handleCheckIn, handleCheckOut, checkingIn, checkingOut, todayAtt, openAttendanceFor,
     // payroll
     showPayModal, setShowPayModal, payForm, setPayForm, savingPay, savePayroll, netPay,
     // note

@@ -35,9 +35,12 @@ export default function EmployeeProfilePage() {
 
       <EmployeeHero
         emp={s.emp}
+        todayAtt={s.todayAtt}
+        checkingIn={s.checkingIn}
+        checkingOut={s.checkingOut}
         onCheckIn={s.handleCheckIn}
         onCheckOut={s.handleCheckOut}
-        onLogAttendance={() => s.setShowAttModal(true)}
+        onLogAttendance={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], s.todayAtt)}
         onAddNote={() => s.setShowNoteModal(true)}
       />
 
@@ -52,8 +55,8 @@ export default function EmployeeProfilePage() {
           documents: s.emp.documents.length,
         }} />
         <div className="p-6">
-          {s.tab === 'overview'   && <OverviewTab emp={s.emp} calendar={calendar} />}
-          {s.tab === 'attendance' && <AttendanceTab attendance={s.emp.attendance} onLog={() => s.setShowAttModal(true)} />}
+          {s.tab === 'overview'   && <OverviewTab emp={s.emp} calendar={calendar} onLogDate={(date, att) => s.openAttendanceFor(date, att)} />}
+          {s.tab === 'attendance' && <AttendanceTab attendance={s.emp.attendance} onLog={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], null)} onEdit={a => s.openAttendanceFor(new Date(a.date).toISOString().split('T')[0], a)} />}
           {s.tab === 'shifts'     && <ShiftsTab shifts={s.emp.shifts} onAdd={() => s.setShowShiftModal(true)} onDelete={s.deleteShift} />}
           {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onDelete={s.deleteOvertime} />}
           {s.tab === 'payroll'    && <PayrollTab payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} />}
