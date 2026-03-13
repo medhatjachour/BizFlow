@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Edit2, Trash2, LogIn, LogOut, ChevronRight, Mail, Phone, Building2, Briefcase, Calendar, Star } from 'lucide-react'
 import type { Employee } from '../types'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -29,6 +30,13 @@ interface Props {
 
 export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheckOut, checkingIn }: Props) {
   const navigate = useNavigate()
+  const { t } = useLanguage()
+
+  const statusLabel: Record<string, string> = {
+    active: t('empStatusActive'),
+    'on-leave': t('empStatusOnLeave'),
+    terminated: t('empStatusTerminated'),
+  }
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all">
@@ -41,7 +49,7 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold text-slate-900 dark:text-white truncate">{emp.name}</h3>
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_COLORS[emp.status] || ''}`}>
-                {emp.status}
+                {statusLabel[emp.status] ?? emp.status}
               </span>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">{emp.role}{emp.department ? ` · ${emp.department}` : ''}</p>
@@ -75,7 +83,7 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Calendar size={12} className="shrink-0" />
-            Hired {new Date(emp.hireDate).toLocaleDateString()}
+            {t('empHiredLabel')} {new Date(emp.hireDate).toLocaleDateString()}
           </div>
         </div>
       </div>
@@ -88,14 +96,14 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
               disabled={checkingIn === emp.id}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium transition-colors disabled:opacity-50"
             >
-              <LogIn size={12} /> In
+              <LogIn size={12} /> {t('empCheckIn')}
             </button>
             <button
               onClick={() => onCheckOut(emp)}
               disabled={checkingIn === emp.id}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium transition-colors disabled:opacity-50"
             >
-              <LogOut size={12} /> Out
+              <LogOut size={12} /> {t('empCheckOut')}
             </button>
           </>
         )}
@@ -115,3 +123,4 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
     </div>
   )
 }
+

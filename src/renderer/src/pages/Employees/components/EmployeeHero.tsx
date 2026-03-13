@@ -1,5 +1,6 @@
 import { LogIn, LogOut, Edit2, Plus } from 'lucide-react'
 import type { EmployeeProfile, EmployeeAttendance } from '../types'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 const STATUS_BADGE: Record<string, string> = {
   active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -31,8 +32,23 @@ interface Props {
 }
 
 export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, onCheckIn, onCheckOut, onLogAttendance, onAddNote }: Props) {
+  const { t } = useLanguage()
   const alreadyIn  = !!todayAtt?.checkIn
   const alreadyOut = !!todayAtt?.checkOut
+
+  const statusLabel: Record<string, string> = {
+    active: t('empStatusActive'),
+    'on-leave': t('empStatusOnLeave'),
+    terminated: t('empStatusTerminated'),
+  }
+  const attStatusLabel: Record<string, string> = {
+    present: t('empStatusPresent'),
+    absent: t('empStatusAbsent'),
+    late: t('empStatusLate'),
+    'half-day': t('empHalfDay'),
+    leave: t('empStatusLeave'),
+  }
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div className="h-24 bg-gradient-to-r from-primary/80 to-secondary/80" />
@@ -44,7 +60,7 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
           <div className="pb-1 flex-1 min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{emp.name}</h1>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[emp.status]}`}>{emp.status}</span>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[emp.status]}`}>{statusLabel[emp.status] ?? emp.status}</span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">{emp.employmentType}</span>
               {emp.performanceScore != null && (() => {
                 const score = emp.performanceScore as number
@@ -78,7 +94,7 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <Calendar size={14} className="text-slate-400 shrink-0" />
-            Hired {new Date(emp.hireDate).toLocaleDateString()}
+            {t('empHiredLabel')} {new Date(emp.hireDate).toLocaleDateString()}
           </div>
         </div>
 
@@ -94,7 +110,7 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
                 : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
               }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                Today: {todayAtt.status === 'half-day' ? 'Half Day' : todayAtt.status.charAt(0).toUpperCase() + todayAtt.status.slice(1)}
+                {t('empToday')}: {attStatusLabel[todayAtt.status] ?? todayAtt.status}
                 {todayAtt.checkIn && (
                   <span className="opacity-70 ml-1">
                     · In {new Date(todayAtt.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -115,7 +131,7 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
                 disabled={checkingIn}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <LogIn size={15} /> {checkingIn ? 'Checking in…' : 'Check In'}
+                <LogIn size={15} /> {checkingIn ? t('empCheckingIn') : t('empCheckIn')}
               </button>
             )}
 
@@ -126,15 +142,15 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
                 disabled={checkingOut}
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <LogOut size={15} /> {checkingOut ? 'Checking out…' : 'Check Out'}
+                <LogOut size={15} /> {checkingOut ? t('empCheckingOut') : t('empCheckOut')}
               </button>
             )}
 
             <button onClick={onLogAttendance} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 text-sm font-medium transition-colors">
-              <Edit2 size={14} /> {todayAtt ? 'Edit Today' : 'Log Attendance'}
+              <Edit2 size={14} /> {todayAtt ? t('empEditToday') : t('empLogAttendance')}
             </button>
             <button onClick={onAddNote} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">
-              <Plus size={14} /> Add Note
+              <Plus size={14} /> {t('empAddNote')}
             </button>
           </div>
         )}
@@ -142,3 +158,4 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
     </div>
   )
 }
+

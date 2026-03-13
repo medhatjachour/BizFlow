@@ -1,5 +1,6 @@
 import { Plus, Trash2, Clock } from 'lucide-react'
 import type { EmployeeShift } from '../types'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 const SHIFT_TYPE_COLORS: Record<string, string> = {
   morning: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -25,29 +26,38 @@ interface Props {
 }
 
 export default function ShiftsTab({ shifts, onAdd, onDelete }: Props) {
+  const { t } = useLanguage()
+
+  const shiftTypeLabels: Record<string, string> = {
+    morning: t('empMorningShift').split(' ')[0],
+    evening: t('empEveningShift').split(' ')[0],
+    night: t('empNightShift').split(' ')[0],
+    custom: t('empCustomShift'),
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <Clock size={16} /> Shift Schedule
+          <Clock size={16} /> {t('empShiftSchedule')}
         </h3>
         <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-          <Plus size={14} /> Add Shift
+          <Plus size={14} /> {t('empAddShift')}
         </button>
       </div>
 
       {shifts.length === 0 ? (
         <div className="text-center py-12 text-slate-500 dark:text-slate-400">
           <Clock size={40} className="mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-          <p>No shifts scheduled yet</p>
+          <p>{t('empNoShiftsYet')}</p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-700/50">
               <tr>
-                {['Date', 'Type', 'Start', 'End', 'Break', 'Duration', 'Notes', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{h}</th>
+                {[t('empDate'), t('empShiftType'), t('empStart'), t('empEnd'), t('empBreak'), t('empDuration'), t('notes'), ''].map((h, i) => (
+                  <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -57,7 +67,7 @@ export default function ShiftsTab({ shifts, onAdd, onDelete }: Props) {
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{new Date(s.date).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${SHIFT_TYPE_COLORS[s.shiftType] ?? SHIFT_TYPE_COLORS.custom}`}>
-                      {s.shiftType}
+                      {shiftTypeLabels[s.shiftType] ?? s.shiftType}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-700 dark:text-slate-300">{s.startTime}</td>
@@ -79,3 +89,4 @@ export default function ShiftsTab({ shifts, onAdd, onDelete }: Props) {
     </div>
   )
 }
+

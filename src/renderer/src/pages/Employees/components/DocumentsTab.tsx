@@ -1,16 +1,18 @@
 import { FileText } from 'lucide-react'
 import type { EmployeeDocument } from '../types'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface Props {
   documents: EmployeeDocument[]
 }
 
 export default function DocumentsTab({ documents }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-slate-900 dark:text-white">Documents</h3>
+      <h3 className="font-semibold text-slate-900 dark:text-white">{t('tabDocuments')}</h3>
       {documents.length === 0 ? (
-        <p className="text-slate-500 text-center py-12">No documents uploaded yet</p>
+        <p className="text-slate-500 text-center py-12">{t('empNoDocumentsYet')}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {documents.map(doc => (

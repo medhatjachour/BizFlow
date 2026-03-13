@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import type { EmployeeActivityLog } from '../types'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface Props {
   activityLogs: EmployeeActivityLog[]
@@ -7,16 +8,17 @@ interface Props {
 }
 
 export default function ActivityTab({ activityLogs, onAddNote }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900 dark:text-white">Activity Log</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white">{t('empActivityLog')}</h3>
         <button onClick={onAddNote} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-          <Plus size={14} /> Add Note
+          <Plus size={14} /> {t('empAddNote')}
         </button>
       </div>
       {activityLogs.length === 0 ? (
-        <p className="text-slate-500 text-center py-12">No activity yet</p>
+        <p className="text-slate-500 text-center py-12">{t('empNoActivityYet')}</p>
       ) : (
         <div className="relative">
           <div className="absolute left-4 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />

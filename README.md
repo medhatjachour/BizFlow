@@ -327,7 +327,7 @@ BizFlow/
 │   │       ├── logger.ts                 # Structured logger (electron-log)
 │   │       └── module-settings.ts        # Plugin enable/disable persistence
 │   │
-│   ├── plugins/                          # ── Microkernel plugin layer ──
+│   ├── plugins/                          # ── Microkernel plugin layer (backend)──
 │   │   └── bakery/                       # Bakery plugin (self-contained)
 │   │       ├── manifest.ts               # id, name, routes, models metadata
 │   │       ├── handlers.ts               # All bakery IPC handlers

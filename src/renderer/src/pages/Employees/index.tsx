@@ -7,7 +7,7 @@ import EmployeeForm from './components/EmployeeForm'
 import { useEmployees, DEPARTMENTS, ROLES } from './hooks/useEmployees'
 
 export default function Employees() {
-  useLanguage()
+  const { t } = useLanguage()
   const state = useEmployees()
 
   return (
@@ -16,12 +16,12 @@ export default function Employees() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Users className="text-primary" size={28} /> Employee Management
+            <Users className="text-primary" size={28} /> {t('employeeManagement')}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Track your team, attendance, payroll and activity</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{t('empTrackTeam')}</p>
         </div>
         <button onClick={state.openAdd} className="btn-primary flex items-center gap-2">
-          <Plus size={18} /> Add Employee
+          <Plus size={18} /> {t('addEmployee')}
         </button>
       </div>
 
@@ -36,7 +36,7 @@ export default function Employees() {
             <input
               value={state.searchQuery}
               onChange={e => state.setSearchQuery(e.target.value)}
-              placeholder="Search by name, email, phone, role…"
+              placeholder={t('empSearchPlaceholder')}
               className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:ring-2 focus:ring-primary text-slate-900 dark:text-white"
             />
           </div>
@@ -44,23 +44,23 @@ export default function Employees() {
             onClick={() => state.setShowFilters(v => !v)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm transition-colors ${state.showFilters ? 'bg-primary text-white border-primary' : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
           >
-            <Filter size={16} /> Filters {(state.filterStatus || state.filterDepartment || state.filterRole) ? '●' : ''}
+            <Filter size={16} /> {t('empFilters')} {(state.filterStatus || state.filterDepartment || state.filterRole) ? '●' : ''}
           </button>
         </div>
         {state.showFilters && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
             <select value={state.filterStatus} onChange={e => state.setFilterStatus(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white">
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="on-leave">On Leave</option>
-              <option value="terminated">Terminated</option>
+              <option value="">{t('empAllStatuses')}</option>
+              <option value="active">{t('empStatusActive')}</option>
+              <option value="on-leave">{t('empStatusOnLeave')}</option>
+              <option value="terminated">{t('empStatusTerminated')}</option>
             </select>
             <select value={state.filterDepartment} onChange={e => state.setFilterDepartment(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white">
-              <option value="">All Departments</option>
+              <option value="">{t('empAllDepartments')}</option>
               {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
             <select value={state.filterRole} onChange={e => state.setFilterRole(e.target.value)} className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white">
-              <option value="">All Roles</option>
+              <option value="">{t('empAllRoles')}</option>
               {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
@@ -75,9 +75,9 @@ export default function Employees() {
       ) : state.filtered.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-16 text-center">
           <Users size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-          <p className="text-slate-500 dark:text-slate-400">No employees found</p>
+          <p className="text-slate-500 dark:text-slate-400">{t('empNoEmployeesFound')}</p>
           <button onClick={state.openAdd} className="btn-primary mt-4">
-            <Plus size={16} className="inline mr-1" /> Add Employee
+            <Plus size={16} className="inline mr-1" /> {t('addEmployee')}
           </button>
         </div>
       ) : (
@@ -97,30 +97,30 @@ export default function Employees() {
       )}
 
       {/* Add Modal */}
-      <Modal isOpen={state.showAddModal} onClose={() => state.setShowAddModal(false)} title="Add Employee">
+      <Modal isOpen={state.showAddModal} onClose={() => state.setShowAddModal(false)} title={t('addEmployee')}>
         <div className="space-y-5">
           <EmployeeForm formData={state.formData} onChange={updates => state.setFormData(p => ({ ...p, ...updates }))} />
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
             <button onClick={() => state.setShowAddModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
-              Cancel
+              {t('cancel')}
             </button>
             <button onClick={state.handleAdd} disabled={state.saving} className="btn-primary">
-              {state.saving ? 'Saving…' : 'Add Employee'}
+              {state.saving ? t('empSaving') : t('addEmployee')}
             </button>
           </div>
         </div>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal isOpen={state.showEditModal} onClose={() => state.setShowEditModal(false)} title="Edit Employee">
+      <Modal isOpen={state.showEditModal} onClose={() => state.setShowEditModal(false)} title={t('editEmployee')}>
         <div className="space-y-5">
           <EmployeeForm formData={state.formData} onChange={updates => state.setFormData(p => ({ ...p, ...updates }))} />
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
             <button onClick={() => state.setShowEditModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
-              Cancel
+              {t('cancel')}
             </button>
             <button onClick={state.handleEdit} disabled={state.saving} className="btn-primary">
-              {state.saving ? 'Saving…' : 'Save Changes'}
+              {state.saving ? t('empSaving') : t('empSaveChanges')}
             </button>
           </div>
         </div>
@@ -128,3 +128,4 @@ export default function Employees() {
     </div>
   )
 }
+

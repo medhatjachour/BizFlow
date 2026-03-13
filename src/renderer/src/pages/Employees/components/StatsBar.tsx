@@ -1,19 +1,21 @@
 import { Users, UserCheck, UserX, Clock, CheckCircle, BarChart2, TrendingUp } from 'lucide-react'
 import type { EmployeeStats } from '../types'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface Props {
   stats: EmployeeStats
 }
 
 export default function StatsBar({ stats }: Props) {
+  const { t } = useLanguage()
   const items = [
-    { label: 'Total', value: stats.total, icon: <Users size={20} />, color: 'text-blue-500' },
-    { label: 'Active', value: stats.active, icon: <UserCheck size={20} />, color: 'text-green-500' },
-    { label: 'On Leave', value: stats.onLeave, icon: <Clock size={20} />, color: 'text-amber-500' },
-    { label: 'Terminated', value: stats.terminated, icon: <UserX size={20} />, color: 'text-red-500' },
-    { label: 'Present Today', value: stats.presentToday, icon: <CheckCircle size={20} />, color: 'text-emerald-500' },
-    { label: 'Attendance Rate', value: `${stats.attendanceRate}%`, icon: <BarChart2 size={20} />, color: 'text-purple-500' },
-    { label: 'Payroll/Month', value: `$${stats.payrollThisMonth.toFixed(0)}`, icon: <TrendingUp size={20} />, color: 'text-indigo-500' }
+    { label: t('empTotal'), value: stats.total, icon: <Users size={20} />, color: 'text-blue-500' },
+    { label: t('empActive'), value: stats.active, icon: <UserCheck size={20} />, color: 'text-green-500' },
+    { label: t('empOnLeaveCount'), value: stats.onLeave, icon: <Clock size={20} />, color: 'text-amber-500' },
+    { label: t('empTerminatedCount'), value: stats.terminated, icon: <UserX size={20} />, color: 'text-red-500' },
+    { label: t('empPresentToday'), value: stats.presentToday, icon: <CheckCircle size={20} />, color: 'text-emerald-500' },
+    { label: t('empAttendanceRate'), value: `${stats.attendanceRate}%`, icon: <BarChart2 size={20} />, color: 'text-purple-500' },
+    { label: t('empPayrollMonth'), value: `$${stats.payrollThisMonth.toFixed(0)}`, icon: <TrendingUp size={20} />, color: 'text-indigo-500' }
   ]
 
   return (

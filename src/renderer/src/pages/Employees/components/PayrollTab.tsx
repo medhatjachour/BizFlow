@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react'
 import type { EmployeePayroll } from '../types'
+import { useLanguage } from '../../../contexts/LanguageContext'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
@@ -9,23 +10,24 @@ interface Props {
 }
 
 export default function PayrollTab({ payrollRecords, onAdd }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900 dark:text-white">Payroll Records</h3>
+        <h3 className="font-semibold text-slate-900 dark:text-white">{t('empPayrollRecords')}</h3>
         <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-          <Plus size={14} /> Add / Edit Payroll
+          <Plus size={14} /> {t('empAddEditPayroll')}
         </button>
       </div>
       {payrollRecords.length === 0 ? (
-        <p className="text-slate-500 text-center py-12">No payroll records yet</p>
+        <p className="text-slate-500 text-center py-12">{t('empNoPayrollYet')}</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-700/50">
               <tr>
-                {['Period', 'Base Salary', 'Bonuses', 'Deductions', 'Net Pay', 'Status', 'Paid Date'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{h}</th>
+                {[t('period'), t('empBaseSalary'), t('empBonuses'), t('empDeductions'), t('empNetPay'), t('status'), t('empPaidDate')].map((h, i) => (
+                  <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -39,7 +41,7 @@ export default function PayrollTab({ payrollRecords, onAdd }: Props) {
                   <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">${p.netPay.toFixed(2)}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${p.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                      {p.status}
+                      {p.status === 'paid' ? t('empPaid') : t('empStatusPending')}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{p.paidDate ? new Date(p.paidDate).toLocaleDateString() : '—'}</td>
@@ -52,3 +54,4 @@ export default function PayrollTab({ payrollRecords, onAdd }: Props) {
     </div>
   )
 }
+
