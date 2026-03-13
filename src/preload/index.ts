@@ -452,7 +452,8 @@ const api = {
   modules: {
     getEnabled: (): Promise<string[]> => ipcRenderer.invoke('module:getEnabled'),
     setEnabled: (moduleId: string, enabled: boolean): Promise<void> =>
-      ipcRenderer.invoke('module:setEnabled', { moduleId, enabled })
+      ipcRenderer.invoke('module:setEnabled', { moduleId, enabled }),
+    relaunch: (): Promise<void> => ipcRenderer.invoke('module:relaunch'),
   },
   // ─── Plugin APIs ──────────────────────────────────────────────────────────
   // Each plugin exposes its IPC bindings under its own namespace.

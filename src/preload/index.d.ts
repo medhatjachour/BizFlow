@@ -320,6 +320,7 @@ interface API {
   modules: {
     getEnabled: () => Promise<string[]>
     setEnabled: (moduleId: string, enabled: boolean) => Promise<void>
+    relaunch: () => Promise<void>
   }
   // ─── Plugin APIs ────────────────────────────────────────────────────────
   bakery: {
