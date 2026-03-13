@@ -12,7 +12,13 @@ const SHIFT_TYPE_COLORS: Record<string, string> = {
 function shiftDuration(start: string, end: string, breakMins: number) {
   const [sh, sm] = start.split(':').map(Number)
   const [eh, em] = end.split(':').map(Number)
-  const totalMins = (eh * 60 + em) - (sh * 60 + sm) - breakMins
+  const startMins = sh * 60 + sm
+  let endMins = eh * 60 + em
+  // Handle shifts that cross midnight by treating the end time as next day
+  if (endMins < startMins) {
+    endMins += 24 * 60
+  }
+  const totalMins = endMins - startMins - breakMins
   if (totalMins <= 0) return '—'
   const h = Math.floor(totalMins / 60)
   const m = totalMins % 60
