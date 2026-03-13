@@ -121,22 +121,34 @@ interface API {
   employees: {
     getAll: () => Promise<any>
     getById: (id: string) => Promise<any>
-    create: (employeeData: {
-      name: string
-      role: string
-      email: string
-      phone: string
-      salary: number
-    }) => Promise<any>
-    update: (id: string, employeeData: {
-      name?: string
-      role?: string
-      email?: string
-      phone?: string
-      salary?: number
-      performance?: number
-    }) => Promise<any>
+    search: (params: { query?: string; status?: string; department?: string; role?: string }) => Promise<any>
+    stats: () => Promise<any>
+    create: (employeeData: any) => Promise<any>
+    update: (id: string, employeeData: any) => Promise<any>
     delete: (id: string) => Promise<any>
+    attendance: {
+      upsert: (data: any) => Promise<any>
+      getRange: (params: { employeeId: string; from: string; to: string }) => Promise<any>
+      checkIn: (employeeId: string) => Promise<any>
+      checkOut: (employeeId: string) => Promise<any>
+    }
+    payroll: {
+      upsert: (data: any) => Promise<any>
+      getAll: (year: number) => Promise<any>
+    }
+    activity: {
+      add: (data: { employeeId: string; action: string; details?: string; performedBy?: string }) => Promise<any>
+    }
+    shifts: {
+      add: (data: any) => Promise<any>
+      getAll: (employeeId: string) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    overtime: {
+      add: (data: any) => Promise<any>
+      approve: (id: string, approvedBy?: string) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
   }
   reports: {
     getSalesData: (options: { startDate: Date; endDate: Date }) => Promise<any>
@@ -320,6 +332,7 @@ interface API {
   modules: {
     getEnabled: () => Promise<string[]>
     setEnabled: (moduleId: string, enabled: boolean) => Promise<void>
+    relaunch: () => Promise<void>
   }
   // ─── Plugin APIs ────────────────────────────────────────────────────────
   bakery: {

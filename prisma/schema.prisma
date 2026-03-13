@@ -276,17 +276,153 @@ model Store {
 }
 
 model Employee {
-  id          String   @id @default(uuid())
-  name        String
-  role        String
-  email       String   @unique
-  phone       String
-  salary      Float    @default(0) // Monthly salary
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@index([salary])
+  id              String              @id @default(uuid())
+  // Core identity
+  name            String
+  role            String              // e.g. "Cashier", "Manager", "Warehouse"
+  department      String?             // e.g. "Sales", "Operations"
+  email           String?             @unique
+  phone           String
+  address         String?
+  nationalId      String?             // National ID / passport number
+  avatarUrl       String?             // Profile photo path
+  // Employment details
+  employmentType  String              @default("full-time") // full-time, part-time, contract
+  status          String              @default("active")    // active, on-leave, terminated
+  hireDate        DateTime            @default(now())
+  terminationDate DateTime?
+  terminationNote String?
+  // Compensation
+  salary          Float               @default(0)
+  salaryType      String              @default("monthly")   // monthly, hourly, daily
+  // Emergency contact
+  emergencyName   String?
+  emergencyPhone  String?
+  // Notes
+  notes           String?
+  // Performance
+  performanceScore Float?              // 0–100 performance score
+  // Relations
+  attendance      EmployeeAttendance[]
+  documents       EmployeeDocument[]
+  activityLogs    EmployeeActivityLog[]
+  payrollRecords  EmployeePayroll[]
+  shifts          EmployeeShift[]
+  overtimeRecords EmployeeOvertime[]
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
   @@index([name])
+  @@index([role])
+  @@index([status])
+  @@index([department])
+  @@index([hireDate])
+  @@index([email])
+}
+
+// Daily check-in / check-out attendance
+model EmployeeAttendance {
+  id         String   @id @default(uuid())
+  employeeId String
+  date       DateTime // The calendar day (midnight UTC)
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     String   @default("present") // present, absent, late, half-day, leave
+  notes      String?
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([employeeId, date])
+  @@index([employeeId])
+  @@index([date])
+  @@index([status])
+}
+
+// Files / contracts / certificates attached to employee
+model EmployeeDocument {
+  id          String   @id @default(uuid())
+  employeeId  String
+  title       String
+  type        String   // contract, id_copy, certificate, other
+  filename    String
+  uploadedAt  DateTime @default(now())
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([type])
+}
+
+// Audit log: every significant action tied to an employee
+model EmployeeActivityLog {
+  id          String   @id @default(uuid())
+  employeeId  String
+  action      String   // e.g. "salary_updated", "status_changed", "checked_in"
+  details     String?  // JSON or plain text description
+  performedBy String?  // userId who performed the action
+  createdAt   DateTime @default(now())
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@index([createdAt])
+  @@index([action])
+}
+
+// Monthly payroll records
+model EmployeePayroll {
+  id           String   @id @default(uuid())
+  employeeId   String
+  month        Int      // 1–12
+  year         Int
+  baseSalary   Float
+  bonuses      Float    @default(0)
+  deductions   Float    @default(0)
+  netPay       Float
+  status       String   @default("pending") // pending, paid
+  paidDate     DateTime?
+  notes        String?
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([employeeId, month, year])
+  @@index([employeeId])
+  @@index([year, month])
+  @@index([status])
+}
+
+// Planned shifts — when an employee is scheduled to work
+model EmployeeShift {
+  id          String   @id @default(uuid())
+  employeeId  String
+  date        DateTime
+  shiftType   String   @default("morning")  // morning, evening, night, custom
+  startTime   String   // "HH:MM"
+  endTime     String   // "HH:MM"
+  breakMins   Int      @default(0)
+  notes       String?
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([employeeId])
+  @@index([date])
+}
+
+// Overtime records — extra hours worked beyond the normal shift
+model EmployeeOvertime {
+  id          String   @id @default(uuid())
+  employeeId  String
+  date        DateTime
+  hours       Float    // extra hours worked
+  reason      String?
+  approved    Boolean  @default(false)
+  approvedBy  String?
+  multiplier  Float    @default(1.5)  // pay rate multiplier (1.5 = time + half)
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([employeeId])
+  @@index([date])
 }
 
 model Customer {

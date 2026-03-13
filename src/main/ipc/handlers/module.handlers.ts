@@ -8,7 +8,7 @@
  *   module:setEnabled  → void              — enable/disable a module by ID
  */
 
-import { ipcMain } from 'electron'
+import { ipcMain, app } from 'electron'
 import { getEnabledModuleIds, setModuleEnabled } from '../../utils/module-settings'
 import { createLogger } from '../../utils/logger'
 
@@ -22,5 +22,11 @@ export function registerModuleHandlers(): void {
   ipcMain.handle('module:setEnabled', (_event, { moduleId, enabled }: { moduleId: string; enabled: boolean }) => {
     setModuleEnabled(moduleId, enabled)
     log.info(`Module "${moduleId}" ${enabled ? 'enabled' : 'disabled'}`)
+  })
+
+  ipcMain.handle('module:relaunch', () => {
+    log.info('Relaunching app to apply module changes…')
+    app.relaunch()
+    app.exit(0)
   })
 }

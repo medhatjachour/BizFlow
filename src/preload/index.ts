@@ -158,22 +158,37 @@ const api = {
   employees: {
     getAll: () => ipcRenderer.invoke('employees:getAll'),
     getById: (id: string) => ipcRenderer.invoke('employees:getById', id),
-    create: (employeeData: {
-      name: string
-      role: string
-      email: string
-      phone: string
-      salary: number
-    }) => ipcRenderer.invoke('employees:create', employeeData),
-    update: (id: string, employeeData: {
-      name?: string
-      role?: string
-      email?: string
-      phone?: string
-      salary?: number
-      performance?: number
-    }) => ipcRenderer.invoke('employees:update', { id, employeeData }),
-    delete: (id: string) => ipcRenderer.invoke('employees:delete', id)
+    search: (params: { query?: string; status?: string; department?: string; role?: string }) =>
+      ipcRenderer.invoke('employees:search', params),
+    stats: () => ipcRenderer.invoke('employees:stats'),
+    create: (employeeData: any) => ipcRenderer.invoke('employees:create', employeeData),
+    update: (id: string, employeeData: any) => ipcRenderer.invoke('employees:update', { id, employeeData }),
+    delete: (id: string) => ipcRenderer.invoke('employees:delete', id),
+    attendance: {
+      upsert: (data: any) => ipcRenderer.invoke('employees:attendance:upsert', data),
+      getRange: (params: { employeeId: string; from: string; to: string }) =>
+        ipcRenderer.invoke('employees:attendance:getRange', params),
+      checkIn: (employeeId: string) => ipcRenderer.invoke('employees:attendance:checkIn', { employeeId }),
+      checkOut: (employeeId: string) => ipcRenderer.invoke('employees:attendance:checkOut', { employeeId })
+    },
+    payroll: {
+      upsert: (data: any) => ipcRenderer.invoke('employees:payroll:upsert', data),
+      getAll: (year: number) => ipcRenderer.invoke('employees:payroll:getAll', { year })
+    },
+    activity: {
+      add: (data: { employeeId: string; action: string; details?: string; performedBy?: string }) =>
+        ipcRenderer.invoke('employees:activity:add', data)
+    },
+    shifts: {
+      add: (data: any) => ipcRenderer.invoke('employees:shifts:add', data),
+      getAll: (employeeId: string) => ipcRenderer.invoke('employees:shifts:getAll', { employeeId }),
+      delete: (id: string) => ipcRenderer.invoke('employees:shifts:delete', id)
+    },
+    overtime: {
+      add: (data: any) => ipcRenderer.invoke('employees:overtime:add', data),
+      approve: (id: string, approvedBy?: string) => ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy }),
+      delete: (id: string) => ipcRenderer.invoke('employees:overtime:delete', id)
+    }
   },
   users: {
     getAll: () => ipcRenderer.invoke('users:getAll'),
@@ -437,7 +452,8 @@ const api = {
   modules: {
     getEnabled: (): Promise<string[]> => ipcRenderer.invoke('module:getEnabled'),
     setEnabled: (moduleId: string, enabled: boolean): Promise<void> =>
-      ipcRenderer.invoke('module:setEnabled', { moduleId, enabled })
+      ipcRenderer.invoke('module:setEnabled', { moduleId, enabled }),
+    relaunch: (): Promise<void> => ipcRenderer.invoke('module:relaunch'),
   },
   // ─── Plugin APIs ──────────────────────────────────────────────────────────
   // Each plugin exposes its IPC bindings under its own namespace.

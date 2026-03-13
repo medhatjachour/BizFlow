@@ -27,7 +27,10 @@ export interface ModuleMeta {
   id: ModuleId
   name: string
   description: string
+  /** Short bullet-point feature list shown in the settings UI. */
+  features: string[]
   icon: string
+  color: string
   status: 'active' | 'planned' | 'future'
   /** Prisma models this module introduces (for documentation only). */
   models: string[]
@@ -41,9 +44,16 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
   [MODULE_IDS.BAKERY]: {
     id: MODULE_IDS.BAKERY,
     name: 'Bakery',
-    description:
-      'Production scheduling, recipe management, ingredient pantry and waste tracking for bakery businesses.',
+    description: 'Production scheduling, recipe management, ingredient pantry and waste tracking for bakery businesses.',
+    features: [
+      'Recipe builder with yield & cost calculation',
+      'Production batch scheduling & tracking',
+      'Pantry / ingredient stock management',
+      'Waste logging & spoilage analytics',
+      'Daily production schedule board',
+    ],
     icon: '🥐',
+    color: 'amber',
     status: 'active',
     models: ['Recipe', 'RecipeIngredient', 'ProductionBatch', 'PantryIngredient', 'WasteLog', 'ProductionSchedule'],
     ipcPrefix: 'bakery',
@@ -52,20 +62,36 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
   [MODULE_IDS.RESTAURANT]: {
     id: MODULE_IDS.RESTAURANT,
     name: 'Restaurant',
-    description: 'Table management, reservations and kitchen order routing for restaurants.',
+    description: 'Table management, reservations and dine-in order management for restaurants.',
+    features: [
+      'Visual table layout & seat management',
+      'Reservation booking with guest details',
+      'Dine-in order creation from the table',
+      'Menu item management per category',
+      'Kitchen-ready order status board',
+    ],
     icon: '🍽️',
+    color: 'rose',
     status: 'active',
-    models: ['Table', 'Reservation', 'KitchenOrder'],
+    models: ['RestaurantTable', 'TableReservation', 'MenuItem', 'DineInOrder', 'DineInOrderItem'],
     ipcPrefix: 'restaurant',
     routePrefix: '/restaurant'
   },
   [MODULE_IDS.WAREHOUSE]: {
     id: MODULE_IDS.WAREHOUSE,
     name: 'Warehouse',
-    description: 'Multi-location inventory with bin/location tracking and stock transfers.',
+    description: 'Multi-location inventory with bin/location tracking and inter-location stock transfers.',
+    features: [
+      'Multiple warehouse location management',
+      'Per-location stock level tracking',
+      'Stock transfer between locations',
+      'Transfer history & audit trail',
+      'Low-stock alerts per location',
+    ],
     icon: '🏭',
+    color: 'blue',
     status: 'active',
-    models: ['Location', 'Transfer', 'StockLevel'],
+    models: ['WarehouseLocation', 'WarehouseStock', 'StockTransfer', 'StockTransferItem'],
     ipcPrefix: 'warehouse',
     routePrefix: '/warehouse'
   }

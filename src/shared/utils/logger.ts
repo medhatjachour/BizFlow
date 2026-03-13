@@ -14,7 +14,21 @@ function sendToMain(level: 'info' | 'warn' | 'error' | 'debug', args: unknown[])
       const [first, ...rest] = args
       const message = typeof first === 'string' ? first : JSON.stringify(first)
       const data = rest.length === 1 ? rest[0] : rest.length > 1 ? rest : undefined
-      api[level](message, data)
+      // Serialize objects so they don't appear as [object Object] in the log file
+      const serialized = data !== undefined && typeof data === 'object'
+        ? (() => {
+            // Preserve Error details that JSON.stringify loses
+            if (data instanceof Error) {
+              return JSON.stringify({ name: data.name, message: data.message, stack: data.stack })
+            }
+            try {
+              return JSON.stringify(data)
+            } catch {
+              return String(data)
+            }
+          })()
+        : data
+      api[level](message, serialized)
     }
   } catch {
     // Never let logging crash the renderer
