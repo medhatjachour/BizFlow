@@ -34,7 +34,8 @@ const Inventory    = lazy(() => import('./pages/Inventory/index'))
 const Expenses     = lazy(() => import('./pages/Expenses/index'))
 const Sales        = lazy(() => import('./pages/Sales'))
 const Stores       = lazy(() => import('./pages/Stores'))
-const Employees    = lazy(() => import('./pages/Employees'))
+const Employees    = lazy(() => import('./pages/Employees/index'))
+const EmployeeProfile = lazy(() => import('./pages/Employees/EmployeeProfile'))
 const Customers    = lazy(() => import('./pages/Customers/Customers'))
 const CustomerProfile = lazy(() => import('./pages/Customers/CustomerProfile'))
 const Reports      = lazy(() => import('./pages/Reports/Reports'))
@@ -178,6 +179,16 @@ function AppContent() {
               <RequireAuth>
                 <RootLayoutWrapper>
                   <RouteErrorBoundary name="Employees"><Employees /></RouteErrorBoundary>
+                </RootLayoutWrapper>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/employees/:id"
+            element={
+              <RequireAuth>
+                <RootLayoutWrapper>
+                  <RouteErrorBoundary name="Employee Profile"><EmployeeProfile /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }

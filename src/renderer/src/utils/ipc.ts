@@ -101,6 +101,9 @@ const mockIPC = {
   },
   employees: {
     getAll: async () => JSON.parse(localStorage.getItem('employees') || '[]'),
+    getById: async (_id: string) => null,
+    search: async (_params: any) => [],
+    stats: async () => ({ total: 0, active: 0, onLeave: 0, terminated: 0, presentToday: 0, attendanceRate: 0, payrollThisMonth: 0 }),
     create: async (data: any) => {
       const employees = JSON.parse(localStorage.getItem('employees') || '[]')
       const newEmployee = { id: Date.now().toString(), ...data }
@@ -123,6 +126,29 @@ const mockIPC = {
       const filtered = employees.filter((e: any) => e.id !== id)
       localStorage.setItem('employees', JSON.stringify(filtered))
       return { success: true }
+    },
+    attendance: {
+      upsert: async (_data: any) => ({ success: true }),
+      getRange: async (_params: any) => [],
+      checkIn: async (_id: string) => ({ success: true }),
+      checkOut: async (_id: string) => ({ success: true })
+    },
+    payroll: {
+      upsert: async (_data: any) => ({ success: true }),
+      getAll: async (_year: number) => []
+    },
+    activity: {
+      add: async (_data: any) => ({ success: true })
+    },
+    shifts: {
+      add: async (_data: any) => ({ success: true }),
+      getAll: async (_id: string) => [],
+      delete: async (_id: string) => ({ success: true })
+    },
+    overtime: {
+      add: async (_data: any) => ({ success: true }),
+      approve: async (_id: string, _by?: string) => ({ success: true }),
+      delete: async (_id: string) => ({ success: true })
     }
   },
   customers: {
@@ -487,9 +513,35 @@ export const ipc = isElectron ? {
   // Employee operations
   employees: {
     getAll: () => window.electron.ipcRenderer.invoke('employees:getAll'),
+    getById: (id: string) => window.electron.ipcRenderer.invoke('employees:getById', id),
+    search: (params: any) => window.electron.ipcRenderer.invoke('employees:search', params),
+    stats: () => window.electron.ipcRenderer.invoke('employees:stats'),
     create: (data: any) => window.electron.ipcRenderer.invoke('employees:create', data),
     update: (id: string, data: any) => window.electron.ipcRenderer.invoke('employees:update', { id, employeeData: data }),
-    delete: (id: string) => window.electron.ipcRenderer.invoke('employees:delete', id)
+    delete: (id: string) => window.electron.ipcRenderer.invoke('employees:delete', id),
+    attendance: {
+      upsert: (data: any) => window.electron.ipcRenderer.invoke('employees:attendance:upsert', data),
+      getRange: (params: any) => window.electron.ipcRenderer.invoke('employees:attendance:getRange', params),
+      checkIn: (employeeId: string) => window.electron.ipcRenderer.invoke('employees:attendance:checkIn', { employeeId }),
+      checkOut: (employeeId: string) => window.electron.ipcRenderer.invoke('employees:attendance:checkOut', { employeeId })
+    },
+    payroll: {
+      upsert: (data: any) => window.electron.ipcRenderer.invoke('employees:payroll:upsert', data),
+      getAll: (year: number) => window.electron.ipcRenderer.invoke('employees:payroll:getAll', { year })
+    },
+    activity: {
+      add: (data: any) => window.electron.ipcRenderer.invoke('employees:activity:add', data)
+    },
+    shifts: {
+      add: (data: any) => window.electron.ipcRenderer.invoke('employees:shifts:add', data),
+      getAll: (employeeId: string) => window.electron.ipcRenderer.invoke('employees:shifts:getAll', { employeeId }),
+      delete: (id: string) => window.electron.ipcRenderer.invoke('employees:shifts:delete', id)
+    },
+    overtime: {
+      add: (data: any) => window.electron.ipcRenderer.invoke('employees:overtime:add', data),
+      approve: (id: string, approvedBy?: string) => window.electron.ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy }),
+      delete: (id: string) => window.electron.ipcRenderer.invoke('employees:overtime:delete', id)
+    }
   },
   
   // Customer operations
