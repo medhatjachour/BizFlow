@@ -84,7 +84,7 @@ export default function Expenses() {
           <span className="text-sm text-slate-500">{s.filteredExpenses.length} {s.t('expenseTransactions')}</span>
         </div>
         <ExpenseTable
-          expenses={s.filteredExpenses as any}
+          expenses={s.filteredExpenses}
           getCategoryName={s.getCategoryName}
           getCategoryColor={s.getCategoryColor}
           onEdit={s.openEdit}

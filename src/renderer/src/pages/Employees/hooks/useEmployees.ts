@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ipc } from '../../../utils/ipc'
 import { useToast } from '../../../contexts/ToastContext'
+import { useLanguage } from '../../../contexts/LanguageContext'
 import logger from '../../../../../shared/utils/logger'
 import type { Employee, EmployeeStats } from '../types'
 
@@ -20,6 +21,7 @@ export type EmployeeFormData = typeof EMPTY_FORM
 
 export function useEmployees() {
   const toast = useToast()
+  const { t } = useLanguage()
 
   const [employees, setEmployees] = useState<Employee[]>([])
   const [stats, setStats] = useState<EmployeeStats | null>(null)
@@ -47,7 +49,7 @@ export function useEmployees() {
       setStats(st)
     } catch (err) {
       logger.error('Failed to load employees:', err)
-      toast.error?.('Failed to load employees')
+      toast.error?.(t('empToastLoadFailed'))
     } finally {
       setLoading(false)
     }
@@ -65,9 +67,9 @@ export function useEmployees() {
   })
 
   const validateForm = () => {
-    if (!formData.name.trim()) { toast.error?.('Name is required'); return false }
-    if (!formData.role.trim()) { toast.error?.('Role is required'); return false }
-    if (!formData.phone.trim()) { toast.error?.('Phone is required'); return false }
+    if (!formData.name.trim()) { toast.error?.(t('empToastNameRequired')); return false }
+    if (!formData.role.trim()) { toast.error?.(t('empToastRoleRequired')); return false }
+    if (!formData.phone.trim()) { toast.error?.(t('empToastPhoneRequired')); return false }
     return true
   }
 
@@ -83,15 +85,15 @@ export function useEmployees() {
         performanceScore: formData.performanceScore > 0 ? formData.performanceScore : null
       })
       if (res?.success) {
-        toast.success?.('Employee added')
+        toast.success?.(t('empToastAdded'))
         setShowAddModal(false)
         setFormData(EMPTY_FORM)
         load()
       } else {
-        toast.error?.(res?.message || 'Failed to add employee')
+        toast.error?.(res?.message || t('empToastAddFailed'))
       }
     } catch (err: any) {
-      toast.error?.(err.message || 'Failed to add employee')
+      toast.error?.(err.message || t('empToastAddFailed'))
     } finally {
       setSaving(false)
     }
@@ -109,27 +111,27 @@ export function useEmployees() {
         performanceScore: formData.performanceScore > 0 ? formData.performanceScore : null
       })
       if (res?.success) {
-        toast.success?.('Employee updated')
+        toast.success?.(t('empToastUpdated'))
         setShowEditModal(false)
         setSelected(null)
         setFormData(EMPTY_FORM)
         load()
       } else {
-        toast.error?.(res?.message || 'Failed to update')
+        toast.error?.(res?.message || t('empToastUpdateFailed'))
       }
     } catch (err: any) {
-      toast.error?.(err.message || 'Failed to update')
+      toast.error?.(err.message || t('empToastUpdateFailed'))
     } finally {
       setSaving(false)
     }
   }
 
   const handleDelete = async (emp: Employee) => {
-    if (!window.confirm(`Delete employee "${emp.name}"? This cannot be undone.`)) return
+    if (!window.confirm(t('empConfirmDelete', { name: emp.name }))) return
     try {
       const res = await ipc.employees.delete(emp.id)
-      if (res?.success) { toast.success?.('Employee deleted'); load() }
-      else toast.error?.(res?.message || 'Failed to delete')
+      if (res?.success) { toast.success?.(t('empToastDeleted')); load() }
+      else toast.error?.(res?.message || t('empToastDeleteFailed'))
     } catch (err: any) { toast.error?.(err.message) }
   }
 
@@ -151,8 +153,8 @@ export function useEmployees() {
     setCheckingIn(emp.id)
     try {
       const res = await ipc.employees.attendance.checkIn(emp.id)
-      if (res?.success) { toast.success?.(`${emp.name} checked in`); load() }
-      else toast.error?.(res?.message || 'Check-in failed')
+      if (res?.success) { toast.success?.(t('empToastCheckInOk', { name: emp.name })); load() }
+      else toast.error?.(res?.message || t('empToastCheckInFailed'))
     } catch (err: any) { toast.error?.(err.message) }
     finally { setCheckingIn(null) }
   }
@@ -161,8 +163,8 @@ export function useEmployees() {
     setCheckingIn(emp.id)
     try {
       const res = await ipc.employees.attendance.checkOut(emp.id)
-      if (res?.success) { toast.success?.(`${emp.name} checked out`); load() }
-      else toast.error?.(res?.message || 'Check-out failed')
+      if (res?.success) { toast.success?.(t('empToastCheckOutOk', { name: emp.name })); load() }
+      else toast.error?.(res?.message || t('empToastCheckOutFailed'))
     } catch (err: any) { toast.error?.(err.message) }
     finally { setCheckingIn(null) }
   }

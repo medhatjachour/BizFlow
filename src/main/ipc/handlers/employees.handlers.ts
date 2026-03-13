@@ -123,7 +123,7 @@ export function registerEmployeesHandlers(prisma: any) {
     try {
       if (!prisma) return { success: false }
       const dayStart = new Date(date)
-      dayStart.setHours(0, 0, 0, 0)
+      dayStart.setUTCHours(0, 0, 0, 0)
       const record = await prisma.employeeAttendance.upsert({
         where: { employeeId_date: { employeeId, date: dayStart } },
         create: { employeeId, date: dayStart, status, checkIn, checkOut, notes },
@@ -166,7 +166,7 @@ export function registerEmployeesHandlers(prisma: any) {
       if (!prisma) return { success: false }
       const now = new Date()
       const dayStart = new Date(now)
-      dayStart.setHours(0, 0, 0, 0)
+      dayStart.setUTCHours(0, 0, 0, 0)
 
       // Guard: only allow one check-in per day
       const existing = await prisma.employeeAttendance.findUnique({
@@ -201,7 +201,7 @@ export function registerEmployeesHandlers(prisma: any) {
       if (!prisma) return { success: false }
       const now = new Date()
       const dayStart = new Date(now)
-      dayStart.setHours(0, 0, 0, 0)
+      dayStart.setUTCHours(0, 0, 0, 0)
 
       // Guard: must have checked in, and must not have checked out yet
       const existing = await prisma.employeeAttendance.findUnique({
@@ -318,7 +318,7 @@ export function registerEmployeesHandlers(prisma: any) {
     try {
       if (!prisma) return null
       const today = new Date()
-      today.setHours(0, 0, 0, 0)
+      today.setUTCHours(0, 0, 0, 0)
       const [total, active, onLeave, terminatedCount, todayAttendance, payrollThisMonth] = await Promise.all([
         prisma.employee.count(),
         prisma.employee.count({ where: { status: 'active' } }),
@@ -351,7 +351,7 @@ export function registerEmployeesHandlers(prisma: any) {
     try {
       if (!prisma) return { success: false }
       const dayStart = new Date(date)
-      dayStart.setHours(0, 0, 0, 0)
+      dayStart.setUTCHours(0, 0, 0, 0)
       const shift = await prisma.employeeShift.create({
         data: { employeeId, date: dayStart, shiftType: shiftType || 'morning', startTime, endTime, breakMins: breakMins ?? 0, notes: notes || null }
       })
@@ -400,7 +400,7 @@ export function registerEmployeesHandlers(prisma: any) {
     try {
       if (!prisma) return { success: false }
       const dayStart = new Date(date)
-      dayStart.setHours(0, 0, 0, 0)
+      dayStart.setUTCHours(0, 0, 0, 0)
       const ot = await prisma.employeeOvertime.create({
         data: { employeeId, date: dayStart, hours, reason: reason || null, multiplier: multiplier ?? 1.5, approved: false }
       })
