@@ -4,6 +4,7 @@ import log from 'electron-log/preload'
 import { bakeryPreload } from '../plugins/bakery/preload'
 import { restaurantPreload } from '../plugins/restaurant/preload'
 import { warehousePreload } from '../plugins/warehouse/preload'
+import { clinicPreload } from '../plugins/clinic/preload'
 
 // Custom APIs for renderer
 const api = {
@@ -15,7 +16,11 @@ const api = {
       ipcRenderer.invoke('auth:create', { username, password, role })
   },
   dashboard: {
-    getMetrics: () => ipcRenderer.invoke('dashboard:getMetrics')
+    getMetrics: () => ipcRenderer.invoke('dashboard:getMetrics'),
+    getSalesChart: (opts: { startDate: string; endDate: string }) => ipcRenderer.invoke('dashboard:getSalesChart', opts),
+    getTopProducts: (opts: { startDate: string; endDate: string; limit?: number }) => ipcRenderer.invoke('dashboard:getTopProducts', opts),
+    getRecentActivity: (opts?: { limit?: number }) => ipcRenderer.invoke('dashboard:getRecentActivity', opts),
+    getDayStats: (opts: { startDate: string; endDate: string }) => ipcRenderer.invoke('dashboard:getDayStats', opts),
   },
   sales: {
     getAll: () => ipcRenderer.invoke('sales:getAll'),
@@ -63,6 +68,7 @@ const api = {
   },
   customers: {
     getAll: () => ipcRenderer.invoke('customers:getAll'),
+    getCount: () => ipcRenderer.invoke('customers:getCount'),
     getProfile: (customerId: string) => ipcRenderer.invoke('customers:getProfile', customerId)
   },
   inventory: {
@@ -460,7 +466,8 @@ const api = {
   // Adding a plugin: import its preload and add it here.
   bakery: bakeryPreload,
   restaurant: restaurantPreload,
-  warehouse: warehousePreload
+  warehouse: warehousePreload,
+  clinic: clinicPreload
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

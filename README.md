@@ -125,8 +125,9 @@ BizFlow is built on a **microkernel** design — the core app is lean and stable
 | Plugin | Status | What it adds |
 |--------|--------|-------------|
 | 🥐 **Bakery** | ✅ Active | Recipe management, production batches, pantry stock, waste tracking, scheduling, P&L |
-| 🍽️ Restaurant | 🗓 Planned | Table management, reservations, kitchen orders |
-| 🏭 Warehouse | 🗓 Future | Multi-location inventory, bin tracking, stock transfers |
+| 🏥 **Clinic** | ✅ Active | Patient records, session tracking, prescriptions, check results (PDF), financial stats |
+| 🍽️ **Restaurant** | ✅ Active | Table management, reservations, kitchen orders, menu management |
+| 🏭 **Warehouse** | ✅ Active | Multi-location inventory, bin tracking, stock transfers |
 
 Plugins can be **enabled or disabled** from Settings → Modules. When a plugin is off, its pages and database tables are completely inactive. Each plugin is fully self-contained — its backend logic, UI pages, IPC bridge, and database schema all live inside `src/plugins/<name>/`.
 
@@ -213,15 +214,17 @@ The core app handles authentication, products, sales, finance, and reporting. Bu
 
 ```
 src/plugins/<name>/
-  handlers.ts     ← backend IPC logic
-  preload.ts      ← window.api.<name> bindings
-  migrate.ts      ← ensures its DB tables exist at startup
-  manifest.ts     ← metadata (id, name, routes, models)
-  schema.prisma   ← its own Prisma models
+  handlers/           ← backend IPC handlers (split by domain)
+    index.ts          ← registers all plugin handlers
+    <entity>.ts       ← per-entity handler file
+  preload.ts          ← window.api.<name>.* bindings
+  migrate.ts          ← ensures plugin tables exist at runtime
+  manifest.ts         ← metadata (id, name, routes, models)
+  schema.prisma       ← plugin's own Prisma models
 
 src/renderer/src/plugins/<name>/pages/
-  index.tsx       ← main page
-  components/     ← all UI components
+  index.tsx           ← main list / overview page
+  components/         ← all UI components for this plugin
 ```
 
 Schemas are merged at build time: `scripts/merge-schemas.js` combines `prisma/schema.prisma` + every enabled plugin's `schema.prisma` → `prisma/merged.prisma`.
@@ -327,13 +330,54 @@ BizFlow/
 │   │       ├── logger.ts                 # Structured logger (electron-log)
 │   │       └── module-settings.ts        # Plugin enable/disable persistence
 │   │
-│   ├── plugins/                          # ── Microkernel plugin layer (backend)──
-│   │   └── bakery/                       # Bakery plugin (self-contained)
-│   │       ├── manifest.ts               # id, name, routes, models metadata
-│   │       ├── handlers.ts               # All bakery IPC handlers
-│   │       ├── preload.ts                # window.api.bakery.* bindings
-│   │       ├── migrate.ts                # Ensures bakery tables exist at runtime
-│   │       └── schema.prisma             # Bakery Prisma models
+│   ├── plugins/                          # ── Microkernel plugin layer (backend) ──
+│   │   ├── bakery/                       # Bakery plugin (self-contained)
+│   │   │   ├── manifest.ts               # id, name, routes, models metadata
+│   │   │   ├── handlers/                 # IPC handlers split by domain
+│   │   │   │   ├── index.ts              # Registers all bakery handlers
+│   │   │   │   ├── recipes.ts
+│   │   │   │   ├── production.ts
+│   │   │   │   ├── pantry.ts
+│   │   │   │   ├── schedule.ts
+│   │   │   │   ├── waste.ts
+│   │   │   │   └── analytics.ts
+│   │   │   ├── preload.ts                # window.api.bakery.* bindings
+│   │   │   ├── migrate.ts                # Ensures bakery tables exist at runtime
+│   │   │   └── schema.prisma             # Bakery Prisma models
+│   │   ├── clinic/                       # Clinic plugin (self-contained)
+│   │   │   ├── manifest.ts
+│   │   │   ├── handlers/
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── patients.ts
+│   │   │   │   ├── sessions.ts
+│   │   │   │   ├── checkResults.ts
+│   │   │   │   └── stats.ts
+│   │   │   ├── preload.ts                # window.api.clinic.* bindings
+│   │   │   ├── migrate.ts
+│   │   │   └── schema.prisma
+│   │   ├── restaurant/                   # Restaurant plugin (self-contained)
+│   │   │   ├── manifest.ts
+│   │   │   ├── handlers/
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── menu.ts
+│   │   │   │   ├── orders.ts
+│   │   │   │   ├── tables.ts
+│   │   │   │   ├── reservations.ts
+│   │   │   │   └── overview.ts
+│   │   │   ├── preload.ts
+│   │   │   ├── migrate.ts
+│   │   │   └── schema.prisma
+│   │   └── warehouse/                    # Warehouse plugin (self-contained)
+│   │       ├── manifest.ts
+│   │       ├── handlers/
+│   │       │   ├── index.ts
+│   │       │   ├── stock.ts
+│   │       │   ├── locations.ts
+│   │       │   ├── transfers.ts
+│   │       │   └── overview.ts
+│   │       ├── preload.ts
+│   │       ├── migrate.ts
+│   │       └── schema.prisma
 │   │
 │   ├── preload/
 │   │   ├── index.ts                      # contextBridge — exposes window.api.*
@@ -361,12 +405,19 @@ BizFlow/
 │   │       │   ├── Finance/
 │   │       │   ├── Inventory/
 │   │       │   ├── Customers/
+│   │       │   ├── Employees/
 │   │       │   ├── Expenses/
 │   │       │   ├── Reports/
 │   │       │   └── Settings/
 │   │       ├── plugins/                  # Plugin UI (mirrors src/plugins/)
-│   │       │   └── bakery/
-│   │       │       └── pages/            # Bakery pages & components
+│   │       │   ├── bakery/
+│   │       │   │   └── pages/            # Bakery pages & components
+│   │       │   ├── clinic/
+│   │       │   │   └── pages/            # Patient list, PatientProfile, session modals
+│   │       │   ├── restaurant/
+│   │       │   │   └── pages/            # Restaurant pages & components
+│   │       │   └── warehouse/
+│   │       │       └── pages/            # Warehouse pages & components
 │   │       ├── i18n/
 │   │       │   └── translations.ts       # EN + AR strings (bilingual)
 │   │       └── services/                 # Frontend-side helpers

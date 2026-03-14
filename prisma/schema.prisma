@@ -244,6 +244,8 @@ model SaleItem {
   @@index([productId])
   @@index([createdAt])
   @@index([transactionId, productId])
+  // Supports dashboard:getTopProducts GROUP BY productId with JOIN on SaleTransaction.createdAt
+  @@index([productId, total])
 }
 
 // Financial Transaction (renamed from Transaction to avoid confusion)

@@ -123,11 +123,9 @@ export default function GoalTracking() {
             return createdAt >= startOfMonth && createdAt <= endOfMonth
           }).length
           
-          logger.info('📊 Goal Tracking - New Customers:', {
-            total: customersResponse.customers.length,
-            newInPeriod: newCustomersCount,
-            period: { start: startOfMonth, end: endOfMonth }
-          })
+          logger.info(
+            `📊 Goal Tracking – New Customers: total=${customersResponse.customers.length}, newInPeriod=${newCustomersCount}`
+          )
         }
       } catch (error) {
         logger.error('Error loading customer data for goals:', error)

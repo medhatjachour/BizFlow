@@ -39,6 +39,7 @@ import type { IPlugin } from '../../../shared/interfaces/IPlugin'
 import BakeryPlugin from '../../../plugins/bakery/index'
 import RestaurantPlugin from '../../../plugins/restaurant/index'
 import WarehousePlugin from '../../../plugins/warehouse/index'
+import ClinicPlugin from '../../../plugins/clinic/index'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Database')
@@ -52,6 +53,7 @@ const ALL_PLUGINS: IPlugin[] = [
   ...(__PLUGIN_BAKERY__     ? [BakeryPlugin]     : []),
   ...(__PLUGIN_RESTAURANT__ ? [RestaurantPlugin] : []),
   ...(__PLUGIN_WAREHOUSE__  ? [WarehousePlugin]  : []),
+  ...(__PLUGIN_CLINIC__     ? [ClinicPlugin]     : []),
 ]
 
 // Initialize Prisma client
@@ -96,6 +98,25 @@ try {
     })
     
     
+    // Apply SQLite performance PRAGMAs immediately after client creation.
+    // The journal_mode=WAL in the connection URL string is NOT reliably applied
+    // by Prisma for SQLite — explicit $queryRawUnsafe calls are required.
+    ;(async () => {
+      try {
+        await prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL;')
+        await prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL;')
+        await prisma.$queryRawUnsafe('PRAGMA cache_size = -65536;')  // 64 MB page cache
+        await prisma.$queryRawUnsafe('PRAGMA temp_store = MEMORY;')
+        await prisma.$queryRawUnsafe('PRAGMA mmap_size = 536870912;') // 512 MB memory-mapped I/O
+        await prisma.$queryRawUnsafe('PRAGMA busy_timeout = 10000;')  // 10 s wait on locked DB
+        await prisma.$queryRawUnsafe('PRAGMA foreign_keys = ON;')
+        await prisma.$queryRawUnsafe('PRAGMA optimize;')
+        log.info('[Database] ✅ SQLite PRAGMAs applied')
+      } catch (e) {
+        log.error('[Database] Failed to apply SQLite PRAGMAs:', e)
+      }
+    })()
+
     // Auto-seed on first connection (production only)
     const isProd = process.env.NODE_ENV !== 'development'
     if (isProd && !isSeeded) {

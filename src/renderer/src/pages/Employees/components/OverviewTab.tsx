@@ -1,4 +1,5 @@
-import { Calendar, User } from 'lucide-react'
+import { useState } from 'react'
+import { Calendar, User, Clock, FileText, X, Pencil, Plus } from 'lucide-react'
 import type { EmployeeProfile, EmployeeAttendance, AttendanceStatus } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
@@ -19,6 +20,7 @@ interface Props {
 
 export default function OverviewTab({ emp, calendar, onLogDate }: Props) {
   const { t } = useLanguage()
+  const [selectedDay, setSelectedDay] = useState<{ date: string; att: EmployeeAttendance | null } | null>(null)
 
   const attLabels: Record<AttendanceStatus, string> = {
     present: t('empStatusPresent'),
@@ -57,8 +59,8 @@ export default function OverviewTab({ emp, calendar, onLogDate }: Props) {
                 key={date}
                 type="button"
                 title={`${new Date(date).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}: ${att ? attLabels[att.status as AttendanceStatus] : t('empNoRecord')}`}
-                onClick={() => onLogDate(date, att)}
-                className={`w-4 h-4 rounded-sm transition-transform hover:scale-125 hover:ring-2 hover:ring-offset-1 hover:ring-primary/60 ${att ? ATTENDANCE_COLORS[att.status as AttendanceStatus] : 'bg-slate-200 dark:bg-slate-700'}`}
+                onClick={() => setSelectedDay(prev => prev?.date === date ? null : { date, att })}
+                className={`w-4 h-4 rounded-sm transition-transform hover:scale-125 hover:ring-2 hover:ring-offset-1 hover:ring-primary/60 ${att ? ATTENDANCE_COLORS[att.status as AttendanceStatus] : 'bg-slate-200 dark:bg-slate-700'} ${selectedDay?.date === date ? 'ring-2 ring-offset-1 ring-primary scale-125' : ''}`}
               />
             ))}
           </div>
@@ -72,6 +74,77 @@ export default function OverviewTab({ emp, calendar, onLogDate }: Props) {
               <div className="w-3 h-3 rounded-sm bg-slate-200 dark:bg-slate-700" />{t('empNoRecord')}
             </div>
           </div>
+
+          {/* ── Day detail panel ──────────────────────────────────────── */}
+          {selectedDay && (
+            <div className="mt-4 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 p-4">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-slate-400 shrink-0" />
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {new Date(selectedDay.date).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDay(null)}
+                  className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {selectedDay.att ? (
+                <>
+                  <div className="flex flex-wrap gap-3 mb-3">
+                    {/* Status badge */}
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${ATTENDANCE_COLORS[selectedDay.att.status as AttendanceStatus]}`} />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        {attLabels[selectedDay.att.status as AttendanceStatus]}
+                      </span>
+                    </div>
+                    {/* Check-in */}
+                    <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                      <Clock size={13} className="text-slate-400" />
+                      <span className="text-xs text-slate-400">{t('empCheckInCol')}:</span>
+                      <span>{selectedDay.att.checkIn ? String(selectedDay.att.checkIn) : '—'}</span>
+                    </div>
+                    {/* Check-out */}
+                    <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                      <Clock size={13} className="text-slate-400" />
+                      <span className="text-xs text-slate-400">{t('empCheckOutCol')}:</span>
+                      <span>{selectedDay.att.checkOut ? String(selectedDay.att.checkOut) : '—'}</span>
+                    </div>
+                  </div>
+                  {selectedDay.att.notes && (
+                    <div className="flex items-start gap-1.5 mb-3 text-sm text-slate-600 dark:text-slate-300">
+                      <FileText size={13} className="text-slate-400 mt-0.5 shrink-0" />
+                      <span>{selectedDay.att.notes}</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => { onLogDate(selectedDay.date, selectedDay.att); setSelectedDay(null) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    <Pencil size={12} /> {t('edit')}
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">{t('empNoRecord')}</span>
+                  <button
+                    type="button"
+                    onClick={() => { onLogDate(selectedDay.date, null); setSelectedDay(null) }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus size={12} /> {t('empAddAttendanceRecord')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

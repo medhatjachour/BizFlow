@@ -1,0 +1,82 @@
+// Clinic Plugin – Prisma Schema
+// This file is merged into prisma/merged.prisma by scripts/merge-schemas.js
+// Do NOT add a datasource or generator block here.
+
+model ClinicPatient {
+  id           String          @id @default(uuid())
+  name         String
+  dateOfBirth  DateTime?
+  gender       String?         // 'male' | 'female' | 'other'
+  phone        String
+  email        String?
+  address      String?
+  nationalId   String?         @unique
+  bloodType    String?         // 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-'
+  allergies    String?
+  medicalNotes String?
+  sessions     ClinicSession[]
+  checkResults ClinicCheckResult[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([name])
+  @@index([phone])
+}
+
+model ClinicSession {
+  id             String               @id @default(uuid())
+  patientId      String
+  patient        ClinicPatient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  visitDate      DateTime             @default(now())
+  visitType      String               @default("routine") // 'first_visit' | 'follow_up' | 'routine' | 'emergency'
+  doctorName     String?
+  chiefComplaint String
+  vitals         String?              // JSON: { bp?, temp?, weight?, height?, pulse?, o2sat? }
+  diagnosis      String?
+  notes          String?
+  followUpDate   DateTime?
+  status         String               @default("completed") // 'active' | 'completed' | 'cancelled'
+  amountCharged  Float?
+  amountPaid     Float?
+  paymentStatus  String               @default("unpaid")   // 'paid' | 'partial' | 'unpaid' | 'waived'
+  paymentMethod  String?              // 'cash' | 'card' | 'insurance' | 'other'
+  prescriptions  ClinicPrescription[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([patientId])
+  @@index([visitDate])
+  @@index([status])
+  @@index([paymentStatus])
+}
+
+model ClinicPrescription {
+  id           String        @id @default(uuid())
+  sessionId    String
+  session      ClinicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  medicineName String
+  dosage       String?       // e.g. "500mg"
+  frequency    String?       // e.g. "3x daily"
+  duration     String?       // e.g. "7 days"
+  quantity     Int?
+  instructions String?
+  createdAt    DateTime      @default(now())
+
+  @@index([sessionId])
+}
+
+model ClinicCheckResult {
+  id          String        @id @default(uuid())
+  patientId   String
+  patient     ClinicPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  fileName    String        // Original file name (for display)
+  filePath    String        // Absolute path on disk
+  fileSize    Int?          // bytes
+  resultDate  DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+
+  @@index([patientId])
+  @@index([resultDate])
+}

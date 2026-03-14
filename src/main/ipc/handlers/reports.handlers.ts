@@ -515,22 +515,16 @@ export function registerReportsHandlers(prisma: any) {
         return created >= new Date(startDate) && created <= new Date(endDate)
       })
 
-      // Get order counts for top customers
+      // Get order counts for top customers via groupBy — no full table scan
+      const orderCountRows = await prisma.saleTransaction.groupBy({
+        by: ['customerId'],
+        where: { customerId: { not: null } },
+        _count: { id: true },
+      })
       const customerOrderCounts: Record<string, number> = {}
-      const allTransactions = await prisma.saleTransaction.findMany({
-        where: {
-          customerId: { not: null }
-        },
-        select: {
-          customerId: true
-        }
-      })
-      
-      allTransactions.forEach(t => {
-        if (t.customerId) {
-          customerOrderCounts[t.customerId] = (customerOrderCounts[t.customerId] || 0) + 1
-        }
-      })
+      for (const row of orderCountRows) {
+        if (row.customerId) customerOrderCounts[row.customerId] = row._count.id
+      }
 
       // Top customers
       const topCustomers = customers.slice(0, 10).map(c => ({
@@ -570,56 +564,38 @@ export function registerReportsHandlers(prisma: any) {
 
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-
-      // Today's sales from SaleTransaction
-      const todaySales = await prisma.saleTransaction.findMany({
-        where: {
-          createdAt: {
-            gte: today
-          },
-          status: 'completed'
-        }
-      })
-
-      const todayRevenue = todaySales.reduce((sum, sale) => sum + sale.total, 0)
-      const todayOrders = todaySales.length
-
-      // Low stock items
-      const products = await prisma.product.findMany({
-        where: {
-          isArchived: false // Filter out archived products
-        },
-        include: {
-          variants: true
-        }
-      })
-
-      let lowStockCount = 0
-      products.forEach(product => {
-        if (product.hasVariants) {
-          const hasLowStock = product.variants.some(v => v.stock < 10 && v.stock > 0)
-          if (hasLowStock) lowStockCount++
-        }
-      })
-
-      // New customers this month
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-      const newCustomers = await prisma.customer.count({
-        where: {
-          createdAt: {
-            gte: startOfMonth
-          }
-        }
-      })
+
+      // Run all four aggregates in parallel — no row-level data shipped over IPC
+      const [todayAgg, lowStockVariants, newCustomers] = await Promise.all([
+        // Today's revenue + order count via aggregate (no full table scan)
+        prisma.saleTransaction.aggregate({
+          where: { createdAt: { gte: today }, status: 'completed' },
+          _sum: { total: true },
+          _count: true,
+        }),
+        // Count distinct products that have at least one variant with low stock
+        // Uses existing (productId) + (stock) indexes — no full-product load
+        prisma.productVariant.findMany({
+          where: {
+            stock: { gt: 0, lt: 10 },
+            product: { isArchived: false },
+          },
+          select: { productId: true },
+          distinct: ['productId'],
+        }),
+        // Customer count — already a simple aggregate
+        prisma.customer.count({ where: { createdAt: { gte: startOfMonth } } }),
+      ])
 
       return {
         success: true,
         data: {
-          todayRevenue,
-          todayOrders,
-          lowStockItems: lowStockCount,
-          newCustomers
-        }
+          todayRevenue: todayAgg._sum.total ?? 0,
+          todayOrders: todayAgg._count ?? 0,
+          lowStockItems: lowStockVariants.length,
+          newCustomers,
+        },
       }
     } catch (error) {
       log.error('[Reports] Error getting quick insights:', error)

@@ -20,43 +20,20 @@ export default function TopProducts() {
   const loadTopProducts = async () => {
     try {
       setLoading(true)
-      const saleTransactionsApi = (globalThis as any).api?.saleTransactions
+      const dashboardApi = (globalThis as any).api?.dashboard
       const endDate = new Date()
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - 30)
       startDate.setHours(0, 0, 0, 0)
 
-      const transactions = await saleTransactionsApi?.getByDateRange?.({
+      // Server-side GROUP BY — returns only the top-5 rows, no raw transactions
+      const topProducts = await dashboardApi?.getTopProducts?.({
         startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      })
+        endDate: endDate.toISOString(),
+        limit: 5,
+      }) || []
 
-      // Calculate product sales using transaction items
-      const productSales = new Map<string, { name: string; revenue: number; quantity: number }>()
-      
-      ;(transactions || []).forEach((transaction: any) => {
-        if (transaction.status !== 'completed') return
-
-        (transaction.items || []).forEach((item: any) => {
-          if (!item?.productId) return
-
-          const existing = productSales.get(item.productId) || { 
-            name: item.product?.name || 'Unknown Product',
-            revenue: 0,
-            quantity: 0
-          }
-
-          existing.revenue += item.total ?? item.price * item.quantity
-          existing.quantity += item.quantity
-          productSales.set(item.productId, existing)
-        })
-      })
-
-      const sorted = Array.from(productSales.values())
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5)
-
-      setTopProducts(sorted)
+      setTopProducts(topProducts)
     } catch (error) {
       logger.error('Error loading top products:', error)
     } finally {

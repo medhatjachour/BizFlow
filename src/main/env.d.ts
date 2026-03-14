@@ -5,3 +5,4 @@
 declare const __PLUGIN_BAKERY__: boolean
 declare const __PLUGIN_RESTAURANT__: boolean
 declare const __PLUGIN_WAREHOUSE__: boolean
+declare const __PLUGIN_CLINIC__: boolean

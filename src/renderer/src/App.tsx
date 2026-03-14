@@ -43,6 +43,8 @@ const Installments = lazy(() => import('./pages/Installments'))
 const Bakery       = __PLUGIN_BAKERY__ ? lazy(() => import('./plugins/bakery/pages/index')) : null
 const Restaurant   = __PLUGIN_RESTAURANT__ ? lazy(() => import('./plugins/restaurant/pages/index')) : null
 const Warehouse    = __PLUGIN_WAREHOUSE__ ? lazy(() => import('./plugins/warehouse/pages/index')) : null
+const Clinic       = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/index')) : null
+const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/PatientProfile')) : null
 
 // ------------------------------------------------------------------
 // Per-route error boundary — wraps each page in isolation so one
@@ -83,6 +85,7 @@ function AppContent() {
   const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
+  const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
 
   // Global keyboard shortcuts
   useKeyboardShortcuts([
@@ -284,6 +287,30 @@ function AppContent() {
                 <RequireAuth>
                   <RootLayoutWrapper>
                     <RouteErrorBoundary name="Warehouse"><Warehouse /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_CLINIC__ && clinicEnabled && Clinic && (
+            <Route
+              path="/clinic"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Clinic"><Clinic /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_CLINIC__ && clinicEnabled && ClinicPatientProfile && (
+            <Route
+              path="/clinic/patients/:id"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Patient Profile"><ClinicPatientProfile /></RouteErrorBoundary>
                   </RootLayoutWrapper>
                 </RequireAuth>
               }

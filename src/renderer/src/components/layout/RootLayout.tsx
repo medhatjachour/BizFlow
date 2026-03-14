@@ -25,7 +25,8 @@ import {
   ChevronRight,
   ChefHat,
   UtensilsCrossed,
-  Warehouse as WarehouseIcon
+  Warehouse as WarehouseIcon,
+  Stethoscope
 } from 'lucide-react'
 
 interface NavItem {
@@ -137,6 +138,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
+  const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
 
   // Build dynamic nav — inject module items after Employees
   const navItems: NavItem[] = [
@@ -161,6 +163,13 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       href: '/warehouse',
       icon: WarehouseIcon,
       roles: ['admin', 'manager', 'inventory']
+    }] : []),
+    ...(__PLUGIN_CLINIC__ && clinicEnabled ? [{
+      name: 'Clinic',
+      translationKey: 'clinic',
+      href: '/clinic',
+      icon: Stethoscope,
+      roles: ['admin', 'manager']
     }] : []),
     ...navigation.slice(navigation.findIndex(n => n.href === '/employees') + 1)
   ]

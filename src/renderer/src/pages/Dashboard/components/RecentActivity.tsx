@@ -20,24 +20,10 @@ export default function RecentActivity() {
   const loadActivities = async () => {
     try {
       setLoading(true)
-      const saleTransactionsApi = (globalThis as any).api?.saleTransactions
-      const endDate = new Date()
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - 14)
-      startDate.setHours(0, 0, 0, 0)
+      const dashboardApi = (globalThis as any).api?.dashboard
 
-      const transactions = await saleTransactionsApi?.getByDateRange?.({
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      })
-      
-      const recentActivities = (transactions || [])
-        .filter((transaction: any) => transaction.status === 'completed')
-        .map((transaction: any) => ({
-          ...transaction,
-          totalItems: (transaction.items || []).reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
-        }))
-        .slice(0, 10)
+      // Fetches only the latest 10 transactions — no items, no 14-day full scan
+      const recentActivities = await dashboardApi?.getRecentActivity?.({ limit: 10 }) || []
 
       setActivities(recentActivities)
     } catch (error) {
@@ -93,7 +79,7 @@ export default function RecentActivity() {
                   {activity.customerName && ` - ${activity.customerName}`}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {activity.totalItems || 0} item{(activity.totalItems || 0) === 1 ? '' : 's'} • {getTimeAgo(activity.createdAt)}
+                  {activity.itemCount || 0} item{(activity.itemCount || 0) === 1 ? '' : 's'} • {getTimeAgo(activity.createdAt)}
                 </p>
               </div>
               <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
