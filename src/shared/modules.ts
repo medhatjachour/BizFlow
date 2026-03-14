@@ -16,7 +16,8 @@
 export const MODULE_IDS = {
   BAKERY: 'bakery',
   RESTAURANT: 'restaurant',
-  WAREHOUSE: 'warehouse'
+  WAREHOUSE: 'warehouse',
+  CLINIC: 'clinic'
 } as const
 
 export type ModuleId = (typeof MODULE_IDS)[keyof typeof MODULE_IDS]
@@ -94,6 +95,24 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     models: ['WarehouseLocation', 'WarehouseStock', 'StockTransfer', 'StockTransferItem'],
     ipcPrefix: 'warehouse',
     routePrefix: '/warehouse'
+  },
+  [MODULE_IDS.CLINIC]: {
+    id: MODULE_IDS.CLINIC,
+    name: 'Clinic',
+    description: 'Patient management, medical session records, prescription history and clinical statistics.',
+    features: [
+      'Patient records with full medical history',
+      'Session notes with vitals tracking',
+      'Prescription management per visit',
+      'Follow-up scheduling',
+      'Clinical statistics & diagnosis trends',
+    ],
+    icon: '🏥',
+    color: 'teal',
+    status: 'active',
+    models: ['ClinicPatient', 'ClinicSession', 'ClinicPrescription'],
+    ipcPrefix: 'clinic',
+    routePrefix: '/clinic'
   }
 }
 

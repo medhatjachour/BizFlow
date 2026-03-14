@@ -402,6 +402,34 @@ interface API {
     deleteTransfer: (id: string) => Promise<any>
     getOverview: () => Promise<any>
   }
+  clinic: {
+    patients: {
+      getAll: (params?: { search?: string }) => Promise<any>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    sessions: {
+      getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all' }) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    stats: {
+      overview: () => Promise<any>
+      topDiagnoses: (limit?: number) => Promise<any>
+      visitTrend: (days?: number) => Promise<any>
+      patientStats: (patientId: string) => Promise<any>
+    }
+    checkResults: {
+      getByPatient: (patientId: string) => Promise<any>
+      upload: (data: { patientId: string; title: string; description?: string; resultDate?: string }) => Promise<any>
+      getBuffer: (filePath: string) => Promise<string | null>
+      open: (filePath: string) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+  }
 }
 
 declare global {

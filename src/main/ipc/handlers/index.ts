@@ -39,6 +39,7 @@ import type { IPlugin } from '../../../shared/interfaces/IPlugin'
 import BakeryPlugin from '../../../plugins/bakery/index'
 import RestaurantPlugin from '../../../plugins/restaurant/index'
 import WarehousePlugin from '../../../plugins/warehouse/index'
+import ClinicPlugin from '../../../plugins/clinic/index'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Database')
@@ -52,6 +53,7 @@ const ALL_PLUGINS: IPlugin[] = [
   ...(__PLUGIN_BAKERY__     ? [BakeryPlugin]     : []),
   ...(__PLUGIN_RESTAURANT__ ? [RestaurantPlugin] : []),
   ...(__PLUGIN_WAREHOUSE__  ? [WarehousePlugin]  : []),
+  ...(__PLUGIN_CLINIC__     ? [ClinicPlugin]     : []),
 ]
 
 // Initialize Prisma client

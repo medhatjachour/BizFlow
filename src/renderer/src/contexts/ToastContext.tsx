@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import Toast, { ToastType } from '../components/ui/Toast'
 
 type ToastItem = {
@@ -21,19 +21,19 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
-  }
+  }, [])
 
-  const showToast = (type: ToastType, message: string, duration = 5000) => {
+  const showToast = useCallback((type: ToastType, message: string, duration = 5000) => {
     const id = Date.now().toString() + Math.random().toString(36)
     setToasts(prev => [...prev, { id, type, message, duration }])
-  }
+  }, [])
 
-  const success = (message: string, duration?: number) => showToast('success', message, duration)
-  const error = (message: string, duration?: number) => showToast('error', message, duration)
-  const warning = (message: string, duration?: number) => showToast('warning', message, duration)
-  const info = (message: string, duration?: number) => showToast('info', message, duration)
+  const success = useCallback((message: string, duration?: number) => showToast('success', message, duration), [showToast])
+  const error = useCallback((message: string, duration?: number) => showToast('error', message, duration), [showToast])
+  const warning = useCallback((message: string, duration?: number) => showToast('warning', message, duration), [showToast])
+  const info = useCallback((message: string, duration?: number) => showToast('info', message, duration), [showToast])
 
   return (
     <ToastContext.Provider value={{ showToast, success, error, warning, info }}>

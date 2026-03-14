@@ -4,6 +4,7 @@ import log from 'electron-log/preload'
 import { bakeryPreload } from '../plugins/bakery/preload'
 import { restaurantPreload } from '../plugins/restaurant/preload'
 import { warehousePreload } from '../plugins/warehouse/preload'
+import { clinicPreload } from '../plugins/clinic/preload'
 
 // Custom APIs for renderer
 const api = {
@@ -460,7 +461,8 @@ const api = {
   // Adding a plugin: import its preload and add it here.
   bakery: bakeryPreload,
   restaurant: restaurantPreload,
-  warehouse: warehousePreload
+  warehouse: warehousePreload,
+  clinic: clinicPreload
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
