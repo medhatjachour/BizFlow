@@ -37,6 +37,16 @@ export function registerCustomersHandlers(prisma: any) {
     }
   }
 
+  ipcMain.handle('customers:getCount', async () => {
+    try {
+      if (!prisma) return 0
+      return await prisma.customer.count()
+    } catch (error) {
+      log.error('Error counting customers:', error)
+      return 0
+    }
+  })
+
   ipcMain.handle('customers:getAll', async (_, options = {}) => {
     try {
       if (prisma) {

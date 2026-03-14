@@ -405,6 +405,7 @@ interface API {
   clinic: {
     patients: {
       getAll: (params?: { search?: string }) => Promise<any>
+      searchLite: (query: string) => Promise<Array<{ id: string; name: string; phone: string; dateOfBirth?: string | null }>>
       getById: (id: string) => Promise<any>
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>

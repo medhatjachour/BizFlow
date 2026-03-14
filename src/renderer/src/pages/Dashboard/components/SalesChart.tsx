@@ -14,7 +14,8 @@ export default function SalesChart() {
   const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState<'7days' | '30days'>('7days')
-  const [allSales, setAllSales] = useState<any[]>([])
+  // Previous-period totals for trend comparison (no raw transactions needed)
+  const [prevStats, setPrevStats] = useState<{ revenue: number; count: number }>({ revenue: 0, count: 0 })
 
   useEffect(() => {
     loadChartData()
@@ -23,54 +24,57 @@ export default function SalesChart() {
   const loadChartData = async () => {
     try {
       setLoading(true)
-      const saleTransactionsApi = (globalThis as any).api?.saleTransactions
+      const dashboardApi = (globalThis as any).api?.dashboard
       const days = period === '7days' ? 7 : 30
 
-      // Fetch double the range so we can compare with previous period
+      // Fetch the full 2× range so we can derive previous-period totals for comparison.
+      // The server returns pre-aggregated { date, total, count } rows — no items loaded.
+      const endDate = new Date()
       const startDate = new Date()
-      startDate.setDate(startDate.getDate() - (days * 2) + 1)
+      startDate.setDate(startDate.getDate() - days * 2)
       startDate.setHours(0, 0, 0, 0)
 
-      const transactions = await saleTransactionsApi?.getByDateRange?.({
-        startDate: startDate.toISOString(),
-        endDate: new Date().toISOString()
-      })
+      const dailyRows: Array<{ date: string; total: number; count: number }> =
+        await dashboardApi?.getSalesChart?.({
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        }) || []
 
-      setAllSales(transactions || [])
+      // Index by YYYY-MM-DD for O(1) lookup
+      const byDate = new Map(dailyRows.map((r) => [r.date, r]))
 
+      // Cutoff between previous and current period
+      const currentStart = new Date()
+      currentStart.setDate(currentStart.getDate() - days)
+      currentStart.setHours(0, 0, 0, 0)
+      const currentStartStr = currentStart.toISOString().slice(0, 10)
+
+      // Build per-day chart data for the current period
       const data: any[] = []
       for (let i = days - 1; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        date.setHours(0, 0, 0, 0)
-
-        const nextDate = new Date(date)
-        nextDate.setDate(nextDate.getDate() + 1)
-
-        const daySales = (transactions || []).filter((sale: any) => {
-          const saleDate = new Date(sale.createdAt)
-          return saleDate >= date && saleDate < nextDate && 
-                 (sale.status === 'completed' || sale.status === 'partially_refunded')
-        })
-
-        // Calculate net revenue accounting for refunds
-        const total = daySales.reduce((sum: number, sale: any) => {
-          const refundedAmount = sale.items?.reduce((refundSum: number, item: any) => {
-            const refunded = item.refundedQuantity || 0
-            return refundSum + (refunded * item.price)
-          }, 0) || 0
-          
-          return sum + (sale.total - refundedAmount)
-        }, 0)
-
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        d.setHours(0, 0, 0, 0)
+        const key = d.toISOString().slice(0, 10)
+        const row = byDate.get(key) || { total: 0, count: 0 }
         data.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          total,
-          count: daySales.length,
+          date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          total: row.total,
+          count: row.count,
         })
       }
-
       setChartData(data)
+
+      // Compute previous-period totals from the older half of the fetched data
+      let prevRevenue = 0
+      let prevCount = 0
+      for (const row of dailyRows) {
+        if (row.date < currentStartStr) {
+          prevRevenue += row.total
+          prevCount += row.count
+        }
+      }
+      setPrevStats({ revenue: prevRevenue, count: prevCount })
     } catch (error) {
       logger.error('Error loading chart data:', error)
     } finally {
@@ -78,49 +82,20 @@ export default function SalesChart() {
     }
   }
 
-  // Calculate key metrics
+  // Calculate key metrics from pre-aggregated server data
   const metrics = useMemo(() => {
-    // Include both completed and partially_refunded transactions
-    const completedSales = allSales.filter((s: any) => 
-      s.status === 'completed' || s.status === 'partially_refunded'
-    )
-    
-    // Current period
     const totalRevenue = chartData.reduce((sum, d) => sum + d.total, 0)
     const totalSales = chartData.reduce((sum, d) => sum + d.count, 0)
     const avgSale = totalSales > 0 ? totalRevenue / totalSales : 0
-    
-    // Previous period for comparison
-    const days = period === '7days' ? 7 : 30
-    const previousPeriodStart = new Date()
-    previousPeriodStart.setDate(previousPeriodStart.getDate() - (days * 2))
-    const previousPeriodEnd = new Date()
-    previousPeriodEnd.setDate(previousPeriodEnd.getDate() - days)
-    
-    const previousSales = completedSales.filter((sale: any) => {
-      const saleDate = new Date(sale.createdAt)
-      return saleDate >= previousPeriodStart && saleDate < previousPeriodEnd
-    })
-    
-    // Calculate previous revenue accounting for refunds
-    const previousRevenue = previousSales.reduce((sum: number, sale: any) => {
-      const refundedAmount = sale.items?.reduce((refundSum: number, item: any) => {
-        const refunded = item.refundedQuantity || 0
-        return refundSum + (refunded * item.price)
-      }, 0) || 0
-      
-      return sum + (sale.total - refundedAmount)
-    }, 0)
-    const previousCount = previousSales.length
-    
-    const revenueChange = previousRevenue > 0 
-      ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 
+
+    const revenueChange = prevStats.revenue > 0
+      ? ((totalRevenue - prevStats.revenue) / prevStats.revenue) * 100
       : totalRevenue > 0 ? 100 : 0
-      
-    const salesChange = previousCount > 0
-      ? ((totalSales - previousCount) / previousCount) * 100
+
+    const salesChange = prevStats.count > 0
+      ? ((totalSales - prevStats.count) / prevStats.count) * 100
       : totalSales > 0 ? 100 : 0
-    
+
     return {
       totalRevenue,
       totalSales,
@@ -129,7 +104,7 @@ export default function SalesChart() {
       salesChange,
       hasData: chartData.length > 0 && totalRevenue > 0
     }
-  }, [chartData, allSales, period])
+  }, [chartData, prevStats])
 
   const maxValue = Math.max(...chartData.map(d => d.total), 1)
 

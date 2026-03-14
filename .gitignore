@@ -22,6 +22,7 @@ prisma/*.db-journal
 
 # Prisma images (product images)
 prisma/images/
+prisma/clinic-results/
 /*.db-journal
 
 # coverage unit  test

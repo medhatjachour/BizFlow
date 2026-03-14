@@ -12,6 +12,8 @@ export const clinicPreload = {
   patients: {
     getAll: (params?: { search?: string }) =>
       ipcRenderer.invoke('clinic:patients:getAll', params),
+    searchLite: (query: string) =>
+      ipcRenderer.invoke('clinic:patients:searchLite', query),
     getById: (id: string) =>
       ipcRenderer.invoke('clinic:patients:getById', id),
     create: (data: any) =>

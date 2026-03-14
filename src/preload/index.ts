@@ -16,7 +16,11 @@ const api = {
       ipcRenderer.invoke('auth:create', { username, password, role })
   },
   dashboard: {
-    getMetrics: () => ipcRenderer.invoke('dashboard:getMetrics')
+    getMetrics: () => ipcRenderer.invoke('dashboard:getMetrics'),
+    getSalesChart: (opts: { startDate: string; endDate: string }) => ipcRenderer.invoke('dashboard:getSalesChart', opts),
+    getTopProducts: (opts: { startDate: string; endDate: string; limit?: number }) => ipcRenderer.invoke('dashboard:getTopProducts', opts),
+    getRecentActivity: (opts?: { limit?: number }) => ipcRenderer.invoke('dashboard:getRecentActivity', opts),
+    getDayStats: (opts: { startDate: string; endDate: string }) => ipcRenderer.invoke('dashboard:getDayStats', opts),
   },
   sales: {
     getAll: () => ipcRenderer.invoke('sales:getAll'),
@@ -64,6 +68,7 @@ const api = {
   },
   customers: {
     getAll: () => ipcRenderer.invoke('customers:getAll'),
+    getCount: () => ipcRenderer.invoke('customers:getCount'),
     getProfile: (customerId: string) => ipcRenderer.invoke('customers:getProfile', customerId)
   },
   inventory: {

@@ -69,70 +69,43 @@ export default function Dashboard() {
       
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
-      
-      // Fetch dashboard data using optimized endpoints with date filtering
-      const saleTransactionsApi = (globalThis as any).api?.saleTransactions
-      const [productStats, todaySales, yesterdaySales, customerStats] = await Promise.all([
-        // Use optimized stats endpoint instead of loading all products
+
+      const dashboardApi = (globalThis as any).api?.dashboard
+
+      // All three calls return lightweight aggregates — no raw transaction rows shipped
+      const [productStats, todayStats, yesterdayStats, customerCount] = await Promise.all([
         // @ts-ignore
         (globalThis as any).api?.products?.getStats?.() || Promise.resolve({ totalProducts: 0, lowStockCount: 0 }),
-        // Only fetch today's sales (filtered at database level)
+        // Today: { total, count }
+        dashboardApi?.getDayStats?.({ startDate: today.toISOString(), endDate: tomorrow.toISOString() }) || Promise.resolve({ total: 0, count: 0 }),
+        // Yesterday: { total, count }
+        dashboardApi?.getDayStats?.({ startDate: yesterday.toISOString(), endDate: today.toISOString() }) || Promise.resolve({ total: 0, count: 0 }),
+        // Customer count via aggregate — no full table load
         // @ts-ignore
-        saleTransactionsApi?.getByDateRange?.({ 
-          startDate: today.toISOString(),
-          endDate: tomorrow.toISOString()
-        }) || Promise.resolve([]),
-        // Only fetch yesterday's sales (filtered at database level)
-        // @ts-ignore
-        saleTransactionsApi?.getByDateRange?.({ 
-          startDate: yesterday.toISOString(), 
-          endDate: today.toISOString() 
-        }) || Promise.resolve([]),
-        // Get customer count only (not all customer data)
-        // @ts-ignore
-        (globalThis as any).api?.customers?.getAll?.() || Promise.resolve([]),
+        (globalThis as any).api?.customers?.getCount?.() || Promise.resolve(0),
       ])
-      
+
       logger.info('Dashboard data loaded', {
-        todaySales: todaySales.length,
-        yesterdaySales: yesterdaySales.length
+        todayOrders: todayStats.count,
+        yesterdayOrders: yesterdayStats.count,
       })
 
-      // Calculate metrics from filtered data, accounting for refunds
-      const todayRevenue = (todaySales || []).reduce((sum: number, sale: any) => {
-        // Calculate refunded amount for this sale
-        const refundedAmount = sale.items?.reduce((refundSum: number, item: any) => {
-          const refunded = item.refundedQuantity || 0
-          return refundSum + (refunded * item.price)
-        }, 0) || 0
-        
-        // Net revenue = total - refunded
-        return sum + (sale.total - refundedAmount)
-      }, 0)
-      
-      const yesterdayRevenue = (yesterdaySales || []).reduce((sum: number, sale: any) => {
-        const refundedAmount = sale.items?.reduce((refundSum: number, item: any) => {
-          const refunded = item.refundedQuantity || 0
-          return refundSum + (refunded * item.price)
-        }, 0) || 0
-        
-        return sum + (sale.total - refundedAmount)
-      }, 0)
-      
-      const revenueChange = yesterdayRevenue > 0 
-        ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100 
+      const todayRevenue = todayStats.total ?? 0
+      const yesterdayRevenue = yesterdayStats.total ?? 0
+      const revenueChange = yesterdayRevenue > 0
+        ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
         : 0
 
-      const ordersChange = (yesterdaySales || []).length > 0
-        ? (((todaySales || []).length - (yesterdaySales || []).length) / (yesterdaySales || []).length) * 100
+      const ordersChange = yesterdayStats.count > 0
+        ? ((todayStats.count - yesterdayStats.count) / yesterdayStats.count) * 100
         : 0
 
       setStats({
         todayRevenue,
-        todayOrders: (todaySales || []).length,
+        todayOrders: todayStats.count ?? 0,
         totalProducts: productStats?.totalProducts || 0,
         lowStockItems: productStats?.lowStockCount || 0,
-        totalCustomers: customerStats?.length || 0,
+        totalCustomers: typeof customerCount === 'number' ? customerCount : (customerCount?.count ?? 0),
         revenueChange,
         ordersChange,
       })

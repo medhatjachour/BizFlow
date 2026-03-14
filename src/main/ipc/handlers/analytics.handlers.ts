@@ -58,6 +58,20 @@ export function registerAnalyticsHandlers() {
     return
   }
 
+  // Apply SQLite PRAGMAs to this isolated analytics Prisma instance
+  ;(async () => {
+    try {
+      await prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL;')
+      await prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL;')
+      await prisma.$queryRawUnsafe('PRAGMA cache_size = -32768;') // 32 MB
+      await prisma.$queryRawUnsafe('PRAGMA temp_store = MEMORY;')
+      await prisma.$queryRawUnsafe('PRAGMA mmap_size = 268435456;') // 256 MB
+      await prisma.$queryRawUnsafe('PRAGMA busy_timeout = 10000;')
+    } catch (e) {
+      log.error('[Analytics] Failed to apply SQLite PRAGMAs:', e)
+    }
+  })()
+
 // ==================== STOCK MOVEMENT TRACKING ====================
 
 /**

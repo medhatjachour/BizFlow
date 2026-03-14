@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { X, Plus, Trash2, Loader2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { X, Plus, Trash2, Loader2, Search, UserCircle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import type { Patient } from '../index'
@@ -73,8 +73,50 @@ export default function SessionFormModal({ existingSession, defaultPatient, onCl
   const initialPatientName = existingSession?.patient?.name ?? defaultPatient?.name ?? ''
 
   // Form state
-  const [patientId] = useState(initialPatientId)
-  const [patientName] = useState(initialPatientName)
+  const [patientId, setPatientId] = useState(initialPatientId)
+  const [patientName, setPatientName] = useState(initialPatientName)
+
+  // Patient search state
+  const [searchQuery, setSearchQuery] = useState(initialPatientName)
+  const [searchResults, setSearchResults] = useState<Array<{ id: string; name: string; phone: string; dateOfBirth?: string | null }>>([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const isInitialMount = useRef(true)
+
+  // Debounced patient search (skip on initial mount to avoid searching pre-filled value)
+  useEffect(() => {
+    if (isInitialMount.current) { isInitialMount.current = false; return }
+    if (!searchQuery.trim()) {
+      setSearchResults([])
+      setShowDropdown(false)
+      return
+    }
+    const timer = setTimeout(async () => {
+      setIsSearching(true)
+      try {
+        const results = await window.api.clinic.patients.searchLite(searchQuery)
+        setSearchResults(results ?? [])
+        setShowDropdown((results ?? []).length > 0)
+      } catch {
+        setSearchResults([])
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const parseVitals = (raw?: string | null) => {
     if (!raw) return { bp: '', temp: '', weight: '', height: '', pulse: '', o2sat: '' }
@@ -203,10 +245,65 @@ export default function SessionFormModal({ existingSession, defaultPatient, onCl
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-5">
-          {/* Patient (read-only if pre-filled) */}
-          <div>
+          {/* Patient – search autocomplete for new sessions, locked when editing */}
+          <div className="relative" ref={searchRef}>
             <label className={labelCls}>{t('patient')} *</label>
-            <input className={inputCls} value={patientName} readOnly />
+            {existingSession ? (
+              <input
+                className={`${inputCls} bg-slate-50 dark:bg-slate-800 cursor-not-allowed`}
+                value={patientName}
+                readOnly
+              />
+            ) : (
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  className={`${inputCls} pl-9 pr-9`}
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setSearchQuery(v)
+                    if (!v) { setPatientId(''); setPatientName('') }
+                  }}
+                  onFocus={() => { if (searchResults.length > 0) setShowDropdown(true) }}
+                  placeholder={t('searchPatient') ?? 'Search by name or phone…'}
+                  autoComplete="off"
+                />
+                {isSearching && (
+                  <Loader2 className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-teal-500" />
+                )}
+                {showDropdown && searchResults.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                    {searchResults.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        className="w-full text-left px-4 py-2.5 hover:bg-teal-50 dark:hover:bg-teal-900/20 flex items-center gap-3 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors"
+                        onClick={() => {
+                          setPatientId(p.id)
+                          setPatientName(p.name)
+                          setSearchQuery(p.name)
+                          setShowDropdown(false)
+                        }}
+                      >
+                        <UserCircle className="h-5 w-5 text-teal-500 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-slate-900 dark:text-white truncate">{p.name}</div>
+                          <div className="text-xs text-slate-400">
+                            {p.phone}{p.dateOfBirth ? ` · ${String(p.dateOfBirth).slice(0, 10)}` : ''}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showDropdown && !isSearching && searchResults.length === 0 && searchQuery.trim() && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl px-4 py-3 text-sm text-slate-400 text-center">
+                    {t('noPatientsFound') ?? 'No patients found'}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Visit date + Visit Type */}

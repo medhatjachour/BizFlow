@@ -50,6 +50,24 @@ export function registerPatientHandlers(prisma: any) {
     }))
   })
 
+  // ─── Search Patients (lightweight – for autocomplete) ─────────────────
+  ipcMain.handle('clinic:patients:searchLite', async (_e, query: string) => {
+    const trimmed = (query ?? '').trim()
+    if (!trimmed) return []
+    return prisma.clinicPatient.findMany({
+      where: {
+        OR: [
+          { name: { contains: trimmed } },
+          { phone: { contains: trimmed } },
+          { nationalId: { contains: trimmed } }
+        ]
+      },
+      select: { id: true, name: true, phone: true, dateOfBirth: true },
+      orderBy: { name: 'asc' },
+      take: 10
+    })
+  })
+
   // ─── Get Patient By ID (with full session history) ────────────────────
   ipcMain.handle('clinic:patients:getById', async (_e, id: string) => {
     return prisma.clinicPatient.findUnique({

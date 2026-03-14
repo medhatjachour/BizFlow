@@ -92,7 +92,7 @@ function PatientCard({
 
   return (
     <div
-      className="group relative bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-lg hover:shadow-teal-500/10 transition-all duration-200 cursor-pointer overflow-hidden"
+      className="group relative pt-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-600 hover:shadow-lg hover:shadow-teal-500/10 transition-all duration-200 cursor-pointer overflow-hidden"
       onClick={onView}
     >
       {/* Outstanding badge */}
