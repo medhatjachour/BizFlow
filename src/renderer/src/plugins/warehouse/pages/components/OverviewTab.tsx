@@ -7,7 +7,7 @@ interface Overview {
   totalSkus: number
   lowStockCount: number
   pendingTransfers: number
-  recentTransfers: { id: string; fromLocation: string; toLocation: string; status: string; transferDate: string; itemCount: number }[]
+  recentTransfers: { id: string; fromLocation: { name: string; code: string }; toLocation: { name: string; code: string }; status: string; transferDate: string; itemCount: number }[]
 }
 
 type Tab = 'overview' | 'locations' | 'inventory' | 'transfers'
@@ -78,9 +78,9 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
               <ArrowRightLeft className="w-4 h-4 text-slate-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                  <span className="text-slate-500 dark:text-slate-400">{tr.fromLocation}</span>
+                  <span className="text-slate-500 dark:text-slate-400">{tr.fromLocation.name}</span>
                   <span className="text-slate-400">→</span>
-                  <span>{tr.toLocation}</span>
+                  <span>{tr.toLocation.name}</span>
                 </div>
                 <div className="text-xs text-slate-400">{tr.itemCount} {tr.itemCount !== 1 ? t('warehouseLocationsCountPlural') : t('warehouseLocationsCount')} · {new Date(tr.transferDate).toLocaleDateString()}</div>
               </div>
