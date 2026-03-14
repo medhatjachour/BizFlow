@@ -16,7 +16,7 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
   const [saving, setSaving] = useState(false)
 
   const [name, setName] = useState(patient?.name ?? '')
-  const [dateOfBirth, setDateOfBirth] = useState(patient?.dateOfBirth ? patient.dateOfBirth.slice(0, 10) : '')
+  const [dateOfBirth, setDateOfBirth] = useState(patient?.dateOfBirth ? String(patient.dateOfBirth).slice(0, 10) : '')
   const [gender, setGender] = useState(patient?.gender ?? '')
   const [phone, setPhone] = useState(patient?.phone ?? '')
   const [email, setEmail] = useState(patient?.email ?? '')
