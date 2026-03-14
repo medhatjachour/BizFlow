@@ -125,7 +125,7 @@ BizFlow is built on a **microkernel** design — the core app is lean and stable
 | Plugin | Status | What it adds |
 |--------|--------|-------------|
 | 🥐 **Bakery** | ✅ Active | Recipe management, production batches, pantry stock, waste tracking, scheduling, P&L |
-| � **Clinic** | ✅ Active | Patient records, session tracking, prescriptions, check results (PDF), financial stats |
+| 🏥 **Clinic** | ✅ Active | Patient records, session tracking, prescriptions, check results (PDF), financial stats |
 | 🍽️ **Restaurant** | ✅ Active | Table management, reservations, kitchen orders, menu management |
 | 🏭 **Warehouse** | ✅ Active | Multi-location inventory, bin tracking, stock transfers |
 

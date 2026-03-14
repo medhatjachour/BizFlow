@@ -35,22 +35,14 @@ export function registerStatsHandlers(prisma: any) {
 
   // ─── Top Diagnoses ────────────────────────────────────────────────────
   ipcMain.handle('clinic:stats:topDiagnoses', async (_e, limit = 10) => {
-    const sessions = await prisma.clinicSession.findMany({
+    const groups = await prisma.clinicSession.groupBy({
+      by: ['diagnosis'],
       where: { diagnosis: { not: null } },
-      select: { diagnosis: true }
+      _count: { diagnosis: true },
+      orderBy: { _count: { diagnosis: 'desc' } },
+      take: limit
     })
-
-    const counts: Record<string, number> = {}
-    for (const s of sessions) {
-      if (s.diagnosis) {
-        counts[s.diagnosis] = (counts[s.diagnosis] ?? 0) + 1
-      }
-    }
-
-    return Object.entries(counts)
-      .map(([diagnosis, count]) => ({ diagnosis, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, limit)
+    return groups.map((g) => ({ diagnosis: g.diagnosis as string, count: g._count.diagnosis }))
   })
 
   // ─── Visit Trend (last N days) ────────────────────────────────────────

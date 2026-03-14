@@ -426,7 +426,7 @@ interface API {
       getByPatient: (patientId: string) => Promise<any>
       upload: (data: { patientId: string; title: string; description?: string; resultDate?: string }) => Promise<any>
       getBuffer: (filePath: string) => Promise<string | null>
-      open: (filePath: string) => Promise<any>
+      open: (id: string) => Promise<any>
       delete: (id: string) => Promise<any>
     }
   }

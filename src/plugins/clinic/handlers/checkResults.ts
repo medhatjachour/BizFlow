@@ -74,22 +74,29 @@ export function registerCheckResultHandlers(prisma: any) {
 
   // ─── Stream a check result file as base64 (for in-app PDF viewer) ────
   ipcMain.handle('clinic:checkResults:getBuffer', async (_e, filePath: string) => {
-    // Validate path is inside expected results directory
-    const baseDir = getCheckResultsDir()
+    // Validate path is strictly inside the expected results directory
+    const baseDir = path.resolve(getCheckResultsDir())
     const resolved = path.resolve(filePath)
-    if (!resolved.startsWith(path.resolve(baseDir))) {
+    const rel = path.relative(baseDir, resolved)
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
       throw new Error('Access denied: file is outside results directory')
     }
     if (!fs.existsSync(resolved)) return null
     return fs.readFileSync(resolved).toString('base64')
   })
 
-  // ─── Open/View a check result file in system app ────────────────────
-  ipcMain.handle('clinic:checkResults:open', async (_e, filePath: string) => {
-    if (!fs.existsSync(filePath)) {
-      throw new Error('File not found')
+  // ─── Open/View a check result file in system app (accepts DB record id) ────
+  ipcMain.handle('clinic:checkResults:open', async (_e, id: string) => {
+    const record = await prisma.clinicCheckResult.findUnique({ where: { id } })
+    if (!record?.filePath) throw new Error('Check result not found')
+    const baseDir = path.resolve(getCheckResultsDir())
+    const resolved = path.resolve(record.filePath)
+    const rel = path.relative(baseDir, resolved)
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new Error('Access denied: file is outside results directory')
     }
-    await shell.openPath(filePath)
+    if (!fs.existsSync(resolved)) throw new Error('File not found')
+    await shell.openPath(resolved)
     return true
   })
 

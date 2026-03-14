@@ -12,6 +12,6 @@ export const clinicManifest = {
   status: 'active' as const,
   routePrefix: '/clinic',
   ipcPrefix: 'clinic',
-  models: ['ClinicPatient', 'ClinicSession', 'ClinicPrescription'],
+  models: ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult'],
   defaultEnabled: true
 }

@@ -110,7 +110,7 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     icon: '🏥',
     color: 'teal',
     status: 'active',
-    models: ['ClinicPatient', 'ClinicSession', 'ClinicPrescription'],
+    models: ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult'],
     ipcPrefix: 'clinic',
     routePrefix: '/clinic'
   }

@@ -54,8 +54,8 @@ export const clinicPreload = {
       ipcRenderer.invoke('clinic:checkResults:upload', data),
     getBuffer: (filePath: string) =>
       ipcRenderer.invoke('clinic:checkResults:getBuffer', filePath),
-    open: (filePath: string) =>
-      ipcRenderer.invoke('clinic:checkResults:open', filePath),
+    open: (id: string) =>
+      ipcRenderer.invoke('clinic:checkResults:open', id),
     delete: (id: string) =>
       ipcRenderer.invoke('clinic:checkResults:delete', id)
   }

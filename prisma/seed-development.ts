@@ -1,14 +1,18 @@
 /**
  * Development Seed - Large Dataset Simulation
- * Creates realistic data spanning 4 years:
- * - 50,000 products added over 3 years
- * - 1,000,000 sales over 4 years
- * - Realistic growth patterns and seasonal variations
+ * Creates realistic data spanning 4 years for ALL modules:
+ * - Core: products, sales, customers, employees, finance, suppliers
+ * - Clinic plugin: patients, sessions, prescriptions, check results
+ * - Restaurant plugin: menu, tables, reservations, dine-in orders
+ * - Warehouse plugin: locations, stock, transfers
+ * - Bakery plugin: pantry, recipes, batches, schedules, waste
  */
 
 import { PrismaClient } from '../src/generated/prisma'
 import * as bcrypt from 'bcryptjs'
 import * as crypto from 'crypto'
+import * as fs from 'fs'
+import * as path from 'path'
 
 const prisma = new PrismaClient()
 
@@ -23,7 +27,7 @@ const CONFIG = {
   TOTAL_SALES: 250000, // Increased from 100k to 250k for better analytics
   CUSTOMER_COUNT: 2000, // Increased from 1k to 2k
   // Use larger batches with transactions for much better performance
-  PRODUCT_BATCH_SIZE: 500, // Products per transaction
+  PRODUCT_BATCH_SIZE: 100, // Products per transaction (smaller to avoid timeout with EAV attribute creation)
   VARIANT_BATCH_SIZE: 1000, // Variants per transaction
   SALE_BATCH_SIZE: 500 // Sales per transaction
 }
@@ -96,8 +100,43 @@ async function main() {
 
   // ==================== CLEAR EXISTING DATA ====================
   console.log('🗑️ Clearing existing data...')
+
+  // Plugin: Clinic
+  await prisma.clinicCheckResult.deleteMany()
+  await prisma.clinicPrescription.deleteMany()
+  await prisma.clinicSession.deleteMany()
+  await prisma.clinicPatient.deleteMany()
+
+  // Plugin: Restaurant
+  await prisma.dineInOrderItem.deleteMany()
+  await prisma.dineInOrder.deleteMany()
+  await prisma.tableReservation.deleteMany()
+  await prisma.menuItem.deleteMany()
+  await prisma.restaurantTable.deleteMany()
+
+  // Plugin: Warehouse
+  await prisma.stockTransferItem.deleteMany()
+  await prisma.stockTransfer.deleteMany()
+  await prisma.warehouseStock.deleteMany()
+  await prisma.warehouseLocation.deleteMany()
+
+  // Plugin: Bakery
+  await prisma.productionSchedule.deleteMany()
+  await prisma.wasteLog.deleteMany()
+  await prisma.productionBatch.deleteMany()
+  await prisma.recipeIngredient.deleteMany()
+  await prisma.recipe.deleteMany()
+  await prisma.pantryIngredient.deleteMany()
+
+  // Core
+  await prisma.purchaseOrderItem.deleteMany()
+  await prisma.purchaseOrder.deleteMany()
+  await prisma.supplierProduct.deleteMany()
+  await prisma.supplier.deleteMany()
   await prisma.stockMovement.deleteMany()
   await prisma.productImage.deleteMany()
+  await prisma.variantAttributeValue.deleteMany()
+  await prisma.productAttribute.deleteMany()
   await prisma.productVariant.deleteMany()
   await prisma.saleItem.deleteMany()
   await prisma.saleTransaction.deleteMany()
@@ -107,11 +146,18 @@ async function main() {
   await prisma.receiptTemplate.deleteMany()
   await prisma.financialTransaction.deleteMany()
   await prisma.product.deleteMany()
+  await prisma.category.deleteMany()
+  await prisma.employeeOvertime.deleteMany()
+  await prisma.employeeShift.deleteMany()
+  await prisma.employeePayroll.deleteMany()
+  await prisma.employeeActivityLog.deleteMany()
+  await prisma.employeeDocument.deleteMany()
+  await prisma.employeeAttendance.deleteMany()
   await prisma.employee.deleteMany()
   await prisma.customer.deleteMany()
+  await prisma.emailReport.deleteMany()
   await prisma.store.deleteMany()
   await prisma.user.deleteMany()
-  await prisma.category.deleteMany()
   console.log('✅ Cleared existing data\n')
 
   // ==================== CATEGORIES ====================
@@ -198,55 +244,98 @@ async function main() {
   console.log(`✅ Created ${stores.length} stores\n`)
 
   // ==================== EMPLOYEES ====================
-  console.log('👷 Creating employees...')
-  const employees = await Promise.all([
-    prisma.employee.create({ 
-      data: { 
-        name: 'John Manager', 
-        role: 'Store Manager', 
-        email: 'john.manager@bizflow.com',
-        phone: '+1-555-1001',
-        salary: 5000
-      } 
-    }),
-    prisma.employee.create({ 
-      data: { 
-        name: 'Sarah Cashier', 
-        role: 'Cashier', 
-        email: 'sarah.cashier@bizflow.com',
-        phone: '+1-555-1002',
-        salary: 2500
-      } 
-    }),
-    prisma.employee.create({ 
-      data: { 
-        name: 'Mike Stock', 
-        role: 'Stock Clerk', 
-        email: 'mike.stock@bizflow.com',
-        phone: '+1-555-1003',
-        salary: 2200
-      } 
-    }),
-    prisma.employee.create({ 
-      data: { 
-        name: 'Lisa Sales', 
-        role: 'Sales Associate', 
-        email: 'lisa.sales@bizflow.com',
-        phone: '+1-555-2001',
-        salary: 2800
-      } 
-    }),
-    prisma.employee.create({ 
-      data: { 
-        name: 'Tom Assistant', 
-        role: 'Assistant Manager', 
-        email: 'tom.assistant@bizflow.com',
-        phone: '+1-555-2002',
-        salary: 4000
-      } 
-    })
-  ])
-  console.log(`✅ Created ${employees.length} employees\n`)
+  console.log('👷 Creating employees with full HR data...')
+  const employeeData = [
+    { name: 'John Manager',   role: 'Store Manager',      department: 'Management', email: 'john.manager@bizflow.com',   phone: '+1-555-1001', salary: 5000, salaryType: 'monthly', employmentType: 'full-time', hireDate: new Date('2022-01-15') },
+    { name: 'Sarah Cashier',  role: 'Cashier',            department: 'Sales',      email: 'sarah.cashier@bizflow.com',  phone: '+1-555-1002', salary: 2500, salaryType: 'monthly', employmentType: 'full-time', hireDate: new Date('2022-03-01') },
+    { name: 'Mike Stock',     role: 'Stock Clerk',        department: 'Warehouse',  email: 'mike.stock@bizflow.com',     phone: '+1-555-1003', salary: 2200, salaryType: 'monthly', employmentType: 'full-time', hireDate: new Date('2022-06-10') },
+    { name: 'Lisa Sales',     role: 'Sales Associate',    department: 'Sales',      email: 'lisa.sales@bizflow.com',     phone: '+1-555-2001', salary: 2800, salaryType: 'monthly', employmentType: 'full-time', hireDate: new Date('2023-01-20') },
+    { name: 'Tom Assistant',  role: 'Assistant Manager',  department: 'Management', email: 'tom.assistant@bizflow.com',  phone: '+1-555-2002', salary: 4000, salaryType: 'monthly', employmentType: 'full-time', hireDate: new Date('2022-09-05') },
+    { name: 'Emma Inventory', role: 'Inventory Analyst',  department: 'Warehouse',  email: 'emma.inventory@bizflow.com', phone: '+1-555-3001', salary: 3000, salaryType: 'monthly', employmentType: 'part-time', hireDate: new Date('2023-05-01') },
+    { name: 'Carlos Finance', role: 'Finance Officer',    department: 'Finance',    email: 'carlos.finance@bizflow.com', phone: '+1-555-4001', salary: 4500, salaryType: 'monthly', employmentType: 'full-time', hireDate: new Date('2022-02-14') },
+  ]
+  const employees = await Promise.all(
+    employeeData.map(e => prisma.employee.create({ data: e }))
+  )
+
+  // Attendance: last 90 days for each employee
+  const today = new Date(); today.setHours(0,0,0,0)
+  const attendanceStatuses = ['present','present','present','present','late','absent','half-day']
+  for (const emp of employees) {
+    const records: any[] = []
+    for (let d = 89; d >= 0; d--) {
+      const date = new Date(today); date.setDate(date.getDate() - d)
+      const dow = date.getDay()
+      if (dow === 0 || dow === 6) continue // skip weekends
+      const status = attendanceStatuses[randomInt(0, attendanceStatuses.length - 1)]
+      const checkIn  = status !== 'absent' ? new Date(date.getTime() + (8 + (status === 'late' ? randomInt(1,2) : 0)) * 3600 * 1000) : null
+      const checkOut = checkIn ? new Date(date.getTime() + (17 + randomInt(0,2)) * 3600 * 1000) : null
+      records.push({ employeeId: emp.id, date, status, checkIn, checkOut })
+    }
+    await prisma.employeeAttendance.createMany({ data: records })
+  }
+
+  // Payroll: last 6 months
+  for (const emp of employees) {
+    for (let m = 5; m >= 0; m--) {
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - m)
+      const bonuses    = Math.random() > 0.7 ? randomPrice(100, 500) : 0
+      const deductions = Math.random() > 0.8 ? randomPrice(50, 200) : 0
+      const netPay = emp.salary + bonuses - deductions
+      const isPaid = m > 0
+      await prisma.employeePayroll.create({ data: {
+        employeeId: emp.id,
+        month: d.getMonth() + 1, year: d.getFullYear(),
+        baseSalary: emp.salary, bonuses, deductions, netPay,
+        status: isPaid ? 'paid' : 'pending',
+        paidDate: isPaid ? new Date(d.getFullYear(), d.getMonth(), 28) : null
+      }}).catch(() => {}) // skip duplicate if re-run
+    }
+  }
+
+  // Shifts: last 30 days
+  const shiftTypes = [
+    { type: 'morning', start: '08:00', end: '16:00' },
+    { type: 'evening', start: '14:00', end: '22:00' },
+    { type: 'night',   start: '22:00', end: '06:00' },
+  ]
+  for (const emp of employees) {
+    for (let d = 29; d >= 0; d--) {
+      const date = new Date(today); date.setDate(date.getDate() - d)
+      if (date.getDay() === 0 || date.getDay() === 6) continue
+      const shift = shiftTypes[randomInt(0, shiftTypes.length - 1)]
+      await prisma.employeeShift.create({ data: {
+        employeeId: emp.id, date,
+        shiftType: shift.type, startTime: shift.start, endTime: shift.end,
+        breakMins: 30
+      }})
+    }
+  }
+
+  // Overtime: random 10 records per employee
+  for (const emp of employees) {
+    for (let i = 0; i < 5; i++) {
+      const date = randomDate(new Date(Date.now() - 90 * 24 * 3600 * 1000), new Date())
+      await prisma.employeeOvertime.create({ data: {
+        employeeId: emp.id, date,
+        hours: randomInt(1, 4),
+        reason: ['High sales volume','Stock count','System migration','Special event'][randomInt(0,3)],
+        approved: Math.random() > 0.3,
+        approvedBy: users[0].id,
+        multiplier: 1.5
+      }})
+    }
+  }
+
+  // Activity logs
+  for (const emp of employees) {
+    await prisma.employeeActivityLog.createMany({ data: [
+      { employeeId: emp.id, action: 'hired',          details: 'Employee created in system',    performedBy: users[0].id, createdAt: emp.hireDate },
+      { employeeId: emp.id, action: 'salary_updated', details: `Salary set to ${emp.salary}`,  performedBy: users[0].id, createdAt: new Date() },
+    ]})
+  }
+
+  console.log(`✅ Created ${employees.length} employees with attendance, payroll, shifts & overtime\n`)
 
   // ==================== CUSTOMERS ====================
   console.log('👥 Creating customers...')
@@ -293,7 +382,7 @@ async function main() {
     const batchStart = batchNum * CONFIG.PRODUCT_BATCH_SIZE
     const batchSize = Math.min(CONFIG.PRODUCT_BATCH_SIZE, CONFIG.TOTAL_PRODUCTS - batchStart)
     
-    // Use transaction for batch with sequential processing
+    // Use transaction for batch — longer timeout needed due to EAV attribute creation per product
     const result = await prisma.$transaction(async (tx) => {
       const createdProducts = []
       let stockMovementsCount = 0
@@ -316,14 +405,18 @@ async function main() {
         const baseCost = basePrice * (0.5 + Math.random() * 0.2) // 50-70% of price
         
         // Generate variant data with barcodes
+        // Track color/size separately — ProductVariant uses EAV via VariantAttributeValue
+        const variantAttrMeta: Array<{color: string, size: string}> = []
         const variantData = hasVariants ? 
           Array.from({ length: randomInt(2, 5) }, (_, vIdx) => {
             const sku = `${generateSKU(categoryName, productIndex + 1)}-V${vIdx + 1}`
             const variantPrice = basePrice + randomPrice(-10, 20)
             const variantCost = variantPrice * (0.5 + Math.random() * 0.2) // 50-70% of variant price
-            return {
+            variantAttrMeta.push({
               color: COLORS[randomInt(0, COLORS.length - 1)],
-              size: SIZES[randomInt(0, SIZES.length - 1)],
+              size: SIZES[randomInt(0, SIZES.length - 1)]
+            })
+            return {
               sku,
               barcode: `BAR${sku.replace(/-/g, '')}`,
               price: variantPrice,
@@ -333,8 +426,6 @@ async function main() {
             }
           }) :
           [{
-            color: 'Default',
-            size: 'One Size',
             sku: generateSKU(categoryName, productIndex + 1),
             barcode: `BAR${generateSKU(categoryName, productIndex + 1).replace(/-/g, '')}`,
             price: basePrice,
@@ -342,6 +433,7 @@ async function main() {
             stock: randomInt(100, 500),
             reorderPoint: randomInt(20, 50)
           }]
+        if (!hasVariants) variantAttrMeta.push({ color: 'Default', size: 'One Size' })
         
         const product = await tx.product.create({
           data: {
@@ -369,6 +461,24 @@ async function main() {
           }
         })
         
+        // Create EAV attribute entries for Color and Size
+        const colorAttr = await tx.productAttribute.create({
+          data: { productId: product.id, name: 'Color', position: 0 }
+        })
+        const sizeAttr = await tx.productAttribute.create({
+          data: { productId: product.id, name: 'Size', position: 1 }
+        })
+        for (let vi = 0; vi < product.variants.length; vi++) {
+          const v = product.variants[vi]
+          const meta = variantAttrMeta[vi]
+          await tx.variantAttributeValue.createMany({
+            data: [
+              { variantId: v.id, attributeId: colorAttr.id, value: meta.color },
+              { variantId: v.id, attributeId: sizeAttr.id, value: meta.size }
+            ]
+          })
+        }
+        
         // Create initial RESTOCK stock movements for each variant
         for (const variant of product.variants) {
           if (variant.stock > 0) {
@@ -392,7 +502,7 @@ async function main() {
       }
       
       return { products: createdProducts, stockMovements: stockMovementsCount }
-    })
+    }, { timeout: 120000 })
     
     products.push(...result.products)
     totalInitialStockMovements += result.stockMovements
@@ -1088,7 +1198,517 @@ async function main() {
   
   console.log(`✅ Created ${purchaseOrderCount} purchase orders\n`)
 
-  // ==================== DEPOSITS & INSTALLMENTS ====================
+  // ==================== INSTALLMENT PLANS ====================
+  console.log('💳 Creating installment plans...')
+  const installmentPlans = await prisma.installmentPlan.createMany({
+    data: [
+      { name: '3-Month Plan',        downPaymentPercent: 30, numberOfPayments: 3,  intervalDays: 30, interestRate: 5,  description: '30% down, 3 monthly installments @ 5%',   isActive: true },
+      { name: '6-Month Plan',        downPaymentPercent: 20, numberOfPayments: 6,  intervalDays: 30, interestRate: 8,  description: '20% down, 6 monthly installments @ 8%',   isActive: true },
+      { name: '12-Month Plan',       downPaymentPercent: 10, numberOfPayments: 12, intervalDays: 30, interestRate: 12, description: '10% down, 12 monthly installments @ 12%', isActive: true },
+      { name: 'Weekly 4-Week Plan',  downPaymentPercent: 25, numberOfPayments: 4,  intervalDays: 7,  interestRate: 2,  description: '25% down, 4 weekly installments @ 2%',    isActive: true },
+      { name: 'No Interest 3-Month', downPaymentPercent: 50, numberOfPayments: 3,  intervalDays: 30, interestRate: 0,  description: '50% down, 3 monthly installments, 0%',    isActive: true },
+    ]
+  })
+  console.log(`✅ Created ${installmentPlans.count} installment plans\n`)
+
+  // ═══════════════════════ PLUGIN: CLINIC ═══════════════════════════════════
+  console.log('🏥 Seeding Clinic plugin...')
+
+  // Create a shared dummy PDF file for check results preview
+  const dummyPdfDir  = path.resolve(__dirname, '../resources/dummy-data')
+  const dummyPdfPath = path.join(dummyPdfDir, 'dummy-check-result.pdf')
+  if (!fs.existsSync(dummyPdfDir)) fs.mkdirSync(dummyPdfDir, { recursive: true })
+  if (!fs.existsSync(dummyPdfPath)) {
+    // Minimal valid PDF bytes
+    const minimalPdf = Buffer.from(
+      '%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj ' +
+      '2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj ' +
+      '3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\n' +
+      'xref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n' +
+      'trailer<</Size 4/Root 1 0 R>>\nstartxref\n190\n%%EOF'
+    )
+    fs.writeFileSync(dummyPdfPath, minimalPdf)
+  }
+
+  const CLINIC_PATIENTS = [
+    { name: 'Ahmed Al-Rashid',    phone: '+966-50-1001', gender: 'male',   dateOfBirth: new Date('1985-03-12'), bloodType: 'O+',  allergies: 'Penicillin',     nationalId: 'NID-001' },
+    { name: 'Fatima Hassan',      phone: '+966-50-1002', gender: 'female', dateOfBirth: new Date('1992-07-24'), bloodType: 'A+',  allergies: null,             nationalId: 'NID-002' },
+    { name: 'Mohammed Al-Sayed',  phone: '+966-50-1003', gender: 'male',   dateOfBirth: new Date('1978-11-05'), bloodType: 'B-',  allergies: 'Aspirin',        nationalId: 'NID-003' },
+    { name: 'Sara Khalid',        phone: '+966-50-1004', gender: 'female', dateOfBirth: new Date('2000-01-30'), bloodType: 'AB+', allergies: null,             nationalId: 'NID-004' },
+    { name: 'Omar Abdullah',      phone: '+966-50-1005', gender: 'male',   dateOfBirth: new Date('1965-09-18'), bloodType: 'A-',  allergies: 'Sulfa drugs',    nationalId: 'NID-005' },
+    { name: 'Nour Al-Farsi',      phone: '+966-50-1006', gender: 'female', dateOfBirth: new Date('1990-04-15'), bloodType: 'O-',  allergies: null,             nationalId: 'NID-006' },
+    { name: 'Khalid Ibrahim',     phone: '+966-50-1007', gender: 'male',   dateOfBirth: new Date('1988-12-22'), bloodType: 'B+',  allergies: null,             nationalId: 'NID-007' },
+    { name: 'Rania Mahmoud',      phone: '+966-50-1008', gender: 'female', dateOfBirth: new Date('1975-06-08'), bloodType: 'O+',  allergies: 'Latex',          nationalId: 'NID-008' },
+    { name: 'Tariq Al-Amri',      phone: '+966-50-1009', gender: 'male',   dateOfBirth: new Date('1995-02-14'), bloodType: 'A+',  allergies: null,             nationalId: 'NID-009' },
+    { name: 'Hind Al-Otaibi',     phone: '+966-50-1010', gender: 'female', dateOfBirth: new Date('1982-08-27'), bloodType: 'AB-', allergies: 'NSAIDs',         nationalId: 'NID-010' },
+    { name: 'Yusuf Nasser',       phone: '+966-50-1011', gender: 'male',   dateOfBirth: new Date('1960-11-03'), bloodType: 'B+',  allergies: 'Codeine',        nationalId: 'NID-011' },
+    { name: 'Layla Al-Ghamdi',    phone: '+966-50-1012', gender: 'female', dateOfBirth: new Date('2003-05-19'), bloodType: 'O+',  allergies: null,             nationalId: 'NID-012' },
+    { name: 'Hassan Al-Balawi',   phone: '+966-50-1013', gender: 'male',   dateOfBirth: new Date('1971-07-31'), bloodType: 'A+',  allergies: null,             nationalId: 'NID-013' },
+    { name: 'Mona Saleh',         phone: '+966-50-1014', gender: 'female', dateOfBirth: new Date('1998-03-07'), bloodType: 'B-',  allergies: 'Ibuprofen',      nationalId: 'NID-014' },
+    { name: 'Abdulaziz Al-Zahrani',phone:'+966-50-1015', gender: 'male',   dateOfBirth: new Date('1955-10-21'), bloodType: 'O+',  allergies: 'Morphine',       nationalId: 'NID-015' },
+  ]
+
+  const visitTypes   = ['first_visit','follow_up','routine','emergency']
+  const doctors      = ['Dr. Ahmad Karimi','Dr. Sarah Mitchell','Dr. Khalid Nasser','Dr. Emily Chen']
+  const diagnoses    = ['Hypertension','Type 2 Diabetes','Upper Respiratory Infection','Migraine','Gastritis','Lumbar Pain','Anxiety Disorder','Hyperlipidemia','Asthma','Dermatitis']
+  const medicines    = ['Metformin 500mg','Amlodipine 5mg','Omeprazole 20mg','Paracetamol 500mg','Amoxicillin 500mg','Atorvastatin 20mg','Salbutamol inhaler','Cetirizine 10mg','Ibuprofen 400mg','Fluoxetine 20mg']
+  const checkTitles  = ['Blood Test - CBC','Chest X-Ray','MRI Brain','ECG','Lipid Panel','HbA1c','Urine Analysis','Thyroid Function','Kidney Function','Abdominal Ultrasound']
+
+  let clinicPatientCount = 0, clinicSessionCount = 0, clinicPrescriptionCount = 0, clinicCheckResultCount = 0
+
+  for (const pd of CLINIC_PATIENTS) {
+    const pat = await prisma.clinicPatient.create({ data: { ...pd, medicalNotes: Math.random() > 0.5 ? 'Chronic condition, requires regular monitoring' : null } })
+    clinicPatientCount++
+
+    // 3–6 sessions per patient
+    const sessionCount = randomInt(3, 6)
+    for (let s = 0; s < sessionCount; s++) {
+      const visitDate   = randomDate(new Date(Date.now() - 2 * 365 * 24 * 3600 * 1000), new Date())
+      const diag        = diagnoses[randomInt(0, diagnoses.length - 1)]
+      const charged     = randomPrice(50, 500)
+      const payStatus   = ['paid','partial','unpaid','waived'][randomInt(0,3)]
+      const paid        = payStatus === 'paid' ? charged : payStatus === 'partial' ? charged * 0.5 : 0
+
+      const vitals = JSON.stringify({
+        bp:     `${randomInt(110,140)}/${randomInt(70,90)}`,
+        temp:   `${(36 + Math.random() * 2).toFixed(1)}°C`,
+        pulse:  `${randomInt(60,100)} bpm`,
+        weight: `${randomInt(55,100)} kg`,
+        o2sat:  `${randomInt(95,100)}%`
+      })
+
+      const session = await prisma.clinicSession.create({ data: {
+        patientId: pat.id,
+        visitDate,
+        visitType:     visitTypes[randomInt(0, visitTypes.length - 1)],
+        doctorName:    doctors[randomInt(0, doctors.length - 1)],
+        chiefComplaint: ['Headache and dizziness','Chest pain','Shortness of breath','Fever and cough','Back pain','Stomach ache','Fatigue','Skin rash','Joint pain','Follow-up checkup'][randomInt(0,9)],
+        vitals,
+        diagnosis:     diag,
+        notes:         `Patient presents with ${diag.toLowerCase()}. Advised lifestyle changes.`,
+        followUpDate:  Math.random() > 0.4 ? new Date(visitDate.getTime() + randomInt(14,60) * 24 * 3600 * 1000) : null,
+        status:        ['completed','completed','completed','active','cancelled'][randomInt(0,4)],
+        amountCharged: charged,
+        amountPaid:    paid,
+        paymentStatus: payStatus,
+        paymentMethod: ['cash','card','insurance','other'][randomInt(0,3)],
+      }})
+      clinicSessionCount++
+
+      // 0–3 prescriptions per session
+      const rxCount = randomInt(0, 3)
+      for (let r = 0; r < rxCount; r++) {
+        await prisma.clinicPrescription.create({ data: {
+          sessionId:   session.id,
+          medicineName: medicines[randomInt(0, medicines.length - 1)],
+          dosage:       ['250mg','500mg','10mg','20mg','40mg'][randomInt(0,4)],
+          frequency:    ['Once daily','Twice daily','Three times daily','As needed'][randomInt(0,3)],
+          duration:     ['5 days','7 days','14 days','30 days','Ongoing'][randomInt(0,4)],
+          quantity:     randomInt(7, 60),
+          instructions: ['Take with food','Take before sleep','Take on empty stomach','Avoid alcohol'][randomInt(0,3)]
+        }})
+        clinicPrescriptionCount++
+      }
+    }
+
+    // 1–3 check results per patient
+    const crCount = randomInt(1, 3)
+    for (let c = 0; c < crCount; c++) {
+      const title = checkTitles[randomInt(0, checkTitles.length - 1)]
+      await prisma.clinicCheckResult.create({ data: {
+        patientId:   pat.id,
+        title,
+        description: `${title} report — results within normal range.`,
+        fileName:    'dummy-check-result.pdf',
+        filePath:    dummyPdfPath,
+        fileSize:    fs.statSync(dummyPdfPath).size,
+        resultDate:  randomDate(new Date(Date.now() - 365 * 24 * 3600 * 1000), new Date()),
+      }})
+      clinicCheckResultCount++
+    }
+  }
+  console.log(`✅ Clinic: ${clinicPatientCount} patients, ${clinicSessionCount} sessions, ${clinicPrescriptionCount} prescriptions, ${clinicCheckResultCount} check results\n`)
+
+  // ═══════════════════════ PLUGIN: RESTAURANT ═══════════════════════════════
+  console.log('🍽️ Seeding Restaurant plugin...')
+
+  // Tables
+  const tableSections = ['Indoor','Outdoor','Bar','VIP']
+  const tables = await Promise.all(
+    Array.from({ length: 14 }, (_, i) => prisma.restaurantTable.create({ data: {
+      number:   i + 1,
+      capacity: [2, 2, 4, 4, 4, 6, 6, 8][randomInt(0, 7)],
+      section:  tableSections[randomInt(0, tableSections.length - 1)],
+      status:   ['available','available','available','occupied','reserved'][randomInt(0, 4)],
+      isActive: true,
+    }}))
+  )
+
+  // Menu items
+  const menuCategories: Record<string, Array<{ name: string; price: number; cost: number; prep: number }>> = {
+    Starters:  [
+      { name: 'Garlic Bread',       price: 5.5,  cost: 1.2, prep: 8  },
+      { name: 'Bruschetta',         price: 7.0,  cost: 2.0, prep: 10 },
+      { name: 'Soup of the Day',    price: 6.5,  cost: 1.8, prep: 10 },
+      { name: 'Caesar Salad',       price: 9.0,  cost: 2.5, prep: 8  },
+      { name: 'Spring Rolls',       price: 8.5,  cost: 2.2, prep: 12 },
+    ],
+    Mains: [
+      { name: 'Grilled Chicken',    price: 18.0, cost: 7,   prep: 20 },
+      { name: 'Beef Steak',         price: 28.0, cost: 12,  prep: 25 },
+      { name: 'Pasta Carbonara',    price: 15.0, cost: 4.5, prep: 15 },
+      { name: 'Margherita Pizza',   price: 14.0, cost: 4.0, prep: 18 },
+      { name: 'Fish & Chips',       price: 16.5, cost: 5.5, prep: 20 },
+      { name: 'Veggie Burger',      price: 13.0, cost: 3.5, prep: 12 },
+      { name: 'Lamb Chops',         price: 26.0, cost: 11,  prep: 30 },
+    ],
+    Desserts: [
+      { name: 'Chocolate Lava Cake',price: 8.5,  cost: 2.0, prep: 10 },
+      { name: 'Tiramisu',           price: 7.5,  cost: 1.8, prep: 5  },
+      { name: 'Cheesecake',         price: 7.0,  cost: 1.5, prep: 5  },
+      { name: 'Ice Cream Sundae',   price: 6.0,  cost: 1.2, prep: 5  },
+    ],
+    Drinks: [
+      { name: 'Fresh Orange Juice', price: 4.5,  cost: 1.0, prep: 5  },
+      { name: 'Lemonade',           price: 3.5,  cost: 0.8, prep: 5  },
+      { name: 'Soft Drink',         price: 2.5,  cost: 0.5, prep: 2  },
+      { name: 'Mineral Water',      price: 2.0,  cost: 0.3, prep: 1  },
+      { name: 'Arabic Coffee',      price: 3.0,  cost: 0.7, prep: 5  },
+      { name: 'Cappuccino',         price: 4.0,  cost: 1.0, prep: 5  },
+    ],
+  }
+
+  const allMenuItems: any[] = []
+  let menuDisplayOrder = 0
+  for (const [cat, items] of Object.entries(menuCategories)) {
+    for (const item of items) {
+      const mi = await prisma.menuItem.create({ data: {
+        name: item.name, category: cat,
+        price: item.price, cost: item.cost,
+        preparationTime: item.prep,
+        displayOrder: menuDisplayOrder++,
+        isAvailable: Math.random() > 0.1,
+        description: `Fresh ${item.name.toLowerCase()} prepared to order`
+      }})
+      allMenuItems.push(mi)
+    }
+  }
+
+  // Reservations: past 30 days + next 14 days
+  const guestNames  = ['Al-Rashid Family','Smith Party','Johnson Group','Al-Sayed','Williams','Al-Faris','Brown Family','Al-Otaibi']
+  const resvStatuses = ['confirmed','confirmed','confirmed','seated','completed','completed','cancelled','pending']
+  let reservationCount = 0
+  for (let i = 0; i < 40; i++) {
+    const isUpcoming = Math.random() > 0.6
+    const resDate = isUpcoming
+      ? randomDate(new Date(), new Date(Date.now() + 14 * 24 * 3600 * 1000))
+      : randomDate(new Date(Date.now() - 30 * 24 * 3600 * 1000), new Date())
+    await prisma.tableReservation.create({ data: {
+      tableId:       tables[randomInt(0, tables.length - 1)].id,
+      customerName:  guestNames[randomInt(0, guestNames.length - 1)],
+      customerPhone: `+1-555-${String(9000 + i).padStart(4,'0')}`,
+      partySize:     randomInt(1, 8),
+      date:          resDate,
+      status:        resvStatuses[randomInt(0, resvStatuses.length - 1)],
+      notes:         Math.random() > 0.7 ? 'Window seat preferred' : null,
+    }})
+    reservationCount++
+  }
+
+  // Dine-in orders: last 60 days
+  const servers   = ['Ali','Sara','Omar','Nour','Khalid']
+  const orderStatuses = ['paid','paid','paid','paid','open','ready','voided']
+  let orderCount = 0, orderItemCount = 0
+  for (let i = 0; i < 80; i++) {
+    const orderDate  = randomDate(new Date(Date.now() - 60 * 24 * 3600 * 1000), new Date())
+    const status     = orderStatuses[randomInt(0, orderStatuses.length - 1)]
+    const table      = tables[randomInt(0, tables.length - 1)]
+    // Pick 2–5 menu items
+    const picked: any[] = []
+    const itemCount  = randomInt(2, 5)
+    for (let j = 0; j < itemCount; j++) picked.push(allMenuItems[randomInt(0, allMenuItems.length - 1)])
+    const subtotal   = picked.reduce((s, m) => s + m.price * (Math.random() > 0.6 ? 2 : 1), 0)
+    const tax        = Math.round(subtotal * 0.08 * 100) / 100
+    const total      = subtotal + tax
+    const itemStatuses = ['pending','preparing','ready','served']
+
+    const order = await prisma.dineInOrder.create({ data: {
+      tableId:    table.id,
+      status,
+      serverName: servers[randomInt(0, servers.length - 1)],
+      subtotal, tax, total,
+      openedAt:  orderDate,
+      closedAt:  status === 'paid' ? new Date(orderDate.getTime() + randomInt(30,120) * 60 * 1000) : null,
+      items: {
+        create: picked.map(mi => ({
+          menuItemId: mi.id,
+          itemName:   mi.name,
+          quantity:   Math.random() > 0.6 ? 2 : 1,
+          unitPrice:  mi.price,
+          status:     status === 'paid' ? 'served' : itemStatuses[randomInt(0, itemStatuses.length - 1)],
+        }))
+      }
+    }})
+    orderCount++
+    orderItemCount += picked.length
+  }
+
+  console.log(`✅ Restaurant: ${tables.length} tables, ${allMenuItems.length} menu items, ${reservationCount} reservations, ${orderCount} orders (${orderItemCount} items)\n`)
+
+  // ═══════════════════════ PLUGIN: WAREHOUSE ════════════════════════════════
+  console.log('🏭 Seeding Warehouse plugin...')
+
+  // Hierarchical locations: zones → aisles → shelves
+  const zoneNames = ['Zone A – Electronics','Zone B – Clothing','Zone C – Kitchen','Zone D – Sports']
+  const rootLocations: any[] = []
+  for (let z = 0; z < zoneNames.length; z++) {
+    const zone = await prisma.warehouseLocation.create({ data: {
+      name: zoneNames[z], code: `Z${String.fromCharCode(65+z)}`,
+      type: 'zone', isActive: true,
+      notes: `Main ${zoneNames[z].split('–')[1].trim()} storage zone`
+    }})
+    rootLocations.push(zone)
+
+    for (let a = 1; a <= 3; a++) {
+      const aisle = await prisma.warehouseLocation.create({ data: {
+        name: `Aisle ${z+1}-${a}`, code: `Z${String.fromCharCode(65+z)}-A${a}`,
+        type: 'aisle', parentId: zone.id, isActive: true
+      }})
+
+      for (let s = 1; s <= 4; s++) {
+        const shelf = await prisma.warehouseLocation.create({ data: {
+          name: `Shelf ${z+1}-${a}-${s}`, code: `Z${String.fromCharCode(65+z)}-A${a}-S${s}`,
+          type: 'shelf', parentId: aisle.id, isActive: true
+        }})
+
+        // Add stock to each shelf
+        const stockItems = [
+          `SKU-${String.fromCharCode(65+z)}${a}${s}-001`,
+          `SKU-${String.fromCharCode(65+z)}${a}${s}-002`,
+        ]
+        for (const sku of stockItems) {
+          await prisma.warehouseStock.create({ data: {
+            locationId:  shelf.id,
+            productName: `${zoneNames[z].split('–')[1].trim().trim()} Item ${sku.slice(-3)}`,
+            sku, quantity: randomInt(10, 500), unit: 'pcs',
+            minQuantity: randomInt(5, 20),
+          }}).catch(() => {}) // skip unique conflicts
+        }
+      }
+    }
+  }
+
+  // Stock transfers between zones
+  const allLocations = await prisma.warehouseLocation.findMany({ where: { type: 'shelf' } })
+  const transferStatuses = ['completed','completed','completed','in_transit','draft','cancelled']
+  let transferCount = 0, transferItemCount = 0
+  for (let i = 0; i < 25; i++) {
+    const from   = allLocations[randomInt(0, allLocations.length - 1)]
+    let   to     = allLocations[randomInt(0, allLocations.length - 1)]
+    while (to.id === from.id) to = allLocations[randomInt(0, allLocations.length - 1)]
+    const status = transferStatuses[randomInt(0, transferStatuses.length - 1)]
+    const tDate  = randomDate(new Date(Date.now() - 180 * 24 * 3600 * 1000), new Date())
+
+    await prisma.stockTransfer.create({ data: {
+      fromLocationId: from.id,
+      toLocationId:   to.id,
+      status, transferDate: tDate,
+      completedAt:    status === 'completed' ? new Date(tDate.getTime() + randomInt(1,5) * 24 * 3600 * 1000) : null,
+      notes: `Transfer from ${from.name} to ${to.name}`,
+      items: {
+        create: Array.from({ length: randomInt(1, 4) }, (_, j) => ({
+          productName: `Transfer Item ${i + 1}-${j + 1}`,
+          sku:         `TRF-${String(i+1).padStart(3,'0')}-${j+1}`,
+          quantity:    randomInt(5, 50),
+          unit:        'pcs',
+        }))
+      }
+    }})
+    transferCount++
+    transferItemCount += randomInt(1, 4)
+  }
+  console.log(`✅ Warehouse: ${allLocations.length} shelf locations, ${transferCount} transfers\n`)
+
+  // ═══════════════════════ PLUGIN: BAKERY ═══════════════════════════════════
+  console.log('🥐 Seeding Bakery plugin...')
+
+  // Pantry ingredients
+  const pantryData = [
+    { name: 'All-Purpose Flour',  currentStock: 200000, unit: 'g',   costPerUnit: 0.002, lowStockThreshold: 20000, supplierName: 'FoodSupply Co' },
+    { name: 'Whole Wheat Flour',  currentStock: 80000,  unit: 'g',   costPerUnit: 0.003, lowStockThreshold: 10000, supplierName: 'FoodSupply Co' },
+    { name: 'Granulated Sugar',   currentStock: 50000,  unit: 'g',   costPerUnit: 0.003, lowStockThreshold: 5000,  supplierName: 'FoodSupply Co' },
+    { name: 'Brown Sugar',        currentStock: 25000,  unit: 'g',   costPerUnit: 0.004, lowStockThreshold: 3000,  supplierName: 'FoodSupply Co' },
+    { name: 'Unsalted Butter',    currentStock: 15000,  unit: 'g',   costPerUnit: 0.015, lowStockThreshold: 2000,  supplierName: 'Dairy Direct'  },
+    { name: 'Eggs',               currentStock: 300,    unit: 'pcs', costPerUnit: 0.3,   lowStockThreshold: 50,    supplierName: 'Dairy Direct'  },
+    { name: 'Whole Milk',         currentStock: 20000,  unit: 'ml',  costPerUnit: 0.001, lowStockThreshold: 3000,  supplierName: 'Dairy Direct'  },
+    { name: 'Baking Powder',      currentStock: 2000,   unit: 'g',   costPerUnit: 0.01,  lowStockThreshold: 200  },
+    { name: 'Baking Soda',        currentStock: 1500,   unit: 'g',   costPerUnit: 0.008, lowStockThreshold: 200  },
+    { name: 'Salt',               currentStock: 5000,   unit: 'g',   costPerUnit: 0.001, lowStockThreshold: 500  },
+    { name: 'Vanilla Extract',    currentStock: 1000,   unit: 'ml',  costPerUnit: 0.05,  lowStockThreshold: 100  },
+    { name: 'Dark Chocolate',     currentStock: 8000,   unit: 'g',   costPerUnit: 0.02,  lowStockThreshold: 1000, supplierName: 'Choco World'   },
+    { name: 'Cocoa Powder',       currentStock: 5000,   unit: 'g',   costPerUnit: 0.015, lowStockThreshold: 500,  supplierName: 'Choco World'   },
+    { name: 'Active Dry Yeast',   currentStock: 500,    unit: 'g',   costPerUnit: 0.04,  lowStockThreshold: 50   },
+    { name: 'Olive Oil',          currentStock: 10000,  unit: 'ml',  costPerUnit: 0.008, lowStockThreshold: 1000 },
+    { name: 'Heavy Cream',        currentStock: 8000,   unit: 'ml',  costPerUnit: 0.005, lowStockThreshold: 1000 },
+    { name: 'Cream Cheese',       currentStock: 5000,   unit: 'g',   costPerUnit: 0.018, lowStockThreshold: 500  },
+    { name: 'Almonds',            currentStock: 4000,   unit: 'g',   costPerUnit: 0.025, lowStockThreshold: 500  },
+    { name: 'Rolled Oats',        currentStock: 10000,  unit: 'g',   costPerUnit: 0.004, lowStockThreshold: 1000 },
+    { name: 'Honey',              currentStock: 3000,   unit: 'ml',  costPerUnit: 0.012, lowStockThreshold: 300  },
+  ]
+  const pantryIngredients = await Promise.all(pantryData.map(p => prisma.pantryIngredient.create({ data: p })))
+
+  // Recipes
+  const recipeTemplates = [
+    {
+      name: 'Classic White Bread',    yieldQty: 2, yieldUnit: 'loaves',  expiryDays: 4,
+      description: 'Traditional white sandwich bread',
+      ingredients: [
+        { name: 'All-Purpose Flour', qty: 500, unit: 'g' }, { name: 'Whole Milk', qty: 300, unit: 'ml' },
+        { name: 'Active Dry Yeast', qty: 7, unit: 'g' },    { name: 'Salt', qty: 10, unit: 'g' },
+        { name: 'Granulated Sugar', qty: 15, unit: 'g' },   { name: 'Unsalted Butter', qty: 30, unit: 'g' },
+      ]
+    },
+    {
+      name: 'Chocolate Chip Cookies', yieldQty: 24, yieldUnit: 'pcs',   expiryDays: 7,
+      description: 'Crispy-edge, chewy-center cookies',
+      ingredients: [
+        { name: 'All-Purpose Flour', qty: 280, unit: 'g' }, { name: 'Unsalted Butter', qty: 230, unit: 'g' },
+        { name: 'Brown Sugar', qty: 200, unit: 'g' },        { name: 'Granulated Sugar', qty: 100, unit: 'g' },
+        { name: 'Eggs', qty: 2, unit: 'pcs' },               { name: 'Vanilla Extract', qty: 5, unit: 'ml' },
+        { name: 'Dark Chocolate', qty: 200, unit: 'g' },     { name: 'Baking Soda', qty: 5, unit: 'g' },
+        { name: 'Salt', qty: 3, unit: 'g' },
+      ]
+    },
+    {
+      name: 'Croissants',             yieldQty: 12, yieldUnit: 'pcs',   expiryDays: 2,
+      description: 'Buttery flaky French croissants',
+      ingredients: [
+        { name: 'All-Purpose Flour', qty: 500, unit: 'g' }, { name: 'Unsalted Butter', qty: 280, unit: 'g' },
+        { name: 'Whole Milk', qty: 140, unit: 'ml' },        { name: 'Active Dry Yeast', qty: 7, unit: 'g' },
+        { name: 'Granulated Sugar', qty: 50, unit: 'g' },    { name: 'Salt', qty: 10, unit: 'g' },
+      ]
+    },
+    {
+      name: 'Chocolate Lava Cake',    yieldQty: 6, yieldUnit: 'pcs',    expiryDays: 2,
+      description: 'Warm individual cakes with molten center',
+      ingredients: [
+        { name: 'Dark Chocolate', qty: 170, unit: 'g' },    { name: 'Unsalted Butter', qty: 115, unit: 'g' },
+        { name: 'Eggs', qty: 4, unit: 'pcs' },               { name: 'Granulated Sugar', qty: 100, unit: 'g' },
+        { name: 'All-Purpose Flour', qty: 60, unit: 'g' },   { name: 'Cocoa Powder', qty: 15, unit: 'g' },
+      ]
+    },
+    {
+      name: 'Banana Nut Muffins',     yieldQty: 12, yieldUnit: 'pcs',   expiryDays: 5,
+      description: 'Moist muffins with banana and almonds',
+      ingredients: [
+        { name: 'All-Purpose Flour', qty: 280, unit: 'g' }, { name: 'Rolled Oats', qty: 50, unit: 'g' },
+        { name: 'Brown Sugar', qty: 150, unit: 'g' },         { name: 'Eggs', qty: 2, unit: 'pcs' },
+        { name: 'Unsalted Butter', qty: 115, unit: 'g' },    { name: 'Whole Milk', qty: 120, unit: 'ml' },
+        { name: 'Almonds', qty: 80, unit: 'g' },              { name: 'Baking Powder', qty: 8, unit: 'g' },
+        { name: 'Salt', qty: 3, unit: 'g' },
+      ]
+    },
+    {
+      name: 'Classic Cheesecake',     yieldQty: 8, yieldUnit: 'slices', expiryDays: 5,
+      description: 'New York style baked cheesecake',
+      ingredients: [
+        { name: 'Cream Cheese', qty: 680, unit: 'g' }, { name: 'Granulated Sugar', qty: 200, unit: 'g' },
+        { name: 'Eggs', qty: 3, unit: 'pcs' },          { name: 'Heavy Cream', qty: 120, unit: 'ml' },
+        { name: 'Vanilla Extract', qty: 10, unit: 'ml' },{ name: 'All-Purpose Flour', qty: 30, unit: 'g' },
+      ]
+    },
+    {
+      name: 'Sourdough Loaf',         yieldQty: 1, yieldUnit: 'loaf',   expiryDays: 5,
+      description: 'Traditional tangy sourdough bread',
+      ingredients: [
+        { name: 'Whole Wheat Flour', qty: 250, unit: 'g' }, { name: 'All-Purpose Flour', qty: 250, unit: 'g' },
+        { name: 'Salt', qty: 12, unit: 'g' },                { name: 'Active Dry Yeast', qty: 5, unit: 'g' },
+      ]
+    },
+    {
+      name: 'Honey Granola Bars',     yieldQty: 16, yieldUnit: 'pcs',   expiryDays: 14,
+      description: 'Wholesome oat and honey bars',
+      ingredients: [
+        { name: 'Rolled Oats', qty: 300, unit: 'g' }, { name: 'Honey', qty: 120, unit: 'ml' },
+        { name: 'Almonds', qty: 100, unit: 'g' },      { name: 'Brown Sugar', qty: 60, unit: 'g' },
+        { name: 'Unsalted Butter', qty: 60, unit: 'g' },{ name: 'Salt', qty: 3, unit: 'g' },
+      ]
+    },
+  ]
+
+  const pantryMap = new Map(pantryIngredients.map(p => [p.name, p]))
+  let recipeCount = 0, batchCount = 0, scheduleCount = 0, wasteCount = 0
+
+  for (const rt of recipeTemplates) {
+    const recipe = await prisma.recipe.create({ data: {
+      name: rt.name, description: rt.description,
+      yieldQty: rt.yieldQty, yieldUnit: rt.yieldUnit,
+      expiryDays: rt.expiryDays, isActive: true,
+      ingredients: {
+        create: rt.ingredients.map(ing => {
+          const pantry = pantryMap.get(ing.name)
+          return {
+            name: ing.name, quantity: ing.qty, unit: ing.unit,
+            costPerUnit: pantry?.costPerUnit ?? 0.01,
+            pantryIngredientId: pantry?.id ?? null,
+          }
+        })
+      }
+    }})
+    recipeCount++
+
+    // 3–8 production batches over the past year
+    const numBatches = randomInt(3, 8)
+    for (let b = 0; b < numBatches; b++) {
+      const batchDate = randomDate(new Date(Date.now() - 365 * 24 * 3600 * 1000), new Date())
+      const qty = randomInt(1, 5)
+      const totalCost = rt.ingredients.reduce((s, ing) => {
+        const pantry = pantryMap.get(ing.name)
+        return s + ing.qty * qty * (pantry?.costPerUnit ?? 0.01)
+      }, 0)
+      await prisma.productionBatch.create({ data: {
+        recipeId: recipe.id, batchDate,
+        quantity: qty, unitsProduced: qty * recipe.yieldQty,
+        totalCost: Math.round(totalCost * 100) / 100,
+        expiresAt: rt.expiryDays ? new Date(batchDate.getTime() + rt.expiryDays * 24 * 3600 * 1000) : null,
+        notes: `Batch #${b+1} — ${qty} runs`,
+      }})
+      batchCount++
+    }
+
+    // Production schedules: next 14 days
+    for (let d = 0; d < 7; d++) {
+      const schedDate = new Date(); schedDate.setDate(schedDate.getDate() + d * 2)
+      await prisma.productionSchedule.create({ data: {
+        recipeId: recipe.id, scheduledDate: schedDate,
+        plannedQuantity: randomInt(1, 4),
+        actualQuantity:  d < 3 ? randomInt(1, 4) : null,
+        status: d < 3 ? 'completed' : (d === 3 ? 'in-progress' : 'planned'),
+      }})
+      scheduleCount++
+    }
+
+    // 1–2 waste logs per recipe
+    const wasteTypes = ['ingredient','finished_product','other']
+    for (let w = 0; w < randomInt(1, 2); w++) {
+      const wType = wasteTypes[randomInt(0, wasteTypes.length - 1)]
+      const pantry = pantryIngredients[randomInt(0, pantryIngredients.length - 1)]
+      await prisma.wasteLog.create({ data: {
+        wasteType:         wType,
+        recipeId:          recipe.id,
+        pantryIngredientId: wType === 'ingredient' ? pantry.id : null,
+        itemName:          wType === 'ingredient' ? pantry.name : rt.name,
+        quantity:          randomInt(1, 10),
+        unit:              wType === 'ingredient' ? pantry.unit : rt.yieldUnit,
+        cost:              randomPrice(1, 30),
+        reason:            ['Expired','Dropped','Overbaked','Quality reject','Breakage'][randomInt(0,4)],
+        wasteDate:         randomDate(new Date(Date.now() - 90 * 24 * 3600 * 1000), new Date()),
+        notes:             'Recorded during end-of-day waste audit',
+      }})
+      wasteCount++
+    }
+  }
+  console.log(`✅ Bakery: ${pantryIngredients.length} pantry items, ${recipeCount} recipes, ${batchCount} batches, ${scheduleCount} schedules, ${wasteCount} waste logs\n`)
   console.log('💰 Creating deposits and installments...')
   
   // Get some recent customers with significant spending
@@ -1164,69 +1784,17 @@ async function main() {
   
   console.log(`✅ Created ${depositCount} deposits and ${installmentCount} installments\n`)
 
-  // ==================== INSTALLMENT PLANS ====================
-  console.log('💳 Creating installment plans...')
-  const installmentPlans = await prisma.installmentPlan.createMany({
-    data: [
-      {
-        name: '3-Month Plan',
-        downPaymentPercent: 30,
-        numberOfPayments: 3,
-        intervalDays: 30,
-        interestRate: 5,
-        description: '30% down payment, 3 monthly installments with 5% interest',
-        isActive: true
-      },
-      {
-        name: '6-Month Plan',
-        downPaymentPercent: 20,
-        numberOfPayments: 6,
-        intervalDays: 30,
-        interestRate: 8,
-        description: '20% down payment, 6 monthly installments with 8% interest',
-        isActive: true
-      },
-      {
-        name: '12-Month Plan',
-        downPaymentPercent: 10,
-        numberOfPayments: 12,
-        intervalDays: 30,
-        interestRate: 12,
-        description: '10% down payment, 12 monthly installments with 12% interest',
-        isActive: true
-      },
-      {
-        name: 'Weekly 4-Week Plan',
-        downPaymentPercent: 25,
-        numberOfPayments: 4,
-        intervalDays: 7,
-        interestRate: 2,
-        description: '25% down payment, 4 weekly installments with 2% interest',
-        isActive: true
-      },
-      {
-        name: 'No Interest 3-Month',
-        downPaymentPercent: 50,
-        numberOfPayments: 3,
-        intervalDays: 30,
-        interestRate: 0,
-        description: '50% down payment, 3 monthly installments with no interest',
-        isActive: true
-      }
-    ]
-  })
-  console.log(`✅ Created ${installmentPlans.count} installment plans\n`)
-
   // ==================== SUMMARY ====================
   const endTime = Date.now()
   const duration = ((endTime - startTime) / 1000).toFixed(2)
   
   console.log('🎉 Development seeding completed successfully!\n')
   console.log('📊 Summary:')
+  console.log('  ── Core ──────────────────────────────────────────')
   console.log(`   • ${categories.length} categories`)
   console.log(`   • ${users.length} users`)
   console.log(`   • ${stores.length} stores`)
-  console.log(`   • ${employees.length} employees`)
+  console.log(`   • ${employees.length} employees (with attendance, payroll, shifts, overtime)`)
   console.log(`   • ${customers.length.toLocaleString()} customers`)
   console.log(`   • ${products.length.toLocaleString()} products (over 3 years)`)
   console.log(`   • ${totalInitialStockMovements.toLocaleString()} initial stock movements`)
@@ -1234,12 +1802,24 @@ async function main() {
   console.log(`   • ${totalStockMovements.toLocaleString()} sale-related stock movements`)
   console.log(`   • ${additionalStockMovements.toLocaleString()} additional stock movements`)
   console.log(`   • ${financialTransactionCount} financial transactions`)
-  console.log(`   • ${suppliers.length} suppliers`)
-  console.log(`   • ${supplierProductCount} supplier-product links`)
+  console.log(`   • ${suppliers.length} suppliers / ${supplierProductCount} supplier-product links`)
   console.log(`   • ${purchaseOrderCount} purchase orders`)
-  console.log(`   • ${depositCount} deposits`)
-  console.log(`   • ${installmentCount} installments`)
+  console.log(`   • ${depositCount} deposits / ${installmentCount} installments`)
   console.log(`   • ${installmentPlans.count} installment plans`)
+  console.log('  ── Clinic Plugin ─────────────────────────────────')
+  console.log(`   • ${clinicPatientCount} patients`)
+  console.log(`   • ${clinicSessionCount} sessions / ${clinicPrescriptionCount} prescriptions`)
+  console.log(`   • ${clinicCheckResultCount} check results (PDF)`)
+  console.log('  ── Restaurant Plugin ─────────────────────────────')
+  console.log(`   • ${tables.length} tables / ${allMenuItems.length} menu items`)
+  console.log(`   • ${reservationCount} reservations / ${orderCount} orders (${orderItemCount} items)`)
+  console.log('  ── Warehouse Plugin ──────────────────────────────')
+  console.log(`   • ${allLocations.length} shelf locations (4 zones → aisles → shelves)`)
+  console.log(`   • ${transferCount} stock transfers`)
+  console.log('  ── Bakery Plugin ─────────────────────────────────')
+  console.log(`   • ${pantryIngredients.length} pantry ingredients`)
+  console.log(`   • ${recipeCount} recipes / ${batchCount} production batches`)
+  console.log(`   • ${scheduleCount} production schedules / ${wasteCount} waste logs`)
   console.log(`\n⏱️  Completed in ${duration}s`)
   console.log('\n🔐 Login Credentials:')
   console.log('   Setup: setup / setup123')

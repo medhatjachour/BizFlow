@@ -54,21 +54,23 @@ export function registerSessionHandlers(prisma: any) {
   ipcMain.handle('clinic:sessions:update', async (_e, { id, data }: { id: string; data: any }) => {
     const { prescriptions, ...sessionData } = data
 
-    // Replace prescriptions: delete old, insert new
-    await prisma.clinicPrescription.deleteMany({ where: { sessionId: id } })
+    // Replace prescriptions atomically: delete old inside same transaction
+    return prisma.$transaction(async (tx) => {
+      await tx.clinicPrescription.deleteMany({ where: { sessionId: id } })
 
-    return prisma.clinicSession.update({
-      where: { id },
-      data: {
-        ...sessionData,
-        prescriptions: prescriptions?.length
-          ? { create: prescriptions }
-          : undefined
-      },
-      include: {
-        prescriptions: true,
-        patient: { select: { id: true, name: true } }
-      }
+      return tx.clinicSession.update({
+        where: { id },
+        data: {
+          ...sessionData,
+          prescriptions: prescriptions?.length
+            ? { create: prescriptions }
+            : undefined
+        },
+        include: {
+          prescriptions: true,
+          patient: { select: { id: true, name: true } }
+        }
+      })
     })
   })
 
