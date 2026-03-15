@@ -65,13 +65,21 @@ const RestaurantFinanceSection: React.FC = () => {
 
       const [r1, r2, r3, r4] = await Promise.allSettled([
         api.getOverview?.(),
-        api.getOrders?.({ startDate: start.toISOString(), endDate: end.toISOString(), status: 'closed' }),
+        // backend only filters by status, not dates — fetch paid orders then filter client-side
+        api.getOrders?.({ status: 'paid' }),
         api.getMenuItems?.(),
         api.getTables?.(),
       ])
 
       if (r1.status === 'fulfilled') setOverview(r1.value)
-      if (r2.status === 'fulfilled') setOrders(Array.isArray(r2.value) ? r2.value : [])
+      if (r2.status === 'fulfilled') {
+        const allPaid = Array.isArray(r2.value) ? r2.value : []
+        // filter by closedAt within the selected date range
+        setOrders(allPaid.filter(o => {
+          const d = new Date(o.closedAt || o.openedAt)
+          return d >= start && d <= end
+        }))
+      }
       if (r3.status === 'fulfilled') setMenuItems(Array.isArray(r3.value) ? r3.value : [])
       if (r4.status === 'fulfilled') setTables(Array.isArray(r4.value) ? r4.value : [])
     } catch (err) { logger.error('RestaurantFinance: loadData failed', err) }

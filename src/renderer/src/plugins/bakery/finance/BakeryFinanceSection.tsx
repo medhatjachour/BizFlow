@@ -56,7 +56,7 @@ const BakeryFinanceSection: React.FC = () => {
   const [dateRange, setDateRange] = useState(30) // days
 
   const [plData, setPlData] = useState<any>(null)
-  const [plTrend, setPlTrend] = useState<any[]>([])
+  const [plTrend, setPlTrend] = useState<any>(null)  // { weeks, series } from getProfitLossTrend
   const [wasteSummary, setWasteSummary] = useState<any>(null)
   const [recipes, setRecipes] = useState<any[]>([])
 
@@ -77,26 +77,38 @@ const BakeryFinanceSection: React.FC = () => {
       ])
 
       if (r1.status === 'fulfilled') setPlData(r1.value)
-      if (r2.status === 'fulfilled') setPlTrend(Array.isArray(r2.value) ? r2.value : [])
+      if (r2.status === 'fulfilled') setPlTrend(r2.value || null)
       if (r3.status === 'fulfilled') setWasteSummary(r3.value)
       if (r4.status === 'fulfilled') setRecipes(Array.isArray(r4.value) ? r4.value : [])
     } catch (err) { logger.error('BakeryFinance: loadData failed', err) }
     finally { setLoading(false); setRefreshing(false) }
   }
 
-  const revenue   = Number(plData?.revenue  || plData?.totalRevenue  || 0)
-  const cost      = Number(plData?.cost     || plData?.totalCost     || 0)
-  const profit    = Number(plData?.profit   || plData?.netProfit     || revenue - cost)
-  const margin    = revenue > 0 ? ((profit / revenue) * 100) : 0
+  // getProfitLoss returns { rows, totals: { totalRevenue, totalProductionCost, wasteCost, grossProfit } }
+  const revenue = Number(plData?.totals?.totalRevenue        || plData?.totalRevenue || plData?.revenue || 0)
+  const cost    = Number(plData?.totals?.totalProductionCost || plData?.totalCost   || plData?.cost    || 0)
+  const profit  = Number(plData?.totals?.grossProfit         || plData?.netProfit   || plData?.profit  || revenue - cost)
+  const margin  = revenue > 0 ? ((profit / revenue) * 100) : 0
   const wasteCost = Number(wasteSummary?.totalCost || wasteSummary?.cost || 0)
-  const wasteQty  = Number(wasteSummary?.totalQty  || wasteSummary?.qty  || 0)
-
-  const trendChartData = plTrend.map((d: any) => ({
-    date: d.date ? new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : d.label || '',
-    revenue: Number(d.revenue || 0),
-    cost: Number(d.cost || 0),
-    profit: Number(d.profit || d.revenue - d.cost || 0),
+  // getWasteSummary returns totalQuantity (not totalQty)
+  const wasteQty  = Number(wasteSummary?.totalQuantity || wasteSummary?.totalQty || wasteSummary?.qty || 0)
+  // byWasteType entries: { wasteType, _sum: { cost, quantity }, _count }
+  const wasteChartData = (wasteSummary?.byWasteType || []).map((w: any) => ({
+    name: w.wasteType || 'Other',
+    cost: Number(w._sum?.cost || 0),
   }))
+
+  // getProfitLossTrend returns { weeks: string[], series: [{ recipeId, recipeName, data: [{ week, cost, revenue, profit }] }] }
+  const trendChartData = (() => {
+    if (!plTrend?.weeks) return []
+    return plTrend.weeks.map((week: string) => {
+      const totals = (plTrend.series || []).reduce((acc: any, s: any) => {
+        const wData = (s.data || []).find((d: any) => d.week === week)
+        return { revenue: acc.revenue + (wData?.revenue || 0), cost: acc.cost + (wData?.cost || 0), profit: acc.profit + (wData?.profit || 0) }
+      }, { revenue: 0, cost: 0, profit: 0 })
+      return { date: week, ...totals }
+    })
+  })()
 
   return (
     <div className="space-y-6">
@@ -188,13 +200,13 @@ const BakeryFinanceSection: React.FC = () => {
                 <StatCard icon={AlertTriangle} label="Waste Quantity" value={wasteQty} sub="units wasted" color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
                 <StatCard icon={TrendingDown} label="Waste % of Revenue" value={revenue > 0 ? `${(wasteCost / revenue * 100).toFixed(1)}%` : '0%'} sub={wasteCost / revenue < 0.05 ? '✓ Under 5% target' : '⚠ Above 5% target'} color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
               </div>
-              {wasteSummary?.byCategory && Array.isArray(wasteSummary.byCategory) && wasteSummary.byCategory.length > 0 && (
+              {wasteChartData.length > 0 && (
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Waste by Category</h4>
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Waste by Type</h4>
                   <ResponsiveContainer width="100%" height={180}>
-                    <BarChart data={wasteSummary.byCategory} margin={{ top: 0, right: 4, left: -10, bottom: 0 }}>
+                    <BarChart data={wasteChartData} margin={{ top: 0, right: 4, left: -10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
-                      <XAxis dataKey="category" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={v => `$${v}`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                       <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
                       <Bar dataKey="cost" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -220,8 +232,9 @@ const BakeryFinanceSection: React.FC = () => {
           ) : recipes.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {recipes.map((recipe: any) => {
-                const ingredientCost = Number(recipe.ingredientCost || recipe.cost || 0)
-                const sellingPrice   = Number(recipe.sellingPrice || recipe.price || 0)
+                // ingredients[].quantity * costPerUnit; outputProduct.basePrice from handler
+                const ingredientCost = (recipe.ingredients || []).reduce((s: number, ing: any) => s + Number(ing.quantity || 0) * Number(ing.costPerUnit || 0), 0)
+                const sellingPrice   = Number(recipe.outputProduct?.basePrice || 0)
                 const recipeMargin   = sellingPrice > 0 ? ((sellingPrice - ingredientCost) / sellingPrice * 100) : 0
                 return (
                   <div key={recipe.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-sm">

@@ -8,8 +8,8 @@
 
 import { useState, useEffect } from 'react'
 import {
-  Warehouse, DollarSign, PackageX, MapPin, ArrowRightLeft,
-  AlertTriangle, RefreshCcw, TrendingDown, Box, BarChart3,
+  Warehouse, PackageX, MapPin, ArrowRightLeft,
+  AlertTriangle, RefreshCcw, Box, BarChart3,
 } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell, PieChart, Pie, Legend,
@@ -45,8 +45,11 @@ const WarehouseFinanceSection: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
+  // getStock() returns warehouseStock items: { id, locationId, productName, sku?, quantity, unit?, minQuantity?, location }
+  // getLowStock() returns items where quantity <= minQuantity
+  // getOverview() returns { totalLocations, totalSKUs, pendingTransfers, lowStockCount, recentTransfers }
   const [stockItems, setStockItems] = useState<any[]>([])
-  const [locations, setLocations] = useState<any[]>([])
+  const [overviewData, setOverviewData] = useState<any>(null)
   const [criticalItems, setCriticalItems] = useState<any[]>([])
   const [transfers, setTransfers] = useState<any[]>([])
 
@@ -60,49 +63,36 @@ const WarehouseFinanceSection: React.FC = () => {
       const start = new Date(); start.setDate(start.getDate() - 30); start.setHours(0, 0, 0, 0)
 
       const [r1, r2, r3, r4] = await Promise.allSettled([
-        api.getAllStockItems?.(),
-        api.getLocations?.(),
-        api.getCriticalStockItems?.(),
+        api.getStock?.(),          // all stock items (correct method name)
+        api.getOverview?.(),       // KPI counts
+        api.getLowStock?.(),       // critical/low stock items (correct method name)
         api.getTransfers?.({ startDate: start.toISOString(), endDate: end.toISOString() }),
       ])
 
       if (r1.status === 'fulfilled') setStockItems(Array.isArray(r1.value) ? r1.value : [])
-      if (r2.status === 'fulfilled') setLocations(Array.isArray(r2.value) ? r2.value : [])
+      if (r2.status === 'fulfilled') setOverviewData(r2.value || null)
       if (r3.status === 'fulfilled') setCriticalItems(Array.isArray(r3.value) ? r3.value : [])
       if (r4.status === 'fulfilled') setTransfers(Array.isArray(r4.value) ? r4.value : [])
     } catch (err) { logger.error('WarehouseFinance: loadData failed', err) }
     finally { setLoading(false); setRefreshing(false) }
   }
 
-  // Computed metrics
-  const totalStockValue = stockItems.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.costPrice || i.unitCost || 0), 0)
-  const totalSkus = stockItems.length
-  const totalCritical = criticalItems.length
-  const criticalValue = criticalItems.reduce((s, i) => s + Number(i.quantity || 0) * Number(i.costPrice || i.unitCost || 0), 0)
+  // warehouseStock has no cost fields — use quantity-based metrics
+  const totalSkus      = overviewData?.totalSKUs     ?? stockItems.length
+  const totalCritical  = overviewData?.lowStockCount ?? criticalItems.length
+  const totalLocations = overviewData?.totalLocations ?? 0
+  const pendingTransfers = overviewData?.pendingTransfers ?? 0
   const totalTransfers = transfers.length
+  const totalStockQty  = stockItems.reduce((s, i) => s + Number(i.quantity || 0), 0)
 
-  // Value by location
-  const locValMap = new Map<string, number>()
+  // Qty by location (stockItems.location.name)
+  const locQtyMap = new Map<string, number>()
   stockItems.forEach(item => {
-    const loc = item.location?.name || item.locationName || 'Unassigned'
-    locValMap.set(loc, (locValMap.get(loc) || 0) + Number(item.quantity || 0) * Number(item.costPrice || item.unitCost || 0))
+    const loc = item.location?.name || 'Unassigned'
+    locQtyMap.set(loc, (locQtyMap.get(loc) || 0) + Number(item.quantity || 0))
   })
-  const locValData = Array.from(locValMap.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
-
-  // Value by category
-  const catValMap = new Map<string, number>()
-  stockItems.forEach(item => {
-    const cat = item.category || 'Uncategorized'
-    catValMap.set(cat, (catValMap.get(cat) || 0) + Number(item.quantity || 0) * Number(item.costPrice || item.unitCost || 0))
-  })
-  const catValData = Array.from(catValMap.entries()).map(([name, value]) => ({ name, value: Math.round(value) })).sort((a, b) => b.value - a.value)
-
-  // Critical items with potential impact
-  const criticalWithImpact = criticalItems.map(item => ({
-    ...item,
-    currentValue: Number(item.quantity || 0) * Number(item.costPrice || item.unitCost || 0),
-    potentialLoss: (Number(item.minQuantity || item.reorderPoint || 0) - Number(item.quantity || 0)) * Number(item.costPrice || item.unitCost || 0),
-  }))
+  const locQtyData = Array.from(locQtyMap.entries()).map(([name, qty]) => ({ name, qty })).sort((a, b) => b.qty - a.qty)
+  const totalQtyForPct = Math.max(totalStockQty, 1)
 
   return (
     <div className="space-y-6">
@@ -139,23 +129,23 @@ const WarehouseFinanceSection: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-pulse">{[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={DollarSign} label="Total Stock Value" value={`$${totalStockValue.toFixed(2)}`} sub="at cost price" color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
-              <StatCard icon={Box} label="Total SKUs" value={totalSkus} sub="unique items" color="bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400" />
-              <StatCard icon={AlertTriangle} label="Critical Items" value={totalCritical} sub="below reorder level" color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
-              <StatCard icon={ArrowRightLeft} label="Transfers (30d)" value={totalTransfers} sub="stock movements" color="bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400" />
+              <StatCard icon={Box} label="Total SKUs" value={totalSkus} sub="unique items tracked" color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
+              <StatCard icon={MapPin} label="Locations" value={totalLocations} sub="active warehouses" color="bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400" />
+              <StatCard icon={AlertTriangle} label="Low Stock Items" value={totalCritical} sub="at or below min qty" color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+              <StatCard icon={ArrowRightLeft} label="Pending Transfers" value={pendingTransfers} sub="in-transit / draft" color="bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400" />
             </div>
           )}
-          {!loading && catValData.length > 0 && (
+          {!loading && locQtyData.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Stock Value by Category</h4>
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Stock Quantity by Location</h4>
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={catValData.slice(0, 8)} margin={{ top: 0, right: 4, left: -10, bottom: 5 }}>
+                <BarChart data={locQtyData.slice(0, 8)} margin={{ top: 0, right: 4, left: -10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={v => `$${v}`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {catValData.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="qty" radius={[4, 4, 0, 0]}>
+                    {locQtyData.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -169,22 +159,22 @@ const WarehouseFinanceSection: React.FC = () => {
         <div className="space-y-5">
           {loading ? (
             <div className="animate-pulse h-64 bg-slate-200 dark:bg-slate-700 rounded-xl" />
-          ) : locValData.length > 0 ? (
+          ) : locQtyData.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Value by Location</h4>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Stock by Location</h4>
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
-                    <Pie data={locValData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                      {locValData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    <Pie data={locQtyData} dataKey="qty" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                      {locQtyData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
+                    <Tooltip />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
               <div className="space-y-2">
-                {locValData.map((loc, i) => (
+                {locQtyData.map((loc, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg" style={{ backgroundColor: COLORS[i % COLORS.length] + '22' }}>
@@ -192,17 +182,17 @@ const WarehouseFinanceSection: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{loc.name}</p>
-                        <p className="text-xs text-slate-500">{((loc.value / totalStockValue) * 100).toFixed(1)}% of total</p>
+                        <p className="text-xs text-slate-500">{((loc.qty / totalQtyForPct) * 100).toFixed(1)}% of total qty</p>
                       </div>
                     </div>
-                    <p className="text-sm font-bold text-blue-600">${loc.value.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-blue-600">{loc.qty} units</p>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-              <MapPin size={40} className="opacity-30 mb-2" /><p className="text-sm">No location data available</p>
+              <MapPin size={40} className="opacity-30 mb-2" /><p className="text-sm">No stock data available</p>
             </div>
           )}
         </div>
@@ -213,27 +203,28 @@ const WarehouseFinanceSection: React.FC = () => {
         <div className="space-y-5">
           {loading ? (
             <div className="animate-pulse space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}</div>
-          ) : criticalWithImpact.length > 0 ? (
+          ) : criticalItems.length > 0 ? (
             <>
               <div className="grid grid-cols-2 gap-4">
-                <StatCard icon={PackageX} label="Critical Items" value={totalCritical} sub="at or below reorder level" color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
-                <StatCard icon={TrendingDown} label="Value at Risk" value={`$${criticalValue.toFixed(2)}`} sub="remaining value" color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
+                <StatCard icon={PackageX} label="Low Stock Items" value={totalCritical} sub="at or below min quantity" color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
+                <StatCard icon={Box} label="Total SKUs" value={totalSkus} sub="across all locations" color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="space-y-2">
-                {criticalWithImpact.slice(0, 15).map((item: any, i) => (
+                {criticalItems.slice(0, 15).map((item: any, i) => (
                   <div key={item.id || i} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl border border-red-200 dark:border-red-900/30">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600"><AlertTriangle size={15} /></div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.name || item.sku || `Item ${i + 1}`}</p>
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{item.productName || item.sku || `Item ${i + 1}`}</p>
                         <p className="text-xs text-slate-500">
-                          Qty: {item.quantity ?? '?'} / Min: {item.minQuantity || item.reorderPoint || '?'} · SKU: {item.sku || 'N/A'}
+                          Qty: {item.quantity ?? '?'} / Min: {item.minQuantity ?? '?'} · SKU: {item.sku || 'N/A'} · {item.location?.name || 'No location'}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-red-600">Current: ${item.currentValue.toFixed(2)}</p>
-                      {item.potentialLoss > 0 && <p className="text-xs text-orange-500">Shortage: ${item.potentialLoss.toFixed(2)}</p>}
+                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
+                        Number(item.quantity) <= 0 ? 'bg-red-200 dark:bg-red-900/40 text-red-800 dark:text-red-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                      }`}>{Number(item.quantity) <= 0 ? 'OUT OF STOCK' : `${item.quantity} ${item.unit || 'units'}`}</span>
                     </div>
                   </div>
                 ))}
