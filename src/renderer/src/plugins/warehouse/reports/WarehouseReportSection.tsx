@@ -242,7 +242,7 @@ const WarehouseReportSection: React.FC<Props> = ({ refreshSignal }) => {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
+                    <Tooltip formatter={(v: number | undefined) => `$${(v ?? 0).toFixed(2)}`} />
                     <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                       {topLocations.map((_, i) => <Cell key={i} fill={`hsl(${210 + i * 15}, 70%, ${55 - i * 3}%)`} />)}
                     </Bar>
