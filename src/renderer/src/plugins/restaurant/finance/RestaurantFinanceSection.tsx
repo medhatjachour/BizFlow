@@ -185,7 +185,7 @@ const RestaurantFinanceSection: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tickFormatter={v => `$${v}`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(v: number) => [`$${v.toFixed(2)}`, 'Revenue']} />
+                  <Tooltip formatter={(v: number | undefined) => [`$${(v ?? 0).toFixed(2)}`, 'Revenue']} />
                   <Line type="monotone" dataKey="revenue" stroke="#f43f5e" strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -212,7 +212,7 @@ const RestaurantFinanceSection: React.FC = () => {
                   <BarChart data={menuRevData.slice(0, 8)} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                     <XAxis type="number" tickFormatter={v => `$${v}`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={90} />
-                    <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
+                    <Tooltip formatter={(v: number | undefined) => `$${(v ?? 0).toFixed(2)}`} />
                     <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
                       {menuRevData.slice(0, 8).map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>
@@ -254,7 +254,7 @@ const RestaurantFinanceSection: React.FC = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={v => `$${v}`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
+                    <Tooltip formatter={(v: number | undefined) => `$${(v ?? 0).toFixed(2)}`} />
                     <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
                       {tableRevData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>

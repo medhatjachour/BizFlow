@@ -165,7 +165,7 @@ const WarehouseFinanceSection: React.FC = () => {
                 <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Stock by Location</h4>
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
-                    <Pie data={locQtyData} dataKey="qty" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                    <Pie data={locQtyData} dataKey="qty" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name}: ${(percent ? percent * 100 : 0).toFixed(0)}%`} labelLine={false}>
                       {locQtyData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip />

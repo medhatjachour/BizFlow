@@ -167,7 +167,7 @@ const BakeryFinanceSection: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis tickFormatter={v => `$${v}`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(v: number, n: string) => [`$${v.toFixed(2)}`, n.charAt(0).toUpperCase() + n.slice(1)]} />
+                  <Tooltip formatter={(v: number | undefined, n: string | undefined) => [`$${(v ?? 0).toFixed(2)}`, n ? n.charAt(0).toUpperCase() + n.slice(1) : '']} />
                   <Line type="monotone" dataKey="revenue" stroke="#d97706" strokeWidth={2} dot={false} name="revenue" />
                   <Line type="monotone" dataKey="cost" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="4 4" name="cost" />
                   <Line type="monotone" dataKey="profit" stroke="#22c55e" strokeWidth={2} dot={false} name="profit" />
@@ -208,7 +208,7 @@ const BakeryFinanceSection: React.FC = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
                       <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                       <YAxis tickFormatter={v => `$${v}`} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-                      <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
+                      <Tooltip formatter={(v: number | undefined) => `$${(v ?? 0).toFixed(2)}`} />
                       <Bar dataKey="cost" fill="#ef4444" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
