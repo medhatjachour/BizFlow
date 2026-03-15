@@ -1,143 +1,119 @@
-import React from 'react';
-import { Activity, RefreshCw } from 'lucide-react';
-import { ReceiptPreviewModal } from '@renderer/plugins/commerce/pages/Sales/ReceiptPreviewModal';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useReports } from './hooks/useReports';
-import ReportGenerator from './components/ReportGenerator';
-import TodayStatsGrid from './components/TodayStatsGrid';
-import ActivityFeed from './components/ActivityFeed';
-import QuickInsightsPanel from './components/QuickInsightsPanel';
-import ItemsSoldSummary from './components/ItemsSoldSummary';
-import ReportPreviewModal from './components/ReportPreviewModal';
+import React, { useState, lazy, Suspense } from 'react'
+import { RefreshCw, FileBarChart } from 'lucide-react'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { useModuleEnabled } from '@renderer/hooks/useModuleEnabled'
+import NoPluginsKernel from './components/NoPluginsKernel'
 
-const EnhancedReports: React.FC = () => {
-  const { t } = useLanguage();
-  const {
-    loading,
-    refreshing,
-    todayStats,
-    activityFeed,
-    reportData,
-    showPreview,
-    expandedSales,
-    expandedProducts,
-    itemsSummary,
-    itemSearchQuery,
-    totalPiecesSold,
-    selectedReceipt,
-    reportForm,
-    reportTypes,
-    setShowPreview,
-    setReportData,
-    setReportForm,
-    setExpandedSales,
-    setExpandedProducts,
-    setItemSearchQuery,
-    setSelectedReceipt,
-    handleRefresh,
-    handleGenerateReport,
-    handleExportPDF,
-    handleExportCSV
-  } = useReports();
+// Lazy-loaded plugin report sections
+const CommerceReportSection  = lazy(() => import('@renderer/plugins/commerce/reports/CommerceReportSection'))
+const BakeryReportSection    = lazy(() => import('@renderer/plugins/bakery/reports/BakeryReportSection'))
+const RestaurantReportSection = lazy(() => import('@renderer/plugins/restaurant/reports/RestaurantReportSection'))
+const WarehouseReportSection  = lazy(() => import('@renderer/plugins/warehouse/reports/WarehouseReportSection'))
+const ClinicReportSection     = lazy(() => import('@renderer/plugins/clinic/reports/ClinicReportSection'))
+
+const SectionFallback: React.FC = () => (
+  <div className="h-40 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+)
+
+const Divider: React.FC = () => (
+  <div className="border-t border-slate-200 dark:border-slate-700" />
+)
+
+const Reports: React.FC = () => {
+  const { t } = useLanguage()
+  const [refreshSig, setRefreshSig] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const isCommerce   = useModuleEnabled('commerce')
+  const isBakery     = useModuleEnabled('bakery')
+  const isRestaurant = useModuleEnabled('restaurant')
+  const isWarehouse  = useModuleEnabled('warehouse')
+  const isClinic     = useModuleEnabled('clinic')
+
+  const anyActive = isCommerce || isBakery || isRestaurant || isWarehouse || isClinic
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    setRefreshSig(s => s + 1)
+    setTimeout(() => setRefreshing(false), 800)
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header with Refresh */}
+    <div className="p-6 space-y-8">
+      {/* Page header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('reportsAndAnalytics')}</h1>
-          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-            {t('businessInsights')}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl">
+            <FileBarChart size={24} className="text-slate-600 dark:text-slate-300" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('reportsAndAnalytics')}</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              {anyActive
+                ? 'Per-plugin live reports and today\'s activity'
+                : 'Enable plugins to unlock reports and analytics'}
+            </p>
+          </div>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-        >
-          <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
-          {t('refresh')}
-        </button>
+        {anyActive && (
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50 shadow-sm font-medium text-sm"
+          >
+            <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+            Refresh All
+          </button>
+        )}
       </div>
 
-      {/* Generate Reports */}
-      <ReportGenerator
-        reportForm={reportForm}
-        setReportForm={setReportForm}
-        loading={loading}
-        handleGenerateReport={handleGenerateReport}
-        reportTypes={reportTypes}
-        t={t}
-      />
+      {/* No plugins state */}
+      {!anyActive && <NoPluginsKernel />}
 
-      {/* Today's Activity */}
-      <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/5 p-6 rounded-xl border border-primary/20">
-        <div className="flex items-center gap-2 mb-4">
-          <Activity size={24} className="text-primary" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('todaysActivity')}</h2>
-          <span className="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full text-xs font-medium flex items-center gap-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            {t('live')}
-          </span>
-        </div>
-        <TodayStatsGrid
-          todayStats={todayStats}
-          totalPiecesSold={totalPiecesSold}
-          itemsSummary={itemsSummary}
-          t={t}
-        />
-      </div>
-
-      {/* Activity Feed & Quick Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ActivityFeed
-          activityFeed={activityFeed}
-          expandedSales={expandedSales}
-          setExpandedSales={setExpandedSales}
-          totalPiecesSold={totalPiecesSold}
-          setSelectedReceipt={setSelectedReceipt}
-          t={t}
-        />
-        <QuickInsightsPanel todayStats={todayStats} t={t} />
-      </div>
-
-      {/* Items Sold Summary */}
-      {itemsSummary.length > 0 && (
-        <ItemsSoldSummary
-          itemsSummary={itemsSummary}
-          totalPiecesSold={totalPiecesSold}
-          expandedProducts={expandedProducts}
-          setExpandedProducts={setExpandedProducts}
-          itemSearchQuery={itemSearchQuery}
-          setItemSearchQuery={setItemSearchQuery}
-        />
+      {/* Plugin sections */}
+      {isCommerce && (
+        <>
+          <Suspense fallback={<SectionFallback />}>
+            <CommerceReportSection refreshSignal={refreshSig} />
+          </Suspense>
+          {(isBakery || isRestaurant || isWarehouse || isClinic) && <Divider />}
+        </>
       )}
 
-      {/* Report Preview Modal */}
-      {showPreview && reportData && (
-        <ReportPreviewModal
-          showPreview={showPreview}
-          reportData={reportData}
-          reportForm={reportForm}
-          setShowPreview={setShowPreview}
-          setReportData={setReportData}
-          setReportForm={setReportForm}
-          handleExportPDF={handleExportPDF}
-          handleExportCSV={handleExportCSV}
-          reportTypes={reportTypes}
-          t={t}
-        />
+      {isBakery && (
+        <>
+          <Suspense fallback={<SectionFallback />}>
+            <BakeryReportSection refreshSignal={refreshSig} />
+          </Suspense>
+          {(isRestaurant || isWarehouse || isClinic) && <Divider />}
+        </>
       )}
 
-      {/* Receipt Preview Modal */}
-      {selectedReceipt && (
-        <ReceiptPreviewModal
-          transaction={selectedReceipt}
-          onClose={() => setSelectedReceipt(null)}
-        />
+      {isRestaurant && (
+        <>
+          <Suspense fallback={<SectionFallback />}>
+            <RestaurantReportSection refreshSignal={refreshSig} />
+          </Suspense>
+          {(isWarehouse || isClinic) && <Divider />}
+        </>
+      )}
+
+      {isWarehouse && (
+        <>
+          <Suspense fallback={<SectionFallback />}>
+            <WarehouseReportSection refreshSignal={refreshSig} />
+          </Suspense>
+          {isClinic && <Divider />}
+        </>
+      )}
+
+      {isClinic && (
+        <Suspense fallback={<SectionFallback />}>
+          <ClinicReportSection refreshSignal={refreshSig} />
+        </Suspense>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default EnhancedReports;
+export default Reports

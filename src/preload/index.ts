@@ -241,6 +241,14 @@ const api = {
       ipcRenderer.invoke('module:setEnabled', { moduleId, enabled }),
     relaunch: (): Promise<void> => ipcRenderer.invoke('module:relaunch'),
   },
+  finance: {
+    addTransaction: (data: { type: string; amount: number; description?: string; userId?: string }) =>
+      ipcRenderer.invoke('finance:addTransaction', data),
+    getTransactions: (data: { startDate: Date | string; endDate: Date | string }) =>
+      ipcRenderer.invoke('finance:getTransactions', data),
+    getStats: () =>
+      ipcRenderer.invoke('finance:getStats'),
+  },
   // ─── Plugin APIs ──────────────────────────────────────────────────────────
   // Each plugin exposes its IPC bindings under its own namespace.
   // Adding a plugin: import its preload and add it here.
