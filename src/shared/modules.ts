@@ -14,6 +14,7 @@
 // ─── Module IDs ──────────────────────────────────────────────────────────────
 
 export const MODULE_IDS = {
+  COMMERCE: 'commerce',
   BAKERY: 'bakery',
   RESTAURANT: 'restaurant',
   WAREHOUSE: 'warehouse',
@@ -42,6 +43,26 @@ export interface ModuleMeta {
 }
 
 export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
+  [MODULE_IDS.COMMERCE]: {
+    id: MODULE_IDS.COMMERCE,
+    name: 'Commerce',
+    description: 'Core retail & commerce features: products, inventory, point of sale, sales, and multi-store management.',
+    features: [
+      'Product catalog with variants & barcodes',
+      'Inventory management with reorder alerts',
+      'Point of Sale terminal',
+      'Sales transaction history & refunds',
+      'Multi-store & branch management',
+      'Supplier & purchase order management',
+      'Installment & deposit payments',
+    ],
+    icon: '🛒',
+    color: 'indigo',
+    status: 'active',
+    models: ['Product', 'ProductVariant', 'Category', 'SaleTransaction', 'SaleItem', 'Store', 'Supplier', 'PurchaseOrder', 'InstallmentPlan', 'Installment'],
+    ipcPrefix: 'commerce',
+    routePrefix: '/products'
+  },
   [MODULE_IDS.BAKERY]: {
     id: MODULE_IDS.BAKERY,
     name: 'Bakery',

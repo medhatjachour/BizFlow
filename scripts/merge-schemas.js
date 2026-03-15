@@ -33,6 +33,11 @@ const OUTPUT = path.join(ROOT, 'prisma', 'merged.prisma')
  * Schemas live at: src/plugins/<id>/schema.prisma
  */
 const MODULE_REGISTRY = {
+  // commerce MUST be first — bakery/warehouse reference Product which lives here
+  commerce: {
+    file: 'schema.prisma',
+    injectFields: {}
+  },
   bakery: {
     file: 'schema.prisma',  // path: src/plugins/bakery/schema.prisma
     /** Fields to inject into core models.  Key = model name, value = lines. */

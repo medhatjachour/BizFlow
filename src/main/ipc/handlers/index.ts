@@ -8,34 +8,19 @@ import { getDatabasePath } from '../../database/init'
 import { seedProductionDatabase } from '../../database/seed-production'
 import { registerAuthHandlers } from './auth.handlers'
 import { registerDashboardHandlers } from './dashboard.handlers'
-import { registerSalesHandlers } from './sales.handlers'
-import { registerSaleTransactionHandlers } from './sale-transactions.handlers'
-import { registerInventoryHandlers } from './inventory.handlers'
-import { registerFinanceHandlers } from './finance.handlers'
-import { registerProductsHandlers } from './products.handlers'
-import { registerCategoriesHandlers } from './categories.handlers'
-import { registerStoresHandlers } from './stores.handlers'
 import { registerEmployeesHandlers } from './employees.handlers'
 import { registerCustomersHandlers } from './customers.handlers'
 import { registerSearchHandlers } from './search.handlers'
 import { registerUserHandlers } from './user.handlers'
 import { registerReportsHandlers } from './reports.handlers'
 import { registerAnalyticsHandlers } from './analytics.handlers'
-import { registerDeleteHandlers } from './delete.handlers'
-import { registerStockMovementHandlers } from './stock-movements.handlers'
-import { registerDepositsHandlers } from './deposits.handlers'
-import { registerInstallmentsHandlers } from './installments.handlers'
-import { registerReceiptHandlers } from './receipts.handlers'
 import { registerEmailHandlers } from './email.handlers'
 import './backup.handlers' // Import backup handlers (self-contained, no registration needed)
-import { setupReorderHandlers } from './reorder.handlers'
-import { registerSupplierHandlers } from './suppliers.handlers'
-import { setupPurchaseOrderHandlers } from './purchase-orders.handlers'
-import { registerReceiptHandlers as registerThermalReceiptHandlers } from './receipt.handlers'
-import { registerBarcodePrintHandlers } from './barcode.handlers'
 import { registerLogHandlers } from './log.handlers'
+import { registerFinanceHandlers } from './finance.handlers'
 import { registerModuleHandlers } from './module.handlers'
 import type { IPlugin } from '../../../shared/interfaces/IPlugin'
+import CommercePlugin from '../../../plugins/commerce/index'
 import BakeryPlugin from '../../../plugins/bakery/index'
 import RestaurantPlugin from '../../../plugins/restaurant/index'
 import WarehousePlugin from '../../../plugins/warehouse/index'
@@ -50,6 +35,7 @@ const log = createLogger('Database')
  * Dead-code elimination removes entries for disabled plugins.
  */
 const ALL_PLUGINS: IPlugin[] = [
+  ...(__PLUGIN_COMMERCE__   ? [CommercePlugin]   : []),
   ...(__PLUGIN_BAKERY__     ? [BakeryPlugin]     : []),
   ...(__PLUGIN_RESTAURANT__ ? [RestaurantPlugin] : []),
   ...(__PLUGIN_WAREHOUSE__  ? [WarehousePlugin]  : []),
@@ -145,71 +131,19 @@ if (!prisma) {
  * Call this function once during Electron app initialization
  */
 export function registerAllHandlers() {
-  
-  registerAuthHandlers(prisma)
-  
-  registerDashboardHandlers(prisma)
-  
-  registerSalesHandlers(prisma)
-  
-  registerSaleTransactionHandlers(prisma)
-  
-  registerInventoryHandlers(prisma)
-  
-  registerFinanceHandlers(prisma)
-  
-  registerProductsHandlers(prisma)
-  
-  registerCategoriesHandlers(prisma)
-  
-  registerStoresHandlers(prisma)
-  
-  registerEmployeesHandlers(prisma)
-  
-  registerCustomersHandlers(prisma)
-  
-  registerSearchHandlers(prisma)
-  
-  registerUserHandlers(prisma)
-  
-  registerReportsHandlers(prisma)
-  
-  // Register deposit and installment handlers
-  registerDepositsHandlers(prisma)
-  registerInstallmentsHandlers(prisma)
-  // Register receipt handlers
-  registerReceiptHandlers(prisma)
-  // Register analytics handlers (self-contained with own Prisma instance)
-  registerAnalyticsHandlers()
-  
-  // Register email handlers
-  registerEmailHandlers(prisma)
-  
-  // Register reorder analysis handlers
-  setupReorderHandlers(prisma)
-  
-  // Register supplier handlers
-  registerSupplierHandlers(prisma)
-  
-  // Register thermal receipt/printer handlers
-  registerThermalReceiptHandlers()
-  
-  // Register barcode printing handlers
-  registerBarcodePrintHandlers()
-  
-  // Register purchase order handlers
-  setupPurchaseOrderHandlers(prisma)
-  
-  // Register delete handlers (archive/restore functionality)
-  registerDeleteHandlers(prisma)
-  
-  // Register stock movement handlers (restock, adjustments, etc.)
-  registerStockMovementHandlers(prisma)
-  
-  // Register log bridge (renderer → main log file)
-  registerLogHandlers()
 
-  // Register module feature-flag handlers
+  // ── Kernel handlers (always registered) ─────────────────────────────────
+  registerAuthHandlers(prisma)
+  registerDashboardHandlers(prisma)
+  registerFinanceHandlers(prisma)
+  registerEmployeesHandlers(prisma)
+  registerCustomersHandlers(prisma)
+  registerSearchHandlers(prisma)
+  registerUserHandlers(prisma)
+  registerReportsHandlers(prisma)
+  registerAnalyticsHandlers()
+  registerEmailHandlers(prisma)
+  registerLogHandlers()
   registerModuleHandlers()
 
   // ── Plugin Handlers ──────────────────────────────────────────────────────

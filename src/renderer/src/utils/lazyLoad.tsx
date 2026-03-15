@@ -85,11 +85,11 @@ export function preload<T extends ComponentType<any>>(
  */
 export const LazyRoutes = {
   Dashboard: lazyLoad(() => import('../pages/Dashboard')),
-  Inventory: lazyLoad(() => import('../pages/Inventory')),
-  Sales: lazyLoad(() => import('../pages/Sales')),
+  Inventory: lazyLoad(() => import('../plugins/commerce/pages/Inventory')),
+  Sales: lazyLoad(() => import('../plugins/commerce/pages/Sales')),
   Customers: lazyLoad(() => import('../pages/Customers/Customers')),
   Employees: lazyLoad(() => import('../pages/Employees')),
-  Stores: lazyLoad(() => import('../pages/Stores')),
+  Stores: lazyLoad(() => import('../plugins/commerce/pages/Stores')),
   Reports: lazyLoad(() => import('../pages/Reports/Reports')),
   Settings: lazyLoad(() => import('../pages/Settings'))
 }

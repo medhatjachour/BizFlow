@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, RefreshCw } from 'lucide-react';
-import { ReceiptPreviewModal } from '../Sales/ReceiptPreviewModal';
+import { ReceiptPreviewModal } from '@renderer/plugins/commerce/pages/Sales/ReceiptPreviewModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useReports } from './hooks/useReports';
 import ReportGenerator from './components/ReportGenerator';

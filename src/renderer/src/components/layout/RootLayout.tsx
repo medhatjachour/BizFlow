@@ -46,41 +46,6 @@ const navigation: NavItem[] = [
     roles: ['admin', 'manager', 'sales', 'inventory', 'finance']
   },
   {
-    name: 'Stores',
-    translationKey: 'stores',
-    href: '/stores',
-    icon: Store,
-    roles: ['admin', 'manager']
-  },
-  {
-    name: 'Products',
-    translationKey: 'products',
-    href: '/products',
-    icon: BoxIcon,
-    roles: ['admin', 'manager', 'inventory']
-  },
-  {
-    name: 'POS',
-    translationKey: 'pos',
-    href: '/pos',
-    icon: CreditCard,
-    roles: ['admin', 'manager', 'sales']
-  },
-  {
-    name: 'Inventory',
-    translationKey: 'inventory',
-    href: '/inventory',
-    icon: Package,
-    roles: ['admin', 'manager', 'inventory']
-  },
-  {
-    name: 'Sales',
-    translationKey: 'sales',
-    href: '/sales',
-    icon: ShoppingCart,
-    roles: ['admin', 'manager', 'sales']
-  },
-  {
     name: 'Employees',
     translationKey: 'employees',
     href: '/employees',
@@ -139,10 +104,24 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
+  const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
 
-  // Build dynamic nav — inject module items after Employees
+  // ── Commerce nav items (injected when Commerce plugin is enabled) ─────────
+  const commerceNavItems: NavItem[] = __PLUGIN_COMMERCE__ && commerceEnabled ? [
+    { name: 'Stores',    translationKey: 'stores',    href: '/stores',    icon: Store,         roles: ['admin', 'manager'] },
+    { name: 'Products',  translationKey: 'products',  href: '/products',  icon: BoxIcon,       roles: ['admin', 'manager', 'inventory'] },
+    { name: 'POS',       translationKey: 'pos',       href: '/pos',       icon: CreditCard,    roles: ['admin', 'manager', 'sales'] },
+    { name: 'Inventory', translationKey: 'inventory', href: '/inventory', icon: Package,       roles: ['admin', 'manager', 'inventory'] },
+    { name: 'Sales',     translationKey: 'sales',     href: '/sales',     icon: ShoppingCart,  roles: ['admin', 'manager', 'sales'] },
+  ] : []
+
+  // Build dynamic nav — inject commerce items after Dashboard, then plugin items after Employees
+  const dashboardIdx = navigation.findIndex(n => n.href === '/dashboard')
+  const employeesIdx = navigation.findIndex(n => n.href === '/employees')
   const navItems: NavItem[] = [
-    ...navigation.slice(0, navigation.findIndex(n => n.href === '/employees') + 1),
+    ...navigation.slice(0, dashboardIdx + 1),
+    ...commerceNavItems,
+    ...navigation.slice(dashboardIdx + 1, employeesIdx + 1),
     ...(__PLUGIN_BAKERY__ && bakeryEnabled ? [{
       name: 'Bakery',
       translationKey: 'bakery',
@@ -171,7 +150,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       icon: Stethoscope,
       roles: ['admin', 'manager']
     }] : []),
-    ...navigation.slice(navigation.findIndex(n => n.href === '/employees') + 1)
+    ...navigation.slice(employeesIdx + 1)
   ]
 
   const handleLogout = async () => {
