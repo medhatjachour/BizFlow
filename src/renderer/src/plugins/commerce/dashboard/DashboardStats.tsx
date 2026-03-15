@@ -7,7 +7,7 @@
 import { memo } from 'react'
 import { TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users } from 'lucide-react'
 import { formatCurrency, formatLargeNumber } from '@renderer/utils/formatNumber'
-import { useLanguage } from '../../../contexts/LanguageContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   stats: {

@@ -17,6 +17,8 @@ import {
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useModuleEnabled } from '../../../hooks/useModuleEnabled'
+import { MODULE_IDS } from '@/shared/modules'
 
 interface Props {
   userRole: string
@@ -27,13 +29,24 @@ export default function QuickActions({ userRole }: Props) {
   const { warning } = useToast()
   const { t } = useLanguage()
   const navigate = useNavigate()
+
+  // Runtime module checks — mirrors the build-flag guards so toggling a module
+  // in settings immediately hides/shows the related quick actions.
+  const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
+  const bakeryEnabled   = useModuleEnabled(MODULE_IDS.BAKERY)
+  const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
+  const warehouseEnabled  = useModuleEnabled(MODULE_IDS.WAREHOUSE)
+  const clinicEnabled     = useModuleEnabled(MODULE_IDS.CLINIC)
+
   const allActions = [
+    // --- Commerce actions ---
     {
       label: t('newSale'),
       icon: ShoppingCart,
       href: '/pos',
       color: 'primary',
       roles: ['admin', 'manager', 'sales'],
+      visible: __PLUGIN_COMMERCE__ && commerceEnabled,
     },
     {
       label: t('addProduct'),
@@ -41,6 +54,7 @@ export default function QuickActions({ userRole }: Props) {
       href: '/products',
       color: 'blue',
       roles: ['admin', 'manager', 'inventory'],
+      visible: __PLUGIN_COMMERCE__ && commerceEnabled,
     },
     {
       label: t('checkInventory'),
@@ -48,20 +62,7 @@ export default function QuickActions({ userRole }: Props) {
       href: '/inventory',
       color: 'purple',
       roles: ['admin', 'manager', 'inventory'],
-    },
-    {
-      label: t('viewReports'),
-      icon: BarChart3,
-      href: '/reports',
-      color: 'emerald',
-      roles: ['admin', 'manager', 'finance'],
-    },
-    {
-      label: t('manageCustomers'),
-      icon: Users,
-      href: '/customers',
-      color: 'amber',
-      roles: ['admin', 'manager', 'sales'],
+      visible: __PLUGIN_COMMERCE__ && commerceEnabled,
     },
     {
       label: t('manageStores'),
@@ -69,6 +70,60 @@ export default function QuickActions({ userRole }: Props) {
       href: '/stores',
       color: 'indigo',
       roles: ['admin', 'manager'],
+      visible: __PLUGIN_COMMERCE__ && commerceEnabled,
+    },
+    // --- Bakery actions ---
+    {
+      label: t('bakerySchedule') || 'Production',
+      icon: ClipboardList,
+      href: '/bakery',
+      color: 'amber',
+      roles: ['admin', 'manager', 'sales'],
+      visible: __PLUGIN_BAKERY__ && bakeryEnabled,
+    },
+    // --- Restaurant actions ---
+    {
+      label: t('manageTables') || 'Tables',
+      icon: Store,
+      href: '/restaurant',
+      color: 'rose',
+      roles: ['admin', 'manager', 'sales'],
+      visible: __PLUGIN_RESTAURANT__ && restaurantEnabled,
+    },
+    // --- Warehouse actions ---
+    {
+      label: t('warehouseStock') || 'Warehouse',
+      icon: ClipboardList,
+      href: '/warehouse',
+      color: 'blue',
+      roles: ['admin', 'manager', 'inventory'],
+      visible: __PLUGIN_WAREHOUSE__ && warehouseEnabled,
+    },
+    // --- Clinic actions ---
+    {
+      label: t('clinicPatients') || 'Patients',
+      icon: Users,
+      href: '/clinic',
+      color: 'teal',
+      roles: ['admin', 'manager', 'sales'],
+      visible: __PLUGIN_CLINIC__ && clinicEnabled,
+    },
+    // --- Kernel actions (always visible) ---
+    {
+      label: t('viewReports'),
+      icon: BarChart3,
+      href: '/reports',
+      color: 'emerald',
+      roles: ['admin', 'manager', 'finance'],
+      visible: true,
+    },
+    {
+      label: t('manageCustomers'),
+      icon: Users,
+      href: '/customers',
+      color: 'amber',
+      roles: ['admin', 'manager', 'sales'],
+      visible: true,
     },
     {
       label: t('manageEmployees'),
@@ -76,6 +131,7 @@ export default function QuickActions({ userRole }: Props) {
       href: '/employees',
       color: 'pink',
       roles: ['admin', 'manager'],
+      visible: true,
     },
     {
       label: t('settings'),
@@ -83,11 +139,12 @@ export default function QuickActions({ userRole }: Props) {
       href: '/settings',
       color: 'slate',
       roles: ['admin', 'manager'],
+      visible: true,
     },
   ]
 
-  const availableActions = allActions.filter(action => 
-    action.roles.includes(userRole)
+  const availableActions = allActions.filter(
+    action => action.visible && action.roles.includes(userRole)
   )
 
   const colorClasses: Record<string, { bg: string; hover: string; icon: string }> = {
@@ -99,6 +156,8 @@ export default function QuickActions({ userRole }: Props) {
     indigo: { bg: 'bg-indigo-500/10', hover: 'hover:bg-indigo-500/20', icon: 'text-indigo-600' },
     pink: { bg: 'bg-pink-500/10', hover: 'hover:bg-pink-500/20', icon: 'text-pink-600' },
     slate: { bg: 'bg-slate-500/10', hover: 'hover:bg-slate-500/20', icon: 'text-slate-600' },
+    rose: { bg: 'bg-rose-500/10', hover: 'hover:bg-rose-500/20', icon: 'text-rose-600' },
+    teal: { bg: 'bg-teal-500/10', hover: 'hover:bg-teal-500/20', icon: 'text-teal-600' },
   }
 
   return (

@@ -5,8 +5,8 @@
 
 import { useState, useEffect } from 'react'
 import { TrendingUp, Package } from 'lucide-react'
-import { useLanguage } from '../../../contexts/LanguageContext'
-import logger from '../../../../../shared/utils/logger'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import logger from '@/shared/utils/logger'
 
 export default function TopProducts() {
   const { t } = useLanguage()

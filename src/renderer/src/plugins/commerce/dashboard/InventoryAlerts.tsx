@@ -6,10 +6,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Package, ArrowRight } from 'lucide-react'
-import { useAuth } from '../../../contexts/AuthContext'
-import { useToast } from '../../../contexts/ToastContext'
-import { useLanguage } from '../../../contexts/LanguageContext'
-import logger from '../../../../../shared/utils/logger'
+import { useAuth } from '@renderer/contexts/AuthContext'
+import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import logger from '@/shared/utils/logger'
 
 export default function InventoryAlerts() {
   const { user } = useAuth()

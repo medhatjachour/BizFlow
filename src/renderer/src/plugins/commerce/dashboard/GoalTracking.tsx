@@ -5,8 +5,8 @@
 
 import { useState, useEffect } from 'react'
 import { Target, TrendingUp, Edit2, Plus, X, Save } from 'lucide-react'
-import { useLanguage } from '../../../contexts/LanguageContext'
-import logger from '../../../../../shared/utils/logger'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import logger from '@/shared/utils/logger'
 
 type Goal = {
   id: string

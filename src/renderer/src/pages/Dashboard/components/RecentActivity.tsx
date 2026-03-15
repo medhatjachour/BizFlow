@@ -1,30 +1,38 @@
 /**
  * RecentActivity Component
- * Recent sales and transactions
+ *
+ * Kernel version — shows recent sales transactions when the commerce plugin is
+ * active.  When no plugin provides activity data the component renders a
+ * friendly "all quiet" empty state so the kernel dashboard still looks polished.
  */
 
 import { useState, useEffect } from 'react'
-import { Clock, DollarSign, ShoppingCart } from 'lucide-react'
+import { Clock, DollarSign, ShoppingCart, Layers } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useModuleEnabled } from '../../../hooks/useModuleEnabled'
+import { MODULE_IDS } from '@/shared/modules'
 import logger from '../../../../../shared/utils/logger'
 
 export default function RecentActivity() {
   const { t } = useLanguage()
+  const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
   const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadActivities()
-  }, [])
+    // Only fetch commerce activity when the plugin is built-in AND enabled at runtime
+    if (__PLUGIN_COMMERCE__ && commerceEnabled) {
+      loadActivities()
+    } else {
+      setLoading(false)
+    }
+  }, [commerceEnabled])
 
   const loadActivities = async () => {
     try {
       setLoading(true)
       const dashboardApi = (globalThis as any).api?.dashboard
-
-      // Fetches only the latest 10 transactions — no items, no 14-day full scan
       const recentActivities = await dashboardApi?.getRecentActivity?.({ limit: 10 }) || []
-
       setActivities(recentActivities)
     } catch (error) {
       logger.error('Error loading activities:', error)
@@ -35,12 +43,14 @@ export default function RecentActivity() {
 
   const getTimeAgo = (date: string) => {
     const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
-    
     if (seconds < 60) return t('justNow')
     if (seconds < 3600) return `${Math.floor(seconds / 60)} ${t('minutesAgo')}`
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} ${t('hoursAgo')}`
     return `${Math.floor(seconds / 86400)} ${t('daysAgo')}`
   }
+
+  // No commerce plugin → neutral kernel state
+  const noPlugin = !(__PLUGIN_COMMERCE__ && commerceEnabled)
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
@@ -55,13 +65,23 @@ export default function RecentActivity() {
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="flex items-center gap-3 animate-pulse">
-              <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+              <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-full" />
               <div className="flex-1">
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
               </div>
             </div>
           ))}
+        </div>
+      ) : noPlugin ? (
+        <div className="text-center py-8">
+          <Layers className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            {t('noPluginActivity') || 'No active plugin'}
+          </p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+            {t('enablePluginForActivity') || 'Enable a plugin to see activity here'}
+          </p>
         </div>
       ) : activities.length > 0 ? (
         <div className="space-y-2">
@@ -92,9 +112,7 @@ export default function RecentActivity() {
       ) : (
         <div className="text-center py-8">
           <Clock className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            No recent activity
-          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">No recent activity</p>
         </div>
       )}
     </div>
