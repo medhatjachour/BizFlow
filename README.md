@@ -95,6 +95,72 @@
 ![Login](./samples/login.png)
 *Modern login interface with secure authentication and role-based access control*
 
+---
+
+### 👥 Customer Profile
+![Customer Profile](./samples/customerProfile.png)
+*Detailed customer profiles with purchase history, loyalty tier, outstanding balance, and contact info*
+
+---
+
+### 👨‍💼 Employee Profile
+![Employee Profile](./samples/employee%20profile.png)
+*Employee records with role assignment, salary details, and activity history*
+
+---
+
+### 🗂️ Employees Page
+![Employees](./samples/employees%20page.png)
+*Full employee directory with filtering by role, department, and status*
+
+---
+
+### 🥐 Bakery Management
+![Bakery](./samples/bakery.png)
+*Bakery production planning with daily schedules, product batches, and sales integration*
+
+---
+
+### 🏭 Bakery Production
+![Bakery Production](./samples/bakeryProduction.png)
+*Track raw material consumption, production batches, yield, and waste per product*
+
+---
+
+### 📜 Recipes
+![Recipes](./samples/recipes.png)
+*Manage ingredient recipes with quantities, units, and cost calculations per batch*
+
+---
+
+### 🍽️ Restaurant
+![Restaurant](./samples/restaruant.png)
+*Table management, live order tracking, and kitchen queue for restaurant operations*
+
+---
+
+### 🧾 Restaurant Menu
+![Restaurant Menu](./samples/restaraunt%20menu.png)
+*Interactive menu management with categories, prices, and availability toggles*
+
+---
+
+### 🏥 Clinic
+![Clinic](./samples/clinic.png)
+*Clinic dashboard with appointment queue, patient stats, and daily revenue summary*
+
+---
+
+### 🧑‍⚕️ Patient Page
+![Patient Page](./samples/patient%20page.png)
+*Patient record with medical history, session log, and billing overview*
+
+---
+
+### 💊 Patient Session
+![Patient Session](./samples/patient%20session.png)
+*Session details with diagnosis, prescriptions, check results, and session fee*
+
 </div>
 
 ---
