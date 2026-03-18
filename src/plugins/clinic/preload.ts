@@ -60,5 +60,27 @@ export const clinicPreload = {
       ipcRenderer.invoke('clinic:checkResults:open', id),
     delete: (id: string) =>
       ipcRenderer.invoke('clinic:checkResults:delete', id)
-  }
+  },
+
+  // ─── Appointments ──────────────────────────────────────────────────────────
+  appointments: {
+    getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string }) =>
+      ipcRenderer.invoke('clinic:appointments:getAll', params),
+    getToday: () =>
+      ipcRenderer.invoke('clinic:appointments:getToday'),
+    getUpcoming: (days?: number) =>
+      ipcRenderer.invoke('clinic:appointments:getUpcoming', days),
+    getFollowUpReminders: () =>
+      ipcRenderer.invoke('clinic:appointments:getFollowUpReminders'),
+    create: (data: any) =>
+      ipcRenderer.invoke('clinic:appointments:create', data),
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('clinic:appointments:update', { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('clinic:appointments:delete', id)
+  },
+
+  // ─── PDF Export ────────────────────────────────────────────────────────────
+  patients_exportPdf: (data: { patient: any; sessions: any[]; stats: any; checkResults: any[] }) =>
+    ipcRenderer.invoke('clinic:patients:exportPdf', data)
 }

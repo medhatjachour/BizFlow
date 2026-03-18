@@ -4,7 +4,7 @@ import {
   ArrowLeft, Plus, Loader2, AlertTriangle, Phone, Mail, MapPin,
   CreditCard, CheckCircle2, Clock, XCircle, MinusCircle, Banknote,
   DollarSign, Pencil, ChevronDown, ChevronUp, Stethoscope, Calendar,
-  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus
+  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus, Download
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -535,6 +535,7 @@ export default function PatientProfile() {
   const [showEditPatient, setShowEditPatient] = useState(false)
   const [showNewSession, setShowNewSession] = useState(false)
   const [showUploadResult, setShowUploadResult] = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false)
   const [viewingResult, setViewingResult] = useState<CheckResult | null>(null)
   const [showResultsPanel, setShowResultsPanel] = useState(false)
 
@@ -573,6 +574,24 @@ export default function PatientProfile() {
       showToast('success', 'Check result deleted')
     } catch {
       showToast('error', 'Failed to delete check result')
+    }
+  }
+
+  const handleExportPdf = async () => {
+    if (!patient) return
+    setExportingPdf(true)
+    try {
+      const result = await (window.api.clinic as any).patients_exportPdf({
+        patient,
+        sessions: patient.sessions ?? [],
+        stats,
+        checkResults,
+      })
+      if (result?.success) showToast('success', 'Medical record exported')
+    } catch {
+      showToast('error', 'Failed to export PDF')
+    } finally {
+      setExportingPdf(false)
     }
   }
 
@@ -658,6 +677,14 @@ export default function PatientProfile() {
             >
               <FilePlus className="h-4 w-4" />
               Upload Result
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={exportingPdf}
+              className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-medium transition-colors border border-white/20 disabled:opacity-60"
+            >
+              {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+              Export PDF
             </button>
             <button
               onClick={() => setShowNewSession(true)}

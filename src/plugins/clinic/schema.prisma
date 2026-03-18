@@ -16,6 +16,7 @@ model ClinicPatient {
   medicalNotes String?
   sessions     ClinicSession[]
   checkResults ClinicCheckResult[]
+  appointments ClinicAppointment[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -79,4 +80,23 @@ model ClinicCheckResult {
 
   @@index([patientId])
   @@index([resultDate])
+}
+
+model ClinicAppointment {
+  id              String        @id @default(uuid())
+  patientId       String
+  patient         ClinicPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentDate DateTime
+  duration        Int?          @default(30)  // minutes
+  type            String        @default("consultation") // 'consultation' | 'follow_up' | 'procedure' | 'checkup'
+  doctorName      String?
+  notes           String?
+  status          String        @default("scheduled") // 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  reminderSent    Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([patientId])
+  @@index([appointmentDate])
+  @@index([status])
 }

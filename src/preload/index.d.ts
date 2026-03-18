@@ -430,6 +430,16 @@ interface API {
       open: (id: string) => Promise<any>
       delete: (id: string) => Promise<any>
     }
+    appointments: {
+      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string }) => Promise<any[]>
+      getToday: () => Promise<any[]>
+      getUpcoming: (days?: number) => Promise<any[]>
+      getFollowUpReminders: () => Promise<{ today: any[]; overdue: any[] }>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    patients_exportPdf: (data: { patient: any; sessions: any[]; stats: any; checkResults: any[] }) => Promise<{ success: boolean }>
   }
 }
 

@@ -29,11 +29,13 @@ interface ClinicData {
   upcomingFollowUps: any[]
   prescriptionsToday: any[]
   recentDiagnoses: string[]  // raw diagnosis strings for freq computation
+  todayAppointments: any[]
 }
 
 const EMPTY: ClinicData = {
   patientCount: 0, patients: [], todaySessions: [], weekSessions: [],
   upcomingFollowUps: [], prescriptionsToday: [], recentDiagnoses: [],
+  todayAppointments: [],
 }
 
 // Age-bucket colours
@@ -89,27 +91,27 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
       const api = (globalThis as any).api?.clinic
       if (!api) { setLoading(false); return }
 
-      const today    = new Date(); today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-      const weekAgo  = new Date(today); weekAgo.setDate(today.getDate() - 7)
-
       // All IPC calls in parallel ────────────────────────────────────────────
-      const [countR, patientsR, todaySessionsR, weekSessionsR, followUpsR, rxR] =
+      const [overviewR, patientsR, todaySessionsR, weekSessionsR, apptsTodayR, remindersR] =
         await Promise.allSettled([
-          api.getPatientCount?.(),
-          api.getPatients?.({ limit: 200 }),
-          api.getSessions?.({ startDate: today.toISOString(),   endDate: tomorrow.toISOString() }),
-          api.getSessions?.({ startDate: weekAgo.toISOString(), endDate: tomorrow.toISOString() }),
-          api.getUpcomingFollowUps?.(7),
-          api.getPrescriptions?.({ startDate: today.toISOString(), endDate: tomorrow.toISOString() }),
+          api.stats?.overview?.(),
+          api.patients?.getAll?.({ limit: 200 }),
+          api.sessions?.getRecent?.({ filter: 'today' }),
+          api.sessions?.getRecent?.({ filter: 'week' }),
+          api.appointments?.getToday?.(),
+          api.appointments?.getFollowUpReminders?.(),
         ])
 
-      const patientCount   = countR.status         === 'fulfilled' ? (countR.value?.count ?? countR.value ?? 0) : 0
-      const patients       = patientsR.status      === 'fulfilled' ? (patientsR.value     || []) : []
-      const todaySessions  = todaySessionsR.status === 'fulfilled' ? (todaySessionsR.value || []) : []
-      const weekSessions   = weekSessionsR.status  === 'fulfilled' ? (weekSessionsR.value  || []) : []
-      const upcomingFU     = followUpsR.status     === 'fulfilled' ? (followUpsR.value     || []) : []
-      const rxToday        = rxR.status            === 'fulfilled' ? (rxR.value            || []) : []
+      const overview          = overviewR.status      === 'fulfilled' ? (overviewR.value      ?? {}) : {}
+      const patients          = patientsR.status      === 'fulfilled' ? (patientsR.value      ?? []) : []
+      const todaySessions     = todaySessionsR.status === 'fulfilled' ? (todaySessionsR.value ?? []) : []
+      const weekSessions      = weekSessionsR.status  === 'fulfilled' ? (weekSessionsR.value  ?? []) : []
+      const todayAppointments = apptsTodayR.status    === 'fulfilled' ? (apptsTodayR.value    ?? []) : []
+      const remindersData     = remindersR.status     === 'fulfilled' ? (remindersR.value     ?? {}) : {}
+
+      const patientCount   = (overview as any).totalPatients ?? patients.length
+      const upcomingFU     = [...((remindersData as any).today ?? []), ...((remindersData as any).overdue ?? [])]
+      const rxToday        = todaySessions.flatMap((s: any) => s.prescriptions ?? [])
 
       // Collect diagnosis strings from session notes ─────────────────────────
       const diagnoses = weekSessions
@@ -119,7 +121,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
       const data: ClinicData = {
         patientCount, patients, todaySessions, weekSessions,
         upcomingFollowUps: upcomingFU, prescriptionsToday: rxToday,
-        recentDiagnoses: diagnoses,
+        recentDiagnoses: diagnoses, todayAppointments,
       }
       setRaw(data)
 
@@ -172,14 +174,14 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
     sessionTrend ? sessionTrend.movingAvg.map((v, i) => ({ v: +v.toFixed(1), label: sessionTrend.labels[i] || `D${i+1}` })) : []
   , [sessionTrend])
 
-  // Sort today's sessions by time
-  const sortedSessions = useMemo(() =>
-    [...raw.todaySessions].sort((a, b) => {
-      const ta = new Date(a.scheduledTime || a.startTime || 0).getTime()
-      const tb = new Date(b.scheduledTime || b.startTime || 0).getTime()
+  // Sort today's appointments by time
+  const sortedAppointments = useMemo(() =>
+    [...raw.todayAppointments].sort((a, b) => {
+      const ta = new Date(a.appointmentDate || 0).getTime()
+      const tb = new Date(b.appointmentDate || 0).getTime()
       return ta - tb
     })
-  , [raw.todaySessions])
+  , [raw.todayAppointments])
 
   if (loading) {
     return (
@@ -281,28 +283,26 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm mb-3">
             <Clock size={16} /> Today's Schedule
           </h3>
-          {sortedSessions.length > 0 ? (
+          {sortedAppointments.length > 0 ? (
             <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-              {sortedSessions.map((session: any, i: number) => {
-                const time = session.scheduledTime || session.startTime
-                  ? new Date(session.scheduledTime || session.startTime).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
-                  : null
+              {sortedAppointments.map((appt: any, i: number) => {
+                const time = new Date(appt.appointmentDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
                 return (
                   <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50">
                     <div className="flex-shrink-0 text-center w-10">
-                      <p className="text-xs font-bold text-teal-600">{time || '?'}</p>
+                      <p className="text-xs font-bold text-teal-600">{time}</p>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-slate-800 dark:text-white truncate">
-                        {session.patientName || session.patient?.name || 'Patient'}
+                        {appt.patient?.name || 'Patient'}
                       </p>
-                      <p className="text-xs text-slate-500">{session.type || session.sessionType || 'Visit'}</p>
+                      <p className="text-xs text-slate-500">{(appt.type || 'consultation').replace('_', ' ')}</p>
                     </div>
                     <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                      session.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                      session.status === 'in_progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                      appt.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                      appt.status === 'confirmed' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' :
                       'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                    }`}>{session.status || 'scheduled'}</span>
+                    }`}>{(appt.status || 'scheduled').replace('_', ' ')}</span>
                   </div>
                 )
               })}
@@ -310,7 +310,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           ) : (
             <div className="flex flex-col items-center justify-center h-32 text-slate-400 text-xs gap-2">
               <CalendarClock size={24} className="opacity-30" />
-              No sessions today
+              No appointments today
             </div>
           )}
         </div>
@@ -425,10 +425,10 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
         {/* Quick nav links */}
         <div className="space-y-2">
           {[
-            { tab: 'patients',      icon: Users,         label: 'Patients',       sub: 'View patient records' },
-            { tab: 'sessions',      icon: Activity,      label: 'Sessions',       sub: 'Session notes & vitals' },
-            { tab: 'prescriptions', icon: Pill,          label: 'Prescriptions',  sub: 'Prescription history' },
-            { tab: 'follow-ups',    icon: CalendarClock, label: 'Follow-ups',     sub: 'Schedule follow-up visits' },
+            { tab: 'patients',     icon: Users,         label: 'Patients',      sub: 'View patient records' },
+            { tab: 'sessions',     icon: Activity,      label: 'Sessions',      sub: 'Session notes & vitals' },
+            { tab: 'appointments', icon: CalendarClock, label: 'Appointments',  sub: "Today's scheduled visits" },
+            { tab: 'stats',        icon: BarChart3,     label: 'Stats',         sub: 'Charts & analytics' },
           ].map(({ tab, icon: Icon, label, sub }) => (
             <button
               key={tab}
