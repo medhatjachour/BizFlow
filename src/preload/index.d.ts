@@ -431,10 +431,12 @@ interface API {
       delete: (id: string) => Promise<any>
     }
     appointments: {
-      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string }) => Promise<any[]>
+      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string }) => Promise<any[]>
       getToday: () => Promise<any[]>
       getUpcoming: (days?: number) => Promise<any[]>
       getFollowUpReminders: () => Promise<{ today: any[]; overdue: any[] }>
+      getAllFollowUps: (params?: { filter?: 'all' | 'today' | 'overdue' | 'upcoming' }) => Promise<any[]>
+      clearFollowUp: (sessionId: string) => Promise<any>
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>

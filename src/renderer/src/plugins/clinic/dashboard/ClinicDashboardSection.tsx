@@ -11,13 +11,15 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Stethoscope, Users, CalendarClock, FileText, Activity,
-  Heart, Pill, TrendingUp, TrendingDown, BarChart3, Minus, Clock,
+  Heart, Pill, TrendingUp, TrendingDown, BarChart3, Minus, Clock, Plus,
+  CheckCircle2, XCircle, AlertCircle,
 } from 'lucide-react'
 import { ResponsiveContainer, LineChart, Line, XAxis, Tooltip } from 'recharts'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { TrendsResult, AgeDistResult, DiagnosisFreqResult } from '@renderer/hooks/useDashboardWorker'
 import logger from '@/shared/utils/logger'
+import AppointmentFormModal from '../pages/components/AppointmentFormModal'
 
 interface Props { refreshSignal?: number }
 
@@ -82,6 +84,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
   const [ageDist, setAgeDist]         = useState<AgeDistResult | null>(null)
   const [sessionTrend, setSessionTrend] = useState<TrendsResult | null>(null)
   const [diagFreq, setDiagFreq]       = useState<DiagnosisFreqResult | null>(null)
+  const [showBooking, setShowBooking] = useState(false)
 
   useEffect(() => { load() }, [refreshSignal])
 
@@ -92,14 +95,14 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
       if (!api) { setLoading(false); return }
 
       // All IPC calls in parallel ────────────────────────────────────────────
-      const [overviewR, patientsR, todaySessionsR, weekSessionsR, apptsTodayR, remindersR] =
+      const [overviewR, patientsR, todaySessionsR, weekSessionsR, apptsTodayR, followUpApptsR] =
         await Promise.allSettled([
           api.stats?.overview?.(),
           api.patients?.getAll?.({ limit: 200 }),
           api.sessions?.getRecent?.({ filter: 'today' }),
           api.sessions?.getRecent?.({ filter: 'week' }),
           api.appointments?.getToday?.(),
-          api.appointments?.getFollowUpReminders?.(),
+          api.appointments?.getAll?.({ type: 'follow_up' }),
         ])
 
       const overview          = overviewR.status      === 'fulfilled' ? (overviewR.value      ?? {}) : {}
@@ -107,10 +110,17 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
       const todaySessions     = todaySessionsR.status === 'fulfilled' ? (todaySessionsR.value ?? []) : []
       const weekSessions      = weekSessionsR.status  === 'fulfilled' ? (weekSessionsR.value  ?? []) : []
       const todayAppointments = apptsTodayR.status    === 'fulfilled' ? (apptsTodayR.value    ?? []) : []
-      const remindersData     = remindersR.status     === 'fulfilled' ? (remindersR.value     ?? {}) : {}
+      const allFollowUpAppts  = followUpApptsR.status === 'fulfilled' ? (followUpApptsR.value  ?? []) : []
 
       const patientCount   = (overview as any).totalPatients ?? patients.length
-      const upcomingFU     = [...((remindersData as any).today ?? []), ...((remindersData as any).overdue ?? [])]
+      // Follow-up appointments: scheduled/confirmed, within 30 days past or 30 days ahead
+      const now = new Date(); now.setHours(0, 0, 0, 0)
+      const past30 = new Date(now); past30.setDate(now.getDate() - 30)
+      const ahead30 = new Date(now); ahead30.setDate(now.getDate() + 30)
+      const upcomingFU = allFollowUpAppts.filter((a: any) => {
+        const d = new Date(a.appointmentDate)
+        return ['scheduled', 'confirmed'].includes(a.status) && d >= past30 && d <= ahead30
+      }).sort((a: any, b: any) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
       const rxToday        = todaySessions.flatMap((s: any) => s.prescriptions ?? [])
 
       // Collect diagnosis strings from session notes ─────────────────────────
@@ -208,16 +218,25 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
   }
 
   return (
+    <>
     <div className="space-y-4">
       {/* Plugin header */}
-      <div className="flex items-center gap-3 px-1">
-        <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
-          <Stethoscope size={20} className="text-teal-600 dark:text-teal-400" />
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg">
+            <Stethoscope size={20} className="text-teal-600 dark:text-teal-400" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-slate-900 dark:text-white">{t('clinic') || 'Clinic'}</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('clinicOverview') || "Today's clinical overview"}</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-semibold text-slate-900 dark:text-white">{t('clinic') || 'Clinic'}</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{t('clinicOverview') || "Today's clinical overview"}</p>
-        </div>
+        <button
+          onClick={() => setShowBooking(true)}
+          className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-teal-500/20"
+        >
+          <Plus size={15} /> Book Appointment
+        </button>
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
@@ -278,31 +297,103 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           </div>
         </div>
 
-        {/* Today's session schedule */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm mb-3">
-            <Clock size={16} /> Today's Schedule
-          </h3>
+        {/* Today's Appointments — full-featured panel */}
+        <div className="bg-white col-span-2 dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+              <Clock size={16} className="text-teal-500" />
+              Today's Appointments
+              {sortedAppointments.length > 0 && (
+                <span className="ml-1 text-xs px-1.5 py-0.5 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-full font-medium">
+                  {sortedAppointments.length}
+                </span>
+              )}
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/clinic?tab=appointments')}
+                className="text-xs text-teal-600 dark:text-teal-400 hover:underline"
+              >
+                View all
+              </button>
+              <button
+                onClick={() => setShowBooking(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors shadow-sm shadow-teal-500/20"
+              >
+                <Plus size={12} /> Book
+              </button>
+            </div>
+          </div>
+
+          {/* Stats mini-row */}
+          {sortedAppointments.length > 0 && (() => {
+            const done      = sortedAppointments.filter((a: any) => a.status === 'completed').length
+            const upcoming  = sortedAppointments.filter((a: any) => ['scheduled', 'confirmed'].includes(a.status)).length
+            const cancelled = sortedAppointments.filter((a: any) => ['cancelled', 'no_show'].includes(a.status)).length
+            return (
+              <div className="flex gap-3 mb-3">
+                {[
+                  { label: 'Upcoming', val: upcoming,  icon: Clock,          cls: 'text-blue-500' },
+                  { label: 'Done',     val: done,       icon: CheckCircle2,   cls: 'text-emerald-500' },
+                  { label: 'Missed',   val: cancelled,  icon: XCircle,       cls: 'text-red-400' },
+                ].map(({ label, val, icon: Ic, cls }) => (
+                  <div key={label} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <Ic size={12} className={cls} />
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">{val}</span> {label}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
+
           {sortedAppointments.length > 0 ? (
-            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
               {sortedAppointments.map((appt: any, i: number) => {
                 const time = new Date(appt.appointmentDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+                const isPast = new Date(appt.appointmentDate) < new Date()
+                const statusColor =
+                  appt.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                  appt.status === 'confirmed' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' :
+                  appt.status === 'cancelled' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                  appt.status === 'no_show'   ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' :
+                  'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                const typeColor =
+                  appt.type === 'consultation' ? 'bg-teal-50 text-teal-600 dark:bg-teal-900/20 dark:text-teal-400' :
+                  appt.type === 'follow_up'    ? 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-400' :
+                  appt.type === 'procedure'    ? 'bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400' :
+                  'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
                 return (
-                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50">
-                    <div className="flex-shrink-0 text-center w-10">
-                      <p className="text-xs font-bold text-teal-600">{time}</p>
+                  <div
+                    key={i}
+                    onClick={() => navigate('/clinic?tab=appointments')}
+                    className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors group
+                      ${isPast && appt.status === 'scheduled'
+                        ? 'bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30'
+                        : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  >
+                    <div className="flex-shrink-0 text-center w-11 bg-white dark:bg-slate-800 rounded-lg py-1 shadow-sm">
+                      <p className="text-xs font-bold text-teal-600 dark:text-teal-400 leading-tight">{time}</p>
+                      {appt.duration && <p className="text-[9px] text-slate-400">{appt.duration}m</p>}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-800 dark:text-white truncate">
-                        {appt.patient?.name || 'Patient'}
-                      </p>
-                      <p className="text-xs text-slate-500">{(appt.type || 'consultation').replace('_', ' ')}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-xs font-semibold text-slate-800 dark:text-white truncate max-w-[110px]">
+                          {appt.patient?.name || 'Patient'}
+                        </p>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${typeColor}`}>
+                          {(appt.type || 'consult').replace('_', ' ')}
+                        </span>
+                        {isPast && appt.status === 'scheduled' && (
+                          <AlertCircle size={11} className="text-amber-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      {appt.doctorName && (
+                        <p className="text-[10px] text-slate-400 truncate">Dr. {appt.doctorName}</p>
+                      )}
                     </div>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                      appt.status === 'completed' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                      appt.status === 'confirmed' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' :
-                      'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
-                    }`}>{(appt.status || 'scheduled').replace('_', ' ')}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium ${statusColor}`}>
+                      {(appt.status || 'scheduled').replace('_', ' ')}
+                    </span>
                   </div>
                 )
               })}
@@ -310,44 +401,18 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           ) : (
             <div className="flex flex-col items-center justify-center h-32 text-slate-400 text-xs gap-2">
               <CalendarClock size={24} className="opacity-30" />
-              No appointments today
+              <p>No appointments today</p>
+              <button
+                onClick={() => setShowBooking(true)}
+                className="flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium hover:underline"
+              >
+                <Plus size={12} /> Book first appointment
+              </button>
             </div>
           )}
         </div>
 
-        {/* Diagnosis frequency */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm mb-3">
-            <FileText size={16} /> Top Diagnoses (7d)
-          </h3>
-          {diagFreq && diagFreq.ranked.length > 0 ? (
-            <div className="space-y-2">
-              {diagFreq.ranked.slice(0, 6).map((diag, i) => {
-                const pct = Math.round((diag.count / diagFreq.total) * 100)
-                return (
-                  <div key={i}>
-                    <div className="flex justify-between text-xs mb-0.5">
-                      <span className="text-slate-700 dark:text-slate-300 truncate max-w-[140px]">{diag.name}</span>
-                      <span className="text-slate-500">{diag.count}×</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700">
-                      <div
-                        className="h-1.5 rounded-full bg-teal-500"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-              <p className="text-xs text-slate-400 mt-2">{diagFreq.unique} unique diagnoses · {diagFreq.total} total</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-32 text-slate-400 text-xs gap-2">
-              <Stethoscope size={24} className="opacity-30" />
-              No diagnoses recorded
-            </div>
-          )}
-        </div>
+    
       </div>
 
       {/* ── Row 3: Age distribution + Follow-ups + Quick links ─────────────── */}
@@ -387,27 +452,42 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           )}
         </div>
 
-        {/* Upcoming follow-ups */}
+        {/* Upcoming follow-ups — now sourced from follow_up type appointments */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm mb-3">
-            <CalendarClock size={16} /> Upcoming Follow-ups
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+              <CalendarClock size={16} className="text-amber-500" /> Upcoming Follow-ups
+            </h3>
+            <button
+              onClick={() => navigate('/clinic?tab=appointments')}
+              className="text-[10px] text-teal-600 dark:text-teal-400 hover:underline"
+            >
+              View all
+            </button>
+          </div>
           {raw.upcomingFollowUps.length > 0 ? (
             <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
-              {raw.upcomingFollowUps.slice(0, 6).map((fu: any, i: number) => {
-                const date = fu.followUpDate || fu.scheduledDate || fu.date
+              {raw.upcomingFollowUps.slice(0, 5).map((appt: any, i: number) => {
+                const diff = Math.round((new Date(appt.appointmentDate).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000)
+                const isOverdue = diff < 0
+                const isToday   = diff === 0
                 return (
-                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50">
-                    <div className="flex-shrink-0">
-                      <CalendarClock size={14} className="text-amber-500" />
-                    </div>
+                  <div
+                    key={i}
+                    onClick={() => navigate(`/clinic/patients/${appt.patientId}`)}
+                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${isOverdue ? 'bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20' : isToday ? 'bg-amber-50 dark:bg-amber-900/10 hover:bg-amber-100 dark:hover:bg-amber-900/20' : 'bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  >
+                    <CalendarClock size={13} className={isOverdue ? 'text-red-500 flex-shrink-0' : isToday ? 'text-amber-500 flex-shrink-0' : 'text-teal-500 flex-shrink-0'} />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-slate-800 dark:text-white truncate">
-                        {fu.patientName || fu.patient?.name || 'Patient'}
+                        {appt.patient?.name || 'Patient'}
                       </p>
-                      <p className="text-xs text-slate-500">
-                        {date ? new Date(date).toLocaleDateString('en', { month: 'short', day: 'numeric' }) : '—'}
-                        {fu.reason ? ` · ${fu.reason}` : ''}
+                      <p className="text-[10px] text-slate-500">
+                        {new Date(appt.appointmentDate).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
+                        {isOverdue && <span className="text-red-500 font-medium"> · {Math.abs(diff)}d overdue</span>}
+                        {isToday   && <span className="text-amber-600 font-medium"> · Today</span>}
+                        {!isOverdue && !isToday && <span> · in {diff}d</span>}
+                        {appt.doctorName ? ` · Dr. ${appt.doctorName}` : ''}
                       </p>
                     </div>
                   </div>
@@ -417,34 +497,55 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           ) : (
             <div className="flex flex-col items-center justify-center h-28 text-slate-400 text-xs gap-2">
               <CalendarClock size={24} className="opacity-30" />
-              No follow-ups in next 7 days
+              No follow-up appointments
             </div>
           )}
         </div>
-
-        {/* Quick nav links */}
-        <div className="space-y-2">
-          {[
-            { tab: 'patients',     icon: Users,         label: 'Patients',      sub: 'View patient records' },
-            { tab: 'sessions',     icon: Activity,      label: 'Sessions',      sub: 'Session notes & vitals' },
-            { tab: 'appointments', icon: CalendarClock, label: 'Appointments',  sub: "Today's scheduled visits" },
-            { tab: 'stats',        icon: BarChart3,     label: 'Stats',         sub: 'Charts & analytics' },
-          ].map(({ tab, icon: Icon, label, sub }) => (
-            <button
-              key={tab}
-              onClick={() => navigate(`/clinic?tab=${tab}`)}
-              className="w-full bg-white dark:bg-slate-800 rounded-lg px-4 py-2.5 border border-slate-200 dark:border-slate-700 text-left hover:border-teal-400 transition-colors group flex items-center gap-3"
-            >
-              <Icon size={15} className="text-teal-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
-              <div>
-                <p className="font-medium text-slate-900 dark:text-white text-xs">{label}</p>
-                <p className="text-xs text-slate-500">{sub}</p>
-              </div>
-            </button>
-          ))}
+        {/* Diagnosis frequency */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm mb-3">
+            <FileText size={16} /> Top Diagnoses (7d)
+          </h3>
+          {diagFreq && diagFreq.ranked.length > 0 ? (
+            <div className="space-y-2">
+              {diagFreq.ranked.slice(0, 6).map((diag, i) => {
+                const pct = Math.round((diag.count / diagFreq.total) * 100)
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs mb-0.5">
+                      <span className="text-slate-700 dark:text-slate-300 truncate max-w-[140px]">{diag.name}</span>
+                      <span className="text-slate-500">{diag.count}×</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700">
+                      <div
+                        className="h-1.5 rounded-full bg-teal-500"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+              <p className="text-xs text-slate-400 mt-2">{diagFreq.unique} unique diagnoses · {diagFreq.total} total</p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-32 text-slate-400 text-xs gap-2">
+              <Stethoscope size={24} className="opacity-30" />
+              No diagnoses recorded
+            </div>
+          )}
         </div>
+ 
 
       </div>
     </div>
+
+    {showBooking && (
+      <AppointmentFormModal
+        existing={null}
+        onClose={() => setShowBooking(false)}
+        onSaved={() => { setShowBooking(false); load() }}
+      />
+    )}
+    </>
   )
 }

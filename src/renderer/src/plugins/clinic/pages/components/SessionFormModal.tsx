@@ -41,9 +41,26 @@ interface ExistingSession {
   patient: { id: string; name: string }
 }
 
+interface DefaultAppointment {
+  id: string
+  appointmentDate: string
+  type: string
+  doctorName?: string | null
+  notes?: string | null
+  patient: { id: string; name: string; phone: string }
+}
+
+const APPT_TO_VISIT_TYPE: Record<string, string> = {
+  consultation: 'first_visit',
+  follow_up: 'follow_up',
+  procedure: 'routine',
+  checkup: 'routine',
+}
+
 interface Props {
   existingSession?: ExistingSession | null
   defaultPatient?: Patient | null
+  defaultAppointment?: DefaultAppointment | null
   onClose: () => void
   onSaved: () => void
 }
@@ -63,14 +80,14 @@ function emptyRx(): PrescriptionRow {
   return { medicineName: '', dosage: '', frequency: '', duration: '', quantity: '', instructions: '' }
 }
 
-export default function SessionFormModal({ existingSession, defaultPatient, onClose, onSaved }: Props) {
+export default function SessionFormModal({ existingSession, defaultPatient, defaultAppointment, onClose, onSaved }: Props) {
   const { t } = useLanguage()
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
 
-  // Determine initial patient (from existing session or from prop)
-  const initialPatientId = existingSession?.patientId ?? defaultPatient?.id ?? ''
-  const initialPatientName = existingSession?.patient?.name ?? defaultPatient?.name ?? ''
+  // Determine initial patient (from existing session, defaultPatient, or defaultAppointment)
+  const initialPatientId = existingSession?.patientId ?? defaultPatient?.id ?? defaultAppointment?.patient?.id ?? ''
+  const initialPatientName = existingSession?.patient?.name ?? defaultPatient?.name ?? defaultAppointment?.patient?.name ?? ''
 
   // Form state
   const [patientId, setPatientId] = useState(initialPatientId)
@@ -125,10 +142,15 @@ export default function SessionFormModal({ existingSession, defaultPatient, onCl
   }
 
   const [visitDate, setVisitDate] = useState(
-    toDatetimeLocal(existingSession?.visitDate) || toDatetimeLocal(new Date().toISOString())
+    toDatetimeLocal(existingSession?.visitDate)
+    || (defaultAppointment ? toDatetimeLocal(defaultAppointment.appointmentDate) : '')
+    || toDatetimeLocal(new Date().toISOString())
   )
-  const [visitType, setVisitType] = useState(existingSession?.visitType ?? 'routine')
-  const [doctorName, setDoctorName] = useState(existingSession?.doctorName ?? '')
+  const [visitType, setVisitType] = useState(
+    existingSession?.visitType
+    ?? (defaultAppointment ? (APPT_TO_VISIT_TYPE[defaultAppointment.type] ?? 'routine') : 'routine')
+  )
+  const [doctorName, setDoctorName] = useState(existingSession?.doctorName ?? defaultAppointment?.doctorName ?? '')
   const [chiefComplaint, setChiefComplaint] = useState(existingSession?.chiefComplaint ?? '')
   const [vitals, setVitals] = useState(parseVitals(existingSession?.vitals))
   const [diagnosis, setDiagnosis] = useState(existingSession?.diagnosis ?? '')
@@ -217,7 +239,26 @@ export default function SessionFormModal({ existingSession, defaultPatient, onCl
         showToast('success', t('savedSuccessfully'))
       } else {
         await window.api.clinic.sessions.create(payload)
-        showToast('success', t('createdSuccessfully'))
+        // Auto-mark the source appointment as completed
+        if (defaultAppointment) {
+          try {
+            await window.api.clinic.appointments.update(defaultAppointment.id, { status: 'completed' })
+          } catch { /* non-critical */ }
+        }
+        // Auto-create a follow-up appointment if followUpDate was set
+        if (followUpDate) {
+          try {
+            await window.api.clinic.appointments.create({
+              patientId,
+              appointmentDate: new Date(followUpDate).toISOString(),
+              type: 'follow_up',
+              doctorName: doctorName || null,
+              notes: `Follow-up from session on ${new Date(visitDate || new Date().toISOString()).toLocaleDateString()}`,
+              status: 'scheduled',
+            })
+          } catch { /* non-critical */ }
+        }
+        showToast('success', defaultAppointment ? t('sessionStartedFromAppt') : t('createdSuccessfully'))
       }
       onSaved()
     } catch {

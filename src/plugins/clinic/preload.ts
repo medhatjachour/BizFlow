@@ -44,6 +44,12 @@ export const clinicPreload = {
       ipcRenderer.invoke('clinic:stats:topDiagnoses', limit),
     visitTrend: (days?: number) =>
       ipcRenderer.invoke('clinic:stats:visitTrend', days),
+    fullTrend: (days?: number) =>
+      ipcRenderer.invoke('clinic:stats:fullTrend', days),
+    monthlyTrend: (months?: number) =>
+      ipcRenderer.invoke('clinic:stats:monthlyTrend', months),
+    breakdowns: () =>
+      ipcRenderer.invoke('clinic:stats:breakdowns'),
     patientStats: (patientId: string) =>
       ipcRenderer.invoke('clinic:stats:patientStats', patientId)
   },
@@ -64,7 +70,7 @@ export const clinicPreload = {
 
   // ─── Appointments ──────────────────────────────────────────────────────────
   appointments: {
-    getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string }) =>
+    getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string }) =>
       ipcRenderer.invoke('clinic:appointments:getAll', params),
     getToday: () =>
       ipcRenderer.invoke('clinic:appointments:getToday'),
@@ -72,6 +78,10 @@ export const clinicPreload = {
       ipcRenderer.invoke('clinic:appointments:getUpcoming', days),
     getFollowUpReminders: () =>
       ipcRenderer.invoke('clinic:appointments:getFollowUpReminders'),
+    getAllFollowUps: (params?: { filter?: 'all' | 'today' | 'overdue' | 'upcoming' }) =>
+      ipcRenderer.invoke('clinic:appointments:getAllFollowUps', params),
+    clearFollowUp: (sessionId: string) =>
+      ipcRenderer.invoke('clinic:sessions:clearFollowUp', sessionId),
     create: (data: any) =>
       ipcRenderer.invoke('clinic:appointments:create', data),
     update: (id: string, data: any) =>

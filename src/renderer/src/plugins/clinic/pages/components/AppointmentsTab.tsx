@@ -2,11 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Calendar, Plus, Loader2, Pencil, Trash2, Check, X,
-  ChevronLeft, ChevronRight, Bell, Clock
+  ChevronLeft, ChevronRight, Clock, PlayCircle
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import AppointmentFormModal from './AppointmentFormModal'
+import SessionFormModal from './SessionFormModal'
 
 interface Appointment {
   id: string
@@ -18,15 +19,6 @@ interface Appointment {
   doctorName?: string | null
   notes?: string | null
   status: string
-}
-
-interface FollowUpReminder {
-  id: string
-  patientId: string
-  patient: { id: string; name: string; phone: string }
-  followUpDate: string
-  chiefComplaint: string
-  diagnosis?: string | null
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -45,7 +37,10 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 function toIsoDate(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 function shiftDay(dateStr: string, delta: number): string {
@@ -56,7 +51,7 @@ function shiftDay(dateStr: string, delta: number): string {
 
 // ─── Individual appointment row ───────────────────────────────────────────────
 function AppointmentRow({
-  appt, updating, onEdit, onDelete, onStatusChange, onViewPatient
+  appt, updating, onEdit, onDelete, onStatusChange, onViewPatient, onStartSession
 }: {
   appt: Appointment
   updating: boolean
@@ -64,6 +59,7 @@ function AppointmentRow({
   onDelete: () => void
   onStatusChange: (s: string) => void
   onViewPatient: () => void
+  onStartSession: () => void
 }) {
   const { t } = useLanguage()
   const time = new Date(appt.appointmentDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -122,6 +118,12 @@ function AppointmentRow({
           <Loader2 className="h-4 w-4 animate-spin text-teal-500" />
         ) : (
           <>
+            {isActive && (
+              <button onClick={onStartSession} title={t('startSession')}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-lg border border-teal-200 dark:border-teal-800/40 transition-colors">
+                <PlayCircle className="h-3.5 w-3.5" /> {t('startSession')}
+              </button>
+            )}
             {appt.status === 'scheduled' && (
               <button onClick={() => onStatusChange('confirmed')} title={t('confirmAppt')}
                 className="p-1.5 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-lg hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors">
@@ -164,22 +166,17 @@ export default function AppointmentsTab() {
   const [selectedDate,     setSelectedDate]     = useState<string>(toIsoDate(new Date()))
   const [appointments,     setAppointments]     = useState<Appointment[]>([])
   const [loading,          setLoading]          = useState(true)
-  const [reminders,        setReminders]        = useState<{ today: FollowUpReminder[]; overdue: FollowUpReminder[] }>({ today: [], overdue: [] })
-  const [reminderDismissed, setReminderDismissed] = useState(false)
   const [showForm,         setShowForm]         = useState(false)
   const [editingAppt,      setEditingAppt]      = useState<Appointment | null>(null)
   const [updatingId,       setUpdatingId]       = useState<string | null>(null)
+  const [showSessionForm,  setShowSessionForm]  = useState(false)
+  const [sessionAppt,      setSessionAppt]      = useState<Appointment | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [apptRes, fuRes] = await Promise.allSettled([
-        window.api.clinic.appointments.getAll({ date: selectedDate }),
-        window.api.clinic.appointments.getFollowUpReminders()
-      ])
-      setAppointments(apptRes.status === 'fulfilled' ? (apptRes.value ?? []) : [])
-      if (fuRes.status === 'fulfilled' && fuRes.value)
-        setReminders(fuRes.value)
+      const res = await window.api.clinic.appointments.getAll({ date: selectedDate })
+      setAppointments(res ?? [])
     } catch {
       showToast('error', t('errorLoadingData'))
     } finally {
@@ -208,7 +205,6 @@ export default function AppointmentsTab() {
     finally { setUpdatingId(null) }
   }
 
-  const totalReminders = reminders.today.length + reminders.overdue.length
   const isToday        = selectedDate === toIsoDate(new Date())
   const selectedDateObj = new Date(selectedDate + 'T00:00:00')
   const displayDate = selectedDateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -218,40 +214,6 @@ export default function AppointmentsTab() {
 
   return (
     <div className="space-y-4">
-
-      {/* ── Follow-up reminder banner ───────────────────────────────────────── */}
-      {!reminderDismissed && totalReminders > 0 && (
-        <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 flex items-start gap-3">
-          <Bell className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-amber-800 dark:text-amber-200">
-              {t('followUpReminders')}
-            </p>
-            <div className="mt-1.5 space-y-1">
-              {reminders.today.map((fu) => (
-                <p key={fu.id} className="text-xs text-amber-700 dark:text-amber-300">
-                  <button onClick={() => navigate(`/clinic/patients/${fu.patientId}`)}
-                    className="font-semibold hover:underline">{fu.patient.name}</button>
-                  {' — '}{t('followUpDueToday')}
-                  {fu.diagnosis ? ` (${fu.diagnosis})` : ''}
-                </p>
-              ))}
-              {reminders.overdue.map((fu) => (
-                <p key={fu.id} className="text-xs text-red-600 dark:text-red-400">
-                  <button onClick={() => navigate(`/clinic/patients/${fu.patientId}`)}
-                    className="font-semibold hover:underline">{fu.patient.name}</button>
-                  {' — '}{t('overdueFollowUp')}: {new Date(fu.followUpDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  {fu.diagnosis ? ` · ${fu.diagnosis}` : ''}
-                </p>
-              ))}
-            </div>
-          </div>
-          <button onClick={() => setReminderDismissed(true)}
-            className="p-1 text-amber-400 hover:text-amber-600 rounded-lg transition-colors flex-shrink-0">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
 
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -321,6 +283,7 @@ export default function AppointmentsTab() {
                   onDelete={() => handleDelete(appt.id)}
                   onStatusChange={(s) => handleStatusChange(appt, s)}
                   onViewPatient={() => navigate(`/clinic/patients/${appt.patientId}`)}
+                  onStartSession={() => { setSessionAppt(appt); setShowSessionForm(true) }}
                 />
               ))}
             </div>
@@ -337,6 +300,7 @@ export default function AppointmentsTab() {
                   onDelete={() => handleDelete(appt.id)}
                   onStatusChange={(s) => handleStatusChange(appt, s)}
                   onViewPatient={() => navigate(`/clinic/patients/${appt.patientId}`)}
+                  onStartSession={() => { setSessionAppt(appt); setShowSessionForm(true) }}
                 />
               ))}
             </div>
@@ -350,6 +314,21 @@ export default function AppointmentsTab() {
           defaultDate={selectedDate}
           onClose={() => { setShowForm(false); setEditingAppt(null) }}
           onSaved={() => { setShowForm(false); setEditingAppt(null); load() }}
+        />
+      )}
+
+      {showSessionForm && sessionAppt && (
+        <SessionFormModal
+          defaultAppointment={{
+            id: sessionAppt.id,
+            appointmentDate: sessionAppt.appointmentDate,
+            type: sessionAppt.type,
+            doctorName: sessionAppt.doctorName,
+            notes: sessionAppt.notes,
+            patient: sessionAppt.patient
+          }}
+          onClose={() => { setShowSessionForm(false); setSessionAppt(null) }}
+          onSaved={() => { setShowSessionForm(false); setSessionAppt(null); load() }}
         />
       )}
     </div>

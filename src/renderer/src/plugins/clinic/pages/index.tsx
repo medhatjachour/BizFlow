@@ -326,9 +326,9 @@ export default function ClinicPage() {
   const [activeTab, setActiveTab] = useState<Tab>('patients')
 
   const tabs: { key: Tab; label: string; Icon: React.ElementType }[] = [
-    { key: 'patients',     label: t('clinicPatients'), Icon: Users },
-    { key: 'sessions',     label: t('clinicSessions'), Icon: ClipboardList },
-    { key: 'stats',        label: t('clinicStats'),    Icon: BarChart3 },
+    { key: 'patients',     label: t('clinicPatients'),     Icon: Users },
+    { key: 'sessions',     label: t('clinicSessions'),     Icon: ClipboardList },
+    { key: 'stats',        label: t('clinicStats'),        Icon: BarChart3 },
     { key: 'appointments', label: t('clinicAppointments'), Icon: CalendarClock },
   ]
 
