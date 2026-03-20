@@ -1,124 +1,95 @@
 /**
- * Dashboard Page
- * Comprehensive overview with real-time metrics, analytics, and quick actions
+ * Dashboard Page — Kernel shell
+ *
+ * Each plugin contributes its own dashboard section (lazy-loaded, guarded by
+ * build flag + runtime module check).  If NO plugins are active the kernel
+ * shows a clean "welcome / enable a plugin" state instead of blank space.
  */
 
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useLanguage } from '../../contexts/LanguageContext'
-import {
-  BarChart3,
-  Activity,
-  Zap,
-  RefreshCw
-} from 'lucide-react'
-import DashboardStats from './components/DashboardStats'
+import { Activity, Zap, RefreshCw, Layers, Settings } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useModuleEnabled, useEnabledModules } from '../../hooks/useModuleEnabled'
+import { MODULE_IDS, MODULE_REGISTRY } from '@/shared/modules'
 import RecentActivity from './components/RecentActivity'
-import logger from '../../../../shared/utils/logger'
-
 import QuickActions from './components/QuickActions'
 
-// Lazy load heavy dashboard components for faster initial load
-const SalesChart = lazy(() => import('./components/SalesChart'))
-const TopProducts = lazy(() => import('./components/TopProducts'))
-const InventoryAlerts = lazy(() => import('./components/InventoryAlerts'))
-const GoalTracking = lazy(() => import('./components/GoalTracking'))
 const NotificationCenter = lazy(() => import('./components/NotificationCenter'))
+
+// ── Plugin dashboard sections (tree-shaken when build flag is false) ─────────
+const CommerceDashboard = __PLUGIN_COMMERCE__
+  ? lazy(() => import('@renderer/plugins/commerce/dashboard/CommerceDashboardSection'))
+  : null
+
+const BakeryDashboard = __PLUGIN_BAKERY__
+  ? lazy(() => import('@renderer/plugins/bakery/dashboard/BakeryDashboardSection'))
+  : null
+
+const RestaurantDashboard = __PLUGIN_RESTAURANT__
+  ? lazy(() => import('@renderer/plugins/restaurant/dashboard/RestaurantDashboardSection'))
+  : null
+
+const WarehouseDashboard = __PLUGIN_WAREHOUSE__
+  ? lazy(() => import('@renderer/plugins/warehouse/dashboard/WarehouseDashboardSection'))
+  : null
+
+const ClinicDashboard = __PLUGIN_CLINIC__
+  ? lazy(() => import('@renderer/plugins/clinic/dashboard/ClinicDashboardSection'))
+  : null
+
+const Spinner = ({ h = 'h-48' }: { h?: string }) => (
+  <div className={`bg-white dark:bg-slate-800 rounded-xl p-4 ${h} flex items-center justify-center`}>
+    <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
+  </div>
+)
+
+/** Placeholder loading skeleton for a plugin section */
+const PluginSkeleton = () => (
+  <div className="space-y-4">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Spinner key={i} h="h-24" />
+      ))}
+    </div>
+    <Spinner h="h-40" />
+  </div>
+)
 
 export default function Dashboard() {
   const { user } = useAuth()
   const { t } = useLanguage()
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate()
+
+  // Runtime module state
+  const commerceEnabled   = useModuleEnabled(MODULE_IDS.COMMERCE)
+  const bakeryEnabled     = useModuleEnabled(MODULE_IDS.BAKERY)
+  const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
+  const warehouseEnabled  = useModuleEnabled(MODULE_IDS.WAREHOUSE)
+  const clinicEnabled     = useModuleEnabled(MODULE_IDS.CLINIC)
+  const enabledIds        = useEnabledModules()
+
+  // True when at least one plugin section will be rendered
+  const hasActivePlugin =
+    (__PLUGIN_COMMERCE__   && commerceEnabled)   ||
+    (__PLUGIN_BAKERY__     && bakeryEnabled)     ||
+    (__PLUGIN_RESTAURANT__ && restaurantEnabled) ||
+    (__PLUGIN_WAREHOUSE__  && warehouseEnabled)  ||
+    (__PLUGIN_CLINIC__     && clinicEnabled)
+
+  const [refreshSignal, setRefreshSignal] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
-  const [stats, setStats] = useState({
-    todayRevenue: 0,
-    todayOrders: 0,
-    totalProducts: 0,
-    lowStockItems: 0,
-    totalCustomers: 0,
-    revenueChange: 0,
-    ordersChange: 0,
-  })
 
   useEffect(() => {
-    loadDashboardData()
-    
-    // Auto-refresh every 5 minutes (reduced from 30 seconds)
-    const REFRESH_INTERVAL = 5 * 60 * 1000 // 5 minutes
-    const interval = setInterval(() => {
-      loadDashboardData(true)
-    }, REFRESH_INTERVAL)
-
-    return () => clearInterval(interval)
+    const id = setInterval(() => setRefreshSignal(s => s + 1), 5 * 60 * 1000)
+    return () => clearInterval(id)
   }, [])
 
-  const loadDashboardData = async (silent = false) => {
-    try {
-      if (!silent) {
-        setLoading(true)
-      } else {
-        setRefreshing(true)
-      }
-      
-      // Calculate date ranges
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-      
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
-
-      const dashboardApi = (globalThis as any).api?.dashboard
-
-      // All three calls return lightweight aggregates — no raw transaction rows shipped
-      const [productStats, todayStats, yesterdayStats, customerCount] = await Promise.all([
-        // @ts-ignore
-        (globalThis as any).api?.products?.getStats?.() || Promise.resolve({ totalProducts: 0, lowStockCount: 0 }),
-        // Today: { total, count }
-        dashboardApi?.getDayStats?.({ startDate: today.toISOString(), endDate: tomorrow.toISOString() }) || Promise.resolve({ total: 0, count: 0 }),
-        // Yesterday: { total, count }
-        dashboardApi?.getDayStats?.({ startDate: yesterday.toISOString(), endDate: today.toISOString() }) || Promise.resolve({ total: 0, count: 0 }),
-        // Customer count via aggregate — no full table load
-        // @ts-ignore
-        (globalThis as any).api?.customers?.getCount?.() || Promise.resolve(0),
-      ])
-
-      logger.info('Dashboard data loaded', {
-        todayOrders: todayStats.count,
-        yesterdayOrders: yesterdayStats.count,
-      })
-
-      const todayRevenue = todayStats.total ?? 0
-      const yesterdayRevenue = yesterdayStats.total ?? 0
-      const revenueChange = yesterdayRevenue > 0
-        ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
-        : 0
-
-      const ordersChange = yesterdayStats.count > 0
-        ? ((todayStats.count - yesterdayStats.count) / yesterdayStats.count) * 100
-        : 0
-
-      setStats({
-        todayRevenue,
-        todayOrders: todayStats.count ?? 0,
-        totalProducts: productStats?.totalProducts || 0,
-        lowStockItems: productStats?.lowStockCount || 0,
-        totalCustomers: typeof customerCount === 'number' ? customerCount : (customerCount?.count ?? 0),
-        revenueChange,
-        ordersChange,
-      })
-    } catch (error) {
-      logger.error('Error loading dashboard data:', error)
-    } finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }
-
   const handleRefresh = () => {
-    loadDashboardData()
+    setRefreshing(true)
+    setRefreshSignal(s => s + 1)
+    setTimeout(() => setRefreshing(false), 800)
   }
 
   const getGreeting = () => {
@@ -140,13 +111,18 @@ export default function Dashboard() {
               </h1>
               <p className="text-white/80 text-sm flex items-center gap-2">
                 <Activity size={16} />
-                {t('businessOverview')} {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                {t('businessOverview')}{' '}
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleRefresh}
-                disabled={loading || refreshing}
+                disabled={refreshing}
                 className="flex items-center gap-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm px-3 py-2 rounded-lg transition-colors disabled:opacity-50"
                 title={t('refresh')}
               >
@@ -155,123 +131,111 @@ export default function Dashboard() {
                   {refreshing ? t('refreshing') : t('refresh')}
                 </span>
               </button>
-              
               <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg">
                 <Zap size={16} />
-                <span className="text-sm font-medium capitalize">{t(`${user?.role}Access` as any) || `${user?.role} Access`}</span>
+                <span className="text-sm font-medium capitalize">
+                  {t(`${user?.role}Access` as any) || `${user?.role} Access`}
+                </span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className=" mx-auto p-4 space-y-4">
-        {/* Key Metrics */}
-        <DashboardStats stats={stats} loading={loading} />
+      <div className="mx-auto p-4 space-y-6">
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Left Column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Sales Chart */}
-            <Suspense fallback={
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-6 h-96 flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            }>
-              <SalesChart />
-            </Suspense>
+        {/* ── Plugin sections ─────────────────────────────────────────────── */}
+        {__PLUGIN_COMMERCE__ && commerceEnabled && CommerceDashboard && (
+          <Suspense fallback={<PluginSkeleton />}>
+            <CommerceDashboard refreshSignal={refreshSignal} />
+          </Suspense>
+        )}
 
-            {/* Top Products */}
-            <Suspense fallback={
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-6 h-64 flex items-center justify-center">
-                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            }>
-              <TopProducts />
-            </Suspense>
+        {__PLUGIN_BAKERY__ && bakeryEnabled && BakeryDashboard && (
+          <Suspense fallback={<PluginSkeleton />}>
+            <BakeryDashboard refreshSignal={refreshSignal} />
+          </Suspense>
+        )}
 
-            {/* Recent Activity */}
-            <RecentActivity />
-          </div>
+        {__PLUGIN_RESTAURANT__ && restaurantEnabled && RestaurantDashboard && (
+          <Suspense fallback={<PluginSkeleton />}>
+            <RestaurantDashboard refreshSignal={refreshSignal} />
+          </Suspense>
+        )}
 
-          {/* Right Column - 1/3 width */}
-          <div className="space-y-4">
-            {/* Quick Actions */}
-            <QuickActions userRole={user?.role || 'sales'} />
+        {__PLUGIN_WAREHOUSE__ && warehouseEnabled && WarehouseDashboard && (
+          <Suspense fallback={<PluginSkeleton />}>
+            <WarehouseDashboard refreshSignal={refreshSignal} />
+          </Suspense>
+        )}
 
-            {/* Goal Tracking */}
-            <Suspense fallback={
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 h-48 flex items-center justify-center">
-                <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            }>
-              <GoalTracking />
-            </Suspense>
+        {__PLUGIN_CLINIC__ && clinicEnabled && ClinicDashboard && (
+          <Suspense fallback={<PluginSkeleton />}>
+            <ClinicDashboard refreshSignal={refreshSignal} />
+          </Suspense>
+        )}
 
-            {/* Notification Center */}
-            <Suspense fallback={
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 h-48 flex items-center justify-center">
-                <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            }>
-              <NotificationCenter />
-            </Suspense>
-
-            {/* Inventory Alerts */}
-            <Suspense fallback={
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 h-48 flex items-center justify-center">
-                <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full"></div>
-              </div>
-            }>
-              <InventoryAlerts />
-            </Suspense>
-
-            {/* Quick Stats Card */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                <BarChart3 size={18} />
-                {t('quickStats')}
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('avgOrderValue')}</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">
-                    ${stats.todayOrders > 0 ? (stats.todayRevenue / stats.todayOrders).toFixed(2) : '0.00'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('productsInStock')}</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">
-                    {stats.totalProducts - stats.lowStockItems}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('lowStockItems')}</span>
-                  <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                    {stats.lowStockItems}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">{t('activeCustomers')}</span>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">
-                    {stats.totalCustomers}
-                  </span>
-                </div>
+        {/* ── No-plugin welcome state ──────────────────────────────────────── */}
+        {!hasActivePlugin && (
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-dashed border-slate-300 dark:border-slate-600 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-primary/10 rounded-full">
+                <Layers size={32} className="text-primary" />
               </div>
             </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              {t('noPluginsActive') || 'No plugins active'}
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto text-sm">
+              {t('enablePluginHint') ||
+                'Enable a plugin from Settings to unlock its dashboard, quick actions, and reports.'}
+            </p>
+            {/* Available plugins overview */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 max-w-2xl mx-auto">
+              {Object.values(MODULE_REGISTRY).map(mod => (
+                <div
+                  key={mod.id}
+                  className="flex flex-col items-center gap-1 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600"
+                >
+                  <span className="text-2xl">{mod.icon}</span>
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{mod.name}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => navigate('/settings?tab=modules')}
+              className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors text-sm"
+            >
+              <Settings size={16} />
+              {t('goToSettings') || 'Go to Settings'}
+            </button>
+          </div>
+        )}
 
+        {/* ── Kernel layout (always visible) ──────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <RecentActivity />
+          </div>
+          <div className="space-y-4">
+            <QuickActions userRole={user?.role || 'sales'} />
+            <Suspense fallback={<Spinner />}>
+              <NotificationCenter />
+            </Suspense>
             {/* System Status */}
             <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-4 text-white">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
                 <span className="text-sm font-medium">{t('systemStatus')}</span>
               </div>
               <p className="text-2xl font-bold mb-1">{t('allSystemsOperational')}</p>
-              <p className="text-white/80 text-xs">{t('lastUpdated')}: {new Date().toLocaleTimeString()}</p>
+              <p className="text-white/80 text-xs">
+                {t('lastUpdated')}: {new Date().toLocaleTimeString()}
+              </p>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   )

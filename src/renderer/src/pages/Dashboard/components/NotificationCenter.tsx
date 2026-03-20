@@ -1,6 +1,9 @@
 /**
  * NotificationCenter Component
- * Real-time notifications and alerts for important events
+ *
+ * Kernel notification hub.  Each API call is guarded by its plugin build flag
+ * AND the runtime module-enabled check, so disabling a module in settings
+ * immediately stops all related IPC calls and clears the notifications.
  */
 
 import { useState, useEffect } from 'react'
@@ -8,6 +11,8 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
+import { useModuleEnabled } from '../../../hooks/useModuleEnabled'
+import { MODULE_IDS } from '@/shared/modules'
 import logger from '../../../../../shared/utils/logger'
 
 type Notification = {
@@ -27,95 +32,75 @@ export default function NotificationCenter() {
   const { user } = useAuth()
   const { warning } = useToast()
   const navigate = useNavigate()
+  const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     loadNotifications()
-    // Refresh notifications every 5 minutes
     const interval = setInterval(loadNotifications, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [commerceEnabled])
 
   const loadNotifications = async () => {
     try {
-      // Check for low stock
-      // @ts-ignore
-      const lowStock = await window.api?.inventory?.getLowStock(10)
-      
       const newNotifications: Notification[] = []
 
-      // Low stock notifications
-      if (lowStock && lowStock.length > 0) {
-        newNotifications.push({
-          id: 'low-stock',
-          type: 'warning',
-          title: 'Low Stock Alert',
-          message: `${lowStock.length} products are running low on stock`,
-          timestamp: new Date(),
-          read: false,
-          action: {
-            label: 'View Inventory',
-            link: '/inventory'
-          }
+      // ── Commerce notifications (only when plugin is built-in + enabled) ──────
+      if (__PLUGIN_COMMERCE__ && commerceEnabled) {
+        // Low stock alert
+        const lowStock = await (window as any).api?.inventory?.getLowStock?.(10)
+        if (lowStock?.length > 0) {
+          newNotifications.push({
+            id: 'low-stock',
+            type: 'warning',
+            title: 'Low Stock Alert',
+            message: `${lowStock.length} products are running low on stock`,
+            timestamp: new Date(),
+            read: false,
+            action: { label: 'View Inventory', link: '/inventory' },
+          })
+        }
+
+        // Out of stock alert
+        const outOfStock = await (window as any).api?.inventory?.getOutOfStock?.()
+        if (outOfStock?.length > 0) {
+          newNotifications.push({
+            id: 'out-of-stock',
+            type: 'error',
+            title: 'Out of Stock',
+            message: `${outOfStock.length} products are out of stock`,
+            timestamp: new Date(),
+            read: false,
+            action: { label: 'Restock Now', link: '/inventory' },
+          })
+        }
+
+        // Daily sales summary
+        const today = new Date(); today.setHours(0, 0, 0, 0)
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
+        const todaySales = await (window as any).api?.['search:finance']?.({
+          startDate: today.toISOString(),
+          endDate: tomorrow.toISOString(),
         })
-      }
+        if (todaySales?.currentMetrics?.transactions > 0) {
+          newNotifications.push({
+            id: 'daily-sales',
+            type: 'success',
+            title: 'Daily Sales Update',
+            message: `${todaySales.currentMetrics.transactions} sales today totaling $${todaySales.currentMetrics.revenue.toFixed(2)}`,
+            timestamp: new Date(),
+            read: false,
+            action: { label: 'View Details', link: '/finance' },
+          })
+        }
 
-      // Out of stock notifications
-      // @ts-ignore
-      const outOfStock = await window.api?.inventory?.getOutOfStock()
-      if (outOfStock && outOfStock.length > 0) {
-        newNotifications.push({
-          id: 'out-of-stock',
-          type: 'error',
-          title: 'Out of Stock',
-          message: `${outOfStock.length} products are out of stock`,
-          timestamp: new Date(),
-          read: false,
-          action: {
-            label: 'Restock Now',
-            link: '/inventory'
-          }
-        })
-      }
-
-      // Today's sales notification
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today)
-      tomorrow.setDate(tomorrow.getDate() + 1)
-
-      // @ts-ignore
-      const todaySales = await window.api['search:finance']({
-        startDate: today.toISOString(),
-        endDate: tomorrow.toISOString()
-      })
-
-      if (todaySales && todaySales.currentMetrics.transactions > 0) {
-        newNotifications.push({
-          id: 'daily-sales',
-          type: 'success',
-          title: 'Daily Sales Update',
-          message: `${todaySales.currentMetrics.transactions} sales today totaling $${todaySales.currentMetrics.revenue.toFixed(2)}`,
-          timestamp: new Date(),
-          read: false,
-          action: {
-            label: 'View Details',
-            link: '/finance'
-          }
-        })
-      }
-
-      // Payment reminders and overdue notifications
-      // @ts-ignore
-      const [upcomingReminders, overdueItems] = await Promise.all([
-        window.api?.installments?.getUpcomingReminders(7),
-        window.api?.installments?.getOverdue()
-      ])
-
-      // Upcoming payment reminders
-      if (upcomingReminders && upcomingReminders.length > 0) {
-        upcomingReminders.slice(0, 3).forEach((reminder: any) => {
+        // Upcoming & overdue installment payments
+        const [upcomingReminders, overdueItems] = await Promise.all([
+          (window as any).api?.installments?.getUpcomingReminders?.(7),
+          (window as any).api?.installments?.getOverdue?.(),
+        ])
+        upcomingReminders?.slice(0, 3).forEach((reminder: any) => {
           newNotifications.push({
             id: `reminder-${reminder.id}`,
             type: 'warning',
@@ -123,17 +108,10 @@ export default function NotificationCenter() {
             message: `$${reminder.amount.toFixed(2)} due on ${new Date(reminder.dueDate).toLocaleDateString()} for ${reminder.customer?.name || 'Customer'}`,
             timestamp: new Date(),
             read: false,
-            action: {
-              label: 'View Installments',
-              link: '/sales?tab=installments'
-            }
+            action: { label: 'View Installments', link: '/sales?tab=installments' },
           })
         })
-      }
-
-      // Overdue payment notifications
-      if (overdueItems && overdueItems.length > 0) {
-        overdueItems.slice(0, 3).forEach((item: any) => {
+        overdueItems?.slice(0, 3).forEach((item: any) => {
           newNotifications.push({
             id: `overdue-${item.id}`,
             type: 'error',
@@ -141,10 +119,7 @@ export default function NotificationCenter() {
             message: `$${item.amount.toFixed(2)} was due on ${new Date(item.dueDate).toLocaleDateString()} for ${item.customer?.name || 'Customer'}`,
             timestamp: new Date(),
             read: false,
-            action: {
-              label: 'View Installments',
-              link: '/sales?tab=installments'
-            }
+            action: { label: 'View Installments', link: '/sales?tab=installments' },
           })
         })
       }

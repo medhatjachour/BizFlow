@@ -12,6 +12,7 @@ import { Check, RefreshCw, Power, PowerOff, ChevronDown, ChevronUp, Database } f
 
 /** Map of module id → build-time flag. Only bundled plugins are shown. */
 const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
+  commerce:   typeof __PLUGIN_COMMERCE__   !== 'undefined' && __PLUGIN_COMMERCE__,
   bakery:     typeof __PLUGIN_BAKERY__     !== 'undefined' && __PLUGIN_BAKERY__,
   restaurant: typeof __PLUGIN_RESTAURANT__ !== 'undefined' && __PLUGIN_RESTAURANT__,
   warehouse:  typeof __PLUGIN_WAREHOUSE__  !== 'undefined' && __PLUGIN_WAREHOUSE__,
@@ -19,6 +20,12 @@ const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
 }
 
 const COLOR_MAP: Record<string, { ring: string; bg: string; icon: string; badge: string }> = {
+  indigo: {
+    ring:  'border-indigo-300  dark:border-indigo-700',
+    bg:    'bg-indigo-50        dark:bg-indigo-900/20',
+    icon:  'bg-indigo-100      dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300',
+    badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+  },
   amber: {
     ring:  'border-amber-300  dark:border-amber-700',
     bg:    'bg-amber-50        dark:bg-amber-900/20',

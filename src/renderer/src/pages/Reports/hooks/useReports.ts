@@ -14,10 +14,13 @@ import {
   ReportType,
   formatCurrency
 } from '../types';
+import { useDashboardWorker } from '../../../hooks/useDashboardWorker';
+import type { TrendsResult, HeatmapResult } from '../../../hooks/useDashboardWorker';
 
 export const useReports = () => {
   const { error, success } = useToast();
   const { t } = useLanguage();
+  const { compute } = useDashboardWorker();
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -31,6 +34,9 @@ export const useReports = () => {
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [totalPiecesSold, setTotalPiecesSold] = useState(0);
   const [selectedReceipt, setSelectedReceipt] = useState<any>(null);
+  const [weeklyData, setWeeklyData] = useState<{ day: string; revenue: number; label: string }[]>([]);
+  const [trendResult, setTrendResult] = useState<TrendsResult | null>(null);
+  const [heatmapResult, setHeatmapResult] = useState<HeatmapResult | null>(null);
   const [reportForm, setReportForm] = useState<ReportFormState>({
     reportType: null,
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -48,8 +54,56 @@ export const useReports = () => {
     loadAllData();
   }, []);
 
+  const loadWeeklyTrend = async () => {
+    try {
+      const days: { start: Date; end: Date; day: string; label: string }[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const start = new Date(d); start.setHours(0, 0, 0, 0);
+        const end = new Date(d); end.setHours(23, 59, 59, 999);
+        days.push({
+          start, end,
+          day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+          label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        });
+      }
+
+      const results = await Promise.allSettled(
+        days.map(({ start, end }) =>
+          window.api.saleTransactions.getByDateRange({
+            startDate: start.toISOString(),
+            endDate: end.toISOString()
+          })
+        )
+      );
+
+      const revenues = results.map(r => {
+        if (r.status !== 'fulfilled') return 0;
+        return (r.value as any[]).reduce((sum: number, s: any) => {
+          const refunded = calculateRefundedAmount(s.items || []);
+          return sum + (s.subtotal ?? s.total) - refunded;
+        }, 0);
+      });
+
+      setWeeklyData(days.map((d, i) => ({ day: d.day, label: d.label, revenue: revenues[i] })));
+
+      const trend = await compute<TrendsResult>('COMPUTE_TRENDS', { values: revenues, labels: days.map(d => d.day) });
+      if (trend) setTrendResult(trend);
+
+      const todayRev = revenues[6];
+      const yestRev = revenues[5];
+      const pctChange = yestRev > 0
+        ? parseFloat(((todayRev - yestRev) / yestRev * 100).toFixed(1))
+        : todayRev > 0 ? 100 : 0;
+      setTodayStats(prev => prev ? { ...prev, revenueChange: pctChange } : prev);
+    } catch (err) {
+      logger.error('Failed to load weekly trend:', err);
+    }
+  };
+
   const loadAllData = async () => {
-    await Promise.all([loadTodayStats(), loadActivityFeed()]);
+    await Promise.all([loadTodayStats(), loadActivityFeed(), loadWeeklyTrend()]);
   };
 
   const handleRefresh = async () => {
@@ -118,8 +172,8 @@ export const useReports = () => {
         cashInSafe,
         salesCount: salesData.length,
         expensesCount: financeData.filter((t: any) => t.type === 'expense').length,
-        topProduct: 'Product X', // TODO: calculate from sales data
-        revenueChange: 12.5 // TODO: calculate vs yesterday
+        topProduct: '',
+        revenueChange: 0
       });
     } catch (err) {
       logger.error('Failed to load today stats:', err);
@@ -245,6 +299,13 @@ export const useReports = () => {
       });
 
       setActivityFeed(activities.slice(0, 10));
+
+      // Compute hourly sales heatmap
+      if (salesData.length > 0) {
+        const timestamps = salesData.map((s: any) => s.createdAt as string);
+        const hmap = await compute<HeatmapResult>('COMPUTE_HEATMAP', { timestamps });
+        if (hmap) setHeatmapResult(hmap);
+      }
     } catch (err) {
       logger.error('Failed to load activity feed:', err);
     }
@@ -471,6 +532,9 @@ export const useReports = () => {
     refreshing,
     todayStats,
     activityFeed,
+    weeklyData,
+    trendResult,
+    heatmapResult,
     reportData,
     showPreview,
     expandedSales,

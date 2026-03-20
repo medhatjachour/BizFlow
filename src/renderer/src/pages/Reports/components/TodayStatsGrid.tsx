@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, TrendingDown, TrendingUp, ShoppingCart, Package, Plus, ArrowUpRight, HelpCircle, Wallet } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, ShoppingCart, Package, Plus, ArrowUpRight, ArrowDownRight, HelpCircle, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TodayStats, ItemSummary, formatCurrency } from '../types';
 
@@ -47,9 +47,9 @@ const TodayStatsGrid: React.FC<TodayStatsGridProps> = ({
             {todayStats ? formatCurrency(todayStats.revenue) : '$0.00'}
           </p>
           <div className="flex flex-col gap-0.5 mt-1">
-            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-              <ArrowUpRight size={14} />
-              <span>{todayStats?.revenueChange || 0}% {t('vsYesterday')}</span>
+            <div className={`flex items-center gap-1 text-xs ${(todayStats?.revenueChange ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+              {(todayStats?.revenueChange ?? 0) >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+              <span>{Math.abs(todayStats?.revenueChange ?? 0)}% {t('vsYesterday')}</span>
             </div>
             <p className="text-xs text-slate-500">
               {todayStats ? formatCurrency(todayStats.revenueWithTax) : '$0.00'} with tax

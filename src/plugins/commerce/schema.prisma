@@ -1,0 +1,27 @@
+// ─── Commerce Plugin – Schema ─────────────────────────────────────────────
+// Module: commerce
+// Status: Active
+// Models: Category, Product, ProductVariant, ProductImage, ProductAttribute,
+//         Store, SaleTransaction, SaleItem, StockMovement,
+//         Supplier, SupplierProduct, PurchaseOrder, PurchaseOrderItem,
+//         InstallmentPlan, Installment, Deposit
+//
+// ── CURRENT STATE ────────────────────────────────────────────────────────
+// Commerce models are currently defined in the main  prisma/schema.prisma
+// because they were part of the original kernel before the plugin system.
+// This file is a placeholder — the models ARE managed, just not yet here.
+//
+// ── MIGRATION PLAN (future) ──────────────────────────────────────────────
+// Moving the models here requires:
+//   1. Cut all commerce models from prisma/schema.prisma into this file.
+//   2. Add 'commerce' to scripts/merge-schemas.js (already done — see below).
+//   3. Ensure merge order: commerce MUST be merged BEFORE bakery/warehouse,
+//      since bakery's Recipe.outputProductId and warehouse's WarehouseStock.productId
+//      reference Product which lives here.
+//   4. Update ensureCommerceSchema() in migrate.ts to check table existence
+//      and run `prisma db push --schema=prisma/merged.prisma` when needed.
+//   5. The main prisma/schema.prisma becomes a lean kernel schema:
+//        User, Customer, Employee (+ sub-models), FinancialTransaction, Expense.
+//   6. Run: npm run prisma:generate  (after moving models)
+//
+// ─────────────────────────────────────────────────────────────────────────

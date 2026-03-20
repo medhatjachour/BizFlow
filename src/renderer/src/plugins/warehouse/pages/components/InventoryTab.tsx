@@ -34,7 +34,7 @@ export default function InventoryTab() {
     setLoading(true); setError('')
     try {
       if (showLow) setLowStock(await window.api.warehouse.getLowStock())
-      else setStock(await window.api.warehouse.getStock({ locationId: selectedLocation }))
+      else setStock(await window.api.warehouse.getStock(selectedLocation))
     } catch { setError(t('warehouseLoadStockFailed')) }
     finally { setLoading(false) }
   }

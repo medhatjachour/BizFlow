@@ -109,4 +109,88 @@ export function registerStatsHandlers(prisma: any) {
       outstanding: totalCharged - totalPaid
     }
   })
+
+  // ─── Full Trend (sessions + revenue per day) ──────────────────────────
+  ipcMain.handle('clinic:stats:fullTrend', async (_e, days = 30) => {
+    const from = new Date()
+    from.setDate(from.getDate() - (days - 1))
+    from.setHours(0, 0, 0, 0)
+
+    const sessions = await prisma.clinicSession.findMany({
+      where: { visitDate: { gte: from } },
+      select: { visitDate: true, amountCharged: true, amountPaid: true }
+    })
+
+    const map: Record<string, { sessions: number; charged: number; paid: number }> = {}
+    for (let i = 0; i < days; i++) {
+      const d = new Date(from)
+      d.setDate(from.getDate() + i)
+      map[d.toISOString().slice(0, 10)] = { sessions: 0, charged: 0, paid: 0 }
+    }
+    for (const s of sessions) {
+      const key = new Date(s.visitDate).toISOString().slice(0, 10)
+      if (key in map) {
+        map[key].sessions++
+        map[key].charged += s.amountCharged ?? 0
+        map[key].paid += s.amountPaid ?? 0
+      }
+    }
+
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, v]) => ({ date, ...v }))
+  })
+
+  // ─── Monthly Trend (last N months) ───────────────────────────────────
+  ipcMain.handle('clinic:stats:monthlyTrend', async (_e, months = 6) => {
+    const now = new Date()
+    const from = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
+
+    const sessions = await prisma.clinicSession.findMany({
+      where: { visitDate: { gte: from } },
+      select: { visitDate: true, amountPaid: true }
+    })
+
+    const map: Record<string, { sessions: number; revenue: number }> = {}
+    for (let i = 0; i < months; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - (months - 1) + i, 1)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      map[key] = { sessions: 0, revenue: 0 }
+    }
+    for (const s of sessions) {
+      const d = new Date(s.visitDate)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      if (key in map) {
+        map[key].sessions++
+        map[key].revenue += s.amountPaid ?? 0
+      }
+    }
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => ({
+        month: monthNames[parseInt(month.split('-')[1]) - 1],
+        ...v
+      }))
+  })
+
+  // ─── Breakdowns (visit types + payment statuses) ──────────────────────
+  ipcMain.handle('clinic:stats:breakdowns', async () => {
+    const [vtGroups, psGroups] = await Promise.all([
+      prisma.clinicSession.groupBy({
+        by: ['visitType'],
+        _count: { visitType: true }
+      }),
+      prisma.clinicSession.groupBy({
+        by: ['paymentStatus'],
+        _count: { paymentStatus: true }
+      })
+    ])
+
+    return {
+      visitTypes: vtGroups.map((g: any) => ({ type: g.visitType as string, count: g._count.visitType })),
+      paymentStatuses: psGroups.map((g: any) => ({ status: g.paymentStatus as string, count: g._count.paymentStatus }))
+    }
+  })
 }

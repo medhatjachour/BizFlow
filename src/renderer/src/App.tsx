@@ -27,19 +27,19 @@ import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
 const Dashboard    = lazy(() => import('./pages/Dashboard/index'))
 const Login        = lazy(() => import('./pages/login'))
 const Finance      = lazy(() => import('./pages/Finance/index'))
-const Products     = lazy(() => import('./pages/Products/index'))
+const Products     = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Products/index')) : null
 const Settings     = lazy(() => import('./pages/Settings/index'))
-const POS          = lazy(() => import('./pages/POS/index'))
-const Inventory    = lazy(() => import('./pages/Inventory/index'))
+const POS          = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/POS/index')) : null
+const Inventory    = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Inventory/index')) : null
 const Expenses     = lazy(() => import('./pages/Expenses/index'))
-const Sales        = lazy(() => import('./pages/Sales'))
-const Stores       = lazy(() => import('./pages/Stores'))
+const Sales        = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Sales')) : null
+const Stores       = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Stores')) : null
 const Employees    = lazy(() => import('./pages/Employees/index'))
 const EmployeeProfile = lazy(() => import('./pages/Employees/EmployeeProfile'))
 const Customers    = lazy(() => import('./pages/Customers/Customers'))
 const CustomerProfile = lazy(() => import('./pages/Customers/CustomerProfile'))
 const Reports      = lazy(() => import('./pages/Reports/Reports'))
-const Installments = lazy(() => import('./pages/Installments'))
+const Installments = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Installments')) : null
 const Bakery       = __PLUGIN_BAKERY__ ? lazy(() => import('./plugins/bakery/pages/index')) : null
 const Restaurant   = __PLUGIN_RESTAURANT__ ? lazy(() => import('./plugins/restaurant/pages/index')) : null
 const Warehouse    = __PLUGIN_WAREHOUSE__ ? lazy(() => import('./plugins/warehouse/pages/index')) : null
@@ -82,6 +82,7 @@ function RouteErrorBoundary({ name, children }: { name: string; children: ReactN
 
 function AppContent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
   const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
@@ -116,62 +117,84 @@ function AppContent() {
               </RequireAuth>
             }
           />
-          <Route
-            path="/sales"
-            element={
-              <RequireAuth>
-                <RootLayoutWrapper>
-                  <RouteErrorBoundary name="Sales"><Sales /></RouteErrorBoundary>
-                </RootLayoutWrapper>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <RequireAuth>
-                <RootLayoutWrapper>
-                  <RouteErrorBoundary name="Inventory"><Inventory /></RouteErrorBoundary>
-                </RootLayoutWrapper>
-              </RequireAuth>
-            }
-          />
+          {__PLUGIN_COMMERCE__ && commerceEnabled && Sales && (
+            <Route
+              path="/sales"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Sales"><Sales /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_COMMERCE__ && commerceEnabled && Inventory && (
+            <Route
+              path="/inventory"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Inventory"><Inventory /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_COMMERCE__ && commerceEnabled && Stores && (
+            <Route
+              path="/stores"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Stores"><Stores /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_COMMERCE__ && commerceEnabled && Products && (
+            <Route
+              path="/products"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Products"><Products /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_COMMERCE__ && commerceEnabled && POS && (
+            <Route
+              path="/pos"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="POS"><POS /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_COMMERCE__ && commerceEnabled && Installments && (
+            <Route
+              path="/installments"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Installments"><Installments /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
           <Route
             path="/finance"
             element={
               <RequireAuth>
                 <RootLayoutWrapper>
                   <RouteErrorBoundary name="Finance"><Finance /></RouteErrorBoundary>
-                </RootLayoutWrapper>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/stores"
-            element={
-              <RequireAuth>
-                <RootLayoutWrapper>
-                  <RouteErrorBoundary name="Stores"><Stores /></RouteErrorBoundary>
-                </RootLayoutWrapper>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/products"
-            element={
-              <RequireAuth>
-                <RootLayoutWrapper>
-                  <RouteErrorBoundary name="Products"><Products /></RouteErrorBoundary>
-                </RootLayoutWrapper>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/pos"
-            element={
-              <RequireAuth>
-                <RootLayoutWrapper>
-                  <RouteErrorBoundary name="POS"><POS /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }
@@ -232,16 +255,6 @@ function AppContent() {
               <RequireAuth>
                 <RootLayoutWrapper>
                   <RouteErrorBoundary name="Expenses"><Expenses /></RouteErrorBoundary>
-                </RootLayoutWrapper>
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/installments"
-            element={
-              <RequireAuth>
-                <RootLayoutWrapper>
-                  <RouteErrorBoundary name="Installments"><Installments /></RouteErrorBoundary>
                 </RootLayoutWrapper>
               </RequireAuth>
             }

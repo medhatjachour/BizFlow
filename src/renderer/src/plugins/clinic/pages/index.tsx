@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Stethoscope, Users, ClipboardList, BarChart3, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle } from 'lucide-react'
+import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import PatientFormModal from './components/PatientFormModal'
 import SessionFormModal from './components/SessionFormModal'
 import SessionsTab from './components/SessionsTab'
 import StatsTab from './components/StatsTab'
+import AppointmentsTab from './components/AppointmentsTab'
 
-type Tab = 'patients' | 'sessions' | 'stats'
+type Tab = 'patients' | 'sessions' | 'stats' | 'appointments'
 
 export interface Patient {
   id: string
@@ -325,9 +326,10 @@ export default function ClinicPage() {
   const [activeTab, setActiveTab] = useState<Tab>('patients')
 
   const tabs: { key: Tab; label: string; Icon: React.ElementType }[] = [
-    { key: 'patients', label: t('clinicPatients'), Icon: Users },
-    { key: 'sessions', label: t('clinicSessions'), Icon: ClipboardList },
-    { key: 'stats', label: t('clinicStats'), Icon: BarChart3 }
+    { key: 'patients',     label: t('clinicPatients'),     Icon: Users },
+    { key: 'sessions',     label: t('clinicSessions'),     Icon: ClipboardList },
+    { key: 'stats',        label: t('clinicStats'),        Icon: BarChart3 },
+    { key: 'appointments', label: t('clinicAppointments'), Icon: CalendarClock },
   ]
 
   return (
@@ -363,9 +365,10 @@ export default function ClinicPage() {
 
       {/* Tab content */}
       <div className="flex-1 min-h-0">
-        {activeTab === 'patients' && <PatientsTab />}
-        {activeTab === 'sessions' && <SessionsTab />}
-        {activeTab === 'stats' && <StatsTab />}
+        {activeTab === 'patients'     && <PatientsTab />}
+        {activeTab === 'sessions'     && <SessionsTab />}
+        {activeTab === 'stats'        && <StatsTab />}
+        {activeTab === 'appointments' && <AppointmentsTab />}
       </div>
     </div>
   )
