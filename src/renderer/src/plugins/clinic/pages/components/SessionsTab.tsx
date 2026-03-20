@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -63,6 +63,81 @@ const paymentMethodIcons: Record<string, React.ElementType> = {
   other:     DollarSign
 }
 
+const statusOptions: { value: string; icon: React.ElementType; cls: string }[] = [
+  { value: 'completed', icon: CheckCircle2, cls: statusColors.completed },
+  { value: 'active',    icon: Clock,        cls: statusColors.active },
+  { value: 'cancelled', icon: XCircle,      cls: statusColors.cancelled }
+]
+
+function StatusDropdown({ status, onChange, disabled }: {
+  status: string
+  onChange: (s: string) => void
+  disabled?: boolean
+}) {
+  const { t } = useLanguage()
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleOut(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleOut)
+    return () => document.removeEventListener('mousedown', handleOut)
+  }, [open])
+
+  const current = statusOptions.find(o => o.value === status)
+  const CurrentIcon = current?.icon ?? MinusCircle
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        disabled={disabled}
+        onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
+        className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium transition-all ${
+          statusColors[status] ?? ''
+        } ${
+          disabled
+            ? 'opacity-60 cursor-not-allowed'
+            : 'hover:opacity-80 cursor-pointer ring-offset-1 hover:ring-2 hover:ring-current/30'
+        }`}
+      >
+        <CurrentIcon className="h-3 w-3" />
+        {t(status as any)}
+        <ChevronDown className="h-2.5 w-2.5 opacity-60" />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-1.5 left-0 min-w-[148px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+          {statusOptions.map(opt => {
+            const Icon = opt.icon
+            const isActive = opt.value === status
+            return (
+              <button
+                key={opt.value}
+                onClick={(e) => { e.stopPropagation(); setOpen(false); if (!isActive) onChange(opt.value) }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'bg-slate-50 dark:bg-slate-700/60'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
+                }`}
+              >
+                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${opt.cls}`}>
+                  <Icon className="h-3 w-3" />
+                  {t(opt.value as any)}
+                </span>
+                {isActive && (
+                  <CheckCircle2 className="ml-auto h-3.5 w-3.5 text-teal-500 flex-shrink-0" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function parseVitals(raw?: string | null): Record<string, string> {
   if (!raw) return {}
   try { return JSON.parse(raw) } catch { return {} }
@@ -81,10 +156,12 @@ const vitalLabels: Record<string, string> = {
   bp: 'BP', temp: 'Temp', weight: 'Wt', height: 'Ht', pulse: 'Pulse', o2sat: 'O₂'
 }
 
-function SessionCard({ session, onEdit, onDelete }: {
+function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating }: {
   session: Session
   onEdit: (s: Session) => void
   onDelete: (id: string) => void
+  onStatusChange: (id: string, status: string) => void
+  statusUpdating: boolean
 }) {
   const { t } = useLanguage()
   const [expanded, setExpanded] = useState(false)
@@ -119,9 +196,11 @@ function SessionCard({ session, onEdit, onDelete }: {
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${visitTypeCfg.cls}`}>
               {t(session.visitType as any) ?? visitTypeCfg.label}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColors[session.status] ?? ''}`}>
-              {t(session.status as any)}
-            </span>
+            <StatusDropdown
+              status={session.status}
+              onChange={(s) => onStatusChange(session.id, s)}
+              disabled={statusUpdating}
+            />
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
             <span>{new Date(session.visitDate).toLocaleDateString()}</span>
@@ -276,6 +355,7 @@ export default function SessionsTab() {
   const [filter, setFilter] = useState<FilterType>('today')
   const [showNewSession, setShowNewSession] = useState(false)
   const [editSession, setEditSession] = useState<Session | null>(null)
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -290,6 +370,19 @@ export default function SessionsTab() {
   }, [filter, showToast, t])
 
   useEffect(() => { load() }, [load])
+
+  async function handleStatusChange(id: string, newStatus: string) {
+    setUpdatingStatusId(id)
+    try {
+      await window.api.clinic.sessions.update(id, { status: newStatus })
+      setSessions(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s))
+      showToast('success', t('updatedSuccessfully'))
+    } catch {
+      showToast('error', t('errorUpdatingRecord'))
+    } finally {
+      setUpdatingStatusId(null)
+    }
+  }
 
   async function handleDelete(id: string) {
     if (!confirm(t('confirmDelete'))) return
@@ -385,6 +478,8 @@ export default function SessionsTab() {
               session={s}
               onEdit={setEditSession}
               onDelete={handleDelete}
+              onStatusChange={handleStatusChange}
+              statusUpdating={updatingStatusId === s.id}
             />
           ))}
         </div>
