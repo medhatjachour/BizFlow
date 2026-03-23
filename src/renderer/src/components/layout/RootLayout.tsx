@@ -307,7 +307,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
                   {t((navItems.find(item => item.href === location.pathname)?.translationKey || 'dashboard') as any)}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-                  Point of Sale Management System
+                   Management System
                 </p>
               </div>
             </div>

@@ -21,6 +21,7 @@ import {
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useDisplaySettings as useDisplaySettingsContext } from '../../contexts/DisplaySettingsContext'
+import { useModuleEnabled } from '../../hooks/useModuleEnabled'
 import { useSettings } from './useSettings'
 import GeneralSettings from './GeneralSettings'
 import DisplaySettings from './DisplaySettings'
@@ -40,6 +41,7 @@ export default function Settings() {
   const { theme, setTheme, actualTheme } = useTheme()
   const { language, setLanguage, t } = useLanguage()
   const { updateSettings: updateDisplaySettingsContext } = useDisplaySettingsContext()
+  const clinicEnabled = useModuleEnabled('clinic')
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
   const [saveSuccess, setSaveSuccess] = useState(false)
 
@@ -63,7 +65,7 @@ export default function Settings() {
     updateDisplaySettingsContext(newSettings)
   }
 
-  const tabs = [
+  const allTabs = [
     { id: 'general' as SettingsTab, name: t('general'), icon: SettingsIcon },
     { id: 'display' as SettingsTab, name: t('display'), icon: Monitor },
     { id: 'categories' as SettingsTab, name: t('categories'), icon: Tag },
@@ -76,6 +78,11 @@ export default function Settings() {
     { id: 'archive' as SettingsTab, name: t('archive'), icon: Archive },
     { id: 'modules' as SettingsTab, name: 'Modules', icon: Puzzle },
   ]
+
+  const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup']
+  const tabs = clinicEnabled
+    ? allTabs.filter(tab => CLINIC_TABS.includes(tab.id))
+    : allTabs
 
   const handleSave = () => {
     try {

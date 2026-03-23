@@ -5,6 +5,7 @@ import ExpenseFilters from './components/ExpenseFilters'
 import ExpenseCharts from './components/ExpenseCharts'
 import ExpenseTable from './components/ExpenseTable'
 import ExpenseModal from './components/ExpenseModal'
+import PayrollBreakdown from './components/PayrollBreakdown'
 
 export default function Expenses() {
   const s = useExpenses()
@@ -53,6 +54,10 @@ export default function Expenses() {
         totalCOGS={s.totalCOGS}
         totalExpenses={s.totalExpenses}
         totalSalaries={s.totalSalaries}
+        totalBaseSalary={s.totalBaseSalary}
+        totalOvertimePay={s.totalOvertimePay}
+        totalExtraShiftPay={s.totalExtraShiftPay}
+        totalGrossPay={s.totalGrossPay}
         totalWithSalaries={s.totalWithSalaries}
         expenseCount={s.filteredExpenses.length}
         employeeCount={s.employeeCount}
@@ -92,6 +97,8 @@ export default function Expenses() {
           t={s.t}
         />
       </div>
+
+      <PayrollBreakdown payrollDetails={s.payrollDetails} />
 
       {s.showModal && (
         <ExpenseModal

@@ -5,6 +5,10 @@ interface Props {
   totalCOGS: number
   totalExpenses: number
   totalSalaries: number
+  totalBaseSalary: number
+  totalOvertimePay: number
+  totalExtraShiftPay: number
+  totalGrossPay: number
   totalWithSalaries: number
   expenseCount: number
   employeeCount: number
@@ -17,6 +21,10 @@ export default function SummaryCards({
   totalCOGS,
   totalExpenses,
   totalSalaries,
+  totalBaseSalary,
+  totalOvertimePay,
+  totalExtraShiftPay,
+  totalGrossPay,
   totalWithSalaries,
   expenseCount,
   employeeCount,
@@ -62,6 +70,7 @@ export default function SummaryCards({
         </p>
       </div>
 
+      {/* Enhanced payroll card */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('employeeSalaries')}</h3>
@@ -69,8 +78,23 @@ export default function SummaryCards({
             <Users size={20} className="text-purple-600 dark:text-purple-400" />
           </div>
         </div>
-        <p className="text-3xl font-bold text-slate-900 dark:text-white">${totalSalaries.toFixed(2)}</p>
-        <p className="text-sm text-slate-500 mt-1">{employeeCount} {t('expenseEmployees')}</p>
+        <p className="text-2xl font-bold text-slate-900 dark:text-white">
+          ${(totalGrossPay > 0 ? totalGrossPay : totalSalaries).toFixed(2)}
+        </p>
+        <div className="mt-2 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+          {totalBaseSalary > 0 && (
+            <p>Base: <span className="font-medium text-slate-700 dark:text-slate-300">${totalBaseSalary.toFixed(2)}</span></p>
+          )}
+          {totalOvertimePay > 0 && (
+            <p>Overtime: <span className="font-medium text-amber-600 dark:text-amber-400">+${totalOvertimePay.toFixed(2)}</span></p>
+          )}
+          {totalExtraShiftPay > 0 && (
+            <p>Extra shifts: <span className="font-medium text-cyan-600 dark:text-cyan-400">+${totalExtraShiftPay.toFixed(2)}</span></p>
+          )}
+          {totalGrossPay === 0 && (
+            <p>{employeeCount} {t('expenseEmployees')}</p>
+          )}
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">

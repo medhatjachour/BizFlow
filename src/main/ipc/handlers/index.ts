@@ -98,14 +98,44 @@ try {
         await prisma.$queryRawUnsafe('PRAGMA foreign_keys = ON;')
         await prisma.$queryRawUnsafe('PRAGMA optimize;')
         log.info('[Database] ✅ SQLite PRAGMAs applied')
+
+        // ── Orphan table cleanup ──────────────────────────────────────────────
+        // Drop tables left behind by a previous build that had more plugins
+        // (e.g. a user upgrading from a full build to a clinic-only build).
+        // Non-fatal: wrapped in its own try/catch.
+        try {
+          const EXPECTED = new Set<string>([
+            'User', 'FinancialTransaction',
+            'Employee', 'EmployeeAttendance', 'EmployeeDocument',
+            'EmployeeActivityLog', 'EmployeePayroll', 'EmployeeShift', 'EmployeeOvertime',
+            'EmailReport',
+          ])
+          if (__PLUGIN_COMMERCE__)    ['Category','Product','ProductImage','ProductVariant','ProductAttribute','VariantAttributeValue','StockMovement','Store','Customer','SaleTransaction','SaleItem','Deposit','Installment','InstallmentPlan','ReceiptTemplate','Supplier','SupplierProduct','PurchaseOrder','PurchaseOrderItem'].forEach(t => EXPECTED.add(t))
+          if (__PLUGIN_BAKERY__)      ['Recipe','RecipeIngredient','ProductionBatch','PantryIngredient','WasteLog','ProductionSchedule'].forEach(t => EXPECTED.add(t))
+          if (__PLUGIN_RESTAURANT__)  ['RestaurantTable','TableReservation','MenuItem','DineInOrder','DineInOrderItem'].forEach(t => EXPECTED.add(t))
+          if (__PLUGIN_WAREHOUSE__)   ['WarehouseLocation','WarehouseStock','StockTransfer','StockTransferItem'].forEach(t => EXPECTED.add(t))
+          if (__PLUGIN_CLINIC__)      ['ClinicPatient','ClinicSession','ClinicPrescription','ClinicCheckResult','ClinicAppointment','ClinicExpense','ClinicStaff','ClinicSalaryRecord'].forEach(t => EXPECTED.add(t))
+          const allTables: { name: string }[] = await prisma.$queryRawUnsafe(
+            `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+          )
+          const orphans = allTables.map((r: { name: string }) => r.name).filter(t => !EXPECTED.has(t))
+          if (orphans.length > 0) {
+            log.info(`[Database] 🧹 Dropping ${orphans.length} orphan table(s): ${orphans.join(', ')}`)
+            for (const table of orphans) {
+              await prisma.$queryRawUnsafe(`DROP TABLE IF EXISTS "${table}"`)
+            }
+            log.info('[Database] ✅ Orphan tables removed')
+          }
+        } catch (cleanupErr) {
+          log.warn('[Database] Orphan table cleanup failed (non-fatal):', cleanupErr)
+        }
       } catch (e) {
         log.error('[Database] Failed to apply SQLite PRAGMAs:', e)
       }
     })()
 
-    // Auto-seed on first connection (production only)
-    const isProd = process.env.NODE_ENV !== 'development'
-    if (isProd && !isSeeded) {
+    // Auto-seed on first connection (always — ensures setup user exists in dev and prod)
+    if (!isSeeded) {
       // Defer seeding to avoid blocking app startup
       setTimeout(async () => {
         try {

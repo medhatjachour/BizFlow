@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -76,25 +77,80 @@ function StatusDropdown({ status, onChange, disabled }: {
 }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
     function handleOut(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (
+        triggerRef.current && triggerRef.current.contains(e.target as Node)
+      ) return
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
     document.addEventListener('mousedown', handleOut)
     return () => document.removeEventListener('mousedown', handleOut)
   }, [open])
 
+  function handleOpen(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 6,
+        left: rect.left,
+        zIndex: 9999,
+        minWidth: 148
+      })
+    }
+    setOpen(v => !v)
+  }
+
   const current = statusOptions.find(o => o.value === status)
   const CurrentIcon = current?.icon ?? MinusCircle
 
+  const dropdown = open ? (
+    <div
+      ref={dropdownRef}
+      style={dropdownStyle}
+      className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden"
+    >
+      {statusOptions.map(opt => {
+        const Icon = opt.icon
+        const isActive = opt.value === status
+        return (
+          <button
+            key={opt.value}
+            onClick={(e) => { e.stopPropagation(); setOpen(false); if (!isActive) onChange(opt.value) }}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${
+              isActive
+                ? 'bg-slate-50 dark:bg-slate-700/60'
+                : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
+            }`}
+          >
+            <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${opt.cls}`}>
+              <Icon className="h-3 w-3" />
+              {t(opt.value as any)}
+            </span>
+            {isActive && (
+              <CheckCircle2 className="ml-auto h-3.5 w-3.5 text-teal-500 flex-shrink-0" />
+            )}
+          </button>
+        )
+      })}
+    </div>
+  ) : null
+
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={triggerRef}
         disabled={disabled}
-        onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
+        onClick={handleOpen}
         className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium transition-all ${
           statusColors[status] ?? ''
         } ${
@@ -107,33 +163,7 @@ function StatusDropdown({ status, onChange, disabled }: {
         {t(status as any)}
         <ChevronDown className="h-2.5 w-2.5 opacity-60" />
       </button>
-      {open && (
-        <div className="absolute z-50 top-full mt-1.5 left-0 min-w-[148px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
-          {statusOptions.map(opt => {
-            const Icon = opt.icon
-            const isActive = opt.value === status
-            return (
-              <button
-                key={opt.value}
-                onClick={(e) => { e.stopPropagation(); setOpen(false); if (!isActive) onChange(opt.value) }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-slate-50 dark:bg-slate-700/60'
-                    : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
-                }`}
-              >
-                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${opt.cls}`}>
-                  <Icon className="h-3 w-3" />
-                  {t(opt.value as any)}
-                </span>
-                {isActive && (
-                  <CheckCircle2 className="ml-auto h-3.5 w-3.5 text-teal-500 flex-shrink-0" />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
+      {createPortal(dropdown, document.body)}
     </div>
   )
 }

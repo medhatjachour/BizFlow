@@ -135,6 +135,8 @@ interface API {
     payroll: {
       upsert: (data: any) => Promise<any>
       getAll: (year: number) => Promise<any>
+      compute: (params: { employeeId: string; month: number; year: number; baseSalary?: number; extraShiftBonusPerShift?: number }) => Promise<any>
+      getSummary: (params: { startYear: number; startMonth: number; endYear: number; endMonth: number }) => Promise<{ employees: any[]; totals: any }>
     }
     activity: {
       add: (data: { employeeId: string; action: string; details?: string; performedBy?: string }) => Promise<any>
@@ -442,6 +444,39 @@ interface API {
       delete: (id: string) => Promise<any>
     }
     patients_exportPdf: (data: { patient: any; sessions: any[]; stats: any; checkResults: any[] }) => Promise<{ success: boolean }>
+    expenses: {
+      getAll: (params?: { period?: string; category?: string }) => Promise<any[]>
+      summary: (period?: string) => Promise<{
+        revenue: number; totalExpenses: number; totalSalaries: number; netIncome: number; outstanding: number
+        byCategory: Array<{ category: string; total: number }>
+      }>
+      breakdown: (params?: { period?: string; category?: string }) => Promise<Array<{ label: string; total: number }>>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<{ success: boolean }>
+    }
+    staff: {
+      getAll: () => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<{ success: boolean }>
+      salary: {
+        getAll: (params?: { staffId?: string; year?: number }) => Promise<any[]>
+        compute: (staffId: string, params: {
+          regularHours?: number; overtimeHours?: number; overtimeMultiplier?: number
+          doubleShiftCount?: number; doubleShiftBonus?: number; bonuses?: number; deductions?: number
+        }) => Promise<{
+          basePay: number; overtimePay: number; doubleShiftPay: number
+          bonuses: number; deductions: number; grossPay: number; netPay: number
+        }>
+        summary: (year?: number) => Promise<Array<{
+          month: number; label: string; totalPaid: number; totalPending: number; headcount: number
+        }>>
+        upsert: (data: any) => Promise<any>
+        markPaid: (id: string) => Promise<any>
+        delete: (id: string) => Promise<{ success: boolean }>
+      }
+    }
   }
 }
 

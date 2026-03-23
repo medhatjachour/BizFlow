@@ -137,6 +137,14 @@ export function useEmployeeProfile(id: string | undefined) {
     finally { setSavingPay(false) }
   }
 
+  const markPayrollPaid = async (recordId: string) => {
+    try {
+      const res = await ipc.employees.payroll.markPaid(recordId)
+      if (res?.success || res === undefined) { toast.success?.('Salary marked as paid'); load() }
+      else toast.error?.(res?.message || 'Failed to mark as paid')
+    } catch (err: any) { toast.error?.(err.message) }
+  }
+
   // ── Activity / note ───────────────────────────────────────────────────────
   const saveNote = async () => {
     if (!emp || !noteText.trim()) return
@@ -265,7 +273,7 @@ export function useEmployeeProfile(id: string | undefined) {
     showAttModal, setShowAttModal, attForm, setAttForm, savingAtt, saveAttendance,
     handleCheckIn, handleCheckOut, checkingIn, checkingOut, todayAtt, openAttendanceFor,
     // payroll
-    showPayModal, setShowPayModal, payForm, setPayForm, savingPay, savePayroll, netPay,
+    showPayModal, setShowPayModal, payForm, setPayForm, savingPay, savePayroll, markPayrollPaid, netPay,
     // note
     showNoteModal, setShowNoteModal, noteText, setNoteText, savingNote, saveNote,
     // shifts

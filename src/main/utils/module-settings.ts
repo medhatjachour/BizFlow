@@ -55,7 +55,7 @@ export function writeSettings(settings: BizFlowSettings): void {
 export function getEnabledModuleIds(): string[] {
   const settings = readSettings()
   // If no key exists yet, default to enabling the bakery module
-  return settings.enabledModules ?? ['bakery']
+  return settings.enabledModules ?? []
 }
 
 /** Enable or disable a module by ID. */

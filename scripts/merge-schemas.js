@@ -36,7 +36,15 @@ const MODULE_REGISTRY = {
   // commerce MUST be first — bakery/warehouse reference Product which lives here
   commerce: {
     file: 'schema.prisma',
-    injectFields: {}
+    // Inject back-relations into kernel User model when commerce is enabled
+    injectFields: {
+      User: [
+        '  deactivatedProducts     Product[]              @relation("ProductDeactivations") // Products this user has deactivated',
+        '  deactivatedCustomers    Customer[]             @relation("CustomerDeactivations") // Customers this user has deactivated',
+        '  saleTransactions        SaleTransaction[]      // New transaction-based sales',
+        '  stockMovements          StockMovement[]        // Inventory changes made by this user'
+      ]
+    }
   },
   bakery: {
     file: 'schema.prisma',  // path: src/plugins/bakery/schema.prisma
@@ -91,6 +99,13 @@ function resolveModules() {
     })
 }
 
+/** Plugin dependency map — when a plugin is enabled, these plugins are auto-included first. */
+const PLUGIN_DEPENDENCIES = {
+  bakery: ['commerce'],
+  restaurant: ['commerce'],
+  warehouse: ['commerce'],
+}
+
 /**
  * Inject cross-reference fields into a model block in the schema text.
  *
@@ -121,8 +136,15 @@ function main() {
   // 1. Read core schema
   let merged = fs.readFileSync(CORE_SCHEMA, 'utf8')
 
-  // 2. Determine enabled modules
-  const enabledModules = resolveModules()
+  // 2. Determine enabled modules (with auto-dependency expansion)
+  const rawModules = resolveModules()
+  const enabledModules = []
+  for (const m of rawModules) {
+    for (const dep of (PLUGIN_DEPENDENCIES[m] || [])) {
+      if (!enabledModules.includes(dep)) enabledModules.push(dep)
+    }
+    if (!enabledModules.includes(m)) enabledModules.push(m)
+  }
   console.log('   modules:', enabledModules.length ? enabledModules.join(', ') : '(none)')
 
   // 3. Process each module

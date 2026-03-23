@@ -100,3 +100,84 @@ model ClinicAppointment {
   @@index([appointmentDate])
   @@index([status])
 }
+
+// ─── Clinic Expenses ──────────────────────────────────────────────────────────
+// Clinic-specific operating costs. No "cost of goods" — categories are
+// tailored to a medical practice (rent, utilities, medical supplies, etc.)
+model ClinicExpense {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now())
+  // rent | utilities | medical_supplies | medications | equipment |
+  // maintenance | lab_fees | insurance | marketing | cleaning | salaries | other
+  category      String
+  description   String
+  amount        Float
+  vendor        String?  // Supplier / landlord / service provider
+  paymentMethod String   @default("cash") // cash | card | transfer | cheque
+  recurrence    String   @default("one_time") // one_time | weekly | monthly | yearly
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@index([recurrence])
+}
+
+// ─── Clinic Staff ─────────────────────────────────────────────────────────────
+// Clinic-specific staff (doctors, nurses, receptionists…).
+// Separate from the generic Employee module.
+model ClinicStaff {
+  id              String               @id @default(uuid())
+  name            String
+  role            String               // doctor | nurse | receptionist | technician | pharmacist | other
+  phone           String?
+  email           String?
+  employmentType  String               @default("full_time") // full_time | part_time | contract
+  status          String               @default("active")    // active | inactive
+  baseSalary      Float                @default(0)           // monthly amount for full_time/contract
+  salaryType      String               @default("monthly")   // monthly | hourly | daily
+  hourlyRate      Float?               // for part_time / hourly salary type
+  overtimeRate    Float                @default(1.5)         // multiplier  (1.5 = time-and-a-half)
+  doubleShiftRate Float                @default(0)           // extra flat pay per double shift
+  hireDate        DateTime             @default(now())
+  notes           String?
+  salaryRecords   ClinicSalaryRecord[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([name])
+  @@index([role])
+  @@index([status])
+}
+
+// ─── Clinic Salary Records ────────────────────────────────────────────────────
+// One record per staff member per month.
+// Supports full-time (fixed + OT), part-time (hours × rate + OT), contract,
+// double shifts, bonuses, and deductions.
+model ClinicSalaryRecord {
+  id                 String      @id @default(uuid())
+  staffId            String
+  staff              ClinicStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  month              Int         // 1–12
+  year               Int
+  baseSalary         Float       // snapshot of applicable rate for this period
+  regularHours       Float       @default(0)   // actual hours worked (part_time / hourly)
+  overtimeHours      Float       @default(0)
+  overtimeMultiplier Float       @default(1.5) // e.g. 1.5 or 2.0
+  doubleShiftCount   Int         @default(0)   // number of double shifts worked
+  doubleShiftBonus   Float       @default(0)   // flat bonus per double shift
+  bonuses            Float       @default(0)
+  deductions         Float       @default(0)
+  netPay             Float       // computed and stored for record-keeping
+  status             String      @default("pending") // pending | paid
+  paidDate           DateTime?
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@unique([staffId, month, year])
+  @@index([staffId])
+  @@index([year, month])
+  @@index([status])
+}

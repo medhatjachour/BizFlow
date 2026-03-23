@@ -1,14 +1,19 @@
-import { Plus, Search, Users, Filter } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Search, Users, Filter, DollarSign } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import Modal from '../../components/ui/Modal'
 import StatsBar from './components/StatsBar'
 import EmployeeCard from './components/EmployeeCard'
 import EmployeeForm from './components/EmployeeForm'
+import PayrollOverview from './components/PayrollOverview'
 import { useEmployees, DEPARTMENTS, ROLES } from './hooks/useEmployees'
+
+type TabView = 'team' | 'payroll'
 
 export default function Employees() {
   const { t } = useLanguage()
   const state = useEmployees()
+  const [view, setView] = useState<TabView>('team')
 
   return (
     <div className="p-6 space-y-6">
@@ -20,11 +25,43 @@ export default function Employees() {
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{t('empTrackTeam')}</p>
         </div>
-        <button onClick={state.openAdd} className="btn-primary flex items-center gap-2">
-          <Plus size={18} /> {t('addEmployee')}
+        {view === 'team' && (
+          <button onClick={state.openAdd} className="btn-primary flex items-center gap-2">
+            <Plus size={18} /> {t('addEmployee')}
+          </button>
+        )}
+      </div>
+
+      {/* Tab bar */}
+      <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit border border-slate-200 dark:border-slate-700">
+        <button
+          onClick={() => setView('team')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            view === 'team'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          <Users size={15} /> {t('empTeam') ?? 'Team'}
+        </button>
+        <button
+          onClick={() => setView('payroll')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            view === 'payroll'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          <DollarSign size={15} /> {t('empPayroll') ?? 'Payroll'}
         </button>
       </div>
 
+
+      {/* ── Payroll tab ─────────────────────────────────────────────── */}
+      {view === 'payroll' && <PayrollOverview />}
+
+      {/* ── Team tab ────────────────────────────────────────────────── */}
+      {view === 'team' && (<>
       {/* Stats */}
       {state.stats && <StatsBar stats={state.stats} />}
 
@@ -95,6 +132,7 @@ export default function Employees() {
           ))}
         </div>
       )}
+      </>)}
 
       {/* Add Modal */}
       <Modal isOpen={state.showAddModal} onClose={() => state.setShowAddModal(false)} title={t('addEmployee')}>

@@ -18,9 +18,16 @@ function resolveEnabledPlugins(): string[] {
   }
   // Default: bundle every known plugin
   return ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic']
+  // return ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic']
 }
 
 const enabledPlugins = resolveEnabledPlugins()
+
+// Auto-enable commerce when any dependent plugin is enabled (they reference Product, Customer etc.)
+const DEPENDS_ON_COMMERCE = ['bakery', 'restaurant', 'warehouse']
+if (DEPENDS_ON_COMMERCE.some(p => enabledPlugins.includes(p)) && !enabledPlugins.includes('commerce')) {
+  enabledPlugins.push('commerce')
+}
 
 const pluginDefineFlags = {
   __PLUGIN_COMMERCE__: enabledPlugins.includes('commerce'),
