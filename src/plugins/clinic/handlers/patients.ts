@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 
 export function registerPatientHandlers(prisma: any) {
   // ─── Get All Patients ─────────────────────────────────────────────────
-  ipcMain.handle('clinic:patients:getAll', async (_e, params?: { search?: string }) => {
+  ipcMain.handle('clinic:patients:getAll', async (_e, params?: { search?: string; limit?: number }) => {
     const where = params?.search
       ? {
           OR: [
@@ -23,7 +23,8 @@ export function registerPatientHandlers(prisma: any) {
           select: { visitDate: true, paymentStatus: true, visitType: true }
         }
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
+      take: params?.limit ?? undefined
     })
 
     if (patients.length === 0) return patients
