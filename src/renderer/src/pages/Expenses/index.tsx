@@ -6,6 +6,7 @@ import ExpenseCharts from './components/ExpenseCharts'
 import ExpenseTable from './components/ExpenseTable'
 import ExpenseModal from './components/ExpenseModal'
 import PayrollBreakdown from './components/PayrollBreakdown'
+import ClinicExpensesPanel from '../../plugins/clinic/components/ClinicExpensesPanel'
 
 export default function Expenses() {
   const s = useExpenses()
@@ -99,6 +100,9 @@ export default function Expenses() {
       </div>
 
       <PayrollBreakdown payrollDetails={s.payrollDetails} />
+
+      {/* ── Clinic-exclusive expenses (separate plugin schema) ── */}
+      <ClinicExpensesPanel />
 
       {s.showModal && (
         <ExpenseModal

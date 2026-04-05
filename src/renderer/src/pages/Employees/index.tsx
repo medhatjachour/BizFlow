@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plus, Search, Users, Filter, DollarSign } from 'lucide-react'
+import { Plus, Search, Users, Filter, DollarSign, Stethoscope } from 'lucide-react'
+import ClinicStaffPanel from '../../plugins/clinic/components/ClinicStaffPanel'
 import { useLanguage } from '../../contexts/LanguageContext'
 import Modal from '../../components/ui/Modal'
 import StatsBar from './components/StatsBar'
@@ -8,7 +9,7 @@ import EmployeeForm from './components/EmployeeForm'
 import PayrollOverview from './components/PayrollOverview'
 import { useEmployees, DEPARTMENTS, ROLES } from './hooks/useEmployees'
 
-type TabView = 'team' | 'payroll'
+type TabView = 'team' | 'payroll' | 'clinic'
 
 export default function Employees() {
   const { t } = useLanguage()
@@ -54,11 +55,24 @@ export default function Employees() {
         >
           <DollarSign size={15} /> {t('empPayroll') ?? 'Payroll'}
         </button>
+        <button
+          onClick={() => setView('clinic')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            view === 'clinic'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          <Stethoscope size={15} /> Clinic Staff
+        </button>
       </div>
 
 
       {/* ── Payroll tab ─────────────────────────────────────────────── */}
       {view === 'payroll' && <PayrollOverview />}
+
+      {/* ── Clinic Staff tab ────────────────────────────────────────── */}
+      {view === 'clinic' && <ClinicStaffPanel />}
 
       {/* ── Team tab ────────────────────────────────────────────────── */}
       {view === 'team' && (<>

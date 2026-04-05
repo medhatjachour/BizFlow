@@ -4,7 +4,7 @@ import {
   ArrowLeft, Plus, Loader2, AlertTriangle, Phone, Mail, MapPin,
   CreditCard, CheckCircle2, Clock, XCircle, MinusCircle, Banknote,
   DollarSign, Pencil, ChevronDown, ChevronUp, Stethoscope, Calendar,
-  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus, Download, Heart
+  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus, Download, Heart, X
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'

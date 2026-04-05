@@ -110,10 +110,32 @@ export function registerClinicStaffHandlers(prisma: any) {
   ipcMain.handle('clinic:staff:getAll', async () => {
     try {
       if (!prisma) return []
-      return await prisma.clinicStaff.findMany({
+      const staffList = await prisma.clinicStaff.findMany({
         orderBy: { createdAt: 'desc' },
         include: { _count: { select: { salaryRecords: true } } }
       })
+
+      // Enrich records that have a linked global employee (soft cross-DB reference)
+      const linkedIds: string[] = staffList
+        .map((s: any) => s.employeeId)
+        .filter(Boolean)
+
+      if (linkedIds.length > 0) {
+        const globalEmps = await prisma.employee.findMany({
+          where: { id: { in: linkedIds } },
+          select: { id: true, name: true, department: true, role: true, status: true }
+        })
+        const empMap: Record<string, any> = {}
+        for (const e of globalEmps) empMap[e.id] = e
+
+        return staffList.map((s: any) =>
+          s.employeeId && empMap[s.employeeId]
+            ? { ...s, linkedEmployee: empMap[s.employeeId] }
+            : s
+        )
+      }
+
+      return staffList
     } catch (error) {
       log.error('Error fetching staff:', error)
       throw error

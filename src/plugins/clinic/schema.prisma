@@ -147,6 +147,7 @@ model ClinicStaff {
   doubleShiftRate Float                @default(0)           // extra flat pay per double shift
   hireDate        DateTime             @default(now())
   notes           String?
+  employeeId      String?              // optional link to a global Employee record (cross-DB soft reference)
   salaryRecords   ClinicSalaryRecord[]
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
@@ -154,6 +155,7 @@ model ClinicStaff {
   @@index([name])
   @@index([role])
   @@index([status])
+  @@index([employeeId])
 }
 
 // ─── Clinic Salary Records ────────────────────────────────────────────────────
