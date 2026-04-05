@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Plus, Trash2, Loader2, Search, UserCircle } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Search, UserCircle, ChevronDown } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import type { Patient } from '../index'
@@ -84,6 +84,12 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   const { t } = useLanguage()
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
+  const [staffList, setStaffList] = useState<Array<{ id: string; name: string; role?: string | null }>>([])
+
+  // Load staff for doctor dropdown
+  useEffect(() => {
+    window.api.clinic.staff.getAll().then((list) => setStaffList(list ?? [])).catch(() => {})
+  }, [])
 
   // Determine initial patient (from existing session, defaultPatient, or defaultAppointment)
   const initialPatientId = existingSession?.patientId ?? defaultPatient?.id ?? defaultAppointment?.patient?.id ?? ''
@@ -367,7 +373,25 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           {/* Doctor */}
           <div>
             <label className={labelCls}>{t('doctorName')}</label>
-            <input className={inputCls} value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder={t('optional')} />
+            {staffList.length > 0 ? (
+              <div className="relative">
+                <select
+                  className={`${inputCls} appearance-none pr-8`}
+                  value={doctorName}
+                  onChange={(e) => setDoctorName(e.target.value)}
+                >
+                  <option value="">{t('optional')}</option>
+                  {staffList.map((s) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name}{s.role ? ` (${s.role})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              </div>
+            ) : (
+              <input className={inputCls} value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder={t('optional')} />
+            )}
           </div>
 
           {/* Chief complaint */}

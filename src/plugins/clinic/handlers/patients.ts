@@ -86,6 +86,13 @@ export function registerPatientHandlers(prisma: any) {
 
   // ─── Create Patient ───────────────────────────────────────────────────
   ipcMain.handle('clinic:patients:create', async (_e, data: any) => {
+    // Guard against duplicate phone numbers
+    if (data.phone) {
+      const existing = await prisma.clinicPatient.findFirst({ where: { phone: data.phone } })
+      if (existing) {
+        throw new Error(`A patient with phone ${data.phone} already exists (${existing.name}).`)
+      }
+    }
     return prisma.clinicPatient.create({ data })
   })
 

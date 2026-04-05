@@ -4,7 +4,7 @@ import {
   ArrowLeft, Plus, Loader2, AlertTriangle, Phone, Mail, MapPin,
   CreditCard, CheckCircle2, Clock, XCircle, MinusCircle, Banknote,
   DollarSign, Pencil, ChevronDown, ChevronUp, Stethoscope, Calendar,
-  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus, Download
+  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus, Download, Heart
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -948,6 +948,50 @@ export default function PatientProfile() {
             )}
           </div>
         )}
+
+        {/* ── Prescriptions summary ─── */}
+        {(() => {
+          const allRx = sessions.flatMap((s) =>
+            (s.prescriptions ?? []).map((rx: any) => ({ ...rx, sessionDate: s.visitDate, diagnosis: s.diagnosis }))
+          )
+          if (allRx.length === 0) return null
+          return (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-700/60 bg-pink-50/60 dark:bg-pink-900/10">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Prescriptions</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400 font-semibold">{allRx.length}</span>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-700/50">
+                    <tr>
+                      {['Medicine', 'Dosage', 'Frequency', 'Duration', 'Diagnosis', 'Date'].map((h) => (
+                        <th key={h} className="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                    {allRx.map((rx: any) => (
+                      <tr key={rx.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                        <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{rx.medicineName}</td>
+                        <td className="px-3 py-2 text-slate-500">{rx.dosage ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-500">{rx.frequency ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-500">{rx.duration ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-500 max-w-[140px] truncate">{rx.diagnosis ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-400 whitespace-nowrap">
+                          {new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── Session Timeline ─── */}
         <div>

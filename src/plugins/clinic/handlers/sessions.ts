@@ -4,11 +4,14 @@ export function registerSessionHandlers(prisma: any) {
   // ─── Get Recent Sessions (with optional patient + date filter) ─────────
   ipcMain.handle(
     'clinic:sessions:getRecent',
-    async (_e, params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all' }) => {
+    async (_e, params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; startDate?: string; endDate?: string }) => {
       const now = new Date()
       let dateFrom: Date | undefined
+      let dateTo: Date | undefined
 
-      if (params?.filter === 'today') {
+      if (params?.startDate) {
+        dateFrom = new Date(params.startDate)
+      } else if (params?.filter === 'today') {
         dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       } else if (params?.filter === 'week') {
         dateFrom = new Date(now)
@@ -17,9 +20,15 @@ export function registerSessionHandlers(prisma: any) {
         dateFrom = new Date(now.getFullYear(), now.getMonth(), 1)
       }
 
+      if (params?.endDate) dateTo = new Date(params.endDate)
+
       const where: any = {}
       if (params?.patientId) where.patientId = params.patientId
-      if (dateFrom) where.visitDate = { gte: dateFrom }
+      if (dateFrom || dateTo) {
+        where.visitDate = {}
+        if (dateFrom) where.visitDate.gte = dateFrom
+        if (dateTo) where.visitDate.lte = dateTo
+      }
 
       return prisma.clinicSession.findMany({
         where,

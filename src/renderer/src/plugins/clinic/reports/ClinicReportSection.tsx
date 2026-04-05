@@ -72,32 +72,37 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
   const loadData = async () => {
     setLoading(true)
     try {
-      const api = (window as any).api.clinic
-      const today = new Date(); today.setHours(0, 0, 0, 0)
-      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
+      const clinic = window.api.clinic
 
-      const [r1, r2, r3, r4, r5] = await Promise.allSettled([
-        api.getPatientCount?.(),
-        api.getSessions?.({ startDate: today.toISOString(), endDate: tomorrow.toISOString() }),
-        api.getUpcomingFollowUps?.(7),
-        api.getPrescriptions?.({ startDate: today.toISOString(), endDate: tomorrow.toISOString() }),
-        api.getPatients?.({ limit: 200 }),
+      const [overviewRes, sessionsRes, followUpsRes, patientsRes] = await Promise.allSettled([
+        clinic.stats.overview(),
+        clinic.sessions.getRecent({ filter: 'today' }),
+        clinic.appointments.getUpcoming(7),
+        clinic.patients.getAll({ limit: 200 }),
       ])
 
-      const patientCount   = r1.status === 'fulfilled' ? Number(r1.value || 0) : 0
-      const todaySessions  = r2.status === 'fulfilled' ? (r2.value || []) : []
-      const followUps      = r3.status === 'fulfilled' ? (r3.value || []) : []
-      const todayRx        = r4.status === 'fulfilled' ? (r4.value || []) : []
-      const patients       = r5.status === 'fulfilled' ? (r5.value || []) : []
+      const overview      = overviewRes.status === 'fulfilled' ? overviewRes.value : null
+      const todaySessions = sessionsRes.status === 'fulfilled' ? (sessionsRes.value ?? []) : []
+      const followUps     = followUpsRes.status === 'fulfilled' ? (followUpsRes.value ?? []) : []
+      const patients      = patientsRes.status === 'fulfilled' ? (patientsRes.value ?? []) : []
 
-      setData({ patientCount, todaySessions, followUps, todayPrescriptions: todayRx, patients })
+      // Prescriptions are embedded in each session; extract them as a flat list
+      const todayRx = todaySessions.flatMap((s: any) =>
+        (s.prescriptions ?? []).map((rx: any) => ({ ...rx, patientName: s.patient?.name, sessionDate: s.visitDate }))
+      )
+
+      setData({
+        patientCount: overview?.totalPatients ?? 0,
+        todaySessions,
+        followUps,
+        todayPrescriptions: todayRx,
+        patients,
+      })
 
       // Worker: diagnosis frequency
-      const diagnoses = todaySessions.flatMap((s: any) => {
-        if (Array.isArray(s.diagnoses)) return s.diagnoses.map((d: any) => typeof d === 'string' ? d : d.name || d.diagnosis || 'Unknown')
-        if (s.diagnosis) return [typeof s.diagnosis === 'string' ? s.diagnosis : s.diagnosis.name || 'Unknown']
-        return []
-      })
+      const diagnoses = todaySessions
+        .filter((s: any) => s.diagnosis)
+        .map((s: any) => s.diagnosis as string)
       if (diagnoses.length > 0) {
         const freq = await compute<DiagnosisFreqResult>('COMPUTE_DIAGNOSIS_FREQ', { diagnoses })
         if (freq) setDiagnosisFreq(freq)
@@ -110,7 +115,6 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
     if (!reportType) return
     setGenerating(true)
     try {
-      const api = (window as any).api.clinic
       const sDate = new Date(startDate)
       const eDate = new Date(endDate); eDate.setHours(23, 59, 59, 999)
       const dr = `${sDate.toLocaleDateString()} - ${eDate.toLocaleDateString()}`
@@ -123,20 +127,21 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
       doc.text(`Period: ${dr}  |  Generated: ${new Date().toLocaleString()}`, 105, y, { align: 'center' }); y += 12
       doc.setTextColor(0)
 
+      const clinic = window.api.clinic
       if (reportType === 'sessions') {
-        const [r1] = await Promise.allSettled([api.getSessions?.({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })])
-        const sessions = r1.status === 'fulfilled' ? (r1.value || []) : []
+        const sessions = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
         autoTable(doc, { startY: y, head: [['Metric', 'Value']], body: [['Total Sessions', sessions.length.toString()], ['Unique Patients', new Set(sessions.map((s: any) => s.patientId)).size.toString()]], theme: 'grid', headStyles: { fillColor: [13, 148, 136] }, styles: { fontSize: 9 }, margin: { left: 14, right: 14 } })
         y = (doc as any).lastAutoTable.finalY + 10
-        autoTable(doc, { startY: y, head: [['Patient', 'Date', 'Diagnosis', 'Treatment']], body: sessions.slice(0, 50).map((s: any) => [s.patient?.name || s.patientId || '-', new Date(s.createdAt).toLocaleDateString(), s.diagnosis || (s.diagnoses?.[0]?.name) || '-', s.treatment || '-']), theme: 'striped', headStyles: { fillColor: [13, 148, 136] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
+        autoTable(doc, { startY: y, head: [['Patient', 'Date', 'Diagnosis', 'Chief Complaint']], body: sessions.slice(0, 100).map((s: any) => [s.patient?.name || '-', new Date(s.visitDate).toLocaleDateString(), s.diagnosis || '-', s.chiefComplaint || '-']), theme: 'striped', headStyles: { fillColor: [13, 148, 136] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'patients') {
-        const [r1] = await Promise.allSettled([api.getPatients?.({ limit: 1000 })])
-        const pts = r1.status === 'fulfilled' ? (r1.value || []) : []
-        autoTable(doc, { startY: y, head: [['Name', 'DOB', 'Gender', 'Phone', 'Registered']], body: pts.slice(0, 50).map((p: any) => [p.name || '-', p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString() : '-', p.gender || '-', p.phone || '-', new Date(p.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [99, 102, 241] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
+        const pts = await clinic.patients.getAll({ limit: 1000 })
+        autoTable(doc, { startY: y, head: [['Name', 'DOB', 'Gender', 'Phone', 'Registered']], body: pts.slice(0, 100).map((p: any) => [p.name || '-', p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString() : '-', p.gender || '-', p.phone || '-', new Date(p.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [99, 102, 241] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'prescriptions') {
-        const [r1] = await Promise.allSettled([api.getPrescriptions?.({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })])
-        const rxList = r1.status === 'fulfilled' ? (r1.value || []) : []
-        autoTable(doc, { startY: y, head: [['Patient', 'Medication', 'Dosage', 'Date']], body: rxList.slice(0, 50).map((rx: any) => [rx.patient?.name || rx.patientId || '-', rx.medication || rx.name || '-', rx.dosage || '-', new Date(rx.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [236, 72, 153] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
+        const sessions = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
+        const rxList = sessions.flatMap((s: any) =>
+          (s.prescriptions ?? []).map((rx: any) => ({ ...rx, patientName: s.patient?.name, sessionDate: s.visitDate }))
+        )
+        autoTable(doc, { startY: y, head: [['Patient', 'Medication', 'Dosage', 'Frequency', 'Session Date']], body: rxList.slice(0, 100).map((rx: any) => [rx.patientName || '-', rx.medicineName || '-', rx.dosage || '-', rx.frequency || '-', new Date(rx.sessionDate).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [236, 72, 153] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       }
 
       const fname = `Clinic_${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`

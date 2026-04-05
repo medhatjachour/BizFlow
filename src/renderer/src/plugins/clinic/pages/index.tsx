@@ -209,26 +209,30 @@ function PatientsTab() {
   const [editPatient, setEditPatient] = useState<Patient | null>(null)
   const [newSessionPatient, setNewSessionPatient] = useState<Patient | null>(null)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (searchVal?: string) => {
     setLoading(true)
     try {
-      const data = await window.api.clinic.patients.getAll({ search: search || undefined })
+      const data = await window.api.clinic.patients.getAll({ search: searchVal || undefined })
       setPatients(data)
     } catch {
       showToast('error', t('errorLoadingData'))
     } finally {
       setLoading(false)
     }
-  }, [search, showToast, t])
+  }, [showToast, t])
 
-  useEffect(() => { load() }, [load])
+  // Debounce: search waits 300 ms; initial load (empty search) fires immediately
+  useEffect(() => {
+    const timer = setTimeout(() => load(search), search ? 300 : 0)
+    return () => clearTimeout(timer)
+  }, [search, load])
 
   async function handleDelete(id: string) {
     if (!confirm(t('confirmDelete'))) return
     try {
       await window.api.clinic.patients.delete(id)
       showToast('success', t('deletedSuccessfully'))
-      load()
+      load(search)
     } catch {
       showToast('error', t('errorDeletingRecord'))
     }

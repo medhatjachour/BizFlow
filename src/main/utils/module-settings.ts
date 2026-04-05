@@ -51,17 +51,16 @@ export function writeSettings(settings: BizFlowSettings): void {
   }
 }
 
-/** Returns the list of currently enabled module IDs (default: all enabled). */
+/** Returns the list of currently enabled module IDs (default: clinic). */
 export function getEnabledModuleIds(): string[] {
   const settings = readSettings()
-  // If no key exists yet, default to enabling the bakery module
-  return settings.enabledModules ?? []
+  return settings.enabledModules ?? ['clinic']
 }
 
 /** Enable or disable a module by ID. */
 export function setModuleEnabled(moduleId: string, enabled: boolean): void {
   const settings = readSettings()
-  const current = new Set(settings.enabledModules ?? ['bakery'])
+  const current = new Set(settings.enabledModules ?? ['clinic'])
   if (enabled) {
     current.add(moduleId)
   } else {
