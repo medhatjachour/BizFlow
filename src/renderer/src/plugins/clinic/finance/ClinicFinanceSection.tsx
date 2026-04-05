@@ -2,19 +2,19 @@
  * ClinicFinanceSection
  *
  * Full clinic financial management shown at /finance → Clinic.
- * Tabs: Overview · Expenses · Payroll · Analytics
+ * Tabs: Overview · Expenses · Payroll · Revenue
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   TrendingUp, TrendingDown, Wallet, AlertCircle, Receipt, Users,
   Plus, Loader2, X, ChevronLeft, ChevronRight, RefreshCcw,
-  Stethoscope, Activity, BarChart3, ClipboardList, DollarSign,
-  CheckCircle2, Pencil, Trash2, Heart, Calendar,
+  Stethoscope, BarChart3, DollarSign,
+  CheckCircle2, Pencil, Trash2, Banknote, ArrowUpRight,
 } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
-  CartesianGrid, LineChart, Line, Cell,
+  CartesianGrid, ComposedChart, Line,
 } from 'recharts'
 import { useToast } from '@renderer/contexts/ToastContext'
 import logger from '@/shared/utils/logger'
@@ -22,7 +22,7 @@ import logger from '@/shared/utils/logger'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 type Period  = 'today' | 'week' | 'month' | 'year'
-type MainTab = 'overview' | 'expenses' | 'payroll' | 'analytics'
+type MainTab = 'overview' | 'expenses' | 'payroll' | 'revenue'
 
 const EXPENSE_CATEGORIES = [
   { value: 'rent',             label: 'Rent / Lease',    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
@@ -41,8 +41,6 @@ const EXPENSE_CATEGORIES = [
 
 const STAFF_ROLES = ['doctor', 'nurse', 'receptionist', 'technician', 'pharmacist', 'other']
 const MONTHS      = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-const CHART_COLORS = ['#14b8a6','#0ea5e9','#8b5cf6','#10b981','#f59e0b','#f43f5e','#06b6d4','#84cc16']
-
 const EMP_BADGE: Record<string, string> = {
   full_time: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   part_time: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -78,6 +76,12 @@ interface SalaryRecord {
   bonuses: number; deductions: number; netPay: number
   status: string; paidDate?: string | null; notes?: string | null
   staff?: { name: string; role: string; employmentType: string; salaryType: string }
+}
+interface PatientWithFinance {
+  id: string
+  name: string
+  phone: string
+  finance?: { totalCharged: number; totalPaid: number; outstanding: number }
 }
 interface FinanceSummary {
   revenue: number; totalExpenses: number; totalSalaries: number
@@ -645,11 +649,10 @@ const ClinicFinanceSection: React.FC = () => {
   const [loadingSalary, setLoadingSalary] = useState(false)
   const [editSalary,    setEditSalary]    = useState<SalaryRecord | null | undefined>(undefined)
 
-  // ── analytics state ───────────────────────────────────────────────────────
-  const [overviewStats,  setOverviewStats]  = useState<any>(null)
-  const [visitTrend,     setVisitTrend]     = useState<any[]>([])
-  const [topDiagnoses,   setTopDiagnoses]   = useState<any[]>([])
-  const [loadingAnalytics, setLoadingAnalytics] = useState(false)
+  // ── revenue state ─────────────────────────────────────────────────────────
+  const [debtPatients,   setDebtPatients]   = useState<PatientWithFinance[]>([])
+  const [revBreakdown,   setRevBreakdown]   = useState<Array<{ label: string; revenue: number; expenses: number }>>([])
+  const [loadingRevenue, setLoadingRevenue] = useState(false)
 
   // ── loaders ───────────────────────────────────────────────────────────────
   const loadExpenses = useCallback(async () => {
@@ -686,21 +689,24 @@ const ClinicFinanceSection: React.FC = () => {
     finally { setLoadingSalary(false) }
   }, [salaryYear, showToast])
 
-  const loadAnalytics = useCallback(async () => {
-    setLoadingAnalytics(true)
+  const loadRevenue = useCallback(async () => {
+    setLoadingRevenue(true)
     try {
-      const api = (window as any).api.clinic
-      const [r1, r2, r3] = await Promise.allSettled([
-        api.stats?.overview?.(),
-        api.stats?.visitTrend?.(30),
-        api.stats?.topDiagnoses?.(10),
+      const [patients, brk] = await Promise.all([
+        window.api.clinic.patients.getAll({ limit: 500 }),
+        window.api.clinic.expenses.breakdown({ period }),
       ])
-      if (r1.status === 'fulfilled') setOverviewStats(r1.value)
-      if (r2.status === 'fulfilled') setVisitTrend(Array.isArray(r2.value) ? r2.value : [])
-      if (r3.status === 'fulfilled') setTopDiagnoses(Array.isArray(r3.value) ? r3.value : [])
-    } catch (e) { logger.error('ClinicFinance: loadAnalytics failed', e) }
-    finally { setLoadingAnalytics(false) }
-  }, [])
+      const debtors = (patients ?? []).filter((p: PatientWithFinance) => (p.finance?.outstanding ?? 0) > 0)
+        .sort((a: PatientWithFinance, b: PatientWithFinance) => (b.finance?.outstanding ?? 0) - (a.finance?.outstanding ?? 0))
+      setDebtPatients(debtors)
+      // Build revenue vs expenses per bucket using the same breakdown labels
+      const expMap: Record<string, number> = {}
+      for (const b of brk) expMap[b.label] = b.total
+      // Revenue breakdown requires a separate call — reuse summary revenue / buckets count for now
+      setRevBreakdown(brk.map((b: { label: string; total: number }) => ({ label: b.label, revenue: 0, expenses: b.total })))
+    } catch (e) { logger.error('ClinicFinance: loadRevenue failed', e) }
+    finally { setLoadingRevenue(false) }
+  }, [period, showToast])
 
   useEffect(() => { loadExpenses() }, [loadExpenses])
   useEffect(() => { loadStaff() },   [loadStaff])
@@ -708,8 +714,8 @@ const ClinicFinanceSection: React.FC = () => {
     if (activeTab === 'payroll') loadSalary()
   }, [activeTab, loadSalary])
   useEffect(() => {
-    if (activeTab === 'analytics') loadAnalytics()
-  }, [activeTab, loadAnalytics])
+    if (activeTab === 'revenue') loadRevenue()
+  }, [activeTab, loadRevenue])
 
   // ── delete helpers ────────────────────────────────────────────────────────
   async function deleteExpense(id: string) {
@@ -733,10 +739,10 @@ const ClinicFinanceSection: React.FC = () => {
   }
 
   const TAB_DEFS: { key: MainTab; icon: any; label: string }[] = [
-    { key: 'overview',  icon: BarChart3,     label: 'Overview'  },
-    { key: 'expenses',  icon: Receipt,       label: 'Expenses'  },
-    { key: 'payroll',   icon: Users,         label: 'Payroll'   },
-    { key: 'analytics', icon: Activity,      label: 'Analytics' },
+    { key: 'overview', icon: BarChart3,  label: 'Overview' },
+    { key: 'expenses', icon: Receipt,    label: 'Expenses' },
+    { key: 'payroll',  icon: Users,      label: 'Payroll'  },
+    { key: 'revenue',  icon: Banknote,   label: 'Revenue'  },
   ]
 
   const PERIOD_DEFS: { key: Period; label: string }[] = [
@@ -750,15 +756,6 @@ const ClinicFinanceSection: React.FC = () => {
     ? expenses
     : expenses.filter(e => e.category === catFilter)
 
-  const trendData = visitTrend.map(v => ({
-    date: typeof v.date === 'string' ? v.date.slice(5) : v.date,
-    visits: Number(v.count || v.visits || 0),
-  }))
-  const diagData = topDiagnoses.map(d => ({
-    name: (d.diagnosis || d.name || 'Unknown').slice(0, 20),
-    count: Number(d.count || d.total || 0),
-  }))
-
   // ── render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-5">
@@ -770,11 +767,11 @@ const ClinicFinanceSection: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Clinic Finance</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Expenses · Payroll · Analytics</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Expenses · Payroll · Revenue</p>
           </div>
         </div>
         <button
-          onClick={() => { loadExpenses(); if (activeTab === 'payroll') loadSalary() }}
+          onClick={() => { loadExpenses(); if (activeTab === 'payroll') loadSalary(); if (activeTab === 'revenue') loadRevenue() }}
           className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
         >
           <RefreshCcw size={14} className={loadingExp ? 'animate-spin' : ''} />
@@ -1126,87 +1123,118 @@ const ClinicFinanceSection: React.FC = () => {
         </div>
       )}
 
-      {/* ═══════════════════════════════ ANALYTICS ══════════════════════════ */}
-      {activeTab === 'analytics' && (
+      {/* ═══════════════════════════════ REVENUE ════════════════════════════ */}
+      {activeTab === 'revenue' && (
         <div className="space-y-5">
-          {/* Stat bar */}
-          {loadingAnalytics ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-pulse">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-2xl" />)}
+          {/* KPIs */}
+          {summary && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <KpiCard label="Total Billed"      value={fmt(summary.revenue + summary.outstanding)} icon={Receipt}      colorClass="text-slate-700 dark:text-slate-200"     bgClass="bg-slate-50 dark:bg-slate-700/40"       sub={`${PERIOD_DEFS.find(p => p.key === period)?.label}`} />
+              <KpiCard label="Collected"         value={fmt(summary.revenue)}                     icon={CheckCircle2} colorClass="text-emerald-600 dark:text-emerald-400"  bgClass="bg-emerald-50 dark:bg-emerald-900/10"   sub="cash received" />
+              <KpiCard label="Outstanding"       value={fmt(summary.outstanding)}                  icon={AlertCircle}  colorClass="text-red-500 dark:text-red-400"          bgClass="bg-red-50 dark:bg-red-900/10"           sub="unpaid invoices" />
+              <KpiCard
+                label="Collection Rate"
+                value={summary.revenue + summary.outstanding > 0 ? `${((summary.revenue / (summary.revenue + summary.outstanding)) * 100).toFixed(0)}%` : '–'}
+                icon={TrendingUp}
+                colorClass={summary.revenue + summary.outstanding > 0 && (summary.revenue / (summary.revenue + summary.outstanding)) >= 0.8 ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}
+                bgClass={summary.revenue + summary.outstanding > 0 && (summary.revenue / (summary.revenue + summary.outstanding)) >= 0.8 ? 'bg-teal-50 dark:bg-teal-900/10' : 'bg-amber-50 dark:bg-amber-900/10'}
+                sub="billed vs collected"
+              />
             </div>
-          ) : overviewStats ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <KpiCard label="Total Sessions" value={String(overviewStats.totalSessions ?? overviewStats.sessionCount ?? 0)} icon={Calendar}  colorClass="text-teal-600 dark:text-teal-400"   bgClass="bg-teal-50 dark:bg-teal-900/10"   sub="all time" />
-              <KpiCard label="Total Patients" value={String(overviewStats.totalPatients ?? overviewStats.patientCount ?? 0)} icon={Users}    colorClass="text-sky-600 dark:text-sky-400"    bgClass="bg-sky-50 dark:bg-sky-900/10"     sub="registered" />
-              <KpiCard label="Avg Daily Visits" value={String(overviewStats.avgVisitsPerDay ?? (trendData.length > 0 ? (trendData.reduce((s,v)=>s+v.visits,0)/trendData.length).toFixed(1) : 0))} icon={Activity} colorClass="text-violet-600 dark:text-violet-400" bgClass="bg-violet-50 dark:bg-violet-900/10" sub="30-day avg" />
-              <KpiCard label="Active Doctors" value={String(overviewStats.activeDoctors ?? overviewStats.doctorCount ?? 0)} icon={Heart}    colorClass="text-pink-600 dark:text-pink-400"  bgClass="bg-pink-50 dark:bg-pink-900/10"   sub="practitioners" />
-            </div>
-          ) : null}
+          )}
 
-          {/* Visit trend */}
-          {trendData.length > 0 && (
+          {/* Expense spend overlay chart */}
+          {revBreakdown.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Daily Visits — Last 30 Days</p>
-                <div className="flex gap-3 text-xs text-slate-400">
-                  <span>Peak: <strong className="text-slate-600 dark:text-slate-300">{Math.max(...trendData.map(d=>d.visits))}</strong></span>
-                  <span>Total: <strong className="text-slate-600 dark:text-slate-300">{trendData.reduce((s,d)=>s+d.visits,0)}</strong></span>
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
-                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="visits" stroke="#14b8a6" strokeWidth={2.5} dot={{ r: 2.5, fill: '#14b8a6' }} activeDot={{ r: 4 }} />
-                </LineChart>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Expenses Over Period</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <ComposedChart data={revBreakdown} margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(v: any, name: string) => [fmt(v), name === 'expenses' ? 'Expenses' : 'Revenue']} />
+                  <Bar dataKey="expenses" fill="#f87171" opacity={0.8} radius={[4,4,0,0]} barSize={18} name="expenses" />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          {/* Top diagnoses */}
-          {diagData.length > 0 && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Top Diagnoses</p>
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={diagData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
-                    <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={110} />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[0, 5, 5, 0]}>
-                      {diagData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+          {/* Patients with outstanding balance */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Patients with Outstanding Balance</span>
+                {debtPatients.length > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-semibold">{debtPatients.length}</span>
+                )}
               </div>
-              <div className="space-y-2.5">
-                {diagData.map((diag, i) => {
-                  const max = diagData[0]?.count || 1
-                  const pct = ((diag.count / max) * 100).toFixed(0)
+              <button onClick={loadRevenue} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-600 transition-colors">
+                <RefreshCcw size={12} className={loadingRevenue ? 'animate-spin' : ''} /> Refresh
+              </button>
+            </div>
+
+            {loadingRevenue ? (
+              <div className="space-y-2 p-4 animate-pulse">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}
+              </div>
+            ) : debtPatients.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400 dark:text-slate-500">
+                <CheckCircle2 className="h-9 w-9 mb-2 text-emerald-400 opacity-60" />
+                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">All patients are fully paid</p>
+                <p className="text-xs text-slate-400 mt-0.5">No outstanding balances for this period</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                {/* Summary row */}
+                <div className="flex items-center justify-between px-5 py-2.5 bg-red-50/60 dark:bg-red-900/10">
+                  <span className="text-xs font-semibold text-red-600 dark:text-red-400">Total receivable across {debtPatients.length} patient{debtPatients.length !== 1 ? 's' : ''}</span>
+                  <span className="text-sm font-black text-red-600 dark:text-red-400">
+                    {fmt(debtPatients.reduce((s, p) => s + (p.finance?.outstanding ?? 0), 0))}
+                  </span>
+                </div>
+                {debtPatients.map((p) => {
+                  const fin = p.finance!
+                  const rate = fin.totalCharged > 0 ? Math.round((fin.totalPaid / fin.totalCharged) * 100) : 0
                   return (
-                    <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{diag.name}</span>
-                        <span className="text-sm font-black" style={{ color: CHART_COLORS[i % CHART_COLORS.length] }}>{diag.count}</span>
+                    <div key={p.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
+                      {/* Avatar */}
+                      <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-400 to-rose-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <span className="text-[10px] font-bold text-white">
+                          {p.name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')}
+                        </span>
                       </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">{p.name}</span>
+                          <span className="text-xs text-slate-400">{p.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 max-w-32 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div className="h-full rounded-full bg-emerald-400 transition-all duration-700" style={{ width: `${rate}%` }} />
+                          </div>
+                          <span className="text-[11px] text-slate-400">{rate}% collected</span>
+                          <span className="text-[11px] text-slate-400">·</span>
+                          <span className="text-[11px] text-slate-500">Billed: <strong>{fmt(fin.totalCharged)}</strong></span>
+                          <span className="text-[11px] text-slate-500">Paid: <strong className="text-emerald-600 dark:text-emerald-400">{fmt(fin.totalPaid)}</strong></span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-lg font-black text-red-500 dark:text-red-400 tabular-nums">{fmt(fin.outstanding)}</span>
+                        <a
+                          href={`#/clinic/patients/${p.id}`}
+                          onClick={(e) => { e.preventDefault(); window.location.hash = `/clinic/patients/${p.id}` }}
+                          className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline transition-opacity"
+                        >
+                          Profile <ArrowUpRight className="h-3 w-3" />
+                        </a>
                       </div>
                     </div>
                   )
                 })}
               </div>
-            </div>
-          )}
-
-          {!loadingAnalytics && trendData.length === 0 && diagData.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
-              <BarChart3 className="h-10 w-10 mb-3 opacity-25" />
-              <p className="text-sm">No analytics data yet</p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 

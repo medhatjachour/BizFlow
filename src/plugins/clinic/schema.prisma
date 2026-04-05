@@ -61,9 +61,14 @@ model ClinicPrescription {
   duration     String?       // e.g. "7 days"
   quantity     Int?
   instructions String?
+  isActive     Boolean       @default(true)   // Is patient currently taking this medicine?
+  startDate    DateTime?                       // When the patient started (defaults to session date)
+  stoppedAt    DateTime?                       // When the medicine was discontinued
+  stopReason   String?                         // 'completed' | 'side_effects' | 'not_effective' | 'other'
   createdAt    DateTime      @default(now())
 
   @@index([sessionId])
+  @@index([isActive])
 }
 
 model ClinicCheckResult {

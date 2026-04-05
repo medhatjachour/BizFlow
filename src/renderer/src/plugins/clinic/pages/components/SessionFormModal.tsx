@@ -11,6 +11,9 @@ interface PrescriptionRow {
   duration: string
   quantity: string
   instructions: string
+  isActive: boolean
+  stoppedAt: string
+  stopReason: string
 }
 
 interface ExistingSession {
@@ -37,6 +40,10 @@ interface ExistingSession {
     duration?: string | null
     quantity?: number | null
     instructions?: string | null
+    isActive?: boolean
+    startDate?: string | null
+    stoppedAt?: string | null
+    stopReason?: string | null
   }>
   patient: { id: string; name: string }
 }
@@ -77,7 +84,7 @@ function toDatetimeLocal(iso?: string | null): string {
 }
 
 function emptyRx(): PrescriptionRow {
-  return { medicineName: '', dosage: '', frequency: '', duration: '', quantity: '', instructions: '' }
+  return { medicineName: '', dosage: '', frequency: '', duration: '', quantity: '', instructions: '', isActive: true, stoppedAt: '', stopReason: '' }
 }
 
 export default function SessionFormModal({ existingSession, defaultPatient, defaultAppointment, onClose, onSaved }: Props) {
@@ -183,7 +190,10 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
       frequency: rx.frequency ?? '',
       duration: rx.duration ?? '',
       quantity: rx.quantity?.toString() ?? '',
-      instructions: rx.instructions ?? ''
+      instructions: rx.instructions ?? '',
+      isActive: rx.isActive ?? true,
+      stoppedAt: rx.stoppedAt ? new Date(rx.stoppedAt).toISOString().slice(0, 10) : '',
+      stopReason: rx.stopReason ?? ''
     })) ?? []
   )
 
@@ -196,7 +206,11 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   }
 
   function updateRx(idx: number, field: keyof PrescriptionRow, value: string) {
-    setPrescriptions((prev) => prev.map((rx, i) => i === idx ? { ...rx, [field]: value } : rx))
+    setPrescriptions((prev) => prev.map((rx, i) => {
+      if (i !== idx) return rx
+      if (field === 'isActive') return { ...rx, isActive: value === 'true' }
+      return { ...rx, [field]: value }
+    }))
   }
 
   function removeRx(idx: number) {
@@ -236,7 +250,10 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
             frequency: rx.frequency || null,
             duration: rx.duration || null,
             quantity: rx.quantity ? parseInt(rx.quantity) : null,
-            instructions: rx.instructions || null
+            instructions: rx.instructions || null,
+            isActive: rx.isActive,
+            stoppedAt: !rx.isActive && rx.stoppedAt ? new Date(rx.stoppedAt).toISOString() : null,
+            stopReason: !rx.isActive && rx.stopReason ? rx.stopReason : null
           }))
       }
 
@@ -524,33 +541,71 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
               </button>
             </div>
             {prescriptions.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {prescriptions.map((rx, idx) => (
-                  <div key={idx} className="grid grid-cols-6 gap-2 items-end">
-                    <div className="col-span-2">
-                      {idx === 0 && <label className={labelCls}>{t('medicine')}</label>}
-                      <input className={inputCls} placeholder={t('medicineName')} value={rx.medicineName} onChange={(e) => updateRx(idx, 'medicineName', e.target.value)} />
-                    </div>
-                    <div>
-                      {idx === 0 && <label className={labelCls}>{t('dosage')}</label>}
-                      <input className={inputCls} placeholder="500mg" value={rx.dosage} onChange={(e) => updateRx(idx, 'dosage', e.target.value)} />
-                    </div>
-                    <div>
-                      {idx === 0 && <label className={labelCls}>{t('frequency')}</label>}
-                      <input className={inputCls} placeholder="3x/day" value={rx.frequency} onChange={(e) => updateRx(idx, 'frequency', e.target.value)} />
-                    </div>
-                    <div>
-                      {idx === 0 && <label className={labelCls}>{t('duration')}</label>}
-                      <input className={inputCls} placeholder="7 days" value={rx.duration} onChange={(e) => updateRx(idx, 'duration', e.target.value)} />
-                    </div>
-                    <div className="flex items-end gap-1">
-                      <div className="flex-1">
-                        {idx === 0 && <label className={labelCls}>{t('qty')}</label>}
-                        <input className={inputCls} type="number" min="0" placeholder="–" value={rx.quantity} onChange={(e) => updateRx(idx, 'quantity', e.target.value)} />
+                  <div key={idx} className={`rounded-xl border p-3 space-y-2 transition-colors ${rx.isActive ? 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/60' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/30 opacity-75'}`}>
+                    {/* Row 1: medicine + dosage + frequency + duration + qty + delete */}
+                    <div className="grid grid-cols-6 gap-2 items-end">
+                      <div className="col-span-2">
+                        {idx === 0 && <label className={labelCls}>{t('medicine')}</label>}
+                        <input className={inputCls} placeholder={t('medicineName')} value={rx.medicineName} onChange={(e) => updateRx(idx, 'medicineName', e.target.value)} />
                       </div>
-                      <button type="button" onClick={() => removeRx(idx)} className="mb-px p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        <Trash2 className="h-4 w-4" />
+                      <div>
+                        {idx === 0 && <label className={labelCls}>{t('dosage')}</label>}
+                        <input className={inputCls} placeholder="500mg" value={rx.dosage} onChange={(e) => updateRx(idx, 'dosage', e.target.value)} />
+                      </div>
+                      <div>
+                        {idx === 0 && <label className={labelCls}>{t('frequency')}</label>}
+                        <input className={inputCls} placeholder="3x/day" value={rx.frequency} onChange={(e) => updateRx(idx, 'frequency', e.target.value)} />
+                      </div>
+                      <div>
+                        {idx === 0 && <label className={labelCls}>{t('duration')}</label>}
+                        <input className={inputCls} placeholder="7 days" value={rx.duration} onChange={(e) => updateRx(idx, 'duration', e.target.value)} />
+                      </div>
+                      <div className="flex items-end gap-1">
+                        <div className="flex-1">
+                          {idx === 0 && <label className={labelCls}>{t('qty')}</label>}
+                          <input className={inputCls} type="number" min="0" placeholder="–" value={rx.quantity} onChange={(e) => updateRx(idx, 'quantity', e.target.value)} />
+                        </div>
+                        <button type="button" onClick={() => removeRx(idx)} className="mb-px p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Row 2: active toggle + stopped date + reason */}
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => updateRx(idx, 'isActive', rx.isActive ? 'false' : 'true')}
+                        className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors ${rx.isActive ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-600'}`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${rx.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                        {rx.isActive ? 'Active' : 'Discontinued'}
                       </button>
+                      {!rx.isActive && (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <label className="text-[11px] text-slate-400 whitespace-nowrap">Stopped on</label>
+                            <input
+                              type="date"
+                              value={rx.stoppedAt}
+                              onChange={(e) => updateRx(idx, 'stoppedAt', e.target.value)}
+                              className="text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            />
+                          </div>
+                          <select
+                            value={rx.stopReason}
+                            onChange={(e) => updateRx(idx, 'stopReason', e.target.value)}
+                            className="text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          >
+                            <option value="">Reason…</option>
+                            <option value="completed">Course completed</option>
+                            <option value="side_effects">Side effects</option>
+                            <option value="not_effective">Not effective</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
