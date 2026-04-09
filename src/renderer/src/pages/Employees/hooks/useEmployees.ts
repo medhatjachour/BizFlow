@@ -5,8 +5,15 @@ import { useLanguage } from '../../../contexts/LanguageContext'
 import logger from '../../../../../shared/utils/logger'
 import type { Employee, EmployeeStats } from '../types'
 
-export const ROLES = ['Cashier', 'Manager', 'Warehouse', 'Accountant', 'Supervisor', 'Delivery', 'Security', 'HR', 'IT', 'Other']
-export const DEPARTMENTS = ['Sales', 'Operations', 'Finance', 'Logistics', 'Management', 'IT', 'HR']
+export const ROLES = [
+  // General
+  'Cashier', 'Manager', 'Supervisor', 'Accountant', 'HR', 'IT',
+  'Warehouse', 'Delivery', 'Security', 'Other',
+  // Clinic / Medical
+  'Doctor', 'Nurse', 'Receptionist', 'Technician', 'Pharmacist',
+  'Lab Technician', 'Physiotherapist', 'Radiologist',
+]
+export const DEPARTMENTS = ['Sales', 'Operations', 'Finance', 'Logistics', 'Management', 'IT', 'HR', 'Clinic', 'Medical', 'Administration']
 
 export const EMPTY_FORM = {
   name: '', role: '', department: '', email: '', phone: '',
@@ -62,7 +69,7 @@ export function useEmployees() {
     const matchQ = !q || e.name.toLowerCase().includes(q) || (e.email ?? '').toLowerCase().includes(q) || e.phone.includes(q) || e.role.toLowerCase().includes(q)
     const matchS = !filterStatus || e.status === filterStatus
     const matchD = !filterDepartment || e.department === filterDepartment
-    const matchR = !filterRole || e.role === filterRole
+    const matchR = !filterRole || e.role.toLowerCase().includes(filterRole.toLowerCase())
     return matchQ && matchS && matchD && matchR
   })
 
@@ -143,7 +150,7 @@ export function useEmployees() {
       nationalId: emp.nationalId || '', employmentType: emp.employmentType as EmployeeFormData['employmentType'],
       status: emp.status as EmployeeFormData['status'], salary: emp.salary, salaryType: emp.salaryType,
       emergencyName: emp.emergencyName || '', emergencyPhone: emp.emergencyPhone || '',
-      notes: emp.notes || '', hireDate: emp.hireDate?.split('T')[0] || '',
+      notes: emp.notes || '', hireDate: emp.hireDate ? new Date(emp.hireDate).toISOString().split('T')[0] : '',
       performanceScore: emp.performanceScore || 0
     })
     setShowEditModal(true)

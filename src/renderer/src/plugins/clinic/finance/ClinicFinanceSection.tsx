@@ -5,7 +5,7 @@
  * Tabs: Overview · Revenue
  *
  * Expenses and Payroll have been moved to the kernel pages:
- *   - Clinic Staff/Payroll  → /employees  (Clinic Staff tab)
+ *   - Clinic Staff  → /employees  (managed as regular employees with clinic roles)
  *   - Clinic Expenses       → /expenses   (Clinic Expenses section)
  */
 

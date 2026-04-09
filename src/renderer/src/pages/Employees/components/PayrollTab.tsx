@@ -9,9 +9,10 @@ interface Props {
   payrollRecords: EmployeePayroll[]
   onAdd: () => void
   onMarkPaid: (id: string) => void
+  disabled?: boolean
 }
 
-export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid }: Props) {
+export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid, disabled }: Props) {
   const { t } = useLanguage()
   const [markingId, setMarkingId] = useState<string | null>(null)
 
@@ -24,9 +25,11 @@ export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid }: Props)
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-slate-900 dark:text-white">{t('empPayrollRecords')}</h3>
-        <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-          <Plus size={14} /> {t('empAddEditPayroll')}
-        </button>
+        {!disabled && (
+          <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
+            <Plus size={14} /> {t('empAddEditPayroll')}
+          </button>
+        )}
       </div>
       {payrollRecords.length === 0 ? (
         <p className="text-slate-500 text-center py-12">{t('empNoPayrollYet')}</p>
@@ -55,7 +58,7 @@ export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid }: Props)
                   </td>
                   <td className="px-4 py-3 text-slate-500">{p.paidDate ? new Date(p.paidDate).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3">
-                    {p.status === 'pending' && (
+                    {!disabled && p.status === 'pending' && (
                       <button
                         onClick={() => handleMarkPaid(p.id)}
                         disabled={markingId === p.id}

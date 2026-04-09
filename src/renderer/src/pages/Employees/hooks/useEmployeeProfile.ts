@@ -39,6 +39,14 @@ export function useEmployeeProfile(id: string | undefined) {
   const [noteText, setNoteText] = useState('')
   const [savingNote, setSavingNote] = useState(false)
 
+  // ── End contract modal ────────────────────────────────────────────────────
+  const [showTerminateModal, setShowTerminateModal] = useState(false)
+  const [terminateForm, setTerminateForm] = useState({
+    terminationDate: new Date().toISOString().split('T')[0],
+    terminationNote: '',
+  })
+  const [savingTerminate, setSavingTerminate] = useState(false)
+
   // ── Confirm dialog ────────────────────────────────────────────────────────
   const [confirm, setConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null)
 
@@ -233,6 +241,47 @@ export function useEmployeeProfile(id: string | undefined) {
     })
   }
 
+  // ── End Contract ──────────────────────────────────────────────────────────
+  const endContract = async () => {
+    if (!emp) return
+    setSavingTerminate(true)
+    try {
+      const res = await ipc.employees.update(emp.id, {
+        status: 'terminated',
+        terminationDate: new Date(terminateForm.terminationDate).toISOString(),
+        terminationNote: terminateForm.terminationNote || null,
+      })
+      if (res?.success) {
+        toast.success?.('Contract ended — employee marked as terminated')
+        setShowTerminateModal(false)
+        load()
+      } else {
+        toast.error?.(res?.message || 'Failed to end contract')
+      }
+    } catch (err: any) { toast.error?.(err.message) }
+    finally { setSavingTerminate(false) }
+  }
+
+  const [reactivating, setReactivating] = useState(false)
+  const reactivate = async () => {
+    if (!emp) return
+    setReactivating(true)
+    try {
+      const res = await ipc.employees.update(emp.id, {
+        status: 'active',
+        terminationDate: null,
+        terminationNote: null,
+      })
+      if (res?.success) {
+        toast.success?.('Employee reactivated')
+        load()
+      } else {
+        toast.error?.(res?.message || 'Failed to reactivate')
+      }
+    } catch (err: any) { toast.error?.(err.message) }
+    finally { setReactivating(false) }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   const toDateKey = (d: string | Date) =>
     (d instanceof Date ? d : new Date(d)).toISOString().split('T')[0]
@@ -282,6 +331,10 @@ export function useEmployeeProfile(id: string | undefined) {
     showOTModal, setShowOTModal, otForm, setOtForm, savingOT, saveOvertime, approveOvertime, deleteOvertime,
     // confirm dialog
     confirm, setConfirm,
+    // end contract
+    showTerminateModal, setShowTerminateModal, terminateForm, setTerminateForm, savingTerminate, endContract,
+    // reactivate
+    reactivating, reactivate,
     // misc
     buildCalendar, reload: load
   }

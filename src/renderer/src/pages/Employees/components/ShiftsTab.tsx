@@ -29,9 +29,10 @@ interface Props {
   shifts: EmployeeShift[]
   onAdd: () => void
   onDelete: (id: string) => void
+  disabled?: boolean
 }
 
-export default function ShiftsTab({ shifts, onAdd, onDelete }: Props) {
+export default function ShiftsTab({ shifts, onAdd, onDelete, disabled }: Props) {
   const { t } = useLanguage()
 
   const shiftTypeLabels: Record<string, string> = {
@@ -47,9 +48,11 @@ export default function ShiftsTab({ shifts, onAdd, onDelete }: Props) {
         <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <Clock size={16} /> {t('empShiftSchedule')}
         </h3>
-        <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-          <Plus size={14} /> {t('empAddShift')}
-        </button>
+        {!disabled && (
+          <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
+            <Plus size={14} /> {t('empAddShift')}
+          </button>
+        )}
       </div>
 
       {shifts.length === 0 ? (
@@ -82,9 +85,11 @@ export default function ShiftsTab({ shifts, onAdd, onDelete }: Props) {
                   <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">{shiftDuration(s.startTime, s.endTime, s.breakMins)}</td>
                   <td className="px-4 py-3 text-slate-500 max-w-[160px] truncate">{s.notes ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <button onClick={() => onDelete(s.id)} className="p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
+                    {!disabled && (
+                      <button onClick={() => onDelete(s.id)} className="p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

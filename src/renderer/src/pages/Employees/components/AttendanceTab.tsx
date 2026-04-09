@@ -34,9 +34,10 @@ interface Props {
   attendance: EmployeeAttendance[]
   onLog: () => void
   onEdit: (a: EmployeeAttendance) => void
+  disabled?: boolean
 }
 
-export default function AttendanceTab({ attendance, onLog, onEdit }: Props) {
+export default function AttendanceTab({ attendance, onLog, onEdit, disabled }: Props) {
   const { t } = useLanguage()
   const now = new Date()
   const [monthFilter, setMonthFilter] = useState(
@@ -91,12 +92,14 @@ export default function AttendanceTab({ attendance, onLog, onEdit }: Props) {
             ))}
           </select>
         </div>
-        <button
-          onClick={onLog}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors"
-        >
-          <Plus size={14} /> {t('empLogAttendance')}
-        </button>
+        {!disabled && (
+          <button
+            onClick={onLog}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors"
+          >
+            <Plus size={14} /> {t('empLogAttendance')}
+          </button>
+        )}
       </div>
 
       {/* Summary pills */}
@@ -118,9 +121,11 @@ export default function AttendanceTab({ attendance, onLog, onEdit }: Props) {
         <div className="text-center py-14 text-slate-400 dark:text-slate-500">
           <CalendarOff size={40} className="mx-auto mb-3 opacity-40" />
           <p className="text-sm">{t('empNoRecordsFor', { month: MONTHS[parseInt(mo) - 1], year: yr })}</p>
-          <button onClick={onLog} className="mt-3 text-sm text-primary hover:underline">
-            {t('empAddAttendanceRecord')} →
-          </button>
+          {!disabled && (
+            <button onClick={onLog} className="mt-3 text-sm text-primary hover:underline">
+              {t('empAddAttendanceRecord')} →
+            </button>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
@@ -148,13 +153,15 @@ export default function AttendanceTab({ attendance, onLog, onEdit }: Props) {
                   <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">{calcDuration(a.checkIn, a.checkOut)}</td>
                   <td className="px-4 py-3 text-slate-500 max-w-[160px] truncate">{a.notes ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => onEdit(a)}
-                      title={t('editEmployee')}
-                      className="p-1.5 rounded text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                    >
-                      <Pencil size={13} />
-                    </button>
+                    {!disabled && (
+                      <button
+                        onClick={() => onEdit(a)}
+                        title={t('editEmployee')}
+                        className="p-1.5 rounded text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

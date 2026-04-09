@@ -7,9 +7,10 @@ interface Props {
   onAdd: () => void
   onApprove: (id: string) => void
   onDelete: (id: string) => void
+  disabled?: boolean
 }
 
-export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onDelete }: Props) {
+export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onDelete, disabled }: Props) {
   const { t } = useLanguage()
   const totalHours = overtimeRecords.reduce((sum, o) => sum + o.hours, 0)
   const approvedHours = overtimeRecords.filter(o => o.approved).reduce((sum, o) => sum + o.hours, 0)
@@ -20,9 +21,11 @@ export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onDelet
         <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
           <AlarmClock size={16} /> {t('empOvertimeRecords')}
         </h3>
-        <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-          <Plus size={14} /> {t('empLogOvertime')}
-        </button>
+        {!disabled && (
+          <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
+            <Plus size={14} /> {t('empLogOvertime')}
+          </button>
+        )}
       </div>
 
       {/* Summary row */}
@@ -75,7 +78,7 @@ export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onDelet
                   <td className="px-4 py-3 text-slate-500">{o.approvedBy ?? '—'}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      {!o.approved && (
+                      {!disabled && !o.approved && (
                         <button
                           onClick={() => onApprove(o.id)}
                           title={t('empApproved')}
@@ -84,9 +87,11 @@ export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onDelet
                           <CheckCircle size={14} />
                         </button>
                       )}
-                      <button onClick={() => onDelete(o.id)} className="p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        <Trash2 size={14} />
-                      </button>
+                      {!disabled && (
+                        <button onClick={() => onDelete(o.id)} className="p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
