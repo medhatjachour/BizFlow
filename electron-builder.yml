@@ -24,8 +24,6 @@ files:
 extraResources:
   - from: prisma/template.db
     to: prisma/template.db
-  - from: prisma/migrations
-    to: prisma/migrations
   - from: prisma/schema.prisma
     to: prisma/schema.prisma
 asarUnpack:

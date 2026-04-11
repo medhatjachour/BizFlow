@@ -5,6 +5,7 @@
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { app } from 'electron'
 import { createLogger } from '../utils/logger'
 
@@ -61,7 +62,7 @@ export async function initializeDatabase(): Promise<void> {
 
     if (dbExists && dbSizeBytes < EMPTY_DB_THRESHOLD) {
       log.info(`[DB Init] ⚠️  Database file exists but looks empty (${dbSizeBytes} bytes) — likely pre-created by Prisma before init ran. Removing and re-initialising from template.`)
-      fs.unlinkSync(dbPath)
+        await unlinkWithRetry(dbPath, log)
     }
 
     log.info('[DB Init] 🎉 First run or empty DB — initialising database from template...')
@@ -453,3 +454,23 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
     throw error
   }
 }
+
+  /**
+   * Delete a file, retrying on EBUSY/EPERM (Windows file-lock races).
+   * Waits up to ~1.5 s before giving up.
+   */
+  async function unlinkWithRetry(filePath: string, logger: ReturnType<typeof createLogger>, retries = 5, delayMs = 300): Promise<void> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        fs.unlinkSync(filePath)
+        return
+      } catch (err: any) {
+        if ((err.code === 'EBUSY' || err.code === 'EPERM') && attempt < retries) {
+          logger.warn(`[DB Init] File locked (${err.code}), retrying in ${delayMs}ms… (attempt ${attempt + 1}/${retries})`)
+          await sleep(delayMs)
+        } else {
+          throw err
+        }
+      }
+    }
+  }

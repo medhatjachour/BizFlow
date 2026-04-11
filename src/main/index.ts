@@ -9,7 +9,7 @@ import { schedule, ScheduledTask } from 'node-cron'
 import icon from '../../resources/icon.png?asset'
 
 // Import IPC handlers registration function
-import { registerAllHandlers, prisma } from './ipc/handlers/index'
+import { registerAllHandlers, prisma, initializePrisma } from './ipc/handlers/index'
 import { initializeDatabase } from './database/init'
 import { MigrationManager } from './services/MigrationManager'
 // Static imports — fixes "dynamically and statically imported" Vite warnings
@@ -190,11 +190,17 @@ app.whenReady().then(async () => {
   mainLog.info('Log file:', log.transports.file.getFile().path)
 
   try {
-    // Initialize database (create in userData on first run)
+    // 1. Ensure the database file exists and is seeded BEFORE Prisma opens it.
+    //    initializePrisma() (called below) is what actually opens the SQLite file,
+    //    so there is no EBUSY race on first production run.
     mainLog.info('Initializing database...')
     await initializeDatabase()
 
-    // Register all IPC handlers BEFORE creating windows
+    // 2. Now it is safe to open Prisma — the seeded template is already in place.
+    mainLog.info('Initializing Prisma client...')
+    await initializePrisma()
+
+    // 3. Register all IPC handlers (they use the prisma export from handlers/index).
     mainLog.info('Registering IPC handlers...')
     registerAllHandlers()
 
