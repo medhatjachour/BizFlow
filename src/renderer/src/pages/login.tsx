@@ -7,7 +7,50 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
-import { Eye, EyeOff, Store, Zap, Shield, TrendingUp, Lock, User } from 'lucide-react'
+import { Eye, EyeOff, Store, Zap, Shield, TrendingUp, Lock, User, AlertCircle, ExternalLink } from 'lucide-react'
+
+// ─── App-wide licence expiry ──────────────────────────────────────────────────
+const APP_EXPIRY_DATE = new Date('2026-08-13T00:00:00')
+const isExpired = Date.now() > APP_EXPIRY_DATE.getTime()
+
+function ExpiredScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 p-8 text-center">
+      <div className="w-full max-w-md">
+        {/* Icon */}
+        <div className="mx-auto mb-6 h-24 w-24 rounded-full bg-red-900/30 border-2 border-red-700/50 flex items-center justify-center">
+          <AlertCircle className="h-12 w-12 text-red-400" />
+        </div>
+
+        {/* Heading */}
+        <h1 className="text-3xl font-bold text-white mb-3">License Expired</h1>
+        <p className="text-slate-400 text-base leading-relaxed mb-2">
+          Your BizFlow license expired 
+         
+        </p>
+        <p className="text-slate-400 text-base mb-8">
+          Please contact your provider to renew access.
+        </p>
+
+        {/* LinkedIn CTA */}
+        <a
+          href="https://www.linkedin.com/in/medhatjachour"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-3 px-6 py-3.5 bg-[#0A66C2] hover:bg-[#0952a0] text-white font-semibold rounded-xl transition-colors shadow-lg shadow-blue-900/40"
+        >
+          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+          </svg>
+          Contact on LinkedIn — medhatjachour
+          <ExternalLink className="h-4 w-4 opacity-70" />
+        </a>
+
+        <p className="mt-6 text-xs text-slate-600">BizFlow · License expired</p>
+      </div>
+    </div>
+  )
+}
 
 export default function Login() {
   const { t } = useLanguage()
@@ -18,6 +61,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const auth = useAuth()
   const navigate = useNavigate()
+
+  if (isExpired) return <ExpiredScreen />
 
   const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
@@ -229,7 +274,7 @@ export default function Login() {
             </div>
 
             {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <label className="flex items-center cursor-pointer group">
                 <input
                   type="checkbox"
@@ -245,7 +290,7 @@ export default function Login() {
               >
                 Forgot password?
               </button>
-            </div>
+            </div> */}
 
             {/* Sign In Button */}
             <button

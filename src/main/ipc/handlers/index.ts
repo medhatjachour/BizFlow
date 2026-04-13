@@ -42,88 +42,113 @@ const ALL_PLUGINS: IPlugin[] = [
   ...(__PLUGIN_CLINIC__     ? [ClinicPlugin]     : []),
 ]
 
-// Initialize Prisma client
+// Prisma client — initialised lazily via initializePrisma() so it never
+// opens the database file before initializeDatabase() has copied the
+// seeded template into place (avoids EBUSY on first production run).
 let isSeeded = false
 export let prisma: any = null
-try {
-  // In dev mode, use generated Prisma from src/generated/prisma
-  // In production, use the packed src/generated/prisma (unpacked by electron-builder)
-  const isDev = process.env.NODE_ENV === 'development'
-  let PrismaClient
-  
-  if (isDev) {
-    const prismaPath = path.resolve(process.cwd(), 'src', 'generated', 'prisma')
-    PrismaClient = require(prismaPath).PrismaClient
-  } else {
-    // In production, use the unpacked src/generated/prisma
-    // __dirname in production is: /opt/BizFlow/resources/app.asar/out/main
-    const prismaPath = path.resolve(__dirname, '..', '..', '..', 'app.asar.unpacked', 'src', 'generated', 'prisma')
-    log.info('[Database] [PROD] Loading Prisma from:', prismaPath)
-    PrismaClient = require(prismaPath).PrismaClient
-  }
-  if (PrismaClient) {
-    // Use centralized database path function
+
+/**
+ * Initialise the Prisma client and apply SQLite PRAGMAs.
+ * Must be awaited AFTER initializeDatabase() has completed so the database
+ * file already contains the schema from the seeded template.
+ */
+export async function initializePrisma(): Promise<void> {
+  try {
+    const isDev = process.env.NODE_ENV === 'development'
+    let PrismaClient
+
+    if (isDev) {
+      const prismaPath = path.resolve(process.cwd(), 'src', 'generated', 'prisma')
+      PrismaClient = require(prismaPath).PrismaClient
+    } else {
+      const prismaPath = path.resolve(__dirname, '..', '..', '..', 'app.asar.unpacked', 'src', 'generated', 'prisma')
+      log.info('[Database] [PROD] Loading Prisma from:', prismaPath)
+      PrismaClient = require(prismaPath).PrismaClient
+    }
+
+    if (!PrismaClient) {
+      log.warn('[Database] PrismaClient could not be loaded')
+      return
+    }
+
     const dbPath = getDatabasePath()
-    
-    
+
     prisma = new PrismaClient({
       datasources: {
         db: {
-          // SQLite optimization: WAL mode for better concurrency, increased timeout
           url: `file:${dbPath}?connection_limit=1&timeout=60000&journal_mode=WAL`
         }
       },
-      log: ['error'], // Only log errors, disable query logging
-      // Increase transaction timeout from default 5s to 30s
-      // This prevents "Transaction already closed" errors for complex operations
+      log: ['error'],
       transactionOptions: {
-        maxWait: 30000, // Max time to wait for a transaction slot (30s)
-        timeout: 30000, // Max time a transaction can run (30s)
-        isolationLevel: 'Serializable' // Ensure data consistency
+        maxWait: 30000,
+        timeout: 30000,
+        isolationLevel: 'Serializable'
       }
     })
-    
-    
-    // Apply SQLite performance PRAGMAs immediately after client creation.
-    // The journal_mode=WAL in the connection URL string is NOT reliably applied
-    // by Prisma for SQLite — explicit $queryRawUnsafe calls are required.
-    ;(async () => {
+
+    // Apply SQLite performance PRAGMAs — awaited so the connection is fully
+    // open before registerAllHandlers() proceeds.
+    try {
+      await prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL;')
+      await prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL;')
+      await prisma.$queryRawUnsafe('PRAGMA cache_size = -65536;')
+      await prisma.$queryRawUnsafe('PRAGMA temp_store = MEMORY;')
+      await prisma.$queryRawUnsafe('PRAGMA mmap_size = 536870912;')
+      await prisma.$queryRawUnsafe('PRAGMA busy_timeout = 10000;')
+      await prisma.$queryRawUnsafe('PRAGMA foreign_keys = ON;')
+      await prisma.$queryRawUnsafe('PRAGMA optimize;')
+      log.info('[Database] ✅ SQLite PRAGMAs applied')
+
+      // ── Orphan table cleanup ──────────────────────────────────────────────
       try {
-        await prisma.$queryRawUnsafe('PRAGMA journal_mode = WAL;')
-        await prisma.$queryRawUnsafe('PRAGMA synchronous = NORMAL;')
-        await prisma.$queryRawUnsafe('PRAGMA cache_size = -65536;')  // 64 MB page cache
-        await prisma.$queryRawUnsafe('PRAGMA temp_store = MEMORY;')
-        await prisma.$queryRawUnsafe('PRAGMA mmap_size = 536870912;') // 512 MB memory-mapped I/O
-        await prisma.$queryRawUnsafe('PRAGMA busy_timeout = 10000;')  // 10 s wait on locked DB
-        await prisma.$queryRawUnsafe('PRAGMA foreign_keys = ON;')
-        await prisma.$queryRawUnsafe('PRAGMA optimize;')
-        log.info('[Database] ✅ SQLite PRAGMAs applied')
-      } catch (e) {
-        log.error('[Database] Failed to apply SQLite PRAGMAs:', e)
-      }
-    })()
-
-    // Auto-seed on first connection (production only)
-    const isProd = process.env.NODE_ENV !== 'development'
-    if (isProd && !isSeeded) {
-      // Defer seeding to avoid blocking app startup
-      setTimeout(async () => {
-        try {
-          await seedProductionDatabase(prisma)
-          isSeeded = true
-        } catch (error) {
-          log.error('[Database] Failed to seed database:', error)
+        const EXPECTED = new Set<string>([
+          'User', 'FinancialTransaction',
+          'Employee', 'EmployeeAttendance', 'EmployeeDocument',
+          'EmployeeActivityLog', 'EmployeePayroll', 'EmployeeShift', 'EmployeeOvertime',
+          'EmailReport',
+        ])
+        if (__PLUGIN_COMMERCE__)    ['Category','Product','ProductImage','ProductVariant','ProductAttribute','VariantAttributeValue','StockMovement','Store','Customer','SaleTransaction','SaleItem','Deposit','Installment','InstallmentPlan','ReceiptTemplate','Supplier','SupplierProduct','PurchaseOrder','PurchaseOrderItem'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_BAKERY__)      ['Recipe','RecipeIngredient','ProductionBatch','PantryIngredient','WasteLog','ProductionSchedule'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_RESTAURANT__)  ['RestaurantTable','TableReservation','MenuItem','DineInOrder','DineInOrderItem'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_WAREHOUSE__)   ['WarehouseLocation','WarehouseStock','StockTransfer','StockTransferItem'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_CLINIC__)      ['ClinicPatient','ClinicSession','ClinicPrescription','ClinicCheckResult','ClinicAppointment','ClinicExpense','ClinicStaff','ClinicSalaryRecord'].forEach(t => EXPECTED.add(t))
+        const allTables: { name: string }[] = await prisma.$queryRawUnsafe(
+          `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+        )
+        const orphans = allTables.map((r: { name: string }) => r.name).filter(t => !EXPECTED.has(t))
+        if (orphans.length > 0) {
+          log.info(`[Database] 🧹 Dropping ${orphans.length} orphan table(s): ${orphans.join(', ')}`)
+          for (const table of orphans) {
+            await prisma.$queryRawUnsafe(`DROP TABLE IF EXISTS "${table}"`)
+          }
+          log.info('[Database] ✅ Orphan tables removed')
         }
-      }, 1000)
+      } catch (cleanupErr) {
+        log.warn('[Database] Orphan table cleanup failed (non-fatal):', cleanupErr)
+      }
+    } catch (e) {
+      log.error('[Database] Failed to apply SQLite PRAGMAs:', e)
     }
-  }
-} catch (e) {
-  log.error('[Database] ⚠️  Error initializing Prisma:', e)
-  log.warn('[Database] Using mock fallbacks')
-}
 
-if (!prisma) {
-  log.warn('[Dev Mode] 🔄 Prisma client disabled - IPC handlers using mock data')
+    // Seed setup account if not already present
+    if (!isSeeded) {
+      try {
+        await seedProductionDatabase(prisma)
+        isSeeded = true
+      } catch (error) {
+        log.error('[Database] Failed to seed database:', error)
+      }
+    }
+  } catch (e) {
+    log.error('[Database] ⚠️  Error initializing Prisma:', e)
+    log.warn('[Database] Using mock fallbacks')
+  }
+
+  if (!prisma) {
+    log.warn('[Dev Mode] 🔄 Prisma client disabled - IPC handlers using mock data')
+  }
 }
 
 /**

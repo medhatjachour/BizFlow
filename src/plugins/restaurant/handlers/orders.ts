@@ -11,9 +11,14 @@ async function recalcOrderTotals(prisma: any, orderId: string) {
 }
 
 export function registerOrderHandlers(prisma: any) {
-  ipcMain.handle('restaurant:getOrders', async (_e, options?: { status?: string }) => {
+  ipcMain.handle('restaurant:getOrders', async (_e, options?: { status?: string; startDate?: string; endDate?: string }) => {
     try {
-      const where = options?.status ? { status: options.status } : {}
+      const where: any = options?.status ? { status: options.status } : {}
+      if (options?.startDate || options?.endDate) {
+        where.closedAt = {}
+        if (options.startDate) where.closedAt.gte = new Date(options.startDate)
+        if (options.endDate) where.closedAt.lte = new Date(options.endDate)
+      }
       return await prisma.dineInOrder.findMany({
         where,
         include: {

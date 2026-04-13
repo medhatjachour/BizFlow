@@ -44,6 +44,8 @@ export default function EmployeeProfilePage() {
         onCheckOut={s.handleCheckOut}
         onLogAttendance={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], s.todayAtt)}
         onAddNote={() => s.setShowNoteModal(true)}
+        onEndContract={() => s.setShowTerminateModal(true)}
+        onReactivate={s.reactivate}
       />
 
       {/* Tabs panel */}
@@ -57,12 +59,26 @@ export default function EmployeeProfilePage() {
           documents: s.emp.documents.length,
         }} />
         <div className="p-6">
-          {s.tab === 'overview'   && <OverviewTab emp={s.emp} calendar={calendar} onLogDate={(date, att) => s.openAttendanceFor(date, att)} />}
-          {s.tab === 'attendance' && <AttendanceTab attendance={s.emp.attendance} onLog={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], null)} onEdit={a => s.openAttendanceFor(new Date(a.date).toISOString().split('T')[0], a)} />}
-          {s.tab === 'shifts'     && <ShiftsTab shifts={s.emp.shifts} onAdd={() => s.setShowShiftModal(true)} onDelete={s.deleteShift} />}
-          {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onDelete={s.deleteOvertime} />}
-          {s.tab === 'payroll'    && <PayrollTab payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} />}
-          {s.tab === 'activity'   && <ActivityTab activityLogs={s.emp.activityLogs} onAddNote={() => s.setShowNoteModal(true)} />}
+          {s.emp.status === 'terminated' && (
+            <div className="mb-5 flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
+              <span className="text-red-500 text-lg leading-none mt-0.5">⚠</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-red-700 dark:text-red-400">
+                  Contract ended{s.emp.terminationDate ? ` on ${new Date(s.emp.terminationDate).toLocaleDateString()}` : ''}
+                </p>
+                {s.emp.terminationNote && (
+                  <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-0.5">{s.emp.terminationNote}</p>
+                )}
+                <p className="text-xs text-red-500/70 dark:text-red-400/60 mt-1">All actions are locked. Use the Reactivate button to restore.</p>
+              </div>
+            </div>
+          )}
+          {s.tab === 'overview'   && <OverviewTab emp={s.emp} calendar={calendar} onLogDate={(date, att) => s.openAttendanceFor(date, att)} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'attendance' && <AttendanceTab attendance={s.emp.attendance} onLog={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], null)} onEdit={a => s.openAttendanceFor(new Date(a.date).toISOString().split('T')[0], a)} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'shifts'     && <ShiftsTab shifts={s.emp.shifts} onAdd={() => s.setShowShiftModal(true)} onDelete={s.deleteShift} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onDelete={s.deleteOvertime} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'payroll'    && <PayrollTab payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} onMarkPaid={s.markPayrollPaid} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'activity'   && <ActivityTab activityLogs={s.emp.activityLogs} onAddNote={() => s.setShowNoteModal(true)} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'documents'  && <DocumentsTab documents={s.emp.documents} />}
         </div>
       </div>
@@ -296,6 +312,52 @@ export default function EmployeeProfilePage() {
           <div className="flex justify-end gap-3">
             <button onClick={() => s.setConfirm(null)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
             <button onClick={s.confirm?.onConfirm} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors">{t('delete')}</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── End Contract Modal ───────────────────────────────────────────── */}
+      <Modal isOpen={s.showTerminateModal} onClose={() => s.setShowTerminateModal(false)} title="End Contract" size="sm">
+        <div className="space-y-5">
+          <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
+            <span className="text-red-500 mt-0.5">⚠</span>
+            <p className="text-sm text-red-700 dark:text-red-400">
+              This will mark <strong>{s.emp?.name}</strong> as <strong>terminated</strong>. Their data is preserved and can be reinstated by editing the employee record.
+            </p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Termination Date</label>
+            <input
+              type="date"
+              value={s.terminateForm.terminationDate}
+              onChange={e => s.setTerminateForm(p => ({ ...p, terminationDate: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Reason / Note (optional)</label>
+            <textarea
+              rows={3}
+              value={s.terminateForm.terminationNote}
+              onChange={e => s.setTerminateForm(p => ({ ...p, terminationNote: e.target.value }))}
+              placeholder="Resignation, end of contract, redundancy…"
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-1 border-t border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => s.setShowTerminateModal(false)}
+              className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={s.endContract}
+              disabled={s.savingTerminate}
+              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {s.savingTerminate ? 'Saving…' : 'End Contract'}
+            </button>
           </div>
         </div>
       </Modal>

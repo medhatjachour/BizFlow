@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Edit2, Trash2, LogIn, LogOut, ChevronRight, Mail, Phone, Building2, Briefcase, Calendar, Star } from 'lucide-react'
+import { Edit2, Trash2, LogIn, LogOut, ChevronRight, Mail, Phone, Briefcase, Star } from 'lucide-react'
 import type { Employee } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
@@ -71,54 +71,53 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Phone size={12} className="shrink-0" />{emp.phone}
           </div>
-          {emp.department && (
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <Building2 size={12} className="shrink-0" />{emp.department}
-            </div>
-          )}
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Briefcase size={12} className="shrink-0" />
-            <span className="font-medium text-slate-700 dark:text-slate-300">${Number(emp.salary).toLocaleString()}</span>
-            <span>/{emp.salaryType}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <Calendar size={12} className="shrink-0" />
-            {t('empHiredLabel')} {new Date(emp.hireDate).toLocaleDateString()}
+            <span className="capitalize">{emp.salaryType}</span>
+            <span className="ml-auto font-medium text-slate-600 dark:text-slate-300">{t('empHired') ?? 'Hired'} {new Date(emp.hireDate).toLocaleDateString()}</span>
           </div>
         </div>
       </div>
 
-      <div className="px-5 pb-3 flex gap-2 flex-wrap border-t border-slate-100 dark:border-slate-700 pt-3">
-        {emp.status === 'active' && (
-          <>
-            <button
-              onClick={() => onCheckIn(emp)}
-              disabled={checkingIn === emp.id}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium transition-colors disabled:opacity-50"
-            >
-              <LogIn size={12} /> {t('empCheckIn')}
+      <div className="border-t border-slate-100 dark:border-slate-700">
+        {/* Primary CTA */}
+        <div className="px-4 pt-3 pb-2">
+          <button
+            onClick={() => navigate(`/employees/${emp.id}`)}
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-primary/8 text-primary hover:bg-primary/15 text-xs font-semibold transition-colors"
+          >
+            {t('empViewProfile') ?? 'View Profile'} <ChevronRight size={13} />
+          </button>
+        </div>
+        {/* Secondary actions */}
+        <div className="px-4 pb-3 flex items-center gap-1.5">
+          {emp.status === 'active' && (
+            <>
+              <button
+                onClick={() => onCheckIn(emp)}
+                disabled={checkingIn === emp.id}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium transition-colors disabled:opacity-50"
+              >
+                <LogIn size={11} /> {t('empCheckIn')}
+              </button>
+              <button
+                onClick={() => onCheckOut(emp)}
+                disabled={checkingIn === emp.id}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium transition-colors disabled:opacity-50"
+              >
+                <LogOut size={11} /> {t('empCheckOut')}
+              </button>
+            </>
+          )}
+          <div className="ml-auto flex gap-1">
+            <button onClick={() => onEdit(emp)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+              <Edit2 size={14} />
             </button>
-            <button
-              onClick={() => onCheckOut(emp)}
-              disabled={checkingIn === emp.id}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium transition-colors disabled:opacity-50"
-            >
-              <LogOut size={12} /> {t('empCheckOut')}
+            <button onClick={() => onDelete(emp)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              <Trash2 size={14} />
             </button>
-          </>
-        )}
-        <button
-          onClick={() => navigate(`/employees/${emp.id}`)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-xs font-medium transition-colors ml-auto"
-        >
-          View <ChevronRight size={12} />
-        </button>
-        <button onClick={() => onEdit(emp)} className="p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-          <Edit2 size={14} />
-        </button>
-        <button onClick={() => onDelete(emp)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-          <Trash2 size={14} />
-        </button>
+          </div>
+        </div>
       </div>
     </div>
   )

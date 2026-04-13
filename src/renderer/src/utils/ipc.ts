@@ -135,7 +135,9 @@ const mockIPC = {
     },
     payroll: {
       upsert: async (_data: any) => ({ success: true }),
-      getAll: async (_year: number) => []
+      getAll: async (_year: number) => [],
+      markPaid: async (_id: string) => ({ success: true }),
+      getSummary: async (_params: any) => ({})
     },
     activity: {
       add: async (_data: any) => ({ success: true })
@@ -527,7 +529,9 @@ export const ipc = isElectron ? {
     },
     payroll: {
       upsert: (data: any) => window.electron.ipcRenderer.invoke('employees:payroll:upsert', data),
-      getAll: (year: number) => window.electron.ipcRenderer.invoke('employees:payroll:getAll', { year })
+      getAll: (year: number) => window.electron.ipcRenderer.invoke('employees:payroll:getAll', { year }),
+      markPaid: (id: string) => window.electron.ipcRenderer.invoke('employees:payroll:markPaid', id),
+      getSummary: (params: any) => window.electron.ipcRenderer.invoke('employees:payroll:getSummary', params)
     },
     activity: {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:activity:add', data)

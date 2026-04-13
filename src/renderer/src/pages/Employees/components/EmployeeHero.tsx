@@ -1,4 +1,4 @@
-import { LogIn, LogOut, Edit2, Plus } from 'lucide-react'
+import { LogIn, LogOut, Edit2, Plus, UserX, UserCheck } from 'lucide-react'
 import type { EmployeeProfile, EmployeeAttendance } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
@@ -18,7 +18,7 @@ function avatarColor(name: string) {
   return colors[h % colors.length]
 }
 
-import { Mail, Phone, Briefcase, Calendar, Star } from 'lucide-react'
+import { Mail, Phone, Briefcase, Calendar, Star, Ban } from 'lucide-react'
 
 interface Props {
   emp: EmployeeProfile
@@ -29,9 +29,11 @@ interface Props {
   onCheckOut: () => void
   onLogAttendance: () => void
   onAddNote: () => void
+  onEndContract: () => void
+  onReactivate: () => void
 }
 
-export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, onCheckIn, onCheckOut, onLogAttendance, onAddNote }: Props) {
+export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, onCheckIn, onCheckOut, onLogAttendance, onAddNote, onEndContract, onReactivate }: Props) {
   const { t } = useLanguage()
   const alreadyIn  = !!todayAtt?.checkIn
   const alreadyOut = !!todayAtt?.checkOut
@@ -98,6 +100,25 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
           </div>
         </div>
 
+        {emp.status === 'terminated' && emp.terminationDate && (
+          <div className="flex items-center gap-2 mt-3 text-sm text-red-600 dark:text-red-400">
+            <Ban size={14} className="shrink-0" />
+            <span>Terminated {new Date(emp.terminationDate).toLocaleDateString()}</span>
+            {emp.terminationNote && <span className="text-xs text-red-400/80 truncate">· {emp.terminationNote}</span>}
+          </div>
+        )}
+
+        {emp.status === 'terminated' && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+            <button
+              onClick={onReactivate}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 text-sm font-medium transition-colors border border-green-200 dark:border-green-800"
+            >
+              <UserCheck size={14} /> Reactivate Employee
+            </button>
+          </div>
+        )}
+
         {emp.status === 'active' && (
           <div className="flex items-center gap-2 mt-4 flex-wrap">
             {/* Today's status pill */}
@@ -151,6 +172,18 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
             </button>
             <button onClick={onAddNote} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">
               <Plus size={14} /> {t('empAddNote')}
+            </button>
+          </div>
+        )}
+
+        {/* End Contract — always available for non-terminated employees */}
+        {emp.status !== 'terminated' && (
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
+            <button
+              onClick={onEndContract}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 text-sm font-medium transition-colors border border-red-200 dark:border-red-800"
+            >
+              <UserX size={14} /> End Contract
             </button>
           </div>
         )}

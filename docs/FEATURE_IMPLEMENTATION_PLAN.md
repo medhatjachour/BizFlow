@@ -1,7 +1,7 @@
 # BizFlow Feature Implementation Plan
 
-> **Status:** Planning Phase  
-> **Last Updated:** November 22, 2025  
+> **Status:** Partially outdated — written November 2025. Many Phase 1 features are now implemented (Email Reports, Barcode Scanning, Keyboard Shortcuts). Use `ARCHITECTURE.md` and `CODEBASE_MAP.md` for current state.
+> **Last Updated:** November 22, 2025
 > **Version:** 2.0 Roadmap
 
 This document outlines the strategic plan for implementing new features in BizFlow. Features are prioritized by business impact, implementation complexity, and user value.

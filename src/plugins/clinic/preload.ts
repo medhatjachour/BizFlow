@@ -92,5 +92,47 @@ export const clinicPreload = {
 
   // ─── PDF Export ────────────────────────────────────────────────────────────
   patients_exportPdf: (data: { patient: any; sessions: any[]; stats: any; checkResults: any[] }) =>
-    ipcRenderer.invoke('clinic:patients:exportPdf', data)
+    ipcRenderer.invoke('clinic:patients:exportPdf', data),
+
+  // ─── Expenses ──────────────────────────────────────────────────────────────
+  expenses: {
+    getAll: (params?: { period?: string; category?: string }) =>
+      ipcRenderer.invoke('clinic:expenses:getAll', params),
+    summary: (period?: string) =>
+      ipcRenderer.invoke('clinic:expenses:summary', period),
+    breakdown: (params?: { period?: string; category?: string }) =>
+      ipcRenderer.invoke('clinic:expenses:breakdown', params),
+    create: (data: any) =>
+      ipcRenderer.invoke('clinic:expenses:create', data),
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('clinic:expenses:update', { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('clinic:expenses:delete', id)
+  },
+
+  // ─── Staff & Salaries ──────────────────────────────────────────────────────
+  staff: {
+    getAll: () =>
+      ipcRenderer.invoke('clinic:staff:getAll'),
+    create: (data: any) =>
+      ipcRenderer.invoke('clinic:staff:create', data),
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('clinic:staff:update', { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('clinic:staff:delete', id),
+    salary: {
+      getAll: (params?: { staffId?: string; year?: number }) =>
+        ipcRenderer.invoke('clinic:staff:salary:getAll', params),
+      compute: (staffId: string, params: any) =>
+        ipcRenderer.invoke('clinic:staff:salary:compute', { staffId, params }),
+      summary: (year?: number) =>
+        ipcRenderer.invoke('clinic:staff:salary:summary', year),
+      upsert: (data: any) =>
+        ipcRenderer.invoke('clinic:staff:salary:upsert', data),
+      markPaid: (id: string) =>
+        ipcRenderer.invoke('clinic:staff:salary:markPaid', id),
+      delete: (id: string) =>
+        ipcRenderer.invoke('clinic:staff:salary:delete', id)
+    }
+  }
 }

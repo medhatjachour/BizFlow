@@ -1,4 +1,5 @@
-import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, CheckCircle } from 'lucide-react'
 import type { EmployeePayroll } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
@@ -7,17 +8,28 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 interface Props {
   payrollRecords: EmployeePayroll[]
   onAdd: () => void
+  onMarkPaid: (id: string) => void
+  disabled?: boolean
 }
 
-export default function PayrollTab({ payrollRecords, onAdd }: Props) {
+export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid, disabled }: Props) {
   const { t } = useLanguage()
+  const [markingId, setMarkingId] = useState<string | null>(null)
+
+  const handleMarkPaid = async (id: string) => {
+    setMarkingId(id)
+    try { await onMarkPaid(id) } finally { setMarkingId(null) }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-slate-900 dark:text-white">{t('empPayrollRecords')}</h3>
-        <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-          <Plus size={14} /> {t('empAddEditPayroll')}
-        </button>
+        {!disabled && (
+          <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
+            <Plus size={14} /> {t('empAddEditPayroll')}
+          </button>
+        )}
       </div>
       {payrollRecords.length === 0 ? (
         <p className="text-slate-500 text-center py-12">{t('empNoPayrollYet')}</p>
@@ -26,7 +38,7 @@ export default function PayrollTab({ payrollRecords, onAdd }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-700/50">
               <tr>
-                {[t('period'), t('empBaseSalary'), t('empBonuses'), t('empDeductions'), t('empNetPay'), t('status'), t('empPaidDate')].map((h, i) => (
+                {[t('period'), t('empBaseSalary'), t('empBonuses'), t('empDeductions'), t('empNetPay'), t('status'), t('empPaidDate'), ''].map((h, i) => (
                   <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{h}</th>
                 ))}
               </tr>
@@ -45,6 +57,19 @@ export default function PayrollTab({ payrollRecords, onAdd }: Props) {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{p.paidDate ? new Date(p.paidDate).toLocaleDateString() : '—'}</td>
+                  <td className="px-4 py-3">
+                    {!disabled && p.status === 'pending' && (
+                      <button
+                        onClick={() => handleMarkPaid(p.id)}
+                        disabled={markingId === p.id}
+                        title="Mark as Paid"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle size={13} />
+                        {markingId === p.id ? 'Saving…' : 'Mark Paid'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -54,4 +79,5 @@ export default function PayrollTab({ payrollRecords, onAdd }: Props) {
     </div>
   )
 }
+
 

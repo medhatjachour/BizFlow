@@ -4,7 +4,7 @@ import { useToast } from '../../../contexts/ToastContext'
 import { useLanguage } from '../../../contexts/LanguageContext'
 import * as XLSX from 'xlsx'
 import logger from '../../../../../shared/utils/logger'
-import type { Expense, ExpenseCategory, ExpenseFormData, DateRange } from '../types'
+import type { Expense, ExpenseCategory, ExpenseFormData, DateRange, PayrollEmployee } from '../types'
 
 export const EXPENSE_CATEGORIES = [
   { id: 'rent',        nameKey: 'rentLease',        color: 'bg-blue-500' },
@@ -37,6 +37,11 @@ export function useExpenses() {
   const [filterCategory, setFilterCategory] = useState<ExpenseCategory | 'all'>('all')
   const [dateRange, setDateRange] = useState<DateRange>('30days')
   const [totalSalaries, setTotalSalaries] = useState(0)
+  const [totalBaseSalary, setTotalBaseSalary] = useState(0)
+  const [totalOvertimePay, setTotalOvertimePay] = useState(0)
+  const [totalExtraShiftPay, setTotalExtraShiftPay] = useState(0)
+  const [totalGrossPay, setTotalGrossPay] = useState(0)
+  const [payrollDetails, setPayrollDetails] = useState<PayrollEmployee[]>([])
   const [employeeCount, setEmployeeCount] = useState(0)
   const [totalCOGS, setTotalCOGS] = useState(0)
   const [includeCOGS, setIncludeCOGS] = useState(true)
@@ -71,17 +76,41 @@ export function useExpenses() {
     }
   }, [dateRange, buildDateBounds, error, t])
 
+  const getPayrollRange = useCallback((range: DateRange) => {
+    const now = new Date()
+    const endYear  = now.getFullYear()
+    const endMonth = now.getMonth() + 1
+    switch (range) {
+      case '7days':
+      case '30days':
+        return { startYear: endYear, startMonth: endMonth, endYear, endMonth }
+      case '90days': {
+        const start = new Date(now)
+        start.setMonth(start.getMonth() - 2)
+        return { startYear: start.getFullYear(), startMonth: start.getMonth() + 1, endYear, endMonth }
+      }
+      case 'all':
+        return { startYear: 2000, startMonth: 1, endYear, endMonth }
+    }
+  }, [])
+
   const loadSalaryData = useCallback(async () => {
     try {
-      const employees = await window.api.employees.getAll()
-      setTotalSalaries(
-        employees.filter((e: any) => e.salary > 0).reduce((s: number, e: any) => s + e.salary, 0)
-      )
-      setEmployeeCount(employees.length)
+      const range  = getPayrollRange(dateRange)
+      const result = await window.api.employees.payroll.getSummary(range)
+      const emps: PayrollEmployee[] = result?.employees ?? []
+      const tot  = result?.totals  ?? {}
+      setPayrollDetails(emps)
+      setEmployeeCount(emps.length)
+      setTotalBaseSalary(tot.baseSalary    ?? 0)
+      setTotalOvertimePay(tot.overtimePay  ?? 0)
+      setTotalExtraShiftPay(tot.extraShiftPay ?? 0)
+      setTotalGrossPay(tot.grossPay        ?? 0)
+      setTotalSalaries(tot.netPay          ?? 0)
     } catch (err) {
       logger.error('Failed to load salary data:', err)
     }
-  }, [])
+  }, [dateRange, getPayrollRange])
 
   const loadCOGSData = useCallback(async () => {
     try {
@@ -259,8 +288,13 @@ export function useExpenses() {
     totalCOGS,
     totalExpenses,
     totalSalaries,
+    totalBaseSalary,
+    totalOvertimePay,
+    totalExtraShiftPay,
+    totalGrossPay,
     totalWithSalaries,
     employeeCount,
+    payrollDetails,
     categoriesForCharts,
     // helpers
     getCategoryName,

@@ -233,21 +233,111 @@ export function registerEmployeesHandlers(prisma: any) {
   })
 
   // ─── PAYROLL ──────────────────────────────────────────────────────────────
-  ipcMain.handle('employees:payroll:upsert', async (_, { employeeId, month, year, baseSalary, bonuses, deductions, notes, status, paidDate, performedBy }: any) => {
+
+  /** Auto-compute overtime pay from approved EmployeeOvertime records for a given month/year. */
+  async function computeOvertimeForMonth(employeeId: string, month: number, year: number, baseSalary: number) {
+    if (!prisma) return { overtimeHours: 0, overtimePay: 0 }
+    const monthStart = new Date(year, month - 1, 1)
+    const monthEnd   = new Date(year, month,     1)
+    const records = await prisma.employeeOvertime.findMany({
+      where: { employeeId, date: { gte: monthStart, lt: monthEnd } }
+    })
+    const overtimeHours: number = records.reduce((s: number, r: any) => s + (r.hours ?? 0), 0)
+    // Derive hourly rate: monthly salary / 160 standard hours
+    const hourlyRate = baseSalary > 0 ? baseSalary / 160 : 0
+    const overtimePay: number = records.reduce(
+      (s: number, r: any) => s + (r.hours ?? 0) * hourlyRate * (r.multiplier ?? 1.5),
+      0
+    )
+    return { overtimeHours, overtimePay }
+  }
+
+  /** Count extra/double shifts from EmployeeShift records for the month. */
+  async function countExtraShiftsForMonth(employeeId: string, month: number, year: number) {
+    if (!prisma) return 0
+    const monthStart = new Date(year, month - 1, 1)
+    const monthEnd   = new Date(year, month,     1)
+    const shifts = await prisma.employeeShift.findMany({
+      where: { employeeId, date: { gte: monthStart, lt: monthEnd } }
+    })
+    // Count shifts explicitly typed as 'extra', or days with >1 shift
+    const byDay: Record<string, number> = {}
+    for (const s of shifts) {
+      const key = new Date(s.date).toISOString().slice(0, 10)
+      byDay[key] = (byDay[key] ?? 0) + 1
+    }
+    let extras = shifts.filter((s: any) => s.shiftType === 'extra').length
+    for (const count of Object.values(byDay)) {
+      if (count > 1) extras += count - 1
+    }
+    return extras
+  }
+
+  ipcMain.handle('employees:payroll:upsert', async (_, {
+    employeeId, month, year,
+    baseSalary,
+    regularHours,
+    overtimeHours, overtimePay,
+    extraShifts, extraShiftPay, extraShiftBonusPerShift,
+    bonuses, deductions,
+    notes, status, paidDate, performedBy,
+  }: any) => {
     try {
       if (!prisma) return { success: false }
-      const netPay = (baseSalary ?? 0) + (bonuses ?? 0) - (deductions ?? 0)
+
+      const base = baseSalary ?? 0
+      const bon  = bonuses    ?? 0
+      const ded  = deductions ?? 0
+
+      // Auto-compute overtime from EmployeeOvertime records if not provided
+      let otHours = overtimeHours ?? null
+      let otPay   = overtimePay   ?? null
+      if (otPay == null) {
+        const ot = await computeOvertimeForMonth(employeeId, month, year, base)
+        otHours = ot.overtimeHours
+        otPay   = ot.overtimePay
+      }
+
+      // Auto-compute extra shifts if not provided
+      let xShifts = extraShifts   ?? null
+      let xPay    = extraShiftPay ?? null
+      if (xPay == null) {
+        xShifts = await countExtraShiftsForMonth(employeeId, month, year)
+        const bonusPerShift = extraShiftBonusPerShift ?? 0
+        xPay = (xShifts as number) * bonusPerShift
+      }
+
+      const grossPay = base + (otPay as number) + (xPay as number) + bon
+      const netPay   = grossPay - ded
+
+      const data = {
+        baseSalary: base,
+        regularHours: regularHours ?? 0,
+        overtimeHours: otHours as number,
+        overtimePay:   otPay   as number,
+        extraShifts:   xShifts as number,
+        extraShiftPay: xPay    as number,
+        bonuses: bon,
+        deductions: ded,
+        grossPay,
+        netPay,
+        status: status ?? 'pending',
+        notes: notes ?? null,
+        paidDate: paidDate ? new Date(paidDate) : null,
+      }
+
       const record = await prisma.employeePayroll.upsert({
         where: { employeeId_month_year: { employeeId, month, year } },
-        create: { employeeId, month, year, baseSalary, bonuses: bonuses ?? 0, deductions: deductions ?? 0, netPay, status: status ?? 'pending', notes, paidDate: paidDate ? new Date(paidDate) : null },
-        update: { baseSalary, bonuses: bonuses ?? 0, deductions: deductions ?? 0, netPay, status, notes, paidDate: paidDate ? new Date(paidDate) : null }
+        create: { employeeId, month, year, ...data },
+        update: data,
       })
+
       await prisma.employeeActivityLog.create({
         data: {
           employeeId,
           action: status === 'paid' ? 'payroll_paid' : 'payroll_updated',
-          details: `Payroll ${month}/${year}: net $${netPay.toFixed(2)}`,
-          performedBy: performedBy ?? null
+          details: `Payroll ${month}/${year}: base $${base.toFixed(2)}, OT $${(otPay as number).toFixed(2)}, extra-shifts $${(xPay as number).toFixed(2)}, net $${netPay.toFixed(2)}`,
+          performedBy: performedBy ?? null,
         }
       })
       return { success: true, record }
@@ -257,17 +347,146 @@ export function registerEmployeesHandlers(prisma: any) {
     }
   })
 
+  /** Dry-run: compute full payroll breakdown without saving. */
+  ipcMain.handle('employees:payroll:compute', async (_, { employeeId, month, year, baseSalary, extraShiftBonusPerShift }: any) => {
+    try {
+      if (!prisma) return null
+      const base = baseSalary ?? 0
+      const [ot, xShifts] = await Promise.all([
+        computeOvertimeForMonth(employeeId, month, year, base),
+        countExtraShiftsForMonth(employeeId, month, year),
+      ])
+      const bonusPerShift = extraShiftBonusPerShift ?? 0
+      const xPay    = xShifts * bonusPerShift
+      const grossPay = base + ot.overtimePay + xPay
+      return {
+        baseSalary:   base,
+        regularHours: 0,
+        overtimeHours: ot.overtimeHours,
+        overtimePay:   ot.overtimePay,
+        extraShifts:   xShifts,
+        extraShiftPay: xPay,
+        bonuses:    0,
+        deductions: 0,
+        grossPay,
+        netPay: grossPay,
+      }
+    } catch (error) {
+      log.error('Error computing payroll:', error)
+      return null
+    }
+  })
+
   ipcMain.handle('employees:payroll:getAll', async (_, { year }: { year: number }) => {
     try {
       if (!prisma) return []
       return await prisma.employeePayroll.findMany({
         where: { year },
-        include: { employee: { select: { id: true, name: true, role: true, department: true } } },
+        include: { employee: { select: { id: true, name: true, role: true, department: true, salary: true, salaryType: true } } },
         orderBy: [{ month: 'desc' }, { employee: { name: 'asc' } }]
       })
     } catch (error) {
       log.error('Error fetching payroll:', error)
       return []
+    }
+  })
+
+  ipcMain.handle('employees:payroll:markPaid', async (_, id: string) => {
+    try {
+      if (!prisma) return { success: false }
+      const record = await prisma.employeePayroll.update({
+        where: { id },
+        data: { status: 'paid', paidDate: new Date() },
+      })
+      await prisma.employeeActivityLog.create({
+        data: {
+          employeeId: record.employeeId,
+          action: 'payroll_paid',
+          details: `Payroll ${record.month}/${record.year} marked as paid`,
+          performedBy: null,
+        },
+      })
+      return { success: true, record }
+    } catch (error: any) {
+      log.error('Error marking payroll as paid:', error)
+      return { success: false, message: error.message }
+    }
+  })
+
+  /**
+   * getSummary — aggregates payroll records across a range of months/years.
+   * Returns per-employee breakdown totals plus an overall grand total.
+   */
+  ipcMain.handle('employees:payroll:getSummary', async (_, { startYear, startMonth, endYear, endMonth }: { startYear: number; startMonth: number; endYear: number; endMonth: number }) => {
+    try {
+      if (!prisma) return { employees: [], totals: {} }
+
+      // Build a filter that captures all months in the range
+      const records = await prisma.employeePayroll.findMany({
+        where: {
+          OR: [
+            // entirely inside single year
+            ...(startYear === endYear
+              ? [{ year: startYear, month: { gte: startMonth, lte: endMonth } }]
+              : [
+                  { year: startYear, month: { gte: startMonth } },
+                  { year: { gt: startYear, lt: endYear } },
+                  { year: endYear,   month: { lte: endMonth } },
+                ])
+          ]
+        },
+        include: { employee: { select: { id: true, name: true, role: true, department: true } } },
+        orderBy: [{ year: 'asc' }, { month: 'asc' }],
+      })
+
+      const empMap: Record<string, any> = {}
+      for (const r of records) {
+        if (!empMap[r.employeeId]) {
+          empMap[r.employeeId] = {
+            employeeId: r.employeeId,
+            name:       r.employee?.name ?? 'Unknown',
+            role:       r.employee?.role ?? '',
+            department: r.employee?.department ?? '',
+            baseSalary:    0, regularHours: 0,
+            overtimeHours: 0, overtimePay:   0,
+            extraShifts:   0, extraShiftPay: 0,
+            bonuses: 0, deductions: 0, grossPay: 0, netPay: 0,
+            recordCount: 0, hasPending: false,
+          }
+        }
+        const e = empMap[r.employeeId]
+        e.baseSalary    += r.baseSalary    ?? 0
+        e.regularHours  += r.regularHours  ?? 0
+        e.overtimeHours += r.overtimeHours ?? 0
+        e.overtimePay   += r.overtimePay   ?? 0
+        e.extraShifts   += r.extraShifts   ?? 0
+        e.extraShiftPay += r.extraShiftPay ?? 0
+        e.bonuses       += r.bonuses       ?? 0
+        e.deductions    += r.deductions    ?? 0
+        e.grossPay      += r.grossPay      ?? 0
+        e.netPay        += r.netPay        ?? 0
+        e.recordCount   += 1
+        if (r.status !== 'paid') e.hasPending = true
+      }
+
+      const employees = Object.values(empMap)
+      const totals = employees.reduce((acc: any, e: any) => ({
+        baseSalary:    (acc.baseSalary    ?? 0) + e.baseSalary,
+        regularHours:  (acc.regularHours  ?? 0) + e.regularHours,
+        overtimeHours: (acc.overtimeHours ?? 0) + e.overtimeHours,
+        overtimePay:   (acc.overtimePay   ?? 0) + e.overtimePay,
+        extraShifts:   (acc.extraShifts   ?? 0) + e.extraShifts,
+        extraShiftPay: (acc.extraShiftPay ?? 0) + e.extraShiftPay,
+        bonuses:       (acc.bonuses       ?? 0) + e.bonuses,
+        deductions:    (acc.deductions    ?? 0) + e.deductions,
+        grossPay:      (acc.grossPay      ?? 0) + e.grossPay,
+        netPay:        (acc.netPay        ?? 0) + e.netPay,
+      }), {})
+
+      return { employees, totals }
+    } catch (error) {
+      log.error('Error fetching payroll summary:', error)
+      return { employees: [], totals: {} }
     }
   })
 

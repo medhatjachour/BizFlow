@@ -50,7 +50,10 @@ const api = {
     },
     payroll: {
       upsert: (data: any) => ipcRenderer.invoke('employees:payroll:upsert', data),
-      getAll: (year: number) => ipcRenderer.invoke('employees:payroll:getAll', { year })
+      getAll: (year: number) => ipcRenderer.invoke('employees:payroll:getAll', { year }),
+      markPaid: (id: string) => ipcRenderer.invoke('employees:payroll:markPaid', id),
+      compute: (params: any) => ipcRenderer.invoke('employees:payroll:compute', params),
+      getSummary: (params: any) => ipcRenderer.invoke('employees:payroll:getSummary', params)
     },
     activity: {
       add: (data: { employeeId: string; action: string; details?: string; performedBy?: string }) =>

@@ -4,7 +4,7 @@ import {
   ArrowLeft, Plus, Loader2, AlertTriangle, Phone, Mail, MapPin,
   CreditCard, CheckCircle2, Clock, XCircle, MinusCircle, Banknote,
   DollarSign, Pencil, ChevronDown, ChevronUp, Stethoscope, Calendar,
-  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus, Download
+  Activity, TrendingUp, User, FileText, Trash2, Upload, Eye, FilePlus, Download, Heart, X
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -21,6 +21,10 @@ interface Prescription {
   duration?: string | null
   quantity?: number | null
   instructions?: string | null
+  isActive?: boolean
+  startDate?: string | null
+  stoppedAt?: string | null
+  stopReason?: string | null
 }
 
 interface Session {
@@ -77,6 +81,146 @@ function calcAge(dob?: string | null): string {
 
 function initials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+}
+
+// ─── QuickPayModal ───────────────────────────────────────────────────────────
+function QuickPayModal({
+  sessions,
+  onClose,
+  onPaid,
+}: {
+  sessions: Session[]
+  onClose: () => void
+  onPaid: () => void
+}) {
+  const { showToast } = useToast()
+  const [saving, setSaving] = useState(false)
+  const [amount, setAmount] = useState('')
+  const [method, setMethod] = useState('cash')
+
+  const unpaidSessions = sessions
+    .filter((s) => (s.amountCharged ?? 0) > (s.amountPaid ?? 0))
+    .sort((a, b) => new Date(a.visitDate).getTime() - new Date(b.visitDate).getTime())
+
+  const totalOutstanding = unpaidSessions.reduce(
+    (sum, s) => sum + ((s.amountCharged ?? 0) - (s.amountPaid ?? 0)),
+    0
+  )
+
+  async function handlePay() {
+    const paying = parseFloat(amount)
+    if (isNaN(paying) || paying <= 0) return showToast('error', 'Enter a valid amount')
+    if (paying > totalOutstanding) return showToast('error', 'Amount exceeds outstanding balance')
+    setSaving(true)
+    try {
+      let remaining = paying
+      for (const s of unpaidSessions) {
+        if (remaining <= 0) break
+        const due = (s.amountCharged ?? 0) - (s.amountPaid ?? 0)
+        const applying = Math.min(due, remaining)
+        const newPaid = (s.amountPaid ?? 0) + applying
+        const newCharged = s.amountCharged ?? 0
+        const newStatus = newPaid >= newCharged ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid'
+        await window.api.clinic.sessions.update(s.id, {
+          amountPaid: newPaid,
+          paymentStatus: newStatus,
+          paymentMethod: method,
+        })
+        remaining -= applying
+      }
+      showToast('success', `Payment of ${fmt(paying)} recorded`)
+      onPaid()
+    } catch {
+      showToast('error', 'Failed to record payment')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function fmt(n: number) {
+    return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">Collect Payment</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Applied oldest-to-newest across sessions</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+            <X className="h-4 w-4 text-slate-500" />
+          </button>
+        </div>
+        <div className="px-5 py-4 space-y-4">
+          {/* Outstanding sessions list */}
+          <div className="space-y-1.5 max-h-44 overflow-y-auto">
+            {unpaidSessions.map((s) => {
+              const due = (s.amountCharged ?? 0) - (s.amountPaid ?? 0)
+              return (
+                <div key={s.id} className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-700/50 rounded-lg px-3 py-2">
+                  <div>
+                    <span className="font-medium text-slate-700 dark:text-slate-200">
+                      {new Date(s.visitDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                    {s.diagnosis && <span className="text-slate-400 ml-1.5">— {s.diagnosis}</span>}
+                  </div>
+                  <span className="font-bold text-red-500 dark:text-red-400">{fmt(due)}</span>
+                </div>
+              )
+            })}
+          </div>
+          {/* Total */}
+          <div className="flex items-center justify-between rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 px-4 py-3">
+            <span className="text-sm text-red-700 dark:text-red-400 font-semibold">Total Outstanding</span>
+            <span className="text-xl font-black text-red-600 dark:text-red-400">{fmt(totalOutstanding)}</span>
+          </div>
+          {/* Amount + method */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Amount to Pay</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                max={totalOutstanding}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder={fmt(totalOutstanding)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Method</label>
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="transfer">Transfer</option>
+                <option value="insurance">Insurance</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-5 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-colors">Cancel</button>
+          <button
+            onClick={handlePay}
+            disabled={saving || !amount || parseFloat(amount) <= 0}
+            className="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 shadow-sm shadow-emerald-500/20"
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+            Record Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -450,19 +594,24 @@ function TimelineSession({
                   <table className="w-full text-xs">
                     <thead className="bg-slate-100 dark:bg-slate-700">
                       <tr>
-                        {[t('medicine'), t('dosage'), t('frequency'), t('duration'), t('qty')].map((h) => (
+                        {[t('medicine'), t('dosage'), t('frequency'), t('duration'), t('qty'), 'Status'].map((h) => (
                           <th key={h} className="px-3 py-1.5 text-left font-semibold text-slate-500 dark:text-slate-400">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                       {session.prescriptions.map((rx) => (
-                        <tr key={rx.id}>
+                        <tr key={rx.id} className={(rx.isActive ?? true) ? '' : 'opacity-60'}>
                           <td className="px-3 py-1.5 font-medium text-slate-800 dark:text-slate-200">{rx.medicineName}</td>
                           <td className="px-3 py-1.5 text-slate-500">{rx.dosage ?? '–'}</td>
                           <td className="px-3 py-1.5 text-slate-500">{rx.frequency ?? '–'}</td>
                           <td className="px-3 py-1.5 text-slate-500">{rx.duration ?? '–'}</td>
                           <td className="px-3 py-1.5 text-slate-500">{rx.quantity ?? '–'}</td>
+                          <td className="px-3 py-1.5">
+                            {(rx.isActive ?? true)
+                              ? <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-full"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />Active</span>
+                              : <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded-full" title={rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString()}` : undefined}><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />Stopped</span>}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -538,6 +687,7 @@ export default function PatientProfile() {
   const [exportingPdf, setExportingPdf] = useState(false)
   const [viewingResult, setViewingResult] = useState<CheckResult | null>(null)
   const [showResultsPanel, setShowResultsPanel] = useState(false)
+  const [showPayModal, setShowPayModal] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -652,6 +802,11 @@ export default function PatientProfile() {
                 {patient.nationalId && (
                   <span className="bg-white/15 text-white/80 text-xs px-2 py-0.5 rounded-full">{patient.nationalId}</span>
                 )}
+                {(patient as any).folderNumber && (
+                  <span className="bg-white/20 text-white text-xs font-mono font-medium px-2.5 py-0.5 rounded-full border border-white/30">
+                    #{(patient as any).folderNumber}
+                  </span>
+                )}
               </div>
               {patient.allergies && (
                 <div className="flex items-center gap-1.5 mt-2 bg-amber-400/20 rounded-lg px-2.5 py-1 w-fit">
@@ -758,7 +913,7 @@ export default function PatientProfile() {
               }`}>
                 <DollarSign className={`h-5 w-5 ${(stats.outstanding ?? 0) > 0 ? 'text-red-500' : 'text-emerald-600'}`} />
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className={`text-2xl font-bold ${
                   (stats.outstanding ?? 0) > 0
                     ? 'text-red-600 dark:text-red-400'
@@ -770,6 +925,15 @@ export default function PatientProfile() {
                   {(stats.outstanding ?? 0) > 0 ? t('outstanding') : t('fullyPaid')}
                 </div>
               </div>
+              {(stats.outstanding ?? 0) > 0 && (
+                <button
+                  onClick={() => setShowPayModal(true)}
+                  className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                >
+                  <Banknote className="h-3.5 w-3.5" />
+                  Pay
+                </button>
+              )}
             </div>
 
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 flex items-center gap-3">
@@ -915,8 +1079,17 @@ export default function PatientProfile() {
         )}
 
         {/* ── Medical notes ─── */}
-        {(patient.medicalNotes || stats?.topDiagnosis || stats?.nextFollowUp) && (
+        {(patient.medicalNotes || stats?.topDiagnosis || stats?.nextFollowUp || (patient as any).folderNumber) && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(patient as any).folderNumber && (
+              <div className="bg-teal-50 dark:bg-teal-900/20 rounded-2xl p-4 border border-teal-100 dark:border-teal-800/40">
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="h-4 w-4 text-teal-500" />
+                  <span className="text-xs font-bold text-teal-500 uppercase tracking-wider">{t('folderNumber')}</span>
+                </div>
+                <p className="text-lg font-mono font-bold text-teal-700 dark:text-teal-300">#{(patient as any).folderNumber}</p>
+              </div>
+            )}
             {stats?.topDiagnosis && (
               <div className="bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-4 border border-violet-100 dark:border-violet-800/40">
                 <div className="flex items-center gap-2 mb-1">
@@ -948,6 +1121,66 @@ export default function PatientProfile() {
             )}
           </div>
         )}
+
+        {/* ── Prescriptions summary ─── */}
+        {(() => {
+          const allRx = sessions.flatMap((s) =>
+            (s.prescriptions ?? []).map((rx: any) => ({ ...rx, sessionDate: s.visitDate, diagnosis: s.diagnosis }))
+          )
+          if (allRx.length === 0) return null
+          const activeCount = allRx.filter((rx: any) => rx.isActive ?? true).length
+          const stoppedCount = allRx.length - activeCount
+          return (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-700/60 bg-pink-50/60 dark:bg-pink-900/10">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Prescriptions</span>
+                  {activeCount > 0 && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-semibold">{activeCount} active</span>
+                  )}
+                  {stoppedCount > 0 && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 font-semibold">{stoppedCount} stopped</span>
+                  )}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-700/50">
+                    <tr>
+                      {['Medicine', 'Dosage', 'Frequency', 'Duration', 'Diagnosis', 'Date / Status'].map((h) => (
+                        <th key={h} className="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                    {allRx.map((rx: any) => (
+                      <tr key={rx.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors ${(rx.isActive ?? true) ? '' : 'opacity-60'}`}>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            {(rx.isActive ?? true)
+                              ? <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" title="Active" />
+                              : <span className="h-2 w-2 rounded-full bg-slate-400 flex-shrink-0" title={rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString()}` : 'Discontinued'} />}
+                            <span className="font-medium text-slate-800 dark:text-slate-200">{rx.medicineName}</span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 text-slate-500">{rx.dosage ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-500">{rx.frequency ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-500">{rx.duration ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-500 max-w-[140px] truncate">{rx.diagnosis ?? '–'}</td>
+                        <td className="px-3 py-2 text-slate-400 whitespace-nowrap">
+                          {(rx.isActive ?? true)
+                            ? new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                            : <span className="text-slate-400">{rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── Session Timeline ─── */}
         <div>
@@ -1035,6 +1268,13 @@ export default function PatientProfile() {
         <PdfViewerModal
           result={viewingResult}
           onClose={() => setViewingResult(null)}
+        />
+      )}
+      {showPayModal && sessions.length > 0 && (
+        <QuickPayModal
+          sessions={sessions}
+          onClose={() => setShowPayModal(false)}
+          onPaid={() => { setShowPayModal(false); load() }}
         />
       )}
     </div>

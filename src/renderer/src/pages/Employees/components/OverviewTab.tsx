@@ -16,9 +16,10 @@ interface Props {
   emp: EmployeeProfile
   calendar: { date: string; att: EmployeeAttendance | null }[]
   onLogDate: (date: string, att: EmployeeAttendance | null) => void
+  disabled?: boolean
 }
 
-export default function OverviewTab({ emp, calendar, onLogDate }: Props) {
+export default function OverviewTab({ emp, calendar, onLogDate, disabled }: Props) {
   const { t } = useLanguage()
   const [selectedDay, setSelectedDay] = useState<{ date: string; att: EmployeeAttendance | null } | null>(null)
 
@@ -126,7 +127,7 @@ export default function OverviewTab({ emp, calendar, onLogDate }: Props) {
                   <button
                     type="button"
                     onClick={() => { onLogDate(selectedDay.date, selectedDay.att); setSelectedDay(null) }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`}
                   >
                     <Pencil size={12} /> {t('edit')}
                   </button>
@@ -137,7 +138,7 @@ export default function OverviewTab({ emp, calendar, onLogDate }: Props) {
                   <button
                     type="button"
                     onClick={() => { onLogDate(selectedDay.date, null); setSelectedDay(null) }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`}
                   >
                     <Plus size={12} /> {t('empAddAttendanceRecord')}
                   </button>

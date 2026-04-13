@@ -103,7 +103,8 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 const TOOLTIP_STYLE = {
   contentStyle: { fontSize: 12, borderRadius: 8, border: 'none', background: '#1e293b', color: '#fff' },
-  labelStyle: { color: '#94a3b8' }
+  labelStyle: { color: '#94a3b8' },
+  itemStyle: { color: '#f1f5f9' }
 }
 
 const AXIS_TICK = { fontSize: 10, fill: '#94a3b8' }

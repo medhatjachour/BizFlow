@@ -1,6 +1,7 @@
 import { ipcMain, dialog, app, BrowserWindow, shell } from 'electron'
 import * as path from 'path'
 import * as fs from 'fs'
+import * as os from 'os'
 import { createLogger } from '../../../main/utils/logger'
 
 const log = createLogger('Clinic:PDF')
@@ -191,7 +192,9 @@ export function registerClinicPdfHandlers() {
         webPreferences: { nodeIntegration: false, contextIsolation: true, javascript: false }
       })
 
-      await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+      const tmpFile = path.join(os.tmpdir(), `bizflow_report_${Date.now()}.html`)
+      fs.writeFileSync(tmpFile, html, 'utf-8')
+      await win.loadFile(tmpFile)
 
       const pdfBuffer = await win.webContents.printToPDF({
         landscape: false,
@@ -201,6 +204,7 @@ export function registerClinicPdfHandlers() {
       } as any)
 
       win.destroy()
+      try { fs.unlinkSync(tmpFile) } catch {}
 
       fs.writeFileSync(filePath, pdfBuffer)
       shell.openPath(filePath)

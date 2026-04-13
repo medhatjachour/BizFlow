@@ -1,5 +1,8 @@
 # Thermal Printer Setup Guide
 
+> **Status:** Current. Fully implemented in `src/main/services/ThermalPrinterService.ts`.
+> **AI INSTRUCTION:** Thermal printing is handled exclusively in the main process via `node-thermal-printer`. Never call thermal printer APIs directly from the renderer. Use the `receipts:print` IPC channel.
+
 ## Overview
 This application supports Egyptian thermal receipt printers with full Arabic language support, ESC/POS commands, and Egyptian tax requirements (الرقم الضريبي).
 

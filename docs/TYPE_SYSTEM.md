@@ -1,5 +1,8 @@
 # Type System Documentation
 
+> **Status:** Complete and in use. Updated April 2026.
+> **AI INSTRUCTION:** Always import shared types from `src/shared/types.ts`. Plugin-local types (e.g., `Patient` interface) are defined inline in their respective plugin `index.tsx` or component file.
+
 ## Overview
 
 This application uses a **centralized type system** to eliminate duplication and ensure consistency across the codebase. All shared types are defined in `src/shared/types.ts` and imported where needed.

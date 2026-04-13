@@ -1,5 +1,8 @@
 # Database Migration System - Implementation Complete ✅
 
+> **Status:** Implemented and integrated. The `MigrationManager` runs on every app launch.
+> **AI INSTRUCTION:** The migration system handles upgrades between app versions (schema changes). Plugin-level column additions use `applyColumnMigrations()` in each plugin's `migrate.ts` file instead. See `ARCHITECTURE.md` section 6 for the full flow.
+
 ## 🎯 What Was Implemented
 
 A complete automatic database migration system that handles schema updates when users install a new .exe version over an old one.

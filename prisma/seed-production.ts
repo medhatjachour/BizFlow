@@ -16,21 +16,39 @@ async function main() {
   
   // Delete in correct order respecting foreign key constraints
   // Use try-catch to handle cases where tables might not exist yet
+  // Cast to any so optional-chain access works regardless of which plugin's
+  // Prisma client was generated (e.g. clinic-only has no stockMovement model).
+  const p: any = prisma
   try {
-    await prisma.stockMovement.deleteMany()
-    await prisma.productImage.deleteMany()
-    await prisma.productVariant.deleteMany()
-    await prisma.saleItem.deleteMany()
-    await prisma.saleTransaction.deleteMany()
-    await prisma.installment.deleteMany()
-    await prisma.deposit.deleteMany()
-    await prisma.financialTransaction.deleteMany()
-    await prisma.product.deleteMany()
-    await prisma.employee.deleteMany()
-    await prisma.customer.deleteMany()
-    await prisma.store.deleteMany()
-    await prisma.user.deleteMany()
-    await prisma.category.deleteMany()
+    await p.stockMovement?.deleteMany()
+    await p.productImage?.deleteMany()
+    await p.variantAttributeValue?.deleteMany()
+    await p.productAttribute?.deleteMany()
+    await p.productVariant?.deleteMany()
+    await p.saleItem?.deleteMany()
+    await p.saleTransaction?.deleteMany()
+    await p.installment?.deleteMany()
+    await p.installmentPlan?.deleteMany()
+    await p.deposit?.deleteMany()
+    await p.receiptTemplate?.deleteMany()
+    await p.purchaseOrderItem?.deleteMany()
+    await p.purchaseOrder?.deleteMany()
+    await p.supplierProduct?.deleteMany()
+    await p.supplier?.deleteMany()
+    await p.financialTransaction?.deleteMany()
+    await p.product?.deleteMany()
+    await p.employeeOvertime?.deleteMany()
+    await p.employeeShift?.deleteMany()
+    await p.employeePayroll?.deleteMany()
+    await p.employeeActivityLog?.deleteMany()
+    await p.employeeDocument?.deleteMany()
+    await p.employeeAttendance?.deleteMany()
+    await p.employee?.deleteMany()
+    await p.customer?.deleteMany()
+    await p.store?.deleteMany()
+    await p.emailReport?.deleteMany()
+    await p.user?.deleteMany()
+    await p.category?.deleteMany()
     console.log('✅ Cleared existing data\n')
   } catch (error: any) {
     if (error.code === 'P2021') {
@@ -42,8 +60,10 @@ async function main() {
 
   // ==================== SETUP USER ====================
   console.log('👤 Creating setup user...')
-  const setupUser = await prisma.user.create({
-    data: {
+  const setupUser = await prisma.user.upsert({
+    where: { id: '00000000-0000-0000-0000-000000000000' },
+    update: {},
+    create: {
       id: '00000000-0000-0000-0000-000000000000',
       username: 'setup',
       passwordHash: await bcrypt.hash('setup123', 10),

@@ -1,8 +1,33 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle, Info } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import SessionFormModal from './SessionFormModal'
+
+function SessionHelp() {
+  const [tipPos, setTipPos] = useState<{ top: number; right: number } | null>(null)
+  const tipRef = useRef<HTMLSpanElement>(null)
+  return (
+    <span ref={tipRef} className="inline-flex items-center cursor-default" onClick={e => e.stopPropagation()}
+      onMouseEnter={() => { if (tipRef.current) { const r = tipRef.current.getBoundingClientRect(); setTipPos({ top: r.top, right: window.innerWidth - r.right }) } }}
+      onMouseLeave={() => setTipPos(null)}>
+      <Info className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors" />
+      {tipPos && createPortal(
+        <div style={{ position: 'fixed', top: tipPos.top, right: tipPos.right, transform: 'translateY(-100%) translateY(-8px)', zIndex: 9999 }}
+          className="w-60 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] leading-relaxed px-3 py-2.5 shadow-2xl">
+          <span className="block font-semibold text-teal-400 mb-1.5">Button guide</span>
+          <span className="block mb-1"><span className="text-slate-300 font-medium">Status pill</span> — Click to change: Active (in progress) → Completed → Cancelled.</span>
+          <span className="block mb-1"><span className="text-blue-300 font-medium">✏ Edit</span> — Edit vitals, diagnosis, prescriptions or payment info.</span>
+          <span className="block mb-1"><span className="text-red-300 font-medium">Delete</span> — Permanently remove this session record.</span>
+          <span className="block text-slate-400">Click anywhere on the row to expand full session details.</span>
+          <span className="absolute top-full right-3 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
+        </div>,
+        document.body
+      )}
+    </span>
+  )
+}
 
 type FilterType = 'today' | 'week' | 'month' | 'all'
 
@@ -76,25 +101,80 @@ function StatusDropdown({ status, onChange, disabled }: {
 }) {
   const { t } = useLanguage()
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!open) return
     function handleOut(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (
+        triggerRef.current && triggerRef.current.contains(e.target as Node)
+      ) return
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
     document.addEventListener('mousedown', handleOut)
     return () => document.removeEventListener('mousedown', handleOut)
   }, [open])
 
+  function handleOpen(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setDropdownStyle({
+        position: 'fixed',
+        top: rect.bottom + 6,
+        left: rect.left,
+        zIndex: 9999,
+        minWidth: 148
+      })
+    }
+    setOpen(v => !v)
+  }
+
   const current = statusOptions.find(o => o.value === status)
   const CurrentIcon = current?.icon ?? MinusCircle
 
+  const dropdown = open ? (
+    <div
+      ref={dropdownRef}
+      style={dropdownStyle}
+      className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden"
+    >
+      {statusOptions.map(opt => {
+        const Icon = opt.icon
+        const isActive = opt.value === status
+        return (
+          <button
+            key={opt.value}
+            onClick={(e) => { e.stopPropagation(); setOpen(false); if (!isActive) onChange(opt.value) }}
+            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${
+              isActive
+                ? 'bg-slate-50 dark:bg-slate-700/60'
+                : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
+            }`}
+          >
+            <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${opt.cls}`}>
+              <Icon className="h-3 w-3" />
+              {t(opt.value as any)}
+            </span>
+            {isActive && (
+              <CheckCircle2 className="ml-auto h-3.5 w-3.5 text-teal-500 flex-shrink-0" />
+            )}
+          </button>
+        )
+      })}
+    </div>
+  ) : null
+
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={triggerRef}
         disabled={disabled}
-        onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
+        onClick={handleOpen}
         className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium transition-all ${
           statusColors[status] ?? ''
         } ${
@@ -107,33 +187,7 @@ function StatusDropdown({ status, onChange, disabled }: {
         {t(status as any)}
         <ChevronDown className="h-2.5 w-2.5 opacity-60" />
       </button>
-      {open && (
-        <div className="absolute z-50 top-full mt-1.5 left-0 min-w-[148px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
-          {statusOptions.map(opt => {
-            const Icon = opt.icon
-            const isActive = opt.value === status
-            return (
-              <button
-                key={opt.value}
-                onClick={(e) => { e.stopPropagation(); setOpen(false); if (!isActive) onChange(opt.value) }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-slate-50 dark:bg-slate-700/60'
-                    : 'hover:bg-slate-50 dark:hover:bg-slate-700/40'
-                }`}
-              >
-                <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full ${opt.cls}`}>
-                  <Icon className="h-3 w-3" />
-                  {t(opt.value as any)}
-                </span>
-                {isActive && (
-                  <CheckCircle2 className="ml-auto h-3.5 w-3.5 text-teal-500 flex-shrink-0" />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
+      {createPortal(dropdown, document.body)}
     </div>
   )
 }
@@ -235,11 +289,15 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(session) }}
             className="text-xs px-2 py-1 text-blue-600 dark:text-blue-400 hover:underline"
+            title="Edit session details: vitals, diagnosis, prescriptions, payment"
           >{t('edit')}</button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(session.id) }}
             className="text-xs px-2 py-1 text-red-500 dark:text-red-400 hover:underline"
+            title="Permanently delete this session record"
           >{t('delete')}</button>
+          {/* (i) button guide */}
+          <SessionHelp />
           {expanded ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
         </div>
       </div>

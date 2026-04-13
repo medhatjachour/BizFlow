@@ -1,246 +1,472 @@
 /**
  * ClinicFinanceSection
  *
- * Finance section for the Clinic plugin.
- * Tabs: Activity Overview · Visit Trends · Top Diagnoses
- * APIs: clinic.stats.overview, clinic.stats.visitTrend, clinic.stats.topDiagnoses, clinic.sessions.getRecent
+ * Full clinic financial management shown at /finance → Clinic.
+ * Tabs: Overview · Revenue
+ *
+ * Expenses and Payroll have been moved to the kernel pages:
+ *   - Clinic Staff  → /employees  (managed as regular employees with clinic roles)
+ *   - Clinic Expenses       → /expenses   (Clinic Expenses section)
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  Stethoscope, Users, Calendar, Activity,
-  TrendingUp, ClipboardList, RefreshCcw, Heart, BarChart3,
+  TrendingUp, TrendingDown, AlertCircle, Receipt, Users,
+  Loader2, RefreshCcw, Stethoscope, BarChart3,
+  CheckCircle2, Banknote, ArrowUpRight,
 } from 'lucide-react'
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, Tooltip, CartesianGrid, Cell,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
+  CartesianGrid, ComposedChart, Line,
 } from 'recharts'
+import { useToast } from '@renderer/contexts/ToastContext'
 import logger from '@/shared/utils/logger'
 
-type TabType = 'activity' | 'trends' | 'diagnoses'
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const COLORS = ['#14b8a6', '#0ea5e9', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#06b6d4', '#84cc16']
+type Period  = 'today' | 'week' | 'month' | 'year'
+type MainTab = 'overview' | 'revenue'
 
-const StatCard = ({ icon: Icon, label, value, sub, color }: { icon: any; label: string; value: string | number; sub?: string; color: string }) => (
-  <div className="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-sm border border-slate-200 dark:border-slate-700">
-    <div className="flex items-start justify-between mb-3">
-      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</span>
-      <div className={`p-2 rounded-xl ${color}`}><Icon size={16} /></div>
-    </div>
-    <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
-    {sub && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{sub}</p>}
-  </div>
-)
+const EXPENSE_CATEGORIES = [
+  { value: 'rent',             label: 'Rent / Lease',    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  { value: 'utilities',        label: 'Utilities',        badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+  { value: 'medical_supplies', label: 'Medical Supplies', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  { value: 'medications',      label: 'Medications',      badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
+  { value: 'equipment',        label: 'Equipment',        badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+  { value: 'maintenance',      label: 'Maintenance',      badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  { value: 'lab_fees',         label: 'Lab Fees',         badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' },
+  { value: 'insurance',        label: 'Insurance',        badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  { value: 'marketing',        label: 'Marketing',        badge: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
+  { value: 'cleaning',         label: 'Cleaning',         badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
+  { value: 'salaries',         label: 'Salaries',         badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+  { value: 'other',            label: 'Other',            badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' },
+]
 
-function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function fmt(n: number) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+function getCat(val: string) {
+  return EXPENSE_CATEGORIES.find(c => c.value === val) ?? { label: val, badge: 'bg-slate-100 text-slate-600' }
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface PatientWithFinance {
+  id: string
+  name: string
+  phone: string
+  finance?: { totalCharged: number; totalPaid: number; outstanding: number }
+}
+interface FinanceSummary {
+  revenue: number; totalExpenses: number; totalSalaries: number
+  netIncome: number; outstanding: number
+  byCategory: Array<{ category: string; total: number }>
+}
+
+// ─── KPI Card ─────────────────────────────────────────────────────────────────
+function KpiCard({ label, value, icon: Icon, colorClass, bgClass, sub }: {
+  label: string; value: string; icon: any; colorClass: string; bgClass: string; sub?: string
+}) {
   return (
-    <button onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium text-sm ${active ? 'bg-teal-600 text-white shadow-md' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>
-      {icon}{label}
-    </button>
+    <div className={`rounded-2xl border border-slate-200/80 dark:border-slate-700/60 p-4 ${bgClass}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</span>
+        <div className={`p-1.5 rounded-lg bg-white/60 dark:bg-slate-800/60 ${colorClass}`}>
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+      </div>
+      <p className={`text-2xl font-black tabular-nums ${colorClass}`}>{value}</p>
+      {sub && <p className="text-[11px] text-slate-400 mt-0.5">{sub}</p>}
+    </div>
   )
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
 const ClinicFinanceSection: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('activity')
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const { showToast } = useToast()
+  const [activeTab, setActiveTab] = useState<MainTab>('overview')
+  const [period, setPeriod]       = useState<Period>('month')
 
-  const [overviewStats, setOverviewStats] = useState<any>(null)
-  const [visitTrend, setVisitTrend] = useState<any[]>([])
-  const [topDiagnoses, setTopDiagnoses] = useState<any[]>([])
-  const [recentSessions, setRecentSessions] = useState<any[]>([])
+  // ── expenses state ────────────────────────────────────────────────────────
+  const [summary,     setSummary]     = useState<FinanceSummary | null>(null)
+  const [breakdown,   setBreakdown]   = useState<Array<{ label: string; total: number }>>([])
+  const [loadingExp,  setLoadingExp]  = useState(true)
 
-  useEffect(() => { loadData() }, [])
 
-  const loadData = async (silent = false) => {
-    if (!silent) setLoading(true); else setRefreshing(true)
+  // ── revenue state ─────────────────────────────────────────────────────────
+  const [debtPatients,   setDebtPatients]   = useState<PatientWithFinance[]>([])
+  const [revBreakdown,   setRevBreakdown]   = useState<Array<{ label: string; revenue: number; expenses: number }>>([])
+  const [loadingRevenue, setLoadingRevenue] = useState(false)
+
+  // ── loaders ───────────────────────────────────────────────────────────────
+  const loadExpenses = useCallback(async () => {
+    setLoadingExp(true)
     try {
-      const api = (window as any).api.clinic
-
-      const [r1, r2, r3, r4] = await Promise.allSettled([
-        api.stats?.overview?.(),
-        api.stats?.visitTrend?.(30),
-        api.stats?.topDiagnoses?.(10),
-        api.sessions?.getRecent?.(),
+      const api = window.api.clinic
+      const [sum, brk] = await Promise.all([
+        api.expenses.summary(period),
+        api.expenses.breakdown({ period }),
       ])
+      setSummary(sum as FinanceSummary)
+      setBreakdown(brk)
+    } catch (e) {
+      logger.error('ClinicFinance: loadExpenses failed', e)
+      showToast('error', 'Failed to load financial data')
+    } finally {
+      setLoadingExp(false)
+    }
+  }, [period, showToast])
 
-      if (r1.status === 'fulfilled') setOverviewStats(r1.value)
-      if (r2.status === 'fulfilled') setVisitTrend(Array.isArray(r2.value) ? r2.value : [])
-      if (r3.status === 'fulfilled') setTopDiagnoses(Array.isArray(r3.value) ? r3.value : [])
-      if (r4.status === 'fulfilled') setRecentSessions(Array.isArray(r4.value) ? r4.value : [])
-    } catch (err) { logger.error('ClinicFinance: loadData failed', err) }
-    finally { setLoading(false); setRefreshing(false) }
-  }
 
-  const totalSessions = overviewStats?.totalSessions ?? overviewStats?.sessionCount ?? recentSessions.length
-  const totalPatients = overviewStats?.totalPatients ?? overviewStats?.patientCount ?? 0
-  const avgVisitsPerDay = overviewStats?.avgVisitsPerDay ?? (visitTrend.length > 0 ? (visitTrend.reduce((s, v) => s + Number(v.count || 0), 0) / visitTrend.length).toFixed(1) : 0)
-  const activeDoctors = overviewStats?.activeDoctors ?? overviewStats?.doctorCount ?? 0
+  const loadRevenue = useCallback(async () => {
+    setLoadingRevenue(true)
+    try {
+      const [patients, brk] = await Promise.all([
+        window.api.clinic.patients.getAll({ limit: 500 }),
+        window.api.clinic.expenses.breakdown({ period }),
+      ])
+      const debtors = (patients ?? []).filter((p: PatientWithFinance) => (p.finance?.outstanding ?? 0) > 0)
+        .sort((a: PatientWithFinance, b: PatientWithFinance) => (b.finance?.outstanding ?? 0) - (a.finance?.outstanding ?? 0))
+      setDebtPatients(debtors)
+      // Build revenue vs expenses per bucket using the same breakdown labels
+      const expMap: Record<string, number> = {}
+      for (const b of brk) expMap[b.label] = b.total
+      // Revenue breakdown requires a separate call — reuse summary revenue / buckets count for now
+      setRevBreakdown(brk.map((b: { label: string; total: number }) => ({ label: b.label, revenue: 0, expenses: b.total })))
+    } catch (e) { logger.error('ClinicFinance: loadRevenue failed', e) }
+    finally { setLoadingRevenue(false) }
+  }, [period, showToast])
 
-  // Visit trend chart data
-  const trendData = visitTrend.map(v => ({
-    date: typeof v.date === 'string' ? v.date.slice(5) : v.date,
-    visits: Number(v.count || v.visits || 0),
-  }))
+  useEffect(() => { loadExpenses() }, [loadExpenses])
+  useEffect(() => {
+    if (activeTab === 'revenue') loadRevenue()
+  }, [activeTab, loadRevenue])
 
-  // Diagnoses chart data
-  const diagData = topDiagnoses.map(d => ({
-    name: (d.diagnosis || d.name || 'Unknown').slice(0, 20),
-    count: Number(d.count || d.total || 0),
-  }))
 
+  const TAB_DEFS: { key: MainTab; icon: any; label: string }[] = [
+    { key: 'overview', icon: BarChart3, label: 'Overview' },
+    { key: 'revenue',  icon: Banknote,  label: 'Revenue'  },
+  ]
+
+  const PERIOD_DEFS: { key: Period; label: string }[] = [
+    { key: 'today', label: 'Today' },
+    { key: 'week',  label: 'Week'  },
+    { key: 'month', label: 'Month' },
+    { key: 'year',  label: 'Year'  },
+  ]
+
+
+  // ── render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6">
-      {/* Section header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3 px-1">
-          <div className="p-2.5 bg-teal-100 dark:bg-teal-900/30 rounded-xl">
-            <Stethoscope size={22} className="text-teal-600 dark:text-teal-400" />
+    <div className="space-y-0">
+      {/* ─── Page Header ──────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-5">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="p-2.5 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl shadow-sm shadow-teal-500/30">
+            <Stethoscope size={20} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Clinic Analytics</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Activity · Visit Trends · Top Diagnoses</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Clinic Finance</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Track expenses, payroll, and revenue in one place</p>
           </div>
         </div>
-        <button onClick={() => loadData(true)} disabled={refreshing}
-          className="flex items-center gap-2 px-3 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 text-sm font-medium disabled:opacity-50">
-          <RefreshCcw size={15} className={refreshing ? 'animate-spin' : ''} />Refresh
-        </button>
-      </div>
 
-      {/* Tabs */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-2 shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex flex-wrap gap-2">
-          <TabButton active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} icon={<Activity size={16} />} label="Activity Overview" />
-          <TabButton active={activeTab === 'trends'} onClick={() => setActiveTab('trends')} icon={<TrendingUp size={16} />} label="Visit Trends" />
-          <TabButton active={activeTab === 'diagnoses'} onClick={() => setActiveTab('diagnoses')} icon={<ClipboardList size={16} />} label="Top Diagnoses" />
+        {/* Period selector + refresh – shared by all tabs */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex gap-0.5 p-1 bg-slate-100 dark:bg-slate-700/60 rounded-xl">
+            {PERIOD_DEFS.map(({ key, label }) => (
+              <button key={key} onClick={() => setPeriod(key)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  period === key
+                    ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}>{label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => { loadExpenses(); if (activeTab === 'revenue') loadRevenue() }}
+            className="p-2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+            title="Refresh"
+          >
+            <RefreshCcw size={14} className={loadingExp ? 'animate-spin' : ''} />
+          </button>
         </div>
       </div>
 
-      {/* Activity Overview */}
-      {activeTab === 'activity' && (
+      {/* ─── Tab Navigation ──────────────────────────────────────────────── */}
+      <div className="flex gap-0 border-b border-slate-200 dark:border-slate-700 mb-6">
+        {TAB_DEFS.map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold border-b-2 transition-all -mb-px ${
+              activeTab === key
+                ? 'border-teal-500 text-teal-600 dark:text-teal-400'
+                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:border-slate-300'
+            }`}
+          >
+            <Icon size={15} />{label}
+          </button>
+        ))}
+      </div>
+
+      {/* ═══════════════════════════════ OVERVIEW ═══════════════════════════ */}
+      {activeTab === 'overview' && (
         <div className="space-y-5">
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-pulse">{[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}</div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={Calendar} label="Total Sessions" value={totalSessions} sub="all time" color="bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400" />
-              <StatCard icon={Users} label="Total Patients" value={totalPatients} sub="registered" color="bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400" />
-              <StatCard icon={Activity} label="Avg Daily Visits" value={avgVisitsPerDay} sub="30-day average" color="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400" />
-              <StatCard icon={Heart} label="Active Doctors" value={activeDoctors} sub="practitioners" color="bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400" />
+          {/* Net Income hero card */}
+          {loadingExp ? (
+            <div className="h-28 bg-slate-200 dark:bg-slate-700 rounded-2xl animate-pulse" />
+          ) : summary ? (
+            <div className={`rounded-2xl p-6 ${summary.netIncome >= 0 ? 'bg-gradient-to-r from-teal-500 to-cyan-600' : 'bg-gradient-to-r from-red-500 to-rose-600'} shadow-lg shadow-teal-500/20 text-white`}>
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-semibold opacity-80 mb-1">Net Income · {PERIOD_DEFS.find(p => p.key === period)?.label}</p>
+                  <p className="text-4xl font-black tabular-nums tracking-tight">{summary.netIncome < 0 ? '−' : '+'}{fmt(Math.abs(summary.netIncome))}</p>
+                  <p className="text-sm opacity-70 mt-1.5">
+                    {summary.netIncome >= 0 ? 'Profitable period' : 'Expenses exceed revenue'} · {fmt(summary.revenue)} collected
+                  </p>
+                </div>
+                <div className={`p-3 rounded-2xl ${summary.netIncome >= 0 ? 'bg-white/20' : 'bg-white/20'}`}>
+                  {summary.netIncome >= 0
+                    ? <TrendingUp size={28} className="opacity-90" />
+                    : <TrendingDown size={28} className="opacity-90" />
+                  }
+                </div>
+              </div>
+              {/* mini glanceable stats */}
+              <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-white/20">
+                <div>
+                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">Revenue</p>
+                  <p className="text-base font-black tabular-nums">{fmt(summary.revenue)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">Expenses</p>
+                  <p className="text-base font-black tabular-nums">{fmt(summary.totalExpenses)}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">Outstanding</p>
+                  <p className="text-base font-black tabular-nums">{fmt(summary.outstanding)}</p>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Secondary KPI row */}
+          {!loadingExp && summary && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <KpiCard label="Payroll Cost"   value={fmt(summary.totalSalaries ?? 0)} icon={Users}       colorClass="text-violet-600 dark:text-violet-400" bgClass="bg-violet-50 dark:bg-violet-900/10"    sub="staff salaries" />
+              <KpiCard label="Total Expenses" value={fmt(summary.totalExpenses)}      icon={TrendingDown} colorClass="text-red-500 dark:text-red-400"         bgClass="bg-red-50 dark:bg-red-900/10"          sub="incl. payroll" />
+              <KpiCard label="Collection Rate"
+                value={summary.revenue + summary.outstanding > 0 ? `${Math.round((summary.revenue / (summary.revenue + summary.outstanding)) * 100)}%` : '–'}
+                icon={TrendingUp}
+                colorClass={(summary.revenue / Math.max(1, summary.revenue + summary.outstanding)) >= 0.8 ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}
+                bgClass={(summary.revenue / Math.max(1, summary.revenue + summary.outstanding)) >= 0.8 ? 'bg-teal-50 dark:bg-teal-900/10' : 'bg-amber-50 dark:bg-amber-900/10'}
+                sub="billed vs collected"
+              />
+              <KpiCard label="Uncollected"    value={fmt(summary.outstanding)}        icon={AlertCircle}  colorClass="text-amber-600 dark:text-amber-400"     bgClass="bg-amber-50 dark:bg-amber-900/10"      sub="pending payment" />
             </div>
           )}
 
-          {/* Recent sessions summary */}
-          {!loading && recentSessions.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-700">
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Recent Sessions</h4>
-              </div>
-              <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                {recentSessions.slice(0, 6).map((s: any, i) => (
-                  <div key={s.id || i} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{s.patient?.name || s.patientName || 'Patient'}</p>
-                      <p className="text-xs text-slate-500">{s.doctor?.name || s.doctorName || 'Doctor'} · {s.type || s.sessionType || 'Consultation'}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
-                        s.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        s.status === 'scheduled' ? 'bg-blue-100 text-blue-700' :
-                        'bg-slate-100 text-slate-600'}`}>
-                        {s.status || 'unknown'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Visit Trends */}
-      {activeTab === 'trends' && (
-        <div className="space-y-5">
-          {loading ? (
-            <div className="animate-pulse h-64 bg-slate-200 dark:bg-slate-700 rounded-xl" />
-          ) : trendData.length > 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Daily Visits — Last 30 Days</h4>
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
-                  <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="visits" stroke="#14b8a6" strokeWidth={2.5} dot={{ r: 2.5, fill: '#14b8a6' }} />
-                </LineChart>
+          {/* Spend over time */}
+          {breakdown.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Spend Over Time</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={breakdown} margin={{ top: 0, right: 8, left: -8, bottom: 0 }} barSize={period === 'year' ? 30 : 18}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={50} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v: any) => [fmt(v), 'Expenses']} />
+                  <Bar dataKey="total" radius={[6, 6, 0, 0]} fill="#14b8a6" />
+                </BarChart>
               </ResponsiveContainer>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-              <TrendingUp size={40} className="opacity-30 mb-2" /><p className="text-sm">No visit trend data available</p>
-            </div>
           )}
 
-          {/* Summary cards */}
-          {!loading && trendData.length > 0 && (
-            <div className="grid grid-cols-3 gap-4">
-              <StatCard icon={TrendingUp} label="Peak Day" value={`${Math.max(...trendData.map(d => d.visits))} visits`} sub="highest single day" color="bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400" />
-              <StatCard icon={Activity} label="Total Visits" value={trendData.reduce((s, d) => s + d.visits, 0)} sub="30-day total" color="bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400" />
-              <StatCard icon={BarChart3} label="Avg / Day" value={(trendData.reduce((s, d) => s + d.visits, 0) / trendData.length).toFixed(1)} sub="mean visits/day" color="bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400" />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Top Diagnoses */}
-      {activeTab === 'diagnoses' && (
-        <div className="space-y-5">
-          {loading ? (
-            <div className="animate-pulse space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}</div>
-          ) : diagData.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Top Diagnoses Frequency</h4>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={diagData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
-                    <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} width={110} />
-                    <Tooltip />
-                    <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                      {diagData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-2">
-                {diagData.map((diag, i) => {
-                  const maxCount = diagData[0]?.count || 1
-                  const pct = ((diag.count / maxCount) * 100).toFixed(0)
+          {/* Expenses by category */}
+          {summary && summary.byCategory.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Expenses by Category</p>
+              <div className="space-y-2.5">
+                {summary.byCategory.slice(0, 7).map(({ category, total }) => {
+                  const cfg = category === 'salaries_payroll'
+                    ? { label: 'Payroll', badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' }
+                    : getCat(category)
+                  const pct = Math.max(4, (total / summary.totalExpenses) * 100)
                   return (
-                    <div key={i} className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{diag.name}</span>
-                        <span className="text-sm font-bold" style={{ color: COLORS[i % COLORS.length] }}>{diag.count}</span>
+                    <div key={category} className="flex items-center gap-3">
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0 w-28 text-center truncate ${cfg.badge}`}>{cfg.label}</span>
+                      <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full bg-gradient-to-r from-teal-400 to-teal-500 transition-all duration-700" style={{ width: `${pct}%` }} />
                       </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }} />
-                      </div>
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 w-20 text-right tabular-nums">{fmt(total)}</span>
                     </div>
                   )
                 })}
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-              <ClipboardList size={40} className="opacity-30 mb-2" /><p className="text-sm">No diagnosis data available</p>
-            </div>
           )}
         </div>
       )}
+
+
+
+      {/* ═══════════════════════════════ REVENUE ════════════════════════════ */}
+      {activeTab === 'revenue' && (
+        <div className="space-y-5">
+
+          {/* Collection health KPIs */}
+          {summary ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <KpiCard
+                label="Total Billed"
+                value={fmt(summary.revenue + summary.outstanding)}
+                icon={Receipt}
+                colorClass="text-slate-700 dark:text-slate-200"
+                bgClass="bg-slate-50 dark:bg-slate-700/40"
+                sub={PERIOD_DEFS.find(p => p.key === period)?.label}
+              />
+              <KpiCard
+                label="Collected"
+                value={fmt(summary.revenue)}
+                icon={CheckCircle2}
+                colorClass="text-emerald-600 dark:text-emerald-400"
+                bgClass="bg-emerald-50 dark:bg-emerald-900/10"
+                sub="cash in hand"
+              />
+              <KpiCard
+                label="Outstanding"
+                value={fmt(summary.outstanding)}
+                icon={AlertCircle}
+                colorClass="text-red-500 dark:text-red-400"
+                bgClass="bg-red-50 dark:bg-red-900/10"
+                sub="awaiting payment"
+              />
+              <KpiCard
+                label="Collection Rate"
+                value={summary.revenue + summary.outstanding > 0
+                  ? `${Math.round((summary.revenue / (summary.revenue + summary.outstanding)) * 100)}%`
+                  : '–'}
+                icon={TrendingUp}
+                colorClass={(summary.revenue / Math.max(1, summary.revenue + summary.outstanding)) >= 0.8
+                  ? 'text-teal-600 dark:text-teal-400'
+                  : 'text-amber-600 dark:text-amber-400'}
+                bgClass={(summary.revenue / Math.max(1, summary.revenue + summary.outstanding)) >= 0.8
+                  ? 'bg-teal-50 dark:bg-teal-900/10'
+                  : 'bg-amber-50 dark:bg-amber-900/10'}
+                sub="billed vs collected"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-pulse">
+              {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-2xl" />)}
+            </div>
+          )}
+
+          {/* Expenses chart */}
+          {revBreakdown.length > 0 && (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Expense Spending Over Period</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <ComposedChart data={revBreakdown} margin={{ top: 0, right: 8, left: -8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={50} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v: any) => [fmt(v), 'Expenses']} />
+                  <Bar dataKey="expenses" fill="#f87171" opacity={0.8} radius={[5, 5, 0, 0]} barSize={18} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Patient debt ledger */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Outstanding Balances</span>
+                {debtPatients.length > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold">{debtPatients.length}</span>
+                )}
+              </div>
+              <button onClick={loadRevenue} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-600 transition-colors font-medium">
+                <RefreshCcw size={12} className={loadingRevenue ? 'animate-spin' : ''} /> Refresh
+              </button>
+            </div>
+
+            {loadingRevenue ? (
+              <div className="space-y-px">
+                {[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-700/30 animate-pulse" />)}
+              </div>
+            ) : debtPatients.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 text-slate-400 dark:text-slate-500">
+                <div className="h-12 w-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-500 opacity-70" />
+                </div>
+                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">All patients are fully paid</p>
+                <p className="text-xs text-slate-400 mt-0.5">No outstanding balances</p>
+              </div>
+            ) : (
+              <>
+                {/* Totals banner */}
+                <div className="flex items-center justify-between px-5 py-2.5 bg-red-50/70 dark:bg-red-900/10 border-b border-red-100 dark:border-red-900/20">
+                  <span className="text-xs font-semibold text-red-600 dark:text-red-400">
+                    {debtPatients.length} patient{debtPatients.length !== 1 ? 's' : ''} owe a total of
+                  </span>
+                  <span className="text-sm font-black text-red-600 dark:text-red-400 tabular-nums">
+                    {fmt(debtPatients.reduce((s, p) => s + (p.finance?.outstanding ?? 0), 0))}
+                  </span>
+                </div>
+                <div className="divide-y divide-slate-100 dark:divide-slate-700/40">
+                  {debtPatients.map((p) => {
+                    const fin = p.finance!
+                    const rate = fin.totalCharged > 0 ? Math.round((fin.totalPaid / fin.totalCharged) * 100) : 0
+                    return (
+                      <div key={p.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors group">
+                        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-red-400 to-rose-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <span className="text-[10px] font-bold text-white">
+                            {p.name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className="font-semibold text-sm text-slate-800 dark:text-slate-200 truncate">{p.name}</span>
+                            {p.phone && <span className="text-xs text-slate-400 flex-shrink-0">{p.phone}</span>}
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex-1 max-w-24 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                              <div className="h-full rounded-full bg-emerald-400 transition-all duration-700" style={{ width: `${rate}%` }} />
+                            </div>
+                            <span className="text-[11px] text-slate-400 flex-shrink-0">{rate}%</span>
+                            <span className="text-[11px] text-slate-400 hidden sm:block">
+                              Billed <strong className="text-slate-600 dark:text-slate-300">{fmt(fin.totalCharged)}</strong>
+                              {' · '}Paid <strong className="text-emerald-600 dark:text-emerald-400">{fmt(fin.totalPaid)}</strong>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="text-base font-black text-red-500 dark:text-red-400 tabular-nums">{fmt(fin.outstanding)}</span>
+                          <a
+                            href={`#/clinic/patients/${p.id}`}
+                            onClick={(e) => { e.preventDefault(); window.location.hash = `/clinic/patients/${p.id}` }}
+                            className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline transition-opacity flex-shrink-0"
+                          >
+                            View <ArrowUpRight className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

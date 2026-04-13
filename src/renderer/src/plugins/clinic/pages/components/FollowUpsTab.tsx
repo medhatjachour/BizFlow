@@ -1,11 +1,34 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   CalendarClock, CheckCircle2, Calendar, RefreshCw,
-  AlertTriangle, Clock, Users, Filter, Phone
+  AlertTriangle, Clock, Users, Filter, Phone, Info
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import AppointmentFormModal from './AppointmentFormModal'
+
+function FollowUpHelp() {
+  const [tipPos, setTipPos] = useState<{ top: number; right: number } | null>(null)
+  const tipRef = useRef<HTMLSpanElement>(null)
+  return (
+    <span ref={tipRef} className="inline-flex items-center cursor-default"
+      onMouseEnter={() => { if (tipRef.current) { const r = tipRef.current.getBoundingClientRect(); setTipPos({ top: r.top, right: window.innerWidth - r.right }) } }}
+      onMouseLeave={() => setTipPos(null)}>
+      <Info size={13} className="text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors" />
+      {tipPos && createPortal(
+        <div style={{ position: 'fixed', top: tipPos.top, right: tipPos.right, transform: 'translateY(-100%) translateY(-8px)', zIndex: 9999 }}
+          className="w-60 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] leading-relaxed px-3 py-2.5 shadow-2xl">
+          <span className="block font-semibold text-teal-400 mb-1.5">Button guide</span>
+          <span className="block mb-1"><span className="text-teal-300 font-medium">📅 Book Appt</span> — Creates a real appointment on the calendar. Reminder disappears once booked.</span>
+          <span className="block"><span className="text-emerald-300 font-medium">✓ Done</span> — Dismisses the reminder without scheduling — for when no further action is needed.</span>
+          <span className="absolute top-full right-3 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
+        </div>,
+        document.body
+      )}
+    </span>
+  )
+}
 
 interface FollowUp {
   id: string
@@ -231,6 +254,7 @@ export default function FollowUpsTab() {
                     <button
                       onClick={() => setBookingFor(fu)}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors shadow-sm"
+                      title="Formally schedule this follow-up as a new appointment on the calendar. The reminder will be auto-dismissed once booked."
                     >
                       <Calendar size={11} /> Book Appt
                     </button>
@@ -238,6 +262,7 @@ export default function FollowUpsTab() {
                       onClick={() => handleMarkDone(fu)}
                       disabled={isClearing}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 rounded-lg transition-colors"
+                      title="Dismiss this reminder without scheduling — use when the patient was handled another way or the follow-up is no longer needed."
                     >
                       {isClearing
                         ? <RefreshCw size={11} className="animate-spin" />
@@ -245,6 +270,8 @@ export default function FollowUpsTab() {
                       }
                       Done
                     </button>
+                    {/* (i) button guide */}
+                    <FollowUpHelp />
                   </div>
                 </div>
               )
@@ -259,9 +286,15 @@ export default function FollowUpsTab() {
           defaultPatientId={bookingFor.patientId}
           defaultPatientName={bookingFor.patient.name}
           onClose={() => setBookingFor(null)}
-          onSaved={() => {
+          onSaved={async () => {
+            const scheduled = bookingFor
             setBookingFor(null)
             toast.success('Appointment booked')
+            // Auto-clear the follow-up reminder now that it's been formally scheduled
+            try {
+              await window.api.clinic.appointments.clearFollowUp(scheduled.id)
+              setFollowUps(prev => prev.filter(f => f.id !== scheduled.id))
+            } catch { /* non-critical — reminder can be manually dismissed */ }
           }}
         />
       )}

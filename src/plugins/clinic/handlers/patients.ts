@@ -2,13 +2,14 @@ import { ipcMain } from 'electron'
 
 export function registerPatientHandlers(prisma: any) {
   // ─── Get All Patients ─────────────────────────────────────────────────
-  ipcMain.handle('clinic:patients:getAll', async (_e, params?: { search?: string }) => {
+  ipcMain.handle('clinic:patients:getAll', async (_e, params?: { search?: string; limit?: number }) => {
     const where = params?.search
       ? {
           OR: [
             { name: { contains: params.search } },
             { phone: { contains: params.search } },
-            { nationalId: { contains: params.search } }
+            { nationalId: { contains: params.search } },
+            { folderNumber: { contains: params.search } }
           ]
         }
       : undefined
@@ -23,7 +24,8 @@ export function registerPatientHandlers(prisma: any) {
           select: { visitDate: true, paymentStatus: true, visitType: true }
         }
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: 'asc' },
+      take: params?.limit ?? undefined
     })
 
     if (patients.length === 0) return patients
@@ -59,10 +61,11 @@ export function registerPatientHandlers(prisma: any) {
         OR: [
           { name: { contains: trimmed } },
           { phone: { contains: trimmed } },
-          { nationalId: { contains: trimmed } }
+          { nationalId: { contains: trimmed } },
+          { folderNumber: { contains: trimmed } }
         ]
       },
-      select: { id: true, name: true, phone: true, dateOfBirth: true },
+      select: { id: true, name: true, phone: true, dateOfBirth: true, folderNumber: true },
       orderBy: { name: 'asc' },
       take: 10
     })
@@ -85,6 +88,13 @@ export function registerPatientHandlers(prisma: any) {
 
   // ─── Create Patient ───────────────────────────────────────────────────
   ipcMain.handle('clinic:patients:create', async (_e, data: any) => {
+    // Guard against duplicate phone numbers
+    if (data.phone) {
+      const existing = await prisma.clinicPatient.findFirst({ where: { phone: data.phone } })
+      if (existing) {
+        throw new Error(`A patient with phone ${data.phone} already exists (${existing.name}).`)
+      }
+    }
     return prisma.clinicPatient.create({ data })
   })
 

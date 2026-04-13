@@ -5,6 +5,7 @@
 
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { app } from 'electron'
 import { createLogger } from '../utils/logger'
 
@@ -44,15 +45,27 @@ export async function initializeDatabase(): Promise<void> {
       fs.mkdirSync(appDataPath, { recursive: true })
     }
 
-    // Check if database already exists
-    const isFirstRun = !fs.existsSync(dbPath)
-    
-    if (!isFirstRun) {
-      log.info('[DB Init] Database already exists')
+    // Check if database already exists AND has real content.
+    // IMPORTANT: handlers/index.ts initialises the Prisma client at module-load time
+    // (before app.whenReady fires), which causes SQLite to create an empty database.db
+    // file in userData.  If we only check fs.existsSync we will see that empty file and
+    // bail out before copying the seeded template — leaving the app with no users.
+    // We therefore treat any file below 50 KB as "pre-created empty" and overwrite it.
+    const dbExists = fs.existsSync(dbPath)
+    const dbSizeBytes = dbExists ? fs.statSync(dbPath).size : 0
+    const EMPTY_DB_THRESHOLD = 50 * 1024 // 50 KB — real seeded template is ~400 KB
+
+    if (dbExists && dbSizeBytes >= EMPTY_DB_THRESHOLD) {
+      log.info(`[DB Init] Database already exists and has real content (${(dbSizeBytes / 1024).toFixed(1)} KB), skipping init`)
       return
     }
 
-    log.info('[DB Init] 🎉 First run detected - Creating new database with schema...')
+    if (dbExists && dbSizeBytes < EMPTY_DB_THRESHOLD) {
+      log.info(`[DB Init] ⚠️  Database file exists but looks empty (${dbSizeBytes} bytes) — likely pre-created by Prisma before init ran. Removing and re-initialising from template.`)
+        await unlinkWithRetry(dbPath, log)
+    }
+
+    log.info('[DB Init] 🎉 First run or empty DB — initialising database from template...')
     
     // Copy the template.db from resources to initialize with schema (recommended)
     const templateDbPath = path.join(process.resourcesPath, 'prisma', 'template.db')
@@ -77,6 +90,7 @@ export async function initializeDatabase(): Promise<void> {
         // Verify copy succeeded
         if (fs.existsSync(dbPath) && fs.statSync(dbPath).size > 10240) {
           log.info('[DB Init] ✅ Database initialized from template')
+          await verifyAndSeedDatabaseAfterCopy(dbPath)
         } else {
           log.error('[DB Init] ❌ Copy failed, creating from scratch')
           await createDatabaseWithSchema(dbPath)
@@ -100,6 +114,7 @@ export async function initializeDatabase(): Promise<void> {
           log.info('[DB Init] ✅ Found template at alternative location')
           fs.copyFileSync(altPath, dbPath)
           templateFound = true
+          await verifyAndSeedDatabaseAfterCopy(dbPath)
           break
         }
       }
@@ -139,15 +154,15 @@ async function createDatabaseWithSchema(dbPath: string): Promise<void> {
     // Create empty database file
     fs.writeFileSync(dbPath, '')
     
-    // Import Prisma using require (works better in Electron production)
+    // Import Prisma using the environment-aware helper
     let PrismaClient
     try {
-      PrismaClient = require('@prisma/client').PrismaClient
+      PrismaClient = loadPrismaClient()
     } catch (requireError) {
-      // Try custom generated path
-      log.warn('[DB Init] Standard @prisma/client not found, trying custom location...')
+      // Last-resort fallback to the @prisma/client package itself
+      log.warn('[DB Init] Primary Prisma path failed, trying @prisma/client fallback...')
       try {
-        PrismaClient = require(path.join(__dirname, '..', '..', 'generated', 'prisma')).PrismaClient
+        PrismaClient = require('@prisma/client').PrismaClient
       } catch (customError) {
         log.error('[DB Init] ❌ Could not load PrismaClient from any location')
         throw new Error('Prisma client not found. Please ensure the app is properly packaged.')
@@ -285,6 +300,59 @@ async function createDefaultAdminUser(prisma: any): Promise<void> {
 }
 
 /**
+ * Resolve the correct Prisma client for the current environment.
+ * In production the generated client is unpacked from asar; in dev it lives in the source tree.
+ */
+function loadPrismaClient(): any {
+  const isDev = process.env.NODE_ENV === 'development'
+  if (isDev) {
+    return require(path.join(process.cwd(), 'src', 'generated', 'prisma')).PrismaClient
+  }
+  // Production: electron-builder unpacks src/generated/prisma/** outside the asar.
+  // __dirname at runtime = <install>/resources/app.asar/out/main
+  // so three levels up lands at resources/, then into app.asar.unpacked/src/generated/prisma
+  const prodPath = path.resolve(__dirname, '..', '..', '..', 'app.asar.unpacked', 'src', 'generated', 'prisma')
+  log.info('[DB Init] Loading Prisma from:', prodPath)
+  return require(prodPath).PrismaClient
+}
+
+/**
+ * Verify the copied template DB and seed if no users are present.
+ */
+async function verifyAndSeedDatabaseAfterCopy(dbPath: string): Promise<void> {
+  try {
+    let PrismaClient: any
+    try {
+      PrismaClient = loadPrismaClient()
+    } catch {
+      PrismaClient = require('@prisma/client').PrismaClient
+    }
+
+    const runtimePrisma = new PrismaClient({
+      datasources: {
+        db: { url: `file:${dbPath}` }
+      }
+    })
+
+    try {
+      const userCount = await runtimePrisma.user.count()
+      if (userCount === 0) {
+        log.info('[DB Init] Template DB flagged with 0 users after copy, seeding default setup user...')
+        await createDefaultAdminUser(runtimePrisma)
+      } else {
+        log.info(`[DB Init] Template DB has ${userCount} user(s) after copy`)
+      }
+    } catch (err: any) {
+      log.warn('[DB Init] Could not verify copied template DB user count:', err?.message || err)
+    } finally {
+      try { await runtimePrisma.$disconnect() } catch {}
+    }
+  } catch (err: any) {
+    log.warn('[DB Init] Prisma unavailable for post-copy DB verification:', err?.message || err)
+  }
+}
+
+/**
  * Initialize development database with schema and default admin user
  */
 async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
@@ -386,3 +454,23 @@ async function initializeDevelopmentDatabase(dbPath: string): Promise<void> {
     throw error
   }
 }
+
+  /**
+   * Delete a file, retrying on EBUSY/EPERM (Windows file-lock races).
+   * Waits up to ~1.5 s before giving up.
+   */
+  async function unlinkWithRetry(filePath: string, logger: ReturnType<typeof createLogger>, retries = 5, delayMs = 300): Promise<void> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        fs.unlinkSync(filePath)
+        return
+      } catch (err: any) {
+        if ((err.code === 'EBUSY' || err.code === 'EPERM') && attempt < retries) {
+          logger.warn(`[DB Init] File locked (${err.code}), retrying in ${delayMs}ms… (attempt ${attempt + 1}/${retries})`)
+          await sleep(delayMs)
+        } else {
+          throw err
+        }
+      }
+    }
+  }
