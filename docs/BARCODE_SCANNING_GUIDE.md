@@ -1,5 +1,8 @@
 # Barcode Scanning Guide
 
+> **Status:** Implemented and working. No further action needed.
+> **AI INSTRUCTION:** Barcode search is handled in `src/main/ipc/handlers/search.handlers.ts`. The renderer detects barcode patterns (starts with 'BAR' or 8-13 digits) using `BARCODE_PATTERNS` from `src/shared/constants.ts` and uses 0ms debounce for instant lookup.
+
 ## ✅ Current Status
 
 **Good news!** Barcode scanning is **already set up and working** in your application:

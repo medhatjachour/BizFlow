@@ -47,7 +47,7 @@ The schema is split into two layers:
 │   prisma/schema.prisma  →  29 tables (always present)          │
 ├─────────────────────────────────────────────────────────────────┤
 │                        PLUGIN LAYER                             │
-│   prisma/merged.prisma  →  +21 tables (added by enabled plugins)│
+│   prisma/merged.prisma  →  +23 tables (added by enabled plugins)│
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -337,21 +337,22 @@ These 29 tables exist in **every** BizFlow installation regardless of which plug
        ┌───────────╬──────────────────────┬─────────────────────────┐
        │           │                      │                         │
        ▼           ▼                      ▼                         ▼
-┌─────────────┐ ┌──────────────────┐ ┌────────────────┐ ┌──────────────────┐
-│  🍞 BAKERY  │ │  🍽️ RESTAURANT   │ │  🏭 WAREHOUSE  │ │  🏥 CLINIC       │
-│  (6 tables) │ │  (5 tables)      │ │  (4 tables)    │ │  (4 tables)      │
-│─────────────│ │──────────────────│ │────────────────│ │──────────────────│
-│ Recipe      │ │ RestaurantTable  │ │WarehouseLocation│ │ ClinicPatient   │
-│ RecipeIngred│ │ TableReservation │ │WarehouseStock  │ │ ClinicSession   │
-│ ProductionBa│ │ MenuItem         │ │ StockTransfer  │ │ClinicPrescription│
-│ PantryIngred│ │ DineInOrder      │ │StockTransferIte│ │ClinicCheckResult│
-│ WasteLog    │ │ DineInOrderItem  │ │                │ └──────────────────┘
-│ ProductionSc│ │                  │ │                │
-└─────────────┘ └──────────────────┘ └────────────────┘
-│ Links to:   │ │ Links to:        │ │ Links to:      │ │ Links to:        │
-│ Product     │ │ (self-contained) │ │ Product        │ │ (independent)    │
-│ (outputProd)│ │                  │ │ (via stock)    │ │                  │
-└─────────────┘ └──────────────────┘ └────────────────┘ └──────────────────┘
+┌─────────────┐ ┌──────────────────┐ ┌────────────────┐ ┌──────────────────────┐
+│  🍞 BAKERY  │ │  🍽️ RESTAURANT   │ │  🏭 WAREHOUSE  │ │  🏥 CLINIC           │
+│  (6 tables) │ │  (5 tables)      │ │  (4 tables)    │ │  (8 tables)          │
+│─────────────│ │──────────────────│ │────────────────│ │──────────────────────│
+│ Recipe      │ │ RestaurantTable  │ │WarehouseLocation│ │ ClinicPatient       │
+│ RecipeIngred│ │ TableReservation │ │WarehouseStock  │ │ ClinicSession       │
+│ ProductionBa│ │ MenuItem         │ │ StockTransfer  │ │ ClinicPrescription  │
+│ PantryIngred│ │ DineInOrder      │ │StockTransferIte│ │ ClinicCheckResult   │
+│ WasteLog    │ │ DineInOrderItem  │ │                │ │ ClinicAppointment   │
+│ ProductionSc│ │                  │ │                │ │ ClinicExpense       │
+└─────────────┘ └──────────────────┘ └────────────────┘ │ ClinicStaff         │
+│ Links to:   │ │ Links to:        │ │ Links to:      │ │ ClinicSalaryRecord  │
+│ Product     │ │ (self-contained) │ │ Product        │ └──────────────────────┘
+│ (outputProd)│ │                  │ │ (via stock)    │ │ Links to: none       │
+└─────────────┘ └──────────────────┘ └────────────────┘ │ (fully independent)  │
+                                                          └──────────────────────┘
 ```
 
 ---
@@ -643,57 +644,109 @@ After toggling, the app **relaunches** (`app.relaunch()`) to pick up the new act
 
 ### 6.4 Clinic Plugin
 
-**Tables:** `ClinicPatient`, `ClinicSession`, `ClinicPrescription`, `ClinicCheckResult`
+**Tables (8):** `ClinicPatient`, `ClinicSession`, `ClinicPrescription`, `ClinicCheckResult`, `ClinicAppointment`, `ClinicExpense`, `ClinicStaff`, `ClinicSalaryRecord`
+
+> **Last Updated:** Current as of April 2026 — this plugin has grown significantly from initial design.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                          CLINIC PLUGIN                               │
+│                          CLINIC PLUGIN (8 tables)                    │
 └──────────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────┐  1:n  ┌──────────────────────────┐
-│    ClinicPatient     │◄──────┤      ClinicSession       │
-│──────────────────────│       │──────────────────────────│
-│ id (PK)              │       │ id (PK)                  │
-│ name                 │       │ patientId (FK)           │
-│ dateOfBirth          │       │ visitDate                │
-│ gender               │       │ visitType                │
-│ phone                │       │   first_visit            │
-│ email                │       │   follow_up              │
-│ nationalId (unique)  │       │   routine                │
-│ bloodType            │       │   emergency              │
-│ allergies            │       │ doctorName               │
-│ medicalNotes         │       │ chiefComplaint           │
-└──────────┬───────────┘       │ vitals (JSON)            │
-           │                   │ diagnosis                │
-           │ 1:n               │ amountCharged            │
-           └──────────────────►│ paymentStatus            │
-                               └──────────┬───────────────┘
-                                          │ 1:n
-                                          ▼
-                               ┌──────────────────────────┐
-                               │   ClinicPrescription     │
-                               │──────────────────────────│
-                               │ id (PK)                  │
-                               │ sessionId (FK)           │
-                               │ medicineName             │
-                               │ dosage / frequency       │
-                               │ duration / quantity      │
-                               │ instructions             │
-                               └──────────────────────────┘
+┌─────────────────────────────┐  1:n  ┌──────────────────────────────┐
+│       ClinicPatient         │◄──────┤       ClinicSession          │
+│─────────────────────────────│       │──────────────────────────────│
+│ id (PK)                     │       │ id (PK)                      │
+│ name                        │       │ patientId (FK)               │
+│ dateOfBirth                 │       │ visitDate                    │
+│ gender (male/female/other)  │       │ visitType                    │
+│ phone                       │       │   first_visit / follow_up /  │
+│ email                       │       │   routine / emergency        │
+│ address                     │       │ doctorName                   │
+│ nationalId (unique)         │       │ chiefComplaint               │
+│ folderNumber (unique) ◄─NEW │       │ vitals (JSON string)         │
+│ bloodType (A+/A-/B+…)      │       │ diagnosis                    │
+│ allergies                   │       │ notes                        │
+│ medicalNotes                │       │ followUpDate                 │
+└──────────┬──────────────────┘       │ status (active/completed/…)  │
+           │                          │ amountCharged / amountPaid   │
+           │ 1:n                      │ paymentStatus                │
+           │                          │   paid/partial/unpaid/waived │
+           │                          │ paymentMethod                │
+           └─────────────────────────►│   cash/card/insurance/other  │
+                                      └──────────┬───────────────────┘
+                          also 1:n ─────────────►│
+                                                  │ 1:n
+                                                  ▼
+                                      ┌──────────────────────────────┐
+                                      │    ClinicPrescription        │
+                                      │──────────────────────────────│
+                                      │ id (PK)                      │
+                                      │ sessionId (FK)               │
+                                      │ medicineName                 │
+                                      │ dosage / frequency           │
+                                      │ duration / quantity          │
+                                      │ instructions                 │
+                                      │ isActive (currently taking?) │
+                                      │ startDate / stoppedAt        │
+                                      │ stopReason                   │
+                                      └──────────────────────────────┘
 
-┌──────────────────────────────────┐
-│       ClinicCheckResult          │◄── directly linked to ClinicPatient
-│──────────────────────────────────│
-│ patientId (FK)                   │
-│ title / description              │
-│ fileName / filePath / fileSize   │ (lab results, X-rays, etc.)
-│ resultDate                       │
-└──────────────────────────────────┘
+┌────────────────────────────────────┐
+│         ClinicCheckResult          │◄── linked to ClinicPatient
+│────────────────────────────────────│
+│ patientId (FK)                     │
+│ title / description                │
+│ fileName / filePath / fileSize     │ (lab results, X-rays, scans)
+│ resultDate                         │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│         ClinicAppointment          │◄── linked to ClinicPatient
+│────────────────────────────────────│
+│ patientId (FK)                     │
+│ appointmentDate                    │
+│ duration (minutes, default 30)     │
+│ type (consultation/follow_up/…)    │
+│ doctorName                         │
+│ status (scheduled/confirmed/…)     │
+│ reminderSent                       │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│           ClinicExpense            │  (no FK to patient — clinic operating costs)
+│────────────────────────────────────│
+│ date                               │
+│ category                           │
+│   rent / utilities / medical_supplies / medications /
+│   equipment / maintenance / lab_fees / insurance /
+│   marketing / cleaning / salaries / other
+│ description / amount / vendor      │
+│ paymentMethod (cash/card/…)        │
+│ recurrence (one_time/weekly/…)     │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐  1:n  ┌──────────────────────────────┐
+│           ClinicStaff              │◄──────┤     ClinicSalaryRecord       │
+│────────────────────────────────────│       │──────────────────────────────│
+│ id (PK)                            │       │ staffId (FK)                 │
+│ name / role / phone / email        │       │ month / year (unique pair)   │
+│ employmentType                     │       │ baseSalary (snapshot)        │
+│   full_time / part_time / contract │       │ regularHours / overtimeHours │
+│ status (active/inactive)           │       │ overtimeMultiplier           │
+│ baseSalary / salaryType            │       │ doubleShiftCount / Bonus     │
+│   monthly / hourly / daily         │       │ bonuses / deductions         │
+│ hourlyRate / overtimeRate          │       │ netPay (computed + stored)   │
+│ doubleShiftRate / hireDate         │       │ status (pending/paid)        │
+│ employeeId (soft link to Employee) │       └──────────────────────────────┘
+└────────────────────────────────────┘
 ```
 
 **Cross-plugin links:**
 - Clinic is fully **independent** from all kernel tables.
-  Patient billing is handled via `ClinicSession.amountCharged` and `paymentStatus` directly — no integration with `SaleTransaction`.
+- `ClinicStaff.employeeId` is an **optional soft reference** to a kernel `Employee` record — it is a plain string, not a Prisma FK, to avoid cross-database constraint issues.
+- Patient billing is handled via `ClinicSession.amountCharged / amountPaid / paymentStatus` directly — no integration with kernel `SaleTransaction`.
+- `ClinicExpense` reflects clinic operating costs — entirely separate from kernel `FinancialTransaction`.
 
 ---
 
@@ -764,20 +817,27 @@ Cross-links to kernel:
 ### + Clinic Plugin
 
 ```
-Total tables: 48 (+4)
+Total tables: 52 (+8)
 
 Added:
-  ClinicPatient, ClinicSession
-  ClinicPrescription, ClinicCheckResult
+  ClinicPatient    (with folderNumber String? @unique)
+  ClinicSession
+  ClinicPrescription
+  ClinicCheckResult
+  ClinicAppointment
+  ClinicExpense
+  ClinicStaff
+  ClinicSalaryRecord
 
 Cross-links to kernel:
   None (independent patient management)
+  ClinicStaff.employeeId is a soft string reference to Employee (not a FK)
 ```
 
 ### All 5 Plugins Enabled
 
 ```
-Total tables: 50 (29 kernel + 6 bakery + 5 restaurant + 4 warehouse + 4 clinic + 0 commerce)
+Total tables: 52 (29 kernel + 6 bakery + 5 restaurant + 4 warehouse + 8 clinic + 0 commerce)
 
 ┌─────────────┬──────────────────┬─────────────────────────────────────────┐
 │  Plugin     │  Tables Added    │  Kernel Tables Referenced               │
@@ -786,10 +846,10 @@ Total tables: 50 (29 kernel + 6 bakery + 5 restaurant + 4 warehouse + 4 clinic +
 │ Bakery      │ +6               │ Product (outputProductId, wasteLogs)    │
 │ Restaurant  │ +5               │ None                                    │
 │ Warehouse   │ +4               │ ProductVariant (stock sync on transfer) │
-│ Clinic      │ +4               │ None                                    │
+│ Clinic      │ +8               │ None (ClinicStaff soft-refs Employee)   │
 │ Commerce    │ +0               │ Full kernel (enhanced read/write)       │
 ├─────────────┼──────────────────┼─────────────────────────────────────────┤
-│ Total       │ 50               │                                         │
+│ Total       │ 52               │                                         │
 └─────────────┴──────────────────┴─────────────────────────────────────────┘
 ```
 

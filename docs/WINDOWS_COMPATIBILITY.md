@@ -1,5 +1,8 @@
 # Windows Compatibility Guide
 
+> **Status:** Current and accurate. Updated April 2026.
+> **AI INSTRUCTION:** Always use `npx.cmd` instead of `npx` when spawning Prisma commands on Windows. Use `shell: true` for all child_process.spawn/exec calls.
+
 ## ✅ Cross-Platform Features Confirmed
 
 ### 1. **DevTools Configuration**

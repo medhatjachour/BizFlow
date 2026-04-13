@@ -1,5 +1,8 @@
 # Finance AI Features Implementation Summary
 
+> **Status:** Implemented — all components exist in `src/renderer/src/pages/Finance/`.
+> **AI INSTRUCTION:** AI features use client-side math (linear regression, etc.) — no external AI API calls. All calculations run in the renderer process synchronously.
+
 ## Overview
 Added comprehensive AI-powered prediction and analytics features to the Finance dashboard, transforming it from a basic reporting tool into an advanced business intelligence platform.
 
