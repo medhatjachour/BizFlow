@@ -12,7 +12,10 @@ export function registerSessionHandlers(prisma: any) {
       if (params?.startDate) {
         dateFrom = new Date(params.startDate)
       } else if (params?.filter === 'today') {
-        dateFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        // Explicit start AND end of today (local time) so no timezone edge cases
+        const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate()
+        dateFrom = new Date(y, mo, d, 0, 0, 0, 0)
+        dateTo   = new Date(y, mo, d, 23, 59, 59, 999)
       } else if (params?.filter === 'week') {
         dateFrom = new Date(now)
         dateFrom.setDate(now.getDate() - 7)

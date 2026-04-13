@@ -8,7 +8,8 @@ export function registerPatientHandlers(prisma: any) {
           OR: [
             { name: { contains: params.search } },
             { phone: { contains: params.search } },
-            { nationalId: { contains: params.search } }
+            { nationalId: { contains: params.search } },
+            { folderNumber: { contains: params.search } }
           ]
         }
       : undefined
@@ -60,10 +61,11 @@ export function registerPatientHandlers(prisma: any) {
         OR: [
           { name: { contains: trimmed } },
           { phone: { contains: trimmed } },
-          { nationalId: { contains: trimmed } }
+          { nationalId: { contains: trimmed } },
+          { folderNumber: { contains: trimmed } }
         ]
       },
-      select: { id: true, name: true, phone: true, dateOfBirth: true },
+      select: { id: true, name: true, phone: true, dateOfBirth: true, folderNumber: true },
       orderBy: { name: 'asc' },
       take: 10
     })

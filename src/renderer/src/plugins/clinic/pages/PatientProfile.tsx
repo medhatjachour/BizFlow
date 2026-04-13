@@ -802,6 +802,11 @@ export default function PatientProfile() {
                 {patient.nationalId && (
                   <span className="bg-white/15 text-white/80 text-xs px-2 py-0.5 rounded-full">{patient.nationalId}</span>
                 )}
+                {(patient as any).folderNumber && (
+                  <span className="bg-white/20 text-white text-xs font-mono font-medium px-2.5 py-0.5 rounded-full border border-white/30">
+                    #{(patient as any).folderNumber}
+                  </span>
+                )}
               </div>
               {patient.allergies && (
                 <div className="flex items-center gap-1.5 mt-2 bg-amber-400/20 rounded-lg px-2.5 py-1 w-fit">
@@ -1074,8 +1079,17 @@ export default function PatientProfile() {
         )}
 
         {/* ── Medical notes ─── */}
-        {(patient.medicalNotes || stats?.topDiagnosis || stats?.nextFollowUp) && (
+        {(patient.medicalNotes || stats?.topDiagnosis || stats?.nextFollowUp || (patient as any).folderNumber) && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {(patient as any).folderNumber && (
+              <div className="bg-teal-50 dark:bg-teal-900/20 rounded-2xl p-4 border border-teal-100 dark:border-teal-800/40">
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="h-4 w-4 text-teal-500" />
+                  <span className="text-xs font-bold text-teal-500 uppercase tracking-wider">{t('folderNumber')}</span>
+                </div>
+                <p className="text-lg font-mono font-bold text-teal-700 dark:text-teal-300">#{(patient as any).folderNumber}</p>
+              </div>
+            )}
             {stats?.topDiagnosis && (
               <div className="bg-violet-50 dark:bg-violet-900/20 rounded-2xl p-4 border border-violet-100 dark:border-violet-800/40">
                 <div className="flex items-center gap-2 mb-1">

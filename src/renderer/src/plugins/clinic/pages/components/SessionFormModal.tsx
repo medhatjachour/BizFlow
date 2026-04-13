@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Plus, Trash2, Loader2, Search, UserCircle, ChevronDown } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Search, UserCircle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import type { Patient } from '../index'
@@ -92,10 +92,39 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
   const [staffList, setStaffList] = useState<Array<{ id: string; name: string; role?: string | null }>>([])
+  const [doctorSuggestions, setDoctorSuggestions] = useState<string[]>([])
+  const [showDoctorDropdown, setShowDoctorDropdown] = useState(false)
+  const doctorRef = useRef<HTMLDivElement>(null)
 
-  // Load staff for doctor dropdown
+  // Load staff + employees and merge into one deduplicated list for autocomplete
   useEffect(() => {
-    window.api.clinic.staff.getAll().then((list) => setStaffList(list ?? [])).catch(() => {})
+    async function loadDoctors() {
+      const [clinicStaff, employees] = await Promise.allSettled([
+        window.api.clinic.staff.getAll(),
+        window.electron.ipcRenderer.invoke('employees:getAll'),
+      ])
+      const staff: string[] = clinicStaff.status === 'fulfilled'
+        ? (clinicStaff.value ?? []).map((s: any) => s.name)
+        : []
+      const emps: string[] = employees.status === 'fulfilled'
+        ? (employees.value ?? []).filter((e: any) => e.status === 'active').map((e: any) => e.name)
+        : []
+      const merged = Array.from(new Set([...staff, ...emps])).sort()
+      setStaffList((clinicStaff.status === 'fulfilled' ? clinicStaff.value : []) ?? [])
+      setDoctorSuggestions(merged)
+    }
+    loadDoctors().catch(() => {})
+  }, [])
+
+  // Close doctor dropdown on outside click
+  useEffect(() => {
+    function onOutside(e: MouseEvent) {
+      if (doctorRef.current && !doctorRef.current.contains(e.target as Node)) {
+        setShowDoctorDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
   }, [])
 
   // Determine initial patient (from existing session, defaultPatient, or defaultAppointment)
@@ -262,25 +291,15 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
         showToast('success', t('savedSuccessfully'))
       } else {
         await window.api.clinic.sessions.create(payload)
-        // Auto-mark the source appointment as completed
+        // Auto-mark the source appointment as completed when starting from one
         if (defaultAppointment) {
           try {
             await window.api.clinic.appointments.update(defaultAppointment.id, { status: 'completed' })
           } catch { /* non-critical */ }
         }
-        // Auto-create a follow-up appointment if followUpDate was set
-        if (followUpDate) {
-          try {
-            await window.api.clinic.appointments.create({
-              patientId,
-              appointmentDate: new Date(followUpDate).toISOString(),
-              type: 'follow_up',
-              doctorName: doctorName || null,
-              notes: `Follow-up from session on ${new Date(visitDate || new Date().toISOString()).toLocaleDateString()}`,
-              status: 'scheduled',
-            })
-          } catch { /* non-critical */ }
-        }
+        // NOTE: follow-up reminders are surfaced automatically in the Follow-ups tab
+        // via the session's followUpDate field. No separate appointment is created here —
+        // staff can formally schedule one from the Follow-ups tab using "Book Appt".
         showToast('success', defaultAppointment ? t('sessionStartedFromAppt') : t('createdSuccessfully'))
       }
       onSaved()
@@ -387,28 +406,38 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
             </div>
           </div>
 
-          {/* Doctor */}
+          {/* Doctor — type-ahead autocomplete from clinic staff + employees */}
           <div>
             <label className={labelCls}>{t('doctorName')}</label>
-            {staffList.length > 0 ? (
-              <div className="relative">
-                <select
-                  className={`${inputCls} appearance-none pr-8`}
-                  value={doctorName}
-                  onChange={(e) => setDoctorName(e.target.value)}
-                >
-                  <option value="">{t('optional')}</option>
-                  {staffList.map((s) => (
-                    <option key={s.id} value={s.name}>
-                      {s.name}{s.role ? ` (${s.role})` : ''}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              </div>
-            ) : (
-              <input className={inputCls} value={doctorName} onChange={(e) => setDoctorName(e.target.value)} placeholder={t('optional')} />
-            )}
+            <div className="relative" ref={doctorRef}>
+              <input
+                className={inputCls}
+                value={doctorName}
+                onChange={(e) => { setDoctorName(e.target.value); setShowDoctorDropdown(true) }}
+                onFocus={() => setShowDoctorDropdown(true)}
+                placeholder={t('optional')}
+                autoComplete="off"
+              />
+              {showDoctorDropdown && (() => {
+                const q = doctorName.trim().toLowerCase()
+                const filtered = q
+                  ? doctorSuggestions.filter(n => n.toLowerCase().includes(q))
+                  : doctorSuggestions
+                return filtered.length > 0 ? (
+                  <ul className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {filtered.map(name => (
+                      <li
+                        key={name}
+                        onMouseDown={(e) => { e.preventDefault(); setDoctorName(name); setShowDoctorDropdown(false) }}
+                        className="px-3 py-2 text-sm text-slate-900 dark:text-white hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer"
+                      >
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null
+              })()}
+            </div>
           </div>
 
           {/* Chief complaint */}

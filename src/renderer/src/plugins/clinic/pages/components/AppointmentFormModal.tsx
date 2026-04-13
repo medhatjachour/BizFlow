@@ -113,8 +113,14 @@ export default function AppointmentFormModal({
   }
 
   // Returns whether a slot time conflicts with existing appointments
-  type SlotState = 'available' | 'booked' | 'overlap'
+  const todayStr = toDatetimeLocal(new Date().toISOString()).slice(0, 10)
+  const nowHHMM  = (() => { const n = new Date(); return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}` })()
+
+  type SlotState = 'available' | 'booked' | 'overlap' | 'past'
   const slotStatus = (slotTime: string): { state: SlotState; patient?: string } => {
+    // Disable past slots when the selected day is today
+    if (selectedDay === todayStr && slotTime < nowHHMM) return { state: 'past' }
+
     const duration = Number(form.duration) || 30
     // Parse slot as local time
     const slotStart = new Date(`${selectedDay}T${slotTime}:00`).getTime()
@@ -251,13 +257,15 @@ export default function AppointmentFormModal({
                     key={slot}
                     type="button"
                     title={state !== 'available' ? `${patient ?? t('slotBooked')}` : t('slotAvailable')}
-                    disabled={state === 'booked'}
+                    disabled={state === 'booked' || state === 'past'}
                     onClick={() => setForm(f => ({ ...f, appointmentDate: selectedDay + 'T' + slot }))}
                     className={`
                       text-[11px] py-1.5 rounded-lg font-medium transition-all text-center leading-none
                       ${isSelected
                         ? 'bg-teal-600 text-white shadow ring-2 ring-teal-400 dark:ring-teal-500 scale-105'
-                        : state === 'booked'
+                        : state === 'past'
+                          ? 'bg-slate-100 text-slate-300 dark:bg-slate-800/50 dark:text-slate-600 cursor-not-allowed opacity-40'
+                          : state === 'booked'
                           ? 'bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-500 cursor-not-allowed line-through opacity-70'
                           : state === 'overlap'
                             ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200 border border-amber-300 dark:border-amber-600/40'
@@ -274,10 +282,11 @@ export default function AppointmentFormModal({
             {/* Legend */}
             <div className="flex items-center gap-4 mt-2 flex-wrap">
               {[
-                { color: 'bg-slate-200 dark:bg-slate-700', label: t('slotAvailable') },
-                { color: 'bg-teal-600',                    label: selectedTime || '—' },
-                { color: 'bg-red-200 dark:bg-red-900/40',  label: t('slotBooked') },
-                { color: 'bg-amber-200 dark:bg-amber-900/40', label: t('slotOverlap') },
+                { color: 'bg-slate-200 dark:bg-slate-700',      label: t('slotAvailable') },
+                { color: 'bg-teal-600',                          label: selectedTime || '—' },
+                { color: 'bg-red-200 dark:bg-red-900/40',        label: t('slotBooked') },
+                { color: 'bg-amber-200 dark:bg-amber-900/40',    label: t('slotOverlap') },
+                { color: 'bg-slate-100 dark:bg-slate-800/50 opacity-40', label: 'Past' },
               ].map(({ color, label }) => (
                 <span key={label} className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500">
                   <span className={`h-2 w-2 rounded-sm inline-block ${color}`} />

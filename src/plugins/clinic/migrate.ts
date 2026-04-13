@@ -21,7 +21,8 @@ export async function ensureClinicSchema(
   const missing = await getMissingTables(prisma)
 
   if (missing.length === 0) {
-    log.info('✅ Clinic tables already exist — no migration needed')
+    log.info('✅ Clinic tables already exist — checking column migrations…')
+    await applyColumnMigrations(prisma)
     return
   }
 
@@ -43,6 +44,34 @@ async function getMissingTables(prisma: any): Promise<string[]> {
     }
   }
   return missing
+}
+
+/**
+ * Safe column additions for existing databases (SQLite ALTER TABLE ADD COLUMN).
+ * Each entry is idempotent — adding a column that already exists is caught and ignored.
+ */
+async function applyColumnMigrations(prisma: any): Promise<void> {
+  const columnMigrations: Array<{ table: string; column: string; sql: string }> = [
+    {
+      table: 'ClinicPatient',
+      column: 'folderNumber',
+      sql: `ALTER TABLE "ClinicPatient" ADD COLUMN "folderNumber" TEXT`
+    }
+  ]
+
+  for (const m of columnMigrations) {
+    try {
+      // Check if column already exists via PRAGMA
+      const cols: any[] = await prisma.$queryRawUnsafe(`PRAGMA table_info("${m.table}")`)
+      const exists = cols.some((c: any) => c.name === m.column)
+      if (!exists) {
+        await prisma.$executeRawUnsafe(m.sql)
+        log.info(`✅ Column ${m.table}.${m.column} added`)
+      }
+    } catch (err) {
+      log.warn(`⚠️  Column migration ${m.table}.${m.column} skipped:`, err)
+    }
+  }
 }
 
 function runDbPush(dbUrl: string, cwd: string): Promise<void> {

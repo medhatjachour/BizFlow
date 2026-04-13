@@ -21,6 +21,7 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
   const [phone, setPhone] = useState(patient?.phone ?? '')
   const [email, setEmail] = useState(patient?.email ?? '')
   const [nationalId, setNationalId] = useState(patient?.nationalId ?? '')
+  const [folderNumber, setFolderNumber] = useState((patient as any)?.folderNumber ?? '')
   const [bloodType, setBloodType] = useState(patient?.bloodType ?? '')
   const [address, setAddress] = useState(patient?.address ?? '')
   const [allergies, setAllergies] = useState(patient?.allergies ?? '')
@@ -41,6 +42,7 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
         phone: phone.trim(),
         email: email.trim() || null,
         nationalId: nationalId.trim() || null,
+        folderNumber: folderNumber.trim() || null,
         bloodType: bloodType || null,
         address: address.trim() || null,
         allergies: allergies.trim() || null,
@@ -126,10 +128,21 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          {/* National ID */}
-          <div>
-            <label className={labelCls}>{t('nationalId')}</label>
-            <input className={inputCls} value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
+          {/* National ID + Folder Number */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>{t('nationalId')}</label>
+              <input className={inputCls} value={nationalId} onChange={(e) => setNationalId(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>{t('folderNumber')} <span className="text-slate-400 font-normal">(optional)</span></label>
+              <input
+                className={inputCls}
+                value={folderNumber}
+                onChange={(e) => setFolderNumber(e.target.value)}
+                placeholder="e.g. 2024-0042"
+              />
+            </div>
           </div>
 
           {/* Address */}

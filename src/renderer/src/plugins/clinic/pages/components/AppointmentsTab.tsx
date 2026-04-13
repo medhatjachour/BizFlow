@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   Calendar, Plus, Loader2, Pencil, Trash2, Check, X,
-  ChevronLeft, ChevronRight, Clock, PlayCircle, LayoutGrid, List
+  ChevronLeft, ChevronRight, Clock, PlayCircle, LayoutGrid, List, Info
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -63,6 +64,35 @@ function getWeekDates(anchorDate: string): string[] {
 }
 
 // ─── Individual appointment row ───────────────────────────────────────────────
+
+function ApptHelp() {
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  const ref = useRef<HTMLSpanElement>(null)
+  const show = () => {
+    if (!ref.current) return
+    const r = ref.current.getBoundingClientRect()
+    setPos({ top: r.top, right: window.innerWidth - r.right })
+  }
+  return (
+    <span ref={ref} className="inline-flex items-center cursor-default" onMouseEnter={show} onMouseLeave={() => setPos(null)} onClick={e => e.stopPropagation()}>
+      <Info className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 transition-colors" />
+      {pos && createPortal(
+        <div style={{ position: 'fixed', top: pos.top, right: pos.right, transform: 'translateY(-100%) translateY(-8px)', zIndex: 9999 }}
+          className="w-64 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] leading-relaxed px-3 py-2.5 shadow-2xl whitespace-normal">
+          <span className="block font-semibold text-teal-400 mb-1.5">Button guide</span>
+          <span className="block mb-0.5"><span className="text-teal-300 font-medium">▶ Start Session</span> — Patient arrived; creates the visit record and marks appointment complete.</span>
+          <span className="block mb-0.5"><span className="text-slate-300 font-medium">✓ Check</span> — Confirm: move from Scheduled → Confirmed.</span>
+          <span className="block mb-0.5"><span className="text-emerald-300 font-medium">✓ Complete</span> — Mark as done without starting a formal session.</span>
+          <span className="block mb-0.5"><span className="text-red-300 font-medium">× Cancel</span> — Cancel this appointment.</span>
+          <span className="block mb-0.5"><span className="text-blue-300 font-medium">✏ Edit</span> — Edit date, type, doctor or notes.</span>
+          <span className="block"><span className="text-red-300 font-medium">🗑 Delete</span> — Permanently remove this appointment.</span>
+          <span className="absolute top-full right-3 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
+        </div>,
+        document.body
+      )}
+    </span>
+  )
+}
 function AppointmentRow({
   appt, updating, onEdit, onDelete, onStatusChange, onViewPatient, onStartSession
 }: {
@@ -163,6 +193,7 @@ function AppointmentRow({
               className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
+            <ApptHelp />
           </>
         )}
       </div>

@@ -150,7 +150,10 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       icon: Stethoscope,
       roles: ['admin', 'manager']
     }] : []),
-    ...navigation.slice(employeesIdx + 1).filter(n => n.href !== '/customers' || commerceEnabled)
+    ...navigation.slice(employeesIdx + 1).filter(n =>
+      (n.href !== '/customers' || commerceEnabled) &&
+      (n.href !== '/expenses'  || !(__PLUGIN_CLINIC__ && clinicEnabled))
+    )
   ]
 
   const handleLogout = async () => {

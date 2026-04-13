@@ -11,6 +11,7 @@ model ClinicPatient {
   email        String?
   address      String?
   nationalId   String?         @unique
+  folderNumber String?         @unique // Clinic file/folder reference number
   bloodType    String?         // 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-'
   allergies    String?
   medicalNotes String?
