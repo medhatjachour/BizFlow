@@ -177,6 +177,10 @@ export class ThermalPrinterService {
         statusOverdue: 'متاخر',
         thankYou: 'شكرا لزيارتكم!',
         appreciate: 'نقدر تعاملكم معنا',
+        item: 'الصنف',
+        qty: 'ك',
+        price: 'السعر',
+        totalCol: 'الإجمالي',
       }
     }
     return {
@@ -202,6 +206,10 @@ export class ThermalPrinterService {
       statusOverdue: 'OVERDUE',
       thankYou: 'Thank you for your visit!',
       appreciate: 'We appreciate your business',
+      item: 'Item',
+      qty: 'Qty',
+      price: 'Price',
+      totalCol: 'Total',
     }
   }
 
@@ -333,143 +341,259 @@ export class ThermalPrinterService {
 
   private static createPrinter(settings: PrinterSettings): ThermalPrinter {
     let printerInterface: string
-    
-    if (settings.printerType === 'network' && settings.printerIP) {
-      // Sanitize IP address to prevent injection
+
+    if (process.platform === 'win32') {
+      // On Windows we build the ESC/POS buffer via node-thermal-printer's file interface,
+      // then send it to the Windows spooler via winspool.drv P/Invoke.
+      // The file path is a dummy — we call getBuffer() and never execute() on Windows.
+      printerInterface = path.join(os.tmpdir(), `escpos-buf-${process.pid}`)
+    } else if (settings.printerType === 'network' && settings.printerIP) {
       const safeIP = this.sanitizeIP(settings.printerIP)
       printerInterface = `tcp://${safeIP}:9100`
     } else if (settings.printerName) {
-      // Check if it's a USB URI (usb://...)
       if (settings.printerName.startsWith('usb://')) {
         printerInterface = settings.printerName
-      }
-      // If it starts with /, it's a device path
-      else if (settings.printerName.startsWith('/')) {
+      } else if (settings.printerName.startsWith('/')) {
         printerInterface = settings.printerName
-      }
-      // Otherwise it's a CUPS printer name
-      else {
+      } else {
         printerInterface = `printer:${settings.printerName}`
       }
     } else {
       printerInterface = '/dev/usb/lp0'
     }
 
-    const printer = new ThermalPrinter({
-      type: PrinterTypes.EPSON, // ESC/POS compatible
+    return new ThermalPrinter({
+      type: PrinterTypes.EPSON,
       interface: printerInterface,
       removeSpecialCharacters: false,
       lineCharacter: '-',
-      width: settings.paperWidth === '80mm' ? 48 : 32
+      width: settings.paperWidth === '80mm' ? 48 : 32,
     })
-    return printer
   }
 
   /**
-   * Format and print receipt
+   * Send a raw ESC/POS buffer to a Windows printer using winspool.drv P/Invoke.
+   * This is the official Microsoft KB138594 method — no native Node.js addon required.
+   * Works with ANY Electron version on Windows 10/11 with any thermal printer driver.
    */
-  private static async formatAndPrintReceipt(printer: ThermalPrinter, data: ReceiptData, settings: PrinterSettings): Promise<void> {
-    const lbl = this.getReceiptLabels(settings.receiptLanguage || 'en')
-    const locale = settings.receiptLanguage === 'ar' ? 'ar-EG' : 'en-US'
+  private static async printRawToWindowsSpooler(printerName: string, buffer: Buffer): Promise<void> {
+    const ts         = Date.now()
+    const dataFile   = path.join(os.tmpdir(), `escpos-${ts}.bin`)
+    const scriptFile = path.join(os.tmpdir(), `winspool-${ts}.ps1`)
 
-    // Store info
+    // In PS single-quoted strings, only ' needs escaping (→ '')
+    const safeName = printerName.replace(/'/g, "''")
+    // Backslashes are literal in PS single-quoted strings — no escaping needed for paths
+    const safeData = dataFile
+
+    // Build the PowerShell script as an array of lines, joined with CRLF.
+    // The heredoc @'...'@ uses single quotes so PS does NOT interpolate anything inside —
+    // the C# double-quoted strings pass through unchanged.
+    const psLines: string[] = [
+      // ── C# type definition via single-quoted heredoc ─────────
+      `Add-Type -TypeDefinition @'`,
+      `using System;`,
+      `using System.Runtime.InteropServices;`,
+      `public class RawPrint {`,
+      `  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]`,
+      `  public class DocInfoA {`,
+      `    [MarshalAs(UnmanagedType.LPStr)] public string pDocName;`,
+      `    [MarshalAs(UnmanagedType.LPStr)] public string pOutputFile;`,
+      `    [MarshalAs(UnmanagedType.LPStr)] public string pDataType;`,
+      `  }`,
+      `  [DllImport("winspool.Drv", EntryPoint="OpenPrinterA", SetLastError=true, CharSet=CharSet.Ansi, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool OpenPrinter([MarshalAs(UnmanagedType.LPStr)] string szPrinter, out IntPtr hPrinter, IntPtr pd);`,
+      `  [DllImport("winspool.Drv", EntryPoint="ClosePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool ClosePrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="StartDocPrinterA", SetLastError=true, CharSet=CharSet.Ansi, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern int StartDocPrinter(IntPtr hPrinter, int level, [In, MarshalAs(UnmanagedType.LPStruct)] DocInfoA pDocInfo);`,
+      `  [DllImport("winspool.Drv", EntryPoint="EndDocPrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool EndDocPrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="StartPagePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool StartPagePrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="EndPagePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool EndPagePrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="WritePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, int dwCount, out int dwWritten);`,
+      `}`,
+      `'@`,  // ← closing heredoc — must be at column 0
+      // ── PowerShell logic ──────────────────────────────────────
+      `$pn = '${safeName}'`,
+      `$dp = '${safeData}'`,
+      `$h  = [IntPtr]::Zero`,
+      `if (-not [RawPrint]::OpenPrinter($pn, [ref]$h, [IntPtr]::Zero)) {`,
+      `  throw "Cannot open printer '$pn'. Win32 error: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"`,
+      `}`,
+      `try {`,
+      `  $di = New-Object RawPrint+DocInfoA`,
+      `  $di.pDocName  = 'ESC/POS Receipt'`,
+      `  $di.pDataType = 'RAW'`,
+      `  if ([RawPrint]::StartDocPrinter($h, 1, $di) -le 0) {`,
+      `    throw "StartDocPrinter failed. Win32 error: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"`,
+      `  }`,
+      `  [RawPrint]::StartPagePrinter($h) | Out-Null`,
+      `  $bytes = [IO.File]::ReadAllBytes($dp)`,
+      `  $ptr   = [Runtime.InteropServices.Marshal]::AllocHGlobal($bytes.Length)`,
+      `  [Runtime.InteropServices.Marshal]::Copy($bytes, 0, $ptr, $bytes.Length)`,
+      `  $nw = 0`,
+      `  $ok = [RawPrint]::WritePrinter($h, $ptr, $bytes.Length, [ref]$nw)`,
+      `  [Runtime.InteropServices.Marshal]::FreeHGlobal($ptr)`,
+      `  [RawPrint]::EndPagePrinter($h) | Out-Null`,
+      `  [RawPrint]::EndDocPrinter($h)  | Out-Null`,
+      `  if (-not $ok) { throw "WritePrinter failed. Win32 error: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())" }`,
+      `  Write-Host "OK: $nw bytes sent to $pn"`,
+      `} finally {`,
+      `  [RawPrint]::ClosePrinter($h) | Out-Null`,
+      `}`,
+    ]
+
+    await fs.writeFile(dataFile, buffer)
+    await fs.writeFile(scriptFile, psLines.join('\r\n'), 'utf8')
+
+    try {
+      const { stdout, stderr } = await execAsync(
+        `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${scriptFile}"`,
+        { timeout: 20000 }
+      )
+      log.info('🖨️  winspool result:', stdout.trim())
+      if (stderr?.trim()) log.warn('🖨️  winspool stderr:', stderr.trim())
+    } finally {
+      try { await fs.unlink(dataFile)   } catch { /* ignore */ }
+      try { await fs.unlink(scriptFile) } catch { /* ignore */ }
+    }
+  }
+
+  /**
+   * Format and print receipt via node-thermal-printer.
+   * Design matches the HTML receipt preview exactly.
+   * On Windows, pass windowsPrinterName to route via winspool.drv instead of execute().
+   */
+  private static async formatAndPrintReceipt(
+    printer: ThermalPrinter,
+    data: ReceiptData,
+    settings: PrinterSettings,
+    windowsPrinterName?: string,
+  ): Promise<void> {
+    const lbl    = this.getReceiptLabels(settings.receiptLanguage || 'en')
+    const locale = settings.receiptLanguage === 'ar' ? 'ar-EG' : 'en-US'
+    const isAr   = settings.receiptLanguage === 'ar'
+
+    // Abbreviated VAT label — keeps totals section from overflowing on 58mm
+    const vatLabel = isAr
+      ? `ض.ق.م (${data.taxRate}%):`
+      : `${lbl.vat} (${data.taxRate}%):`
+
+    // ── Store header ──────────────────────────────────────────────
     printer.alignCenter()
     printer.bold(true)
-    printer.setTextSize(1, 1)
-    printer.println(data.storeName.toUpperCase())
+    printer.println(data.storeName)           // normal size — setTextSize(1,1) doubles width and causes truncation
     printer.bold(false)
-    printer.setTextNormal()
-    printer.println(data.storeAddress)
-    printer.println(`${lbl.tel}: ${data.storePhone}`)
-    if (data.storeEmail) {
-      printer.println(data.storeEmail)
-    }
+    if (data.storeAddress)  printer.println(data.storeAddress)
+    if (data.storePhone)    printer.println(`${lbl.tel}: ${data.storePhone}`)
+    if (data.storeEmail)    printer.println(data.storeEmail)
     printer.newLine()
 
-    // Tax info
+    // ── Tax info ──────────────────────────────────────────────────
     printer.drawLine()
-    printer.println(`${lbl.taxNo}: ${data.taxNumber}`)
-    if (data.commercialRegister) {
-      printer.println(`${lbl.commReg}: ${data.commercialRegister}`)
-    }
-    printer.drawLine()
-    printer.newLine()
-
-    // Receipt info
     printer.alignLeft()
+    if (data.taxNumber)          printer.println(`${lbl.taxNo}: ${data.taxNumber}`)
+    if (data.commercialRegister) printer.println(`${lbl.commReg}: ${data.commercialRegister}`)
+    printer.drawLine()
+    printer.newLine()
+
+    // ── Transaction meta ──────────────────────────────────────────
     printer.println(`${lbl.receiptNum}: ${data.receiptNumber}`)
     printer.println(`${lbl.date}: ${data.date.toLocaleString(locale, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: true,
     })}`)
-    if (data.username) {
-      printer.println(`${lbl.cashier}: ${data.username}`)
-    }
-    if (data.customerName) {
-      printer.println(`${lbl.customer}: ${data.customerName}`)
-    }
-    if (data.customerPhone) {
-      printer.println(`${lbl.phone}: ${data.customerPhone}`)
-    }
+    if (data.username)      printer.println(`${lbl.cashier}: ${data.username}`)
+    if (data.customerName)  printer.println(`${lbl.customer}: ${data.customerName}`)
+    if (data.customerPhone) printer.println(`${lbl.phone}: ${data.customerPhone}`)
     printer.drawLine()
 
-    // Items with discount calculation
+    // ── Items ─────────────────────────────────────────────────────
+    // Column header row — matches HTML table (Item | Qty | Price | Total)
+    printer.tableCustom([
+      { text: lbl.item,     align: 'LEFT',   width: 0.42 },
+      { text: lbl.qty,      align: 'CENTER', width: 0.10 },
+      { text: lbl.price,    align: 'RIGHT',  width: 0.22 },
+      { text: lbl.totalCol, align: 'RIGHT',  width: 0.26 },
+    ])
+    printer.drawLine()
+
     data.items.forEach(item => {
-      const hasDiscount = item.discountType && item.discountType !== 'NONE' && item.discountValue !== undefined && item.discountValue > 0
-      
+      const hasDiscount = item.discountType &&
+        item.discountType !== 'NONE' &&
+        item.discountValue !== undefined &&
+        item.discountValue > 0
+
       let originalPrice = item.price
-      let itemDiscount = 0
-      
+      let itemDiscount  = 0
+
       if (hasDiscount && item.discountValue !== undefined) {
         if (item.discountType === 'PERCENTAGE') {
           originalPrice = item.price / (1 - item.discountValue / 100)
-          itemDiscount = (originalPrice * item.quantity) - (item.price * item.quantity)
+          itemDiscount  = (originalPrice * item.quantity) - (item.price * item.quantity)
         } else {
           originalPrice = item.price + (item.discountValue / item.quantity)
-          itemDiscount = item.discountValue
+          itemDiscount  = item.discountValue
         }
       }
-      
+
       const originalTotal = originalPrice * item.quantity
-      const finalTotal = item.price * item.quantity
-      
-      // Item name and details
-      printer.println(item.name)
-      printer.println(`${item.quantity} x ${originalPrice.toFixed(2)} = ${originalTotal.toFixed(2)} EGP`)
-      
+      const finalTotal    = item.price   * item.quantity
+
+      // Data row — same 4-col layout as header
+      printer.tableCustom([
+        { text: item.name,                    align: 'LEFT',   width: 0.42 },
+        { text: String(item.quantity),        align: 'CENTER', width: 0.10 },
+        { text: originalPrice.toFixed(2),     align: 'RIGHT',  width: 0.22 },
+        { text: originalTotal.toFixed(2),     align: 'RIGHT',  width: 0.26 },
+      ])
+
       if (hasDiscount && item.discountValue !== undefined) {
-        const discountLabel = item.discountType === 'PERCENTAGE'
+        const discLabel = item.discountType === 'PERCENTAGE'
           ? `${lbl.discount} ${item.discountValue}%`
           : lbl.fixedDiscount
-        printer.println(`${discountLabel}: -${itemDiscount.toFixed(2)} EGP`)
-        printer.println(`${lbl.afterDiscount}: ${finalTotal.toFixed(2)} EGP`)
-      }
-      
-      printer.drawLine()
-    })
 
-    // Totals
+        printer.tableCustom([
+          { text: discLabel,                        align: 'LEFT',  width: 0.6 },
+          { text: `-${itemDiscount.toFixed(2)} EGP`, align: 'RIGHT', width: 0.4 },
+        ])
+        printer.tableCustom([
+          { text: lbl.afterDiscount,               align: 'LEFT',  width: 0.6 },
+          { text: `${finalTotal.toFixed(2)} EGP`,  align: 'RIGHT', width: 0.4 },
+        ])
+      }
+    })
+    printer.drawLine()
+
+    // ── Totals ────────────────────────────────────────────────────
     printer.newLine()
-    printer.println(`${lbl.subtotal}: ${data.subtotal.toFixed(2)} EGP`)
-    printer.println(`${lbl.vat} (${data.taxRate}%): ${data.tax.toFixed(2)} EGP`)
+    printer.tableCustom([
+      { text: `${lbl.subtotal}:`,  align: 'LEFT',  width: 0.55 },
+      { text: `${data.subtotal.toFixed(2)} EGP`, align: 'RIGHT', width: 0.45 },
+    ])
+    printer.tableCustom([
+      { text: vatLabel,            align: 'LEFT',  width: 0.55 },
+      { text: `${data.tax.toFixed(2)} EGP`,      align: 'RIGHT', width: 0.45 },
+    ])
     printer.drawLine()
     printer.bold(true)
-    printer.setTextSize(1, 1)
-    printer.println(`${lbl.total}: ${data.total.toFixed(2)} EGP`)
+    printer.tableCustom([
+      { text: `${lbl.total}:`, align: 'LEFT',  width: 0.55, bold: true },
+      { text: `${data.total.toFixed(2)} EGP`,  align: 'RIGHT', width: 0.45, bold: true },
+    ])
     printer.bold(false)
-    printer.setTextNormal()
     printer.drawLine()
 
-    // Payment
+    // ── Payment ───────────────────────────────────────────────────
     printer.newLine()
     printer.alignCenter()
     printer.println(`${lbl.payment}: ${data.paymentMethod}`)
-    
-    // Installments
+
+    // ── Installments ──────────────────────────────────────────────
     if (data.installments && data.installments.length > 0) {
       printer.newLine()
       printer.drawLine()
@@ -479,46 +603,61 @@ export class ThermalPrinterService {
       printer.bold(false)
       printer.drawLine()
       printer.alignLeft()
-      
+
       if (data.depositAmount) {
-        printer.println(`${lbl.depositPaid}: ${data.depositAmount.toFixed(2)} EGP`)
-        printer.drawLine()
+        printer.tableCustom([
+          { text: `${lbl.depositPaid}:`,               align: 'LEFT',  width: 0.55 },
+          { text: `${data.depositAmount.toFixed(2)} EGP`, align: 'RIGHT', width: 0.45 },
+        ])
+        printer.newLine()
       }
-      
+
       data.installments.forEach((inst, idx) => {
-        const status = inst.status === 'paid' ? lbl.statusPaid : inst.status === 'overdue' ? lbl.statusOverdue : 'DUE'
-        const dateStr = inst.dueDate.toLocaleDateString(locale, { month: '2-digit', day: '2-digit', year: '2-digit' })
-        printer.println(`#${idx + 1} ${dateStr}`)
-        printer.println(`   ${inst.amount.toFixed(2)} EGP - ${status}`)
+        const status  = inst.status === 'paid'    ? ` ${lbl.statusPaid}`
+                      : inst.status === 'overdue' ? ` ${lbl.statusOverdue}` : ''
+        const dateStr = inst.dueDate.toLocaleDateString(locale, {
+          year: '2-digit', month: '2-digit', day: '2-digit',
+        })
+        printer.tableCustom([
+          { text: `#${idx + 1}  ${dateStr}`,                   align: 'LEFT',  width: 0.55 },
+          { text: `${inst.amount.toFixed(2)} EGP${status}`,    align: 'RIGHT', width: 0.45 },
+        ])
       })
-      
+
       const remaining = data.installments
         .filter(i => i.status !== 'paid')
         .reduce((sum, i) => sum + i.amount, 0)
-      
+
       printer.drawLine()
       printer.bold(true)
-      printer.println(`${lbl.remaining}: ${remaining.toFixed(2)} EGP`)
+      printer.tableCustom([
+        { text: `${lbl.remaining}:`, align: 'LEFT',  width: 0.55, bold: true },
+        { text: `${remaining.toFixed(2)} EGP`,       align: 'RIGHT', width: 0.45, bold: true },
+      ])
       printer.bold(false)
     }
-    
+
+    // ── Footer ────────────────────────────────────────────────────
     printer.newLine()
     printer.alignCenter()
     printer.println(lbl.thankYou)
     printer.println(lbl.appreciate)
 
-    // Add spacing
     const blankLines = settings.receiptBottomSpacing ?? 4
-    for (let i = 0; i < blankLines; i++) {
-      printer.newLine()
-    }
-    
-    if (settings.openCashDrawer) {
-      printer.openCashDrawer()
-    }
-    
+    for (let i = 0; i < blankLines; i++) printer.newLine()
+
+    if (settings.openCashDrawer) printer.openCashDrawer()
+
     printer.cut()
-    await printer.execute()
+
+    // ── Execute ───────────────────────────────────────────────────
+    if (windowsPrinterName) {
+      // Windows: extract the raw ESC/POS buffer and send via winspool.drv
+      await this.printRawToWindowsSpooler(windowsPrinterName, printer.getBuffer())
+    } else {
+      // Linux / macOS / Network: use node-thermal-printer's native interface
+      await printer.execute()
+    }
   }
 
   /**
@@ -526,33 +665,32 @@ export class ThermalPrinterService {
    */
   static async printReceipt(data: ReceiptData, settings: PrinterSettings): Promise<void> {
     try {
-      // For CUPS printers, use direct CUPS printing
-      if (settings.printerType === 'usb' && settings.printerName && 
-          !settings.printerName.startsWith('/') && !settings.printerName.startsWith('tcp://')) {
-        
+      // CUPS (lp command) only exists on Linux / macOS — never call it on Windows
+      const isNamedPrinter = settings.printerType === 'usb' &&
+        settings.printerName &&
+        !settings.printerName.startsWith('/') &&
+        !settings.printerName.startsWith('tcp://')
+
+      if (isNamedPrinter && process.platform !== 'win32') {
         const text = this.formatReceiptText(data, settings)
-        await this.printToCUPS(settings.printerName, text, settings)
+        await this.printToCUPS(settings.printerName!, text, settings)
         return
       }
 
-      // Auto-detect if printer name is empty or default
+      // Auto-detect if no printer configured
       if (settings.printerType === 'usb' && (!settings.printerName || settings.printerName === '/dev/usb/lp0')) {
-        const detectedPrinters = await this.detectUSBPrinters()
-        
-        if (detectedPrinters.length > 0) {
-          const firstPrinter = detectedPrinters[0]
-          settings.printerName = firstPrinter.path
-          
-          // Save to localStorage (will be picked up by renderer)
-          // Note: This runs in main process, need to send back to renderer
+        const detected = await this.detectUSBPrinters()
+        if (detected.length > 0) {
+          settings.printerName = detected[0].path
         } else {
           throw new Error('No thermal printers detected. Please connect your printer and configure it in Settings → Tax & Receipt Settings.')
         }
       }
 
-      // Otherwise use node-thermal-printer for direct device access
-      const printer = this.createPrinter(settings)
-      await this.formatAndPrintReceipt(printer, data, settings)
+      // Build ESC/POS buffer; on Windows send via winspool.drv; on Linux via node-thermal-printer
+      const printer            = this.createPrinter(settings)
+      const winPrinterName     = process.platform === 'win32' ? settings.printerName : undefined
+      await this.formatAndPrintReceipt(printer, data, settings, winPrinterName)
     } catch (error: any) {
       log.error('❌ Print error:', error)
       throw new Error(`Failed to print: ${error.message}`)
@@ -564,43 +702,36 @@ export class ThermalPrinterService {
    */
   static async testPrinter(settings: PrinterSettings): Promise<{ success: boolean; message: string }> {
     try {
-      // Check if using CUPS printer
-      if (settings.printerType === 'usb' && settings.printerName && 
-          !settings.printerName.startsWith('/') && !settings.printerName.startsWith('tcp://')) {
-        // Use CUPS lp command for test
+      // CUPS (lp command) only on Linux / macOS
+      const isNamedPrinter = settings.printerType === 'usb' &&
+        settings.printerName &&
+        !settings.printerName.startsWith('/') &&
+        !settings.printerName.startsWith('tcp://')
+
+      if (isNamedPrinter && process.platform !== 'win32') {
         const testText = '\n' +
           'PRINTER TEST\n' +
           '================================\n' +
           '\n' +
           `Date: ${new Date().toLocaleString()}\n` +
           `Paper Width: ${settings.paperWidth}\n` +
-          `Printer Type: ${settings.printerType}\n` +
           `Printer: ${settings.printerName}\n` +
           '\n' +
           '================================\n' +
-          '\n' +
-          'Test Successful!\n' +
-          'ZKT eco ZKP8012\n' +
-          '\n\n\n\n'
-
-        await this.printToCUPS(settings.printerName, testText, settings)
-        
-        return {
-          success: true,
-          message: 'Test print sent successfully via CUPS. Check printer output.'
-        }
+          '\nTest Successful!\n\n\n\n\n'
+        await this.printToCUPS(settings.printerName!, testText, settings)
+        return { success: true, message: 'Test print sent via CUPS.' }
       }
 
       // Otherwise use node-thermal-printer
       const printer = this.createPrinter(settings)
 
-      // Check if printer is connected
-      const isConnected = await printer.isPrinterConnected()
-      
-      if (!isConnected) {
-        return {
-          success: false,
-          message: 'Printer not connected. Check USB cable or IP address.'
+      // isPrinterConnected() on Windows uses a dummy file path → always false.
+      // Skip the check on Windows; winspool will report errors if printer is unavailable.
+      if (process.platform !== 'win32') {
+        const isConnected = await printer.isPrinterConnected()
+        if (!isConnected) {
+          return { success: false, message: 'Printer not connected. Check USB cable or IP address.' }
         }
       }
 
@@ -640,11 +771,15 @@ export class ThermalPrinterService {
       printer.newLine()
       printer.cut()
 
-      await printer.execute()
+      if (process.platform === 'win32' && settings.printerName) {
+        await this.printRawToWindowsSpooler(settings.printerName, printer.getBuffer())
+      } else {
+        await printer.execute()
+      }
 
       return {
         success: true,
-        message: 'Test print sent successfully. Check printer output.'
+        message: 'Test print sent successfully. Check printer output.',
       }
     } catch (error: any) {
       log.error('❌ Test print failed:', error)
@@ -659,39 +794,53 @@ export class ThermalPrinterService {
   }
 
   /**
-   * Auto-detect USB thermal printers
+   * Auto-detect thermal printers.
+   * Windows: PowerShell Get-Printer — no native addon required.
+   * Linux/macOS: CUPS lpstat -a.
    */
   static async detectUSBPrinters(): Promise<Array<{ path: string; name: string }>> {
-    const { exec } = require('child_process')
-    const { promisify } = require('util')
-    const execAsync = promisify(exec)
-
-    const printers: Array<{ path: string; name: string }> = []
-
     try {
-      // Get CUPS printers with lpstat -a
-      try {
-        const { stdout } = await execAsync('lpstat -a 2>/dev/null || true')
-        const lines = stdout.split('\n')
-        
+      if (process.platform === 'win32') {
+        // Enumerate all installed printers via PowerShell
+        const ps = `Get-Printer | Select-Object Name,DriverName | ConvertTo-Csv -NoTypeInformation`
+        const { stdout } = await execAsync(
+          `powershell -NoProfile -NonInteractive -Command "${ps}"`,
+          { timeout: 10000 }
+        )
+
+        const thermalKeywords = /xp|xprinter|thermal|receipt|pos|epson|star|bixolon|citizen|sewoo/i
+        const all: Array<{ path: string; name: string }> = []
+
+        // Skip CSV header row
+        const lines = stdout.trim().split(/\r?\n/).slice(1)
         for (const line of lines) {
-          const match = line.match(/^(\S+)\s+/)
-          if (match) {
-            const printerName = match[1]
-            printers.push({
-              path: printerName,
-              name: `${printerName} (CUPS Printer)`
-            })
+          // CSV format: "Name","DriverName"
+          const cols = line.replace(/^\s*"|"\s*$/g, '').split('","')
+          const name   = (cols[0] || '').trim()
+          const driver = (cols[1] || '').trim()
+          if (name) {
+            all.push({ path: name, name: driver ? `${name} (${driver})` : name })
           }
         }
-      } catch (error) {
-        // lpstat command not available, silently fail
-      }
 
-      // Return detected printers or empty array
-      return printers
+        // Return thermal-looking printers first; fall back to all printers
+        const thermal = all.filter(p => thermalKeywords.test(p.path) || thermalKeywords.test(p.name))
+        return thermal.length > 0 ? thermal : all
+
+      } else {
+        // Linux / macOS: CUPS
+        const printers: Array<{ path: string; name: string }> = []
+        try {
+          const { stdout } = await execAsync('lpstat -a 2>/dev/null || true')
+          for (const line of stdout.split('\n')) {
+            const match = line.match(/^(\S+)\s+/)
+            if (match) printers.push({ path: match[1], name: `${match[1]} (CUPS)` })
+          }
+        } catch { /* lpstat not available */ }
+        return printers
+      }
     } catch (error) {
-      log.error('Error detecting USB printers:', error)
+      log.error('Error detecting printers:', error)
       return []
     }
   }
