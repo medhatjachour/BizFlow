@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Plus, Trash2, Loader2, Search, UserCircle } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import type { Patient } from '../index'
+import DentalChart, { type DentalChartData } from '../../components/DentalChart'
 
 interface PrescriptionRow {
   medicineName: string
@@ -32,6 +33,7 @@ interface ExistingSession {
   amountPaid?: number | null
   paymentStatus: string
   paymentMethod?: string | null
+  dentalChart?: string | null
   prescriptions: Array<{
     id: string
     medicineName: string
@@ -203,6 +205,15 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   const [amountPaid, setAmountPaid] = useState(existingSession?.amountPaid?.toString() ?? '')
   const [paymentMethod, setPaymentMethod] = useState(existingSession?.paymentMethod ?? 'cash')
 
+  // Dentist mode + dental chart state
+  const isDentistMode = localStorage.getItem('clinicDentistMode') === 'true'
+  const [showDentalChart, setShowDentalChart] = useState(true)
+  const [dentalChart, setDentalChart] = useState<DentalChartData>(() => {
+    const raw = existingSession?.dentalChart
+    if (!raw) return {}
+    try { return JSON.parse(raw) } catch { return {} }
+  })
+
   // Auto-compute payment status
   function computePaymentStatus(charged: string, paid: string): string {
     const c = parseFloat(charged) || 0
@@ -271,6 +282,7 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
         amountPaid: amountPaid ? parseFloat(amountPaid) : null,
         paymentStatus: computePaymentStatus(amountCharged, amountPaid),
         paymentMethod: paymentMethod || null,
+        dentalChart: Object.keys(dentalChart).length > 0 ? JSON.stringify(dentalChart) : null,
         prescriptions: prescriptions
           .filter((rx) => rx.medicineName.trim())
           .map((rx) => ({
@@ -482,6 +494,35 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
               <textarea className={inputCls} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
           </div>
+
+          {/* ── Dental Chart (dentist mode only) ─────────────────────────────── */}
+          {isDentistMode && (
+            <div className="rounded-xl border border-teal-200 dark:border-teal-800 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowDentalChart(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-2.5 bg-teal-50 dark:bg-teal-900/20 border-b border-teal-200 dark:border-teal-800 hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  <p className="text-sm font-semibold text-teal-700 dark:text-teal-300">
+                    Dental Chart (Odontogram)
+                  </p>
+                  {Object.keys(dentalChart).length > 0 && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-200 dark:bg-teal-800 text-teal-800 dark:text-teal-200 font-bold">
+                      {Object.keys(dentalChart).length} noted
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={`h-4 w-4 text-teal-500 transition-transform ${showDentalChart ? 'rotate-180' : ''}`} />
+              </button>
+              {showDentalChart && (
+                <div className="px-4 py-4">
+                  <DentalChart value={dentalChart} onChange={setDentalChart} />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Follow-up + Status */}
           <div className="grid grid-cols-2 gap-4">

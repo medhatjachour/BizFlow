@@ -11,6 +11,8 @@ import { useToast } from '@renderer/contexts/ToastContext'
 import SessionFormModal from './components/SessionFormModal'
 import PatientFormModal from './components/PatientFormModal'
 import type { Patient } from './index'
+import DentalChart from '../components/DentalChart'
+import type { DentalChartData } from '../components/DentalChart'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 interface Prescription {
@@ -42,6 +44,7 @@ interface Session {
   amountPaid?: number | null
   paymentStatus: string
   paymentMethod?: string | null
+  dentalChart?: string | null
   prescriptions: Prescription[]
 }
 
@@ -688,6 +691,8 @@ export default function PatientProfile() {
   const [viewingResult, setViewingResult] = useState<CheckResult | null>(null)
   const [showResultsPanel, setShowResultsPanel] = useState(false)
   const [showPayModal, setShowPayModal] = useState(false)
+  const isDentistMode = localStorage.getItem('clinicDentistMode') === 'true'
+  const [showDentalPanel, setShowDentalPanel] = useState(false)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -970,6 +975,35 @@ export default function PatientProfile() {
                   : <ChevronDown className="h-4 w-4 text-slate-400 flex-shrink-0" />
               )}
             </button>
+
+            {/* Dental Chart card — only in dentist mode */}
+            {isDentistMode && (() => {
+              const latestDental = patient.sessions.find(s => s.dentalChart)
+              const count = patient.sessions.filter(s => s.dentalChart).length
+              return (
+                <button
+                  onClick={() => setShowDentalPanel((v) => !v)}
+                  className={`rounded-2xl p-4 border flex items-center gap-3 text-left transition-all ${
+                    showDentalPanel
+                      ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700/60 shadow-sm'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-teal-200 dark:hover:border-teal-800/50'
+                  }`}
+                >
+                  <div className="h-10 w-10 rounded-xl bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center flex-shrink-0">
+                    <Stethoscope className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">{count}</div>
+                    <div className="text-xs text-slate-400">Dental Charts</div>
+                  </div>
+                  {latestDental && (
+                    showDentalPanel
+                      ? <ChevronUp className="h-4 w-4 text-teal-400 flex-shrink-0" />
+                      : <ChevronDown className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                  )}
+                </button>
+              )
+            })()}
           </div>
         )}
 
@@ -1036,6 +1070,41 @@ export default function PatientProfile() {
             )}
           </div>
         )}
+
+        {/* ── Dental Chart panel (dentist mode only) ─── */}
+        {isDentistMode && showDentalPanel && (() => {
+          const latestDental = patient.sessions.find(s => s.dentalChart)
+          let chartData: DentalChartData = {}
+          if (latestDental?.dentalChart) {
+            try { chartData = JSON.parse(latestDental.dentalChart) } catch { chartData = {} }
+          }
+          return (
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-teal-100 dark:border-teal-800/30 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-teal-50 dark:border-teal-800/20 bg-teal-50/60 dark:bg-teal-900/10">
+                <div className="flex items-center gap-2">
+                  <Stethoscope className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Dental Chart</span>
+                  {latestDental && (
+                    <span className="text-xs text-slate-400">
+                      — from {new Date(latestDental.visitDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {!latestDental ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2">
+                  <Stethoscope className="h-8 w-8 text-slate-200 dark:text-slate-700" />
+                  <p className="text-sm text-slate-400">No dental charts recorded yet</p>
+                  <p className="text-xs text-slate-400">Add a dental chart when creating or editing a session</p>
+                </div>
+              ) : (
+                <div className="px-5 py-4">
+                  <DentalChart value={chartData} readOnly />
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ── Financial breakdown ─── */}
         {hasFinance && stats && (

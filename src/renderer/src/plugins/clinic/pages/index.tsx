@@ -536,6 +536,13 @@ export default function ClinicPage() {
   const [activeTab, setActiveTab] = useState<Tab>('patients')
   const [overdueCount, setOverdueCount] = useState(0)
   const [showJourney, setShowJourney] = useState(false)
+  const [dentistMode, setDentistMode] = useState(() => localStorage.getItem('clinicDentistMode') === 'true')
+
+  function toggleDentistMode() {
+    const next = !dentistMode
+    setDentistMode(next)
+    localStorage.setItem('clinicDentistMode', String(next))
+  }
 
   // Fetch overdue follow-up count once for the tab badge
   useEffect(() => {
@@ -577,6 +584,26 @@ export default function ClinicPage() {
           className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 transition-all"
         >
           <Info className="h-3.5 w-3.5" /> How it works
+        </button>
+        {/* Dentist mode toggle */}
+        <button
+          onClick={toggleDentistMode}
+          title={dentistMode ? 'Disable dentist mode' : 'Enable dentist mode (adds dental chart to sessions)'}
+          className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+            dentistMode
+              ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300'
+              : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-teal-300 hover:text-teal-600 dark:hover:text-teal-400'
+          }`}
+        >
+          <Stethoscope className="h-3.5 w-3.5" />
+          Dentist Mode
+          <span className={`relative inline-block h-4 w-7 rounded-full transition-colors ${
+            dentistMode ? 'bg-teal-500' : 'bg-slate-300 dark:bg-slate-600'
+          }`}>
+            <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${
+              dentistMode ? 'translate-x-3' : ''
+            }`} />
+          </span>
         </button>
       </div>
       {showJourney && <JourneyModal onClose={() => setShowJourney(false)} />}
