@@ -623,6 +623,23 @@ function TimelineSession({
               </div>
             )}
 
+            {/* Dental Chart */}
+            {session.dentalChart && session.dentalChart !== '{}' && (() => {
+              let chartData: DentalChartData = {}
+              try { chartData = JSON.parse(session.dentalChart!) } catch { chartData = {} }
+              if (Object.keys(chartData).length === 0) return null
+              return (
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Dental Chart</p>
+                  <div className="rounded-xl border border-teal-200 dark:border-teal-800 overflow-hidden bg-white dark:bg-slate-800">
+                    <div className="px-4 py-3">
+                      <DentalChart value={chartData} readOnly />
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Payment detail + follow-up */}
             <div className="flex flex-wrap gap-4 pt-1">
               {session.amountCharged != null && session.amountCharged > 0 && (

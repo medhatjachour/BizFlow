@@ -9,7 +9,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { GripVertical, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { GripVertical, Info, X } from 'lucide-react'
 
 // --- Types ---
 
@@ -460,6 +461,8 @@ interface DentalChartProps {
 export default function DentalChart({ value, onChange, readOnly = false }: DentalChartProps) {
   const [popover, setPopover] = useState<{ key: string; x: number; y: number } | null>(null)
   const [showDeciduous, setShowDeciduous] = useState(false)
+  const deciduousInfoRef = useRef<HTMLSpanElement>(null)
+  const [deciduousTipPos, setDeciduousTipPos] = useState<{ top: number; left: number } | null>(null)
 
   const upperAdult = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28]
   const lowerAdult = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38]
@@ -488,6 +491,12 @@ export default function DentalChart({ value, onChange, readOnly = false }: Denta
     setPopover(null)
   }
 
+  function showDeciduousInfo() {
+    if (!deciduousInfoRef.current) return
+    const r = deciduousInfoRef.current.getBoundingClientRect()
+    setDeciduousTipPos({ top: r.top, left: r.left + (r.width / 2) })
+  }
+
   const affected = Object.keys(value).length
 
   return (
@@ -504,6 +513,14 @@ export default function DentalChart({ value, onChange, readOnly = false }: Denta
         </div>
         <label className="flex items-center gap-1.5 cursor-pointer">
           <span className="text-[11px] text-slate-500 dark:text-slate-400">Deciduous</span>
+          <span
+            ref={deciduousInfoRef}
+            className="inline-flex items-center"
+            onMouseEnter={showDeciduousInfo}
+            onMouseLeave={() => setDeciduousTipPos(null)}
+          >
+            <Info className="h-3 w-3 text-slate-400 hover:text-teal-500 cursor-default transition-colors" />
+          </span>
           <div
             onClick={() => setShowDeciduous(v => !v)}
             className={`relative h-5 w-9 rounded-full transition-colors ${showDeciduous ? 'bg-teal-500' : 'bg-slate-300 dark:bg-slate-600'}`}
@@ -512,6 +529,23 @@ export default function DentalChart({ value, onChange, readOnly = false }: Denta
           </div>
         </label>
       </div>
+
+      {deciduousTipPos && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: deciduousTipPos.top,
+            left: deciduousTipPos.left,
+            transform: 'translate(-50%, -100%) translateY(-8px)',
+            zIndex: 99999,
+          }}
+          className="w-56 rounded-xl bg-slate-900 dark:bg-slate-800 text-[11px] text-white leading-relaxed px-3 py-2.5 shadow-2xl"
+        >
+          Deciduous (milk) teeth are the first set of 20 primary teeth that appear in childhood and are later replaced by permanent adult teeth.
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
+        </div>,
+        document.body
+      )}
 
       {/* Chart board */}
       <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 overflow-x-auto">

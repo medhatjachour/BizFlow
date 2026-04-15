@@ -65,12 +65,12 @@ export function registerAppointmentHandlers(prisma: any) {
 
       const [todayFU, overdueFU] = await Promise.all([
         prisma.clinicSession.findMany({
-          where: { followUpDate: { gte: today, lt: tomorrow }, status: 'completed' },
+          where: { followUpDate: { gte: today, lt: tomorrow }, status: { not: 'completed' } },
           include: { patient: { select: { id: true, name: true, phone: true } } },
           orderBy: { followUpDate: 'asc' }
         }),
         prisma.clinicSession.findMany({
-          where: { followUpDate: { gte: weekAgo, lt: today }, status: 'completed' },
+          where: { followUpDate: { gte: weekAgo, lt: today }, status: { not: 'completed' } },
           include: { patient: { select: { id: true, name: true, phone: true } } },
           orderBy: { followUpDate: 'desc' },
           take: 15
@@ -87,7 +87,7 @@ export function registerAppointmentHandlers(prisma: any) {
     try {
       const today = new Date(); today.setHours(0, 0, 0, 0)
       const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-      const where: any = { status: 'completed', followUpDate: { not: null } }
+      const where: any = { status: { not: 'completed' }, followUpDate: { not: null } }
       if (params?.filter === 'today') {
         where.followUpDate = { gte: today, lt: tomorrow }
       } else if (params?.filter === 'overdue') {

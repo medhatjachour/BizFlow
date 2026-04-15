@@ -4,6 +4,8 @@ import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, Credi
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import SessionFormModal from './SessionFormModal'
+import DentalChart from '../../components/DentalChart'
+import type { DentalChartData } from '../../components/DentalChart'
 
 function SessionHelp() {
   const [tipPos, setTipPos] = useState<{ top: number; right: number } | null>(null)
@@ -57,6 +59,7 @@ interface Session {
   amountPaid?: number | null
   paymentStatus: string
   paymentMethod?: string | null
+  dentalChart?: string | null
   prescriptions: Prescription[]
   patient: { id: string; name: string; phone: string; bloodType?: string | null }
 }
@@ -361,6 +364,23 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
               </div>
             </div>
           )}
+
+          {/* Dental Chart */}
+          {session.dentalChart && session.dentalChart !== '{}' && (() => {
+            let chartData: DentalChartData = {}
+            try { chartData = JSON.parse(session.dentalChart!) } catch { chartData = {} }
+            if (Object.keys(chartData).length === 0) return null
+            return (
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Dental Chart</p>
+                <div className="rounded-xl border border-teal-200 dark:border-teal-800 overflow-hidden bg-white dark:bg-slate-800">
+                  <div className="px-4 py-3">
+                    <DentalChart value={chartData} readOnly />
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Payment detail row */}
           {(session.amountCharged != null || session.followUpDate) && (

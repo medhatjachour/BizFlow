@@ -277,7 +277,7 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
         diagnosis: diagnosis || null,
         notes: notes || null,
         followUpDate: followUpDate ? new Date(followUpDate).toISOString() : null,
-        status,
+        status: followUpDate ? 'active' : (existingSession ? status : 'completed'),
         amountCharged: amountCharged ? parseFloat(amountCharged) : null,
         amountPaid: amountPaid ? parseFloat(amountPaid) : null,
         paymentStatus: computePaymentStatus(amountCharged, amountPaid),
@@ -495,8 +495,8 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
             </div>
           </div>
 
-          {/* ── Dental Chart (dentist mode only) ─────────────────────────────── */}
-          {isDentistMode && (
+          {/* ── Dental Chart (dentist mode, or session already has chart data) ─ */}
+          {(isDentistMode || (existingSession?.dentalChart && existingSession.dentalChart !== '{}')) && (
             <div className="rounded-xl border border-teal-200 dark:border-teal-800 overflow-hidden">
               <button
                 type="button"
@@ -525,19 +525,21 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           )}
 
           {/* Follow-up + Status */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${existingSession ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <div>
               <label className={labelCls}>{t('followUpDate')}</label>
               <input type="date" className={inputCls} value={followUpDate.slice(0, 10)} onChange={(e) => setFollowUpDate(e.target.value)} />
             </div>
-            <div>
-              <label className={labelCls}>{t('status')}</label>
-              <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="completed">{t('completed')}</option>
-                <option value="active">{t('active')}</option>
-                <option value="cancelled">{t('cancelled')}</option>
-              </select>
-            </div>
+            {existingSession && (
+              <div>
+                <label className={labelCls}>{t('status')}</label>
+                <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value)}>
+                  <option value="completed">{t('completed')}</option>
+                  <option value="active">{t('active')}</option>
+                  <option value="cancelled">{t('cancelled')}</option>
+                </select>
+              </div>
+            )}
           </div>
 
           {/* ── Payment ─────────────────────────────────────────────── */}
@@ -545,6 +547,60 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
             <div className="bg-slate-50 dark:bg-slate-700/50 px-4 py-2.5 border-b border-slate-200 dark:border-slate-600">
               <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">💳 {t('payment')}</p>
             </div>
+            {/* Debt summary banner – shown when editing a session with an outstanding balance */}
+            {existingSession && (() => {
+              const charged = existingSession.amountCharged ?? 0
+              const paid = existingSession.amountPaid ?? 0
+              const balance = charged - paid
+              if (charged <= 0) return null
+              return (
+                <div className={`px-4 py-3 border-b border-slate-200 dark:border-slate-600 ${
+                  balance > 0
+                    ? 'bg-red-50 dark:bg-red-900/20'
+                    : 'bg-emerald-50 dark:bg-emerald-900/20'
+                }`}>
+                  <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${
+                    balance > 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    {balance > 0 ? '⚠ Outstanding Debt' : '✓ Fully Paid'}
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    <div>
+                      <div className="text-[10px] text-slate-400 mb-0.5">{t('amountCharged')}</div>
+                      <div className="text-sm font-bold text-slate-700 dark:text-slate-200">{charged.toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-slate-400 mb-0.5">{t('amountPaid')}</div>
+                      <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{paid.toFixed(2)}</div>
+                    </div>
+                    {balance > 0 && (
+                      <div>
+                        <div className="text-[10px] text-slate-400 mb-0.5">{t('balance') ?? 'Balance'}</div>
+                        <div className="text-sm font-bold text-red-500 dark:text-red-400">{balance.toFixed(2)}</div>
+                      </div>
+                    )}
+                    {existingSession.paymentMethod && (
+                      <div>
+                        <div className="text-[10px] text-slate-400 mb-0.5">{t('method') ?? 'Method'}</div>
+                        <div className="text-sm font-semibold text-slate-600 dark:text-slate-300 capitalize">{existingSession.paymentMethod}</div>
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-[10px] text-slate-400 mb-0.5">{t('paymentStatus')}</div>
+                      <div className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-block ${
+                        existingSession.paymentStatus === 'paid'
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          : existingSession.paymentStatus === 'partial'
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      }`}>
+                        {existingSession.paymentStatus}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
             <div className="px-4 py-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelCls}>{t('amountCharged')}</label>
