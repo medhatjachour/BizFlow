@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight, Receipt } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -178,13 +179,39 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
 
 // ─── Info tooltip ────────────────────────────────────────────────────────────
 function InfoTooltip({ text }: { text: string }) {
+  const tipRef = useRef<HTMLSpanElement>(null)
+  const [tipPos, setTipPos] = useState<{ top: number; left: number } | null>(null)
+
   return (
-    <span className="group relative inline-flex" onClick={e => e.stopPropagation()}>
+    <span
+      ref={tipRef}
+      className="inline-flex"
+      onClick={e => e.stopPropagation()}
+      onMouseEnter={() => {
+        if (tipRef.current) {
+          const r = tipRef.current.getBoundingClientRect()
+          setTipPos({ top: r.top, left: r.left + (r.width / 2) })
+        }
+      }}
+      onMouseLeave={() => setTipPos(null)}
+    >
       <Info className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-default" />
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs leading-relaxed px-3 py-2 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 text-left whitespace-normal">
-        {text}
-        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800 dark:border-t-slate-700" />
-      </span>
+      {tipPos && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: tipPos.top,
+            left: tipPos.left,
+            transform: 'translate(-68%, -100%) translateY(-8px)',
+            zIndex: 99999,
+          }}
+          className="pointer-events-none w-56 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs leading-relaxed px-3 py-2 shadow-xl text-left whitespace-normal"
+        >
+          {text}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800 dark:border-t-slate-700" />
+        </div>,
+        document.body
+      )}
     </span>
   )
 }
@@ -559,11 +586,11 @@ export default function ClinicPage() {
   }
 
   const tabs: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
-    { key: 'patients',     label: t('clinicPatients'),                  Icon: Users },
+    { key: 'patients',     label: t('clinicPatients'),                  Icon: BarChart3 },
+    { key: 'appointments', label: t('clinicAppointments'),              Icon: Users },
     { key: 'sessions',     label: t('clinicSessions'),                  Icon: ClipboardList },
-    { key: 'stats',        label: t('clinicStats'),                     Icon: BarChart3 },
-    { key: 'appointments', label: t('clinicAppointments'),              Icon: CalendarClock },
     { key: 'followups',    label: t('clinicFollowUps') ?? 'Follow-ups', Icon: Bell, badge: overdueCount },
+    { key: 'stats',        label: t('clinicStats'),                     Icon: CalendarClock },
     { key: 'expenses',     label: t('clinicExpenses')  ?? 'Expenses',   Icon: Receipt },
   ]
 
@@ -596,7 +623,10 @@ export default function ClinicPage() {
           }`}
         >
           <Stethoscope className="h-3.5 w-3.5" />
-          Dentist Mode
+          <span className="inline-flex items-center gap-1">
+            Dentist Mode
+            <InfoTooltip text="Dentist Mode adds the Dental Chart (odontogram) to session forms, so you can record tooth-level findings and save them with the visit." />
+          </span>
           <span className={`relative inline-block h-4 w-7 rounded-full transition-colors ${
             dentistMode ? 'bg-teal-500' : 'bg-slate-300 dark:bg-slate-600'
           }`}>
