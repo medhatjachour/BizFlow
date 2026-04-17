@@ -824,6 +824,10 @@ export default function PatientProfile() {
   }
 
   const startEditPrescription = (rx: any) => {
+    if (!(rx.isActive ?? true)) {
+      showToast('error', 'Enable prescription before updating')
+      return
+    }
     setEditingRxId(rx.id)
     setRxDraft({
       medicineName: String(rx.medicineName ?? ''),
@@ -1467,12 +1471,27 @@ export default function PatientProfile() {
                   )}
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
+              <div className="px-5 pt-2 text-[11px] text-slate-400">Tip: swipe horizontally to view all columns.</div>
+              <div className="relative">
+                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-white dark:from-slate-800 to-transparent z-10" />
+                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-white dark:from-slate-800 to-transparent z-10" />
+                <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin]">
+                <table className="w-full min-w-[980px] text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-700/50">
                     <tr>
                       {['Medicine', 'Dosage', 'Frequency', 'Duration', 'Diagnosis', 'Date / Status', 'Actions'].map((h) => (
-                        <th key={h} className="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">{h}</th>
+                        <th
+                          key={h}
+                          className={`px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap ${
+                            h === 'Medicine'
+                              ? 'sticky left-0 z-20 bg-slate-50 dark:bg-slate-700/50'
+                              : h === 'Actions'
+                                ? 'sticky right-0 z-20 bg-slate-50 dark:bg-slate-700/50'
+                                : ''
+                          }`}
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -1482,7 +1501,7 @@ export default function PatientProfile() {
                       const isSaving = savingRxId === rx.id
                       return (
                         <tr key={rx.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors ${(rx.isActive ?? true) ? '' : 'opacity-60'}`}>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 sticky left-0 z-10 bg-white dark:bg-slate-800">
                             <div className="flex items-center gap-2">
                               {(rx.isActive ?? true)
                                 ? <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" title="Active" />
@@ -1531,7 +1550,7 @@ export default function PatientProfile() {
                               ? new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
                               : <span className="text-slate-400">{rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 py-2 sticky right-0 z-10 bg-white dark:bg-slate-800">
                             <div className="flex items-center gap-1.5">
                               {isEditing ? (
                                 <>
@@ -1575,13 +1594,15 @@ export default function PatientProfile() {
                                   >
                                     {(rx.isActive ?? true) ? 'Disable' : 'Enable'}
                                   </button>
-                                  <button
-                                    onClick={() => startEditPrescription(rx)}
-                                    disabled={savingRxId != null}
-                                    className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/50 disabled:opacity-60"
-                                  >
-                                    Update
-                                  </button>
+                                  {(rx.isActive ?? true) && (
+                                    <button
+                                      onClick={() => startEditPrescription(rx)}
+                                      disabled={savingRxId != null}
+                                      className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/50 disabled:opacity-60"
+                                    >
+                                      Update
+                                    </button>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -1591,6 +1612,7 @@ export default function PatientProfile() {
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )
