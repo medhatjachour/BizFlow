@@ -10,6 +10,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import SessionFormModal from './components/SessionFormModal'
 import PatientFormModal from './components/PatientFormModal'
+import AppointmentFormModal from './components/AppointmentFormModal'
 import type { Patient } from './index'
 import DentalChart from '../components/DentalChart'
 import type { DentalChartData } from '../components/DentalChart'
@@ -71,6 +72,17 @@ interface CheckResult {
   createdAt: string
 }
 
+interface Appointment {
+  id: string
+  patientId: string
+  appointmentDate: string
+  duration?: number | null
+  type: string
+  doctorName?: string | null
+  notes?: string | null
+  status: string
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function parseVitals(raw?: string | null): Record<string, string> {
   if (!raw) return {}
@@ -84,6 +96,20 @@ function calcAge(dob?: string | null): string {
 
 function initials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('')
+}
+
+function toArray<T = any>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[]
+  if (value && typeof value === 'object' && Array.isArray((value as any).data)) {
+    return (value as any).data as T[]
+  }
+  return []
+}
+
+function startOfToday() {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return today
 }
 
 // ─── QuickPayModal ───────────────────────────────────────────────────────────
@@ -262,6 +288,21 @@ const statusColors: Record<string, string> = {
   completed: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   active:    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   cancelled: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+}
+
+const appointmentTypeConfig: Record<string, string> = {
+  consultation: 'Consultation',
+  follow_up: 'Follow-up',
+  procedure: 'Procedure',
+  checkup: 'Checkup'
+}
+
+const appointmentStatusConfig: Record<string, { label: string; cls: string }> = {
+  scheduled: { label: 'Scheduled', cls: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
+  confirmed: { label: 'Confirmed', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+  completed: { label: 'Completed', cls: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' },
+  cancelled: { label: 'Cancelled', cls: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  no_show: { label: 'No Show', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' }
 }
 
 const avatarColors = [
@@ -699,10 +740,13 @@ export default function PatientProfile() {
   const [patient, setPatient] = useState<(Omit<Patient, 'sessions'> & { sessions: Session[] }) | null>(null)
   const [stats, setStats] = useState<PatientStats | null>(null)
   const [checkResults, setCheckResults] = useState<CheckResult[]>([])
+  const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [editSession, setEditSession] = useState<Session | null>(null)
+  const [editAppointment, setEditAppointment] = useState<Appointment | null>(null)
   const [showEditPatient, setShowEditPatient] = useState(false)
   const [showNewSession, setShowNewSession] = useState(false)
+  const [showAppointmentForm, setShowAppointmentForm] = useState(false)
   const [showUploadResult, setShowUploadResult] = useState(false)
   const [exportingPdf, setExportingPdf] = useState(false)
   const [viewingResult, setViewingResult] = useState<CheckResult | null>(null)
@@ -715,10 +759,11 @@ export default function PatientProfile() {
     if (!id) return
     setLoading(true)
     try {
-      const [pat, st, cr] = await Promise.all([
+      const [pat, st, cr, apptRes] = await Promise.all([
         window.api.clinic.patients.getById(id),
         window.api.clinic.stats.patientStats(id),
-        window.api.clinic.checkResults.getByPatient(id)
+        window.api.clinic.checkResults.getByPatient(id),
+        (window.api.clinic.appointments.getAll as any)({ patientId: id, skip: 0, take: 200 })
       ])
       if (!pat) {
         showToast('error', t('errorLoadingData'))
@@ -728,6 +773,7 @@ export default function PatientProfile() {
       setPatient(pat)
       setStats(st)
       setCheckResults(cr ?? [])
+      setAppointments(toArray<Appointment>(apptRes))
     } catch {
       showToast('error', t('errorLoadingData'))
       navigate('/clinic')
@@ -781,6 +827,16 @@ export default function PatientProfile() {
   if (!patient) return null
 
   const sessions = patient.sessions ?? []
+  const today = startOfToday()
+  const upcomingAppointments = appointments
+    .filter((appt) => new Date(appt.appointmentDate).getTime() >= today.getTime())
+    .filter((appt) => ['scheduled', 'confirmed'].includes(appt.status))
+    .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
+  const upcomingFollowUps = sessions
+    .filter((session) => !!session.followUpDate)
+    .filter((session) => session.status !== 'completed')
+    .filter((session) => new Date(session.followUpDate as string).getTime() >= today.getTime())
+    .sort((a, b) => new Date(a.followUpDate as string).getTime() - new Date(b.followUpDate as string).getTime())
   const hasFinance = (stats?.totalCharged ?? 0) > 0
   const collectPct = hasFinance ? Math.round(((stats?.totalPaid ?? 0) / (stats?.totalCharged ?? 1)) * 100) : 0
 
@@ -1208,6 +1264,107 @@ export default function PatientProfile() {
           </div>
         )}
 
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-700/60 bg-teal-50/60 dark:bg-teal-900/10">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-teal-600 dark:text-teal-400" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Upcoming Appointments</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-400 font-semibold">{upcomingAppointments.length}</span>
+              </div>
+              <button
+                onClick={() => { setEditAppointment(null); setShowAppointmentForm(true) }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" /> Book
+              </button>
+            </div>
+            {upcomingAppointments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400 dark:text-slate-500">
+                <Calendar className="h-8 w-8 text-slate-200 dark:text-slate-700" />
+                <p className="text-sm">No upcoming appointments</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                {upcomingAppointments.slice(0, 6).map((appt) => {
+                  const statusCfg = appointmentStatusConfig[appt.status] ?? { label: appt.status, cls: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300' }
+                  return (
+                    <div key={appt.id} className="px-5 py-3 flex items-start justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            {new Date(appt.appointmentDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">
+                            {new Date(appt.appointmentDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusCfg.cls}`}>
+                            {statusCfg.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500 dark:text-slate-400">
+                          <span>{appointmentTypeConfig[appt.type] ?? appt.type}</span>
+                          {appt.duration ? <span>• {appt.duration} min</span> : null}
+                          {appt.doctorName ? <span>• Dr. {appt.doctorName}</span> : null}
+                        </div>
+                        {appt.notes && (
+                          <p className="mt-1 text-xs text-slate-400 truncate">{appt.notes}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => { setEditAppointment(appt); setShowAppointmentForm(true) }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-700/60 bg-sky-50/60 dark:bg-sky-900/10">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-sky-600 dark:text-sky-400" />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Upcoming Follow-ups</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400 font-semibold">{upcomingFollowUps.length}</span>
+              </div>
+            </div>
+            {upcomingFollowUps.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-400 dark:text-slate-500">
+                <Clock className="h-8 w-8 text-slate-200 dark:text-slate-700" />
+                <p className="text-sm">No upcoming follow-ups</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 dark:divide-slate-700/60">
+                {upcomingFollowUps.slice(0, 6).map((session) => {
+                  const visitCfg = visitTypeConfig[session.visitType] ?? { label: session.visitType, cls: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300', dotCls: defaultDotCls }
+                  return (
+                    <div key={session.id} className="px-5 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors">
+                      <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                          {new Date(session.followUpDate as string).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                        </span>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${visitCfg.cls}`}>
+                          {visitCfg.label}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">
+                        {session.diagnosis || session.chiefComplaint || 'Follow-up reminder'}
+                      </div>
+                      {session.doctorName && (
+                        <div className="mt-1 text-xs text-slate-400">Dr. {session.doctorName}</div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* ── Prescriptions summary ─── */}
         {(() => {
           const allRx = sessions.flatMap((s) =>
@@ -1341,6 +1498,16 @@ export default function PatientProfile() {
           existingSession={{ ...editSession, patientId: patient.id, patient: { id: patient.id, name: patient.name } }}
           onClose={() => setEditSession(null)}
           onSaved={() => { setEditSession(null); load() }}
+        />
+      )}
+      {showAppointmentForm && (
+        <AppointmentFormModal
+          existing={editAppointment}
+          defaultPatientId={patient.id}
+          defaultPatientName={patient.name}
+          defaultDate={editAppointment?.appointmentDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10)}
+          onClose={() => { setShowAppointmentForm(false); setEditAppointment(null) }}
+          onSaved={() => { setShowAppointmentForm(false); setEditAppointment(null); load() }}
         />
       )}
       {showUploadResult && (

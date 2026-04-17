@@ -35,6 +35,7 @@
     "prisma:migrate": "node scripts/merge-schemas.js && prisma migrate dev --schema=prisma/merged.prisma",
     "prisma:seed:prod": "ts-node prisma/seed-production.ts",
     "prisma:seed:dev": "ts-node prisma/seed-development.ts",
+    "prisma:seed:clinic": "ts-node prisma/seeds/clinic-dentist/seed.ts",
     "prisma:seed:clinic-dentist": "ts-node prisma/seeds/clinic-dentist/seed.ts",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
