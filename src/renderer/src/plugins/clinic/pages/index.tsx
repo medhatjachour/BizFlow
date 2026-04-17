@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight, Receipt } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useAuth } from '@renderer/contexts/AuthContext'
 import PatientFormModal from './components/PatientFormModal'
 import SessionFormModal from './components/SessionFormModal'
 import AppointmentFormModal from './components/AppointmentFormModal'
@@ -627,10 +628,12 @@ function PatientsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ClinicPage() {
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('patients')
   const [overdueCount, setOverdueCount] = useState(0)
   const [showJourney, setShowJourney] = useState(false)
   const [dentistMode, setDentistMode] = useState(() => localStorage.getItem('clinicDentistMode') === 'true')
+  const isClinicStaff = user?.role === 'clinic_staff'
 
   function toggleDentistMode() {
     const next = !dentistMode
@@ -652,14 +655,22 @@ export default function ClinicPage() {
     expenses:     'Track clinic operating costs — rent, utilities, salaries, supplies, and more. View summaries and totals by period.',
   }
 
-  const tabs: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
+  const allTabs: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
     { key: 'patients',     label: t('clinicPatients'),                  Icon: BarChart3 },
-    { key: 'appointments', label: t('clinicAppointments'),              Icon: Users },
     { key: 'sessions',     label: t('clinicSessions'),                  Icon: ClipboardList },
+    { key: 'appointments', label: t('clinicAppointments'),              Icon: Users },
     { key: 'followups',    label: t('clinicFollowUps') ?? 'Follow-ups', Icon: Bell, badge: overdueCount },
     { key: 'stats',        label: t('clinicStats'),                     Icon: CalendarClock },
     { key: 'expenses',     label: t('clinicExpenses')  ?? 'Expenses',   Icon: Receipt },
   ]
+
+  const staffTabs: Tab[] = ['patients', 'sessions', 'appointments', 'followups']
+  const tabs = isClinicStaff ? allTabs.filter((t) => staffTabs.includes(t.key)) : allTabs
+
+  useEffect(() => {
+    if (tabs.some((t) => t.key === activeTab)) return
+    if (tabs.length > 0) setActiveTab(tabs[0].key)
+  }, [tabs, activeTab])
 
   return (
     <div className="flex flex-col h-full p-6 gap-5 overflow-auto">
@@ -733,10 +744,10 @@ export default function ClinicPage() {
       <div className="flex-1 min-h-0">
         {activeTab === 'patients'     && <PatientsTab />}
         {activeTab === 'sessions'     && <SessionsTab />}
-        {activeTab === 'stats'        && <StatsTab />}
+        {activeTab === 'stats'        && !isClinicStaff && <StatsTab />}
         {activeTab === 'appointments' && <AppointmentsTab />}
         {activeTab === 'followups'    && <FollowUpsTab />}
-        {activeTab === 'expenses'     && <ExpensesTab />}
+        {activeTab === 'expenses'     && !isClinicStaff && <ExpensesTab />}
       </div>
     </div>
   )

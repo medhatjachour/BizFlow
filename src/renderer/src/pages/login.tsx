@@ -62,6 +62,11 @@ export default function Login() {
   const auth = useAuth()
   const navigate = useNavigate()
 
+  function getLandingRoute(role?: string) {
+    if (role === 'clinic_staff') return '/clinic'
+    return '/dashboard'
+  }
+
   if (isExpired) return <ExpiredScreen />
 
   const handleLogin = async (e?: React.FormEvent) => {
@@ -81,7 +86,7 @@ export default function Login() {
       setLoading(true)
       const user = await auth.login(username, password)
       if (user) {
-        navigate('/dashboard')
+        navigate(getLandingRoute(user.role))
       } else {
         setError(t('invalidCredentials'))
       }
@@ -104,7 +109,7 @@ export default function Login() {
       setLoading(true)
       const user = await auth.login('setup', 'setup123')
       if (user) {
-        navigate('/dashboard')
+        navigate(getLandingRoute(user.role))
       } else {
         setError(t('invalidCredentials'))
       }

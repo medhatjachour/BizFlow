@@ -31,24 +31,113 @@ interface NewUser {
   role: string
 }
 
-const roleDescriptions = {
-  admin: 'Full system access - Can manage users, settings, and all features',
-  manager: 'Management access - Can view reports, manage inventory, and sales',
-  sales: 'Sales only - Can process sales and view products',
-  inventory: 'Inventory only - Can manage products and stock',
-  finance: 'Finance only - Can view financial reports and transactions'
+type RoleMeta = {
+  label: string
+  description: string
+  color: string
 }
 
-const roleColors = {
-  admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  manager: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  sales: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  inventory: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  finance: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
+  commerce: typeof __PLUGIN_COMMERCE__ !== 'undefined' && __PLUGIN_COMMERCE__,
+  bakery: typeof __PLUGIN_BAKERY__ !== 'undefined' && __PLUGIN_BAKERY__,
+  restaurant: typeof __PLUGIN_RESTAURANT__ !== 'undefined' && __PLUGIN_RESTAURANT__,
+  warehouse: typeof __PLUGIN_WAREHOUSE__ !== 'undefined' && __PLUGIN_WAREHOUSE__,
+  clinic: typeof __PLUGIN_CLINIC__ !== 'undefined' && __PLUGIN_CLINIC__,
+}
+
+const ALL_ROLE_META: Record<string, RoleMeta> = {
+  admin: {
+    label: 'Admin',
+    description: 'Full system access - can manage users, settings, and all modules',
+    color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+  },
+  manager: {
+    label: 'Manager',
+    description: 'Cross-module management access for operations and reporting',
+    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+  },
+
+  // Commerce roles
+  sales: {
+    label: 'Sales',
+    description: 'Commerce sales operations (POS and sales pages)',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+  },
+  inventory: {
+    label: 'Inventory',
+    description: 'Commerce inventory and product stock control',
+    color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+  },
+  finance: {
+    label: 'Finance',
+    description: 'Financial review and reconciliation access',
+    color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200'
+  },
+
+  // Clinic
+  clinic_staff: {
+    label: 'Clinic Staff',
+    description: 'Clinic day-to-day operations (patients, sessions, appointments)',
+    color: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200'
+  },
+
+  // Bakery
+  bakery_staff: {
+    label: 'Bakery Staff',
+    description: 'Bakery production, recipes, and waste operations',
+    color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+  },
+
+  // Restaurant
+  restaurant_staff: {
+    label: 'Restaurant Staff',
+    description: 'Restaurant tables, reservations, and dine-in workflow',
+    color: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-200'
+  },
+
+  // Warehouse
+  warehouse_staff: {
+    label: 'Warehouse Staff',
+    description: 'Warehouse transfer and location stock operations',
+    color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200'
+  },
+}
+
+const CORE_ROLES = ['admin', 'manager']
+
+function getPluginScopedRoles(): string[] {
+  const roles: string[] = []
+  if (BUNDLED_PLUGIN_FLAGS.commerce) roles.push('sales', 'inventory', 'finance')
+  if (BUNDLED_PLUGIN_FLAGS.clinic) roles.push('clinic_staff')
+  if (BUNDLED_PLUGIN_FLAGS.bakery) roles.push('bakery_staff')
+  if (BUNDLED_PLUGIN_FLAGS.restaurant) roles.push('restaurant_staff')
+  if (BUNDLED_PLUGIN_FLAGS.warehouse) roles.push('warehouse_staff')
+  return roles
+}
+
+function getAvailableRoles(): string[] {
+  return [...CORE_ROLES, ...getPluginScopedRoles()]
+}
+
+function getDefaultRole(): string {
+  const roles = getAvailableRoles()
+  if (roles.includes('sales')) return 'sales'
+  return roles.includes('manager') ? 'manager' : 'admin'
+}
+
+function getRoleMeta(role: string): RoleMeta {
+  return ALL_ROLE_META[role] ?? {
+    label: role,
+    description: 'Custom role',
+    color: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+  }
 }
 
 export default function UserManagementSettings() {
   const { user } = useAuth()
+  const availableRoles = getAvailableRoles()
+  const defaultRole = getDefaultRole()
+
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -70,7 +159,7 @@ export default function UserManagementSettings() {
     fullName: '',
     email: '',
     phone: '',
-    role: 'sales'
+    role: defaultRole
   })
 
   const [passwordChange, setPasswordChange] = useState({
@@ -127,7 +216,7 @@ export default function UserManagementSettings() {
           fullName: '',
           email: '',
           phone: '',
-          role: 'sales'
+          role: defaultRole
         })
         alert('User created successfully!')
       } else {
@@ -339,8 +428,8 @@ export default function UserManagementSettings() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${roleColors[user.role as keyof typeof roleColors]}`}>
-                    {user.role}
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleMeta(user.role).color}`}>
+                    {getRoleMeta(user.role).label}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
@@ -414,12 +503,12 @@ export default function UserManagementSettings() {
       <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Role Permissions</h3>
         <div className="space-y-2">
-          {Object.entries(roleDescriptions).map(([role, description]) => (
+          {availableRoles.map((role) => (
             <div key={role} className="flex items-start gap-2">
-              <span className={`px-2 py-1 text-xs font-semibold rounded ${roleColors[role as keyof typeof roleColors]}`}>
-                {role}
+              <span className={`px-2 py-1 text-xs font-semibold rounded ${getRoleMeta(role).color}`}>
+                {getRoleMeta(role).label}
               </span>
-              <span className="text-sm text-slate-600 dark:text-slate-400">{description}</span>
+              <span className="text-sm text-slate-600 dark:text-slate-400">{getRoleMeta(role).description}</span>
             </div>
           ))}
         </div>
@@ -543,14 +632,12 @@ export default function UserManagementSettings() {
                   onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 >
-                  <option value="sales">Sales</option>
-                  <option value="inventory">Inventory</option>
-                  <option value="finance">Finance</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
+                  {availableRoles.map((role) => (
+                    <option key={role} value={role}>{getRoleMeta(role).label}</option>
+                  ))}
                 </select>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  {roleDescriptions[newUser.role as keyof typeof roleDescriptions]}
+                  {getRoleMeta(newUser.role).description}
                 </p>
               </div>
             </div>
@@ -572,7 +659,7 @@ export default function UserManagementSettings() {
                     fullName: '',
                     email: '',
                     phone: '',
-                    role: 'sales'
+                    role: defaultRole
                   })
                 }}
                 className="flex-1 px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
@@ -652,11 +739,12 @@ export default function UserManagementSettings() {
                   onChange={(e) => setSelectedUser(prev => prev ? { ...prev, role: e.target.value } : prev)}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 >
-                  <option value="sales">Sales</option>
-                  <option value="inventory">Inventory</option>
-                  <option value="finance">Finance</option>
-                  <option value="manager">Manager</option>
-                  <option value="admin">Admin</option>
+                  {availableRoles.map((role) => (
+                    <option key={role} value={role}>{getRoleMeta(role).label}</option>
+                  ))}
+                  {!availableRoles.includes(selectedUser.role) && (
+                    <option value={selectedUser.role}>{selectedUser.role} (legacy)</option>
+                  )}
                 </select>
               </div>
 
