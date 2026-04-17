@@ -15,8 +15,12 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
 
+  const initialAge = patient?.dateOfBirth
+    ? Math.max(0, Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000)))
+    : ''
+
   const [name, setName] = useState(patient?.name ?? '')
-  const [dateOfBirth, setDateOfBirth] = useState(patient?.dateOfBirth ? String(patient.dateOfBirth).slice(0, 10) : '')
+  const [age, setAge] = useState<string>(initialAge === '' ? '' : String(initialAge))
   const [gender, setGender] = useState(patient?.gender ?? '')
   const [phone, setPhone] = useState(patient?.phone ?? '')
   const [email, setEmail] = useState(patient?.email ?? '')
@@ -35,9 +39,20 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
     }
     setSaving(true)
     try {
+      const ageNum = age.trim() === '' ? null : Number(age)
+      const validAge = ageNum != null && Number.isFinite(ageNum) && ageNum >= 0 ? Math.floor(ageNum) : null
+      const derivedDob = validAge == null
+        ? null
+        : (() => {
+            const d = new Date()
+            d.setHours(0, 0, 0, 0)
+            d.setFullYear(d.getFullYear() - validAge)
+            return d.toISOString()
+          })()
+
       const data = {
         name: name.trim(),
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString() : null,
+        dateOfBirth: derivedDob,
         gender: gender || null,
         phone: phone.trim(),
         email: email.trim() || null,
@@ -82,15 +97,23 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          {/* Name + DOB */}
+          {/* Name + Age */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>{t('fullName')} *</label>
               <input className={inputCls} required value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div>
-              <label className={labelCls}>{t('dateOfBirth')}</label>
-              <input type="date" className={inputCls} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+              <label className={labelCls}>Age</label>
+              <input
+                type="number"
+                min="0"
+                max="130"
+                className={inputCls}
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                placeholder="e.g. 32"
+              />
             </div>
           </div>
 

@@ -5,8 +5,9 @@ const log = createLogger('Clinic:Appointments')
 
 export function registerAppointmentHandlers(prisma: any) {
   // ─── Get appointments with optional filters ───────────────────────────────
+  // PAGINATION: Returns { data: Appointment[], total: number, hasMore: boolean }
   ipcMain.handle('clinic:appointments:getAll', async (_e, params?: {
-    date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string
+    date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string; skip?: number; take?: number
   }) => {
     try {
       const where: any = {}
@@ -14,19 +15,36 @@ export function registerAppointmentHandlers(prisma: any) {
       if (params?.status)    where.status    = params.status
       if (params?.type)      where.type      = params.type
       if (params?.date) {
-        const d = new Date(params.date); d.setHours(0, 0, 0, 0)
-        const end = new Date(d); end.setDate(d.getDate() + 1)
-        where.appointmentDate = { gte: d, lt: end }
+        // Use T00:00:00 suffix to force local-time parsing (avoids UTC-midnight shift)
+        const d   = new Date(params.date + 'T00:00:00')
+        const end = new Date(params.date + 'T23:59:59.999')
+        where.appointmentDate = { gte: d, lte: end }
       } else if (params?.from || params?.to) {
         where.appointmentDate = {}
         if (params.from) where.appointmentDate.gte = new Date(params.from)
         if (params.to)   where.appointmentDate.lte = new Date(params.to)
       }
-      return await prisma.clinicAppointment.findMany({
+
+      // Pagination defaults
+      const skip = params?.skip ?? 0
+      const take = params?.take ?? 50
+
+      // Get total count
+      const total = await prisma.clinicAppointment.count({ where })
+
+      const data = await prisma.clinicAppointment.findMany({
         where,
         include: { patient: { select: { id: true, name: true, phone: true, bloodType: true } } },
-        orderBy: { appointmentDate: 'asc' }
+        orderBy: { appointmentDate: 'asc' },
+        skip,
+        take
       })
+
+      return {
+        data,
+        total,
+        hasMore: skip + take < total
+      }
     } catch (err) { log.error('getAll error', err); throw err }
   })
 

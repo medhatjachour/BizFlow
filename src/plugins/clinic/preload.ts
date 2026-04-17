@@ -10,7 +10,7 @@ import { ipcRenderer } from 'electron'
 export const clinicPreload = {
   // ─── Patients ──────────────────────────────────────────────────────────
   patients: {
-    getAll: (params?: { search?: string }) =>
+    getAll: (params?: { search?: string; skip?: number; take?: number }) =>
       ipcRenderer.invoke('clinic:patients:getAll', params),
     searchLite: (query: string) =>
       ipcRenderer.invoke('clinic:patients:searchLite', query),
@@ -26,7 +26,7 @@ export const clinicPreload = {
 
   // ─── Sessions ──────────────────────────────────────────────────────────
   sessions: {
-    getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all' }) =>
+    getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; skip?: number; take?: number }) =>
       ipcRenderer.invoke('clinic:sessions:getRecent', params),
     create: (data: any) =>
       ipcRenderer.invoke('clinic:sessions:create', data),
@@ -70,7 +70,7 @@ export const clinicPreload = {
 
   // ─── Appointments ──────────────────────────────────────────────────────────
   appointments: {
-    getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string }) =>
+    getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string; skip?: number; take?: number }) =>
       ipcRenderer.invoke('clinic:appointments:getAll', params),
     getToday: () =>
       ipcRenderer.invoke('clinic:appointments:getToday'),

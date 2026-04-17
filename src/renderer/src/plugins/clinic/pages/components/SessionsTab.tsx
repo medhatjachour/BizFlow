@@ -430,24 +430,51 @@ export default function SessionsTab() {
   const { showToast } = useToast()
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<FilterType>('today')
+  const [skip, setSkip] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const pageSize = 50
   const [showNewSession, setShowNewSession] = useState(false)
   const [editSession, setEditSession] = useState<Session | null>(null)
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (pageSkip?: number) => {
+    const isInitial = pageSkip == null || pageSkip === 0
+    if (isInitial) setLoading(true)
+    else setLoadingMore(true)
+
     try {
-      const data = await window.api.clinic.sessions.getRecent({ filter })
-      setSessions(data)
+      const response = await (window.api.clinic.sessions.getRecent as any)({ filter, skip: pageSkip ?? 0, take: pageSize })
+      
+      // Handle both old (array) and new (paginated) response formats
+      if (Array.isArray(response)) {
+        setSessions(response)
+        setTotal(response.length)
+        setHasMore(false)
+        setSkip(0)
+      } else {
+        // New paginated format
+        if (isInitial) {
+          setSessions(response.data)
+          setSkip(pageSkip ?? 0)
+        } else {
+          setSessions(prev => [...prev, ...response.data])
+          setSkip((pageSkip ?? 0) + response.data.length)
+        }
+        setTotal(response.total)
+        setHasMore(response.hasMore)
+      }
     } catch {
       showToast('error', t('errorLoadingData'))
     } finally {
-      setLoading(false)
+      if (isInitial) setLoading(false)
+      else setLoadingMore(false)
     }
   }, [filter, showToast, t])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { setSkip(0); load(0) }, [filter])
 
   async function handleStatusChange(id: string, newStatus: string) {
     setUpdatingStatusId(id)
@@ -467,7 +494,7 @@ export default function SessionsTab() {
     try {
       await window.api.clinic.sessions.delete(id)
       showToast('success', t('deletedSuccessfully'))
-      load()
+      load(0)
     } catch {
       showToast('error', t('errorDeletingRecord'))
     }
@@ -560,6 +587,35 @@ export default function SessionsTab() {
               statusUpdating={updatingStatusId === s.id}
             />
           ))}
+          
+          {/* Load more button — only show if there are more results */}
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <button
+                onClick={() => load(skip + pageSize)}
+                disabled={loadingMore}
+                className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    ▼ Load more ({sessions.length} of {total})
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Summary line when showing all results */}
+          {!hasMore && sessions.length > 0 && (
+            <p className="text-center text-xs text-slate-400 dark:text-slate-500 pt-2">
+              Showing all {total} {total === 1 ? 'session' : 'sessions'}
+            </p>
+          )}
         </div>
       )}
 

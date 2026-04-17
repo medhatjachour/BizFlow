@@ -21,8 +21,12 @@ model ClinicPatient {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
+  // Search indexes for patient lookup (name, phone, ID, folder)
   @@index([name])
   @@index([phone])
+  @@index([nationalId])
+  @@index([folderNumber])
+  @@index([createdAt])
 }
 
 model ClinicSession {

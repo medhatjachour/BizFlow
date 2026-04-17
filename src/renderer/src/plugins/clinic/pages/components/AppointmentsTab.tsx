@@ -210,6 +210,11 @@ export default function AppointmentsTab() {
   const [selectedDate,     setSelectedDate]     = useState<string>(toIsoDate(new Date()))
   const [appointments,     setAppointments]     = useState<Appointment[]>([])
   const [loading,          setLoading]          = useState(true)
+  const [loadingMore,      setLoadingMore]      = useState(false)
+  const [skip,             setSkip]             = useState(0)
+  const [total,            setTotal]            = useState(0)
+  const [hasMore,          setHasMore]          = useState(false)
+  const pageSize = 50
   const [showForm,         setShowForm]         = useState(false)
   const [editingAppt,      setEditingAppt]      = useState<Appointment | null>(null)
   const [updatingId,       setUpdatingId]       = useState<string | null>(null)
@@ -218,34 +223,68 @@ export default function AppointmentsTab() {
   const [viewMode,         setViewMode]         = useState<'day' | 'week'>('day')
   const [weekAppts,        setWeekAppts]        = useState<Record<string, Appointment[]>>({})
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async (pageSkip?: number) => {
+    const isInitial = pageSkip == null || pageSkip === 0
+    if (isInitial) setLoading(true)
+    else setLoadingMore(true)
+
     try {
       if (viewMode === 'day') {
-        const res = await window.api.clinic.appointments.getAll({ date: selectedDate })
-        setAppointments(res ?? [])
+        const response = await (window.api.clinic.appointments.getAll as any)({ date: selectedDate, skip: pageSkip ?? 0, take: pageSize })
+        
+        // Handle both old (array) and new (paginated) response formats
+        if (Array.isArray(response)) {
+          if (isInitial) {
+            setAppointments(response ?? [])
+            setTotal(response.length)
+            setHasMore(false)
+            setSkip(0)
+          } else {
+            setAppointments(prev => [...prev, ...(response ?? [])])
+            setSkip((pageSkip ?? 0) + response.length)
+            setTotal(response.length)
+            setHasMore(false)
+          }
+        } else {
+          // New paginated format
+          if (isInitial) {
+            setAppointments(response.data)
+            setSkip(pageSkip ?? 0)
+          } else {
+            setAppointments(prev => [...prev, ...response.data])
+            setSkip((pageSkip ?? 0) + response.data.length)
+          }
+          setTotal(response.total)
+          setHasMore(response.hasMore)
+        }
       } else {
+        // Week view: no pagination for now (fetch all days)
         const days = getWeekDates(selectedDate)
         const results = await Promise.all(days.map((d) => window.api.clinic.appointments.getAll({ date: d }).catch(() => [])))
         const map: Record<string, Appointment[]> = {}
-        days.forEach((d, i) => { map[d] = results[i] ?? [] })
+        days.forEach((d, i) => {
+          const dayData = results[i]
+          // Handle both array and paginated response
+          map[d] = Array.isArray(dayData) ? (dayData ?? []) : (dayData?.data ?? [])
+        })
         setWeekAppts(map)
       }
     } catch {
       showToast('error', t('errorLoadingData'))
     } finally {
-      setLoading(false)
+      if (isInitial) setLoading(false)
+      else setLoadingMore(false)
     }
   }, [selectedDate, viewMode, showToast, t])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { setSkip(0); load(0) }, [selectedDate, viewMode])
 
   const handleDelete = async (id: string) => {
     if (!confirm(t('confirmDelete'))) return
     try {
       await window.api.clinic.appointments.delete(id)
       showToast('success', t('appointmentDeleted'))
-      load()
+      load(0)
     } catch { showToast('error', t('failedDeleteAppointment')) }
   }
 
@@ -254,7 +293,7 @@ export default function AppointmentsTab() {
     try {
       await window.api.clinic.appointments.update(appt.id, { status })
       showToast('success', t('appointmentUpdated'))
-      load()
+      load(0)
     } catch { showToast('error', t('failedUpdateStatus')) }
     finally { setUpdatingId(null) }
   }
@@ -442,7 +481,34 @@ export default function AppointmentsTab() {
               ))}
             </div>
           )}
-        </div>
+          {/* Load more button — only show if there are more results in day view */}
+          {hasMore && (
+            <div className="flex justify-center pt-4">
+              <button
+                onClick={() => load(skip + pageSize)}
+                disabled={loadingMore}
+                className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    ▼ Load more ({appointments.length} of {total})
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Summary line when showing all results */}
+          {!hasMore && appointments.length > 0 && (
+            <p className="text-center text-xs text-slate-400 dark:text-slate-500 pt-2">
+              Showing all {total} {total === 1 ? 'appointment' : 'appointments'}
+            </p>
+          )}        </div>
       ))}
 
       {showForm && (
@@ -450,7 +516,7 @@ export default function AppointmentsTab() {
           existing={editingAppt}
           defaultDate={selectedDate}
           onClose={() => { setShowForm(false); setEditingAppt(null) }}
-          onSaved={() => { setShowForm(false); setEditingAppt(null); load() }}
+          onSaved={(date) => { setShowForm(false); setEditingAppt(null); if (date && date !== selectedDate) { setSelectedDate(date) } else { load(0) } }}
         />
       )}
 
@@ -465,7 +531,7 @@ export default function AppointmentsTab() {
             patient: sessionAppt.patient
           }}
           onClose={() => { setShowSessionForm(false); setSessionAppt(null) }}
-          onSaved={() => { setShowSessionForm(false); setSessionAppt(null); load() }}
+          onSaved={() => { setShowSessionForm(false); setSessionAppt(null); load(0) }}
         />
       )}
     </div>

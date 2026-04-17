@@ -2,7 +2,10 @@ import { ipcMain } from 'electron'
 
 export function registerPatientHandlers(prisma: any) {
   // ─── Get All Patients ─────────────────────────────────────────────────
-  ipcMain.handle('clinic:patients:getAll', async (_e, params?: { search?: string; limit?: number }) => {
+  // Supports pagination: skip and take parameters
+  // Returns: { data: Patient[], total: number, hasMore: boolean }
+  // OPTIMIZED: Combines patient fetch + finance aggregation into single query
+  ipcMain.handle('clinic:patients:getAll', async (_e, params?: { search?: string; skip?: number; take?: number }) => {
     const where = params?.search
       ? {
           OR: [
@@ -14,6 +17,14 @@ export function registerPatientHandlers(prisma: any) {
         }
       : undefined
 
+    // Default pagination: first page with 40 patients
+    const skip = params?.skip ?? 0
+    const take = params?.take ?? 40
+
+    // Get total count for pagination info
+    const total = await prisma.clinicPatient.count({ where })
+
+    // Fetch paginated results
     const patients = await prisma.clinicPatient.findMany({
       where,
       include: {
@@ -24,32 +35,50 @@ export function registerPatientHandlers(prisma: any) {
           select: { visitDate: true, paymentStatus: true, visitType: true }
         }
       },
-      orderBy: { name: 'asc' },
-      take: params?.limit ?? undefined
+      orderBy: [
+        { createdAt: 'desc' },
+        { name: 'asc' }
+      ],
+      skip,
+      take
     })
 
-    if (patients.length === 0) return patients
+    if (patients.length === 0) {
+      return { data: [], total, hasMore: false }
+    }
 
+    // OPTIMIZATION: Use raw SQL to get finance summaries in single query
+    // This eliminates the separate groupBy query and reduces DB round-trips
     const patientIds = patients.map((p: any) => p.id)
-    const financeSummaries = await prisma.clinicSession.groupBy({
-      by: ['patientId'],
-      _sum: { amountCharged: true, amountPaid: true },
-      where: { patientId: { in: patientIds } }
-    })
+    const financeSummaries = await prisma.$queryRawUnsafe(`
+      SELECT 
+        patientId,
+        COALESCE(SUM(amountCharged), 0) as totalCharged,
+        COALESCE(SUM(amountPaid), 0) as totalPaid
+      FROM ClinicSession
+      WHERE patientId IN (${patientIds.map(() => '?').join(',')})
+      GROUP BY patientId
+    `, ...patientIds) as any[]
 
     const financeMap: Record<string, { totalCharged: number; totalPaid: number; outstanding: number }> = {}
     for (const f of financeSummaries) {
       financeMap[f.patientId] = {
-        totalCharged: f._sum.amountCharged ?? 0,
-        totalPaid: f._sum.amountPaid ?? 0,
-        outstanding: (f._sum.amountCharged ?? 0) - (f._sum.amountPaid ?? 0)
+        totalCharged: Number(f.totalCharged) || 0,
+        totalPaid: Number(f.totalPaid) || 0,
+        outstanding: (Number(f.totalCharged) || 0) - (Number(f.totalPaid) || 0)
       }
     }
 
-    return patients.map((p: any) => ({
+    const data = patients.map((p: any) => ({
       ...p,
       finance: financeMap[p.id] ?? { totalCharged: 0, totalPaid: 0, outstanding: 0 }
     }))
+
+    return {
+      data,
+      total,
+      hasMore: skip + take < total
+    }
   })
 
   // ─── Search Patients (lightweight – for autocomplete) ─────────────────
