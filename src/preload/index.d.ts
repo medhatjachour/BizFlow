@@ -412,6 +412,7 @@ interface API {
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>
+        getDebtors: (params?: { search?: string; skip?: number; take?: number }) => Promise<{ data: any[]; total: number; totalOutstanding: number; hasMore: boolean }>
     }
     sessions: {
       getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all' }) => Promise<any>
@@ -419,6 +420,10 @@ interface API {
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>
     }
+      prescriptions: {
+        update: (id: string, data: any) => Promise<any>
+        setActive: (id: string, isActive: boolean) => Promise<any>
+      }
     stats: {
       overview: () => Promise<any>
       topDiagnoses: (limit?: number) => Promise<any>

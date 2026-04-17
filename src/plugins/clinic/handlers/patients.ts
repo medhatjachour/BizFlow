@@ -81,6 +81,88 @@ export function registerPatientHandlers(prisma: any) {
     }
   })
 
+  // ─── Get Debtor Patients (optimized for finance page) ─────────────────
+  // Returns only patients with outstanding balance, sorted by highest debt.
+  ipcMain.handle('clinic:patients:getDebtors', async (_e, params?: { search?: string; skip?: number; take?: number }) => {
+    const skip = params?.skip ?? 0
+    const take = params?.take ?? 200
+    const search = (params?.search ?? '').trim()
+
+    const whereSql = search
+      ? 'WHERE (p.name LIKE ? OR p.phone LIKE ? OR p.nationalId LIKE ? OR p.folderNumber LIKE ?)'
+      : ''
+    const searchArgs = search ? [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`] : []
+
+    const countRows = await prisma.$queryRawUnsafe(`
+      SELECT COUNT(*) AS total
+      FROM (
+        SELECT p.id
+        FROM ClinicPatient p
+        LEFT JOIN ClinicSession s ON s.patientId = p.id
+        ${whereSql}
+        GROUP BY p.id
+        HAVING (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) > 0
+      ) debtors
+    `, ...searchArgs) as Array<{ total: number | string }>
+
+    const totalOutstandingRows = await prisma.$queryRawUnsafe(`
+      SELECT COALESCE(SUM(outstanding), 0) AS totalOutstanding
+      FROM (
+        SELECT (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) AS outstanding
+        FROM ClinicPatient p
+        LEFT JOIN ClinicSession s ON s.patientId = p.id
+        ${whereSql}
+        GROUP BY p.id
+        HAVING (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) > 0
+      ) t
+    `, ...searchArgs) as Array<{ totalOutstanding: number | string }>
+
+    const rows = await prisma.$queryRawUnsafe(`
+      SELECT
+        p.id,
+        p.name,
+        p.phone,
+        COALESCE(SUM(s.amountCharged), 0) AS totalCharged,
+        COALESCE(SUM(s.amountPaid), 0) AS totalPaid,
+        (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) AS outstanding
+      FROM ClinicPatient p
+      LEFT JOIN ClinicSession s ON s.patientId = p.id
+      ${whereSql}
+      GROUP BY p.id
+      HAVING (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) > 0
+      ORDER BY outstanding DESC, p.name ASC
+      LIMIT ? OFFSET ?
+    `, ...searchArgs, take, skip) as Array<{
+      id: string
+      name: string
+      phone: string | null
+      totalCharged: number | string
+      totalPaid: number | string
+      outstanding: number | string
+    }>
+
+    const data = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      phone: r.phone ?? '',
+      finance: {
+        totalCharged: Number(r.totalCharged) || 0,
+        totalPaid: Number(r.totalPaid) || 0,
+        outstanding: Number(r.outstanding) || 0
+      }
+    }))
+
+    const total = Number(countRows?.[0]?.total ?? 0)
+    const totalOutstanding = Number(totalOutstandingRows?.[0]?.totalOutstanding ?? 0)
+
+    return {
+      data,
+      total,
+      totalOutstanding,
+      hasMore: skip + data.length < total
+    }
+  })
+
   // ─── Search Patients (lightweight – for autocomplete) ─────────────────
   ipcMain.handle('clinic:patients:searchLite', async (_e, query: string) => {
     const trimmed = (query ?? '').trim()

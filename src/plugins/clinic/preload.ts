@@ -12,6 +12,8 @@ export const clinicPreload = {
   patients: {
     getAll: (params?: { search?: string; skip?: number; take?: number }) =>
       ipcRenderer.invoke('clinic:patients:getAll', params),
+    getDebtors: (params?: { search?: string; skip?: number; take?: number }) =>
+      ipcRenderer.invoke('clinic:patients:getDebtors', params),
     searchLite: (query: string) =>
       ipcRenderer.invoke('clinic:patients:searchLite', query),
     getById: (id: string) =>
@@ -34,6 +36,13 @@ export const clinicPreload = {
       ipcRenderer.invoke('clinic:sessions:update', { id, data }),
     delete: (id: string) =>
       ipcRenderer.invoke('clinic:sessions:delete', id)
+  },
+
+  prescriptions: {
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('clinic:prescriptions:update', { id, data }),
+    setActive: (id: string, isActive: boolean) =>
+      ipcRenderer.invoke('clinic:prescriptions:setActive', { id, isActive })
   },
 
   // ─── Stats ─────────────────────────────────────────────────────────────

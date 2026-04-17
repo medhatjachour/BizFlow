@@ -106,4 +106,21 @@ export function registerSessionHandlers(prisma: any) {
     await prisma.clinicSession.delete({ where: { id } })
     return { success: true }
   })
+
+  // ─── Prescription row actions (Patient Profile table) ─────────────────
+  ipcMain.handle('clinic:prescriptions:update', async (_e, { id, data }: { id: string; data: any }) => {
+    return prisma.clinicPrescription.update({
+      where: { id },
+      data
+    })
+  })
+
+  ipcMain.handle('clinic:prescriptions:setActive', async (_e, { id, isActive }: { id: string; isActive: boolean }) => {
+    return prisma.clinicPrescription.update({
+      where: { id },
+      data: isActive
+        ? { isActive: true, stoppedAt: null, stopReason: null }
+        : { isActive: false, stoppedAt: new Date(), stopReason: 'other' }
+    })
+  })
 }

@@ -752,6 +752,16 @@ export default function PatientProfile() {
   const [viewingResult, setViewingResult] = useState<CheckResult | null>(null)
   const [showResultsPanel, setShowResultsPanel] = useState(false)
   const [showPayModal, setShowPayModal] = useState(false)
+  const [editingRxId, setEditingRxId] = useState<string | null>(null)
+  const [savingRxId, setSavingRxId] = useState<string | null>(null)
+  const [rxDraft, setRxDraft] = useState({
+    medicineName: '',
+    dosage: '',
+    frequency: '',
+    duration: '',
+    quantity: '',
+    instructions: ''
+  })
   const isDentistMode = localStorage.getItem('clinicDentistMode') === 'true'
   const [showDentalPanel, setShowDentalPanel] = useState(false)
 
@@ -810,6 +820,76 @@ export default function PatientProfile() {
       showToast('error', 'Failed to export PDF')
     } finally {
       setExportingPdf(false)
+    }
+  }
+
+  const startEditPrescription = (rx: any) => {
+    setEditingRxId(rx.id)
+    setRxDraft({
+      medicineName: String(rx.medicineName ?? ''),
+      dosage: String(rx.dosage ?? ''),
+      frequency: String(rx.frequency ?? ''),
+      duration: String(rx.duration ?? ''),
+      quantity: rx.quantity == null ? '' : String(rx.quantity),
+      instructions: String(rx.instructions ?? '')
+    })
+  }
+
+  const cancelEditPrescription = () => {
+    setEditingRxId(null)
+    setRxDraft({ medicineName: '', dosage: '', frequency: '', duration: '', quantity: '', instructions: '' })
+  }
+
+  const updatePrescription = async (rxId: string) => {
+    const toNull = (value: string) => {
+      const v = value.trim()
+      return v ? v : null
+    }
+
+    const qtyRaw = rxDraft.quantity.trim()
+    const parsedQty = qtyRaw === '' ? null : Number(qtyRaw)
+    if (qtyRaw !== '' && (!Number.isFinite(parsedQty) || parsedQty < 0)) {
+      showToast('error', 'Quantity must be a valid number')
+      return
+    }
+
+    if (!rxDraft.medicineName.trim()) {
+      showToast('error', 'Medicine name is required')
+      return
+    }
+
+    setSavingRxId(rxId)
+    try {
+      await window.api.clinic.prescriptions.update(rxId, {
+        medicineName: rxDraft.medicineName.trim(),
+        dosage: toNull(rxDraft.dosage),
+        frequency: toNull(rxDraft.frequency),
+        duration: toNull(rxDraft.duration),
+        quantity: parsedQty == null ? null : Math.round(parsedQty),
+        instructions: toNull(rxDraft.instructions)
+      })
+      showToast('success', 'Prescription updated')
+      cancelEditPrescription()
+      await load()
+    } catch {
+      showToast('error', 'Failed to update prescription')
+    } finally {
+      setSavingRxId(null)
+    }
+  }
+
+  const togglePrescriptionActive = async (rx: any) => {
+    const next = !(rx.isActive ?? true)
+    setSavingRxId(rx.id)
+    try {
+      await window.api.clinic.prescriptions.setActive(rx.id, next)
+      showToast('success', next ? 'Prescription enabled' : 'Prescription disabled')
+      if (editingRxId === rx.id) cancelEditPrescription()
+      await load()
+    } catch {
+      showToast('error', 'Failed to update prescription status')
+    } finally {
+      setSavingRxId(null)
     }
   }
 
@@ -1391,33 +1471,124 @@ export default function PatientProfile() {
                 <table className="w-full text-xs">
                   <thead className="bg-slate-50 dark:bg-slate-700/50">
                     <tr>
-                      {['Medicine', 'Dosage', 'Frequency', 'Duration', 'Diagnosis', 'Date / Status'].map((h) => (
+                      {['Medicine', 'Dosage', 'Frequency', 'Duration', 'Diagnosis', 'Date / Status', 'Actions'].map((h) => (
                         <th key={h} className="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
-                    {allRx.map((rx: any) => (
-                      <tr key={rx.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors ${(rx.isActive ?? true) ? '' : 'opacity-60'}`}>
-                        <td className="px-3 py-2">
-                          <div className="flex items-center gap-2">
+                    {allRx.map((rx: any) => {
+                      const isEditing = editingRxId === rx.id
+                      const isSaving = savingRxId === rx.id
+                      return (
+                        <tr key={rx.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors ${(rx.isActive ?? true) ? '' : 'opacity-60'}`}>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              {(rx.isActive ?? true)
+                                ? <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" title="Active" />
+                                : <span className="h-2 w-2 rounded-full bg-slate-400 flex-shrink-0" title={rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString()}` : 'Discontinued'} />}
+                              {isEditing ? (
+                                <input
+                                  value={rxDraft.medicineName}
+                                  onChange={(e) => setRxDraft((d) => ({ ...d, medicineName: e.target.value }))}
+                                  className="w-44 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-200"
+                                />
+                              ) : (
+                                <span className="font-medium text-slate-800 dark:text-slate-200">{rx.medicineName}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-slate-500">
+                            {isEditing ? (
+                              <input
+                                value={rxDraft.dosage}
+                                onChange={(e) => setRxDraft((d) => ({ ...d, dosage: e.target.value }))}
+                                className="w-24 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
+                              />
+                            ) : (rx.dosage ?? '–')}
+                          </td>
+                          <td className="px-3 py-2 text-slate-500">
+                            {isEditing ? (
+                              <input
+                                value={rxDraft.frequency}
+                                onChange={(e) => setRxDraft((d) => ({ ...d, frequency: e.target.value }))}
+                                className="w-28 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
+                              />
+                            ) : (rx.frequency ?? '–')}
+                          </td>
+                          <td className="px-3 py-2 text-slate-500">
+                            {isEditing ? (
+                              <input
+                                value={rxDraft.duration}
+                                onChange={(e) => setRxDraft((d) => ({ ...d, duration: e.target.value }))}
+                                className="w-24 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
+                              />
+                            ) : (rx.duration ?? '–')}
+                          </td>
+                          <td className="px-3 py-2 text-slate-500 max-w-[140px] truncate">{rx.diagnosis ?? '–'}</td>
+                          <td className="px-3 py-2 text-slate-400 whitespace-nowrap">
                             {(rx.isActive ?? true)
-                              ? <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" title="Active" />
-                              : <span className="h-2 w-2 rounded-full bg-slate-400 flex-shrink-0" title={rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString()}` : 'Discontinued'} />}
-                            <span className="font-medium text-slate-800 dark:text-slate-200">{rx.medicineName}</span>
-                          </div>
-                        </td>
-                        <td className="px-3 py-2 text-slate-500">{rx.dosage ?? '–'}</td>
-                        <td className="px-3 py-2 text-slate-500">{rx.frequency ?? '–'}</td>
-                        <td className="px-3 py-2 text-slate-500">{rx.duration ?? '–'}</td>
-                        <td className="px-3 py-2 text-slate-500 max-w-[140px] truncate">{rx.diagnosis ?? '–'}</td>
-                        <td className="px-3 py-2 text-slate-400 whitespace-nowrap">
-                          {(rx.isActive ?? true)
-                            ? new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-                            : <span className="text-slate-400">{rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-                        </td>
-                      </tr>
-                    ))}
+                              ? new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                              : <span className="text-slate-400">{rx.stoppedAt ? `Stopped ${new Date(rx.stoppedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : new Date(rx.sessionDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-1.5">
+                              {isEditing ? (
+                                <>
+                                  <input
+                                    value={rxDraft.quantity}
+                                    onChange={(e) => setRxDraft((d) => ({ ...d, quantity: e.target.value }))}
+                                    placeholder="Qty"
+                                    className="w-14 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
+                                  />
+                                  <input
+                                    value={rxDraft.instructions}
+                                    onChange={(e) => setRxDraft((d) => ({ ...d, instructions: e.target.value }))}
+                                    placeholder="Instructions"
+                                    className="w-32 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"
+                                  />
+                                  <button
+                                    onClick={() => updatePrescription(rx.id)}
+                                    disabled={isSaving}
+                                    className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-60"
+                                  >
+                                    {isSaving ? 'Saving...' : 'Save'}
+                                  </button>
+                                  <button
+                                    onClick={cancelEditPrescription}
+                                    disabled={isSaving}
+                                    className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => togglePrescriptionActive(rx)}
+                                    disabled={isSaving || (savingRxId != null && savingRxId !== rx.id)}
+                                    className={`px-2 py-1 text-[11px] font-semibold rounded-lg ${
+                                      (rx.isActive ?? true)
+                                        ? 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-900/50'
+                                    } disabled:opacity-60`}
+                                  >
+                                    {(rx.isActive ?? true) ? 'Disable' : 'Enable'}
+                                  </button>
+                                  <button
+                                    onClick={() => startEditPrescription(rx)}
+                                    disabled={savingRxId != null}
+                                    className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 hover:bg-teal-200 dark:hover:bg-teal-900/50 disabled:opacity-60"
+                                  >
+                                    Update
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
