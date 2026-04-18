@@ -56,6 +56,11 @@ async function applyColumnMigrations(prisma: any): Promise<void> {
       table: 'ClinicPatient',
       column: 'folderNumber',
       sql: `ALTER TABLE "ClinicPatient" ADD COLUMN "folderNumber" TEXT`
+    },
+    {
+      table: 'ClinicSession',
+      column: 'dentalChart',
+      sql: `ALTER TABLE "ClinicSession" ADD COLUMN "dentalChart" TEXT`
     }
   ]
 

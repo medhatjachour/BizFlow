@@ -2,9 +2,10 @@ import { ipcMain } from 'electron'
 
 export function registerSessionHandlers(prisma: any) {
   // ─── Get Recent Sessions (with optional patient + date filter) ─────────
+  // PAGINATION: Returns { data: Session[], total: number, hasMore: boolean }
   ipcMain.handle(
     'clinic:sessions:getRecent',
-    async (_e, params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; startDate?: string; endDate?: string }) => {
+    async (_e, params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; startDate?: string; endDate?: string; skip?: number; take?: number }) => {
       const now = new Date()
       let dateFrom: Date | undefined
       let dateTo: Date | undefined
@@ -33,15 +34,29 @@ export function registerSessionHandlers(prisma: any) {
         if (dateTo) where.visitDate.lte = dateTo
       }
 
-      return prisma.clinicSession.findMany({
+      // Pagination defaults
+      const skip = params?.skip ?? 0
+      const take = params?.take ?? 50
+
+      // Get total count
+      const total = await prisma.clinicSession.count({ where })
+
+      const data = await prisma.clinicSession.findMany({
         where,
         include: {
           patient: { select: { id: true, name: true, phone: true, bloodType: true } },
           prescriptions: { orderBy: { createdAt: 'asc' } }
         },
         orderBy: { visitDate: 'desc' },
-        take: 200
+        skip,
+        take
       })
+
+      return {
+        data,
+        total,
+        hasMore: skip + take < total
+      }
     }
   )
 
@@ -90,5 +105,22 @@ export function registerSessionHandlers(prisma: any) {
   ipcMain.handle('clinic:sessions:delete', async (_e, id: string) => {
     await prisma.clinicSession.delete({ where: { id } })
     return { success: true }
+  })
+
+  // ─── Prescription row actions (Patient Profile table) ─────────────────
+  ipcMain.handle('clinic:prescriptions:update', async (_e, { id, data }: { id: string; data: any }) => {
+    return prisma.clinicPrescription.update({
+      where: { id },
+      data
+    })
+  })
+
+  ipcMain.handle('clinic:prescriptions:setActive', async (_e, { id, isActive }: { id: string; isActive: boolean }) => {
+    return prisma.clinicPrescription.update({
+      where: { id },
+      data: isActive
+        ? { isActive: true, stoppedAt: null, stopReason: null }
+        : { isActive: false, stoppedAt: new Date(), stopReason: 'other' }
+    })
   })
 }

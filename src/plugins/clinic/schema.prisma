@@ -21,8 +21,12 @@ model ClinicPatient {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
+  // Search indexes for patient lookup (name, phone, ID, folder)
   @@index([name])
   @@index([phone])
+  @@index([nationalId])
+  @@index([folderNumber])
+  @@index([createdAt])
 }
 
 model ClinicSession {
@@ -42,6 +46,7 @@ model ClinicSession {
   amountPaid     Float?
   paymentStatus  String               @default("unpaid")   // 'paid' | 'partial' | 'unpaid' | 'waived'
   paymentMethod  String?              // 'cash' | 'card' | 'insurance' | 'other'
+  dentalChart    String?              // JSON: Record<string, { conditions: string[], note: string }>
   prescriptions  ClinicPrescription[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt

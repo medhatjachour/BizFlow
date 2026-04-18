@@ -34,6 +34,14 @@ interface ClinicData {
   todayAppointments: any[]
 }
 
+const toArray = <T = any>(value: unknown): T[] => {
+  if (Array.isArray(value)) return value as T[]
+  if (value && typeof value === 'object' && Array.isArray((value as any).data)) {
+    return (value as any).data as T[]
+  }
+  return []
+}
+
 const EMPTY: ClinicData = {
   patientCount: 0, patients: [], todaySessions: [], weekSessions: [],
   upcomingFollowUps: [], prescriptionsToday: [], recentDiagnoses: [],
@@ -105,12 +113,12 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           api.appointments?.getAll?.({ type: 'follow_up' }),
         ])
 
-      const overview          = overviewR.status      === 'fulfilled' ? (overviewR.value      ?? {}) : {}
-      const patients          = patientsR.status      === 'fulfilled' ? (patientsR.value      ?? []) : []
-      const todaySessions     = todaySessionsR.status === 'fulfilled' ? (todaySessionsR.value ?? []) : []
-      const weekSessions      = weekSessionsR.status  === 'fulfilled' ? (weekSessionsR.value  ?? []) : []
-      const todayAppointments = apptsTodayR.status    === 'fulfilled' ? (apptsTodayR.value    ?? []) : []
-      const allFollowUpAppts  = followUpApptsR.status === 'fulfilled' ? (followUpApptsR.value  ?? []) : []
+      const overview          = overviewR.status      === 'fulfilled' ? (overviewR.value ?? {}) : {}
+      const patients          = patientsR.status      === 'fulfilled' ? toArray(patientsR.value) : []
+      const todaySessions     = todaySessionsR.status === 'fulfilled' ? toArray(todaySessionsR.value) : []
+      const weekSessions      = weekSessionsR.status  === 'fulfilled' ? toArray(weekSessionsR.value) : []
+      const todayAppointments = apptsTodayR.status    === 'fulfilled' ? toArray(apptsTodayR.value) : []
+      const allFollowUpAppts  = followUpApptsR.status === 'fulfilled' ? toArray(followUpApptsR.value) : []
 
       const patientCount   = (overview as any).totalPatients ?? patients.length
       // Follow-up appointments: scheduled/confirmed, within 30 days past or 30 days ahead

@@ -13,11 +13,11 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   TrendingUp, TrendingDown, AlertCircle, Receipt, Users,
   Loader2, RefreshCcw, Stethoscope, BarChart3,
-  CheckCircle2, Banknote, ArrowUpRight,
+  CheckCircle2, Banknote, ArrowUpRight, Search, X,
 } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
-  CartesianGrid, ComposedChart, Line,
+  CartesianGrid, ComposedChart,
 } from 'recharts'
 import { useToast } from '@renderer/contexts/ToastContext'
 import logger from '@/shared/utils/logger'
@@ -42,6 +42,8 @@ const EXPENSE_CATEGORIES = [
   { value: 'other',            label: 'Other',            badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' },
 ]
 
+const DEBT_PAGE_SIZE = 80
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmt(n: number) {
@@ -59,10 +61,24 @@ interface PatientWithFinance {
   phone: string
   finance?: { totalCharged: number; totalPaid: number; outstanding: number }
 }
+interface DebtorsResponse {
+  data: PatientWithFinance[]
+  total: number
+  totalOutstanding: number
+  hasMore: boolean
+}
 interface FinanceSummary {
   revenue: number; totalExpenses: number; totalSalaries: number
   netIncome: number; outstanding: number
   byCategory: Array<{ category: string; total: number }>
+}
+
+function toArray<T = any>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[]
+  if (value && typeof value === 'object' && Array.isArray((value as any).data)) {
+    return (value as any).data as T[]
+  }
+  return []
 }
 
 // ─── KPI Card ─────────────────────────────────────────────────────────────────
@@ -88,6 +104,7 @@ const ClinicFinanceSection: React.FC = () => {
   const { showToast } = useToast()
   const [activeTab, setActiveTab] = useState<MainTab>('overview')
   const [period, setPeriod]       = useState<Period>('month')
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── expenses state ────────────────────────────────────────────────────────
   const [summary,     setSummary]     = useState<FinanceSummary | null>(null)
@@ -97,8 +114,12 @@ const ClinicFinanceSection: React.FC = () => {
 
   // ── revenue state ─────────────────────────────────────────────────────────
   const [debtPatients,   setDebtPatients]   = useState<PatientWithFinance[]>([])
+  const [debtMeta, setDebtMeta] = useState({ total: 0, totalOutstanding: 0, hasMore: false })
+  const [debtSearchInput, setDebtSearchInput] = useState('')
+  const [debtSearch, setDebtSearch] = useState('')
   const [revBreakdown,   setRevBreakdown]   = useState<Array<{ label: string; revenue: number; expenses: number }>>([])
   const [loadingRevenue, setLoadingRevenue] = useState(false)
+  const [loadingMoreDebt, setLoadingMoreDebt] = useState(false)
 
   // ── loaders ───────────────────────────────────────────────────────────────
   const loadExpenses = useCallback(async () => {
@@ -120,29 +141,67 @@ const ClinicFinanceSection: React.FC = () => {
   }, [period, showToast])
 
 
-  const loadRevenue = useCallback(async () => {
-    setLoadingRevenue(true)
+  const loadRevenue = useCallback(async (opts?: { append?: boolean; skip?: number }) => {
+    const append = Boolean(opts?.append)
+    const skip = opts?.skip ?? 0
+
+    if (append) setLoadingMoreDebt(true)
+    else setLoadingRevenue(true)
+
     try {
-      const [patients, brk] = await Promise.all([
-        window.api.clinic.patients.getAll({ limit: 500 }),
+      const [debtorsRes, brk] = await Promise.all([
+        (window.api.clinic.patients.getDebtors as any)({
+          search: debtSearch.trim() || undefined,
+          skip,
+          take: DEBT_PAGE_SIZE
+        }) as Promise<DebtorsResponse>,
         window.api.clinic.expenses.breakdown({ period }),
       ])
-      const debtors = (patients ?? []).filter((p: PatientWithFinance) => (p.finance?.outstanding ?? 0) > 0)
-        .sort((a: PatientWithFinance, b: PatientWithFinance) => (b.finance?.outstanding ?? 0) - (a.finance?.outstanding ?? 0))
-      setDebtPatients(debtors)
+
+      const debtors = toArray<PatientWithFinance>(debtorsRes)
+      if (append) {
+        setDebtPatients((prev) => [...prev, ...debtors])
+      } else {
+        setDebtPatients(debtors)
+      }
+      setDebtMeta({
+        total: Number(debtorsRes?.total ?? debtors.length),
+        totalOutstanding: Number(debtorsRes?.totalOutstanding ?? 0),
+        hasMore: Boolean(debtorsRes?.hasMore)
+      })
+
       // Build revenue vs expenses per bucket using the same breakdown labels
-      const expMap: Record<string, number> = {}
-      for (const b of brk) expMap[b.label] = b.total
       // Revenue breakdown requires a separate call — reuse summary revenue / buckets count for now
       setRevBreakdown(brk.map((b: { label: string; total: number }) => ({ label: b.label, revenue: 0, expenses: b.total })))
-    } catch (e) { logger.error('ClinicFinance: loadRevenue failed', e) }
-    finally { setLoadingRevenue(false) }
-  }, [period, showToast])
+    } catch (e) {
+      logger.error('ClinicFinance: loadRevenue failed', e)
+      if (!append) {
+        showToast('error', 'Failed to load outstanding balances')
+        setDebtPatients([])
+        setDebtMeta({ total: 0, totalOutstanding: 0, hasMore: false })
+      } else {
+        showToast('error', 'Failed to load more debtors')
+      }
+    }
+    finally {
+      if (append) setLoadingMoreDebt(false)
+      else setLoadingRevenue(false)
+    }
+  }, [period, showToast, debtSearch])
+
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    searchDebounceRef.current = setTimeout(() => setDebtSearch(debtSearchInput.trim()), 280)
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current)
+    }
+  }, [debtSearchInput])
 
   useEffect(() => { loadExpenses() }, [loadExpenses])
   useEffect(() => {
-    if (activeTab === 'revenue') loadRevenue()
-  }, [activeTab, loadRevenue])
+    if (activeTab !== 'revenue') return
+    loadRevenue({ append: false, skip: 0 })
+  }, [activeTab, period, debtSearch, loadRevenue])
 
 
   const TAB_DEFS: { key: MainTab; icon: any; label: string }[] = [
@@ -388,8 +447,8 @@ const ClinicFinanceSection: React.FC = () => {
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-red-500" />
                 <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Outstanding Balances</span>
-                {debtPatients.length > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold">{debtPatients.length}</span>
+                {debtMeta.total > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold">{debtMeta.total}</span>
                 )}
               </div>
               <button onClick={loadRevenue} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-600 transition-colors font-medium">
@@ -397,11 +456,32 @@ const ClinicFinanceSection: React.FC = () => {
               </button>
             </div>
 
+            <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/40">
+              <div className="relative max-w-md">
+                <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  value={debtSearchInput}
+                  onChange={(e) => setDebtSearchInput(e.target.value)}
+                  placeholder="Search debtor by name, phone, national ID, folder #"
+                  className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 pl-8 pr-8 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                {debtSearchInput && (
+                  <button
+                    onClick={() => setDebtSearchInput('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    title="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {loadingRevenue ? (
               <div className="space-y-px">
                 {[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-700/30 animate-pulse" />)}
               </div>
-            ) : debtPatients.length === 0 ? (
+            ) : debtMeta.total === 0 ? (
               <div className="flex flex-col items-center justify-center py-14 text-slate-400 dark:text-slate-500">
                 <div className="h-12 w-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-3">
                   <CheckCircle2 className="h-6 w-6 text-emerald-500 opacity-70" />
@@ -414,12 +494,22 @@ const ClinicFinanceSection: React.FC = () => {
                 {/* Totals banner */}
                 <div className="flex items-center justify-between px-5 py-2.5 bg-red-50/70 dark:bg-red-900/10 border-b border-red-100 dark:border-red-900/20">
                   <span className="text-xs font-semibold text-red-600 dark:text-red-400">
-                    {debtPatients.length} patient{debtPatients.length !== 1 ? 's' : ''} owe a total of
+                    {debtMeta.total} patient{debtMeta.total !== 1 ? 's' : ''} owe a total of
                   </span>
                   <span className="text-sm font-black text-red-600 dark:text-red-400 tabular-nums">
-                    {fmt(debtPatients.reduce((s, p) => s + (p.finance?.outstanding ?? 0), 0))}
+                    {fmt(debtMeta.totalOutstanding)}
                   </span>
                 </div>
+                {debtSearch && (
+                  <div className="px-5 py-2 text-[11px] text-slate-500 border-b border-slate-100 dark:border-slate-700/40">
+                    Search results for <span className="font-semibold">"{debtSearch}"</span>
+                  </div>
+                )}
+                {debtMeta.hasMore && !debtSearch && (
+                  <div className="px-5 py-2 text-[11px] text-slate-400 border-b border-slate-100 dark:border-slate-700/40">
+                    Showing top {debtPatients.length} debtors by outstanding amount.
+                  </div>
+                )}
                 <div className="divide-y divide-slate-100 dark:divide-slate-700/40">
                   {debtPatients.map((p) => {
                     const fin = p.finance!
@@ -461,6 +551,18 @@ const ClinicFinanceSection: React.FC = () => {
                     )
                   })}
                 </div>
+                {debtMeta.hasMore && (
+                  <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/40 dark:bg-slate-800/20">
+                    <button
+                      onClick={() => loadRevenue({ append: true, skip: debtPatients.length })}
+                      disabled={loadingMoreDebt}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-60"
+                    >
+                      {loadingMoreDebt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                      {loadingMoreDebt ? 'Loading more...' : `Load more (${debtMeta.total - debtPatients.length} remaining)`}
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>

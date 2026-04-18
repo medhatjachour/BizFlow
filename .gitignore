@@ -19,7 +19,7 @@ prisma/merged.prisma
 prisma/*.db
 prisma/*.db-*
 prisma/*.db-journal
-
+prisma/seeds/clinic-dentist/*
 # Prisma images (product images)
 prisma/images/
 prisma/clinic-results/

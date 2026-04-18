@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight, Receipt } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useAuth } from '@renderer/contexts/AuthContext'
 import PatientFormModal from './components/PatientFormModal'
 import SessionFormModal from './components/SessionFormModal'
 import AppointmentFormModal from './components/AppointmentFormModal'
@@ -178,13 +180,39 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
 
 // ─── Info tooltip ────────────────────────────────────────────────────────────
 function InfoTooltip({ text }: { text: string }) {
+  const tipRef = useRef<HTMLSpanElement>(null)
+  const [tipPos, setTipPos] = useState<{ top: number; left: number } | null>(null)
+
   return (
-    <span className="group relative inline-flex" onClick={e => e.stopPropagation()}>
+    <span
+      ref={tipRef}
+      className="inline-flex"
+      onClick={e => e.stopPropagation()}
+      onMouseEnter={() => {
+        if (tipRef.current) {
+          const r = tipRef.current.getBoundingClientRect()
+          setTipPos({ top: r.top, left: r.left + (r.width / 2) })
+        }
+      }}
+      onMouseLeave={() => setTipPos(null)}
+    >
       <Info className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-default" />
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs leading-relaxed px-3 py-2 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 text-left whitespace-normal">
-        {text}
-        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800 dark:border-t-slate-700" />
-      </span>
+      {tipPos && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: tipPos.top,
+            left: tipPos.left,
+            transform: 'translate(-68%, -100%) translateY(-8px)',
+            zIndex: 99999,
+          }}
+          className="pointer-events-none w-56 rounded-lg bg-slate-800 dark:bg-slate-700 text-white text-xs leading-relaxed px-3 py-2 shadow-xl text-left whitespace-normal"
+        >
+          {text}
+          <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800 dark:border-t-slate-700" />
+        </div>,
+        document.body
+      )}
     </span>
   )
 }
@@ -400,27 +428,62 @@ function PatientsTab() {
   const navigate = useNavigate()
   const [patients, setPatients] = useState<Patient[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [search, setSearch] = useState('')
+  const [total, setTotal] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
+  const [skip, setSkip] = useState(0)
+  const pageSize = 40
   const [showNewPatient, setShowNewPatient] = useState(false)
   const [editPatient, setEditPatient] = useState<Patient | null>(null)
   const [newSessionPatient, setNewSessionPatient] = useState<Patient | null>(null)
   const [bookApptPatient, setBookApptPatient] = useState<Patient | null>(null)
 
-  const load = useCallback(async (searchVal?: string) => {
-    setLoading(true)
+  // Load patients with pagination support
+  const load = useCallback(async (searchVal?: string, pageSkip?: number) => {
+    const isInitial = pageSkip == null || pageSkip === 0
+    if (isInitial) setLoading(true)
+    else setLoadingMore(true)
+
     try {
-      const data = await window.api.clinic.patients.getAll({ search: searchVal || undefined })
-      setPatients(data)
+      const response = await (window.api.clinic.patients.getAll as any)({
+        search: searchVal || undefined,
+        skip: pageSkip ?? 0,
+        take: pageSize
+      })
+      
+      // Handle both old (array) and new (paginated) response formats
+      if (Array.isArray(response)) {
+        setPatients(response)
+        setTotal(response.length)
+        setHasMore(false)
+        setSkip(0)
+      } else {
+        // New paginated format
+        if (isInitial) {
+          setPatients(response.data)
+          setSkip(pageSkip ?? 0)
+        } else {
+          setPatients(prev => [...prev, ...response.data])
+          setSkip((pageSkip ?? 0) + response.data.length)
+        }
+        setTotal(response.total)
+        setHasMore(response.hasMore)
+      }
     } catch {
       showToast('error', t('errorLoadingData'))
     } finally {
-      setLoading(false)
+      if (isInitial) setLoading(false)
+      else setLoadingMore(false)
     }
   }, [showToast, t])
 
-  // Debounce: search waits 300 ms; initial load (empty search) fires immediately
+  // When search changes, reset pagination and reload
   useEffect(() => {
-    const timer = setTimeout(() => load(search), search ? 300 : 0)
+    const timer = setTimeout(() => {
+      setSkip(0)
+      load(search, 0)
+    }, search ? 300 : 0)
     return () => clearTimeout(timer)
   }, [search, load])
 
@@ -429,7 +492,7 @@ function PatientsTab() {
     try {
       await window.api.clinic.patients.delete(id)
       showToast('success', t('deletedSuccessfully'))
-      load(search)
+      load(search, 0)
     } catch {
       showToast('error', t('errorDeletingRecord'))
     }
@@ -488,18 +551,50 @@ function PatientsTab() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {patients.map((p) => (
-            <PatientCard
-              key={p.id}
-              patient={p}
-              onView={() => navigate(`/clinic/patients/${p.id}`)}
-              onEdit={() => setEditPatient(p)}
-              onDelete={() => handleDelete(p.id)}
-              onNewSession={() => setNewSessionPatient(p)}
-              onBookAppt={() => setBookApptPatient(p)}
-            />
-          ))}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {patients.map((p) => (
+              <PatientCard
+                key={p.id}
+                patient={p}
+                onView={() => navigate(`/clinic/patients/${p.id}`)}
+                onEdit={() => setEditPatient(p)}
+                onDelete={() => handleDelete(p.id)}
+                onNewSession={() => setNewSessionPatient(p)}
+                onBookAppt={() => setBookApptPatient(p)}
+              />
+            ))}
+          </div>
+
+          {/* Load more button — only show if there are more results */}
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => load(search, skip + pageSize)}
+                disabled={loadingMore}
+                className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <ArrowDown className="h-4 w-4" />
+                    Load more ({patients.length} of {total})
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Summary line when showing all results */}
+          {!hasMore && patients.length > 0 && (
+            <p className="text-center text-xs text-slate-400 dark:text-slate-500 pt-2">
+              Showing all {total} {total === 1 ? 'patient' : 'patients'}
+            </p>
+          )}
         </div>
       )}
 
@@ -508,14 +603,14 @@ function PatientsTab() {
         <PatientFormModal
           patient={editPatient}
           onClose={() => { setShowNewPatient(false); setEditPatient(null) }}
-          onSaved={() => { setShowNewPatient(false); setEditPatient(null); load() }}
+          onSaved={() => { setShowNewPatient(false); setEditPatient(null); load(search, 0) }}
         />
       )}
       {newSessionPatient && (
         <SessionFormModal
           defaultPatient={newSessionPatient}
           onClose={() => setNewSessionPatient(null)}
-          onSaved={() => { setNewSessionPatient(null); load() }}
+          onSaved={() => { setNewSessionPatient(null); load(search, 0) }}
         />
       )}
       {bookApptPatient && (
@@ -533,9 +628,18 @@ function PatientsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ClinicPage() {
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('patients')
   const [overdueCount, setOverdueCount] = useState(0)
   const [showJourney, setShowJourney] = useState(false)
+  const [dentistMode, setDentistMode] = useState(() => localStorage.getItem('clinicDentistMode') === 'true')
+  const isClinicStaff = user?.role === 'clinic_staff'
+
+  function toggleDentistMode() {
+    const next = !dentistMode
+    setDentistMode(next)
+    localStorage.setItem('clinicDentistMode', String(next))
+  }
 
   // Fetch overdue follow-up count once for the tab badge
   useEffect(() => {
@@ -551,14 +655,22 @@ export default function ClinicPage() {
     expenses:     'Track clinic operating costs — rent, utilities, salaries, supplies, and more. View summaries and totals by period.',
   }
 
-  const tabs: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
-    { key: 'patients',     label: t('clinicPatients'),                  Icon: Users },
+  const allTabs: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
+    { key: 'patients',     label: t('clinicPatients'),                  Icon: BarChart3 },
     { key: 'sessions',     label: t('clinicSessions'),                  Icon: ClipboardList },
-    { key: 'stats',        label: t('clinicStats'),                     Icon: BarChart3 },
-    { key: 'appointments', label: t('clinicAppointments'),              Icon: CalendarClock },
+    { key: 'appointments', label: t('clinicAppointments'),              Icon: Users },
     { key: 'followups',    label: t('clinicFollowUps') ?? 'Follow-ups', Icon: Bell, badge: overdueCount },
+    { key: 'stats',        label: t('clinicStats'),                     Icon: CalendarClock },
     { key: 'expenses',     label: t('clinicExpenses')  ?? 'Expenses',   Icon: Receipt },
   ]
+
+  const staffTabs: Tab[] = ['patients', 'sessions', 'appointments', 'followups']
+  const tabs = isClinicStaff ? allTabs.filter((t) => staffTabs.includes(t.key)) : allTabs
+
+  useEffect(() => {
+    if (tabs.some((t) => t.key === activeTab)) return
+    if (tabs.length > 0) setActiveTab(tabs[0].key)
+  }, [tabs, activeTab])
 
   return (
     <div className="flex flex-col h-full p-6 gap-5 overflow-auto">
@@ -577,6 +689,29 @@ export default function ClinicPage() {
           className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 transition-all"
         >
           <Info className="h-3.5 w-3.5" /> How it works
+        </button>
+        {/* Dentist mode toggle */}
+        <button
+          onClick={toggleDentistMode}
+          title={dentistMode ? 'Disable dentist mode' : 'Enable dentist mode (adds dental chart to sessions)'}
+          className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+            dentistMode
+              ? 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300'
+              : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 hover:border-teal-300 hover:text-teal-600 dark:hover:text-teal-400'
+          }`}
+        >
+          <Stethoscope className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center gap-1">
+            Dentist Mode
+            <InfoTooltip text="Dentist Mode adds the Dental Chart (odontogram) to session forms, so you can record tooth-level findings and save them with the visit." />
+          </span>
+          <span className={`relative inline-block h-4 w-7 rounded-full transition-colors ${
+            dentistMode ? 'bg-teal-500' : 'bg-slate-300 dark:bg-slate-600'
+          }`}>
+            <span className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${
+              dentistMode ? 'translate-x-3' : ''
+            }`} />
+          </span>
         </button>
       </div>
       {showJourney && <JourneyModal onClose={() => setShowJourney(false)} />}
@@ -609,10 +744,10 @@ export default function ClinicPage() {
       <div className="flex-1 min-h-0">
         {activeTab === 'patients'     && <PatientsTab />}
         {activeTab === 'sessions'     && <SessionsTab />}
-        {activeTab === 'stats'        && <StatsTab />}
+        {activeTab === 'stats'        && !isClinicStaff && <StatsTab />}
         {activeTab === 'appointments' && <AppointmentsTab />}
         {activeTab === 'followups'    && <FollowUpsTab />}
-        {activeTab === 'expenses'     && <ExpensesTab />}
+        {activeTab === 'expenses'     && !isClinicStaff && <ExpensesTab />}
       </div>
     </div>
   )

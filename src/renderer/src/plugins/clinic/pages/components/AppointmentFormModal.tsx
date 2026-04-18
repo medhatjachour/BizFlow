@@ -9,7 +9,7 @@ interface Props {
   defaultPatientId?: string | null
   defaultPatientName?: string | null
   onClose: () => void
-  onSaved: () => void
+  onSaved: (date?: string) => void
 }
 
 // Timezone-safe: returns local "YYYY-MM-DDTHH:MM"
@@ -33,11 +33,19 @@ function initDateTime(existing: any, defaultDate?: string | null): string {
   return toDatetimeLocal(d.toISOString())
 }
 
-// Slots: 07:00 → 21:00, 30-min increments
+// Slots: 07:00 → 23:30, 30-min increments
 const TIME_SLOTS: string[] = []
-for (let h = 7; h <= 21; h++) {
+for (let h = 7; h <= 23; h++) {
   TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`)
-  if (h < 21) TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`)
+  TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`)
+}
+
+const toArray = <T = any>(value: unknown): T[] => {
+  if (Array.isArray(value)) return value as T[]
+  if (value && typeof value === 'object' && Array.isArray((value as any).data)) {
+    return (value as any).data as T[]
+  }
+  return []
 }
 
 export default function AppointmentFormModal({
@@ -86,8 +94,8 @@ export default function AppointmentFormModal({
     if (!selectedDay || selectedDay.length < 10) return
     let cancelled = false
     setLoadingSlots(true)
-    window.api.clinic.appointments.getAll({ date: selectedDay })
-      .then((res: any) => { if (!cancelled) setDayAppts(res ?? []) })
+    ;(window.api.clinic.appointments.getAll as any)({ date: selectedDay, skip: 0, take: 500 })
+      .then((res: any) => { if (!cancelled) setDayAppts(toArray(res)) })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoadingSlots(false) })
     return () => { cancelled = true }
@@ -160,8 +168,8 @@ export default function AppointmentFormModal({
         await window.api.clinic.appointments.create(payload)
         showToast('success', t('appointmentBooked'))
       }
-      onSaved()
-    } catch { showToast('error', t('failedSaveAppointment')) }
+      onSaved(form.appointmentDate.slice(0, 10))
+    } catch (err) { console.error('[AppointmentFormModal] save failed:', err); showToast('error', t('failedSaveAppointment')) }
     finally { setSaving(false) }
   }
 
@@ -257,7 +265,7 @@ export default function AppointmentFormModal({
                     key={slot}
                     type="button"
                     title={state !== 'available' ? `${patient ?? t('slotBooked')}` : t('slotAvailable')}
-                    disabled={state === 'booked' || state === 'past'}
+                    disabled={state === 'booked' || state === 'overlap' || state === 'past'}
                     onClick={() => setForm(f => ({ ...f, appointmentDate: selectedDay + 'T' + slot }))}
                     className={`
                       text-[11px] py-1.5 rounded-lg font-medium transition-all text-center leading-none
@@ -268,7 +276,7 @@ export default function AppointmentFormModal({
                           : state === 'booked'
                           ? 'bg-red-100 text-red-400 dark:bg-red-900/30 dark:text-red-500 cursor-not-allowed line-through opacity-70'
                           : state === 'overlap'
-                            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 hover:bg-amber-200 border border-amber-300 dark:border-amber-600/40'
+                            ? 'bg-amber-100 text-amber-400 dark:bg-amber-900/30 dark:text-amber-500 cursor-not-allowed line-through opacity-70'
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-600 dark:hover:text-teal-400'
                       }
                     `}

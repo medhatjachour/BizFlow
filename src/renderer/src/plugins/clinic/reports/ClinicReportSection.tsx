@@ -33,6 +33,20 @@ interface ClinicData {
   patients: any[]
 }
 
+const toArray = <T = any>(value: unknown): T[] => {
+  if (Array.isArray(value)) return value as T[]
+  if (value && typeof value === 'object' && Array.isArray((value as any).data)) {
+    return (value as any).data as T[]
+  }
+  return []
+}
+
+const toAge = (dateOfBirth?: string | null): string => {
+  if (!dateOfBirth) return '-'
+  const years = Math.floor((Date.now() - new Date(dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000))
+  return Number.isFinite(years) && years >= 0 ? String(years) : '-'
+}
+
 const EMPTY: ClinicData = { patientCount: 0, todaySessions: [], followUps: [], todayPrescriptions: [], patients: [] }
 
 const reportOptions = [
@@ -82,9 +96,9 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
       ])
 
       const overview      = overviewRes.status === 'fulfilled' ? overviewRes.value : null
-      const todaySessions = sessionsRes.status === 'fulfilled' ? (sessionsRes.value ?? []) : []
-      const followUps     = followUpsRes.status === 'fulfilled' ? (followUpsRes.value ?? []) : []
-      const patients      = patientsRes.status === 'fulfilled' ? (patientsRes.value ?? []) : []
+      const todaySessions = sessionsRes.status === 'fulfilled' ? toArray(sessionsRes.value) : []
+      const followUps     = followUpsRes.status === 'fulfilled' ? toArray(followUpsRes.value) : []
+      const patients      = patientsRes.status === 'fulfilled' ? toArray(patientsRes.value) : []
 
       // Prescriptions are embedded in each session; extract them as a flat list
       const todayRx = todaySessions.flatMap((s: any) =>
@@ -129,15 +143,18 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
 
       const clinic = window.api.clinic
       if (reportType === 'sessions') {
-        const sessions = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
+        const sessionsRes = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
+        const sessions = toArray(sessionsRes)
         autoTable(doc, { startY: y, head: [['Metric', 'Value']], body: [['Total Sessions', sessions.length.toString()], ['Unique Patients', new Set(sessions.map((s: any) => s.patientId)).size.toString()]], theme: 'grid', headStyles: { fillColor: [13, 148, 136] }, styles: { fontSize: 9 }, margin: { left: 14, right: 14 } })
         y = (doc as any).lastAutoTable.finalY + 10
         autoTable(doc, { startY: y, head: [['Patient', 'Date', 'Diagnosis', 'Chief Complaint']], body: sessions.slice(0, 100).map((s: any) => [s.patient?.name || '-', new Date(s.visitDate).toLocaleDateString(), s.diagnosis || '-', s.chiefComplaint || '-']), theme: 'striped', headStyles: { fillColor: [13, 148, 136] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'patients') {
-        const pts = await clinic.patients.getAll({ limit: 1000 })
-        autoTable(doc, { startY: y, head: [['Name', 'DOB', 'Gender', 'Phone', 'Registered']], body: pts.slice(0, 100).map((p: any) => [p.name || '-', p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString() : '-', p.gender || '-', p.phone || '-', new Date(p.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [99, 102, 241] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
+        const ptsRes = await clinic.patients.getAll({ limit: 1000 })
+        const pts = toArray(ptsRes)
+        autoTable(doc, { startY: y, head: [['Name', 'Age', 'Gender', 'Phone', 'Registered']], body: pts.slice(0, 100).map((p: any) => [p.name || '-', toAge(p.dateOfBirth), p.gender || '-', p.phone || '-', new Date(p.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [99, 102, 241] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'prescriptions') {
-        const sessions = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
+        const sessionsRes = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
+        const sessions = toArray(sessionsRes)
         const rxList = sessions.flatMap((s: any) =>
           (s.prescriptions ?? []).map((rx: any) => ({ ...rx, patientName: s.patient?.name, sessionDate: s.visitDate }))
         )

@@ -148,7 +148,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       translationKey: 'clinic',
       href: '/clinic',
       icon: Stethoscope,
-      roles: ['admin', 'manager']
+      roles: ['admin', 'manager', 'clinic_staff']
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&

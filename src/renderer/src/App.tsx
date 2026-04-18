@@ -82,11 +82,13 @@ function RouteErrorBoundary({ name, children }: { name: string; children: ReactN
 
 function AppContent() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const { user } = useAuth()
   const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
   const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
+  const isClinicStaff = user?.role === 'clinic_staff'
 
   // Global keyboard shortcuts
   useKeyboardShortcuts([
@@ -111,9 +113,13 @@ function AppContent() {
             path="/dashboard"
             element={
               <RequireAuth>
-                <RootLayoutWrapper>
-                  <RouteErrorBoundary name="Dashboard"><Dashboard /></RouteErrorBoundary>
-                </RootLayoutWrapper>
+                {isClinicStaff
+                  ? <Navigate to="/clinic" replace />
+                  : (
+                    <RootLayoutWrapper>
+                      <RouteErrorBoundary name="Dashboard"><Dashboard /></RouteErrorBoundary>
+                    </RootLayoutWrapper>
+                  )}
               </RequireAuth>
             }
           />
