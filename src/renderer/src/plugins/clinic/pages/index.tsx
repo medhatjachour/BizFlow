@@ -18,6 +18,7 @@ type Tab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'e
 
 // ─── Journey help modal ─────────────────────────────────────────────────────
 function JourneyModal({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage()
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
@@ -34,8 +35,8 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
               <Stethoscope className="h-4 w-4 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Patient Journey</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">How patients move through the clinic system</p>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">{t('journeyPatientTitle') || 'Patient Journey'}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('journeyPatientSubtitle') || 'How patients move through the clinic system'}</p>
             </div>
           </div>
           <button
@@ -55,10 +56,10 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
               <div className="h-7 w-7 rounded-full bg-violet-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">1</div>
               <div>
                 <p className="text-sm font-semibold text-violet-800 dark:text-violet-300 flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5" /> Patient Created
+                  <Users className="h-3.5 w-3.5" /> {t('journeyStep1PatientTitle') || 'Patient Created'}
                 </p>
                 <p className="text-xs text-violet-700 dark:text-violet-400 mt-0.5">
-                  Staff registers the patient once — name, DOB, phone, blood type, allergies, medical notes. This is the permanent record on file.
+                  {t('journeyStep1PatientDesc') || 'Staff registers the patient once — name, DOB, phone, blood type, allergies, medical notes. This is the permanent record on file.'}
                 </p>
               </div>
             </div>
@@ -69,22 +70,22 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col items-center gap-0.5">
               <ArrowDown className="h-4 w-4 text-slate-400" />
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 italic">Two paths to start a visit:</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 italic">{t('journeyTwoPaths') || 'Two paths to start a visit:'}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             {/* Standard path */}
             <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3">
-              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">Standard (recommended)</p>
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-1">{t('journeyStandardTitle') || 'Standard (recommended)'}</p>
               <p className="text-xs text-blue-600 dark:text-blue-400">
-                Patient card → <span className="font-medium">"Book Appointment"</span> → patient arrives → "Start Session" from the appointment.
+                {t('journeyStandardDesc') || 'Patient card → "Book Appointment" → patient arrives → "Start Session" from the appointment.'}
               </p>
             </div>
             {/* Walk-in path */}
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3">
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Walk-in (exception)</p>
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('journeyWalkinExceptionTitle') || 'Walk-in (exception)'}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Patient card → <span className="font-medium text-slate-600 dark:text-slate-300">"Walk-in"</span> — skips appointment, opens session form directly.
+                {t('journeyWalkinExceptionDesc') || 'Patient card → "Walk-in" — skips appointment, opens session form directly.'}
               </p>
             </div>
           </div>
@@ -99,10 +100,10 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
               <div className="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">2</div>
               <div>
                 <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5" /> Appointment
+                  <CalendarClock className="h-3.5 w-3.5" /> {t('appointment') || 'Appointment'}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
-                  A future calendar slot — no medical data yet. Just a date, time, doctor, and purpose. When the patient walks in, click <span className="font-medium">"Start Session"</span> to open the session form pre-filled. The appointment is then automatically marked as completed.
+                  {t('journeyStep2AppointmentDesc') || 'A future calendar slot — no medical data yet. Just a date, time, doctor, and purpose. When the patient walks in, click "Start Session" to open the session form pre-filled. The appointment is then automatically marked as completed.'}
                 </p>
               </div>
             </div>
@@ -118,13 +119,13 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
               <div className="h-7 w-7 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">3</div>
               <div>
                 <p className="text-sm font-semibold text-teal-800 dark:text-teal-300 flex items-center gap-1.5">
-                  <ClipboardList className="h-3.5 w-3.5" /> Session (Visit Record)
+                  <ClipboardList className="h-3.5 w-3.5" /> {t('journeyStep3SessionTitle') || 'Session (Visit Record)'}
                 </p>
                 <p className="text-xs text-teal-700 dark:text-teal-400 mt-0.5">
-                  The core medical record for a single visit: vitals, diagnosis, prescriptions, payment, and notes. A patient can have many sessions over time.
+                  {t('journeyStep3SessionDesc') || 'The core medical record for a single visit: vitals, diagnosis, prescriptions, payment, and notes. A patient can have many sessions over time.'}
                 </p>
-                <p className="text-xs text-teal-600 dark:text-teal-500 mt-1.5 flex items-center gap-1">
-                  <span className="font-medium">Optional:</span> set a Follow-up date if the doctor wants the patient to return.
+                <p className="text-xs text-teal-600 dark:text-teal-500 mt-1.5">
+                  {t('journeyFollowupOptional') || 'Optional: set a Follow-up date if the doctor wants the patient to return.'}
                 </p>
               </div>
             </div>
@@ -133,7 +134,7 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
           {/* Conditional arrow */}
           <div className="flex items-center gap-2 pl-2">
             <ArrowDown className="h-4 w-4 text-amber-400" />
-            <p className="text-xs text-slate-500 dark:text-slate-400 italic">Only if a follow-up date was set on the session:</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 italic">{t('journeyConditionalFollowup') || 'Only if a follow-up date was set on the session:'}</p>
           </div>
 
           {/* Step 4 — Follow-up */}
@@ -142,19 +143,19 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
               <div className="h-7 w-7 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">4</div>
               <div>
                 <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                  <Bell className="h-3.5 w-3.5" /> Follow-up Reminder
+                  <Bell className="h-3.5 w-3.5" /> {t('journeyStep4FollowupTitle') || 'Follow-up Reminder'}
                 </p>
                 <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                  Appears in the Follow-ups tab as an upcoming, due-today, or overdue reminder — surfaced from the session's follow-up date field. Not yet a scheduled appointment.
+                  {t('journeyStep4FollowupDesc') || "Appears in the Follow-ups tab as an upcoming, due-today, or overdue reminder — surfaced from the session's follow-up date field. Not yet a scheduled appointment."}
                 </p>
                 <div className="flex items-center gap-3 mt-2">
                   <span className="flex items-center gap-1 text-xs bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-400 px-2 py-1 rounded-lg">
-                    <ArrowRight className="h-3 w-3" /> <span><span className="font-medium">"Book Appt"</span> — creates a new Appointment (step 2, loop)</span>
+                    <ArrowRight className="h-3 w-3" /> {t('journeyBookApptAction') || '"Book Appt" — creates a new Appointment (step 2, loop)'}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="flex items-center gap-1 text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-1 rounded-lg">
-                    <ArrowRight className="h-3 w-3" /> <span><span className="font-medium">"Mark Done"</span> — dismisses the reminder without booking</span>
+                    <ArrowRight className="h-3 w-3" /> {t('journeyMarkDoneAction') || '"Mark Done" — dismisses the reminder without booking'}
                   </span>
                 </div>
               </div>
@@ -163,12 +164,12 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
 
           {/* Summary */}
           <div className="mt-3 rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-3">
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Summary: what lives where</p>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">{t('journeySummaryTitle') || 'Summary: what lives where'}</p>
             <div className="space-y-1">
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-violet-600 dark:text-violet-400">Patients tab</span> — permanent records, all patients registered in the system</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-blue-600 dark:text-blue-400">Appointments tab</span> — future calendar slots; no medical data</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-teal-600 dark:text-teal-400">Sessions tab</span> — completed visit records with full medical data</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-amber-600 dark:text-amber-400">Follow-ups tab</span> — reminders extracted from sessions; badge turns red when overdue</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-violet-600 dark:text-violet-400">{t('journeyTabPatients') || 'Patients tab'}</span> — {t('journeyPatientsTabDesc') || 'permanent records, all patients registered in the system'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-blue-600 dark:text-blue-400">{t('journeyTabAppointments') || 'Appointments tab'}</span> — {t('journeyApptsTabDescClinic') || 'future calendar slots; no medical data'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-teal-600 dark:text-teal-400">{t('journeyTabSessions') || 'Sessions tab'}</span> — {t('journeySessionsTabDescClinic') || 'completed visit records with full medical data'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-amber-600 dark:text-amber-400">{t('journeyTabFollowUps') || 'Follow-ups tab'}</span> — {t('journeyFollowupsTabDescClinic') || 'reminders extracted from sessions; badge turns red when overdue'}</p>
             </div>
           </div>
 
@@ -688,7 +689,7 @@ export default function ClinicPage() {
           title="How the clinic system works — patient journey"
           className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 transition-all"
         >
-          <Info className="h-3.5 w-3.5" /> How it works
+          <Info className="h-3.5 w-3.5" /> {t('howItWorks') || 'How it works'}
         </button>
         {/* Dentist mode toggle */}
         <button

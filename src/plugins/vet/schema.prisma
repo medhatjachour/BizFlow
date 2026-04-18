@@ -1,0 +1,214 @@
+// Vet Plugin – Prisma Schema
+// This file is merged into prisma/merged.prisma by scripts/merge-schemas.js
+// Do NOT add a datasource or generator block here.
+
+// ─── Owner ────────────────────────────────────────────────────────────────────
+// A person who owns one or more pets registered in the vet clinic.
+
+model VetOwner {
+  id        String       @id @default(uuid())
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  notes     String?
+  patients  VetPatient[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([name])
+  @@index([phone])
+  @@index([createdAt])
+}
+
+// ─── Patient (Pet) ────────────────────────────────────────────────────────────
+
+model VetPatient {
+  id           String          @id @default(uuid())
+  ownerId      String
+  owner        VetOwner        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name         String          // Pet name
+  species      String          // 'dog' | 'cat' | 'bird' | 'rabbit' | 'guinea_pig' | 'reptile' | 'fish' | 'other'
+  breed        String?
+  petColor     String?
+  microchipId  String?         @unique
+  dateOfBirth  DateTime?
+  gender       String?         // 'male' | 'female' | 'unknown'
+  weight       Float?          // kg – last recorded weight at registration
+  allergies    String?
+  medicalNotes String?
+  sessions     VetSession[]
+  appointments VetAppointment[]
+  checkResults VetCheckResult[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([ownerId])
+  @@index([name])
+  @@index([species])
+  @@index([microchipId])
+  @@index([createdAt])
+}
+
+// ─── Session (Vet Visit) ──────────────────────────────────────────────────────
+
+model VetSession {
+  id             String             @id @default(uuid())
+  patientId      String
+  patient        VetPatient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  visitDate      DateTime           @default(now())
+  visitType      String             @default("wellness_exam") // 'wellness_exam' | 'vaccination' | 'surgery' | 'emergency' | 'follow_up' | 'grooming'
+  vetName        String?
+  chiefComplaint String
+  // JSON: { weight_kg?, temp_rectal_c?, heart_rate?, resp_rate?, crt?, mucous_membranes? }
+  vetVitals      String?
+  diagnosis      String?
+  notes          String?
+  followUpDate   DateTime?
+  status         String             @default("completed") // 'active' | 'completed' | 'cancelled'
+  amountCharged  Float?
+  amountPaid     Float?
+  paymentStatus  String             @default("unpaid")   // 'paid' | 'partial' | 'unpaid' | 'waived'
+  paymentMethod  String?            // 'cash' | 'card' | 'insurance' | 'other'
+  prescriptions  VetPrescription[]
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([patientId])
+  @@index([visitDate])
+  @@index([status])
+  @@index([paymentStatus])
+}
+
+// ─── Prescription ─────────────────────────────────────────────────────────────
+
+model VetPrescription {
+  id           String     @id @default(uuid())
+  sessionId    String
+  session      VetSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  medicineName String
+  dosage       String?    // e.g. "10mg/kg"
+  frequency    String?    // e.g. "2x daily"
+  duration     String?    // e.g. "7 days"
+  quantity     Int?
+  instructions String?
+  isActive     Boolean    @default(true)
+  startDate    DateTime?
+  stoppedAt    DateTime?
+  stopReason   String?    // 'completed' | 'side_effects' | 'not_effective' | 'other'
+  createdAt    DateTime   @default(now())
+
+  @@index([sessionId])
+  @@index([isActive])
+}
+
+// ─── Appointment ─────────────────────────────────────────────────────────────
+
+model VetAppointment {
+  id              String     @id @default(uuid())
+  patientId       String
+  patient         VetPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentDate DateTime
+  duration        Int        @default(30) // minutes
+  // 'consultation' | 'follow_up' | 'vaccination' | 'surgery' | 'grooming' | 'checkup'
+  type            String     @default("consultation")
+  vetName         String?
+  notes           String?
+  status          String     @default("scheduled") // 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  reminderSent    Boolean    @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([patientId])
+  @@index([appointmentDate])
+  @@index([status])
+}
+
+// ─── Check Result (Lab / Imaging) ─────────────────────────────────────────────
+
+model VetCheckResult {
+  id          String     @id @default(uuid())
+  patientId   String
+  patient     VetPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  fileName    String
+  filePath    String
+  fileSize    Int?
+  resultDate  DateTime   @default(now())
+  createdAt   DateTime   @default(now())
+
+  @@index([patientId])
+  @@index([resultDate])
+}
+
+// ─── Expense ──────────────────────────────────────────────────────────────────
+
+model VetExpense {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now())
+  // 'rent' | 'utilities' | 'medical_supplies' | 'medications' | 'equipment' |
+  // 'maintenance' | 'lab_fees' | 'insurance' | 'marketing' | 'cleaning' | 'salaries' | 'other'
+  category      String
+  description   String
+  amount        Float
+  vendor        String?
+  paymentMethod String?  // 'cash' | 'card' | 'bank_transfer' | 'other'
+  recurrence    String?  // 'one_time' | 'monthly' | 'quarterly' | 'yearly'
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+}
+
+// ─── Staff ────────────────────────────────────────────────────────────────────
+
+model VetStaff {
+  id             String           @id @default(uuid())
+  name           String
+  // 'veterinarian' | 'vet_tech' | 'receptionist' | 'groomer' | 'other'
+  role           String
+  phone          String
+  email          String?
+  employmentType String           @default("full_time") // 'full_time' | 'part_time' | 'contract'
+  status         String           @default("active")    // 'active' | 'inactive'
+  baseSalary     Float            @default(0)
+  salaryType     String           @default("monthly")   // 'monthly' | 'hourly'
+  hourlyRate     Float?
+  overtimeRate   Float?
+  hireDate       DateTime?
+  salaryRecords  VetSalaryRecord[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([status])
+  @@index([role])
+}
+
+// ─── Salary Record ────────────────────────────────────────────────────────────
+
+model VetSalaryRecord {
+  id               String   @id @default(uuid())
+  staffId          String
+  staff            VetStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  month            Int      // 1–12
+  year             Int
+  baseSalary       Float    @default(0)
+  regularHours     Float    @default(0)
+  overtimeHours    Float    @default(0)
+  overtimeMultiplier Float  @default(1.5)
+  doubleShiftCount Int      @default(0)
+  doubleShiftBonus Float    @default(0)
+  bonuses          Float    @default(0)
+  deductions       Float    @default(0)
+  netPay           Float    @default(0)
+  status           String   @default("draft") // 'draft' | 'confirmed' | 'paid'
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([staffId, month, year])
+  @@index([staffId])
+  @@index([year, month])
+}

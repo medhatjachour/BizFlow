@@ -18,7 +18,8 @@ export const MODULE_IDS = {
   BAKERY: 'bakery',
   RESTAURANT: 'restaurant',
   WAREHOUSE: 'warehouse',
-  CLINIC: 'clinic'
+  CLINIC: 'clinic',
+  VET: 'vet'
 } as const
 
 export type ModuleId = (typeof MODULE_IDS)[keyof typeof MODULE_IDS]
@@ -134,6 +135,25 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     models: ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult'],
     ipcPrefix: 'clinic',
     routePrefix: '/clinic'
+  },
+  [MODULE_IDS.VET]: {
+    id: MODULE_IDS.VET,
+    name: 'Vet Clinic',
+    description: 'Veterinary clinic management — pet patients with owner records, vet sessions, appointments and clinical statistics.',
+    features: [
+      'Pet patient records with owner information',
+      'Veterinary session notes with vet vitals',
+      'Prescription management per visit',
+      'Appointment scheduling with conflict detection',
+      'Follow-up reminders & overdue tracking',
+      'Clinical statistics & diagnosis trends',
+    ],
+    icon: '🐾',
+    color: 'violet',
+    status: 'active',
+    models: ['VetOwner', 'VetPatient', 'VetSession', 'VetPrescription', 'VetAppointment', 'VetCheckResult', 'VetExpense', 'VetStaff', 'VetSalaryRecord'],
+    ipcPrefix: 'vet',
+    routePrefix: '/vet'
   }
 }
 

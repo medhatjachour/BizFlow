@@ -43,6 +43,7 @@ const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
   restaurant: typeof __PLUGIN_RESTAURANT__ !== 'undefined' && __PLUGIN_RESTAURANT__,
   warehouse: typeof __PLUGIN_WAREHOUSE__ !== 'undefined' && __PLUGIN_WAREHOUSE__,
   clinic: typeof __PLUGIN_CLINIC__ !== 'undefined' && __PLUGIN_CLINIC__,
+  vet: typeof __PLUGIN_VET__ !== 'undefined' && __PLUGIN_VET__,
 }
 
 const ALL_ROLE_META: Record<string, RoleMeta> = {
@@ -81,6 +82,13 @@ const ALL_ROLE_META: Record<string, RoleMeta> = {
     color: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200'
   },
 
+  // Vet
+  vet_staff: {
+    label: 'Vet Staff',
+    description: 'Veterinary clinic operations (patients, sessions, appointments)',
+    color: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200'
+  },
+
   // Bakery
   bakery_staff: {
     label: 'Bakery Staff',
@@ -109,6 +117,7 @@ function getPluginScopedRoles(): string[] {
   const roles: string[] = []
   if (BUNDLED_PLUGIN_FLAGS.commerce) roles.push('sales', 'inventory', 'finance')
   if (BUNDLED_PLUGIN_FLAGS.clinic) roles.push('clinic_staff')
+  if (BUNDLED_PLUGIN_FLAGS.vet) roles.push('vet_staff')
   if (BUNDLED_PLUGIN_FLAGS.bakery) roles.push('bakery_staff')
   if (BUNDLED_PLUGIN_FLAGS.restaurant) roles.push('restaurant_staff')
   if (BUNDLED_PLUGIN_FLAGS.warehouse) roles.push('warehouse_staff')

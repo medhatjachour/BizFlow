@@ -79,7 +79,7 @@ export default function Settings() {
     { id: 'modules' as SettingsTab, name: 'Modules', icon: Puzzle },
   ]
 
-  const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup']
+  const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup', 'modules']
   const tabs = clinicEnabled
     ? allTabs.filter(tab => CLINIC_TABS.includes(tab.id))
     : allTabs
