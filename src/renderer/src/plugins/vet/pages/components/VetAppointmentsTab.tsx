@@ -77,11 +77,12 @@ function ApptHelp() {
 
 // ─── Appointment row ──────────────────────────────────────────────────────────
 function AppointmentRow({
-  appt, updating, onEdit, onDelete, onStatusChange, onViewPatient, onStartSession
+  appt, updating, onEdit, onDelete, onStatusChange, onViewPatient, onStartSession, t
 }: {
   appt: any; updating: boolean
   onEdit: () => void; onDelete: () => void
   onStatusChange: (s: string) => void; onViewPatient: () => void; onStartSession: () => void
+  t: (key: string) => string
 }) {
   const time = new Date(appt.appointmentDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
   const isActive = ['scheduled', 'confirmed'].includes(appt.status)
@@ -255,6 +256,7 @@ export default function VetAppointmentsTab() {
       onStatusChange={s => handleStatusChange(a, s)}
       onViewPatient={() => navigate(`/vet/patients/${a.patient?.id}`)}
       onStartSession={() => { setSessionAppt(a); setShowSessionForm(true) }}
+      t={t}
     />
   )
 
