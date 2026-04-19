@@ -79,6 +79,124 @@ console.debug = (...args) => log.debug(...args)
 let migrationManager: MigrationManager | null = null
 let mainWindow: BrowserWindow | null = null
 
+const DEMO_EXPIRES_AT_ISO = '2026-06-19T23:59:59.999Z'
+const DEFAULT_LINKEDIN_URL = 'https://www.linkedin.com/in/medhatjachour/'
+
+function getDemoExpiryDate(): Date {
+  const configuredExpiry = process.env.BIZFLOW_DEMO_EXPIRES_AT || DEMO_EXPIRES_AT_ISO
+  const expiryDate = new Date(configuredExpiry)
+
+  if (Number.isNaN(expiryDate.getTime())) {
+    // Fail closed: if date config is invalid, lock demo immediately.
+    mainLog.error('Invalid demo expiry date configuration:', configuredExpiry)
+    return new Date(0)
+  }
+
+  return expiryDate
+}
+
+function createDemoExpiredWindow(linkedInUrl: string, expiryDate: Date): BrowserWindow {
+  const expiredWindow = new BrowserWindow({
+    width: 640,
+    height: 460,
+    resizable: false,
+    minimizable: false,
+    maximizable: false,
+    autoHideMenuBar: true,
+    backgroundColor: '#f7f7f5',
+    webPreferences: {
+      sandbox: false,
+      nodeIntegration: false,
+      contextIsolation: true,
+      devTools: is.dev
+    }
+  })
+
+  expiredWindow.setTitle('BizFlow Demo Expired')
+
+  expiredWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  const expiryDateText = expiryDate.toLocaleDateString()
+  const pageHtml = `<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Demo Expired</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #ffffff 0%, #f0f3f6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .card {
+        width: min(520px, calc(100vw - 40px));
+        padding: 32px;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 20px 50px rgba(13, 41, 67, 0.15);
+      }
+      h1 {
+        margin: 0 0 10px;
+        font-size: 28px;
+        color: #0f172a;
+      }
+      p {
+        margin: 10px 0;
+        color: #334155;
+        line-height: 1.6;
+      }
+      .cta {
+        display: inline-block;
+        margin-top: 16px;
+        background: #0a66c2;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-weight: 600;
+      }
+      .footer {
+        margin-top: 18px;
+        font-size: 12px;
+        color: #64748b;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>BizFlow Demo Has Expired</h1>
+      <p>This demo version ended on <strong>${expiryDateText}</strong>.</p>
+      <p>To continue, please connect with me on LinkedIn for full access.</p>
+      <a class="cta" href="${linkedInUrl}" target="_blank" rel="noreferrer">Connect on LinkedIn</a>
+      <p class="footer">Close this window to exit the application.</p>
+    </main>
+  </body>
+</html>`
+
+  expiredWindow.loadURL('data:text/html,' + encodeURIComponent(pageHtml))
+  return expiredWindow
+}
+
+function isDemoExpired(): { expired: boolean; expiryDate: Date } {
+  const expiryDate = getDemoExpiryDate()
+
+  return {
+    expired: Date.now() > expiryDate.getTime(),
+    expiryDate
+  }
+}
+
 function createWindow(): BrowserWindow {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -188,6 +306,18 @@ app.whenReady().then(async () => {
   mainLog.info('Version:', app.getVersion())
   mainLog.info('User data path:', app.getPath('userData'))
   mainLog.info('Log file:', log.transports.file.getFile().path)
+
+  try {
+    const demoStatus = isDemoExpired()
+    if (demoStatus.expired) {
+      const linkedInUrl = process.env.BIZFLOW_LINKEDIN_URL || DEFAULT_LINKEDIN_URL
+      mainLog.warn('Demo access expired. Showing LinkedIn contact window.')
+      createDemoExpiredWindow(linkedInUrl, demoStatus.expiryDate)
+      return
+    }
+  } catch (error) {
+    mainLog.error('Failed to validate demo period. Continuing startup:', error)
+  }
 
   try {
     // 1. Ensure the database file exists and is seeded BEFORE Prisma opens it.

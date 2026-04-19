@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   PawPrint, Users, ClipboardList, BarChart3, CalendarClock, Bell,
   Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar,
@@ -452,6 +452,7 @@ export default function VetPage() {
   const toast    = useToast()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const isVetStaff = user?.role === 'vet_staff'
 
@@ -470,6 +471,17 @@ export default function VetPage() {
   ]
 
   const [tab, setTab] = useState<Tab>('owners')
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const requestedTab = params.get('tab') as Tab | null
+    if (!requestedTab) return
+
+    const tabExists = allTabs.some((x) => x.key === requestedTab)
+    if (tabExists && requestedTab !== tab) {
+      setTab(requestedTab)
+    }
+  }, [location.search, allTabs, tab])
 
   // ── Owners state ──────────────────────────────────────────────────────────
   const [owners,  setOwners]  = useState<VetOwnerWithPets[]>([])
@@ -722,7 +734,7 @@ export default function VetPage() {
 
         {/* Owners tab */}
         {tab === 'owners' && (
-          <div className="p-6 space-y-4 max-w-5xl mx-auto">
+          <div className="p-6 space-y-4 max-w-full mx-auto">
             {total > 0 && (
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-900 dark:text-white">{total}</span> owners registered
@@ -807,7 +819,7 @@ export default function VetPage() {
 
         {/* Vets tab */}
         {tab === 'vets' && (
-          <div className="p-6 space-y-4 max-w-5xl mx-auto">
+          <div className="p-6 space-y-4 max-w-full mx-auto">
             {staffTotal > 0 && (
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 <span className="font-semibold text-slate-900 dark:text-white">{staffTotal}</span> team members

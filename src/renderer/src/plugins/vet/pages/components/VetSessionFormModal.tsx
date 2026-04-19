@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Loader2 } from 'lucide-react'
 import type { VetPatient } from '../index'
+import type { VetStaff } from './VetStaffFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
@@ -58,6 +59,8 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
 
   // Prescriptions
   const [prescriptions, setPrescriptions] = useState<any[]>([])
+  const [attendingVets, setAttendingVets] = useState<VetStaff[]>([])
+  const [vetsLoading, setVetsLoading] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
@@ -85,6 +88,22 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
     }
   }, [session])
 
+  useEffect(() => {
+    const loadVets = async () => {
+      setVetsLoading(true)
+      try {
+        const raw = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
+        const list: VetStaff[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
+        const vets = list.filter((s) => s.role === 'veterinarian' && s.status === 'active')
+        setAttendingVets(vets)
+      } finally {
+        setVetsLoading(false)
+      }
+    }
+
+    void loadVets()
+  }, [])
+
   const searchPatients = async (q: string) => {
     if (!q.trim()) { setPtResults([]); return }
     setPtSearching(true)
@@ -99,6 +118,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!patient) { setError('Please select a patient'); return }
+    if (!form.vetName.trim()) { setError('Please select an attending vet'); return }
     if (!form.chiefComplaint.trim()) { setError('Chief complaint is required'); return }
 
     setSaving(true)
@@ -211,8 +231,21 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetName')||'Veterinarian Name'}</label>
-              <input value={form.vetName} onChange={setF('vetName')} className={inputCls} placeholder="Dr. Name" />
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetName')||'Attending Vet'} *</label>
+              <select value={form.vetName} onChange={setF('vetName')} className={inputCls}>
+                <option value="">{vetsLoading ? 'Loading vets...' : 'Select attending vet'}</option>
+                {form.vetName && !attendingVets.some(v => v.name === form.vetName) && (
+                  <option value={form.vetName}>{form.vetName}</option>
+                )}
+                {attendingVets.map((vet) => (
+                  <option key={vet.id} value={vet.name}>{vet.name}</option>
+                ))}
+              </select>
+              {!vetsLoading && attendingVets.length === 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  No active veterinarians found. Add one in the Vets tab first.
+                </p>
+              )}
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('chiefComplaint')||'Chief Complaint'} *</label>
