@@ -1,4 +1,5 @@
-import { X, Pencil, PawPrint, Phone, Mail, MapPin, FileText, Plus, Eye, Calendar, Activity } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Pencil, PawPrint, Phone, Mail, MapPin, FileText, Plus, Eye, Calendar, Activity, DollarSign, TrendingUp, CreditCard } from 'lucide-react'
 import type { VetOwner, VetOwnerWithPets } from '../index'
 
 const SPECIES_EMOJI: Record<string, string> = {
@@ -33,6 +34,17 @@ interface Props {
 export default function VetOwnerProfileModal({
   owner, onClose, onEdit, onAddPet, onViewPet, onBook, onWalkIn
 }: Props) {
+  const [finance, setFinance] = useState<{ totalCharged: number; totalPaid: number; outstanding: number } | null>(null)
+
+  useEffect(() => {
+    window.api.vet?.owners.getFinance(owner.id)
+      .then((f: any) => setFinance(f))
+      .catch(() => {})
+  }, [owner.id])
+
+  const fmtMoney = (n: number) =>
+    n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-6"
@@ -100,6 +112,32 @@ export default function VetOwnerProfileModal({
               <FileText className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
               {owner.notes}
             </p>
+          </div>
+        )}
+
+        {/* ── Finance strip ─────────────────────────────────── */}
+        {finance && (
+          <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
+            <div className="flex flex-col items-center py-3 px-4 gap-0.5">
+              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <DollarSign className="h-3 w-3" /> Total Charged
+              </span>
+              <span className="text-base font-bold tabular-nums text-slate-800 dark:text-white">{fmtMoney(finance.totalCharged)}</span>
+            </div>
+            <div className="flex flex-col items-center py-3 px-4 gap-0.5">
+              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                <CreditCard className="h-3 w-3" /> Paid
+              </span>
+              <span className="text-base font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{fmtMoney(finance.totalPaid)}</span>
+            </div>
+            <div className="flex flex-col items-center py-3 px-4 gap-0.5">
+              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-red-400">
+                <TrendingUp className="h-3 w-3" /> Outstanding
+              </span>
+              <span className={`text-base font-bold tabular-nums ${finance.outstanding > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                {fmtMoney(finance.outstanding)}
+              </span>
+            </div>
           </div>
         )}
 

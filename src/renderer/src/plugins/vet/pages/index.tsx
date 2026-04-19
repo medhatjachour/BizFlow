@@ -13,6 +13,7 @@ import VetOwnerFormModal    from './components/VetOwnerFormModal'
 import VetPatientFormModal  from './components/VetPatientFormModal'
 import VetOwnerProfileModal from './components/VetOwnerProfileModal'
 import VetStaffFormModal, { type VetStaff } from './components/VetStaffFormModal'
+import VetStaffProfileModal from './components/VetStaffProfileModal'
 import VetSessionFormModal  from './components/VetSessionFormModal'
 import VetAppointmentFormModal from './components/VetAppointmentFormModal'
 import VetSessionsTab   from './components/VetSessionsTab'
@@ -354,33 +355,16 @@ function OwnerCard({ owner, onEdit, onDelete, onAddPet, onViewProfile, onWalkIn,
   )
 }
 
-// ─── Role helpers ─────────────────────────────────────────────────────────────
-const ROLE_LABELS: Record<string, string> = {
-  veterinarian: 'Veterinarian',
-  vet_tech:     'Vet Technician',
-  receptionist: 'Receptionist',
-  groomer:      'Groomer',
-  other:        'Other',
-}
-const ROLE_COLORS: Record<string, string> = {
-  veterinarian: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-  vet_tech:     'bg-blue-100   text-blue-700   dark:bg-blue-900/40   dark:text-blue-300',
-  receptionist: 'bg-teal-100   text-teal-700   dark:bg-teal-900/40   dark:text-teal-300',
-  groomer:      'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300',
-  other:        'bg-slate-100  text-slate-600  dark:bg-slate-700     dark:text-slate-300',
-}
-
 // ─── Staff Card ───────────────────────────────────────────────────────────────
 interface StaffCardProps {
-  staff:    VetStaff
-  onEdit:   () => void
-  onDelete: () => void
+  staff:          VetStaff
+  onViewProfile:  () => void
+  onEdit:         () => void
+  onDelete:       () => void
 }
 
-function StaffCard({ staff, onEdit, onDelete }: StaffCardProps) {
+function StaffCard({ staff, onViewProfile, onEdit, onDelete }: StaffCardProps) {
   const initials = staff.name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
-  const roleColor = ROLE_COLORS[staff.role] ?? ROLE_COLORS.other
-  const roleLabel = ROLE_LABELS[staff.role] ?? staff.role
 
   return (
     <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
@@ -406,8 +390,8 @@ function StaffCard({ staff, onEdit, onDelete }: StaffCardProps) {
           </div>
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-            <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${roleColor}`}>
-              <Stethoscope className="h-3 w-3" /> {roleLabel}
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+              <Stethoscope className="h-3 w-3" /> Veterinarian
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
               {staff.employmentType.replace('_', '-')}
@@ -429,6 +413,12 @@ function StaffCard({ staff, onEdit, onDelete }: StaffCardProps) {
 
       {/* Action bar */}
       <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+        <button
+          onClick={onViewProfile}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 rounded-lg transition-colors"
+        >
+          <Eye className="h-3 w-3" /> Profile
+        </button>
         <button
           onClick={onEdit}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
@@ -518,6 +508,7 @@ export default function VetPage() {
   const [editingStaff,    setEditingStaff]    = useState<VetStaff | null>(null)
   const [deleteStaff,     setDeleteStaff]     = useState<VetStaff | null>(null)
   const [isDeletingStaff, setIsDeletingStaff] = useState(false)
+  const [profileStaff,    setProfileStaff]    = useState<VetStaff | null>(null)
   const staffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Load owners ──────────────────────────────────────────────────────────
@@ -650,7 +641,7 @@ export default function VetPage() {
     setShowStaffForm(false)
     setEditingStaff(null)
     loadStaff()
-    toast.success('Vet / staff saved')
+    toast.success('Veterinarian saved')
   }
 
   const handleDeleteStaff = async () => {
@@ -660,9 +651,9 @@ export default function VetPage() {
       await window.api.vet?.staff.delete(deleteStaff.id)
       setDeleteStaff(null)
       loadStaff()
-      toast.success('Staff member removed')
+      toast.success('Veterinarian removed')
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to remove staff')
+      toast.error(err.message ?? 'Failed to remove veterinarian')
     } finally {
       setIsDeletingStaff(false)
     }
@@ -822,7 +813,7 @@ export default function VetPage() {
           <div className="p-6 space-y-4 max-w-full mx-auto">
             {staffTotal > 0 && (
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                <span className="font-semibold text-slate-900 dark:text-white">{staffTotal}</span> team members
+                <span className="font-semibold text-slate-900 dark:text-white">{staffTotal}</span> veterinarians
               </p>
             )}
 
@@ -848,10 +839,10 @@ export default function VetPage() {
                   <Stethoscope className="h-8 w-8 text-violet-400" />
                 </div>
                 <p className="font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                  {staffSearch ? 'No staff match your search' : 'No team members yet'}
+                  {staffSearch ? 'No veterinarians match your search' : 'No veterinarians yet'}
                 </p>
                 <p className="text-sm text-slate-400 dark:text-slate-500 mb-4">
-                  {staffSearch ? 'Try a different name' : 'Add your first vet or staff member'}
+                  {staffSearch ? 'Try a different name' : 'Add your first veterinarian here. Non-vet staff belong in Employees.'}
                 </p>
                 {!staffSearch && (
                   <button
@@ -868,6 +859,7 @@ export default function VetPage() {
                   <StaffCard
                     key={s.id}
                     staff={s}
+                    onViewProfile={() => setProfileStaff(s)}
                     onEdit={() => { setEditingStaff(s); setShowStaffForm(true) }}
                     onDelete={() => setDeleteStaff(s)}
                   />
@@ -934,6 +926,14 @@ export default function VetPage() {
         />
       )}
 
+      {profileStaff && (
+        <VetStaffProfileModal
+          staff={profileStaff}
+          onClose={() => setProfileStaff(null)}
+          onEdit={() => { setEditingStaff(profileStaff); setProfileStaff(null); setShowStaffForm(true) }}
+        />
+      )}
+
       {/* Delete staff confirm */}
       {deleteStaff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
@@ -943,12 +943,12 @@ export default function VetPage() {
                 <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Remove Staff Member</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">This will remove their record from the clinic.</p>
+                <h3 className="font-semibold text-slate-900 dark:text-white">Remove Veterinarian</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">This will remove this veterinarian from the vet clinic list.</p>
               </div>
             </div>
             <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
-              Remove <strong>{deleteStaff.name}</strong> ({ROLE_LABELS[deleteStaff.role] ?? deleteStaff.role})?
+              Remove <strong>{deleteStaff.name}</strong> from the veterinarians list?
             </p>
             <div className="flex gap-3">
               <button

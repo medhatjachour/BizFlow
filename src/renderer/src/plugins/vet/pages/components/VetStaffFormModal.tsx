@@ -28,14 +28,6 @@ const inputCls =
 const selectCls =
   'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors'
 
-const ROLES = [
-  { value: 'veterinarian', labelKey: 'vetRoleVeterinarian', label: 'Veterinarian' },
-  { value: 'vet_tech',     labelKey: 'vetRoleVetTech',      label: 'Vet Technician' },
-  { value: 'receptionist', labelKey: 'vetRoleReceptionist', label: 'Receptionist' },
-  { value: 'groomer',      labelKey: 'vetRoleGroomer',      label: 'Groomer' },
-  { value: 'other',        labelKey: 'vetRoleOther',        label: 'Other' },
-]
-
 const EMP_TYPES = [
   { value: 'full_time', labelKey: 'vetEmpFullTime',  label: 'Full-time' },
   { value: 'part_time', labelKey: 'vetEmpPartTime',  label: 'Part-time' },
@@ -48,7 +40,6 @@ export default function VetStaffFormModal({ staff, onSave, onClose }: Props) {
 
   const [form, setForm] = useState({
     name:           '',
-    role:           'veterinarian',
     phone:          '',
     email:          '',
     employmentType: 'full_time',
@@ -65,7 +56,6 @@ export default function VetStaffFormModal({ staff, onSave, onClose }: Props) {
     if (staff) {
       setForm({
         name:           staff.name,
-        role:           staff.role,
         phone:          staff.phone,
         email:          staff.email          ?? '',
         employmentType: staff.employmentType,
@@ -93,7 +83,7 @@ export default function VetStaffFormModal({ staff, onSave, onClose }: Props) {
     try {
       const payload: any = {
         name:           form.name.trim(),
-        role:           form.role,
+        role:           'veterinarian',
         phone:          form.phone.trim(),
         email:          form.email.trim()  || undefined,
         employmentType: form.employmentType,
@@ -135,9 +125,9 @@ export default function VetStaffFormModal({ staff, onSave, onClose }: Props) {
             </div>
             <div>
               <h2 className="font-bold text-slate-900 dark:text-white text-sm">
-                {isEdit ? (t('vetEditStaff')||'Edit Vet / Staff') : (t('vetAddStaff')||'Add Vet / Staff')}
+                {isEdit ? 'Edit Veterinarian' : 'Add Veterinarian'}
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('vetClinicTeamMember')||'Clinic team member'}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Only veterinarians should be managed here.</p>
             </div>
           </div>
           <button
@@ -173,20 +163,15 @@ export default function VetStaffFormModal({ staff, onSave, onClose }: Props) {
               </div>
             </div>
 
-            {/* Role + Employment type */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                  {t('vetRoleLabel')||'Role'} *
-                </label>
-                <div className="relative">
-                  <Stethoscope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <select value={form.role} onChange={set('role')} className={`${selectCls} pl-9`}>
-                    {ROLES.map(r => (
-                      <option key={r.value} value={r.value}>{t(r.labelKey as any)||r.label}</option>
-                    ))}
-                  </select>
-                </div>
+            {/* Employment type */}
+            <div>
+              <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 px-3 py-2 mb-3">
+                <p className="text-xs font-medium text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
+                  <Stethoscope className="h-3.5 w-3.5" /> Veterinarian
+                </p>
+                <p className="text-[11px] text-violet-600/80 dark:text-violet-300/80 mt-0.5">
+                  Non-veterinarian team members should be created from the Employees page.
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
@@ -327,7 +312,7 @@ export default function VetStaffFormModal({ staff, onSave, onClose }: Props) {
               {saving ? (
                 <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
               ) : (
-                isEdit ? (t('vetSaveChanges')||'Save Changes') : (t('vetAddStaff')||'Add to Team')
+                isEdit ? (t('vetSaveChanges')||'Save Changes') : 'Add Veterinarian'
               )}
             </button>
           </div>

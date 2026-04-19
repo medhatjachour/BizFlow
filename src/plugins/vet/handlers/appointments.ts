@@ -8,12 +8,14 @@ export function registerVetAppointmentHandlers(prisma: any) {
   ipcMain.handle('vet:appointments:getAll', async (_e, params?: {
     date?: string; from?: string; to?: string; status?: string
     patientId?: string; type?: string; skip?: number; take?: number
+    vetName?: string
   }) => {
     try {
       const where: any = {}
       if (params?.patientId) where.patientId = params.patientId
       if (params?.status)    where.status    = params.status
       if (params?.type)      where.type      = params.type
+      if (params?.vetName)   where.vetName   = params.vetName
       if (params?.date) {
         const d   = new Date(params.date + 'T00:00:00')
         const end = new Date(params.date + 'T23:59:59.999')

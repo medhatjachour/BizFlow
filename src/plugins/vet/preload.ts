@@ -8,7 +8,8 @@ export const vetPreload = {
     getById:    (id: string)               => ipcRenderer.invoke('vet:owners:getById', id),
     create:     (data: any)                => ipcRenderer.invoke('vet:owners:create', data),
     update:     (id: string, data: any)    => ipcRenderer.invoke('vet:owners:update', id, data),
-    delete:     (id: string)               => ipcRenderer.invoke('vet:owners:delete', id)
+    delete:     (id: string)               => ipcRenderer.invoke('vet:owners:delete', id),
+    getFinance: (ownerId: string)          => ipcRenderer.invoke('vet:owners:getFinance', ownerId)
   },
 
   // ── Patients ───────────────────────────────────────────────────────────────

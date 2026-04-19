@@ -42,6 +42,7 @@ export default function Settings() {
   const { language, setLanguage, t } = useLanguage()
   const { updateSettings: updateDisplaySettingsContext } = useDisplaySettingsContext()
   const clinicEnabled = useModuleEnabled('clinic')
+  const vetEnabled = useModuleEnabled('vet')
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
   const [saveSuccess, setSaveSuccess] = useState(false)
 
@@ -80,9 +81,13 @@ export default function Settings() {
   ]
 
   const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup', 'modules']
+  const VET_TABS: SettingsTab[] = ['general', 'users', 'backup']
+
   const tabs = clinicEnabled
     ? allTabs.filter(tab => CLINIC_TABS.includes(tab.id))
-    : allTabs
+    : vetEnabled && !import.meta.env.DEV
+      ? allTabs.filter(tab => VET_TABS.includes(tab.id))
+      : allTabs
 
   const handleSave = () => {
     try {

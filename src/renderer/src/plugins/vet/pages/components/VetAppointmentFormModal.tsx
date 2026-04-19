@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Loader2, Calendar, Clock, AlertTriangle } from 'lucide-react'
 import type { VetPatient } from '../index'
+import type { VetStaff } from './VetStaffFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
@@ -98,6 +99,27 @@ export default function VetAppointmentFormModal({ appointment, preselectedPatien
   const [loadingSlots, setLoadingSlots] = useState(false)
   const [saving,       setSaving]      = useState(false)
   const [error,        setError]       = useState('')
+  const [attendingVets, setAttendingVets] = useState<VetStaff[]>([])
+  const [vetsLoading,   setVetsLoading]   = useState(false)
+
+  // Load vets on mount
+  useEffect(() => {
+    const loadVets = async () => {
+      setVetsLoading(true)
+      try {
+        const raw = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
+        const list: VetStaff[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
+        setAttendingVets(
+          list
+            .filter((staff) => staff.status === 'active')
+            .sort((a, b) => a.name.localeCompare(b.name))
+        )
+      } finally {
+        setVetsLoading(false)
+      }
+    }
+    void loadVets()
+  }, [])
 
   // Load existing appointments for the selected day
   useEffect(() => {
@@ -384,8 +406,22 @@ export default function VetAppointmentFormModal({ appointment, preselectedPatien
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">{t('vetName')||'Vet Name'}</label>
-              <input type="text" className={inputCls} placeholder="Optional" value={form.vetName} onChange={setF('vetName')} />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">{t('vetName')||'Attending Vet'}</label>
+              {vetsLoading ? (
+                <div className="flex items-center gap-2 px-3 py-2 text-sm text-slate-400"><Loader2 className="h-4 w-4 animate-spin" /> Loading vets…</div>
+              ) : attendingVets.length === 0 ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400 px-1">No active vets found. Add one in the Vets tab first.</p>
+              ) : (
+                <select className={inputCls} value={form.vetName} onChange={setF('vetName')}>
+                  <option value="">— Optional —</option>
+                  {form.vetName && !attendingVets.find(v => v.name === form.vetName) && (
+                    <option value={form.vetName}>{form.vetName} (archived)</option>
+                  )}
+                  {attendingVets.map(v => (
+                    <option key={v.id} value={v.name}>{v.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>

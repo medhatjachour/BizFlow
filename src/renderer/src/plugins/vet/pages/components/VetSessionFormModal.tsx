@@ -94,7 +94,9 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
       try {
         const raw = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
         const list: VetStaff[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
-        const vets = list.filter((s) => s.role === 'veterinarian' && s.status === 'active')
+        const vets = list
+          .filter((staff) => staff.status === 'active')
+          .sort((a, b) => a.name.localeCompare(b.name))
         setAttendingVets(vets)
       } finally {
         setVetsLoading(false)

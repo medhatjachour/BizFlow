@@ -8,6 +8,7 @@ export function registerVetSessionHandlers(prisma: any) {
   ipcMain.handle('vet:sessions:getRecent', async (_e, params?: {
     patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'
     startDate?: string; endDate?: string; skip?: number; take?: number
+    vetName?: string
   }) => {
     try {
       const now = new Date()
@@ -30,6 +31,7 @@ export function registerVetSessionHandlers(prisma: any) {
 
       const where: any = {}
       if (params?.patientId) where.patientId = params.patientId
+      if (params?.vetName)   where.vetName   = params.vetName
       if (dateFrom || dateTo) {
         where.visitDate = {}
         if (dateFrom) where.visitDate.gte = dateFrom

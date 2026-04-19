@@ -87,4 +87,23 @@ export function registerOwnerHandlers(prisma: any) {
       return await prisma.vetOwner.delete({ where: { id } })
     } catch (err) { log.error('delete', err); throw err }
   })
+
+  // ─── Get Finance Summary ──────────────────────────────────────────────────
+  ipcMain.handle('vet:owners:getFinance', async (_e, ownerId: string) => {
+    try {
+      const patients = await prisma.vetPatient.findMany({
+        where: { ownerId },
+        select: { id: true }
+      })
+      const patientIds = patients.map((p: any) => p.id)
+      if (!patientIds.length) return { totalCharged: 0, totalPaid: 0, outstanding: 0 }
+      const sessions = await prisma.vetSession.findMany({
+        where: { patientId: { in: patientIds } },
+        select: { amountCharged: true, amountPaid: true }
+      })
+      const totalCharged = sessions.reduce((s: number, r: any) => s + (r.amountCharged ?? 0), 0)
+      const totalPaid    = sessions.reduce((s: number, r: any) => s + (r.amountPaid    ?? 0), 0)
+      return { totalCharged, totalPaid, outstanding: totalCharged - totalPaid }
+    } catch (err) { log.error('getFinance', err); throw err }
+  })
 }
