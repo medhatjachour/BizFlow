@@ -100,7 +100,34 @@ export default function AppointmentFormModal({
     let cancelled = false
     setLoadingSlots(true)
     ;(window.api.clinic.appointments.getAll as any)({ date: selectedDay, skip: 0, take: 500 })
-      .then((res: any) => { if (!cancelled) setDayAppts(toArray(res)) })
+      .then((res: any) => {
+        if (cancelled) return
+        const appts = toArray(res)
+        setDayAppts(appts)
+        // For new appointments, auto-advance default slot if it's already taken
+        if (!existing?.id) {
+          const dur = Number(form.duration) || 30
+          const slots = buildTimeSlots(dur)
+          const todayNow = toDatetimeLocal(new Date().toISOString()).slice(0, 10)
+          const nowHH = (() => { const n = new Date(); return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}` })()
+          const currentSelected = form.appointmentDate.slice(11, 16)
+          const isConflicted = (slotTime: string) => {
+            if (selectedDay === todayNow && slotTime < nowHH) return true
+            const slotStart = new Date(`${selectedDay}T${slotTime}:00`).getTime()
+            const slotEnd   = slotStart + dur * 60000
+            return appts.some(a => {
+              if (!['scheduled', 'confirmed'].includes(a.status)) return false
+              const s = new Date(a.appointmentDate).getTime()
+              const e = s + (a.duration || 30) * 60000
+              return slotStart < e && slotEnd > s
+            })
+          }
+          if (isConflicted(currentSelected)) {
+            const first = slots.find(s => !isConflicted(s))
+            if (first) setForm(f => ({ ...f, appointmentDate: selectedDay + 'T' + first }))
+          }
+        }
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoadingSlots(false) })
     return () => { cancelled = true }
@@ -362,7 +389,7 @@ export default function AppointmentFormModal({
             {t('cancel')}
           </button>
           <button onClick={handleSave}
-            disabled={saving || !form.patientId || !form.appointmentDate}
+            disabled={saving || !form.patientId || !form.appointmentDate || currentConflict.state === 'booked' || currentConflict.state === 'overlap'}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
             {existing?.id ? t('editAppointment') : t('bookAppointment')}
