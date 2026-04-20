@@ -80,14 +80,12 @@ export default function Settings() {
     { id: 'modules' as SettingsTab, name: 'Modules', icon: Puzzle },
   ]
 
-  const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup', 'modules']
+  const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup']
   const VET_TABS: SettingsTab[] = ['general', 'users', 'backup']
 
-  const tabs = clinicEnabled
-    ? allTabs.filter(tab => CLINIC_TABS.includes(tab.id))
-    : vetEnabled && !import.meta.env.DEV
-      ? allTabs.filter(tab => VET_TABS.includes(tab.id))
-      : allTabs
+  const tabs = (clinicEnabled || vetEnabled) && !import.meta.env.DEV
+    ? allTabs.filter(tab => (clinicEnabled ? CLINIC_TABS : VET_TABS).includes(tab.id))
+    : allTabs
 
   const handleSave = () => {
     try {

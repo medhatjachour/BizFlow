@@ -33,11 +33,16 @@ function initDateTime(existing: any, defaultDate?: string | null): string {
   return toDatetimeLocal(d.toISOString())
 }
 
-// Slots: 07:00 → 23:30, 30-min increments
-const TIME_SLOTS: string[] = []
-for (let h = 7; h <= 23; h++) {
-  TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`)
-  TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`)
+const DURATION_OPTIONS = [10, 15, 20, 30, 45, 60]
+
+function buildTimeSlots(durationMins: number): string[] {
+  const slots: string[] = []
+  for (let total = 7 * 60; total <= 23 * 60 + 30; total += durationMins) {
+    const h = Math.floor(total / 60)
+    const m = total % 60
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
+  }
+  return slots
 }
 
 const toArray = <T = any>(value: unknown): T[] => {
@@ -149,6 +154,8 @@ export default function AppointmentFormModal({
   }
 
   const currentConflict = selectedTime ? slotStatus(selectedTime) : { state: 'available' as SlotState }
+  const timeSlots = buildTimeSlots(Number(form.duration) || 30)
+  const gridCols = Number(form.duration) <= 15 ? 'grid-cols-10' : Number(form.duration) <= 20 ? 'grid-cols-8' : Number(form.duration) >= 60 ? 'grid-cols-6' : 'grid-cols-7'
 
   const handleSave = async () => {
     if (!form.patientId)       { showToast('error', t('pleaseSelectPatient')); return }
@@ -240,9 +247,12 @@ export default function AppointmentFormModal({
                 }} />
             )}
             {field(t('durationMinLabel'),
-              <input type="number" className={inputCls} min="5" step="5"
-                value={form.duration}
-                onChange={(e) => setForm(f => ({ ...f, duration: e.target.value }))} />
+              <select className={inputCls} value={form.duration}
+                onChange={(e) => setForm(f => ({ ...f, duration: e.target.value }))}>
+                {DURATION_OPTIONS.map(d => (
+                  <option key={d} value={d}>{d} min</option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -256,8 +266,8 @@ export default function AppointmentFormModal({
               {loadingSlots && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
             </div>
 
-            <div className="grid grid-cols-7 gap-1">
-              {TIME_SLOTS.map((slot) => {
+            <div className={`grid ${gridCols} gap-1`}>
+              {timeSlots.map((slot) => {
                 const { state, patient } = slotStatus(slot)
                 const isSelected = slot === selectedTime
                 return (
