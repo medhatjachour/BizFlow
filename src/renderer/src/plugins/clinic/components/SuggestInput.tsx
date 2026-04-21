@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 
 interface Props {
   value: string
@@ -24,9 +24,12 @@ export default function SuggestInput({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  const filtered = value.trim()
-    ? suggestions.filter(s => s.toLowerCase().includes(value.trim().toLowerCase())).slice(0, 10)
-    : suggestions.slice(0, 10)
+  const filtered = useMemo(() => {
+    const trimmed = value.trim()
+    return trimmed
+      ? suggestions.filter(s => s.toLowerCase().includes(trimmed.toLowerCase())).slice(0, 10)
+      : suggestions.slice(0, 10)
+  }, [value, suggestions])
 
   useEffect(() => {
     function onOutside(e: MouseEvent) {

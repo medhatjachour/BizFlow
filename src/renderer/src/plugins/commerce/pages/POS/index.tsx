@@ -10,7 +10,7 @@
  * - usePOS: Business logic and state management
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Grid, Zap } from 'lucide-react'
 import ProductSearch from './ProductSearch'
 import QuickSale from './QuickSale'
@@ -58,6 +58,11 @@ export default function POS(): JSX.Element {
 
   const { t, language } = useLanguage()
   const toast = useToast()
+
+  // Read settings once on mount — these don't change during a session
+  const taxRate = useMemo(() => parseFloat(localStorage.getItem('taxRate') || '10'), [])
+  const maxDiscountPercentage = useMemo(() => parseFloat(localStorage.getItem('maxDiscountPercentage') || '50'), [])
+  const maxDiscountAmount = useMemo(() => parseFloat(localStorage.getItem('maxDiscountAmount') || '100'), [])
 
   const [cartOpen, setCartOpen] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -394,7 +399,7 @@ export default function POS(): JSX.Element {
                   ) : null
                 })()}
                 <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                  <span>{t('tax')} ({(parseFloat(localStorage.getItem('taxRate') || '10'))}%):</span>
+                  <span>{t('tax')} ({taxRate}%):</span>
                   <span className="font-semibold">${tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-slate-300 dark:border-slate-600">
@@ -452,8 +457,8 @@ export default function POS(): JSX.Element {
           onApply={handleApplyDiscount}
           productName={`${discountingItem.name}${discountingItem.variant ? ` (${discountingItem.variant})` : ''}`}
           originalPrice={discountingItem.price}
-          maxDiscountPercentage={parseFloat(localStorage.getItem('maxDiscountPercentage') || '50')}
-          maxDiscountAmount={parseFloat(localStorage.getItem('maxDiscountAmount') || '100')}
+          maxDiscountPercentage={maxDiscountPercentage}
+          maxDiscountAmount={maxDiscountAmount}
           requireReason={true}
         />
       )}

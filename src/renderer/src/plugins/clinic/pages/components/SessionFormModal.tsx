@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown, Settings2 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -101,8 +101,8 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   const [manageMedicines, setManageMedicines] = useState(false)
   const customComplaints = useCustomSuggestions('clinic:custom:complaints')
   const customMedicines = useCustomSuggestions('clinic:custom:medicines')
-  const allComplaints = [...CHIEF_COMPLAINTS, ...customComplaints.items]
-  const allMedicines  = [...MEDICINE_SUGGESTIONS, ...customMedicines.items]
+  const allComplaints = useMemo(() => [...CHIEF_COMPLAINTS, ...customComplaints.items], [customComplaints.items])
+  const allMedicines  = useMemo(() => [...MEDICINE_SUGGESTIONS, ...customMedicines.items], [customMedicines.items])
   const [staffList, setStaffList] = useState<Array<{ id: string; name: string; role?: string | null }>>([])
   const [doctorSuggestions, setDoctorSuggestions] = useState<string[]>([])
   const [showDoctorDropdown, setShowDoctorDropdown] = useState(false)
@@ -216,7 +216,7 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   const [paymentMethod, setPaymentMethod] = useState(existingSession?.paymentMethod ?? 'cash')
 
   // Dentist mode + dental chart state
-  const isDentistMode = localStorage.getItem('clinicDentistMode') === 'true'
+  const [isDentistMode] = useState(() => localStorage.getItem('clinicDentistMode') === 'true')
   const [showDentalChart, setShowDentalChart] = useState(true)
   const [dentalChart, setDentalChart] = useState<DentalChartData>(() => {
     const raw = existingSession?.dentalChart
