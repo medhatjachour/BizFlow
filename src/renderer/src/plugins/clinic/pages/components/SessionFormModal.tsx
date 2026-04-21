@@ -697,7 +697,7 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
               </div>
             </div>
             {prescriptions.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3" onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }}>
                 {prescriptions.map((rx, idx) => (
                   <div key={idx} className={`rounded-xl border p-3 space-y-2 transition-colors ${rx.isActive ? 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800/60' : 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/30 opacity-75'}`}>
                     {/* Row 1: medicine + dosage + frequency + duration + qty + delete */}
