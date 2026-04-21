@@ -73,10 +73,10 @@ export default function VetExpensesTab() {
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState('')
 
-  const load = useCallback(async (reset = false) => {
+  const load = useCallback(async (reset = false, explicitPage?: number) => {
     setLoading(true)
     try {
-      const currentPage = reset ? 0 : page
+      const currentPage = reset ? 0 : (explicitPage ?? page)
       if (reset) setPage(0)
       const [expResult, sumResult] = await Promise.all([
         window.api.vet?.expenses.getAll({ period, skip: currentPage * PAGE_SIZE, take: PAGE_SIZE }),
@@ -231,7 +231,7 @@ export default function VetExpensesTab() {
           ))}
           {expenses.length < total && (
             <div className="flex justify-center pt-4">
-              <button onClick={() => { setPage(p => p + 1); load() }} disabled={loading}
+              <button onClick={() => { const next = page + 1; setPage(next); load(false, next) }} disabled={loading}
                 className="px-6 py-2 text-sm text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 disabled:opacity-50">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `${t('vetLoadMore')||'Load more'} (${total - expenses.length})`}
               </button>

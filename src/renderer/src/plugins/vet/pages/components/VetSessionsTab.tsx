@@ -67,10 +67,10 @@ export default function VetSessionsTab() {
 
   const PAGE_SIZE = 50
 
-  const load = useCallback(async (reset = false) => {
+  const load = useCallback(async (reset = false, explicitPage?: number) => {
     setLoading(true)
     try {
-      const currentPage = reset ? 0 : page
+      const currentPage = reset ? 0 : (explicitPage ?? page)
       if (reset) setPage(0)
       const result = await window.api.vet?.sessions.getRecent({
         filter: filter === 'all' ? undefined : filter,
@@ -162,13 +162,12 @@ export default function VetSessionsTab() {
                   className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500">
                   <Trash2 className="h-4 w-4" />
                 </button>
-                <SessionHelp />
               </div>
             </div>
           ))}
           {sessions.length < total && (
             <div className="flex justify-center pt-4">
-              <button onClick={() => { setPage(p => p + 1); load() }} disabled={loading}
+              <button onClick={() => { const next = page + 1; setPage(next); load(false, next) }} disabled={loading}
                 className="px-6 py-2 text-sm font-medium text-violet-600 dark:text-violet-400 border border-violet-300 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 disabled:opacity-50">
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `${t('vetLoadMore')||'Load more'} (${total - sessions.length} ${t('remaining')||'remaining'})`}
               </button>

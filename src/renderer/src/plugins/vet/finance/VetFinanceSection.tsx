@@ -54,19 +54,20 @@ export default function VetFinanceSection() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [sm, dx, ex] = await Promise.all([
+      const [sm, expSummary, dx, ex] = await Promise.all([
         window.api.vet?.stats.overview(period).catch(() => null),
+        window.api.vet?.expenses?.summary(period).catch(() => null),
         window.api.vet?.patients?.getAll({ skip: 0, take: 200 }).catch(() => ({ data: [] })),
         window.api.vet?.expenses?.getAll({ period }).catch(() => []),
       ])
 
-      // Build summary from stats overview
+      // Build summary from stats overview + expenses summary
       setSummary({
-        revenue:       sm?.revenue       ?? 0,
-        totalExpenses: sm?.totalExpenses ?? 0,
-        netIncome:     (sm?.revenue ?? 0) - (sm?.totalExpenses ?? 0),
-        outstanding:   sm?.outstanding   ?? 0,
-        byCategory:    sm?.expenseByCategory ?? [],
+        revenue:       sm?.revenue               ?? 0,
+        totalExpenses: expSummary?.totalExpenses ?? 0,
+        netIncome:     (sm?.revenue ?? 0) - (expSummary?.totalExpenses ?? 0),
+        outstanding:   sm?.outstanding           ?? 0,
+        byCategory:    expSummary?.byCategory    ?? [],
       })
 
       // Debtors — patients with outstanding balance
