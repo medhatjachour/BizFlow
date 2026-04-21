@@ -483,6 +483,77 @@ interface API {
       }
     }
   }
+  vet?: {
+    owners: {
+      getAll: (params?: { search?: string; skip?: number; take?: number }) => Promise<any>
+      getById: (id: string) => Promise<any>
+      searchLite: (query: string) => Promise<Array<{ id: string; name: string; phone: string }>>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    patients: {
+      getAll: (params?: { search?: string; skip?: number; take?: number; ownerId?: string }) => Promise<any>
+      getById: (id: string) => Promise<any>
+      searchLite: (query: string) => Promise<Array<{ id: string; name: string; species: string; ownerName: string }>>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      getDebtors: (params?: { search?: string; skip?: number; take?: number }) => Promise<{ data: any[]; total: number; totalOutstanding: number; hasMore: boolean }>
+    }
+    sessions: {
+      getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; skip?: number; take?: number }) => Promise<any>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    prescriptions: {
+      update: (id: string, data: any) => Promise<any>
+      setActive: (id: string, isActive: boolean) => Promise<any>
+    }
+    appointments: {
+      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string }) => Promise<any[]>
+      getToday: () => Promise<any[]>
+      getUpcoming: (days?: number) => Promise<any[]>
+      getAllFollowUps: (params?: { filter?: 'all' | 'today' | 'overdue' | 'upcoming' }) => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    checkResults: {
+      getAll: (params?: { patientId?: string; skip?: number; take?: number }) => Promise<any>
+      create: (params: { patientId: string; title: string; fileName: string; buffer: number[]; mimeType?: string; description?: string; resultDate?: string }) => Promise<any>
+      openFile: (id: string) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    expenses: {
+      getAll: (params?: { period?: string; category?: string; skip?: number; take?: number }) => Promise<{ data: any[]; total: number }>
+      summary: (period?: string) => Promise<any>
+      breakdown: (params?: { period?: string; category?: string }) => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<{ success: boolean }>
+    }
+    staff: {
+      getAll: () => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<{ success: boolean }>
+      salary: {
+        getAll: (params?: { staffId?: string; year?: number }) => Promise<any[]>
+        upsert: (data: any) => Promise<any>
+        markPaid: (id: string) => Promise<any>
+        delete: (id: string) => Promise<{ success: boolean }>
+      }
+    }
+    stats: {
+      overview: () => Promise<any>
+      topDiagnoses: (limit?: number) => Promise<any>
+      visitTrend: (days?: number) => Promise<any>
+      monthlyTrend: (months?: number) => Promise<any>
+    }
+  }
 }
 
 declare global {

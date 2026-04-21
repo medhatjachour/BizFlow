@@ -33,11 +33,16 @@ function initDateTime(existing: any, defaultDate?: string | null): string {
   return toDatetimeLocal(d.toISOString())
 }
 
-// Slots: 07:00 → 23:30, 30-min increments
-const TIME_SLOTS: string[] = []
-for (let h = 7; h <= 23; h++) {
-  TIME_SLOTS.push(`${String(h).padStart(2, '0')}:00`)
-  TIME_SLOTS.push(`${String(h).padStart(2, '0')}:30`)
+const DURATION_OPTIONS = [10, 15, 20, 30, 45, 60]
+
+function buildTimeSlots(durationMins: number): string[] {
+  const slots: string[] = []
+  for (let total = 7 * 60; total <= 23 * 60 + 30; total += durationMins) {
+    const h = Math.floor(total / 60)
+    const m = total % 60
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
+  }
+  return slots
 }
 
 const toArray = <T = any>(value: unknown): T[] => {
@@ -95,7 +100,34 @@ export default function AppointmentFormModal({
     let cancelled = false
     setLoadingSlots(true)
     ;(window.api.clinic.appointments.getAll as any)({ date: selectedDay, skip: 0, take: 500 })
-      .then((res: any) => { if (!cancelled) setDayAppts(toArray(res)) })
+      .then((res: any) => {
+        if (cancelled) return
+        const appts = toArray(res)
+        setDayAppts(appts)
+        // For new appointments, auto-advance default slot if it's already taken
+        if (!existing?.id) {
+          const dur = Number(form.duration) || 30
+          const slots = buildTimeSlots(dur)
+          const todayNow = toDatetimeLocal(new Date().toISOString()).slice(0, 10)
+          const nowHH = (() => { const n = new Date(); return `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}` })()
+          const currentSelected = form.appointmentDate.slice(11, 16)
+          const isConflicted = (slotTime: string) => {
+            if (selectedDay === todayNow && slotTime < nowHH) return true
+            const slotStart = new Date(`${selectedDay}T${slotTime}:00`).getTime()
+            const slotEnd   = slotStart + dur * 60000
+            return appts.some(a => {
+              if (!['scheduled', 'confirmed'].includes(a.status)) return false
+              const s = new Date(a.appointmentDate).getTime()
+              const e = s + (a.duration || 30) * 60000
+              return slotStart < e && slotEnd > s
+            })
+          }
+          if (isConflicted(currentSelected)) {
+            const first = slots.find(s => !isConflicted(s))
+            if (first) setForm(f => ({ ...f, appointmentDate: selectedDay + 'T' + first }))
+          }
+        }
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoadingSlots(false) })
     return () => { cancelled = true }
@@ -149,6 +181,8 @@ export default function AppointmentFormModal({
   }
 
   const currentConflict = selectedTime ? slotStatus(selectedTime) : { state: 'available' as SlotState }
+  const timeSlots = buildTimeSlots(Number(form.duration) || 30)
+  const gridCols = Number(form.duration) <= 15 ? 'grid-cols-10' : Number(form.duration) <= 20 ? 'grid-cols-8' : Number(form.duration) >= 60 ? 'grid-cols-6' : 'grid-cols-7'
 
   const handleSave = async () => {
     if (!form.patientId)       { showToast('error', t('pleaseSelectPatient')); return }
@@ -240,9 +274,12 @@ export default function AppointmentFormModal({
                 }} />
             )}
             {field(t('durationMinLabel'),
-              <input type="number" className={inputCls} min="5" step="5"
-                value={form.duration}
-                onChange={(e) => setForm(f => ({ ...f, duration: e.target.value }))} />
+              <select className={inputCls} value={form.duration}
+                onChange={(e) => setForm(f => ({ ...f, duration: e.target.value }))}>
+                {DURATION_OPTIONS.map(d => (
+                  <option key={d} value={d}>{d} min</option>
+                ))}
+              </select>
             )}
           </div>
 
@@ -256,8 +293,8 @@ export default function AppointmentFormModal({
               {loadingSlots && <Loader2 className="h-3 w-3 animate-spin text-slate-400" />}
             </div>
 
-            <div className="grid grid-cols-7 gap-1">
-              {TIME_SLOTS.map((slot) => {
+            <div className={`grid ${gridCols} gap-1`}>
+              {timeSlots.map((slot) => {
                 const { state, patient } = slotStatus(slot)
                 const isSelected = slot === selectedTime
                 return (
@@ -352,7 +389,7 @@ export default function AppointmentFormModal({
             {t('cancel')}
           </button>
           <button onClick={handleSave}
-            disabled={saving || !form.patientId || !form.appointmentDate}
+            disabled={saving || !form.patientId || !form.appointmentDate || currentConflict.state === 'booked' || currentConflict.state === 'overlap'}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
             {existing?.id ? t('editAppointment') : t('bookAppointment')}

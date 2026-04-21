@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect, lazy, Suspense } from 'react'
-import { TrendingUp, ShoppingCart, Croissant, UtensilsCrossed, Warehouse, Stethoscope } from 'lucide-react'
+import { TrendingUp, ShoppingCart, Croissant, UtensilsCrossed, Warehouse, Stethoscope, PawPrint } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useModuleEnabled } from '@renderer/hooks/useModuleEnabled'
 import NoPluginsFinanceKernel from './components/NoPluginsFinanceKernel'
@@ -19,6 +19,7 @@ const BakeryFinanceSection     = lazy(() => import('@renderer/plugins/bakery/fin
 const RestaurantFinanceSection = lazy(() => import('@renderer/plugins/restaurant/finance/RestaurantFinanceSection'))
 const WarehouseFinanceSection  = lazy(() => import('@renderer/plugins/warehouse/finance/WarehouseFinanceSection'))
 const ClinicFinanceSection     = lazy(() => import('@renderer/plugins/clinic/finance/ClinicFinanceSection'))
+const VetFinanceSection        = lazy(() => import('@renderer/plugins/vet/finance/VetFinanceSection'))
 
 const SectionFallback: React.FC = () => (
   <div className="space-y-4 animate-pulse">
@@ -30,7 +31,7 @@ const SectionFallback: React.FC = () => (
   </div>
 )
 
-type PluginId = 'commerce' | 'bakery' | 'restaurant' | 'warehouse' | 'clinic'
+type PluginId = 'commerce' | 'bakery' | 'restaurant' | 'warehouse' | 'clinic' | 'vet'
 
 const PLUGIN_TABS: { id: PluginId; label: string; icon: React.ElementType; activeClass: string; hoverClass: string }[] = [
   { id: 'commerce',   label: 'Commerce',   icon: ShoppingCart,    activeClass: 'bg-indigo-600 text-white shadow-md', hoverClass: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' },
@@ -38,6 +39,7 @@ const PLUGIN_TABS: { id: PluginId; label: string; icon: React.ElementType; activ
   { id: 'restaurant', label: 'Restaurant', icon: UtensilsCrossed, activeClass: 'bg-rose-600 text-white shadow-md',   hoverClass: 'hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-700 dark:text-rose-300' },
   { id: 'warehouse',  label: 'Warehouse',  icon: Warehouse,       activeClass: 'bg-blue-600 text-white shadow-md',   hoverClass: 'hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300' },
   { id: 'clinic',     label: 'Clinic',     icon: Stethoscope,     activeClass: 'bg-teal-600 text-white shadow-md',   hoverClass: 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-300' },
+  { id: 'vet',        label: 'Vet Clinic', icon: PawPrint,        activeClass: 'bg-violet-600 text-white shadow-md', hoverClass: 'hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-700 dark:text-violet-300' },
 ]
 
 const Finance: React.FC = () => {
@@ -48,13 +50,15 @@ const Finance: React.FC = () => {
   const isRestaurant = useModuleEnabled('restaurant')
   const isWarehouse  = useModuleEnabled('warehouse')
   const isClinic     = useModuleEnabled('clinic')
+  const isVet        = useModuleEnabled('vet')
 
   const enabledPlugins = PLUGIN_TABS.filter(p =>
     (p.id === 'commerce'   && isCommerce)   ||
     (p.id === 'bakery'     && isBakery)     ||
     (p.id === 'restaurant' && isRestaurant) ||
     (p.id === 'warehouse'  && isWarehouse)  ||
-    (p.id === 'clinic'     && isClinic)
+    (p.id === 'clinic'     && isClinic)     ||
+    (p.id === 'vet'        && isVet)
   )
 
   const anyActive = enabledPlugins.length > 0
@@ -66,7 +70,7 @@ const Finance: React.FC = () => {
     if (!activePlugin || !enabledPlugins.find(p => p.id === activePlugin)) {
       setActivePlugin(enabledPlugins[0].id)
     }
-  }, [isCommerce, isBakery, isRestaurant, isWarehouse, isClinic])
+  }, [isCommerce, isBakery, isRestaurant, isWarehouse, isClinic, isVet])
 
   return (
     <div className="p-6 space-y-6">
@@ -117,6 +121,7 @@ const Finance: React.FC = () => {
           {activePlugin === 'restaurant' && <RestaurantFinanceSection />}
           {activePlugin === 'warehouse'  && <WarehouseFinanceSection />}
           {activePlugin === 'clinic'     && <ClinicFinanceSection />}
+          {activePlugin === 'vet'        && <VetFinanceSection />}
         </Suspense>
       )}
     </div>

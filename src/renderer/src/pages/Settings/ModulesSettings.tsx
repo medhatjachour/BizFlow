@@ -17,6 +17,7 @@ const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
   restaurant: typeof __PLUGIN_RESTAURANT__ !== 'undefined' && __PLUGIN_RESTAURANT__,
   warehouse:  typeof __PLUGIN_WAREHOUSE__  !== 'undefined' && __PLUGIN_WAREHOUSE__,
   clinic:     typeof __PLUGIN_CLINIC__     !== 'undefined' && __PLUGIN_CLINIC__,
+  vet:        typeof __PLUGIN_VET__        !== 'undefined' && __PLUGIN_VET__,
 }
 
 const COLOR_MAP: Record<string, { ring: string; bg: string; icon: string; badge: string }> = {
@@ -49,6 +50,12 @@ const COLOR_MAP: Record<string, { ring: string; bg: string; icon: string; badge:
     bg:    'bg-teal-50         dark:bg-teal-900/20',
     icon:  'bg-teal-100       dark:bg-teal-900/40 text-teal-700 dark:text-teal-300',
     badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+  },
+  violet: {
+    ring:  'border-violet-300  dark:border-violet-700',
+    bg:    'bg-violet-50        dark:bg-violet-900/20',
+    icon:  'bg-violet-100      dark:bg-violet-900/40 text-violet-700 dark:text-violet-300',
+    badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
   },
 }
 

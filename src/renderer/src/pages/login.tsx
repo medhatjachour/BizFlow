@@ -64,6 +64,7 @@ export default function Login() {
 
   function getLandingRoute(role?: string) {
     if (role === 'clinic_staff') return '/clinic'
+    if (role === 'vet_staff') return '/vet'
     return '/dashboard'
   }
 

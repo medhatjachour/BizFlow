@@ -68,6 +68,10 @@ const MODULE_REGISTRY = {
     file: 'schema.prisma',
     injectFields: {}
   },
+  vet: {
+    file: 'schema.prisma',
+    injectFields: {}
+  },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

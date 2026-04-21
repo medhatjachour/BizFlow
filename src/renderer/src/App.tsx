@@ -45,6 +45,8 @@ const Restaurant   = __PLUGIN_RESTAURANT__ ? lazy(() => import('./plugins/restau
 const Warehouse    = __PLUGIN_WAREHOUSE__ ? lazy(() => import('./plugins/warehouse/pages/index')) : null
 const Clinic       = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/index')) : null
 const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/PatientProfile')) : null
+const Vet          = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/index')) : null
+const VetPatientProfile = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/VetPatientProfile')) : null
 
 // ------------------------------------------------------------------
 // Per-route error boundary — wraps each page in isolation so one
@@ -88,6 +90,7 @@ function AppContent() {
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
+  const vetEnabled = useModuleEnabled(MODULE_IDS.VET)
   const isClinicStaff = user?.role === 'clinic_staff'
 
   // Global keyboard shortcuts
@@ -330,6 +333,30 @@ function AppContent() {
                 <RequireAuth>
                   <RootLayoutWrapper>
                     <RouteErrorBoundary name="Patient Profile"><ClinicPatientProfile /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_VET__ && vetEnabled && Vet && (
+            <Route
+              path="/vet"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Vet Clinic"><Vet /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_VET__ && vetEnabled && VetPatientProfile && (
+            <Route
+              path="/vet/patients/:id"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Vet Patient Profile"><VetPatientProfile /></RouteErrorBoundary>
                   </RootLayoutWrapper>
                 </RequireAuth>
               }
