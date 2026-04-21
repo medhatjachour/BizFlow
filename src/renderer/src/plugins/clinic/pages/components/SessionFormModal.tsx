@@ -1,9 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown, Settings2 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import type { Patient } from '../index'
 import DentalChart, { type DentalChartData } from '../../components/DentalChart'
+import SuggestInput from '../../components/SuggestInput'
+import ManageSuggestionsModal from '../../components/ManageSuggestionsModal'
+import { CHIEF_COMPLAINTS, MEDICINE_SUGGESTIONS } from '../../data/clinic-suggestions'
+import { useCustomSuggestions } from '../../hooks/useCustomSuggestions'
 
 interface PrescriptionRow {
   medicineName: string
@@ -93,6 +97,12 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   const { t } = useLanguage()
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
+  const [manageComplaints, setManageComplaints] = useState(false)
+  const [manageMedicines, setManageMedicines] = useState(false)
+  const customComplaints = useCustomSuggestions('clinic:custom:complaints')
+  const customMedicines = useCustomSuggestions('clinic:custom:medicines')
+  const allComplaints = [...CHIEF_COMPLAINTS, ...customComplaints.items]
+  const allMedicines  = [...MEDICINE_SUGGESTIONS, ...customMedicines.items]
   const [staffList, setStaffList] = useState<Array<{ id: string; name: string; role?: string | null }>>([])
   const [doctorSuggestions, setDoctorSuggestions] = useState<string[]>([])
   const [showDoctorDropdown, setShowDoctorDropdown] = useState(false)
@@ -454,8 +464,22 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
 
           {/* Chief complaint */}
           <div>
-            <label className={labelCls}>{t('chiefComplaint')} *</label>
-            <textarea className={inputCls} rows={2} value={chiefComplaint} onChange={(e) => setChiefComplaint(e.target.value)} required />
+            <div className="flex items-center justify-between mb-1">
+              <label className={labelCls + ' mb-0'}>{t('chiefComplaint')} *</label>
+              <button type="button" onClick={() => setManageComplaints(true)}
+                className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+                <Settings2 className="h-3 w-3" /> Manage list
+              </button>
+            </div>
+            <SuggestInput
+              className={inputCls}
+              rows={2}
+              suggestions={allComplaints}
+              value={chiefComplaint}
+              onChange={setChiefComplaint}
+              placeholder={t('chiefComplaintPlaceholder') ?? 'e.g. Headache, Cough…'}
+              required
+            />
           </div>
 
           {/* Vitals grid */}
@@ -662,9 +686,15 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('prescriptions')}</p>
-              <button type="button" onClick={addRx} className="flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400 hover:underline">
-                <Plus className="h-3.5 w-3.5" /> {t('addMedicine')}
-              </button>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setManageMedicines(true)}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
+                  <Settings2 className="h-3 w-3" /> Manage list
+                </button>
+                <button type="button" onClick={addRx} className="flex items-center gap-1 text-xs text-teal-600 dark:text-teal-400 hover:underline">
+                  <Plus className="h-3.5 w-3.5" /> {t('addMedicine')}
+                </button>
+              </div>
             </div>
             {prescriptions.length > 0 && (
               <div className="space-y-3">
@@ -674,7 +704,13 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
                     <div className="grid grid-cols-6 gap-2 items-end">
                       <div className="col-span-2">
                         {idx === 0 && <label className={labelCls}>{t('medicine')}</label>}
-                        <input className={inputCls} placeholder={t('medicineName')} value={rx.medicineName} onChange={(e) => updateRx(idx, 'medicineName', e.target.value)} />
+                        <SuggestInput
+                          className={inputCls}
+                          suggestions={allMedicines}
+                          value={rx.medicineName}
+                          onChange={(v) => updateRx(idx, 'medicineName', v)}
+                          placeholder={t('medicineName') ?? 'Medicine name…'}
+                        />
                       </div>
                       <div>
                         {idx === 0 && <label className={labelCls}>{t('dosage')}</label>}
@@ -755,6 +791,27 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           </div>
         </form>
       </div>
+
+      {manageComplaints && (
+        <ManageSuggestionsModal
+          title="Manage Chief Complaints"
+          items={customComplaints.items}
+          onAdd={customComplaints.add}
+          onRemove={customComplaints.remove}
+          onClose={() => setManageComplaints(false)}
+          placeholder="e.g. Chronic fatigue, Knee swelling…"
+        />
+      )}
+      {manageMedicines && (
+        <ManageSuggestionsModal
+          title="Manage Medicines"
+          items={customMedicines.items}
+          onAdd={customMedicines.add}
+          onRemove={customMedicines.remove}
+          onClose={() => setManageMedicines(false)}
+          placeholder="e.g. Paracetamol 650mg, Vitamin B1…"
+        />
+      )}
     </div>
   )
 }
