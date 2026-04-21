@@ -762,7 +762,7 @@ export default function PatientProfile() {
     quantity: '',
     instructions: ''
   })
-  const isDentistMode = localStorage.getItem('clinicDentistMode') === 'true'
+  const [isDentistMode] = useState(() => localStorage.getItem('clinicDentistMode') === 'true')
   const [showDentalPanel, setShowDentalPanel] = useState(false)
 
   const load = useCallback(async () => {

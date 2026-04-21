@@ -130,8 +130,8 @@ export default function Sales(): JSX.Element {
   const [installmentStatusFilter, setInstallmentStatusFilter] = useState('all')
   const [installmentDateFilter, setInstallmentDateFilter] = useState('all')
   
-  // Get refund period from settings
-  const refundPeriodDays = parseInt(localStorage.getItem('refundPeriodDays') || '30')
+  // Get refund period from settings (read once on mount, not on every render)
+  const [refundPeriodDays] = useState(() => parseInt(localStorage.getItem('refundPeriodDays') || '30'))
   
   // Check if transaction is within refund period
   const isWithinRefundPeriod = (transactionDate: string): boolean => {

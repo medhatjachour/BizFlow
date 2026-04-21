@@ -4,7 +4,7 @@
  * Optimized for large datasets (1M+ products) with virtualization
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Search, ShoppingCart, Trash2, X, DollarSign, Percent, Info } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
@@ -118,21 +118,21 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
   const [showDiscountModal, setShowDiscountModal] = useState(false)
   const [discountingItem, setDiscountingItem] = useState<CartItem | null>(null)
   
-  // Calculated totals
-  const subtotal = cartItems.reduce((sum, item) => sum + item.subtotal, 0)
-  const taxRate = parseFloat(localStorage.getItem('taxRate') || '0')
+  // Calculated totals (memoized to avoid recomputing on every render)
+  const subtotal = useMemo(() => cartItems.reduce((sum, item) => sum + item.subtotal, 0), [cartItems])
+  const taxRate = useMemo(() => parseFloat(localStorage.getItem('taxRate') || '0'), [])
   const tax = (subtotal * taxRate) / 100
   
   // Calculate total discount across all items
   // Discount is the difference between original price and final price
-  const totalDiscount = cartItems.reduce((sum, item) => {
+  const totalDiscount = useMemo(() => cartItems.reduce((sum, item) => {
     if (!item.discountType || item.discountType === 'NONE' || !item.discountValue) return sum
     
     const originalPrice = item.price // Price before discount
     const finalPrice = item.finalPrice || item.price // Price after discount
     const discountPerItem = originalPrice - finalPrice
     return sum + (discountPerItem * item.quantity)
-  }, 0)
+  }, 0), [cartItems])
   
   const total = subtotal + tax
 
@@ -554,7 +554,6 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
     }))
   }
 
-  // Discount functions
   const canApplyDiscount = () => {
     const isEnabled = localStorage.getItem('allowDiscounts') === 'true'
     return isEnabled

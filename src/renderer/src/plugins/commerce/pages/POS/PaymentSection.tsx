@@ -2,6 +2,7 @@
  * Payment method selection and checkout component
  */
 
+import { useMemo } from 'react'
 import { DollarSign, CreditCard, Receipt } from 'lucide-react'
 import type { PaymentMethod } from './types'
 
@@ -23,7 +24,7 @@ export default function PaymentSection({
   onCompleteSale
 }: Props) {
   // Get tax rate from settings for display
-  const taxRate = parseFloat(localStorage.getItem('taxRate') || '10')
+  const taxRate = useMemo(() => parseFloat(localStorage.getItem('taxRate') || '10'), [])
   
   return (
     <div className="space-y-2">
