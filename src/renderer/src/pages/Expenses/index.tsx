@@ -7,6 +7,7 @@ import ExpenseTable from './components/ExpenseTable'
 import ExpenseModal from './components/ExpenseModal'
 import PayrollBreakdown from './components/PayrollBreakdown'
 import ClinicExpensesPanel from '../../plugins/clinic/components/ClinicExpensesPanel'
+import GymExpensesPanel from '../../plugins/gym/components/GymExpensesPanel'
 
 export default function Expenses() {
   const s = useExpenses()
@@ -103,6 +104,9 @@ export default function Expenses() {
 
       {/* ── Clinic-exclusive expenses (separate plugin schema) ── */}
       <ClinicExpensesPanel />
+
+      {/* ── Gym-exclusive expenses (separate plugin schema) ── */}
+      {typeof __PLUGIN_GYM__ !== 'undefined' && __PLUGIN_GYM__ && <GymExpensesPanel />}
 
       {s.showModal && (
         <ExpenseModal

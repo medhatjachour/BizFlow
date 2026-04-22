@@ -27,7 +27,8 @@ import {
   UtensilsCrossed,
   Warehouse as WarehouseIcon,
   Stethoscope,
-  PawPrint
+  PawPrint,
+  Dumbbell
 } from 'lucide-react'
 
 interface NavItem {
@@ -105,6 +106,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
   const vetEnabled = useModuleEnabled(MODULE_IDS.VET)
+  const gymEnabled = useModuleEnabled(MODULE_IDS.GYM)
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
   const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
 
@@ -158,6 +160,13 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       href: '/vet',
       icon: PawPrint,
       roles: ['admin', 'manager', 'vet_staff']
+    }] : []),
+    ...(__PLUGIN_GYM__ && gymEnabled ? [{
+      name: 'Gym',
+      translationKey: 'gym',
+      href: '/gym',
+      icon: Dumbbell,
+      roles: ['admin', 'manager']
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&

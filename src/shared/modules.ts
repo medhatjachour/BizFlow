@@ -19,7 +19,8 @@ export const MODULE_IDS = {
   RESTAURANT: 'restaurant',
   WAREHOUSE: 'warehouse',
   CLINIC: 'clinic',
-  VET: 'vet'
+  VET: 'vet',
+  GYM: 'gym'
 } as const
 
 export type ModuleId = (typeof MODULE_IDS)[keyof typeof MODULE_IDS]
@@ -154,6 +155,24 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     models: ['VetOwner', 'VetPatient', 'VetSession', 'VetPrescription', 'VetAppointment', 'VetCheckResult', 'VetExpense', 'VetStaff', 'VetSalaryRecord'],
     ipcPrefix: 'vet',
     routePrefix: '/vet'
+  },
+  [MODULE_IDS.GYM]: {
+    id: MODULE_IDS.GYM,
+    name: 'Gym',
+    description: 'Gym management — coaches, trainees, subscription plans, walk-in sessions and financial tracking.',
+    features: [
+      'Trainee profiles with subscription history',
+      'Coach roster with specialties and QR codes',
+      'Flexible subscription plans with freeze support',
+      'Walk-in session logging',
+      'Expense tracking and financial reporting',
+    ],
+    icon: '🏋️',
+    color: 'orange',
+    status: 'active',
+    models: ['GymCoach', 'GymTrainee', 'GymPlan', 'GymSubscription', 'GymFreeze', 'GymWalkSession', 'GymExpense'],
+    ipcPrefix: 'gym',
+    routePrefix: '/gym'
   }
 }
 

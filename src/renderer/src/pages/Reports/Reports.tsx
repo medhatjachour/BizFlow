@@ -11,6 +11,7 @@ const RestaurantReportSection = lazy(() => import('@renderer/plugins/restaurant/
 const WarehouseReportSection  = lazy(() => import('@renderer/plugins/warehouse/reports/WarehouseReportSection'))
 const ClinicReportSection     = lazy(() => import('@renderer/plugins/clinic/reports/ClinicReportSection'))
 const VetReportSection        = lazy(() => import('@renderer/plugins/vet/reports/VetReportSection'))
+const GymReportSection        = lazy(() => import('@renderer/plugins/gym/reports/GymReportSection'))
 
 const SectionFallback: React.FC = () => (
   <div className="h-40 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
@@ -31,8 +32,9 @@ const Reports: React.FC = () => {
   const isWarehouse  = useModuleEnabled('warehouse')
   const isClinic     = useModuleEnabled('clinic')
   const isVet        = useModuleEnabled('vet')
+  const isGym        = useModuleEnabled('gym')
 
-  const anyActive = isCommerce || isBakery || isRestaurant || isWarehouse || isClinic || isVet
+  const anyActive = isCommerce || isBakery || isRestaurant || isWarehouse || isClinic || isVet || isGym
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -119,8 +121,17 @@ const Reports: React.FC = () => {
       )}
 
       {isVet && (
+        <>
+          <Suspense fallback={<SectionFallback />}>
+            <VetReportSection refreshSignal={refreshSig} />
+          </Suspense>
+          {isGym && <Divider />}
+        </>
+      )}
+
+      {isGym && (
         <Suspense fallback={<SectionFallback />}>
-          <VetReportSection refreshSignal={refreshSig} />
+          <GymReportSection refreshSignal={refreshSig} />
         </Suspense>
       )}
     </div>
