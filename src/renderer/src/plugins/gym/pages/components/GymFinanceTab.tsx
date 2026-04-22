@@ -45,7 +45,7 @@ export default function GymFinanceTab() {
 
   const expenseData = summary?.byCategory?.map((c: any) => ({
     name: c.category.charAt(0).toUpperCase() + c.category.slice(1),
-    amount: c._sum.amount,
+    amount: c.total ?? 0,
     color: CATEGORY_COLORS[c.category] ?? '#64748b'
   })) ?? []
 

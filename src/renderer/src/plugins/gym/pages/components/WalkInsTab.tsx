@@ -113,9 +113,12 @@ export default function WalkInsTab() {
                     <td className="px-4 py-2.5 text-xs text-slate-500">{new Date(s.date).toLocaleDateString()}</td>
                     <td className="px-4 py-2.5 text-slate-800 dark:text-slate-200">{s.trainee?.name ?? <span className="text-slate-400 italic">{t('gymAnonymous')}</span>}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.type === 'walkin' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'}`}>
-                        {s.type === 'walkin' ? `🚶 ${t('gymWalkInType')}` : `✅ ${t('gymSubscriptionType')}`}
-                      </span>
+                      {s.type === 'subscription_visit'
+                        ? <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">✅ {t('gymSubscriptionType')}</span>
+                        : s.trainee
+                          ? <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">👤 {t('gymMemberVisit')}</span>
+                          : <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400">🚶 {t('gymAnonymous')}</span>
+                      }
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-500">{s.coach?.name ?? '—'}</td>
                     <td className="px-4 py-2.5 font-semibold text-orange-600 dark:text-orange-400 tabular-nums">

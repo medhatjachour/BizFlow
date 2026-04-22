@@ -43,7 +43,9 @@ export function registerGymStatsHandlers(prisma: any) {
         newMembersThisMonth,
         activePrograms,
         occupiedLockers,
-        totalLockers
+        totalLockers,
+        totalTrainees,
+        anonymousWalkInsToday
       ] = await Promise.all([
         prisma.gymSubscription.count({ where: { status: 'active' } }),
         prisma.gymSubscription.count({ where: { status: 'active', endDate: { gte: now, lte: nextWeek } } }),
@@ -67,7 +69,9 @@ export function registerGymStatsHandlers(prisma: any) {
         prisma.gymTrainee.count({ where: { createdAt: { gte: monthStart, lt: todayEnd } } }),
         prisma.gymProgram.count({ where: { isActive: true } }),
         prisma.gymLockerAssignment.count({ where: { isActive: true } }),
-        prisma.gymLocker.count()
+        prisma.gymLocker.count(),
+        prisma.gymTrainee.count(),
+        prisma.gymWalkSession.count({ where: { traineeId: null, date: { gte: todayStart, lt: todayEnd } } })
       ])
 
       // Build 7-day trend
@@ -102,7 +106,9 @@ export function registerGymStatsHandlers(prisma: any) {
         newMembersThisMonth,
         activePrograms,
         occupiedLockers,
-        totalLockers
+        totalLockers,
+        totalTrainees,
+        anonymousWalkInsToday
       }
     } catch (err) { log.error('overview', err); throw err }
   })

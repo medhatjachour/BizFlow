@@ -55,6 +55,10 @@ export default function WalkInFormModal({ isOpen, onClose, onSaved }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (form.type === 'walkin' && (!form.amount || parseFloat(form.amount) <= 0)) {
+      toast.error('Walk-in sessions require a payment amount greater than 0')
+      return
+    }
     setSaving(true)
     try {
       const payload = {
@@ -141,12 +145,25 @@ export default function WalkInFormModal({ isOpen, onClose, onSaved }: Props) {
               <input type="date" className={inputCls} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
             </div>
             <div>
-              <label className={labelCls}>{form.type === 'walkin' ? t('gymAmountWalkin') : t('gymAmountOptional')}</label>
-              <input type="number" min="0" step="0.01" className={inputCls} value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
+              <label className={labelCls}>
+                {form.type === 'walkin' ? t('gymAmountWalkin') : t('gymAmountOptional')}
+                {form.type === 'walkin' && <span className="text-red-500 ml-0.5">*</span>}
+              </label>
+              <input
+                type="number"
+                min={form.type === 'walkin' ? '0.01' : '0'}
+                step="0.01"
+                className={inputCls}
+                value={form.amount}
+                onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                placeholder={form.type === 'walkin' ? '0.00' : '0.00 (optional)'}
+                required={form.type === 'walkin'}
+              />
             </div>
           </div>
 
-          {form.amount && parseFloat(form.amount) > 0 && (
+          {/* Payment method — always shown for walk-ins, shown when amount > 0 for subscription visits */}
+          {(form.type === 'walkin' || (form.amount && parseFloat(form.amount) > 0)) && (
             <div>
               <label className={labelCls}>{t('gymPaymentMethod')}</label>
               <select className={inputCls} value={form.paymentMethod} onChange={e => setForm(f => ({ ...f, paymentMethod: e.target.value }))}>

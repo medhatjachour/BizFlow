@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Search, Loader2, CheckCircle2, Footprints, Users, DollarSign,
   ChevronLeft, ChevronRight, CalendarDays, X, Zap, Trash2,
-  AlertTriangle, ChevronDown, ChevronUp, Phone
+  AlertTriangle, ChevronDown, ChevronUp, Phone, Minus, Plus
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -81,7 +81,18 @@ export default function AttendanceTab() {
   const [showAnon, setShowAnon] = useState(false)
   const [anonName, setAnonName] = useState('')
   const [anonAmount, setAnonAmount] = useState('')
+  const [anonPayMethod, setAnonPayMethod] = useState('cash')
   const [savingAnon, setSavingAnon] = useState(false)
+  const [anonPresets, setAnonPresets] = useState<number[]>([10, 20, 50])
+  const [anonPresetInput, setAnonPresetInput] = useState('')
+
+  // ── Fee-based member walk-in (no subscription) ──
+  const [feeTarget, setFeeTarget] = useState<any | null>(null)
+  const [feeAmount, setFeeAmount] = useState('')
+  const [feePayMethod, setFeePayMethod] = useState('cash')
+  const [checkingInFee, setCheckingInFee] = useState(false)
+  const [feePresets, setFeePresets] = useState<number[]>([10, 20, 50])
+  const [feePresetInput, setFeePresetInput] = useState('')
 
   // ── Delete confirm ──
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
@@ -141,13 +152,17 @@ export default function AttendanceTab() {
 
   // ── Check-in ──────────────────────────────────────────────────────────────────
   async function checkIn(trainee: any) {
+    const status = subStatus(trainee)
+    // No active subscription → open inline fee form instead of logging $0
+    if (status === 'none') {
+      setFeeTarget(trainee)
+      return
+    }
     setCheckingIn(trainee.id)
     try {
-      const status = subStatus(trainee)
-      const type = status !== 'none' ? 'subscription_visit' : 'walkin'
       await (window.api as any).gym?.sessions?.create({
         traineeId: trainee.id,
-        type,
+        type: 'subscription_visit',
         date: selDate,
         amount: 0
       })
@@ -165,21 +180,51 @@ export default function AttendanceTab() {
     }
   }
 
+  // ── Fee-based member check-in (registered trainee, no subscription) ──────────
+  async function checkInWithFee(e: React.FormEvent) {
+    e.preventDefault()
+    if (!feeTarget) return
+    const amt = parseFloat(feeAmount)
+    if (!amt || amt <= 0) { toast.error('Enter a valid visit fee'); return }
+    setCheckingInFee(true)
+    try {
+      await (window.api as any).gym?.sessions?.create({
+        traineeId: feeTarget.id,
+        type: 'walkin',
+        date: selDate,
+        amount: amt,
+        paymentMethod: feePayMethod
+      })
+      setFlashId(feeTarget.id)
+      setTimeout(() => setFlashId(null), 1800)
+      toast.success(`${feeTarget.name} checked in!`)
+      setFeeTarget(null); setFeeAmount(''); setFeePayMethod('cash')
+      setSearch(''); setSearchRes([])
+      loadDay(selDate); loadCalendar(calMonth.year, calMonth.month)
+    } catch (err: any) {
+      toast.error(err.message ?? 'Check-in failed')
+    } finally {
+      setCheckingInFee(false)
+    }
+  }
+
   // ── Anonymous walk-in ─────────────────────────────────────────────────────────
   async function handleAnonSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const amt = parseFloat(anonAmount)
+    if (!amt || amt <= 0) { toast.error('Payment is required for anonymous walk-ins'); return }
     setSavingAnon(true)
     try {
       await (window.api as any).gym?.sessions?.create({
         type: 'walkin',
         date: selDate,
-        amount: anonAmount ? parseFloat(anonAmount) : 0,
+        amount: amt,
+        paymentMethod: anonPayMethod,
         notes: anonName.trim() ? `Walk-in: ${anonName.trim()}` : undefined
       })
       toast.success('Walk-in logged!')
       setShowAnon(false)
-      setAnonName('')
-      setAnonAmount('')
+      setAnonName(''); setAnonAmount(''); setAnonPayMethod('cash')
       loadDay(selDate)
       loadCalendar(calMonth.year, calMonth.month)
     } catch (err: any) {
@@ -228,9 +273,10 @@ export default function AttendanceTab() {
   }
 
   // ── Derived stats ─────────────────────────────────────────────────────────────
-  const totalSubs = sessions.filter(s => s.type === 'subscription_visit').length
-  const totalWalkins = sessions.filter(s => s.type === 'walkin').length
-  const totalRevenue = sessions.reduce((sum, s) => sum + (s.amount ?? 0), 0)
+  const totalSubs        = sessions.filter(s => s.type === 'subscription_visit').length
+  const totalMemberWalks = sessions.filter(s => s.type === 'walkin' && s.traineeId).length
+  const totalAnonWalks   = sessions.filter(s => s.type === 'walkin' && !s.traineeId).length
+  const totalRevenue     = sessions.reduce((sum, s) => sum + (s.amount ?? 0), 0)
   const isToday = selDate === todayStr()
 
   // ── Calendar grid ─────────────────────────────────────────────────────────────
@@ -308,55 +354,134 @@ export default function AttendanceTab() {
         {/* Search results */}
         {searchRes.length > 0 && (
           <div className="space-y-2 mb-3 max-h-72 overflow-y-auto">
-            {searchRes.map(t => {
-              const status = subStatus(t)
-              const badgeConf = {
-                active:   { label: t('gymActiveSub'),     cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
-                expiring: { label: t('gymExpiringSoon'),  cls: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' },
-                none:     { label: t('gymNoSubscription'), cls: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }
+            {searchRes.map(tr => {
+              const status = subStatus(tr)
+              const isCIn = checkingIn === tr.id
+              const isFlash = flashId === tr.id
+              const isFeeOpen = feeTarget?.id === tr.id
+              const sub = tr.subscriptions?.[0]
+              const daysLeft = sub ? Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / 86_400_000) : null
+              const statusConf = {
+                active:   { label: t('gymActiveSub'),      cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-800/40', avatarCls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700' },
+                expiring: { label: t('gymExpiringSoon'),   cls: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',         border: 'border-amber-200 dark:border-amber-800/40',   avatarCls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700'   },
+                none:     { label: t('gymNoSubscription'), cls: 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400',            border: 'border-blue-100 dark:border-blue-900/40',     avatarCls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700'      }
               }[status]
-              const isCIn = checkingIn === t.id
-              const isFlash = flashId === t.id
-
               return (
-                <div
-                  key={t.id}
-                  className={`flex items-center justify-between p-3 rounded-xl border bg-white dark:bg-slate-800 transition-all duration-300 ${
-                    isFlash ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : 'border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-sm font-bold text-orange-600 shrink-0">
-                      {t.name.charAt(0).toUpperCase()}
+                <div key={tr.id} className={`rounded-xl border bg-white dark:bg-slate-800 transition-all duration-300 overflow-hidden ${
+                  isFlash ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20' : statusConf.border
+                }`}>
+                  <div className="flex items-center justify-between p-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${statusConf.avatarCls}`}>
+                        {tr.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{tr.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          {tr.phone && <p className="text-xs text-slate-400">{tr.phone}</p>}
+                          {daysLeft !== null && daysLeft >= 0 && <span className="text-[10px] text-slate-400">· {daysLeft}d left</span>}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{t.name}</p>
-                      {t.phone && <p className="text-xs text-slate-400">{t.phone}</p>}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold hidden sm:block ${statusConf.cls}`}>
+                        {statusConf.label}
+                      </span>
+                      <button
+                        onClick={() => checkIn(tr)}
+                        disabled={!!checkingIn || isFeeOpen}
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
+                          isFlash ? 'bg-emerald-500 text-white'
+                            : status !== 'none' ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        }`}
+                      >
+                        {isCIn ? <Loader2 size={12} className="animate-spin" /> : isFlash ? <CheckCircle2 size={12} /> : null}
+                        {isCIn ? t('gymLoggingIn') : isFlash ? t('gymDone') : status !== 'none' ? t('gymCheckIn') : 'Log Visit (Paid)'}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium hidden sm:block ${badgeConf.cls}`}>
-                      {badgeConf.label}
-                    </span>
-                    <button
-                      onClick={() => checkIn(t)}
-                      disabled={!!checkingIn}
-                      className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all disabled:opacity-50 ${
-                        isFlash
-                          ? 'bg-emerald-500 text-white'
-                          : status !== 'none'
-                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                          : 'bg-orange-500 hover:bg-orange-600 text-white'
-                      }`}
-                    >
-                      {isCIn
-                        ? <Loader2 size={12} className="animate-spin" />
-                        : isFlash
-                        ? <CheckCircle2 size={12} />
-                        : null}
-                      {isCIn ? t('gymLoggingIn') : isFlash ? t('gymDone') : t('gymCheckIn')}
-                    </button>
-                  </div>
+                  {isFeeOpen && (
+                    <form onSubmit={checkInWithFee} className="border-t border-blue-100 dark:border-blue-900/40 bg-blue-50 dark:bg-blue-900/10 px-3 py-3 space-y-2.5">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 shrink-0">Visit fee</span>
+                        {/* Stepper */}
+                        <div className="flex items-center rounded-xl border-2 border-blue-300 dark:border-blue-600 bg-white dark:bg-slate-800 overflow-hidden shadow-sm">
+                          <button type="button"
+                            onClick={() => setFeeAmount(v => String(Math.max(0, (parseFloat(v) || 0) - 5)))}
+                            className="px-2.5 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors active:scale-90">
+                            <Minus size={13} />
+                          </button>
+                          <div className="relative">
+                            <input
+                              value={feeAmount} onChange={e => setFeeAmount(e.target.value)}
+                              type="number" min="0" step="0.5" required autoFocus
+                              placeholder="0.00"
+                              className="w-20 text-center text-base font-bold text-blue-700 dark:text-blue-300 bg-transparent focus:outline-none py-1.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                          <button type="button"
+                            onClick={() => setFeeAmount(v => String((parseFloat(v) || 0) + 5))}
+                            className="px-2.5 py-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors active:scale-90">
+                            <Plus size={13} />
+                          </button>
+                        </div>
+                        {/* Quick amounts */}
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {feePresets.map(q => (
+                            <button key={q} type="button"
+                              onClick={() => setFeeAmount(String(q))}
+                              className={`group relative px-2 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                                parseFloat(feeAmount) === q
+                                  ? 'bg-blue-500 border-blue-500 text-white'
+                                  : 'border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                              }`}>
+                              {q}
+                              {![10, 20, 50].includes(q) && (
+                                <span
+                                  onClick={e => { e.stopPropagation(); setFeePresets(p => p.filter(x => x !== q)) }}
+                                  className="hidden group-hover:inline-flex absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white rounded-full items-center justify-center text-[9px] cursor-pointer leading-none"
+                                >×</span>
+                              )}
+                            </button>
+                          ))}
+                          {/* Add custom preset */}
+                          <form onSubmit={e => {
+                            e.preventDefault()
+                            const v = parseFloat(feePresetInput)
+                            if (v > 0 && !feePresets.includes(v)) setFeePresets(p => [...p, v].sort((a,b) => a-b))
+                            setFeePresetInput('')
+                          }} className="flex items-center gap-0.5">
+                            <input
+                              value={feePresetInput} onChange={e => setFeePresetInput(e.target.value)}
+                              type="number" min="1" placeholder="+"
+                              className="w-10 text-center text-[11px] font-bold px-1 py-1 rounded-l-lg border border-blue-300 dark:border-blue-600 bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            />
+                            <button type="submit"
+                              className="px-1.5 py-1 rounded-r-lg bg-blue-400 hover:bg-blue-500 text-white text-[11px] font-bold border border-blue-400 transition-colors">
+                              ✓
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <select value={feePayMethod} onChange={e => setFeePayMethod(e.target.value)}
+                          className="flex-1 px-2.5 py-1.5 rounded-lg border border-blue-200 dark:border-blue-700 bg-white dark:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                          <option value="cash">💵 Cash</option>
+                          <option value="card">💳 Card</option>
+                          <option value="transfer">📲 Transfer</option>
+                        </select>
+                        <button type="submit" disabled={checkingInFee || !feeAmount || parseFloat(feeAmount) <= 0}
+                          className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors">
+                          {checkingInFee ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />} Confirm
+                        </button>
+                        <button type="button" onClick={() => { setFeeTarget(null); setFeeAmount(''); setFeePayMethod('cash') }}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-white/60 rounded-lg transition-colors">
+                          <X size={13} />
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               )
             })}
@@ -372,42 +497,102 @@ export default function AttendanceTab() {
         {!showAnon ? (
           <button
             onClick={() => { setShowAnon(true); setSearch(''); setSearchRes([]) }}
-            className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+            className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
           >
             <Footprints size={14} />
             {t('gymLogAnon')}
           </button>
         ) : (
-          <form onSubmit={handleAnonSubmit} className="flex flex-wrap items-center gap-2 mt-2">
-            <input
-              value={anonName}
-              onChange={e => setAnonName(e.target.value)}
-              placeholder={t('gymAnonName')}
-              className="flex-1 min-w-32 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
-            <input
-              value={anonAmount}
-              onChange={e => setAnonAmount(e.target.value)}
-              placeholder={t('gymAnonAmount')}
-              type="number" min="0" step="0.01"
-              className="w-28 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
-            <button
-              type="submit"
-              disabled={savingAnon}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 flex items-center gap-1.5"
-            >
-              {savingAnon ? <Loader2 size={13} className="animate-spin" /> : <Footprints size={13} />}
-              {t('gymLog')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setShowAnon(false); setAnonName(''); setAnonAmount('') }}
-              className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-            >
-              <X size={14} />
-            </button>
-          </form>
+          <div className="mt-2 rounded-xl border border-teal-200 dark:border-teal-800/50 bg-teal-50 dark:bg-teal-900/10 p-3">
+            <p className="text-xs font-semibold text-teal-700 dark:text-teal-400 mb-2 flex items-center gap-1.5">
+              <Footprints size={12} /> Anonymous Walk-in <span className="text-red-500 ml-1">— payment required</span>
+            </p>
+            <form onSubmit={handleAnonSubmit} className="space-y-2.5">
+              {/* Name */}
+              <input
+                value={anonName} onChange={e => setAnonName(e.target.value)}
+                placeholder={t('gymAnonName')}
+                className="w-full px-3 py-2 rounded-lg border border-teal-200 dark:border-teal-700 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-400"
+              />
+              {/* Amount stepper */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-semibold text-teal-700 dark:text-teal-400 shrink-0">Amount <span className="text-red-500">*</span></span>
+                <div className="flex items-center rounded-xl border-2 border-teal-400 dark:border-teal-600 bg-white dark:bg-slate-800 overflow-hidden shadow-sm">
+                  <button type="button"
+                    onClick={() => setAnonAmount(v => String(Math.max(0, (parseFloat(v) || 0) - 5)))}
+                    className="px-2.5 py-2 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors active:scale-90">
+                    <Minus size={13} />
+                  </button>
+                  <input
+                    value={anonAmount} onChange={e => setAnonAmount(e.target.value)}
+                    type="number" min="0" step="0.5" required
+                    placeholder="0.00"
+                    className="w-20 text-center text-base font-bold text-teal-700 dark:text-teal-300 bg-transparent focus:outline-none py-1.5 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button type="button"
+                    onClick={() => setAnonAmount(v => String((parseFloat(v) || 0) + 5))}
+                    className="px-2.5 py-2 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors active:scale-90">
+                    <Plus size={13} />
+                  </button>
+                </div>
+                {/* Quick amounts */}
+                <div className="flex flex-wrap gap-1 items-center">
+                  {anonPresets.map(q => (
+                    <button key={q} type="button"
+                      onClick={() => setAnonAmount(String(q))}
+                      className={`group relative px-2 py-1 rounded-lg text-[11px] font-bold border transition-colors ${
+                        parseFloat(anonAmount) === q
+                          ? 'bg-teal-500 border-teal-500 text-white'
+                          : 'border-teal-300 dark:border-teal-600 text-teal-600 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/30'
+                      }`}>
+                      {q}
+                      {![10, 20, 50].includes(q) && (
+                        <span
+                          onClick={e => { e.stopPropagation(); setAnonPresets(p => p.filter(x => x !== q)) }}
+                          className="hidden group-hover:inline-flex absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-red-500 text-white rounded-full items-center justify-center text-[9px] cursor-pointer leading-none"
+                        >×</span>
+                      )}
+                    </button>
+                  ))}
+                  {/* Add custom preset */}
+                  <form onSubmit={e => {
+                    e.preventDefault()
+                    const v = parseFloat(anonPresetInput)
+                    if (v > 0 && !anonPresets.includes(v)) setAnonPresets(p => [...p, v].sort((a,b) => a-b))
+                    setAnonPresetInput('')
+                  }} className="flex items-center gap-0.5">
+                    <input
+                      value={anonPresetInput} onChange={e => setAnonPresetInput(e.target.value)}
+                      type="number" min="1" placeholder="+"
+                      className="w-10 text-center text-[11px] font-bold px-1 py-1 rounded-l-lg border border-teal-300 dark:border-teal-600 bg-white dark:bg-slate-700 text-teal-700 dark:text-teal-300 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                    />
+                    <button type="submit"
+                      className="px-1.5 py-1 rounded-r-lg bg-teal-400 hover:bg-teal-500 text-white text-[11px] font-bold border border-teal-400 transition-colors">
+                      ✓
+                    </button>
+                  </form>
+                </div>
+              </div>
+              {/* Method + submit */}
+              <div className="flex items-center gap-2">
+                <select value={anonPayMethod} onChange={e => setAnonPayMethod(e.target.value)}
+                  className="flex-1 px-2.5 py-1.5 rounded-lg border border-teal-200 dark:border-teal-700 bg-white dark:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                  <option value="cash">💵 Cash</option>
+                  <option value="card">💳 Card</option>
+                  <option value="transfer">📲 Transfer</option>
+                </select>
+                <button type="submit" disabled={savingAnon || !anonAmount || parseFloat(anonAmount) <= 0}
+                  className="flex items-center gap-1.5 px-4 py-1.5 bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-colors">
+                  {savingAnon ? <Loader2 size={13} className="animate-spin" /> : <Footprints size={13} />}
+                  {t('gymLog')}
+                </button>
+                <button type="button" onClick={() => { setShowAnon(false); setAnonName(''); setAnonAmount(''); setAnonPayMethod('cash') }}
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/60 rounded-lg transition-colors">
+                  <X size={14} />
+                </button>
+              </div>
+            </form>
+          </div>
         )}
       </div>
 
@@ -449,19 +634,27 @@ export default function AttendanceTab() {
           </div>
 
           {/* Day summary strip */}
-          <div className="grid grid-cols-4 gap-3">
-            {([
-              { icon: Users,        label: t('gymTotal'),       value: sessions.length,              cls: 'text-slate-700 dark:text-slate-200',  bg: 'bg-slate-50 dark:bg-slate-700/30' },
-              { icon: CalendarDays, label: t('gymSubscribers'), value: totalSubs,                    cls: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-              { icon: Footprints,   label: t('gymWalkIns'),    value: totalWalkins,                 cls: 'text-orange-500',                     bg: 'bg-orange-50 dark:bg-orange-900/20' },
-              { icon: DollarSign,   label: t('gymRevenue'),     value: `$${totalRevenue.toFixed(0)}`, cls: 'text-teal-600 dark:text-teal-400',   bg: 'bg-teal-50 dark:bg-teal-900/20' },
-            ] as const).map(({ icon: Icon, label, value, cls, bg }) => (
-              <div key={label} className={`${bg} rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-center`}>
-                <Icon size={15} className={`mx-auto mb-1 ${cls}`} />
-                <p className={`text-xl font-bold tabular-nums ${cls}`}>{value}</p>
-                <p className="text-[11px] text-slate-400">{label}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800/40 p-3 text-center">
+              <CalendarDays size={15} className="mx-auto mb-1 text-emerald-600 dark:text-emerald-400" />
+              <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{totalSubs}</p>
+              <p className="text-[11px] text-slate-400">{t('gymSubscribers')}</p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800/40 p-3 text-center">
+              <Users size={15} className="mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+              <p className="text-xl font-bold tabular-nums text-blue-600 dark:text-blue-400">{totalMemberWalks}</p>
+              <p className="text-[11px] text-slate-400">Member Walk-ins</p>
+            </div>
+            <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl border border-teal-200 dark:border-teal-800/40 p-3 text-center">
+              <Footprints size={15} className="mx-auto mb-1 text-teal-600 dark:text-teal-400" />
+              <p className="text-xl font-bold tabular-nums text-teal-600 dark:text-teal-400">{totalAnonWalks}</p>
+              <p className="text-[11px] text-slate-400">Anonymous</p>
+            </div>
+            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800/40 p-3 text-center">
+              <DollarSign size={15} className="mx-auto mb-1 text-orange-600 dark:text-orange-400" />
+              <p className="text-xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{totalRevenue.toFixed(2)}</p>
+              <p className="text-[11px] text-slate-400">{t('gymRevenue')}</p>
+            </div>
           </div>
 
           {/* Session list */}
@@ -491,16 +684,25 @@ export default function AttendanceTab() {
                   const time = new Date(s.date).toLocaleTimeString('en-US', {
                     hour: '2-digit', minute: '2-digit', hour12: true
                   })
-                  const isSub = s.type === 'subscription_visit'
+                  const isSub   = s.type === 'subscription_visit'
+                  const isAnon  = s.type === 'walkin' && !s.traineeId
+                  const isMember = s.type === 'walkin' && s.traineeId
+
+                  const typeConf = isSub
+                    ? { label: '✅ ' + t('gymSubscriptionType'), cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300', avatarCls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700', rowCls: '' }
+                    : isMember
+                    ? { label: '👤 ' + t('gymMemberVisit'),      cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',            avatarCls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700',    rowCls: '' }
+                    : { label: '🚶 ' + t('gymAnonymous'),         cls: 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300',            avatarCls: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600',    rowCls: 'bg-teal-50/30 dark:bg-teal-900/5' }
+
                   return (
                     <div
                       key={s.id}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group"
+                      className={`flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group ${typeConf.rowCls}`}
                       style={{ animationDelay: `${i * 30}ms` }}
                     >
                       <span className="text-xs text-slate-400 w-16 shrink-0 tabular-nums">{time}</span>
-                      <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-xs font-bold text-orange-600 shrink-0">
-                        {(s.trainee?.name ?? 'W').charAt(0).toUpperCase()}
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${typeConf.avatarCls}`}>
+                        {(s.trainee?.name ?? (isAnon ? '?' : 'W')).charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
@@ -508,17 +710,16 @@ export default function AttendanceTab() {
                         </p>
                         {s.notes && <p className="text-xs text-slate-400 truncate">{s.notes}</p>}
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-                        isSub
-                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                      }`}>
-                        {isSub ? t('gymSubscriptionType') : t('gymWalkInType')}
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 ${typeConf.cls}`}>
+                        {typeConf.label}
                       </span>
-                      {(s.amount ?? 0) > 0 && (
-                        <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 tabular-nums shrink-0">
-                          ${s.amount.toFixed(2)}
+                      {(s.amount ?? 0) > 0 ? (
+                        <span className="text-xs font-bold text-orange-600 dark:text-orange-400 tabular-nums shrink-0 min-w-[50px] text-right">
+                          {s.amount.toFixed(2)}
+                          {s.paymentMethod && <span className="text-[9px] text-slate-400 font-normal ml-1">{s.paymentMethod}</span>}
                         </span>
+                      ) : (
+                        <span className="text-xs text-slate-300 dark:text-slate-600 tabular-nums shrink-0 min-w-[50px] text-right">—</span>
                       )}
                       <button
                         onClick={() => setDeleteTarget(s)}

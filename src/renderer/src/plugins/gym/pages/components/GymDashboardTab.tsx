@@ -298,6 +298,54 @@ export default function GymDashboardTab({ onNavigate }: Props) {
               </div>
             ))}
           </div>
+
+          {/* Member Types At a Glance */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Member Types</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              {/* Registered Trainees */}
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800/30">
+                <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center flex-shrink-0">
+                  <Users size={16} className="text-orange-600" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-1.5 mb-0.5">
+                    <p className="text-lg font-bold text-orange-700 dark:text-orange-400 tabular-nums">{stats.totalTrainees ?? '—'}</p>
+                    <span className="text-[10px] font-semibold bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full whitespace-nowrap">Trainees</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">Registered profiles — have full history, measurements &amp; goals</p>
+                </div>
+              </div>
+
+              {/* Active Subscribers */}
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30">
+                <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                  <UserCheck size={16} className="text-emerald-600" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-1.5 mb-0.5">
+                    <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{stats.activeMembers ?? '—'}</p>
+                    <span className="text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-full whitespace-nowrap">Active subs</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">Trainees on a live plan — time-bound access with optional coach</p>
+                </div>
+              </div>
+
+              {/* Anonymous Walk-ins */}
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800/30">
+                <div className="w-9 h-9 rounded-lg bg-teal-100 dark:bg-teal-900/40 flex items-center justify-center flex-shrink-0">
+                  <Footprints size={16} className="text-teal-600" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-1.5 mb-0.5">
+                    <p className="text-lg font-bold text-teal-700 dark:text-teal-400 tabular-nums">{stats.anonymousWalkInsToday ?? 0}</p>
+                    <span className="text-[10px] font-semibold bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 px-1.5 py-0.5 rounded-full whitespace-nowrap">Today's anon</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">One-off visitors — no profile, pay per entry, no history kept</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </>
       ) : null}
     </div>

@@ -7,13 +7,13 @@ import TraineeProfileModal from './TraineeProfileModal'
 
 function subBadge(trainee: any) {
   const sub = trainee.subscriptions?.[0]
-  if (!sub) return { label: 'No subscription', cls: 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400' }
+  if (!sub) return { label: 'No subscription', cls: 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400', avatarCls: 'bg-slate-100 dark:bg-slate-700 text-slate-400' }
   const daysLeft = Math.ceil((new Date(sub.endDate).getTime() - Date.now()) / 86_400_000)
-  if (sub.status === 'frozen') return { label: '❄️ Frozen', cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' }
-  if (sub.status === 'cancelled') return { label: 'Cancelled', cls: 'bg-slate-100 dark:bg-slate-700 text-slate-500' }
-  if (sub.status === 'expired' || daysLeft < 0) return { label: 'Expired', cls: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' }
-  if (daysLeft <= 7) return { label: `⚠️ ${daysLeft}d left`, cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' }
-  return { label: `${daysLeft}d left`, cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' }
+  if (sub.status === 'frozen') return { label: '❄️ Frozen', cls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400', avatarCls: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' }
+  if (sub.status === 'cancelled') return { label: 'Cancelled', cls: 'bg-slate-100 dark:bg-slate-700 text-slate-500', avatarCls: 'bg-slate-100 dark:bg-slate-700 text-slate-400' }
+  if (sub.status === 'expired' || daysLeft < 0) return { label: 'Expired', cls: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400', avatarCls: 'bg-red-100 dark:bg-red-900/30 text-red-600' }
+  if (daysLeft <= 7) return { label: `⚠️ ${daysLeft}d left`, cls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400', avatarCls: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' }
+  return { label: `${daysLeft}d left`, cls: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400', avatarCls: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600' }
 }
 
 const PAGE_SIZE = 20
@@ -115,8 +115,8 @@ export default function TraineesTab() {
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xs font-bold text-orange-600">{t.name.charAt(0).toUpperCase()}</span>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${badge.avatarCls}`}>
+                            <span className="text-xs font-bold">{t.name.charAt(0).toUpperCase()}</span>
                           </div>
                           <span className="font-medium text-slate-900 dark:text-white">{t.name}</span>
                         </div>

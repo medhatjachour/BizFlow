@@ -8,6 +8,6 @@ export const gymManifest = {
   status: 'active' as const,
   routePrefix: '/gym',
   ipcPrefix: 'gym',
-  models: ['GymCoach', 'GymTrainee', 'GymPlan', 'GymSubscription', 'GymFreeze', 'GymWalkSession', 'GymExpense'],
+  models: ['GymCoach','GymTrainee','GymPlan','GymSubscription','GymFreeze','GymWalkSession','GymExpense','GymMeasurement','GymGoal','GymLocker','GymLockerAssignment','GymProgram','GymProgramDay','GymProgramExercise','GymProgramAssignment','GymShift'],
   defaultEnabled: true
 }
