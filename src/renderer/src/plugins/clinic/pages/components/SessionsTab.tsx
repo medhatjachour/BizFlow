@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle, Info } from 'lucide-react'
+import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle, Info, Printer } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import SessionFormModal from './SessionFormModal'
 import DentalChart from '../../components/DentalChart'
 import type { DentalChartData } from '../../components/DentalChart'
+import PrescriptionPrintModal from '../../components/PrescriptionPrintModal'
 
 function SessionHelp() {
   const [tipPos, setTipPos] = useState<{ top: number; right: number } | null>(null)
@@ -222,6 +223,7 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
 }) {
   const { t } = useLanguage()
   const [expanded, setExpanded] = useState(false)
+  const [showRxPrint, setShowRxPrint] = useState(false)
   const vitals = parseVitals(session.vitals)
   const vitalEntries = Object.entries(vitals).filter(([, v]) => v)
 
@@ -289,6 +291,15 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
 
         {/* Actions + expand */}
         <div className="flex items-center gap-1 ml-1 flex-shrink-0">
+          {session.prescriptions.length > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowRxPrint(true) }}
+              className="flex items-center gap-1 text-xs px-2 py-1 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors"
+              title="Print prescription slip"
+            >
+              <Printer className="h-3 w-3" /> Rx
+            </button>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(session) }}
             className="text-xs px-2 py-1 text-blue-600 dark:text-blue-400 hover:underline"
@@ -339,7 +350,15 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
           {/* Prescriptions */}
           {session.prescriptions.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">{t('prescriptions')}</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t('prescriptions')}</p>
+                <button
+                  onClick={() => setShowRxPrint(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/20 px-2.5 py-1 rounded-lg transition-colors border border-teal-200 dark:border-teal-800/40"
+                >
+                  <Printer className="h-3.5 w-3.5" /> Print Prescription
+                </button>
+              </div>
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <table className="w-full text-xs">
                   <thead className="bg-slate-100 dark:bg-slate-700/60">
@@ -364,7 +383,6 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
               </div>
             </div>
           )}
-
           {/* Dental Chart */}
           {session.dentalChart && session.dentalChart !== '{}' && (() => {
             let chartData: DentalChartData = {}
@@ -420,6 +438,13 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
             </div>
           )}
         </div>
+      )}
+      {showRxPrint && (
+        <PrescriptionPrintModal
+          session={session}
+          patient={session.patient as any}
+          onClose={() => setShowRxPrint(false)}
+        />
       )}
     </div>
   )

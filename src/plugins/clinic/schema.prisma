@@ -47,6 +47,7 @@ model ClinicSession {
   paymentStatus  String               @default("unpaid")   // 'paid' | 'partial' | 'unpaid' | 'waived'
   paymentMethod  String?              // 'cash' | 'card' | 'insurance' | 'other'
   dentalChart    String?              // JSON: Record<string, { conditions: string[], note: string }>
+  labOrders      String?              // JSON: Array<{ testName: string, notes: string }>
   prescriptions  ClinicPrescription[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt

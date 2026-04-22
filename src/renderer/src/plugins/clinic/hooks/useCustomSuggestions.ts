@@ -5,6 +5,11 @@ export function useCustomSuggestions(storageKey: string) {
     try { return JSON.parse(localStorage.getItem(storageKey) ?? '[]') } catch { return [] }
   })
 
+  // Tracks which built-in defaults the user has hidden
+  const [hiddenDefaults, setHiddenDefaults] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(storageKey + ':hidden') ?? '[]') } catch { return [] }
+  })
+
   const add = useCallback((item: string) => {
     const trimmed = item.trim()
     if (!trimmed) return
@@ -24,5 +29,22 @@ export function useCustomSuggestions(storageKey: string) {
     })
   }, [storageKey])
 
-  return { items, add, remove }
+  const hideDefault = useCallback((item: string) => {
+    setHiddenDefaults(prev => {
+      if (prev.includes(item)) return prev
+      const next = [...prev, item]
+      localStorage.setItem(storageKey + ':hidden', JSON.stringify(next))
+      return next
+    })
+  }, [storageKey])
+
+  const showDefault = useCallback((item: string) => {
+    setHiddenDefaults(prev => {
+      const next = prev.filter(v => v !== item)
+      localStorage.setItem(storageKey + ':hidden', JSON.stringify(next))
+      return next
+    })
+  }, [storageKey])
+
+  return { items, add, remove, hiddenDefaults, hideDefault, showDefault }
 }

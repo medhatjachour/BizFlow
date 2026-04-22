@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown, Settings2 } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown, Settings2, Printer } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import type { Patient } from '../index'
 import DentalChart, { type DentalChartData } from '../../components/DentalChart'
 import SuggestInput from '../../components/SuggestInput'
 import ManageSuggestionsModal from '../../components/ManageSuggestionsModal'
-import { CHIEF_COMPLAINTS, MEDICINE_SUGGESTIONS } from '../../data/clinic-suggestions'
+import PrescriptionPrintModal from '../../components/PrescriptionPrintModal'
+import { CHIEF_COMPLAINTS, MEDICINE_SUGGESTIONS, LAB_CHECKS } from '../../data/clinic-suggestions'
 import { useCustomSuggestions } from '../../hooks/useCustomSuggestions'
+
+interface LabCheckRow {
+  testName: string
+  notes: string
+}
 
 interface PrescriptionRow {
   medicineName: string
@@ -38,6 +44,7 @@ interface ExistingSession {
   paymentStatus: string
   paymentMethod?: string | null
   dentalChart?: string | null
+  labOrders?: string | null
   prescriptions: Array<{
     id: string
     medicineName: string
@@ -97,12 +104,25 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   const { t } = useLanguage()
   const { showToast } = useToast()
   const [saving, setSaving] = useState(false)
+  const [showRxPrint, setShowRxPrint] = useState(false)
   const [manageComplaints, setManageComplaints] = useState(false)
   const [manageMedicines, setManageMedicines] = useState(false)
+  const [manageLabs, setManageLabs] = useState(false)
   const customComplaints = useCustomSuggestions('clinic:custom:complaints')
   const customMedicines = useCustomSuggestions('clinic:custom:medicines')
-  const allComplaints = useMemo(() => [...CHIEF_COMPLAINTS, ...customComplaints.items], [customComplaints.items])
-  const allMedicines  = useMemo(() => [...MEDICINE_SUGGESTIONS, ...customMedicines.items], [customMedicines.items])
+  const customLabs = useCustomSuggestions('clinic:custom:labs')
+  const allComplaints = useMemo(
+    () => [...CHIEF_COMPLAINTS.filter(c => !customComplaints.hiddenDefaults.includes(c)), ...customComplaints.items],
+    [customComplaints.items, customComplaints.hiddenDefaults]
+  )
+  const allMedicines = useMemo(
+    () => [...MEDICINE_SUGGESTIONS.filter(m => !customMedicines.hiddenDefaults.includes(m)), ...customMedicines.items],
+    [customMedicines.items, customMedicines.hiddenDefaults]
+  )
+  const allLabs = useMemo(
+    () => [...LAB_CHECKS.filter(l => !customLabs.hiddenDefaults.includes(l)), ...customLabs.items],
+    [customLabs.items, customLabs.hiddenDefaults]
+  )
   const [staffList, setStaffList] = useState<Array<{ id: string; name: string; role?: string | null }>>([])
   const [doctorSuggestions, setDoctorSuggestions] = useState<string[]>([])
   const [showDoctorDropdown, setShowDoctorDropdown] = useState(false)
@@ -233,6 +253,17 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
     if (p > 0) return 'partial'
     return 'unpaid'
   }
+  const [labOrders, setLabOrders] = useState<LabCheckRow[]>(() => {
+    if (!existingSession?.labOrders) return []
+    try { return JSON.parse(existingSession.labOrders) } catch { return [] }
+  })
+
+  function addLab() { setLabOrders(prev => [...prev, { testName: '', notes: '' }]) }
+  function updateLab(idx: number, field: keyof LabCheckRow, value: string) {
+    setLabOrders(prev => prev.map((l, i) => i !== idx ? l : { ...l, [field]: value }))
+  }
+  function removeLab(idx: number) { setLabOrders(prev => prev.filter((_, i) => i !== idx)) }
+
   const [prescriptions, setPrescriptions] = useState<PrescriptionRow[]>(
     existingSession?.prescriptions?.map((rx) => ({
       medicineName: rx.medicineName,
@@ -293,6 +324,9 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
         paymentStatus: computePaymentStatus(amountCharged, amountPaid),
         paymentMethod: paymentMethod || null,
         dentalChart: Object.keys(dentalChart).length > 0 ? JSON.stringify(dentalChart) : null,
+        labOrders: labOrders.filter(l => l.testName.trim()).length > 0
+          ? JSON.stringify(labOrders.filter(l => l.testName.trim()))
+          : null,
         prescriptions: prescriptions
           .filter((rx) => rx.medicineName.trim())
           .map((rx) => ({
@@ -682,6 +716,52 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
             )}
           </div>
 
+          {/* Lab Orders */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-200 dark:border-indigo-800">
+              <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">🔬 Lab Investigations</p>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setManageLabs(true)}
+                  className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                  <Settings2 className="h-3 w-3" /> Manage list
+                </button>
+                <button type="button" onClick={addLab}
+                  className="flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                  <Plus className="h-3.5 w-3.5" /> Add test
+                </button>
+              </div>
+            </div>
+            {labOrders.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-4 italic">No investigations ordered</p>
+            ) : (
+              <div className="px-4 py-3 space-y-2" onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}>
+                {labOrders.map((lab, idx) => (
+                  <div key={idx} className="flex gap-2 items-start">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <SuggestInput
+                        className={inputCls}
+                        suggestions={allLabs}
+                        value={lab.testName}
+                        onChange={v => updateLab(idx, 'testName', v)}
+                        placeholder="Test / investigation name…"
+                      />
+                      <input
+                        className={inputCls}
+                        placeholder="Notes (optional)"
+                        value={lab.notes}
+                        onChange={e => updateLab(idx, 'notes', e.target.value)}
+                      />
+                    </div>
+                    <button type="button" onClick={() => removeLab(idx)}
+                      className="mt-px p-2 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Prescriptions */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -776,18 +856,33 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-700">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-              {t('cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
-            >
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              {t('saveSession')}
-            </button>
+          <div className="flex justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex items-center">
+              {(prescriptions.filter(rx => rx.medicineName.trim()).length > 0 ||
+                labOrders.filter(l => l.testName.trim()).length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => setShowRxPrint(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 border border-teal-300 dark:border-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20 rounded-lg transition-colors"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print Prescription
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                {t('cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex items-center gap-2 px-5 py-2 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {t('saveSession')}
+              </button>
+            </div>
           </div>
         </form>
       </div>
@@ -800,6 +895,10 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           onRemove={customComplaints.remove}
           onClose={() => setManageComplaints(false)}
           placeholder="e.g. Chronic fatigue, Knee swelling…"
+          defaultItems={CHIEF_COMPLAINTS}
+          hiddenDefaults={customComplaints.hiddenDefaults}
+          onHideDefault={customComplaints.hideDefault}
+          onShowDefault={customComplaints.showDefault}
         />
       )}
       {manageMedicines && (
@@ -810,6 +909,58 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           onRemove={customMedicines.remove}
           onClose={() => setManageMedicines(false)}
           placeholder="e.g. Paracetamol 650mg, Vitamin B1…"
+          defaultItems={MEDICINE_SUGGESTIONS}
+          hiddenDefaults={customMedicines.hiddenDefaults}
+          onHideDefault={customMedicines.hideDefault}
+          onShowDefault={customMedicines.showDefault}
+        />
+      )}
+      {manageLabs && (
+        <ManageSuggestionsModal
+          title="Manage Lab Investigations"
+          items={customLabs.items}
+          onAdd={customLabs.add}
+          onRemove={customLabs.remove}
+          onClose={() => setManageLabs(false)}
+          placeholder="e.g. Hemoglobin A1c, Lipid Panel…"
+          defaultItems={LAB_CHECKS}
+          hiddenDefaults={customLabs.hiddenDefaults}
+          onHideDefault={customLabs.hideDefault}
+          onShowDefault={customLabs.showDefault}
+        />
+      )}
+      {showRxPrint && existingSession && (
+        <PrescriptionPrintModal
+          session={{
+            ...existingSession,
+            diagnosis: diagnosis || null,
+            notes: notes || null,
+            doctorName: doctorName || null,
+            labOrders: labOrders.filter(l => l.testName.trim()),
+            prescriptions: prescriptions
+              .filter(rx => rx.medicineName.trim())
+              .map((rx, i) => ({ id: String(i), ...rx, quantity: rx.quantity ? parseInt(rx.quantity) : null }))
+          }}
+          patient={{ name: patientName, phone: undefined, dateOfBirth: undefined, bloodType: undefined, gender: undefined }}
+          onClose={() => setShowRxPrint(false)}
+        />
+      )}
+      {showRxPrint && !existingSession && (
+        <PrescriptionPrintModal
+          session={{
+            id: 'new',
+            visitDate: visitDate || new Date().toISOString(),
+            doctorName: doctorName || null,
+            chiefComplaint,
+            diagnosis: diagnosis || null,
+            notes: notes || null,
+            labOrders: labOrders.filter(l => l.testName.trim()),
+            prescriptions: prescriptions
+              .filter(rx => rx.medicineName.trim())
+              .map((rx, i) => ({ id: String(i), ...rx, quantity: rx.quantity ? parseInt(rx.quantity) : null }))
+          }}
+          patient={{ name: patientName, phone: undefined, dateOfBirth: undefined, bloodType: undefined, gender: undefined }}
+          onClose={() => setShowRxPrint(false)}
         />
       )}
     </div>

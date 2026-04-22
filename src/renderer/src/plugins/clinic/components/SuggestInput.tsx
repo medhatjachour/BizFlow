@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Props {
   value: string
@@ -24,6 +25,8 @@ export default function SuggestInput({
   const [open, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
   const ref = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
 
   const filtered = useMemo(() => {
     const trimmed = value.trim()
@@ -33,6 +36,19 @@ export default function SuggestInput({
   }, [value, suggestions])
 
   useEffect(() => { setHighlighted(-1) }, [filtered])
+
+  // Recalculate dropdown position whenever it opens
+  useEffect(() => {
+    if (!open || !inputRef.current) return
+    const rect = inputRef.current.getBoundingClientRect()
+    setDropdownStyle({
+      position: 'fixed',
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width,
+      zIndex: 9999,
+    })
+  }, [open, filtered])
 
   useEffect(() => {
     function onOutside(e: MouseEvent) {
@@ -78,15 +94,12 @@ export default function SuggestInput({
     autoComplete: 'off',
   }
 
-  return (
-    <div className="relative" ref={ref}>
-      {rows > 1 ? (
-        <textarea {...shared} rows={rows} />
-      ) : (
-        <input {...shared} />
-      )}
-      {open && filtered.length > 0 && (
-        <ul className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+  const dropdown = open && filtered.length > 0
+    ? createPortal(
+        <ul
+          style={dropdownStyle}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl max-h-52 overflow-y-auto"
+        >
           {filtered.map((s, i) => (
             <li
               key={s}
@@ -96,8 +109,19 @@ export default function SuggestInput({
               {s}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body
+      )
+    : null
+
+  return (
+    <div className="relative" ref={ref}>
+      {rows > 1 ? (
+        <textarea {...shared} ref={el => { inputRef.current = el }} rows={rows} />
+      ) : (
+        <input {...shared} ref={el => { inputRef.current = el }} />
       )}
+      {dropdown}
     </div>
   )
 }
