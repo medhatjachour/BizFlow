@@ -26,6 +26,7 @@ import RestaurantPlugin from '../../../plugins/restaurant/index'
 import WarehousePlugin from '../../../plugins/warehouse/index'
 import ClinicPlugin from '../../../plugins/clinic/index'
 import VetPlugin from '../../../plugins/vet/index'
+import GymPlugin from '../../../plugins/gym/index'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Database')
@@ -42,6 +43,7 @@ const ALL_PLUGINS: IPlugin[] = [
   ...(__PLUGIN_WAREHOUSE__  ? [WarehousePlugin]  : []),
   ...(__PLUGIN_CLINIC__     ? [ClinicPlugin]     : []),
   ...(__PLUGIN_VET__        ? [VetPlugin]        : []),
+  ...(__PLUGIN_GYM__        ? [GymPlugin]        : []),
 ]
 
 // Prisma client — initialised lazily via initializePrisma() so it never
@@ -117,6 +119,7 @@ export async function initializePrisma(): Promise<void> {
         if (__PLUGIN_WAREHOUSE__)   ['WarehouseLocation','WarehouseStock','StockTransfer','StockTransferItem'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_CLINIC__)      ['ClinicPatient','ClinicSession','ClinicPrescription','ClinicCheckResult','ClinicAppointment','ClinicExpense','ClinicStaff','ClinicSalaryRecord'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_VET__)         ['VetOwner','VetPatient','VetSession','VetPrescription','VetAppointment','VetCheckResult','VetExpense','VetStaff','VetSalaryRecord'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_GYM__)         ['GymCoach','GymTrainee','GymPlan','GymSubscription','GymFreeze','GymWalkSession','GymExpense','GymMeasurement','GymGoal','GymLocker','GymLockerAssignment','GymProgram','GymProgramDay','GymProgramExercise','GymProgramAssignment','GymShift'].forEach(t => EXPECTED.add(t))
         const allTables: { name: string }[] = await prisma.$queryRawUnsafe(
           `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
         )

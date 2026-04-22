@@ -47,6 +47,7 @@ const Clinic       = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pag
 const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/PatientProfile')) : null
 const Vet          = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/index')) : null
 const VetPatientProfile = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/VetPatientProfile')) : null
+const Gym          = __PLUGIN_GYM__ ? lazy(() => import('./plugins/gym/pages/index')) : null
 
 // ------------------------------------------------------------------
 // Per-route error boundary — wraps each page in isolation so one
@@ -91,6 +92,7 @@ function AppContent() {
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
   const vetEnabled = useModuleEnabled(MODULE_IDS.VET)
+  const gymEnabled = useModuleEnabled(MODULE_IDS.GYM)
   const isClinicStaff = user?.role === 'clinic_staff'
 
   // Global keyboard shortcuts
@@ -357,6 +359,18 @@ function AppContent() {
                 <RequireAuth>
                   <RootLayoutWrapper>
                     <RouteErrorBoundary name="Vet Patient Profile"><VetPatientProfile /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_GYM__ && gymEnabled && Gym && (
+            <Route
+              path="/gym"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Gym"><Gym /></RouteErrorBoundary>
                   </RootLayoutWrapper>
                 </RequireAuth>
               }

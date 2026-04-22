@@ -554,6 +554,101 @@ interface API {
       monthlyTrend: (months?: number) => Promise<any>
     }
   }
+  gym?: {
+    coaches: {
+      getAll: (params?: { search?: string; isActive?: boolean; skip?: number; take?: number }) => Promise<any>
+      getById: (id: string) => Promise<any>
+      getStats: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    trainees: {
+      getAll: (params?: { search?: string; skip?: number; take?: number }) => Promise<any>
+      getById: (id: string) => Promise<any>
+      searchLite: (query: string) => Promise<Array<{ id: string; name: string; phone: string | null }>>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    plans: {
+      getAll: () => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    subscriptions: {
+      getAll: (params?: { status?: string; traineeId?: string; skip?: number; take?: number }) => Promise<any>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      freeze: (id: string, data: { days: number; reason?: string }) => Promise<any>
+      unfreeze: (id: string) => Promise<any>
+    }
+    sessions: {
+      getAll: (params?: { date?: string; period?: string; type?: string; traineeId?: string; skip?: number; take?: number }) => Promise<any>
+      create: (data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      getCalendar: (params: { year: number; month: number }) => Promise<Record<string, { total: number; walkin: number; sub: number; revenue: number }>>
+    }
+    expenses: {
+      getAll: (params?: { period?: string; category?: string; skip?: number; take?: number }) => Promise<any>
+      summary: (period?: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    stats: {
+      overview: (period?: string) => Promise<any>
+    }
+    alerts: {
+      atRisk: (thresholdDays?: number) => Promise<any[]>
+    }
+    measurements: {
+      getAll: (traineeId: string) => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    goals: {
+      getAll: (traineeId: string) => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      markAchieved: (id: string) => Promise<any>
+    }
+    shifts: {
+      getAll: (params?: { coachId?: string; weekStart?: string }) => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    lockers: {
+      getAll: (params?: { zone?: string }) => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      assign: (data: { lockerId: string; traineeId: string; endDate?: string; notes?: string }) => Promise<any>
+      unassign: (lockerId: string) => Promise<any>
+    }
+    programs: {
+      getAll: (params?: { coachId?: string; isActive?: boolean }) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      addDay: (programId: string, data: any) => Promise<any>
+      updateDay: (id: string, data: any) => Promise<any>
+      deleteDay: (id: string) => Promise<any>
+      addExercise: (dayId: string, data: any) => Promise<any>
+      updateExercise: (id: string, data: any) => Promise<any>
+      deleteExercise: (id: string) => Promise<any>
+      assign: (data: { programId: string; traineeId: string; startDate?: string; notes?: string }) => Promise<any>
+      unassign: (assignmentId: string) => Promise<any>
+      getAssignments: (traineeId: string) => Promise<any[]>
+    }
+  }
 }
 
 declare global {

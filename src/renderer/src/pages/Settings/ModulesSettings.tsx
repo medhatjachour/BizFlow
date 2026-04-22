@@ -18,6 +18,7 @@ const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
   warehouse:  typeof __PLUGIN_WAREHOUSE__  !== 'undefined' && __PLUGIN_WAREHOUSE__,
   clinic:     typeof __PLUGIN_CLINIC__     !== 'undefined' && __PLUGIN_CLINIC__,
   vet:        typeof __PLUGIN_VET__        !== 'undefined' && __PLUGIN_VET__,
+  gym:        typeof __PLUGIN_GYM__        !== 'undefined' && __PLUGIN_GYM__,
 }
 
 const COLOR_MAP: Record<string, { ring: string; bg: string; icon: string; badge: string }> = {

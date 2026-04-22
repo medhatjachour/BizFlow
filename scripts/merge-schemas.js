@@ -72,6 +72,10 @@ const MODULE_REGISTRY = {
     file: 'schema.prisma',
     injectFields: {}
   },
+  gym: {
+    file: 'schema.prisma',
+    injectFields: {}
+  },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

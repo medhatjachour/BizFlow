@@ -8,3 +8,4 @@ declare const __PLUGIN_RESTAURANT__: boolean
 declare const __PLUGIN_WAREHOUSE__: boolean
 declare const __PLUGIN_CLINIC__: boolean
 declare const __PLUGIN_VET__: boolean
+declare const __PLUGIN_GYM__: boolean
