@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2, UserCheck } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   isOpen: boolean
@@ -20,6 +21,7 @@ const defaultForm = (): Form => ({
 
 export default function CoachFormModal({ isOpen, onClose, onSaved, initial }: Props) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState<Form>(defaultForm())
   const [saving, setSaving] = useState(false)
 
@@ -87,7 +89,7 @@ export default function CoachFormModal({ isOpen, onClose, onSaved, initial }: Pr
         <div className="sticky top-0 bg-white dark:bg-slate-800 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 rounded-t-2xl">
           <div className="flex items-center gap-2">
             <UserCheck size={16} className="text-orange-500" />
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? 'Edit Coach' : 'New Coach'}</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? t('gymEditCoach') : t('gymNewCoach')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
             <X size={16} />
@@ -95,57 +97,57 @@ export default function CoachFormModal({ isOpen, onClose, onSaved, initial }: Pr
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className={labelCls}>Full Name *</label>
-            <input className={inputCls} value={form.name} onChange={set('name')} placeholder="Coach full name" required />
+            <label className={labelCls}>{t('gymFullName')} *</label>
+            <input className={inputCls} value={form.name} onChange={set('name')} placeholder={t('gymCoachName')} required />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Specialty</label>
+              <label className={labelCls}>{t('gymSpecialty')}</label>
               <input className={inputCls} value={form.specialty} onChange={set('specialty')} placeholder="e.g. Weightlifting, Cardio" />
             </div>
             <div>
-              <label className={labelCls}>Phone</label>
+              <label className={labelCls}>{t('gymPhone')}</label>
               <input className={inputCls} type="tel" value={form.phone} onChange={set('phone')} placeholder="+1 555 000 0000" />
             </div>
           </div>
           <div>
-            <label className={labelCls}>Email</label>
+            <label className={labelCls}>{t('gymEmail')}</label>
             <input className={inputCls} type="email" value={form.email} onChange={set('email')} placeholder="coach@gym.com" />
           </div>
           <div>
-            <label className={labelCls}>National ID</label>
+            <label className={labelCls}>{t('gymNationalId')}</label>
             <input className={inputCls} value={form.nationalId} onChange={set('nationalId')} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Salary</label>
+              <label className={labelCls}>{t('gymSalary')}</label>
               <input className={inputCls} type="number" min="0" step="0.01" value={form.salary} onChange={set('salary')} placeholder="0.00" />
             </div>
             <div>
-              <label className={labelCls}>Salary Type</label>
+              <label className={labelCls}>{t('gymSalaryType')}</label>
               <select className={inputCls} value={form.salaryType} onChange={set('salaryType')}>
-                <option value="monthly">Monthly</option>
-                <option value="hourly">Hourly</option>
-                <option value="per_session">Per Session</option>
+                <option value="monthly">{t('gymSalaryMonthly')}</option>
+                <option value="hourly">{t('gymSalaryHourly')}</option>
+                <option value="per_session">{t('gymSalaryPerSession')}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className={labelCls}>Hire Date</label>
+            <label className={labelCls}>{t('gymHireDate')}</label>
             <input className={inputCls} type="date" value={form.hireDate} onChange={set('hireDate')} />
           </div>
           <div className="flex items-center gap-2">
             <input type="checkbox" id="isActiveCoach" checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} className="rounded" />
-            <label htmlFor="isActiveCoach" className="text-sm text-slate-700 dark:text-slate-300">Active</label>
+            <label htmlFor="isActiveCoach" className="text-sm text-slate-700 dark:text-slate-300">{t('gymActive')}</label>
           </div>
           <div>
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{t('gymNotes')}</label>
             <textarea className={inputCls} rows={2} value={form.notes} onChange={set('notes')} placeholder="Certifications, schedule notes, etc." />
           </div>
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving} className="flex-1 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-60">
-              {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : initial ? 'Update' : 'Add Coach'}
+              {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : initial ? t('gymSave') : t('gymAddCoach')}
             </button>
           </div>
         </form>

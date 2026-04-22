@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Loader2, ChevronLeft, ChevronRight, QrCode, Pencil } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import TraineeFormModal from './TraineeFormModal'
 import TraineeProfileModal from './TraineeProfileModal'
 
@@ -19,6 +20,7 @@ const PAGE_SIZE = 20
 
 export default function TraineesTab() {
   const toast = useToast()
+  const { t } = useLanguage()
   const [trainees, setTrainees] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
@@ -68,15 +70,15 @@ export default function TraineesTab() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               className="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-              placeholder="Search by name, phone, email…"
+              placeholder={t('gymSearchTrainees')}
               value={searchInput}
               onChange={e => setSearchInput(e.target.value)}
             />
           </div>
-          <button type="submit" className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Search</button>
+          <button type="submit" className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">{t('gymSearch')}</button>
         </form>
         <button onClick={openAdd} className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
-          <Plus size={14} /> Add Trainee
+          <Plus size={14} /> {t('gymAddTrainee')}
         </button>
       </div>
 
@@ -88,8 +90,8 @@ export default function TraineesTab() {
       ) : trainees.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-slate-400">
           <span className="text-4xl mb-3">🏋️</span>
-          <p className="text-sm font-medium">{search ? 'No trainees match your search' : 'No trainees yet'}</p>
-          {!search && <p className="text-xs mt-1">Add your first gym member</p>}
+          <p className="text-sm font-medium">{search ? t('gymNoTraineesMatch') : t('gymNoTrainees')}</p>
+          {!search && <p className="text-xs mt-1">{t('gymAddFirstMember')}</p>}
         </div>
       ) : (
         <>
@@ -97,7 +99,7 @@ export default function TraineesTab() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-700/60">
                 <tr>
-                  {['Name','Phone','Email','Subscription','Sessions',''].map(h => (
+                  {[t('gymTraineeName'), t('gymTraineePhone'), t('gymTraineeEmail'), t('gymTraineeSubscription'), t('gymTraineeSessions'), ''].map(h => (
                     <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{h}</th>
                   ))}
                 </tr>
@@ -148,7 +150,7 @@ export default function TraineesTab() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
-              <p className="text-xs text-slate-400">Page {page + 1} of {totalPages}</p>
+              <p className="text-xs text-slate-400">{t('gymPage')} {page + 1} {t('gymPageOf')} {totalPages}</p>
               <div className="flex gap-2">
                 <button disabled={page === 0} onClick={() => setPage(p => p - 1)}
                   className="p-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-500 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">

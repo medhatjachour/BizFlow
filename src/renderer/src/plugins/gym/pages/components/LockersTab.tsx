@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Loader2, Lock, Unlock, Pencil, X, User, Calendar } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 const ZONES = ['all', 'general', 'men', 'women', 'vip'] as const
 type Zone = typeof ZONES[number]
@@ -18,6 +19,7 @@ const inputCls = 'w-full rounded-lg border border-slate-200 dark:border-slate-60
 /* ─── Add / Edit Locker Modal ─── */
 function LockerFormModal({ initial, onClose, onSaved }: { initial?: any; onClose: () => void; onSaved: () => void }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState({ number: initial?.number ?? '', zone: initial?.zone ?? 'general', notes: initial?.notes ?? '' })
   const [saving, setSaving] = useState(false)
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
@@ -46,33 +48,33 @@ function LockerFormModal({ initial, onClose, onSaved }: { initial?: any; onClose
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Lock size={16} className="text-orange-500" />
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? 'Edit Locker' : 'Add Locker'}</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? t('gymEditLocker') : t('gymAddLocker')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Locker Number / Label *</label>
+              <label className={labelCls}>{t('gymLockerNumber')}</label>
               <input className={inputCls} value={form.number} onChange={set('number')} placeholder="e.g. A-01" required disabled={Boolean(initial)} />
             </div>
             <div>
-              <label className={labelCls}>Zone</label>
+              <label className={labelCls}>{t('gymLockerZone')}</label>
               <select className={inputCls} value={form.zone} onChange={set('zone')}>
                 {['general', 'men', 'women', 'vip'].map(z => (
-                  <option key={z} value={z}>{z.charAt(0).toUpperCase() + z.slice(1)}</option>
+                  <option key={z} value={z}>{z === 'general' ? t('gymZoneGeneral') : z === 'men' ? t('gymZoneMen') : z === 'women' ? t('gymZoneWomen') : t('gymZoneVip')}</option>
                 ))}
               </select>
             </div>
           </div>
           <div>
-            <label className={labelCls}>Notes</label>
-            <textarea className={inputCls} rows={2} value={form.notes} onChange={set('notes')} placeholder="Any additional notes about this locker…" />
+            <label className={labelCls}>{t('gymNotes')}</label>
+            <textarea className={inputCls} rows={2} value={form.notes} onChange={set('notes')} placeholder={t('gymLockerNotes')} />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
-              {saving ? 'Saving…' : initial ? 'Save Changes' : 'Add Locker'}
+              {saving ? t('gymLoggingIn') : initial ? t('gymSave') : t('gymAddLocker')}
             </button>
           </div>
         </form>
@@ -84,6 +86,7 @@ function LockerFormModal({ initial, onClose, onSaved }: { initial?: any; onClose
 /* ─── Assign Member Modal ─── */
 function AssignModal({ locker, onClose, onSaved }: { locker: any; onClose: () => void; onSaved: () => void }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [selected, setSelected] = useState<any | null>(null)
@@ -119,7 +122,7 @@ function AssignModal({ locker, onClose, onSaved }: { locker: any; onClose: () =>
           <div className="flex items-center gap-2">
             <User size={16} className="text-orange-500" />
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Assign Member</h3>
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('gymAssignMember')}</h3>
               <p className="text-xs text-slate-500">Locker <span className="font-semibold">{locker.number}</span> · <span className="capitalize">{locker.zone}</span> zone</p>
             </div>
           </div>
@@ -130,7 +133,7 @@ function AssignModal({ locker, onClose, onSaved }: { locker: any; onClose: () =>
             <label className={labelCls}>Member *</label>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input className={`${inputCls} pl-9`} placeholder="Search by name or phone…" value={search}
+              <input className={`${inputCls} pl-9`} placeholder={t('gymSearchMemberAssign')} value={search}
                 onChange={e => { setSearch(e.target.value); setSelected(null) }} />
             </div>
             {results.length > 0 && !selected && (
@@ -154,20 +157,20 @@ function AssignModal({ locker, onClose, onSaved }: { locker: any; onClose: () =>
             )}
           </div>
           <div>
-            <label className={labelCls}>End Date <span className="text-slate-400 font-normal">(optional — leave blank for open-ended)</span></label>
+            <label className={labelCls}>{t('gymEndDate')}</label>
             <div className="relative">
               <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input type="date" className={`${inputCls} pl-9`} value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
           <div>
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{t('gymNotes')}</label>
             <textarea className={inputCls} rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Combination given, key tag #5…" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving || !selected} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
-              {saving ? 'Assigning…' : 'Assign Locker'}
+              {saving ? t('gymLoggingIn') : t('gymAssign')}
             </button>
           </div>
         </form>
@@ -179,6 +182,7 @@ function AssignModal({ locker, onClose, onSaved }: { locker: any; onClose: () =>
 /* ─── Main component ─── */
 export default function LockersTab() {
   const toast = useToast()
+  const { t } = useLanguage()
   const [lockers, setLockers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [zone, setZone] = useState<Zone>('all')
@@ -226,9 +230,9 @@ export default function LockersTab() {
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Total Lockers', value: lockers.length,            color: 'text-slate-700 dark:text-slate-200',         bg: 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700' },
-          { label: 'Occupied',      value: occupied,                   color: 'text-red-600 dark:text-red-400',             bg: 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40' },
-          { label: 'Available',     value: lockers.length - occupied,  color: 'text-emerald-600 dark:text-emerald-400',     bg: 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40' },
+          { label: t('gymTotal'),    value: lockers.length,            color: 'text-slate-700 dark:text-slate-200',         bg: 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700' },
+          { label: t('gymOccupied'),  value: occupied,                   color: 'text-red-600 dark:text-red-400',             bg: 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40' },
+          { label: t('gymAvailable'), value: lockers.length - occupied,  color: 'text-emerald-600 dark:text-emerald-400',     bg: 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40' },
         ].map(({ label, value, color, bg }) => (
           <div key={label} className={`rounded-xl p-4 text-center ${bg}`}>
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
@@ -246,7 +250,7 @@ export default function LockersTab() {
         </div>
         <button onClick={() => setAddOpen(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
-          <Plus size={14} /> Add Locker
+          <Plus size={14} /> {t('gymAddLocker')}
         </button>
       </div>
 
@@ -259,7 +263,7 @@ export default function LockersTab() {
                 ? 'bg-orange-500 text-white'
                 : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-orange-300 dark:hover:border-orange-700'
             }`}>
-            {z === 'all' ? 'All Zones' : z.charAt(0).toUpperCase() + z.slice(1)}
+            {z === 'all' ? t('gymZoneAll') : z === 'general' ? t('gymZoneGeneral') : z === 'men' ? t('gymZoneMen') : z === 'women' ? t('gymZoneWomen') : t('gymZoneVip')}
           </button>
         ))}
       </div>
@@ -272,7 +276,7 @@ export default function LockersTab() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-slate-400">
           <span className="text-4xl mb-3">🔒</span>
-          <p className="text-sm font-medium">{lockers.length === 0 ? 'No lockers yet' : 'No lockers match your filter'}</p>
+          <p className="text-sm font-medium">{lockers.length === 0 ? t('gymNoLockers') : t('gymNoLockersMatch')}</p>
           {lockers.length === 0 && <p className="text-xs mt-1">Click "Add Locker" to get started</p>}
         </div>
       ) : (
@@ -301,7 +305,7 @@ export default function LockersTab() {
                     </div>
                   </div>
                   <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${isOccupied ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
-                    {isOccupied ? 'Occupied' : 'Free'}
+                    {isOccupied ? t('gymOccupied') : t('gymAvailable')}
                   </span>
                 </div>
 
@@ -324,12 +328,12 @@ export default function LockersTab() {
                   {isOccupied ? (
                     <button onClick={() => handleUnassign(locker.id, assignment.trainee?.name ?? 'member')}
                       className="flex-1 py-1.5 text-xs font-medium text-red-600 border border-red-200 dark:border-red-700 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                      Free Locker
+                      {t('gymUnassign')}
                     </button>
                   ) : (
                     <button onClick={() => setAssignTarget(locker)}
                       className="flex-1 py-1.5 text-xs font-medium text-orange-600 border border-orange-200 dark:border-orange-700 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
-                      Assign Member
+                      {t('gymAssignMember')}
                     </button>
                   )}
                   <button onClick={() => setEditTarget(locker)} title="Edit"

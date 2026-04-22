@@ -10,6 +10,7 @@ import {
   AlertTriangle, Phone, Clock, Lock, ClipboardList, UserCheck, Plus, ArrowRight, DollarSign
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props { refreshSignal?: number }
 
@@ -42,6 +43,7 @@ function KpiCard({ icon: Icon, label, value, sub, color, bg, border, onClick }: 
 
 export default function GymDashboardSection({ refreshSignal }: Props) {
   const navigate = useNavigate()
+  const { t } = useLanguage()
   const [stats, setStats] = useState<any | null>(null)
   const [atRisk, setAtRisk] = useState<any[]>([])
   const [expiringSubs, setExpiringSubs] = useState<any[]>([])
@@ -81,15 +83,15 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
             <Dumbbell size={16} className="text-orange-500" />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Gym</h2>
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">{t('gymTitle')}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {stats ? `${stats.todayCheckIns} check-ins today · ${stats.activeMembers} active members` : 'Loading…'}
+              {stats ? `${stats.todayCheckIns} ${t('gymTodayCheckIns').toLowerCase()} · ${stats.activeMembers} ${t('gymActiveMembers').toLowerCase()}` : 'Loading…'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/gym')}
-            className="text-xs text-orange-600 hover:underline font-medium">Open Gym →</button>
+            className="text-xs text-orange-600 hover:underline font-medium">{t('gymOpenGym')} →</button>
           <button onClick={load} disabled={loading}
             className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
             <RefreshCcw size={13} className={loading ? 'animate-spin' : ''} />
@@ -125,20 +127,20 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
 
             {/* Row 2 KPIs */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <KpiCard icon={UserCheck} label="New This Month" value={stats.newMembersThisMonth ?? 0}
+              <KpiCard icon={UserCheck} label={t('gymNewThisMonth')} value={stats.newMembersThisMonth ?? 0}
                 sub="joined" color="text-blue-600"
                 bg="bg-blue-50 dark:bg-blue-900/20" border="border-blue-200 dark:border-blue-800/40"
                 onClick={() => navigate('/gym')} />
-              <KpiCard icon={ClipboardList} label="Active Programs" value={stats.activePrograms ?? 0}
+              <KpiCard icon={ClipboardList} label={t('gymActivePrograms')} value={stats.activePrograms ?? 0}
                 sub="training programs" color="text-purple-600"
                 bg="bg-purple-50 dark:bg-purple-900/20" border="border-purple-200 dark:border-purple-800/40"
                 onClick={() => navigate('/gym')} />
-              <KpiCard icon={Lock} label="Locker Occupancy"
+              <KpiCard icon={Lock} label={t('gymLockerOccupancy')}
                 value={stats.totalLockers ? `${stats.occupiedLockers}/${stats.totalLockers}` : '—'}
                 sub={stats.totalLockers ? `${stats.totalLockers - (stats.occupiedLockers ?? 0)} free` : 'none set up'}
                 color="text-slate-600" bg="bg-slate-50 dark:bg-slate-700/40" border="border-slate-200 dark:border-slate-700"
                 onClick={() => navigate('/gym')} />
-              <KpiCard icon={AlertTriangle} label="At-Risk Members" value={atRisk.length}
+              <KpiCard icon={AlertTriangle} label={t('gymAtRiskMembers')} value={atRisk.length}
                 sub="inactive 14+ days"
                 color={atRisk.length > 0 ? 'text-red-600' : 'text-slate-400'}
                 bg={atRisk.length > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-slate-50 dark:bg-slate-700/40'}
@@ -149,15 +151,15 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
             {/* Quick Actions */}
             <div className="flex flex-wrap gap-2">
               {([
-                { label: 'Add Member',       icon: Plus,          cls: 'bg-orange-500 hover:bg-orange-600 text-white' },
-                { label: 'New Subscription', icon: Plus,          cls: 'bg-amber-500 hover:bg-amber-600 text-white' },
-                { label: 'New Program',      icon: ClipboardList, cls: 'bg-purple-500 hover:bg-purple-600 text-white' },
-                { label: 'Manage Lockers',   icon: Lock,          cls: 'bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white' },
-                { label: 'View Finance',     icon: DollarSign,    cls: 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200' },
-              ] as const).map(({ label, icon: Icon, cls }) => (
-                <button key={label} onClick={() => navigate('/gym')}
+                { key: 'gymAddMember',       icon: Plus,          cls: 'bg-orange-500 hover:bg-orange-600 text-white' },
+                { key: 'gymNewSub',          icon: Plus,          cls: 'bg-amber-500 hover:bg-amber-600 text-white' },
+                { key: 'gymNewProgramBtn',   icon: ClipboardList, cls: 'bg-purple-500 hover:bg-purple-600 text-white' },
+                { key: 'gymManageLockers',   icon: Lock,          cls: 'bg-slate-700 hover:bg-slate-800 dark:bg-slate-600 dark:hover:bg-slate-500 text-white' },
+                { key: 'gymViewFinance',     icon: DollarSign,    cls: 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200' },
+              ] as const).map(({ key, icon: Icon, cls }) => (
+                <button key={key} onClick={() => navigate('/gym')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${cls}`}>
-                  <Icon size={12} /> {label}
+                  <Icon size={12} /> {t(key)}
                 </button>
               ))}
             </div>
@@ -169,7 +171,7 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-1.5">
                     <AlertTriangle size={13} className="text-red-500" />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">At-Risk Members</span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{t('gymAtRiskPanel')}</span>
                     {atRisk.length > 0 && (
                       <span className="text-[10px] font-bold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-1.5 py-0.5 rounded-full">{atRisk.length}</span>
                     )}
@@ -206,7 +208,7 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-1.5">
                     <Clock size={13} className="text-amber-500" />
-                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Expiring This Week</span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{t('gymExpiringPanel')}</span>
                     {expiringSubs.length > 0 && (
                       <span className="text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full">{expiringSubs.length}</span>
                     )}
@@ -242,7 +244,7 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
               <div>
                 <div className="flex items-center gap-1.5 mb-3">
                   <Zap size={13} className="text-orange-500" />
-                  <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">7-Day Visit Trend</h3>
+                  <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">{t('gymDayVisitTrend')}</h3>
                 </div>
                 <ResponsiveContainer width="100%" height={130}>
                   <LineChart data={stats.visitTrend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -260,9 +262,9 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
             {/* Revenue breakdown */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: 'Subscriptions', value: fmt(stats.subRevenue),    color: 'text-orange-600' },
-                { label: 'Walk-ins',      value: fmt(stats.walkRevenue),   color: 'text-teal-600' },
-                { label: 'Expenses',      value: fmt(stats.totalExpenses), color: 'text-red-500' },
+                { label: t('gymSubRevenue'),  value: fmt(stats.subRevenue),    color: 'text-orange-600' },
+                { label: t('gymWalkRevenue'), value: fmt(stats.walkRevenue),   color: 'text-teal-600' },
+                { label: t('gymExpenses'),    value: fmt(stats.totalExpenses), color: 'text-red-500' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-slate-50 dark:bg-slate-700/40 rounded-xl p-3 text-center border border-slate-200 dark:border-slate-700">
                   <p className="text-[10px] text-slate-400 mb-1">{label}</p>
@@ -272,7 +274,7 @@ export default function GymDashboardSection({ refreshSignal }: Props) {
             </div>
           </>
         ) : (
-          <p className="text-sm text-slate-400 text-center py-6">No data available. Open Gym to get started.</p>
+          <p className="text-sm text-slate-400 text-center py-6">{t('gymNoDataAvailable')}</p>
         )}
       </div>
     </div>

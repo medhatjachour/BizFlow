@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2, CalendarRange } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   isOpen: boolean
@@ -23,6 +24,7 @@ const defaultForm = (): Form => ({
 
 export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefillTraineeId, prefillTraineeName }: Props) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState<Form>(defaultForm())
   const [saving, setSaving] = useState(false)
   const [plans, setPlans] = useState<any[]>([])
@@ -118,14 +120,14 @@ export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefil
         <div className="sticky top-0 bg-white dark:bg-slate-800 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 rounded-t-2xl">
           <div className="flex items-center gap-2">
             <CalendarRange size={16} className="text-orange-500" />
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">New Subscription</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('gymNewSubscription')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Trainee search */}
           <div className="relative">
-            <label className={labelCls}>Trainee *</label>
+            <label className={labelCls}>{t('gymTraineeName')} *</label>
             {prefillTraineeId ? (
               <div className={`${inputCls} bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300`}>{form.traineeName}</div>
             ) : (
@@ -138,7 +140,7 @@ export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefil
                     onChange={e => searchTrainees(e.target.value)}
                     onFocus={() => form.traineeSearch && setShowTraineeDrop(true)}
                     onBlur={() => setTimeout(() => setShowTraineeDrop(false), 150)}
-                    placeholder="Search trainee by name or phone…"
+                    placeholder={t('gymSearchMemberPhone')}
                     required={!form.traineeId}
                   />
                 </div>
@@ -158,18 +160,18 @@ export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefil
 
           {/* Plan */}
           <div>
-            <label className={labelCls}>Plan *</label>
+            <label className={labelCls}>{t('gymPlanName')} *</label>
             <select className={inputCls} value={form.planId} onChange={e => selectPlan(e.target.value)} required>
-              <option value="">Select a plan…</option>
+              <option value="">{t('gymSelectPlan')}</option>
               {plans.map(p => <option key={p.id} value={p.id}>{p.name} — {p.durationDays}d — {p.price.toLocaleString()}</option>)}
             </select>
           </div>
 
           {/* Coach */}
           <div>
-            <label className={labelCls}>Assigned Coach</label>
+            <label className={labelCls}>{t('gymProgramCoach')}</label>
             <select className={inputCls} value={form.coachId} onChange={e => setForm(f => ({ ...f, coachId: e.target.value }))}>
-              <option value="">No coach</option>
+              <option value="">{t('gymNoCoach')}</option>
               {coaches.map(c => <option key={c.id} value={c.id}>{c.name}{c.specialty ? ` (${c.specialty})` : ''}</option>)}
             </select>
           </div>
@@ -177,11 +179,11 @@ export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefil
           {/* Start date */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Start Date *</label>
+              <label className={labelCls}>{t('gymStartDate')} *</label>
               <input type="date" className={inputCls} value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} required />
             </div>
             <div>
-              <label className={labelCls}>End Date (computed)</label>
+              <label className={labelCls}>{t('gymEndDate')}</label>
               <div className={`${inputCls} bg-slate-50 dark:bg-slate-700/40 text-slate-500 cursor-default`}>
                 {endDate ?? '—'}
               </div>
@@ -191,7 +193,7 @@ export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefil
           {/* Amount */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Amount Paid</label>
+              <label className={labelCls}>{t('gymAmount')}</label>
               <input type="number" min="0" step="0.01" className={inputCls} value={form.amountPaid} onChange={e => setForm(f => ({ ...f, amountPaid: e.target.value }))} placeholder="0.00" />
             </div>
             <div>
@@ -203,7 +205,7 @@ export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefil
           </div>
 
           <div>
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{t('gymNotes')}</label>
             <textarea className={inputCls} rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </div>
 
@@ -215,9 +217,9 @@ export default function SubscriptionFormModal({ isOpen, onClose, onSaved, prefil
           )}
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving || !form.traineeId || !form.planId} className="flex-1 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-60">
-              {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Create Subscription'}
+              {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : t('gymNewSubscription')}
             </button>
           </div>
         </form>

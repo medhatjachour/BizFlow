@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Loader2, RefreshCcw, Snowflake, RotateCcw, Trash2, AlertTriangle } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import SubscriptionFormModal from './SubscriptionFormModal'
 
 type Filter = 'all' | 'active' | 'expiring' | 'expired' | 'frozen' | 'cancelled'
@@ -21,6 +22,7 @@ const PAGE_SIZE = 30
 
 export default function SubscriptionsTab() {
   const toast = useToast()
+  const { t } = useLanguage()
   const [subs, setSubs] = useState<any[]>([])
   const [filter, setFilter] = useState<Filter>('active')
   const [expiringSoonCount, setExpiringSoonCount] = useState(0)
@@ -97,12 +99,12 @@ export default function SubscriptionsTab() {
   }
 
   const filters: { key: Filter; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'active', label: 'Active' },
-    { key: 'expiring', label: `Expiring${expiringSoonCount > 0 ? ` (${expiringSoonCount})` : ''}` },
-    { key: 'frozen', label: 'Frozen' },
-    { key: 'expired', label: 'Expired' },
-    { key: 'cancelled', label: 'Cancelled' },
+    { key: 'all',       label: t('gymFilterAll') },
+    { key: 'active',    label: t('gymFilterActive') },
+    { key: 'expiring',  label: `${t('gymFilterExpiring')}${expiringSoonCount > 0 ? ` (${expiringSoonCount})` : ''}` },
+    { key: 'frozen',    label: t('gymFilterFrozen') },
+    { key: 'expired',   label: t('gymFilterExpired') },
+    { key: 'cancelled', label: t('gymFilterCancelled') },
   ]
 
   return (
@@ -122,7 +124,7 @@ export default function SubscriptionsTab() {
             <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
           <button onClick={() => setFormOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors">
-            <Plus size={14} /> New
+            <Plus size={14} /> {t('gymNewSubscription')}
           </button>
         </div>
       </div>
@@ -131,8 +133,8 @@ export default function SubscriptionsTab() {
       {expiringSoonCount > 0 && filter !== 'expiring' && (
         <div className="flex items-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
           <AlertTriangle size={13} />
-          <span><strong>{expiringSoonCount}</strong> subscription{expiringSoonCount !== 1 ? 's' : ''} expiring within 7 days.</span>
-          <button onClick={() => setFilter('expiring')} className="underline font-medium">View them</button>
+          <span><strong>{expiringSoonCount}</strong> {t('gymExpiringSoonAlert')}</span>
+          <button onClick={() => setFilter('expiring')} className="underline font-medium">{t('gymViewThem')}</button>
         </div>
       )}
 
@@ -141,7 +143,7 @@ export default function SubscriptionsTab() {
       ) : subs.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-slate-400">
           <span className="text-4xl mb-3">📋</span>
-          <p className="text-sm">No {filter === 'all' ? '' : filter} subscriptions</p>
+          <p className="text-sm">{t('gymNoSubscriptions')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -183,19 +185,19 @@ export default function SubscriptionsTab() {
                       <button onClick={() => { setFreezeTarget(s); setFreezeDays(7) }}
                         disabled={acting === s.id}
                         className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors">
-                        <Snowflake size={10} /> Freeze
+                        <Snowflake size={10} /> {t('gymFreeze')}
                       </button>
                     )}
                     {s.status === 'frozen' && (
                       <button onClick={() => handleUnfreeze(s.id)} disabled={acting === s.id}
                         className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-colors">
-                        {acting === s.id ? <Loader2 size={10} className="animate-spin" /> : <RotateCcw size={10} />} Unfreeze
+                        {acting === s.id ? <Loader2 size={10} className="animate-spin" /> : <RotateCcw size={10} />} {t('gymUnfreeze')}
                       </button>
                     )}
                     {(s.status === 'expired' || s.status === 'cancelled') && (
                       <button onClick={() => setFormOpen(true)}
                         className="text-xs px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 transition-colors">
-                        Renew
+                        {t('gymRenew')}
                       </button>
                     )}
                     <button onClick={() => setDeleteTarget(s)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
@@ -215,22 +217,22 @@ export default function SubscriptionsTab() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6">
             <div className="flex items-center gap-2 mb-4">
               <Snowflake size={18} className="text-blue-500" />
-              <h3 className="font-semibold text-slate-900 dark:text-white">Freeze Subscription</h3>
-            </div>
+            <h3 className="font-semibold text-slate-900 dark:text-white">{t('gymFreezeSubscription')}</h3>
+          </div>
             <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-              Freeze <strong>{freezeTarget.trainee?.name}</strong>'s subscription. The end date will be extended by the freeze duration.
+              {t('gymFreezeDesc')}
             </p>
             <div className="mb-4">
-              <label className="block text-xs font-medium text-slate-500 mb-1">Freeze duration (days)</label>
+              <label className="block text-xs font-medium text-slate-500 mb-1">{t('gymFreezeDuration')}</label>
               <input type="number" min="1" max={freezeTarget.plan?.maxFreezeDays ?? 30} className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                 value={freezeDays} onChange={e => setFreezeDays(Number(e.target.value))} />
               {freezeTarget.plan?.maxFreezeDays > 0 && (
-                <p className="text-[11px] text-slate-400 mt-1">Max: {freezeTarget.plan.maxFreezeDays} days for this plan</p>
+                <p className="text-[11px] text-slate-400 mt-1">{t('gymFreezeMax')}: {freezeTarget.plan.maxFreezeDays} {t('gymFreezeDaysFor')}</p>
               )}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => setFreezeTarget(null)} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm">Cancel</button>
-              <button onClick={handleFreeze} className="flex-1 px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium">Freeze</button>
+              <button onClick={() => setFreezeTarget(null)} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm">{t('gymCancel')}</button>
+              <button onClick={handleFreeze} className="flex-1 px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium">{t('gymFreeze')}</button>
             </div>
           </div>
         </div>
@@ -243,11 +245,11 @@ export default function SubscriptionsTab() {
             <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-3">
               <Trash2 size={20} className="text-red-500" />
             </div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Delete this subscription?</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">{t('gymDeleteSubscription')}</h3>
             <p className="text-xs text-slate-500 mb-4">{deleteTarget.trainee?.name} · {deleteTarget.plan?.name}</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm">Cancel</button>
-              <button onClick={handleDelete} className="flex-1 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium">Delete</button>
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm">{t('gymCancel')}</button>
+              <button onClick={handleDelete} className="flex-1 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium">{t('gymDelete')}</button>
             </div>
           </div>
         </div>

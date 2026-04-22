@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2, Footprints } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   isOpen: boolean
@@ -19,6 +20,7 @@ const defaultForm = (): Form => ({
 
 export default function WalkInFormModal({ isOpen, onClose, onSaved }: Props) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState<Form>(defaultForm())
   const [saving, setSaving] = useState(false)
   const [coaches, setCoaches] = useState<any[]>([])
@@ -83,14 +85,14 @@ export default function WalkInFormModal({ isOpen, onClose, onSaved }: Props) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <Footprints size={16} className="text-orange-500" />
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Log Visit</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('gymLogVisit')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Trainee (optional) */}
           <div className="relative">
-            <label className={labelCls}>Trainee (optional)</label>
+            <label className={labelCls}>{t('gymTraineeOptional')}</label>
             <div className="relative">
               {searchingTrainee && <Loader2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />}
               <input
@@ -99,7 +101,7 @@ export default function WalkInFormModal({ isOpen, onClose, onSaved }: Props) {
                 onChange={e => searchTrainees(e.target.value)}
                 onFocus={() => form.traineeSearch && setShowTraineeDrop(true)}
                 onBlur={() => setTimeout(() => setShowTraineeDrop(false), 150)}
-                placeholder="Search member name or phone…"
+                placeholder={t('gymSearchMemberPhone')}
               />
             </div>
             {showTraineeDrop && traineeResults.length > 0 && (
@@ -116,18 +118,18 @@ export default function WalkInFormModal({ isOpen, onClose, onSaved }: Props) {
 
           {/* Session type */}
           <div>
-            <label className={labelCls}>Visit Type</label>
+            <label className={labelCls}>{t('gymVisitType')}</label>
             <select className={inputCls} value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-              <option value="walkin">Walk-in (paid separately)</option>
-              <option value="subscription_visit">Subscription visit</option>
+              <option value="walkin">{t('gymWalkInPaid')}</option>
+              <option value="subscription_visit">{t('gymSubVisit')}</option>
             </select>
           </div>
 
           {/* Coach */}
           <div>
-            <label className={labelCls}>Coach (optional)</label>
+            <label className={labelCls}>{t('gymCoachOptional')}</label>
             <select className={inputCls} value={form.coachId} onChange={e => setForm(f => ({ ...f, coachId: e.target.value }))}>
-              <option value="">No coach</option>
+              <option value="">{t('gymNoCoach')}</option>
               {coaches.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
@@ -135,33 +137,33 @@ export default function WalkInFormModal({ isOpen, onClose, onSaved }: Props) {
           {/* Date + amount */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Date</label>
+              <label className={labelCls}>{t('gymDate')}</label>
               <input type="date" className={inputCls} value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
             </div>
             <div>
-              <label className={labelCls}>Amount {form.type === 'walkin' ? '(walk-in fee)' : '(optional)'}</label>
+              <label className={labelCls}>{form.type === 'walkin' ? t('gymAmountWalkin') : t('gymAmountOptional')}</label>
               <input type="number" min="0" step="0.01" className={inputCls} value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
             </div>
           </div>
 
           {form.amount && parseFloat(form.amount) > 0 && (
             <div>
-              <label className={labelCls}>Payment Method</label>
+              <label className={labelCls}>{t('gymPaymentMethod')}</label>
               <select className={inputCls} value={form.paymentMethod} onChange={e => setForm(f => ({ ...f, paymentMethod: e.target.value }))}>
-                {['cash','card','transfer','other'].map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+                {['cash','card','transfer','other'].map(m => <option key={m} value={m}>{m === 'cash' ? t('gymCash') : m === 'card' ? t('gymCard') : m === 'transfer' ? t('gymTransfer') : t('gymOther')}</option>)}
               </select>
             </div>
           )}
 
           <div>
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{t('gymNotes')}</label>
             <input className={inputCls} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Optional notes…" />
           </div>
 
           <div className="flex gap-3 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm">{t('gymCancel')}</button>
             <button type="submit" disabled={saving} className="flex-1 px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors disabled:opacity-60">
-              {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : 'Log Visit'}
+              {saving ? <Loader2 size={14} className="animate-spin mx-auto" /> : t('gymLogVisit')}
             </button>
           </div>
         </form>

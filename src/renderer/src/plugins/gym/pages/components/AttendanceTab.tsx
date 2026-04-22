@@ -5,6 +5,7 @@ import {
   AlertTriangle, ChevronDown, ChevronUp, Phone
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type CalendarData = Record<string, { total: number; walkin: number; sub: number; revenue: number }>
@@ -51,6 +52,7 @@ function subStatus(trainee: any): 'active' | 'expiring' | 'none' {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AttendanceTab() {
   const toast = useToast()
+  const { t } = useLanguage()
 
   // ── Date & calendar ──
   const [selDate, setSelDate] = useState(todayStr())
@@ -249,7 +251,7 @@ export default function AttendanceTab() {
           >
             <AlertTriangle size={16} className="text-amber-500 shrink-0" />
             <span className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex-1">
-              {atRisk.length} member{atRisk.length !== 1 ? 's' : ''} haven't visited in 14+ days
+              {atRisk.length} {t('gymAtRiskBanner')}
             </span>
             {riskExpanded ? <ChevronUp size={14} className="text-amber-500" /> : <ChevronDown size={14} className="text-amber-500" />}
           </button>
@@ -282,7 +284,7 @@ export default function AttendanceTab() {
           <div className="p-1.5 rounded-lg bg-orange-500/10">
             <Zap size={16} className="text-orange-500" />
           </div>
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">Quick Check-in</h2>
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">{t('gymQuickCheckIn')}</h2>
           <span className="ml-auto text-xs font-medium text-slate-400">
             {isToday ? 'Today' : fmtDate(selDate).split(',')[0]}
           </span>
@@ -298,7 +300,7 @@ export default function AttendanceTab() {
             ref={searchRef}
             value={search}
             onChange={e => handleSearchChange(e.target.value)}
-            placeholder="Search member by name or phone…"
+            placeholder={t('gymSearchMember')}
             className="w-full pl-10 pr-10 py-3 rounded-xl border-2 border-orange-200 dark:border-orange-700/60 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-orange-500 transition-colors"
           />
         </div>
@@ -309,9 +311,9 @@ export default function AttendanceTab() {
             {searchRes.map(t => {
               const status = subStatus(t)
               const badgeConf = {
-                active:   { label: 'Active Sub',     cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
-                expiring: { label: 'Expiring Soon',  cls: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' },
-                none:     { label: 'No Subscription', cls: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }
+                active:   { label: t('gymActiveSub'),     cls: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' },
+                expiring: { label: t('gymExpiringSoon'),  cls: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300' },
+                none:     { label: t('gymNoSubscription'), cls: 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300' }
               }[status]
               const isCIn = checkingIn === t.id
               const isFlash = flashId === t.id
@@ -352,7 +354,7 @@ export default function AttendanceTab() {
                         : isFlash
                         ? <CheckCircle2 size={12} />
                         : null}
-                      {isCIn ? 'Logging…' : isFlash ? 'Done!' : 'Check In'}
+                      {isCIn ? t('gymLoggingIn') : isFlash ? t('gymDone') : t('gymCheckIn')}
                     </button>
                   </div>
                 </div>
@@ -363,7 +365,7 @@ export default function AttendanceTab() {
 
         {/* No results hint */}
         {search.trim().length > 1 && !searching && searchRes.length === 0 && (
-          <p className="text-xs text-slate-400 mb-3">No members found — log as anonymous walk-in below.</p>
+          <p className="text-xs text-slate-400 mb-3">{t('gymNoMembersFound')}</p>
         )}
 
         {/* Anonymous walk-in toggle */}
@@ -373,20 +375,20 @@ export default function AttendanceTab() {
             className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
           >
             <Footprints size={14} />
-            Log anonymous walk-in (not in member list)
+            {t('gymLogAnon')}
           </button>
         ) : (
           <form onSubmit={handleAnonSubmit} className="flex flex-wrap items-center gap-2 mt-2">
             <input
               value={anonName}
               onChange={e => setAnonName(e.target.value)}
-              placeholder="Name (optional)"
+              placeholder={t('gymAnonName')}
               className="flex-1 min-w-32 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
             <input
               value={anonAmount}
               onChange={e => setAnonAmount(e.target.value)}
-              placeholder="Amount ($)"
+              placeholder={t('gymAnonAmount')}
               type="number" min="0" step="0.01"
               className="w-28 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-400"
             />
@@ -396,7 +398,7 @@ export default function AttendanceTab() {
               className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-60 flex items-center gap-1.5"
             >
               {savingAnon ? <Loader2 size={13} className="animate-spin" /> : <Footprints size={13} />}
-              Log
+              {t('gymLog')}
             </button>
             <button
               type="button"
@@ -441,7 +443,7 @@ export default function AttendanceTab() {
                 onClick={() => setSelDate(todayStr())}
                 className="px-3 py-1.5 text-xs font-semibold bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
               >
-                Today
+                {t('gymToday')}
               </button>
             )}
           </div>
@@ -449,10 +451,10 @@ export default function AttendanceTab() {
           {/* Day summary strip */}
           <div className="grid grid-cols-4 gap-3">
             {([
-              { icon: Users,        label: 'Total',       value: sessions.length,              cls: 'text-slate-700 dark:text-slate-200',  bg: 'bg-slate-50 dark:bg-slate-700/30' },
-              { icon: CalendarDays, label: 'Subscribers', value: totalSubs,                    cls: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-              { icon: Footprints,   label: 'Walk-ins',    value: totalWalkins,                 cls: 'text-orange-500',                     bg: 'bg-orange-50 dark:bg-orange-900/20' },
-              { icon: DollarSign,   label: 'Revenue',     value: `$${totalRevenue.toFixed(0)}`, cls: 'text-teal-600 dark:text-teal-400',   bg: 'bg-teal-50 dark:bg-teal-900/20' },
+              { icon: Users,        label: t('gymTotal'),       value: sessions.length,              cls: 'text-slate-700 dark:text-slate-200',  bg: 'bg-slate-50 dark:bg-slate-700/30' },
+              { icon: CalendarDays, label: t('gymSubscribers'), value: totalSubs,                    cls: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+              { icon: Footprints,   label: t('gymWalkIns'),    value: totalWalkins,                 cls: 'text-orange-500',                     bg: 'bg-orange-50 dark:bg-orange-900/20' },
+              { icon: DollarSign,   label: t('gymRevenue'),     value: `$${totalRevenue.toFixed(0)}`, cls: 'text-teal-600 dark:text-teal-400',   bg: 'bg-teal-50 dark:bg-teal-900/20' },
             ] as const).map(({ icon: Icon, label, value, cls, bg }) => (
               <div key={label} className={`${bg} rounded-xl border border-slate-200 dark:border-slate-700 p-3 text-center`}>
                 <Icon size={15} className={`mx-auto mb-1 ${cls}`} />
@@ -467,8 +469,8 @@ export default function AttendanceTab() {
             <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
                 {sessions.length > 0
-                  ? `${sessions.length} check-in${sessions.length !== 1 ? 's' : ''}`
-                  : 'No check-ins yet'}
+                  ? `${sessions.length} ${sessions.length !== 1 ? t('gymDailyCheckIns') : t('gymDailyCheckIns')}`
+                  : t('gymNoCheckinsYet')}
               </h3>
               {loadingDay && <Loader2 size={14} className="animate-spin text-slate-400" />}
             </div>
@@ -477,10 +479,10 @@ export default function AttendanceTab() {
               <div className="flex flex-col items-center justify-center py-14 text-slate-400">
                 <CalendarDays size={36} className="mb-3 opacity-30" />
                 <p className="text-sm font-medium">
-                  {isToday ? 'No check-ins yet today' : 'No check-ins on this day'}
+                  {isToday ? t('gymNoCheckInsToday') : t('gymNoCheckInsDay')}
                 </p>
                 {isToday && (
-                  <p className="text-xs mt-1 opacity-70">Use Quick Check-in above to log attendance</p>
+                  <p className="text-xs mt-1 opacity-70">{t('gymUseQuickCheckin')}</p>
                 )}
               </div>
             ) : (
@@ -502,7 +504,7 @@ export default function AttendanceTab() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
-                          {s.trainee?.name ?? <span className="italic text-slate-400">Anonymous walk-in</span>}
+                          {s.trainee?.name ?? <span className="italic text-slate-400">{t('gymAnonymous')}</span>}
                         </p>
                         {s.notes && <p className="text-xs text-slate-400 truncate">{s.notes}</p>}
                       </div>
@@ -511,7 +513,7 @@ export default function AttendanceTab() {
                           ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
                           : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
                       }`}>
-                        {isSub ? 'Subscription' : 'Walk-in'}
+                        {isSub ? t('gymSubscriptionType') : t('gymWalkInType')}
                       </span>
                       {(s.amount ?? 0) > 0 && (
                         <span className="text-xs font-semibold text-teal-600 dark:text-teal-400 tabular-nums shrink-0">
@@ -600,7 +602,7 @@ export default function AttendanceTab() {
           ))}
 
           <p className="text-[10px] text-slate-400 text-center mt-3">
-            Numbers show daily check-ins
+            {t('gymDailyNumbers')}
           </p>
         </div>
       </div>
@@ -609,9 +611,9 @@ export default function AttendanceTab() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 max-w-sm w-full">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">Remove check-in?</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-2">{t('gymRemoveCheckin')}</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
-              This will remove <strong>{deleteTarget.trainee?.name ?? 'the anonymous walk-in'}</strong>'s check-in record. This cannot be undone.
+              {t('gymRemoveCheckinConfirm')}
             </p>
             <div className="flex gap-3">
               <button
@@ -619,7 +621,7 @@ export default function AttendanceTab() {
                 disabled={deleting}
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
               >
-                Cancel
+                {t('gymCancel')}
               </button>
               <button
                 onClick={handleDelete}
@@ -627,7 +629,7 @@ export default function AttendanceTab() {
                 className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                Remove
+                {t('gymRemove')}
               </button>
             </div>
           </div>

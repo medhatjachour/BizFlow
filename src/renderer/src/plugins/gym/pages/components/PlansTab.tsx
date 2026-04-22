@@ -6,6 +6,7 @@ import {
   ClipboardList, Ticket, Snowflake, ListChecks
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Plan {
@@ -108,6 +109,7 @@ function buildPayload(form: PlanForm) {
 
 // ─── Plan Card ────────────────────────────────────────────────────────────────
 function PlanCard({ plan, onEdit, onDelete }: { plan: Plan; onEdit: () => void; onDelete: () => void }) {
+  const { t } = useLanguage()
   const col = getColor(plan.color)
   const cat = getCat(plan.category)
   const CatIcon = cat.icon
@@ -170,10 +172,10 @@ function PlanCard({ plan, onEdit, onDelete }: { plan: Plan; onEdit: () => void; 
       )}
       <div className="mt-auto px-5 py-3 border-t border-white/50 dark:border-slate-600/50 flex gap-2">
         <button onClick={onEdit} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors font-medium">
-          <Pencil size={12} /> Edit
+          <Pencil size={12} /> {t('gymEdit')}
         </button>
         <button onClick={onDelete} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 dark:hover:text-red-400 transition-colors font-medium ml-auto">
-          <Trash2 size={12} /> Delete
+          <Trash2 size={12} /> {t('gymDelete')}
         </button>
       </div>
     </div>
@@ -185,6 +187,7 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
   isOpen: boolean; onClose: () => void; initial: Plan | null; onSaved: (p: Plan) => void
 }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState<PlanForm>(defaultForm())
   const [saving, setSaving] = useState(false)
   const [section, setSection] = useState<'basic'|'sessions'|'amenities'|'display'>('basic')
@@ -229,7 +232,7 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2">
             <ListChecks size={16} className="text-orange-500" />
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? 'Edit Plan' : 'New Plan'}</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? t('gymEditPlan') : t('gymNewPlan')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><X size={16} /></button>
         </div>
@@ -249,15 +252,15 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
 
             {section === 'basic' && (<>
               <div>
-                <label className={labelCls}>Plan Name *</label>
+                <label className={labelCls}>{t('gymPlanName')} *</label>
                 <input className={inputCls} value={form.name} onChange={set('name')} placeholder="e.g. Premium Monthly" required />
               </div>
               <div>
-                <label className={labelCls}>Description</label>
+                <label className={labelCls}>{t('gymPlanDescription')}</label>
                 <textarea className={inputCls} rows={2} value={form.description} onChange={set('description')} placeholder="Short marketing description for members…" />
               </div>
               <div>
-                <label className={labelCls}>Category / Goal</label>
+                <label className={labelCls}>{t('gymPlanCategory')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {CATEGORIES.map(c => {
                     const Icon = c.icon; const sel = form.category === c.value
@@ -285,12 +288,12 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
                   <input className={inputCls} type="number" min="1" value={form.durationDays} onChange={set('durationDays')} placeholder="Days" required />
                 </div>
                 <div>
-                  <label className={labelCls}>Price *</label>
+                    <label className={labelCls}>{t('gymPlanPrice')} *</label>
                   <input className={inputCls} type="number" min="0" step="0.01" value={form.price} onChange={set('price')} placeholder="0.00" required />
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Max Freeze Days</label>
+                <label className={labelCls}>{t('gymPlanMaxFreeze')}</label>
                 <input className={inputCls} type="number" min="0" value={form.maxFreezeDays} onChange={set('maxFreezeDays')} />
                 <p className="text-[10px] text-slate-400 mt-1">How many days a member can pause this subscription</p>
               </div>
@@ -368,7 +371,7 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
 
             {section === 'display' && (<>
               <div>
-                <label className={labelCls}>Card Color Theme</label>
+                <label className={labelCls}>{t('gymPlanColor')}</label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {COLORS.map(c => (
                     <button key={c.value} type="button" onClick={() => setForm(f => ({ ...f, color: c.value }))}
@@ -417,12 +420,12 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
           <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 px-6 py-4 flex gap-3">
             <button type="button" onClick={onClose}
               className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-              Cancel
+              {t('gymCancel')}
             </button>
             <button type="submit" disabled={saving}
               className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2 ${col.btn}`}>
               {saving && <Loader2 size={14} className="animate-spin" />}
-              {initial ? 'Update Plan' : 'Create Plan'}
+              {initial ? t('gymSave') : t('gymAddPlan')}
             </button>
           </div>
         </form>
@@ -434,6 +437,7 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PlansTab() {
   const toast = useToast()
+  const { t } = useLanguage()
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -479,12 +483,12 @@ export default function PlansTab() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-white">Subscription Plans</h2>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">{t('gymSubscriptionPlans')}</h2>
           <p className="text-xs text-slate-400 mt-0.5">{plans.length} plan{plans.length !== 1 ? 's' : ''} configured</p>
         </div>
         <button onClick={() => { setEditTarget(null); setShowForm(true) }}
           className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors">
-          <Plus size={14} /> New Plan
+          <Plus size={14} /> {t('gymNewPlan')}
         </button>
       </div>
 
@@ -507,7 +511,7 @@ export default function PlansTab() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center py-20 text-slate-400">
           <ListChecks size={40} className="mb-3 opacity-30" />
-          <p className="text-sm font-medium">{plans.length === 0 ? 'No plans yet' : 'No plans in this category'}</p>
+          <p className="text-sm font-medium">{plans.length === 0 ? t('gymNoPlans') : t('gymNoProgramsMatch')}</p>
           {plans.length === 0 && <p className="text-xs mt-1">Create your first subscription plan to get started</p>}
         </div>
       ) : (
@@ -529,9 +533,9 @@ export default function PlansTab() {
             <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Delete "{deleteTarget.name}"?</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">Existing subscriptions using this plan will be unaffected.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} disabled={deleting} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm text-slate-600 dark:text-slate-300 disabled:opacity-50">Cancel</button>
+              <button onClick={() => setDeleteTarget(null)} disabled={deleting} className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm text-slate-600 dark:text-slate-300 disabled:opacity-50">{t('gymCancel')}</button>
               <button onClick={handleDelete} disabled={deleting} className="flex-1 px-4 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-semibold disabled:opacity-60 flex items-center justify-center gap-2">
-                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete
+                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} {t('gymDelete')}
               </button>
             </div>
           </div>

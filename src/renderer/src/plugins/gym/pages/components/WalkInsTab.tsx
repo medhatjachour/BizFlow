@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Loader2, Trash2, RefreshCcw, Filter } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import WalkInFormModal from './WalkInFormModal'
 
 type Period = 'today' | 'week' | 'month' | 'year'
@@ -9,6 +10,7 @@ const PAGE_SIZE = 50
 
 export default function WalkInsTab() {
   const toast = useToast()
+  const { t } = useLanguage()
   const [sessions, setSessions] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [period, setPeriod] = useState<Period>('today')
@@ -63,9 +65,9 @@ export default function WalkInsTab() {
             <select
               className="text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500"
               value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-              <option value="">All types</option>
-              <option value="walkin">Walk-in</option>
-              <option value="subscription_visit">Subscription</option>
+              <option value="">{ t('gymAllTypes') }</option>
+              <option value="walkin">{t('gymWalkInType')}</option>
+              <option value="subscription_visit">{t('gymSubscriptionType')}</option>
             </select>
           </div>
         </div>
@@ -74,7 +76,7 @@ export default function WalkInsTab() {
             <RefreshCcw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
           <button onClick={() => setFormOpen(true)} className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors">
-            <Plus size={14} /> Log Visit
+            <Plus size={14} /> {t('gymLogVisit')}
           </button>
         </div>
       </div>
@@ -92,7 +94,7 @@ export default function WalkInsTab() {
       ) : sessions.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-slate-400">
           <span className="text-4xl mb-3">🚶</span>
-          <p className="text-sm">No sessions {period === 'today' ? 'today' : `this ${period}`}</p>
+          <p className="text-sm">{t('gymNoSessions')} {period === 'today' ? t('gymToday') : ''}</p>
         </div>
       ) : (
         <>
@@ -100,7 +102,7 @@ export default function WalkInsTab() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 dark:bg-slate-700/60">
                 <tr>
-                  {['Date','Member','Type','Coach','Amount','Method',''].map(h => (
+                  {[t('gymDate'), t('gymMember'), t('gymType'), t('gymCoach'), t('gymAmount'), t('gymMethod'), ''].map(h => (
                     <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">{h}</th>
                   ))}
                 </tr>
@@ -109,10 +111,10 @@ export default function WalkInsTab() {
                 {sessions.map(s => (
                   <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
                     <td className="px-4 py-2.5 text-xs text-slate-500">{new Date(s.date).toLocaleDateString()}</td>
-                    <td className="px-4 py-2.5 text-slate-800 dark:text-slate-200">{s.trainee?.name ?? <span className="text-slate-400 italic">Anonymous</span>}</td>
+                    <td className="px-4 py-2.5 text-slate-800 dark:text-slate-200">{s.trainee?.name ?? <span className="text-slate-400 italic">{t('gymAnonymous')}</span>}</td>
                     <td className="px-4 py-2.5">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.type === 'walkin' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'}`}>
-                        {s.type === 'walkin' ? '🚶 Walk-in' : '✅ Subscription'}
+                        {s.type === 'walkin' ? `🚶 ${t('gymWalkInType')}` : `✅ ${t('gymSubscriptionType')}`}
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-xs text-slate-500">{s.coach?.name ?? '—'}</td>
@@ -134,7 +136,7 @@ export default function WalkInsTab() {
             <div className="flex justify-center">
               <button onClick={() => { const next = page + 1; setPage(next); load(next) }} disabled={loading}
                 className="px-5 py-2 bg-slate-100 dark:bg-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                {loading ? <Loader2 size={14} className="animate-spin" /> : 'Load more'}
+                {loading ? <Loader2 size={14} className="animate-spin" /> : t('gymLoadMore')}
               </button>
             </div>
           )}
@@ -148,11 +150,11 @@ export default function WalkInsTab() {
             <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mx-auto mb-3">
               <Trash2 size={20} className="text-red-500" />
             </div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">Delete this session?</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-1">{t('gymDeleteSession')}</h3>
             <p className="text-xs text-slate-500 mb-4">{deleteTarget.trainee?.name ?? 'Anonymous'} · {new Date(deleteTarget.date).toLocaleDateString()}</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm">Cancel</button>
-              <button onClick={handleDelete} className="flex-1 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium">Delete</button>
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm">{t('gymCancel')}</button>
+              <button onClick={handleDelete} className="flex-1 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-medium">{t('gymDelete')}</button>
             </div>
           </div>
         </div>

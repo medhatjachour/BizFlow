@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, Search, Loader2, Dumbbell, Pencil, X, ChevronLeft, User, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 const GOAL_OPTIONS = ['weight loss', 'muscle gain', 'endurance', 'flexibility', 'general fitness']
 
@@ -20,6 +21,7 @@ function ProgramFormModal({ initial, coaches, onClose, onSaved }: {
   initial?: any; coaches: any[]; onClose: () => void; onSaved: (p: any) => void
 }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState({
     name:        initial?.name        ?? '',
     description: initial?.description ?? '',
@@ -66,39 +68,39 @@ function ProgramFormModal({ initial, coaches, onClose, onSaved }: {
         <div className="sticky top-0 bg-white dark:bg-slate-800 flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700 rounded-t-2xl">
           <div className="flex items-center gap-2">
             <Dumbbell size={16} className="text-orange-500" />
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? 'Edit Program' : 'New Program'}</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{initial ? t('gymEditProgram') : t('gymNewProgram')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <div>
-            <label className={labelCls}>Program Name *</label>
+            <label className={labelCls}>{t('gymProgramName')} *</label>
             <input className={inputCls} value={form.name} onChange={set('name')} placeholder="e.g. 12-Week Fat Loss Challenge" required />
           </div>
           <div>
-            <label className={labelCls}>Description</label>
+            <label className={labelCls}>{t('gymProgramDescription')}</label>
             <textarea className={inputCls} rows={3} value={form.description} onChange={set('description')} placeholder="What is this program about? Who is it for?" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className={labelCls}>Goal</label>
+              <label className={labelCls}>{t('gymProgramGoal')}</label>
               <select className={inputCls} value={form.goal} onChange={set('goal')}>
-                {GOAL_OPTIONS.map(g => <option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>)}
+                {GOAL_OPTIONS.map(g => <option key={g} value={g}>{g === 'weight loss' ? t('gymGoalWeightLoss') : g === 'muscle gain' ? t('gymGoalMuscleGain') : g === 'endurance' ? t('gymGoalEndurance') : g === 'flexibility' ? t('gymGoalFlexibility') : t('gymGoalGeneralFitness')}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelCls}>Duration (weeks)</label>
+              <label className={labelCls}>{t('gymProgramWeeks')}</label>
               <input type="number" min={1} max={52} className={inputCls} value={form.weeksTotal} onChange={set('weeksTotal')} />
             </div>
             <div>
-              <label className={labelCls}>Days per Week</label>
+              <label className={labelCls}>{t('gymProgramDaysPerWeek')}</label>
               <input type="number" min={1} max={7} className={inputCls} value={form.daysPerWeek} onChange={set('daysPerWeek')} />
             </div>
           </div>
           <div>
-            <label className={labelCls}>Assigned Coach</label>
+            <label className={labelCls}>{t('gymProgramCoach')}</label>
             <select className={inputCls} value={form.coachId} onChange={set('coachId')}>
-              <option value="">— No specific coach —</option>
+              <option value="">{t('gymNoCoach')}</option>
               {coaches.map(c => <option key={c.id} value={c.id}>{c.name}{c.specialty ? ` · ${c.specialty}` : ''}</option>)}
             </select>
           </div>
@@ -106,13 +108,13 @@ function ProgramFormModal({ initial, coaches, onClose, onSaved }: {
             <input type="checkbox" id="prog-active" className="w-4 h-4 accent-orange-500 cursor-pointer"
               checked={form.isActive} onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))} />
             <label htmlFor="prog-active" className="text-sm text-slate-700 dark:text-slate-200 cursor-pointer select-none">
-              Active — visible and assignable to members
+              Active — {t('gymProgramActive')}
             </label>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
-              {saving ? 'Saving…' : initial ? 'Save Changes' : 'Create Program'}
+              {saving ? t('gymLoggingIn') : initial ? t('gymSave') : t('gymAddProgram')}
             </button>
           </div>
         </form>
@@ -124,6 +126,7 @@ function ProgramFormModal({ initial, coaches, onClose, onSaved }: {
 /* ─── Add Day Modal ─── */
 function DayFormModal({ program, onClose, onSaved }: { program: any; onClose: () => void; onSaved: (d: any) => void }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState({ weekNumber: 1, dayNumber: 1, name: '' })
   const [saving, setSaving] = useState(false)
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -149,28 +152,28 @@ function DayFormModal({ program, onClose, onSaved }: { program: any; onClose: ()
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-white">Add Training Day</h3>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('gymAddDay')}</h3>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Week #</label>
+              <label className={labelCls}>{t('gymWeekNumber')}</label>
               <input type="number" min={1} max={program.weeksTotal ?? 52} className={inputCls} value={form.weekNumber} onChange={set('weekNumber')} />
             </div>
             <div>
-              <label className={labelCls}>Day # (1–7)</label>
+              <label className={labelCls}>{t('gymDayNumber')}</label>
               <input type="number" min={1} max={7} className={inputCls} value={form.dayNumber} onChange={set('dayNumber')} />
             </div>
           </div>
           <div>
-            <label className={labelCls}>Day Name / Focus</label>
+            <label className={labelCls}>{t('gymDayName')}</label>
             <input className={inputCls} value={form.name} onChange={set('name')} placeholder="e.g. Push Day, Leg Day, Rest…" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
-              {saving ? 'Adding…' : 'Add Day'}
+              {saving ? t('gymLoggingIn') : t('gymAddDay')}
             </button>
           </div>
         </form>
@@ -182,6 +185,7 @@ function DayFormModal({ program, onClose, onSaved }: { program: any; onClose: ()
 /* ─── Add Exercise Modal ─── */
 function ExerciseFormModal({ day, onClose, onSaved }: { day: any; onClose: () => void; onSaved: (ex: any) => void }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [form, setForm] = useState({ name: '', sets: '3', reps: '10', weight: '', restSec: '60', notes: '' })
   const [saving, setSaving] = useState(false)
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -212,42 +216,42 @@ function ExerciseFormModal({ day, onClose, onSaved }: { day: any; onClose: () =>
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
           <div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Add Exercise</h3>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('gymAddExercise')}</h3>
             <p className="text-xs text-slate-500">W{day.weekNumber} D{day.dayNumber}{day.name ? ` · ${day.name}` : ''}</p>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"><X size={16} /></button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <div>
-            <label className={labelCls}>Exercise Name *</label>
+            <label className={labelCls}>{t('gymExerciseName')} *</label>
             <input className={inputCls} value={form.name} onChange={set('name')} placeholder="e.g. Barbell Squat" required autoFocus />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className={labelCls}>Sets</label>
+              <label className={labelCls}>{t('gymSets')}</label>
               <input type="number" min={1} className={inputCls} value={form.sets} onChange={set('sets')} />
             </div>
             <div>
-              <label className={labelCls}>Reps / Duration</label>
+              <label className={labelCls}>{t('gymReps')}</label>
               <input className={inputCls} value={form.reps} onChange={set('reps')} placeholder="e.g. 10, 8–12, AMRAP" />
             </div>
             <div>
-              <label className={labelCls}>Weight / Load</label>
+              <label className={labelCls}>{t('gymWeight')}</label>
               <input className={inputCls} value={form.weight} onChange={set('weight')} placeholder="e.g. 60kg, Bodyweight" />
             </div>
             <div>
-              <label className={labelCls}>Rest (seconds)</label>
+              <label className={labelCls}>{t('gymRest')}</label>
               <input type="number" min={0} className={inputCls} value={form.restSec} onChange={set('restSec')} placeholder="60" />
             </div>
           </div>
           <div>
-            <label className={labelCls}>Notes / Cues</label>
+            <label className={labelCls}>{t('gymNotes')}</label>
             <textarea className={inputCls} rows={2} value={form.notes} onChange={set('notes')} placeholder="Form tips, tempo, modifications…" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
-              {saving ? 'Adding…' : 'Add Exercise'}
+              {saving ? t('gymLoggingIn') : t('gymAddExercise')}
             </button>
           </div>
         </form>
@@ -259,6 +263,7 @@ function ExerciseFormModal({ day, onClose, onSaved }: { day: any; onClose: () =>
 /* ─── Assign to Member Modal ─── */
 function AssignMemberModal({ program, onClose, onSaved }: { program: any; onClose: () => void; onSaved: () => void }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<any[]>([])
   const [selected, setSelected] = useState<any | null>(null)
@@ -299,7 +304,7 @@ function AssignMemberModal({ program, onClose, onSaved }: { program: any; onClos
           <div className="flex items-center gap-2">
             <User size={16} className="text-orange-500" />
             <div>
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Assign to Member</h3>
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('gymAssignMemberToProgram')}</h3>
               <p className="text-xs text-slate-500 truncate max-w-[220px]">{program.name}</p>
             </div>
           </div>
@@ -310,7 +315,7 @@ function AssignMemberModal({ program, onClose, onSaved }: { program: any; onClos
             <label className={labelCls}>Member *</label>
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input className={`${inputCls} pl-9`} placeholder="Search by name or phone…" value={search}
+              <input className={`${inputCls} pl-9`} placeholder={t('gymProgramSearchMember')} value={search}
                 onChange={e => { setSearch(e.target.value); setSelected(null) }} />
             </div>
             {results.length > 0 && !selected && (
@@ -334,17 +339,17 @@ function AssignMemberModal({ program, onClose, onSaved }: { program: any; onClos
             )}
           </div>
           <div>
-            <label className={labelCls}>Start Date</label>
+            <label className={labelCls}>{t('gymStartDate')}</label>
             <input type="date" className={inputCls} value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{t('gymNotes')}</label>
             <textarea className={inputCls} rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Any specific instructions for this member…" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">Cancel</button>
+            <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
             <button type="submit" disabled={saving || !selected} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
-              {saving ? 'Assigning…' : 'Assign Program'}
+              {saving ? t('gymLoggingIn') : t('gymAssign')}
             </button>
           </div>
         </form>
@@ -358,6 +363,7 @@ function ProgramDetail({ program: initial, coaches, onBack, onProgramUpdated }: 
   program: any; coaches: any[]; onBack: () => void; onProgramUpdated: (p: any) => void
 }) {
   const toast = useToast()
+  const { t } = useLanguage()
   const [program, setProgram] = useState<any>(initial)
   const [loading, setLoading] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -419,7 +425,7 @@ function ProgramDetail({ program: initial, coaches, onBack, onProgramUpdated }: 
               <div className="flex items-center gap-2 shrink-0">
                 <button onClick={() => setAssignOpen(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium rounded-lg transition-colors">
-                  <User size={12} /> Assign
+                  <User size={12} /> {t('gymAssign')}
                 </button>
                 <button onClick={() => setEditOpen(true)}
                   className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors">
@@ -436,7 +442,7 @@ function ProgramDetail({ program: initial, coaches, onBack, onProgramUpdated }: 
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{days.length} Training Day{days.length !== 1 ? 's' : ''}</p>
         <button onClick={() => setDayFormOpen(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors">
-          <Plus size={14} /> Add Day
+          <Plus size={14} /> {t('gymAddDay')}
         </button>
       </div>
 
@@ -508,7 +514,7 @@ function ProgramDetail({ program: initial, coaches, onBack, onProgramUpdated }: 
                   )}
                   <button onClick={() => setExFormDay(day)}
                     className="w-full flex items-center justify-center gap-1.5 py-2 text-sm font-medium text-orange-600 border border-dashed border-orange-300 dark:border-orange-700 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/10 transition-colors">
-                    <Plus size={13} /> Add Exercise
+                    <Plus size={13} /> {t('gymAddExercise')}
                   </button>
                 </div>
               )}
@@ -540,6 +546,7 @@ function ProgramDetail({ program: initial, coaches, onBack, onProgramUpdated }: 
 /* ─── Main Tab ─── */
 export default function ProgramsTab() {
   const toast = useToast()
+  const { t } = useLanguage()
   const [programs, setPrograms] = useState<any[]>([])
   const [coaches, setCoaches] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -597,11 +604,11 @@ export default function ProgramsTab() {
             <input className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               placeholder="Search by name, goal, coach…" value={searchInput} onChange={e => setSearchInput(e.target.value)} />
           </div>
-          <button type="submit" className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">Search</button>
+          <button type="submit" className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">{t('gymSearch')}</button>
         </form>
         <button onClick={() => setFormOpen(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
-          <Plus size={14} /> New Program
+          <Plus size={14} /> {t('gymNewProgram')}
         </button>
       </div>
 
@@ -613,7 +620,7 @@ export default function ProgramsTab() {
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center py-16 text-slate-400">
           <span className="text-4xl mb-3">🏋️</span>
-          <p className="text-sm font-medium">{programs.length === 0 ? 'No programs yet' : 'No programs match your search'}</p>
+          <p className="text-sm font-medium">{programs.length === 0 ? t('gymNoPrograms') : t('gymNoProgramsMatch')}</p>
           {programs.length === 0 && <p className="text-xs mt-1">Click "New Program" to create your first training program</p>}
         </div>
       ) : (
