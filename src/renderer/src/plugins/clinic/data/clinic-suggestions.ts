@@ -256,3 +256,97 @@ export const MEDICINE_SUGGESTIONS: string[] = [
   'Mupirocin Ointment',
   'Povidone-Iodine',
 ]
+
+export const LAB_CHECKS: string[] = [
+  // Blood tests
+  'CBC – Complete Blood Count',
+  'Blood Glucose (Fasting)',
+  'Blood Glucose (Random)',
+  'HbA1c (Glycated Hemoglobin)',
+  'Lipid Profile (Cholesterol)',
+  'LFT – Liver Function Tests',
+  'RFT – Renal Function Tests',
+  'Serum Electrolytes (Na, K, Cl)',
+  'Serum Creatinine',
+  'Blood Urea Nitrogen (BUN)',
+  'Uric Acid',
+  'CRP – C-Reactive Protein',
+  'ESR – Erythrocyte Sedimentation Rate',
+  'Serum Ferritin',
+  'Iron Studies (TIBC)',
+  'Thyroid Function (TSH, T3, T4)',
+  'Vitamin D Level',
+  'Vitamin B12 Level',
+  'PSA – Prostate-Specific Antigen',
+  'Beta HCG (Pregnancy Test)',
+  'Prothrombin Time (PT/INR)',
+  'Blood Culture & Sensitivity',
+  'Widal Test',
+  'Malaria Antigen Test (RDT)',
+  'Dengue NS1 / IgM / IgG',
+  'COVID-19 PCR',
+  'Hepatitis B Surface Antigen (HBsAg)',
+  'Hepatitis C Antibody (Anti-HCV)',
+  'HIV Antibody Test',
+  'VDRL / RPR (Syphilis)',
+  'H. Pylori Antibody / Breath Test',
+  'Serum Amylase / Lipase',
+  'Cardiac Enzymes (Troponin, CK-MB)',
+  'D-Dimer',
+  'BNP / NT-proBNP',
+
+  // Urine
+  'Urinalysis (Routine)',
+  'Urine Culture & Sensitivity',
+  'Urine Albumin / Creatinine Ratio',
+  '24-Hour Urine Protein',
+
+  // Stool
+  'Stool Routine & Microscopy',
+  'Stool Culture',
+  'Stool Occult Blood',
+  'H. Pylori Stool Antigen',
+
+  // Imaging
+  'X-Ray Chest (PA view)',
+  'X-Ray Abdomen',
+  'X-Ray Lumbar Spine',
+  'X-Ray Knee (AP/Lateral)',
+  'Ultrasound Abdomen & Pelvis',
+  'Ultrasound Pelvis (Transvaginal)',
+  'Ultrasound Thyroid',
+  'Ultrasound Scrotal',
+  'CT Scan Brain',
+  'CT Scan Chest',
+  'CT Scan Abdomen & Pelvis',
+  'MRI Brain',
+  'MRI Spine (Lumbar)',
+  'MRI Knee / Shoulder / Hip',
+  'DEXA Scan (Bone Density)',
+  'Mammogram',
+
+  // Cardiology
+  'ECG / EKG (Electrocardiogram)',
+  'Echocardiogram (Echo)',
+  'Holter Monitor (24-hour ECG)',
+  'Treadmill Stress Test (TMT)',
+  'Ankle-Brachial Index (ABI)',
+
+  // Respiratory
+  'Spirometry (PFT)',
+  'Peak Flow Measurement',
+  'Pulse Oximetry',
+  'Sputum Culture & Sensitivity',
+  'Sputum for AFB (TB test)',
+  'Mantoux Test (TB Skin Test)',
+
+  // Other
+  'Pap Smear',
+  'Vaginal Swab Culture',
+  'Wound Swab Culture',
+  'Throat Swab Culture',
+  'Eye Swab Culture',
+  'Biopsy (specify site)',
+  'Fine Needle Aspiration Cytology (FNAC)',
+]
+

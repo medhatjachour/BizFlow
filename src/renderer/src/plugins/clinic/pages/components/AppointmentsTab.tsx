@@ -20,6 +20,9 @@ interface Appointment {
   doctorName?: string | null
   notes?: string | null
   status: string
+  amountCharged?: number | null
+  amountPaid?: number | null
+  paymentMethod?: string | null
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -528,7 +531,10 @@ export default function AppointmentsTab() {
             type: sessionAppt.type,
             doctorName: sessionAppt.doctorName,
             notes: sessionAppt.notes,
-            patient: sessionAppt.patient
+            patient: sessionAppt.patient,
+            amountCharged: sessionAppt.amountCharged,
+            amountPaid: sessionAppt.amountPaid,
+            paymentMethod: sessionAppt.paymentMethod
           }}
           onClose={() => { setShowSessionForm(false); setSessionAppt(null) }}
           onSaved={() => { setShowSessionForm(false); setSessionAppt(null); load(0) }}

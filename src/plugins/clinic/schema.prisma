@@ -47,6 +47,7 @@ model ClinicSession {
   paymentStatus  String               @default("unpaid")   // 'paid' | 'partial' | 'unpaid' | 'waived'
   paymentMethod  String?              // 'cash' | 'card' | 'insurance' | 'other'
   dentalChart    String?              // JSON: Record<string, { conditions: string[], note: string }>
+  labOrders      String?              // JSON: Array<{ testName: string, notes: string }>
   prescriptions  ClinicPrescription[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
@@ -104,6 +105,9 @@ model ClinicAppointment {
   notes           String?
   status          String        @default("scheduled") // 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
   reminderSent    Boolean       @default(false)
+  amountCharged   Float?
+  amountPaid      Float?
+  paymentMethod   String?       // 'cash' | 'card' | 'insurance' | 'other'
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 

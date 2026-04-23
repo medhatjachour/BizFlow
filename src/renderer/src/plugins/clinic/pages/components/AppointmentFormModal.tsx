@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Calendar, Loader2, Search, AlertTriangle, Clock } from 'lucide-react'
+import { X, Calendar, Loader2, Search, AlertTriangle, Clock, DollarSign } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
@@ -82,6 +82,9 @@ export default function AppointmentFormModal({
     doctorName:      existing?.doctorName      ?? '',
     notes:           existing?.notes           ?? '',
     status:          existing?.status          ?? 'scheduled',
+    amountCharged:   String(existing?.amountCharged ?? ''),
+    amountPaid:      String(existing?.amountPaid    ?? ''),
+    paymentMethod:   existing?.paymentMethod        ?? 'cash',
   })
   const [searchQuery,   setSearchQuery]   = useState(existing?.patient?.name ?? defaultPatientName ?? '')
   const [searchResults, setSearchResults] = useState<any[]>([])
@@ -191,9 +194,12 @@ export default function AppointmentFormModal({
     try {
       const payload = {
         ...form,
-        duration:   Number(form.duration) || 30,
-        doctorName: form.doctorName.trim() || null,
-        notes:      form.notes.trim()      || null,
+        duration:       Number(form.duration) || 30,
+        doctorName:     form.doctorName.trim() || null,
+        notes:          form.notes.trim()      || null,
+        amountCharged:  form.amountCharged !== '' ? parseFloat(form.amountCharged) : null,
+        amountPaid:     form.amountPaid    !== '' ? parseFloat(form.amountPaid)    : null,
+        paymentMethod:  form.paymentMethod || null,
       }
       if (existing?.id) {
         await window.api.clinic.appointments.update(existing.id, payload)
@@ -339,6 +345,58 @@ export default function AppointmentFormModal({
                 </span>
               ))}
             </div>
+          </div>
+            {/* ── Payment Section ────────────────────────────────────────── */}
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-slate-800 text-left hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <DollarSign className="h-3.5 w-3.5 text-green-500" />
+                Payment
+                
+              </span>
+            </button>
+            { (
+              <div className="p-4 grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Charged</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    className={inputCls}
+                    placeholder="0.00"
+                    value={form.amountCharged}
+                    onChange={e => setForm(f => ({ ...f, amountCharged: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Paid</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    className={inputCls}
+                    placeholder="0.00"
+                    value={form.amountPaid}
+                    onChange={e => setForm(f => ({ ...f, amountPaid: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Method</label>
+                  <select className={inputCls} value={form.paymentMethod} onChange={e => setForm(f => ({ ...f, paymentMethod: e.target.value }))}>
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="insurance">Insurance</option>
+                    <option value="transfer">Transfer</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                {parseFloat(form.amountCharged || '0') > parseFloat(form.amountPaid || '0') && form.amountPaid !== '' && (
+                  <div className="col-span-3 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                    Balance due: {(parseFloat(form.amountCharged || '0') - parseFloat(form.amountPaid || '0')).toFixed(2)}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Conflict warning banner */}
