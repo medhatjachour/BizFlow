@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Calendar, Loader2, Search, AlertTriangle, Clock, DollarSign, ChevronDown, ChevronUp } from 'lucide-react'
+import { X, Calendar, Loader2, Search, AlertTriangle, Clock, DollarSign } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
