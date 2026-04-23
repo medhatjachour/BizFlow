@@ -24,7 +24,7 @@ interface RxSession {
   chiefComplaint: string
   diagnosis?: string | null
   notes?: string | null
-  labOrders?: RxLabOrder[]
+  labOrders?: RxLabOrder[] | string | null
   prescriptions: RxMedicine[]
 }
 
@@ -50,6 +50,7 @@ interface RxHeader {
   address: string
   phone: string
   workingHours: string
+  whatsapp: string
   extra: string
 }
 
@@ -83,7 +84,12 @@ function buildPrintHtml(
   header: RxHeader
 ): string {
   const medicines = session.prescriptions.filter(rx => rx.medicineName.trim())
-  const labs = session.labOrders?.filter(l => l.testName.trim()) ?? []
+  const labs = ((): RxLabOrder[] => {
+    const raw = session.labOrders
+    if (!raw) return []
+    const arr: RxLabOrder[] = typeof raw === 'string' ? (() => { try { return JSON.parse(raw) } catch { return [] } })() : raw
+    return arr.filter(l => l.testName.trim())
+  })()
   const age = calcAge(patient.dateOfBirth)
 
   const esc = (s: string | null | undefined) =>
@@ -93,13 +99,25 @@ function buildPrintHtml(
     <div class="rx-item">
       <div class="rx-num">${i + 1}</div>
       <div class="rx-body">
-        <div class="rx-name">${esc(rx.medicineName)}${rx.dosage ? ` <span class="rx-dosage">${esc(rx.dosage)}</span>` : ''}</div>
-        <div class="rx-detail">
-          ${rx.frequency ? `<span>🕐 ${esc(rx.frequency)}</span>` : ''}
-          ${rx.duration ? `<span>📅 ${esc(rx.duration)}</span>` : ''}
-          ${rx.quantity ? `<span>📦 Qty: ${rx.quantity}</span>` : ''}
+        <div class="rx-name-line">
+          <span class="rx-name">${esc(rx.medicineName)}</span>
+          ${rx.dosage ? `<span class="rx-dosage">${esc(rx.dosage)}</span>` : ''}
         </div>
+        <table class="rx-table">
+          <tr>
+            <td class="rx-tlabel">Frequency</td>
+            <td class="rx-tval">${rx.frequency ? esc(rx.frequency) : '<span class="rx-blank">_______________</span>'}</td>
+            <td class="rx-tlabel">Duration</td>
+            <td class="rx-tval">${rx.duration ? esc(rx.duration) : '<span class="rx-blank">_______________</span>'}</td>
+            <td class="rx-tlabel">Qty</td>
+            <td class="rx-tval">${rx.quantity ? String(rx.quantity) : '<span class="rx-blank">_______</span>'}</td>
+          </tr>
+        </table>
         ${rx.instructions ? `<div class="rx-instr">${esc(rx.instructions)}</div>` : ''}
+        <div class="rx-write-area">
+          <span class="rx-write-label">Doctor notes:</span>
+          <div class="rx-lines"><div class="rx-line"></div><div class="rx-line"></div></div>
+        </div>
       </div>
     </div>`).join('')
 
@@ -139,13 +157,22 @@ function buildPrintHtml(
 
   /* Rx section */
   .rx-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 10px; }
-  .rx-item { display: flex; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed #e2e8f0; }
+  .rx-item { display: flex; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px dashed #e2e8f0; }
   .rx-item:last-child { border-bottom: none; }
-  .rx-num { width: 24px; height: 24px; background: #0d9488; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
-  .rx-name { font-size: 15px; font-weight: 700; color: #0f172a; }
-  .rx-dosage { font-size: 12px; font-weight: 600; color: #0d9488; background: #f0fdfa; padding: 1px 6px; border-radius: 4px; margin-left: 4px; }
-  .rx-detail { display: flex; gap: 12px; margin-top: 3px; font-size: 12px; color: #475569; }
-  .rx-instr { margin-top: 4px; font-size: 11px; color: #64748b; font-style: italic; }
+  .rx-num { width: 26px; height: 26px; background: #0d9488; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; margin-top: 2px; }
+  .rx-body { flex: 1; }
+  .rx-name-line { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+  .rx-name { font-size: 16px; font-weight: 800; color: #0f172a; }
+  .rx-dosage { font-size: 12px; font-weight: 700; color: #0d9488; background: #f0fdfa; padding: 2px 8px; border-radius: 20px; border: 1px solid #99f6e4; }
+  .rx-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+  .rx-tlabel { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; padding: 2px 4px 2px 0; white-space: nowrap; }
+  .rx-tval { font-size: 12px; font-weight: 600; color: #1e293b; padding: 2px 16px 2px 4px; }
+  .rx-blank { color: #cbd5e1; }
+  .rx-instr { margin-top: 4px; font-size: 11px; color: #64748b; font-style: italic; padding: 3px 6px; background: #f8fafc; border-left: 2px solid #cbd5e1; border-radius: 0 4px 4px 0; }
+  .rx-write-area { margin-top: 6px; }
+  .rx-write-label { font-size: 9px; text-transform: uppercase; color: #cbd5e1; font-weight: 700; letter-spacing: 0.5px; }
+  .rx-lines { margin-top: 2px; }
+  .rx-line { border-bottom: 1px dotted #cbd5e1; height: 16px; margin-bottom: 2px; }
 
   /* Lab orders */
   .lab-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #6366f1; margin: 14px 0 8px; }
@@ -159,6 +186,12 @@ function buildPrintHtml(
   .clinical-box { margin-top: 16px; padding: 12px 14px; border-left: 3px solid #0d9488; background: #f8fafc; border-radius: 0 8px 8px 0; }
   .clinical-box .cl-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 4px; }
   .clinical-box .cl-value { font-size: 13px; color: #1e293b; line-height: 1.5; }
+
+  /* Handwriting area */
+  .handwrite-box { margin-top: 14px; padding: 10px 14px; border: 1px dashed #cbd5e1; border-radius: 8px; }
+  .handwrite-label { font-size: 10px; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .handwrite-lines { }
+  .handwrite-line { border-bottom: 1px solid #e2e8f0; height: 22px; margin-bottom: 4px; }
 
   /* Footer / signature */
   .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 36px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
@@ -180,6 +213,7 @@ function buildPrintHtml(
       <div class="clinic-sub">
         ${header.address ? esc(header.address) + '<br/>' : ''}
         ${header.phone ? '📞 ' + esc(header.phone) : ''}
+        ${header.whatsapp ? '<br/>📱 WhatsApp: ' + esc(header.whatsapp) : ''}
         ${header.workingHours ? '<br/>🕐 ' + esc(header.workingHours) : ''}
         ${header.extra ? '<br/>' + esc(header.extra) : ''}
       </div>
@@ -244,6 +278,16 @@ function buildPrintHtml(
     <div class="cl-value">${esc(session.notes)}</div>
   </div>` : ''}
 
+  <!-- Doctor's handwriting notes area -->
+  <div class="handwrite-box">
+    <div class="handwrite-label">Additional Notes / Remarks (Doctor's handwriting)</div>
+    <div class="handwrite-lines">
+      <div class="handwrite-line"></div>
+      <div class="handwrite-line"></div>
+      <div class="handwrite-line"></div>
+    </div>
+  </div>
+
   <!-- Footer -->
   <div class="footer">
     <div style="font-size:11px; color:#94a3b8; line-height:1.7;">
@@ -252,7 +296,7 @@ function buildPrintHtml(
     </div>
     <div class="sig-block">
       <div class="sig-line"></div>
-      <div class="sig-label">Doctor's Signature</div>
+      <div class="sig-label">Doctor's Signature &amp; Stamp</div>
       ${session.doctorName ? `<div class="sig-name">Dr. ${esc(session.doctorName)}</div>` : ''}
     </div>
     <div class="footer-note">
@@ -273,6 +317,7 @@ export default function PrescriptionPrintModal({ session, patient, onClose }: Pr
       address:       h.address ?? '',
       phone:         h.phone ?? '',
       workingHours:  (h as any).workingHours ?? '',
+      whatsapp:      (h as any).whatsapp ?? '',
       extra:         h.extra ?? '',
     }
   })
@@ -281,7 +326,12 @@ export default function PrescriptionPrintModal({ session, patient, onClose }: Pr
   const printRef = useRef(false)
 
   const medicines = session.prescriptions.filter(rx => rx.medicineName.trim())
-  const labs = session.labOrders?.filter(l => l.testName.trim()) ?? []
+  const labs = ((): RxLabOrder[] => {
+    const raw = session.labOrders
+    if (!raw) return []
+    const arr: RxLabOrder[] = typeof raw === 'string' ? (() => { try { return JSON.parse(raw) } catch { return [] } })() : raw
+    return arr.filter(l => l.testName.trim())
+  })()
 
   function handleSaveHeader() {
     saveHeader(header)
@@ -366,6 +416,10 @@ export default function PrescriptionPrintModal({ session, patient, onClose }: Pr
                   <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Working Hours</label>
                   <input className={inputCls} placeholder="e.g. Sat–Thu 9am–5pm" value={header.workingHours} onChange={e => setHeader(h => ({ ...h, workingHours: e.target.value }))} />
                 </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">WhatsApp</label>
+                  <input className={inputCls} placeholder="+1 555 0100" value={header.whatsapp} onChange={e => setHeader(h => ({ ...h, whatsapp: e.target.value }))} />
+                </div>
                 <div className="col-span-2">
                   <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Extra line (e.g. license, specialty)</label>
                   <input className={inputCls} placeholder="License #12345 · General Practice" value={header.extra} onChange={e => setHeader(h => ({ ...h, extra: e.target.value }))} />
@@ -377,7 +431,9 @@ export default function PrescriptionPrintModal({ session, patient, onClose }: Pr
                   <div className="space-y-0.5">
                     <p className="font-semibold">{header.clinicName}</p>
                     {header.address && <p className="text-xs text-slate-500">{header.address}</p>}
-                    {header.phone && <p className="text-xs text-slate-500">{header.phone}</p>}
+                    {header.phone && <p className="text-xs text-slate-500">📞 {header.phone}</p>}
+                    {header.whatsapp && <p className="text-xs text-slate-500">📱 WhatsApp: {header.whatsapp}</p>}
+                    {header.workingHours && <p className="text-xs text-slate-500">🕐 {header.workingHours}</p>}
                     {header.extra && <p className="text-xs text-slate-500">{header.extra}</p>}
                   </div>
                 ) : (
@@ -395,6 +451,8 @@ export default function PrescriptionPrintModal({ session, patient, onClose }: Pr
                 <p className="text-lg font-bold text-teal-700 dark:text-teal-300">{header.clinicName || 'Medical Clinic'}</p>
                 {header.address && <p className="text-xs text-teal-600/70 dark:text-teal-400/70">{header.address}</p>}
                 {header.phone && <p className="text-xs text-teal-600/70 dark:text-teal-400/70">📞 {header.phone}</p>}
+                {header.whatsapp && <p className="text-xs text-teal-600/70 dark:text-teal-400/70">📱 {header.whatsapp}</p>}
+                {header.workingHours && <p className="text-xs text-teal-600/70 dark:text-teal-400/70">🕐 {header.workingHours}</p>}
               </div>
               <span className="text-5xl font-black text-teal-300 dark:text-teal-700 leading-none select-none">℞</span>
             </div>

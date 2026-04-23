@@ -61,6 +61,7 @@ interface Session {
   paymentStatus: string
   paymentMethod?: string | null
   dentalChart?: string | null
+  labOrders?: string | null
   prescriptions: Prescription[]
   patient: { id: string; name: string; phone: string; bloodType?: string | null }
 }
@@ -394,6 +395,32 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
                 <div className="rounded-xl border border-teal-200 dark:border-teal-800 overflow-hidden bg-white dark:bg-slate-800">
                   <div className="px-4 py-3">
                     <DentalChart value={chartData} readOnly />
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Lab Orders */}
+          {(() => {
+            if (!session.labOrders) return null
+            let labs: { testName: string; notes?: string }[] = []
+            try { labs = JSON.parse(session.labOrders) } catch { return null }
+            if (labs.length === 0) return null
+            return (
+              <div>
+                <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-2">🔬 Lab Investigations</p>
+                <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 overflow-hidden">
+                  <div className="divide-y divide-indigo-100 dark:divide-indigo-900/40">
+                    {labs.map((l, i) => (
+                      <div key={i} className="flex items-start gap-3 px-4 py-2.5 bg-white dark:bg-slate-800">
+                        <div className="w-5 h-5 rounded-full bg-indigo-500 text-white text-[9px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{l.testName}</p>
+                          {l.notes && <p className="text-[11px] text-slate-400 italic">{l.notes}</p>}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
