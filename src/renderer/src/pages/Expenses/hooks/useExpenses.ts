@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '../../../contexts/AuthContext'
 import { useToast } from '../../../contexts/ToastContext'
 import { useLanguage } from '../../../contexts/LanguageContext'
 import * as XLSX from 'xlsx'
@@ -22,10 +21,14 @@ const EMPTY_FORM: ExpenseFormData = {
   amount: 0,
   description: '',
   category: 'other',
+  vendor: '',
+  paymentMethod: 'cash',
+  recurrence: 'one_time',
+  date: new Date().toISOString().slice(0, 10),
+  notes: '',
 }
 
 export function useExpenses() {
-  const { user } = useAuth()
   const { success, error } = useToast()
   const { t } = useLanguage()
 
@@ -65,9 +68,11 @@ export function useExpenses() {
     try {
       setLoading(true)
       const { startDate, endDate } = buildDateBounds(dateRange)
-      // @ts-ignore
-      const data = await window.api.finance.getTransactions({ startDate, endDate })
-      setExpenses(data.filter((t: any) => t.type === 'expense'))
+      const data = await window.api.expenses.getAll({
+        startDate: startDate.toISOString(),
+        endDate:   endDate.toISOString(),
+      })
+      setExpenses(data)
     } catch (err) {
       logger.error('Error loading expenses:', err)
       error(t('failedToLoadData'))
@@ -141,11 +146,6 @@ export function useExpenses() {
 
   // ── helpers ──────────────────────────────────────────────────────────────
 
-  const getCategoryFromDescription = (description: string): ExpenseCategory => {
-    const m = description.match(/^\[(.*?)\]/)
-    return (m?.[1] as ExpenseCategory) ?? 'other'
-  }
-
   const getCategoryName = (id: ExpenseCategory) => {
     const cat = EXPENSE_CATEGORIES.find(c => c.id === id)
     return cat ? t(cat.nameKey) : t('other')
@@ -156,13 +156,10 @@ export function useExpenses() {
 
   // ── derived data ─────────────────────────────────────────────────────────
 
-  const enhancedExpenses = expenses.map(e => ({
-    ...e,
-    category: getCategoryFromDescription(e.description),
-  }))
-
-  const filteredExpenses = enhancedExpenses.filter(e => {
-    const matchSearch = e.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredExpenses = expenses.filter(e => {
+    const matchSearch =
+      e.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (e.vendor ?? '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchCat = filterCategory === 'all' || e.category === filterCategory
     return matchSearch && matchCat
   })
@@ -197,9 +194,16 @@ export function useExpenses() {
   const openEdit = (expense: Expense) => {
     setEditingExpense(expense)
     setFormData({
-      amount: expense.amount,
-      description: expense.description.replace(/^\[.*?\]\s*/, ''),
-      category: getCategoryFromDescription(expense.description),
+      amount:        expense.amount,
+      description:   expense.description,
+      category:      expense.category,
+      vendor:        expense.vendor        ?? '',
+      paymentMethod: expense.paymentMethod ?? 'cash',
+      recurrence:    expense.recurrence    ?? 'one_time',
+      date:          expense.date
+                       ? new Date(expense.date).toISOString().slice(0, 10)
+                       : new Date().toISOString().slice(0, 10),
+      notes:         expense.notes         ?? '',
     })
     setShowModal(true)
   }
@@ -211,25 +215,24 @@ export function useExpenses() {
   }
 
   const handleSave = async () => {
-    if (formData.amount <= 0) { error(t('expenseAmountRequired')); return }
+    if (formData.amount <= 0)         { error(t('expenseAmountRequired'));      return }
     if (!formData.description.trim()) { error(t('expenseDescriptionRequired')); return }
-    if (!user) { error(t('mustBeLoggedIn')); return }
 
     try {
-      const description = `[${formData.category}] ${formData.description}`
+      const payload = {
+        amount:        formData.amount,
+        description:   formData.description,
+        category:      formData.category,
+        vendor:        formData.vendor        || undefined,
+        paymentMethod: formData.paymentMethod,
+        recurrence:    formData.recurrence,
+        date:          formData.date,
+        notes:         formData.notes         || undefined,
+      }
       if (editingExpense) {
-        await window.api.finance.updateTransaction(editingExpense.id, {
-          type: 'expense',
-          amount: formData.amount,
-          description,
-        })
+        await window.api.expenses.update(editingExpense.id, payload)
       } else {
-        await window.api.finance.addTransaction({
-          type: 'expense',
-          amount: formData.amount,
-          description,
-          userId: user.id,
-        })
+        await window.api.expenses.create(payload)
       }
       success(editingExpense ? t('expenseUpdated') : t('expenseAdded'))
       closeModal()
@@ -243,7 +246,7 @@ export function useExpenses() {
   const handleDelete = async (id: string) => {
     if (!confirm(t('confirmDeleteExpense'))) return
     try {
-      await window.api.finance.deleteTransaction(id)
+      await window.api.expenses.delete(id)
       success(t('expenseDeleted'))
       loadExpenses()
     } catch (err) {
