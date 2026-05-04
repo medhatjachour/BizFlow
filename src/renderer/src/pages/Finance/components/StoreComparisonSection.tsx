@@ -219,7 +219,7 @@ export default function StoreComparisonSection({ startDate, endDate }: StoreComp
 
       {/* Store Selector */}
       {allStores.length > 1 && (
-        <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
+        <div className="mb-4 ">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-gray-400 mr-2">{t('selectStores')}:</span>
             {allStores.map(store => (
