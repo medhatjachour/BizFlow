@@ -13,7 +13,7 @@
  */
 
 import { useState, useMemo, lazy, Suspense } from 'react'
-import { Search, Filter, Download, Plus, RefreshCw, Package, AlertTriangle, TrendingUp, History, Users, ShoppingCart } from 'lucide-react'
+import { Search, Filter, Download, Plus, RefreshCw, Package, AlertTriangle, TrendingUp, History, Users, ShoppingCart, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useBackendSearch, useFilterMetadata } from '@renderer/hooks/useBackendSearch'
 import { useDebounce } from '@renderer/hooks/useDebounce'
@@ -65,6 +65,7 @@ export default function InventoryPage() {
   const [prefilledPurchaseOrder, setPrefilledPurchaseOrder] = useState<PrefilledPurchaseOrder | null>(null)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [showMetrics, setShowMetrics] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -561,9 +562,23 @@ export default function InventoryPage() {
               )}
             </div>
 
-            {/* Metrics Sidebar */}
-            <div className="w-80 border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-y-auto">
-              <InventoryMetrics metrics={metrics} loading={loading} items={items} />
+            {/* Metrics Sidebar with toggle handle */}
+            <div className="relative flex">
+              {/* Toggle handle — always visible */}
+              <button
+                onClick={() => setShowMetrics(!showMetrics)}
+                className={`absolute -left-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-l-md shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${showMetrics ? '' : ' hover:-translate-x-2'}`}
+                aria-label={showMetrics ? 'Hide analytics panel' : 'Show analytics panel'}
+                title={showMetrics ? 'Hide analytics panel' : 'Show analytics panel'}
+              >
+                {showMetrics ? <ChevronRight size={14} className="text-slate-500 " /> : <ChevronLeft size={14} className="text-slate-500 " />}
+              </button>
+
+              {showMetrics && (
+                <div className="w-80 border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-y-auto">
+                  <InventoryMetrics metrics={metrics} loading={loading} items={items} />
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -29,6 +29,7 @@ import { registerReceiptHandlers as registerThermalReceiptHandlers } from '../..
 import { registerBarcodePrintHandlers }        from '../../../main/ipc/handlers/barcode.handlers'
 import { registerStockMovementHandlers }       from '../../../main/ipc/handlers/stock-movements.handlers'
 import { registerDeleteHandlers }              from '../../../main/ipc/handlers/delete.handlers'
+import { registerCommerceExpenseHandlers }     from '../../../main/ipc/handlers/commerce-expenses.handlers'
 
 export function registerCommerceHandlers(prisma: any): void {
   registerProductsHandlers(prisma)
@@ -47,4 +48,5 @@ export function registerCommerceHandlers(prisma: any): void {
   registerThermalReceiptHandlers()
   registerBarcodePrintHandlers()
   registerDeleteHandlers(prisma)
+  registerCommerceExpenseHandlers(prisma)
 }

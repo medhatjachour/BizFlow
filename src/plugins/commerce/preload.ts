@@ -237,4 +237,24 @@ export const commercePreload = {
     dismissAlert: (variantId: string) => ipcRenderer.invoke('reorder:dismissAlert', variantId),
     generatePurchaseOrder: (data: any) => ipcRenderer.invoke('reorder:generatePurchaseOrder', data),
   },
+
+  // ─── Commerce Expenses ─────────────────────────────────────────────────
+  expenses: {
+    getAll: (params?: { startDate?: string; endDate?: string; category?: string }) =>
+      ipcRenderer.invoke('commerceExpenses:getAll', params ?? {}),
+    create: (data: {
+      amount: number
+      description: string
+      category: string
+      vendor?: string
+      paymentMethod?: string
+      recurrence?: string
+      date?: string
+      notes?: string
+    }) => ipcRenderer.invoke('commerceExpenses:create', data),
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('commerceExpenses:update', { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('commerceExpenses:delete', id),
+  },
 }

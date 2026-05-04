@@ -51,10 +51,26 @@ export function writeSettings(settings: BizFlowSettings): void {
   }
 }
 
-/** Returns the list of currently enabled module IDs (default: clinic). */
+/** Returns the list of currently enabled module IDs.
+ *
+ * Priority:
+ *  1. ENABLED_MODULES env var (set by dev:commerce, dev:clinic, etc.)
+ *  2. Persistent settings file (user-toggled via Settings UI)
+ *  3. Default fallback: ['commerce']
+ */
 export function getEnabledModuleIds(): string[] {
+  // When running via a targeted dev/build script (e.g. npm run dev:commerce),
+  // ENABLED_MODULES is set by cross-env and takes priority over stored settings
+  // so the Finance / Reports / Expenses pages only show the compiled-in plugin.
+  const envModules = process.env.ENABLED_MODULES
+    ?.split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (envModules && envModules.length > 0) {
+    return envModules
+  }
   const settings = readSettings()
-  return settings.enabledModules ?? ['clinic']
+  return settings.enabledModules ?? ['commerce']
 }
 
 /** Enable or disable a module by ID. */

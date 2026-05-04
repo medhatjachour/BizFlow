@@ -42,6 +42,7 @@
     "prisma:seed:dev": "ts-node prisma/seed-development.ts",
     "prisma:seed:clinic": "ts-node prisma/seeds/clinic-dentist/seed.ts",
     "prisma:seed:clinic-dentist": "ts-node prisma/seeds/clinic-dentist/seed.ts",
+    "prisma:seed:commerce": "ts-node prisma/seeds/commerce/seed.ts",
     "prisma:seed:vet": "ts-node prisma/seeds/vet/seed.ts",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
