@@ -64,7 +64,7 @@ export default function TopProducts() {
         <div className="space-y-2">
           {topProducts.map((product, index) => (
             <div
-              key={product.name}
+              key={`${product.id ?? product.name}-${index}`}
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
             >
               <div className="flex items-center justify-center w-8 h-8 rounded bg-primary/10 text-primary font-bold text-sm">
