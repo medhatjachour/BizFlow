@@ -28,7 +28,7 @@ type Tab = 'overview' | 'recipes' | 'production' | 'sales' | 'pantry' | 'waste' 
 
 // ─── How it Works Modal ───────────────────────────────────────────────────────
 
-function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
+function BakeryHowItWorksModal({ onClose, t }: { onClose: () => void; t: (k: string) => string }) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
@@ -45,8 +45,8 @@ function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
               <ChefHat className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Bakery Workflow</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">How production flows through the system</p>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">{t('bakeryHowItWorksTitle')}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('bakeryHowItWorksSubtitle')}</p>
             </div>
           </div>
           <button
@@ -60,16 +60,16 @@ function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
         {/* Flow */}
         <div className="px-6 py-5 space-y-1 overflow-y-auto max-h-[70vh]">
 
-          {/* Step 1 — Recipes */}
-          <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
+          {/* Step 1 — Pantry */}
+          <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
             <div className="flex items-start gap-3">
-              <div className="h-7 w-7 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">1</div>
+              <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">1</div>
               <div>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                  <ChefHat className="h-3.5 w-3.5" /> Recipes
+                <p className="text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" /> {t('bakeryHowStep1Title')}
                 </p>
-                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                  Define what you bake — ingredients, yield quantity, unit, expiry days, and cost per batch. Recipes are your production templates.
+                <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
+                  {t('bakeryHowStep1Desc')}
                 </p>
               </div>
             </div>
@@ -79,16 +79,19 @@ function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
             <ArrowDown className="h-4 w-4 text-slate-400" />
           </div>
 
-          {/* Step 2 — Pantry */}
-          <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4">
+          {/* Step 2 — Recipes */}
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
             <div className="flex items-start gap-3">
-              <div className="h-7 w-7 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">2</div>
+              <div className="h-7 w-7 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">2</div>
               <div>
-                <p className="text-sm font-semibold text-green-800 dark:text-green-300 flex items-center gap-1.5">
-                  <Package className="h-3.5 w-3.5" /> Pantry
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <ChefHat className="h-3.5 w-3.5" /> {t('bakeryHowStep2Title')}
                 </p>
-                <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
-                  Track raw ingredient stock (flour, sugar, eggs…). Ingredients are automatically deducted when you log a production batch.
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                  {t('bakeryHowStep2Desc')}
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-1.5 italic">
+                  💡 {t('bakeryHowStep2Tip')}
                 </p>
               </div>
             </div>
@@ -104,13 +107,13 @@ function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
               <div className="h-7 w-7 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">3</div>
               <div>
                 <p className="text-sm font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
-                  <FlaskConical className="h-3.5 w-3.5" /> Production
+                  <FlaskConical className="h-3.5 w-3.5" /> {t('bakeryHowStep3Title')}
                 </p>
                 <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
-                  Log a bake: choose a recipe and how many batches you made. Deducts ingredients from pantry and creates a batch record with available units to sell.
+                  {t('bakeryHowStep3Desc')}
                 </p>
                 <p className="text-xs text-blue-600 dark:text-blue-500 mt-1.5">
-                  Each batch tracks: units produced → units sold → units remaining → expiry.
+                  {t('bakeryHowStep3Tip')}
                 </p>
               </div>
             </div>
@@ -126,11 +129,10 @@ function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
               <div className="h-7 w-7 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">4</div>
               <div>
                 <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                  <ShoppingBag className="h-3.5 w-3.5" /> Sales
+                  <ShoppingBag className="h-3.5 w-3.5" /> {t('bakeryHowStep4Title')}
                 </p>
                 <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
-                  <span className="font-medium">Sell from Batch</span> (recommended) — shows available stock per batch. Click a batch, enter qty + price, confirm.
-                  Or use <span className="font-medium">Custom Sale</span> for walk-ins or items without a tracked batch.
+                  {t('bakeryHowStep4Desc')}
                 </p>
               </div>
             </div>
@@ -138,38 +140,34 @@ function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
 
           <div className="flex items-center gap-3 pl-2">
             <ArrowDown className="h-4 w-4 text-slate-400" />
-            <p className="text-xs text-slate-500 dark:text-slate-400 italic">Also handle waste and review finances:</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 italic">{t('bakeryHowAlsoTitle')}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3">
               <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1 flex items-center gap-1.5">
-                <Trash2 className="h-3 w-3" /> Waste Log
+                <Trash2 className="h-3 w-3" /> {t('bakeryHowWasteTitle')}
               </p>
-              <p className="text-xs text-red-600 dark:text-red-400">
-                Log expired, dropped, or overbaked items. Linked to batches for cost impact.
-              </p>
+              <p className="text-xs text-red-600 dark:text-red-400">{t('bakeryHowWasteDesc')}</p>
             </div>
             <div className="rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 p-3">
               <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1 flex items-center gap-1.5">
-                <BarChart3 className="h-3 w-3" /> Finance &amp; P&amp;L
+                <BarChart3 className="h-3 w-3" /> {t('bakeryHowPnLTitle')}
               </p>
-              <p className="text-xs text-purple-600 dark:text-purple-400">
-                Revenue, production costs, waste losses, net profit — by recipe and period.
-              </p>
+              <p className="text-xs text-purple-600 dark:text-purple-400">{t('bakeryHowPnLDesc')}</p>
             </div>
           </div>
 
           {/* Summary */}
           <div className="mt-3 rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-3">
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">Summary: what lives where</p>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">{t('bakeryHowSummaryTitle')}</p>
             <div className="space-y-1">
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-amber-600 dark:text-amber-400">Recipes</span> — production templates with ingredients and yield</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-green-600 dark:text-green-400">Pantry</span> — raw ingredient stock; auto-deducted on each batch</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-blue-600 dark:text-blue-400">Production</span> — batch history: units produced, sold, remaining</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-emerald-600 dark:text-emerald-400">Sales</span> — every sale; batch-linked FIFO + custom free-form</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-red-600 dark:text-red-400">Waste</span> — spoilage tracking with cost impact per batch</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-purple-600 dark:text-purple-400">P&amp;L</span> — profit margins, revenue vs cost, trend analysis</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-green-600 dark:text-green-400">{t('bakeryPantryTab')}</span> — {t('bakeryHowSummaryPantry').split('—').slice(1).join('—').trim()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-amber-600 dark:text-amber-400">{t('bakeryRecipesTab')}</span> — {t('bakeryHowSummaryRecipes').split('—').slice(1).join('—').trim()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-blue-600 dark:text-blue-400">{t('bakeryProductionTab')}</span> — {t('bakeryHowSummaryProduction').split('—').slice(1).join('—').trim()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-emerald-600 dark:text-emerald-400">{t('bakerySalesTab')}</span> — {t('bakeryHowSummarySales').split('—').slice(1).join('—').trim()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-red-600 dark:text-red-400">{t('bakeryWasteTab')}</span> — {t('bakeryHowSummaryWaste').split('—').slice(1).join('—').trim()}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400"><span className="font-medium text-purple-600 dark:text-purple-400">{t('bakeryProfitLossTab')}</span> — {t('bakeryHowSummaryPnL').split('—').slice(1).join('—').trim()}</p>
             </div>
           </div>
         </div>
@@ -177,7 +175,6 @@ function BakeryHowItWorksModal({ onClose }: { onClose: () => void }) {
     </div>
   )
 }
-
 export default function BakeryPage() {
   const [active, setActive] = useState<Tab>('overview')
   const [showEOD, setShowEOD] = useState(false)
@@ -205,7 +202,7 @@ export default function BakeryPage() {
         />
       )}
 
-      {showHowItWorks && <BakeryHowItWorksModal onClose={() => setShowHowItWorks(false)} />}
+      {showHowItWorks && <BakeryHowItWorksModal onClose={() => setShowHowItWorks(false)} t={t} />}
 
       {/* Header */}
       <div className="px-6 pt-6 pb-0">
@@ -223,7 +220,7 @@ export default function BakeryPage() {
             onClick={() => setShowHowItWorks(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-700 transition-all"
           >
-            <Info className="h-3.5 w-3.5" /> How it works
+            <Info className="h-3.5 w-3.5" /> {t('bakeryHowItWorksBtn')}
           </button>
         </div>
 

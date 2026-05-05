@@ -29,9 +29,10 @@ export function registerProductionHandlers(prisma: any) {
           where,
           include: {
             recipe: {
-              select: { id: true, name: true, yieldQty: true, yieldUnit: true, expiryDays: true }
+              select: { id: true, name: true, yieldQty: true, yieldUnit: true, expiryDays: true, sellingPrice: true }
             },
-            sales: { select: { id: true, quantity: true } }
+            sales:     { select: { id: true, quantity: true } },
+            wasteLogs: { select: { id: true, quantity: true, reason: true } }
           },
           orderBy: { batchDate: 'desc' },
           skip,
@@ -40,12 +41,17 @@ export function registerProductionHandlers(prisma: any) {
         prisma.productionBatch.count({ where })
       ])
 
-      // Annotate each batch with unitsSold + unitsAvailable
-      const enriched = data.map((b: any) => ({
-        ...b,
-        unitsSold:      b.sales.reduce((s: number, sale: any) => s + sale.quantity, 0),
-        unitsAvailable: Math.max(0, b.unitsProduced - b.sales.reduce((s: number, sale: any) => s + sale.quantity, 0))
-      }))
+      // Annotate each batch with unitsSold + unitsLost + unitsAvailable
+      const enriched = data.map((b: any) => {
+        const unitsSold = b.sales.reduce((s: number, sale: any) => s + sale.quantity, 0)
+        const unitsLost = b.wasteLogs.reduce((s: number, w: any) => s + w.quantity, 0)
+        return {
+          ...b,
+          unitsSold,
+          unitsLost,
+          unitsAvailable: Math.max(0, b.unitsProduced - unitsSold - unitsLost)
+        }
+      })
 
       return { data: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
     } catch (err) {

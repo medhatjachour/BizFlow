@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   ShoppingBag, Plus, Trash2, Loader2, AlertTriangle,
   TrendingUp, Package, DollarSign, Calendar, Filter, X,
-  Search, ArrowLeft, Tag, Pencil, Check
+  Search, ArrowLeft, Tag, Pencil, Check, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import Pagination from './Pagination'
@@ -132,6 +132,9 @@ export default function SalesTab() {
   const [customSubmitting, setCustomSubmitting] = useState(false)
 
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  // Show / hide Available to Sell panel
+  const [showAvailable, setShowAvailable] = useState(true)
 
   // ── Inline price editing ──
   const [editingPriceId, setEditingPriceId]     = useState<string | null>(null)
@@ -380,6 +383,7 @@ export default function SalesTab() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         {/* ── Left: POS Panel ── */}
+        {(showAvailable || selectedGroup || showCustom) && (
         <div className="xl:col-span-1 space-y-4">
 
           {/* ── SELL CONFIRM PANEL (recipe selected) ── */}
@@ -502,10 +506,20 @@ export default function SalesTab() {
           {/* ── PRODUCT LIST ── */}
           {!selectedGroup && !showCustom && (
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 space-y-2">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
                 <h2 className="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
                   <ShoppingBag className="h-4 w-4 text-amber-500" /> Available to Sell
+                  <span className="text-xs font-normal text-slate-400">({filteredGroups.length})</span>
                 </h2>
+                <button
+                  onClick={() => setShowAvailable(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  title="Hide panel"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                   <input
@@ -668,9 +682,10 @@ export default function SalesTab() {
             </div>
           )}
         </div>
+        )}
 
         {/* ── Right: Sales History ── */}
-        <div className="xl:col-span-2">
+        <div className={(!showAvailable && !selectedGroup && !showCustom) ? 'xl:col-span-3' : 'xl:col-span-2'}>
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
 
             {/* Toolbar */}
@@ -679,6 +694,14 @@ export default function SalesTab() {
                 <Calendar className="h-4 w-4 text-slate-400" /> {t('bakerySaleHistory')}
               </h2>
               <div className="flex items-center gap-2">
+                {!showAvailable && !selectedGroup && !showCustom && (
+                  <button
+                    onClick={() => setShowAvailable(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-800 transition-colors"
+                  >
+                    <ShoppingBag className="h-3.5 w-3.5" /> Available to Sell
+                  </button>
+                )}
                 {hasFilters && (
                   <button onClick={clearFilters}
                     className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
