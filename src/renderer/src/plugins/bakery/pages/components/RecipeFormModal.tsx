@@ -17,6 +17,7 @@ type RecipeFormData = {
   outputProductId: string
   yieldQty: number
   yieldUnit: string
+  sellingPrice: string | number
   expiryDays: string | number
   notes: string
   ingredients: Ingredient[]
@@ -28,7 +29,7 @@ const emptyIngredient = (): Ingredient => ({
 
 const defaultForm = (): RecipeFormData => ({
   name: '', description: '', outputProductId: '', yieldQty: 1,
-  yieldUnit: 'pcs', expiryDays: '', notes: '', ingredients: [emptyIngredient()]
+  yieldUnit: 'pcs', sellingPrice: '', expiryDays: '', notes: '', ingredients: [emptyIngredient()]
 })
 
 interface Props {
@@ -57,6 +58,7 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
         outputProductId: recipe.outputProductId ?? '',
         yieldQty: recipe.yieldQty,
         yieldUnit: recipe.yieldUnit,
+        sellingPrice: recipe.sellingPrice ?? '',
         expiryDays: recipe.expiryDays ?? '',
         notes: recipe.notes ?? '',
         ingredients: recipe.ingredients.length
@@ -113,6 +115,7 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
       const payload = {
         ...form,
         outputProductId: form.outputProductId || undefined,
+        sellingPrice: form.sellingPrice !== '' ? Number(form.sellingPrice) : undefined,
         expiryDays: form.expiryDays !== '' ? Number(form.expiryDays) : undefined,
         ingredients: form.ingredients.map(i => ({
           ...i,
@@ -140,6 +143,10 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
     (s, i) => s + Number(i.quantity) * Number(i.costPerUnit), 0
   )
   const costPerUnit = form.yieldQty > 0 ? totalCost / form.yieldQty : 0
+  const sellingPriceNum = form.sellingPrice !== '' ? Number(form.sellingPrice) : null
+  const margin = sellingPriceNum && sellingPriceNum > 0
+    ? ((sellingPriceNum - costPerUnit) / sellingPriceNum) * 100
+    : null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -437,14 +444,50 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
           </div>
 
           {/* Cost preview */}
-          <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 px-4 py-3 flex gap-6 text-sm">
-            <div>
-            <p className="text-xs text-amber-700 dark:text-amber-400">{t('bakeryTotalBatchCost')}</p>
-              <p className="font-bold text-amber-800 dark:text-amber-300">${totalCost.toFixed(2)}</p>
-            </div>
-            <div>
-            <p className="text-xs text-amber-700 dark:text-amber-400">{t('bakeryCostPer')} {form.yieldUnit || 'unit'}</p>
-              <p className="font-bold text-amber-800 dark:text-amber-300">${costPerUnit.toFixed(3)}</p>
+          <div className="rounded-xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-700 p-4">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Pricing</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  Selling Price / {form.yieldUnit || 'unit'}
+                </label>
+                <div className="relative">
+                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.sellingPrice}
+                    onChange={e => setField('sellingPrice', e.target.value)}
+                    placeholder="0.00"
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 pl-6 pr-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+                {sellingPriceNum !== null && sellingPriceNum > 0 && sellingPriceNum < costPerUnit && (
+                  <p className="text-xs text-red-500 mt-1">⚠ Below cost (${costPerUnit.toFixed(2)})</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500 dark:text-slate-400">Batch cost</span>
+                  <span className="font-medium text-slate-700 dark:text-slate-200">${totalCost.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-500 dark:text-slate-400">Cost / {form.yieldUnit || 'unit'}</span>
+                  <span className="font-medium text-amber-600 dark:text-amber-400">${costPerUnit.toFixed(3)}</span>
+                </div>
+                {margin !== null && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-500 dark:text-slate-400">Margin</span>
+                    <span className={`font-bold ${
+                      margin < 0   ? 'text-red-600 dark:text-red-400' :
+                      margin < 20  ? 'text-orange-600 dark:text-orange-400' :
+                      margin < 40  ? 'text-amber-600 dark:text-amber-400' :
+                                    'text-emerald-600 dark:text-emerald-400'
+                    }`}>{margin.toFixed(1)}%</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

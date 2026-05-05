@@ -8,9 +8,14 @@ export function registerProductionHandlers(prisma: any) {
     recipeId?: string
     startDate?: string
     endDate?: string
-    limit?: number
+    page?: number
+    pageSize?: number
   } = {}) => {
     try {
+      const page     = Math.max(1, options.page ?? 1)
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20))
+      const skip     = (page - 1) * pageSize
+
       const where: any = {}
       if (options.recipeId) where.recipeId = options.recipeId
       if (options.startDate || options.endDate) {
@@ -18,16 +23,31 @@ export function registerProductionHandlers(prisma: any) {
         if (options.startDate) where.batchDate.gte = new Date(options.startDate)
         if (options.endDate) where.batchDate.lte = new Date(options.endDate)
       }
-      return await prisma.productionBatch.findMany({
-        where,
-        include: {
-          recipe: {
-            select: { id: true, name: true, yieldQty: true, yieldUnit: true, expiryDays: true }
-          }
-        },
-        orderBy: { batchDate: 'desc' },
-        take: options.limit ?? 200
-      })
+
+      const [data, total] = await Promise.all([
+        prisma.productionBatch.findMany({
+          where,
+          include: {
+            recipe: {
+              select: { id: true, name: true, yieldQty: true, yieldUnit: true, expiryDays: true }
+            },
+            sales: { select: { id: true, quantity: true } }
+          },
+          orderBy: { batchDate: 'desc' },
+          skip,
+          take: pageSize
+        }),
+        prisma.productionBatch.count({ where })
+      ])
+
+      // Annotate each batch with unitsSold + unitsAvailable
+      const enriched = data.map((b: any) => ({
+        ...b,
+        unitsSold:      b.sales.reduce((s: number, sale: any) => s + sale.quantity, 0),
+        unitsAvailable: Math.max(0, b.unitsProduced - b.sales.reduce((s: number, sale: any) => s + sale.quantity, 0))
+      }))
+
+      return { data: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
     } catch (err) {
       log.error('bakery:getProductionBatches error', err)
       throw err
@@ -103,6 +123,45 @@ export function registerProductionHandlers(prisma: any) {
       return await prisma.productionBatch.delete({ where: { id } })
     } catch (err) {
       log.error('bakery:deleteProductionBatch error', err)
+      throw err
+    }
+  })
+
+  /**
+   * Get production batches that still have units available to sell.
+   * Returns batches sorted by expiry (FIFO), excluding expired ones.
+   */
+  ipcMain.handle('bakery:getSellableBatches', async () => {
+    try {
+      const batches = await prisma.productionBatch.findMany({
+        where: {
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: new Date() } }
+          ]
+        },
+        include: {
+          recipe: {
+            select: { id: true, name: true, yieldQty: true, yieldUnit: true, sellingPrice: true, expiryDays: true }
+          },
+          sales: { select: { quantity: true } }
+        },
+        orderBy: [
+          { expiresAt: 'asc' },
+          { batchDate: 'asc' }
+        ],
+        take: 200
+      })
+
+      return batches
+        .map((b: any) => ({
+          ...b,
+          unitsSold:      b.sales.reduce((s: number, sale: any) => s + sale.quantity, 0),
+          unitsAvailable: Math.max(0, b.unitsProduced - b.sales.reduce((s: number, sale: any) => s + sale.quantity, 0))
+        }))
+        .filter((b: any) => b.unitsAvailable > 0)
+    } catch (err) {
+      log.error('bakery:getSellableBatches error', err)
       throw err
     }
   })

@@ -9,9 +9,14 @@ export function registerWasteHandlers(prisma: any) {
     wasteType?: string
     startDate?: string
     endDate?: string
-    limit?: number
+    page?: number
+    pageSize?: number
   } = {}) => {
     try {
+      const page     = Math.max(1, options.page ?? 1)
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20))
+      const skip     = (page - 1) * pageSize
+
       const where: any = {}
       if (options.recipeId) where.recipeId = options.recipeId
       if (options.wasteType) where.wasteType = options.wasteType
@@ -20,16 +25,23 @@ export function registerWasteHandlers(prisma: any) {
         if (options.startDate) where.wasteDate.gte = new Date(options.startDate)
         if (options.endDate) where.wasteDate.lte = new Date(options.endDate)
       }
-      return await prisma.wasteLog.findMany({
-        where,
-        include: {
-          recipe: { select: { id: true, name: true } },
-          product: { select: { id: true, name: true } },
-          pantryIngredient: { select: { id: true, name: true, unit: true } }
-        },
-        orderBy: { wasteDate: 'desc' },
-        take: options.limit ?? 200
-      })
+
+      const [data, total] = await Promise.all([
+        prisma.wasteLog.findMany({
+          where,
+          include: {
+            recipe: { select: { id: true, name: true } },
+            product: { select: { id: true, name: true } },
+            pantryIngredient: { select: { id: true, name: true, unit: true } }
+          },
+          orderBy: { wasteDate: 'desc' },
+          skip,
+          take: pageSize
+        }),
+        prisma.wasteLog.count({ where })
+      ])
+
+      return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
     } catch (err) {
       log.error('bakery:getWasteLogs error', err)
       throw err

@@ -86,11 +86,11 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
         api.getProductionSchedule?.({ date: today.toISOString() }),
       ])
 
-      const todayBatches = r1.status === 'fulfilled' ? (r1.value || []) : []
-      const weekBatches  = r2.status === 'fulfilled' ? (r2.value || []) : []
-      const lowIng       = r3.status === 'fulfilled' ? (r3.value || []) : []
-      const wasteLogs    = r4.status === 'fulfilled' ? (r4.value || []) : []
-      const schedule     = r5.status === 'fulfilled' ? (r5.value || []) : []
+      const todayBatches = r1.status === 'fulfilled' ? (r1.value?.data || r1.value || []) : []
+      const weekBatches  = r2.status === 'fulfilled' ? (r2.value?.data || r2.value || []) : []
+      const lowIng       = r3.status === 'fulfilled' ? (r3.value              || []) : []
+      const wasteLogs    = r4.status === 'fulfilled' ? (r4.value?.data || r4.value || []) : []
+      const schedule     = r5.status === 'fulfilled' ? (r5.value?.data || r5.value || []) : []
 
       setData({ todayBatches, weekBatches, lowIngredients: lowIng, wasteLogs, schedule })
 
@@ -139,7 +139,7 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
           api.getProductionBatches?.({ startDate: sDate.toISOString(), endDate: eDate.toISOString() }),
           api.getProductionSchedule?.({ date: sDate.toISOString() }),
         ])
-        const batches = r1.status === 'fulfilled' ? (r1.value || []) : []
+        const batches = r1.status === 'fulfilled' ? (r1.value?.data || r1.value || []) : []
         const total = batches.length
         const completed = batches.filter((b: any) => b.status === 'completed').length
         const totalActual = batches.reduce((s: number, b: any) => s + Number(b.actualQuantity || 0), 0)
@@ -151,15 +151,15 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
         autoTable(doc, { startY: y, head: [['Recipe', 'Date', 'Planned', 'Actual', 'Status']], body: batches.slice(0, 50).map((b: any) => [b.recipe?.name || 'Unknown', new Date(b.createdAt).toLocaleDateString(), b.plannedQuantity || '-', b.actualQuantity || '-', b.status || '-']), theme: 'striped', headStyles: { fillColor: [217, 119, 6] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'ingredients') {
         const [r1, r2] = await Promise.allSettled([api.getLowIngredients?.(), api.getWasteLogs?.({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })])
-        const low = r1.status === 'fulfilled' ? (r1.value || []) : []
-        const waste = r2.status === 'fulfilled' ? (r2.value || []) : []
+        const low = r1.status === 'fulfilled' ? (r1.value              || []) : []
+        const waste = r2.status === 'fulfilled' ? (r2.value?.data || r2.value || []) : []
         autoTable(doc, { startY: y, head: [['Ingredient', 'Quantity', 'Unit', 'Threshold', 'Status']], body: low.map((i: any) => [i.name, i.quantity, i.unit || 'unit', i.minThreshold || '-', Number(i.quantity) <= 0 ? 'OUT OF STOCK' : 'LOW']), theme: 'striped', headStyles: { fillColor: [22, 163, 74] }, styles: { fontSize: 9 }, margin: { left: 14, right: 14 } })
         y = (doc as any).lastAutoTable.finalY + 10
         doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.text('Waste Logs', 14, y); y += 5
         autoTable(doc, { startY: y, head: [['Item', 'Quantity', 'Reason', 'Date']], body: waste.slice(0, 30).map((w: any) => [w.ingredient?.name || w.itemName || 'Unknown', w.quantity, w.reason || '-', new Date(w.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [220, 38, 38] }, styles: { fontSize: 9 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'waste') {
         const [r1] = await Promise.allSettled([api.getWasteLogs?.({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })])
-        const waste = r1.status === 'fulfilled' ? (r1.value || []) : []
+        const waste = r1.status === 'fulfilled' ? (r1.value?.data || r1.value || []) : []
         autoTable(doc, { startY: y, head: [['Item', 'Qty', 'Cost', 'Reason', 'Date']], body: waste.map((w: any) => [w.ingredient?.name || w.itemName || 'Unknown', w.quantity, w.cost ? `$${w.cost}` : '-', w.reason || '-', new Date(w.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [220, 38, 38] }, styles: { fontSize: 9 }, margin: { left: 14, right: 14 } })
       }
 
@@ -189,8 +189,8 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
           <Croissant size={22} className="text-amber-600 dark:text-amber-400" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Bakery Reports</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Production · Ingredients · Waste & Spoilage</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('bakeryReportTitle')}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t('bakeryReportSubtitle')}</p>
         </div>
       </div>
 
@@ -199,8 +199,8 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 bg-amber-500 rounded-lg"><FileText size={17} className="text-white" /></div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Generate Report</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Select a report type and date range</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('bakeryReportGenerate')}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('bakeryReportSelectHint')}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
@@ -220,18 +220,18 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
         {reportType && (
           <div className="flex flex-wrap items-end gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600">
             <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 Start Date</label>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 {t('bakeryReportStartDate')}</label>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
                 className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 transition-all text-sm" />
             </div>
             <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 End Date</label>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 {t('bakeryReportEndDate')}</label>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                 className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-amber-500 transition-all text-sm" />
             </div>
             <button onClick={handleGenerateReport} disabled={generating}
               className="px-6 py-2.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50 flex items-center gap-2 font-semibold shadow-md transition-all">
-              <BarChart3 size={16} />{generating ? 'Generating…' : 'Generate PDF Report'}
+              <BarChart3 size={16} />{generating ? t('bakeryReportGenerating') : t('bakeryReportGeneratePDF')}
             </button>
           </div>
         )}
@@ -241,7 +241,7 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
       <div className="bg-gradient-to-br from-amber-500/5 to-amber-500/10 dark:from-amber-500/10 dark:to-amber-500/5 p-6 rounded-xl border border-amber-200/50 dark:border-amber-700/30">
         <div className="flex items-center gap-2 mb-4">
           <Activity size={20} className="text-amber-600 dark:text-amber-400" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Today's Bakery Activity</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('bakeryReportTodayActivity')}</h3>
           <span className="px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full text-xs font-medium flex items-center gap-1">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />Live
           </span>
@@ -253,10 +253,10 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard icon={ChefHat}       label="Batches Today"    value={data.todayBatches.length} sub={`${completedToday} completed`}       color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
-            <StatCard icon={Flame}         label="In Progress"      value={inProgressToday}           sub={`${data.schedule.length} scheduled`}  color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
-            <StatCard icon={AlertTriangle} label="Low Ingredients"  value={data.lowIngredients.length} sub="items below threshold"               color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
-            <StatCard icon={Scale}         label="Waste Today"      value={totalWasteQty}              sub={`${data.wasteLogs.length} log entries`} color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
+            <StatCard icon={ChefHat}       label={t('bakeryReportBatchesToday')} value={data.todayBatches.length} sub={`${completedToday} ${t('bakeryReportCompleted')}`}       color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+            <StatCard icon={Flame}         label={t('bakeryReportInProgress')}   value={inProgressToday}           sub={`${data.schedule.length} ${t('bakeryReportScheduled')}`}   color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
+            <StatCard icon={AlertTriangle} label={t('bakeryReportLowIngredients')} value={data.lowIngredients.length} sub={t('bakeryReportBelowThreshold')}                         color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
+            <StatCard icon={Scale}         label={t('bakeryReportWasteToday')}   value={totalWasteQty}              sub={`${data.wasteLogs.length} ${t('bakeryReportLogEntries')}`}  color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
           </div>
         )}
 
@@ -265,7 +265,7 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
           <div className="mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Batch status distribution */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Batch Status Distribution</h4>
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">{t('bakeryReportBatchStatus')}</h4>
               <ResponsiveContainer width="100%" height={140}>
                 <BarChart data={batchChartData} margin={{ top: 0, right: 4, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
@@ -282,20 +282,20 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
             {/* Efficiency summary */}
             {effResult && (
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Yield Efficiency</h4>
-                <p className="text-xs text-slate-500 mb-3">Planned vs actual units produced today</p>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('bakeryReportYieldEff')}</h4>
+                <p className="text-xs text-slate-500 mb-3">{t('bakeryReportYieldSub')}</p>
                 <div className="flex items-center gap-4 mb-3">
                   <div>
                     <p className="text-3xl font-bold text-slate-900 dark:text-white">{effResult.overallPct.toFixed(0)}%</p>
-                    <p className="text-xs text-slate-500">overall yield</p>
+                    <p className="text-xs text-slate-500">{t('bakeryReportOverallYield')}</p>
                   </div>
                   <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-3">
                     <div className={`h-3 rounded-full transition-all ${effResult.overallPct >= 95 ? 'bg-green-500' : effResult.overallPct >= 80 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${Math.min(effResult.overallPct, 100)}%` }} />
                   </div>
                 </div>
                 <div className="flex gap-4 text-xs text-slate-500">
-                  <span className="text-green-600 dark:text-green-400 font-semibold">↑ {effResult.aboveTarget} above target</span>
-                  <span className="text-red-600 dark:text-red-400 font-semibold">↓ {effResult.belowTarget} below target</span>
+                  <span className="text-green-600 dark:text-green-400 font-semibold">↑ {effResult.aboveTarget} {t('bakeryReportAboveTarget')}</span>
+                  <span className="text-red-600 dark:text-red-400 font-semibold">↓ {effResult.belowTarget} {t('bakeryFinanceBelowTarget')}</span>
                 </div>
               </div>
             )}
@@ -307,7 +307,7 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
           <div className="mt-4 bg-red-50 dark:bg-red-900/10 rounded-xl p-4 border border-red-200 dark:border-red-800">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle size={16} className="text-red-600 dark:text-red-400" />
-              <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">Low Stock Ingredients ({data.lowIngredients.length})</h4>
+              <h4 className="text-sm font-semibold text-red-700 dark:text-red-400">{t('bakeryReportLowStockTitle')} ({data.lowIngredients.length})</h4>
             </div>
             <div className="flex flex-wrap gap-2">
               {data.lowIngredients.slice(0, 8).map((ing: any) => (
@@ -323,7 +323,7 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
         {!loading && data.todayBatches.length === 0 && (
           <div className="mt-4 flex flex-col items-center justify-center py-8 text-slate-400 dark:text-slate-600">
             <Croissant size={40} className="opacity-30 mb-2" />
-            <p className="text-sm">No batches scheduled or started today</p>
+            <p className="text-sm">{t('bakeryReportNoBatches')}</p>
           </div>
         )}
       </div>

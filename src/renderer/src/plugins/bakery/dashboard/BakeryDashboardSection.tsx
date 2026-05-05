@@ -95,12 +95,12 @@ export default function BakeryDashboardSection({ refreshSignal }: Props) {
           api.getProductionSchedule?.({ date: today.toISOString() }),
         ])
 
-      const todayBatches = todayBatchesR.status === 'fulfilled' ? (todayBatchesR.value || []) : []
-      const weekBatches  = weekBatchesR.status  === 'fulfilled' ? (weekBatchesR.value  || []) : []
+      const todayBatches = todayBatchesR.status === 'fulfilled' ? (todayBatchesR.value?.data || todayBatchesR.value || []) : []
+      const weekBatches  = weekBatchesR.status  === 'fulfilled' ? (weekBatchesR.value?.data  || weekBatchesR.value  || []) : []
       const recipes      = recipesR.status      === 'fulfilled' ? (recipesR.value?.total ?? recipesR.value?.length ?? 0) : 0
-      const lowIng       = lowIngR.status       === 'fulfilled' ? (lowIngR.value        || []) : []
-      const wasteLogs    = wasteR.status        === 'fulfilled' ? (wasteR.value         || []) : []
-      const schedule     = scheduleR.status     === 'fulfilled' ? (scheduleR.value      || []) : []
+      const lowIng       = lowIngR.status       === 'fulfilled' ? (lowIngR.value              || []) : []
+      const wasteLogs    = wasteR.status        === 'fulfilled' ? (wasteR.value?.data          || wasteR.value          || []) : []
+      const schedule     = scheduleR.status     === 'fulfilled' ? (scheduleR.value?.data       || scheduleR.value       || []) : []
 
       const data: BakeryData = { todayBatches, weekBatches, recipes, lowIngredients: lowIng, wasteLogs, schedule }
       setRaw(data)

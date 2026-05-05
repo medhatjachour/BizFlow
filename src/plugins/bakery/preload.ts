@@ -19,7 +19,8 @@ export const bakeryPreload = {
   deleteRecipe: (id: string) =>
     ipcRenderer.invoke('bakery:deleteRecipe', id),
 
-  // ─── Production ────────────────────────────────────────────────────────
+  // ─── Production ──────────────────────────────────────────────────
+  // getProductionBatches returns { data, total, page, pageSize, totalPages }
   getProductionBatches: (options?: any) =>
     ipcRenderer.invoke('bakery:getProductionBatches', options),
   createProductionBatch: (data: any) =>
@@ -28,8 +29,21 @@ export const bakeryPreload = {
     ipcRenderer.invoke('bakery:deleteProductionBatch', id),
   getAvailableBatches: () =>
     ipcRenderer.invoke('bakery:getAvailableBatches'),
+  getSellableBatches: () =>
+    ipcRenderer.invoke('bakery:getSellableBatches'),
 
-  // ─── Pantry ────────────────────────────────────────────────────────────
+  // ─── Sales ─────────────────────────────────────────────────────
+  // getSales returns { data, total, page, pageSize, totalPages }
+  getSales: (options?: any) =>
+    ipcRenderer.invoke('bakery:getSales', options),
+  createSale: (data: any) =>
+    ipcRenderer.invoke('bakery:createSale', data),
+  deleteSale: (id: string) =>
+    ipcRenderer.invoke('bakery:deleteSale', id),
+  getSalesSummary: (options?: any) =>
+    ipcRenderer.invoke('bakery:getSalesSummary', options),
+  getInventoryStatus: (options?: any) =>
+    ipcRenderer.invoke('bakery:getInventoryStatus', options),
   getPantry: () =>
     ipcRenderer.invoke('bakery:getPantry'),
   upsertPantryIngredient: (data: any) =>

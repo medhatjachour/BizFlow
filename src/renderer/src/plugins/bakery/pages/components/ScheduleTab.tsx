@@ -49,7 +49,8 @@ export default function ScheduleTab() {
         window.api.bakery.getSchedule(),
         window.api.bakery.getRecipes()
       ])
-      setItems(scheduleData)
+      const rawSchedule = scheduleData?.data ?? scheduleData
+      setItems(Array.isArray(rawSchedule) ? rawSchedule : [])
       setRecipes(Array.isArray(recipeData) ? recipeData : recipeData ?? [])
     } catch {
       setError(t('bakeryScheduleLoadFailed'))

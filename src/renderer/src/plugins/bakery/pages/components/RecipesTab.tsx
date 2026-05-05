@@ -22,6 +22,7 @@ type Recipe = {
   description?: string
   yieldQty: number
   yieldUnit: string
+  sellingPrice?: number | null
   notes?: string
   outputProductId?: string
   outputProduct?: { id: string; name: string; basePrice: number }
@@ -114,6 +115,10 @@ export default function RecipesTab() {
           const isOpen = expandedId === recipe.id
           const batchCost = ingredientCost(recipe)
           const unitCost  = costPerUnit(recipe)
+          const sellPrice = recipe.sellingPrice ?? recipe.outputProduct?.basePrice ?? null
+          const margin = sellPrice && sellPrice > 0 && unitCost > 0
+            ? ((sellPrice - unitCost) / sellPrice) * 100
+            : null
 
           return (
             <div
@@ -146,21 +151,26 @@ export default function RecipesTab() {
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-slate-400">{t('bakeryTotalBatchCost')}</p>
-                    <p className="font-medium text-slate-700 dark:text-slate-200">
-                      ${batchCost.toFixed(2)}
-                    </p>
-                  </div>
-                  <div className="text-center">
                     <p className="text-xs text-slate-400">{t('bakeryCostPer')} {recipe.yieldUnit}</p>
                     <p className="font-medium text-amber-600 dark:text-amber-400">
                       ${unitCost.toFixed(2)}
                     </p>
                   </div>
-                  {recipe.outputProduct && (
+                  {sellPrice !== null && (
                     <div className="text-center">
-                      <p className="text-xs text-slate-400">Sale price</p>
-                      <p className="font-medium text-green-600">${recipe.outputProduct.basePrice.toFixed(2)}</p>
+                      <p className="text-xs text-slate-400">Sell price</p>
+                      <p className="font-medium text-emerald-600 dark:text-emerald-400">${sellPrice.toFixed(2)}</p>
+                    </div>
+                  )}
+                  {margin !== null && (
+                    <div className="text-center">
+                      <p className="text-xs text-slate-400">Margin</p>
+                      <p className={`font-bold ${
+                        margin < 0   ? 'text-red-600 dark:text-red-400' :
+                        margin < 20  ? 'text-orange-600 dark:text-orange-400' :
+                        margin < 40  ? 'text-amber-600 dark:text-amber-400' :
+                                      'text-emerald-600 dark:text-emerald-400'
+                      }`}>{margin.toFixed(1)}%</p>
                     </div>
                   )}
                   {recipe._count && (
@@ -255,19 +265,27 @@ export default function RecipesTab() {
                       </tfoot>
                     </table>
                   </div>
-                  {recipe.outputProduct && (
-                    <div className="mt-3 flex gap-4 text-sm">
+                  {sellPrice !== null && (
+                    <div className="mt-3 flex gap-6 text-sm flex-wrap">
                       <span className="text-slate-500">
-                        {t('bakeryLinkedTo')}: <strong className="text-slate-700 dark:text-slate-200">{recipe.outputProduct.name}</strong>
+                        Cost / {recipe.yieldUnit}: <strong className="text-amber-600 dark:text-amber-400">${unitCost.toFixed(3)}</strong>
                       </span>
                       <span className="text-slate-500">
-                        Sale price: <strong className="text-green-600">${recipe.outputProduct.basePrice.toFixed(2)}</strong>
+                        Sell price: <strong className="text-emerald-600 dark:text-emerald-400">${sellPrice.toFixed(2)}</strong>
                       </span>
-                      {recipe.outputProduct.basePrice > 0 && (
+                      {margin !== null && (
                         <span className="text-slate-500">
-                          Margin: <strong className="text-blue-600">
-                            {(((recipe.outputProduct.basePrice - unitCost) / recipe.outputProduct.basePrice) * 100).toFixed(1)}%
-                          </strong>
+                          Margin: <strong className={
+                            margin < 0   ? 'text-red-600' :
+                            margin < 20  ? 'text-orange-600' :
+                            margin < 40  ? 'text-amber-600' :
+                                          'text-emerald-600'
+                          }>{margin.toFixed(1)}%</strong>
+                        </span>
+                      )}
+                      {recipe.outputProduct && (
+                        <span className="text-slate-500">
+                          {t('bakeryLinkedTo')}: <strong className="text-slate-700 dark:text-slate-200">{recipe.outputProduct.name}</strong>
                         </span>
                       )}
                     </div>

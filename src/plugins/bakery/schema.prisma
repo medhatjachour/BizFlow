@@ -16,6 +16,7 @@ model Recipe {
   outputProduct     Product?            @relation("RecipeOutputProduct", fields: [outputProductId], references: [id], onDelete: SetNull)
   yieldQty          Float               @default(1)    // How many units this recipe produces
   yieldUnit         String              @default("pcs") // e.g. "pcs", "kg", "loaves"
+  sellingPrice      Float?                             // Default selling price per yield unit
   notes             String?
   isActive          Boolean             @default(true)
   expiryDays        Int?                // Shelf life in days for produced items
@@ -23,6 +24,7 @@ model Recipe {
   productionBatches ProductionBatch[]
   schedules         ProductionSchedule[]
   wasteLogs         WasteLog[]
+  sales             BakerySale[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -52,17 +54,18 @@ model RecipeIngredient {
 
 // ProductionBatch: A recorded production run for a recipe
 model ProductionBatch {
-  id            String    @id @default(uuid())
+  id            String       @id @default(uuid())
   recipeId      String
-  recipe        Recipe    @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  batchDate     DateTime  @default(now())
-  quantity      Float     // Number of recipe batches produced (multiplier on yieldQty)
-  unitsProduced Float     // = quantity * recipe.yieldQty (pre-computed for convenience)
-  totalCost     Float     @default(0) // Sum of all ingredient costs for this batch
-  expiresAt     DateTime?             // When this batch expires (batchDate + recipe.expiryDays)
+  recipe        Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  batchDate     DateTime     @default(now())
+  quantity      Float        // Number of recipe batches produced (multiplier on yieldQty)
+  unitsProduced Float        // = quantity * recipe.yieldQty (pre-computed for convenience)
+  totalCost     Float        @default(0) // Sum of all ingredient costs for this batch
+  expiresAt     DateTime?                // When this batch expires (batchDate + recipe.expiryDays)
   notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  sales         BakerySale[] // Sales linked to this batch
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([recipeId])
   @@index([batchDate])
@@ -119,6 +122,27 @@ model WasteLog {
   @@index([pantryIngredientId])
   @@index([wasteType])
   @@index([wasteDate])
+}
+
+// BakerySale: Records the sale of bakery products (directly, without commerce module)
+model BakerySale {
+  id          String           @id @default(uuid())
+  recipeId    String?
+  recipe      Recipe?          @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  batchId     String?          // Optional — which batch these units came from
+  batch       ProductionBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  itemName    String           // Name of the item sold (copied from recipe for history)
+  quantity    Float            // Units sold
+  unitPrice   Float            // Price per unit
+  totalAmount Float            // quantity * unitPrice (pre-computed)
+  saleDate    DateTime         @default(now())
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([recipeId])
+  @@index([batchId])
+  @@index([saleDate])
 }
 
 // ProductionSchedule: Plans which recipe to bake on which day

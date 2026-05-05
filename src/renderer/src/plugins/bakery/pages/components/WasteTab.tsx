@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react'
 import { Trash2, Plus, AlertTriangle, PackageX, FlaskConical, Box, HelpCircle, Filter } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import Pagination from './Pagination'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -150,6 +151,10 @@ function TypeBadge({ type }: { type: string }) {
 export default function WasteTab() {
   const { t } = useLanguage()
   const [logs, setLogs] = useState<WasteLog[]>([])
+  const [totalLogs, setTotalLogs] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(20)
+  const [totalPages, setTotalPages] = useState(1)
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
   const [summary, setSummary] = useState<WasteSummary | null>(null)
@@ -162,19 +167,32 @@ export default function WasteTab() {
 
   // ── Data loading ──────────────────────────────────────────────────────────
 
-  const load = async (type?: WasteType | 'all') => {
+  const load = async (type?: WasteType | 'all', pg?: number) => {
     setLoading(true)
     try {
       const activeFilter = type ?? filterType
+      const activePage   = pg ?? page
       const [logData, recipeData, pantryData, summaryData] = await Promise.all([
         window.api.bakery.getWasteLogs({
-          wasteType: activeFilter !== 'all' ? activeFilter : undefined
+          wasteType: activeFilter !== 'all' ? activeFilter : undefined,
+          page: activePage,
+          pageSize
         }),
         window.api.bakery.getRecipes(),
         window.api.bakery.getPantry(),
         window.api.bakery.getWasteSummary()
       ])
-      setLogs(logData)
+      // Handle both paginated and legacy array responses
+      if (logData && typeof logData === 'object' && 'data' in logData) {
+        setLogs(logData.data ?? [])
+        setTotalLogs(logData.total ?? 0)
+        setTotalPages(logData.totalPages ?? 1)
+        setPage(logData.page ?? 1)
+      } else {
+        setLogs(Array.isArray(logData) ? logData : [])
+        setTotalLogs(Array.isArray(logData) ? logData.length : 0)
+        setTotalPages(1)
+      }
       setRecipes(Array.isArray(recipeData) ? recipeData : [])
       setPantryItems(Array.isArray(pantryData) ? pantryData : [])
       setSummary(summaryData)
@@ -185,11 +203,12 @@ export default function WasteTab() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [])  // eslint-disable-line
 
   const applyFilter = (type: WasteType | 'all') => {
     setFilterType(type)
-    load(type)
+    setPage(1)
+    load(type, 1)
   }
 
   // ── Form helpers ──────────────────────────────────────────────────────────
@@ -667,6 +686,17 @@ export default function WasteTab() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {totalPages > 1 && (
+        <div className="mt-4">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            total={totalLogs}
+            onPage={p => { setPage(p); load(undefined, p) }}
+            pageSize={pageSize}
+          />
         </div>
       )}
     </div>
