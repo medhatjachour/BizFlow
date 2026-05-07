@@ -109,7 +109,9 @@ const WASTE_REASON_OPTIONS = [
 ]
 
 const FIELD_CLS =
-  'w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-500'
+  'w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-rose-400 transition-colors'
+
+const LABEL_CLS = 'block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'
 
 const EMPTY_FORM = {
   wasteType: 'other' as WasteType,
@@ -163,6 +165,7 @@ export default function WasteTab() {
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [formError, setFormError] = useState('')
   const [filterType, setFilterType] = useState<WasteType | 'all'>('all')
 
   // ── Data loading ──────────────────────────────────────────────────────────
@@ -255,10 +258,10 @@ export default function WasteTab() {
   const save = async () => {
     const name = form.itemName.trim()
     if (!name || !form.quantity || Number(form.quantity) <= 0) {
-      setError(t('bakeryWasteFillRequired'))
+      setFormError(t('bakeryWasteFillRequired'))
       return
     }
-    setError('')
+    setFormError('')
     setSaving(true)
     try {
       await window.api.bakery.createWasteLog({
@@ -276,9 +279,10 @@ export default function WasteTab() {
       })
       setShowForm(false)
       setForm({ ...EMPTY_FORM })
+      setFormError('')
       load()
     } catch (e: any) {
-      setError(e?.message ?? t('bakeryWasteSaveFailed'))
+      setFormError(e?.message ?? t('bakeryWasteSaveFailed'))
     } finally {
       setSaving(false)
     }
@@ -320,7 +324,7 @@ export default function WasteTab() {
           <p className="text-sm text-slate-500">{t('bakeryWasteSubtitle')}</p>
         </div>
         <button
-          onClick={() => { setShowForm(v => !v); setError('') }}
+          onClick={() => { setShowForm(true); setFormError(''); setForm({ ...EMPTY_FORM }) }}
           className="flex items-center gap-2 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
           <Plus className="h-4 w-4" />
@@ -358,254 +362,330 @@ export default function WasteTab() {
         </div>
       )}
 
-      {/* ── Log form ────────────────────────────────────────────────────────── */}
-      {showForm && (
-        <div className="p-4 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('bakeryLogWaste')}</h3>
+      {/* ── Log form — modal overlay ────────────────────────────────────── */}
+      {showForm && (() => {
+        const closeForm = () => { setShowForm(false); setForm({ ...EMPTY_FORM }); setFormError('') }
+        const saveLabels: Record<WasteType, string> = {
+          ingredient: 'Log Ingredient Waste',
+          finished_product: 'Log Product Waste',
+          production_batch: 'Log Scrapped Batch',
+          other: 'Log Waste Entry'
+        }
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[92vh]">
 
-          {/* Type selector */}
-          <div>
-            <p className="text-xs text-slate-500 mb-2 font-medium">{t('bakeryWasteWhatLogging')}</p>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {WASTE_TYPES.map(wt => {
-                const Icon = wt.icon
-                const active = form.wasteType === wt.value
-                return (
-                  <button
-                    key={wt.value}
-                    type="button"
-                    onClick={() => onTypeChange(wt.value)}
-                    className={`flex flex-col items-start gap-0.5 p-2.5 rounded-lg border text-left transition-all text-sm ${
-                      active
-                        ? `border-rose-400 ${wt.color} ring-2 ring-rose-300 dark:ring-rose-700`
-                        : 'border-slate-200 dark:border-slate-600 hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="h-4 w-4" />
-                      <span className="font-medium leading-tight">{t(wt.labelKey)}</span>
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-xl ${typeMeta.color}`}>
+                    {(() => { const Icon = typeMeta.icon; return <Icon className="h-4 w-4" /> })()}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('bakeryLogWaste')}</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Record a waste event and update stock automatically</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeForm}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors"
+                >&times;</button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+                {/* ── Waste type selector ── */}
+                <div>
+                  <p className={LABEL_CLS}>{t('bakeryWasteWhatLogging')}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {WASTE_TYPES.map(wt => {
+                      const Icon = wt.icon
+                      const active = form.wasteType === wt.value
+                      return (
+                        <button
+                          key={wt.value}
+                          type="button"
+                          onClick={() => onTypeChange(wt.value)}
+                          className={`flex flex-col items-start gap-1 p-3 rounded-xl border-2 text-left transition-all ${
+                            active
+                              ? `border-rose-400 ${wt.color} ring-2 ring-rose-200 dark:ring-rose-800`
+                              : 'border-slate-200 dark:border-slate-600 hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <span className="text-sm font-semibold leading-tight">{t(wt.labelKey)}</span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug break-words w-full">{t(wt.descKey)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Ingredient fields ── */}
+                {form.wasteType === 'ingredient' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWastePantryIngredient')} <span className="text-red-500">*</span></label>
+                      <select className={FIELD_CLS} value={form.pantryIngredientId} onChange={e => onPantrySelect(e.target.value)}>
+                        <option value="">{t('bakeryWasteSelectIngredient')}</option>
+                        {pantryItems.map(p => (
+                          <option key={p.id} value={p.id}>{p.name} — {p.currentStock.toFixed(2)} {p.unit}</option>
+                        ))}
+                      </select>
+                      {selectedPantry && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                          Current stock: <strong>{selectedPantry.currentStock.toFixed(2)} {selectedPantry.unit}</strong>
+                        </p>
+                      )}
                     </div>
-                    <span className="text-xs opacity-70 leading-tight">{t(wt.descKey)}</span>
-                  </button>
-                )
-              })}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="col-span-2">
+                        <label className={LABEL_CLS}>{t('bakeryWasteQuantityLost')} <span className="text-red-500">*</span></label>
+                        <input type="number" step="0.001" min="0" className={FIELD_CLS} placeholder="0"
+                          value={form.quantity} onChange={e => setField('quantity', Number(e.target.value) as any)} />
+                        {selectedPantry && Number(form.quantity) > selectedPantry.currentStock && (
+                          <p className="text-xs text-red-500 mt-1 flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{t('bakeryWasteExceedsStock')}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryIngredientUnit')}</label>
+                        <input className={`${FIELD_CLS} bg-slate-50 dark:bg-slate-700/50`} value={form.unit} readOnly={!!selectedPantry} onChange={e => setField('unit', e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteCost')}</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                          <input type="number" step="0.01" min="0" className={`${FIELD_CLS} pl-7`} value={form.cost} onChange={e => setField('cost', Number(e.target.value) as any)} />
+                        </div>
+                        {form.quantity && form.cost && Number(form.quantity) > 0 && Number(form.cost) > 0 && (
+                          <p className="text-xs text-slate-400 mt-1">Total: <span className="font-semibold text-slate-600 dark:text-slate-300">${(Number(form.quantity) * Number(form.cost)).toFixed(2)}</span></p>
+                        )}
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteReason')}</label>
+                        <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
+                          {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteDate')}</label>
+                      <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteNotesLabel')} <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+                      <textarea rows={2} className={`${FIELD_CLS} resize-none`} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteOptionalNotes')} />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Finished product fields ── */}
+                {form.wasteType === 'finished_product' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteRecipeProduct')} <span className="text-red-500">*</span></label>
+                      <select className={FIELD_CLS} value={form.recipeId} onChange={e => onRecipeSelect(e.target.value)}>
+                        <option value="">{t('bakeryWasteSelectRecipe')}</option>
+                        {recipes.filter(r => r.outputProduct).map(r => (
+                          <option key={r.id} value={r.id}>{r.name} → {r.outputProduct!.name}</option>
+                        ))}
+                      </select>
+                      {selectedRecipe && !selectedRecipe.outputProduct && (
+                        <p className="text-xs text-orange-500 mt-1">{t('bakeryWasteNoLinkedProduct')}</p>
+                      )}
+                      {selectedRecipe?.outputProduct && (
+                        <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">
+                          Product: <strong>{selectedRecipe.outputProduct.name}</strong>
+                        </p>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="col-span-2">
+                        <label className={LABEL_CLS}>{t('bakeryWasteUnitsLost')} <span className="text-red-500">*</span></label>
+                        <input type="number" step="1" min="0" className={FIELD_CLS} placeholder="0"
+                          value={form.quantity} onChange={e => setField('quantity', Number(e.target.value) as any)} />
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryIngredientUnit')}</label>
+                        <input className={FIELD_CLS} value={form.unit} onChange={e => setField('unit', e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteCostEstimated')}</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                          <input type="number" step="0.01" min="0" className={`${FIELD_CLS} pl-7`} value={form.cost} onChange={e => setField('cost', Number(e.target.value) as any)} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteReason')}</label>
+                        <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
+                          {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteDate')}</label>
+                      <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteNotesLabel')} <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+                      <textarea rows={2} className={`${FIELD_CLS} resize-none`} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteOptionalNotes')} />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Production batch fields ── */}
+                {form.wasteType === 'production_batch' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteRecipeLabel')} <span className="text-red-500">*</span></label>
+                      <select className={FIELD_CLS} value={form.recipeId}
+                        onChange={e => {
+                          const r = recipes.find(x => x.id === e.target.value)
+                          setForm(f => ({ ...f, recipeId: e.target.value, itemName: r ? `Scrapped Batch: ${r.name}` : f.itemName }))
+                        }}>
+                        <option value="">{t('bakeryWasteSelectRecipe')}</option>
+                        {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteBatchesLost')} <span className="text-red-500">*</span></label>
+                        <input type="number" step="1" min="0" className={FIELD_CLS} placeholder="0"
+                          value={form.quantity} onChange={e => setField('quantity', Number(e.target.value) as any)} />
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteCostEstimated')}</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                          <input type="number" step="0.01" min="0" className={`${FIELD_CLS} pl-7`} value={form.cost} onChange={e => setField('cost', Number(e.target.value) as any)} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteReason')}</label>
+                        <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
+                          {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteDate')}</label>
+                        <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteNotesLabel')} <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+                      <textarea rows={2} className={`${FIELD_CLS} resize-none`} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteDescribeHappened')} />
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Other / free-text fields ── */}
+                {form.wasteType === 'other' && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteItemName')} <span className="text-red-500">*</span></label>
+                      <input className={FIELD_CLS} value={form.itemName} onChange={e => setField('itemName', e.target.value)} placeholder={t('bakeryWasteItemNamePlaceholder')} />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="col-span-2">
+                        <label className={LABEL_CLS}>{t('bakeryWasteQuantity')} <span className="text-red-500">*</span></label>
+                        <input type="number" step="0.01" min="0" className={FIELD_CLS} placeholder="0"
+                          value={form.quantity} onChange={e => setField('quantity', Number(e.target.value) as any)} />
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryIngredientUnit')}</label>
+                        <input className={FIELD_CLS} value={form.unit} onChange={e => setField('unit', e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteCost')}</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                          <input type="number" step="0.01" min="0" className={`${FIELD_CLS} pl-7`} value={form.cost} onChange={e => setField('cost', Number(e.target.value) as any)} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteReason')}</label>
+                        <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
+                          {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={LABEL_CLS}>{t('bakeryWasteDate')}</label>
+                        <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
+                      </div>
+                      <div>
+                        <label className={LABEL_CLS}>Linked Recipe <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+                        <select className={FIELD_CLS} value={form.recipeId} onChange={e => setField('recipeId', e.target.value)}>
+                          <option value="">— None —</option>
+                          {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={LABEL_CLS}>{t('bakeryWasteNotesLabel')} <span className="normal-case font-normal text-slate-400">(optional)</span></label>
+                      <textarea rows={2} className={`${FIELD_CLS} resize-none`} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteOptionalNotes')} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="shrink-0 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl">
+                {formError && (
+                  <div className="flex items-center gap-2 mx-6 mt-4 px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-400">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    {formError}
+                  </div>
+                )}
+                <div className="flex items-center justify-between px-6 py-4">
+                  <div className="text-xs text-slate-400">
+                    {form.quantity && Number(form.quantity) > 0 && form.cost && Number(form.cost) > 0 && (
+                      <span>Estimated loss: <span className="font-semibold text-rose-600">${(Number(form.quantity) * Number(form.cost)).toFixed(2)}</span></span>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={closeForm}
+                      className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-colors"
+                    >
+                      {t('bakeryCancelBtn')}
+                    </button>
+                    <button
+                      onClick={save}
+                      disabled={saving}
+                      className={`flex items-center gap-2 px-5 py-2 text-sm rounded-xl text-white font-semibold disabled:opacity-50 transition-colors shadow-sm ${
+                        typeMeta.value === 'ingredient' ? 'bg-amber-600 hover:bg-amber-700'
+                        : typeMeta.value === 'finished_product' ? 'bg-rose-600 hover:bg-rose-700'
+                        : typeMeta.value === 'production_batch' ? 'bg-slate-700 hover:bg-slate-800'
+                        : 'bg-violet-600 hover:bg-violet-700'
+                      }`}
+                    >
+                      {saving
+                        ? <><span className="animate-spin inline-block">⟳</span> {t('bakeryWasteSaving')}</>
+                        : saveLabels[form.wasteType]
+                      }
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        )
+      })()}
 
-          {/* ── Ingredient fields ── */}
-          {form.wasteType === 'ingredient' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWastePantryIngredient')} *</label>
-                <select className={FIELD_CLS} value={form.pantryIngredientId} onChange={e => onPantrySelect(e.target.value)}>
-                  <option value="">{t('bakeryWasteSelectIngredient')}</option>
-                  {pantryItems.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.currentStock.toFixed(2)} {p.unit})
-                    </option>
-                  ))}
-                </select>
-                {selectedPantry && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    {t('bakeryWasteCurrentStock')} <strong>{selectedPantry.currentStock.toFixed(2)} {selectedPantry.unit}</strong>
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteQuantityLost')} *</label>
-                <input
-                  type="number" step="0.001" min="0"
-                  className={FIELD_CLS}
-                  placeholder="0"
-                  value={form.quantity}
-                  onChange={e => setField('quantity', Number(e.target.value) as any)}
-                />
-                {selectedPantry && Number(form.quantity) > selectedPantry.currentStock && (
-                  <p className="text-xs text-red-500 mt-1">{t('bakeryWasteExceedsStock')}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryIngredientUnit')}</label>
-                <input className={FIELD_CLS} value={form.unit} readOnly={!!selectedPantry} onChange={e => setField('unit', e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteCost')}</label>
-                <input type="number" step="0.01" min="0" className={FIELD_CLS} value={form.cost} onChange={e => setField('cost', Number(e.target.value) as any)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteReason')}</label>
-                <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
-                  {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteDate')}</label>
-                <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
-              </div>
-              <div className="col-span-2 sm:col-span-3">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteNotesLabel')}</label>
-                <input className={FIELD_CLS} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteOptionalNotes')} />
-              </div>
-            </div>
-          )}
-
-          {/* ── Finished product fields ── */}
-          {form.wasteType === 'finished_product' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteRecipeProduct')} *</label>
-                <select className={FIELD_CLS} value={form.recipeId} onChange={e => onRecipeSelect(e.target.value)}>
-                  <option value="">{t('bakeryWasteSelectRecipe')}</option>
-                  {recipes.filter(r => r.outputProduct).map(r => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} → {r.outputProduct!.name}
-                    </option>
-                  ))}
-                </select>
-                {selectedRecipe && !selectedRecipe.outputProduct && (
-                  <p className="text-xs text-orange-500 mt-1">{t('bakeryWasteNoLinkedProduct')}</p>
-                )}
-                {selectedRecipe?.outputProduct && (
-                  <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                    {t('bakeryWasteProductLabel')} <strong>{selectedRecipe.outputProduct.name}</strong> — {t('bakeryWasteProductStock')}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteUnitsLost')} *</label>
-                <input type="number" step="1" min="0" className={FIELD_CLS} placeholder="0" value={form.quantity}
-                  onChange={e => setField('quantity', Number(e.target.value) as any)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryIngredientUnit')}</label>
-                <input className={FIELD_CLS} value={form.unit} onChange={e => setField('unit', e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteCostEstimated')}</label>
-                <input type="number" step="0.01" min="0" className={FIELD_CLS} value={form.cost}
-                  onChange={e => setField('cost', Number(e.target.value) as any)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteReason')}</label>
-                <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
-                  {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteDate')}</label>
-                <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
-              </div>
-              <div className="col-span-2 sm:col-span-3">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteNotesLabel')}</label>
-                <input className={FIELD_CLS} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteOptionalNotes')} />
-              </div>
-            </div>
-          )}
-
-          {/* ── Production batch fields ── */}
-          {form.wasteType === 'production_batch' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteRecipeLabel')} *</label>
-                <select className={FIELD_CLS} value={form.recipeId}
-                  onChange={e => {
-                    const r = recipes.find(x => x.id === e.target.value)
-                    setForm(f => ({ ...f, recipeId: e.target.value, itemName: r ? `${t('bakeryWasteScrappedBatch')} ${r.name}` : f.itemName }))
-                  }}>
-                  <option value="">{t('bakeryWasteSelectRecipe')}</option>
-                  {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteBatchesLost')}</label>
-                <input type="number" step="1" min="0" className={FIELD_CLS} placeholder="0" value={form.quantity}
-                  onChange={e => setField('quantity', Number(e.target.value) as any)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteCostEstimated')}</label>
-                <input type="number" step="0.01" min="0" className={FIELD_CLS} value={form.cost}
-                  onChange={e => setField('cost', Number(e.target.value) as any)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteReason')}</label>
-                <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
-                  {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteDate')}</label>
-                <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
-              </div>
-              <div className="col-span-2 sm:col-span-3">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteNotesLabel')}</label>
-                <input className={FIELD_CLS} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteDescribeHappened')} />
-              </div>
-            </div>
-          )}
-
-          {/* ── Other / free-text fields ── */}
-          {form.wasteType === 'other' && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div className="col-span-2 sm:col-span-1">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteItemName')} *</label>
-                <input className={FIELD_CLS} value={form.itemName} onChange={e => setField('itemName', e.target.value)} placeholder={t('bakeryWasteItemNamePlaceholder')} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteQuantity')} *</label>
-                <input type="number" step="0.01" min="0" className={FIELD_CLS} placeholder="0" value={form.quantity}
-                  onChange={e => setField('quantity', Number(e.target.value) as any)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryIngredientUnit')}</label>
-                <input className={FIELD_CLS} value={form.unit} onChange={e => setField('unit', e.target.value)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteCost')}</label>
-                <input type="number" step="0.01" min="0" className={FIELD_CLS} value={form.cost}
-                  onChange={e => setField('cost', Number(e.target.value) as any)} />
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteReason')}</label>
-                <select className={FIELD_CLS} value={form.reason} onChange={e => setField('reason', e.target.value)}>
-                  {WASTE_REASON_OPTIONS.map(r => <option key={r.value} value={r.value}>{t(r.key)}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteDate')}</label>
-                <input type="date" className={FIELD_CLS} value={form.wasteDate} onChange={e => setField('wasteDate', e.target.value)} />
-              </div>
-              <div className="col-span-2 sm:col-span-3">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryLinkedRecipe')}</label>
-                <select className={FIELD_CLS} value={form.recipeId} onChange={e => setField('recipeId', e.target.value)}>
-                  <option value="">— {t('bakeryOutputProductNone')} —</option>
-                  {recipes.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2 sm:col-span-3">
-                <label className="block text-xs text-slate-500 mb-1">{t('bakeryWasteNotesLabel')}</label>
-                <input className={FIELD_CLS} value={form.notes} onChange={e => setField('notes', e.target.value)} placeholder={t('bakeryWasteOptionalNotes')} />
-              </div>
-            </div>
-          )}
-
-          {/* Form actions */}
-          <div className="flex gap-2 justify-end pt-1">
-            <button
-              onClick={() => { setShowForm(false); setForm({ ...EMPTY_FORM }); setError('') }}
-              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
-            >
-              {t('bakeryCancelBtn')}
-            </button>
-            <button
-              onClick={save}
-              disabled={saving}
-              className={`px-4 py-1.5 text-sm rounded-lg text-white font-medium disabled:opacity-50 transition-colors ${typeMeta.value === 'ingredient' ? 'bg-amber-600 hover:bg-amber-700' : typeMeta.value === 'finished_product' ? 'bg-rose-600 hover:bg-rose-700' : typeMeta.value === 'production_batch' ? 'bg-slate-700 hover:bg-slate-800' : 'bg-violet-600 hover:bg-violet-700'}`}
-            >
-              {saving ? t('bakeryWasteSaving') : `${t('bakeryWasteLogBtn')} ${t(typeMeta.labelKey)}`}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 flex-wrap">

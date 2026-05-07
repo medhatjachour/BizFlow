@@ -44,7 +44,8 @@ export function registerPantryHandlers(prisma: any) {
         return await prisma.pantryIngredient.update({ where: { id: data.id }, data: fields })
       }
       return await prisma.pantryIngredient.create({ data: fields })
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.code === 'P2002') throw new Error('DUPLICATE_NAME')
       log.error('bakery:upsertPantryIngredient error', err)
       throw err
     }
@@ -78,6 +79,7 @@ export function registerPantryHandlers(prisma: any) {
   ipcMain.handle('bakery:markPantryReordered', async (_e, data: {
     id: string
     quantityReceived?: number
+    purchasePrice?: number
   }) => {
     try {
       return await prisma.pantryIngredient.update({
@@ -86,11 +88,43 @@ export function registerPantryHandlers(prisma: any) {
           lastOrderedDate: new Date(),
           ...(data.quantityReceived != null && {
             currentStock: { increment: data.quantityReceived }
+          }),
+          ...(data.purchasePrice != null && data.purchasePrice > 0 && {
+            costPerUnit: data.purchasePrice
           })
         }
       })
     } catch (err) {
       log.error('bakery:markPantryReordered error', err)
+      throw err
+    }
+  })
+
+  ipcMain.handle('bakery:bulkRestock', async (_e, items: Array<{
+    id: string
+    quantityReceived?: number
+    purchasePrice?: number
+  }>) => {
+    try {
+      const results = []
+      for (const item of items) {
+        const result = await prisma.pantryIngredient.update({
+          where: { id: item.id },
+          data: {
+            lastOrderedDate: new Date(),
+            ...(item.quantityReceived != null && {
+              currentStock: { increment: item.quantityReceived }
+            }),
+            ...(item.purchasePrice != null && item.purchasePrice > 0 && {
+              costPerUnit: item.purchasePrice
+            })
+          }
+        })
+        results.push(result)
+      }
+      return results
+    } catch (err) {
+      log.error('bakery:bulkRestock error', err)
       throw err
     }
   })

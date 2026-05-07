@@ -54,6 +54,8 @@ export const bakeryPreload = {
     ipcRenderer.invoke('bakery:deletePantryIngredient', id),
   markPantryReordered: (data: any) =>
     ipcRenderer.invoke('bakery:markPantryReordered', data),
+  bulkRestock: (items: any[]) =>
+    ipcRenderer.invoke('bakery:bulkRestock', items),
 
   // ─── Waste ─────────────────────────────────────────────────────────────
   getWasteLogs: (options?: any) =>
