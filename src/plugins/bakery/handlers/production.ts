@@ -96,13 +96,6 @@ export function registerProductionHandlers(prisma: any) {
           }
         }
 
-        if ((recipe as any).outputProductId) {
-          await tx.productVariant.updateMany({
-            where: { productId: (recipe as any).outputProductId },
-            data: { stock: { increment: unitsProduced } }
-          })
-        }
-
         return tx.productionBatch.create({
           data: {
             recipeId: data.recipeId,

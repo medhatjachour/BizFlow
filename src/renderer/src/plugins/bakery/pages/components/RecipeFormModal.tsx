@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2, Loader2, Link2, AlertTriangle, CheckCircle2, Package, Unlink } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Link2, AlertTriangle, CheckCircle2, Unlink } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 type Ingredient = {
@@ -14,7 +14,6 @@ type RecipeFormData = {
   id?: string
   name: string
   description: string
-  outputProductId: string
   yieldQty: number
   yieldUnit: string
   sellingPrice: string | number
@@ -28,7 +27,7 @@ const emptyIngredient = (): Ingredient => ({
 })
 
 const defaultForm = (): RecipeFormData => ({
-  name: '', description: '', outputProductId: '', yieldQty: 1,
+  name: '', description: '', yieldQty: 1,
   yieldUnit: 'pcs', sellingPrice: '', expiryDays: '', notes: '', ingredients: [emptyIngredient()]
 })
 
@@ -41,7 +40,6 @@ interface Props {
 
 export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Props) {
   const [form, setForm]       = useState<RecipeFormData>(defaultForm())
-  const [products, setProducts] = useState<any[]>([])
   const [pantryItems, setPantryItems] = useState<any[]>([])
   const [saving, setSaving]   = useState(false)
   const [errors, setErrors]   = useState<Record<string, string>>({})
@@ -55,7 +53,6 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
         id: recipe.id,
         name: recipe.name,
         description: recipe.description ?? '',
-        outputProductId: recipe.outputProductId ?? '',
         yieldQty: recipe.yieldQty,
         yieldUnit: recipe.yieldUnit,
         sellingPrice: recipe.sellingPrice ?? '',
@@ -74,13 +71,10 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
     setErrors({})
   }, [open, recipe])
 
-  /* Load products for the "output product" dropdown */
+  /* Load pantry items for ingredient linking */
   useEffect(() => {
     if (!open) return
-    ;(window as any).api.products.getAll({ includeImages: false })
-      .then((data: any) => setProducts(Array.isArray(data) ? data : (data?.products ?? [])))
-      .catch(() => setProducts([]))
-    ;window.api.bakery.getPantry()
+    window.api.bakery.getPantry()
       .then((items: any[]) => setPantryItems(items ?? []))
       .catch(() => setPantryItems([]))
   }, [open])
@@ -114,7 +108,6 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
     try {
       const payload = {
         ...form,
-        outputProductId: form.outputProductId || undefined,
         sellingPrice: form.sellingPrice !== '' ? Number(form.sellingPrice) : undefined,
         expiryDays: form.expiryDays !== '' ? Number(form.expiryDays) : undefined,
         ingredients: form.ingredients.map(i => ({
@@ -225,25 +218,6 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
               />
               <p className="text-xs text-slate-400 mt-1">{t('bakeryExpiryDaysHint')}</p>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {t('bakeryOutputProduct')}
-              </label>
-              <select
-                value={form.outputProductId}
-                onChange={e => setField('outputProductId', e.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-              >
-                <option value="">{t('bakeryOutputProductNone')}</option>
-                {products.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-400 mt-1">
-                {t('bakeryOutputProductHint')}
-              </p>
             </div>
           </div>
 

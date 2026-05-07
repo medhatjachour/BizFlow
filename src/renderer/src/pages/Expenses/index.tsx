@@ -1,4 +1,4 @@
-import { Plus, Download } from 'lucide-react'
+import { Plus, Download, AlertCircle } from 'lucide-react'
 import { useExpenses } from './hooks/useExpenses'
 import SummaryCards from './components/SummaryCards'
 import ExpenseFilters from './components/ExpenseFilters'
@@ -34,20 +34,32 @@ export default function Expenses() {
         <div className="flex items-center gap-2">
           <button
             onClick={s.handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            disabled={!s.apiAvailable}
+            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download size={18} />
             {s.t('export')}
           </button>
           <button
             onClick={s.openAdd}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            disabled={!s.apiAvailable}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus size={18} />
             {s.t('add')} {s.t('expenses')}
           </button>
         </div>
       </div>
+
+      {!s.apiAvailable && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Expense tracking requires the <strong>Commerce</strong> module. This module is not enabled in the current build.
+            Expense records and revenue data are unavailable.
+          </span>
+        </div>
+      )}
 
       <SummaryCards
         operationalExpenses={s.operationalExpenses}

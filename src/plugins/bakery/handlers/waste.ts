@@ -31,7 +31,6 @@ export function registerWasteHandlers(prisma: any) {
           where,
           include: {
             recipe: { select: { id: true, name: true } },
-            product: { select: { id: true, name: true } },
             pantryIngredient: { select: { id: true, name: true, unit: true } }
           },
           orderBy: { wasteDate: 'desc' },
@@ -51,7 +50,6 @@ export function registerWasteHandlers(prisma: any) {
   ipcMain.handle('bakery:createWasteLog', async (_e, data: {
     wasteType: string
     recipeId?: string
-    productId?: string
     pantryIngredientId?: string
     productionBatchId?: string
     itemName: string
@@ -68,7 +66,6 @@ export function registerWasteHandlers(prisma: any) {
           data: {
             wasteType: data.wasteType ?? 'other',
             recipeId: data.recipeId ?? null,
-            productId: data.productId ?? null,
             pantryIngredientId: data.pantryIngredientId ?? null,
             productionBatchId: data.productionBatchId ?? null,
             itemName: data.itemName,
@@ -81,7 +78,6 @@ export function registerWasteHandlers(prisma: any) {
           },
           include: {
             recipe: { select: { id: true, name: true } },
-            product: { select: { id: true, name: true } },
             pantryIngredient: { select: { id: true, name: true, unit: true } }
           }
         })
@@ -90,11 +86,6 @@ export function registerWasteHandlers(prisma: any) {
           await tx.pantryIngredient.update({
             where: { id: data.pantryIngredientId },
             data: { currentStock: { decrement: data.quantity } }
-          })
-        } else if (data.wasteType === 'finished_product' && data.productId) {
-          await tx.productVariant.updateMany({
-            where: { productId: data.productId },
-            data: { stock: { decrement: data.quantity } }
           })
         }
 

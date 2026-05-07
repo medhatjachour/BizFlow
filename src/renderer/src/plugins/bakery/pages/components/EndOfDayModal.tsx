@@ -5,7 +5,6 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 type EODEntry = {
   recipeId: string
   recipeName: string
-  outputProductId: string | null
   yieldUnit: string
   unitsProduced: number
   unitsSold: number
@@ -55,7 +54,6 @@ export default function EndOfDayModal({ onClose, onWasteLogged }: Props) {
         if (wasteQty <= 0) continue
         await window.api.bakery.createWasteLog({
           recipeId: entry.recipeId,
-          productId: entry.outputProductId ?? undefined,
           itemName: entry.recipeName,
           quantity: wasteQty,
           unit: entry.yieldUnit || 'pcs',

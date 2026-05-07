@@ -87,5 +87,19 @@ export const bakeryPreload = {
   getProductionRequirements: (data: any) =>
     ipcRenderer.invoke('bakery:getProductionRequirements', data),
   getEndOfDaySuggestion: () =>
-    ipcRenderer.invoke('bakery:getEndOfDaySuggestion')
+    ipcRenderer.invoke('bakery:getEndOfDaySuggestion'),
+
+  // ─── Expenses ──────────────────────────────────────────────────────────
+  expenses: {
+    getAll: (options?: any) =>
+      ipcRenderer.invoke('bakery:expenses:getAll', options),
+    create: (data: any) =>
+      ipcRenderer.invoke('bakery:expenses:create', data),
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('bakery:expenses:update', id, data),
+    delete: (id: string) =>
+      ipcRenderer.invoke('bakery:expenses:delete', id),
+    getSummary: (options?: any) =>
+      ipcRenderer.invoke('bakery:expenses:getSummary', options),
+  }
 }

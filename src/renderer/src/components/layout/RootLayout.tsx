@@ -170,7 +170,11 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&
-      (n.href !== '/expenses'  || (!(__PLUGIN_CLINIC__ && clinicEnabled) && !(__PLUGIN_VET__ && vetEnabled)))
+      (n.href !== '/expenses'  || (
+        __PLUGIN_COMMERCE__ && commerceEnabled &&
+        !(__PLUGIN_CLINIC__ && clinicEnabled) &&
+        !(__PLUGIN_VET__ && vetEnabled)
+      ))
     )
   ]
 

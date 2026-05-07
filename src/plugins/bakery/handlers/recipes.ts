@@ -13,9 +13,6 @@ export function registerRecipeHandlers(prisma: any) {
             include: { pantryIngredient: { select: { id: true, name: true, currentStock: true, unit: true } } },
             orderBy: { createdAt: 'asc' }
           },
-          outputProduct: {
-            select: { id: true, name: true, basePrice: true, baseCost: true }
-          },
           _count: { select: { productionBatches: true } }
         },
         orderBy: { name: 'asc' }
@@ -29,7 +26,6 @@ export function registerRecipeHandlers(prisma: any) {
   ipcMain.handle('bakery:createRecipe', async (_e, data: {
     name: string
     description?: string
-    outputProductId?: string
     yieldQty: number
     yieldUnit: string
     sellingPrice?: number
@@ -49,7 +45,6 @@ export function registerRecipeHandlers(prisma: any) {
         data: {
           name: data.name,
           description: data.description,
-          outputProductId: data.outputProductId || null,
           yieldQty: Number(data.yieldQty),
           yieldUnit: data.yieldUnit,
           sellingPrice: data.sellingPrice != null ? Number(data.sellingPrice) : null,
@@ -78,7 +73,6 @@ export function registerRecipeHandlers(prisma: any) {
     id: string
     name?: string
     description?: string
-    outputProductId?: string | null
     yieldQty?: number
     yieldUnit?: string
     sellingPrice?: number | null

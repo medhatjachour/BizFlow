@@ -12,7 +12,7 @@
  */
 
 import { useState } from 'react'
-import { ChefHat, FlaskConical, BarChart3, Package, Trash2, Calendar, LayoutDashboard, ShoppingBag, Info, X, ArrowDown } from 'lucide-react'
+import { ChefHat, FlaskConical, BarChart3, Package, Trash2, Calendar, LayoutDashboard, ShoppingBag, Info, X, ArrowDown, Receipt } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import DailyOverviewTab from './components/DailyOverviewTab'
 import RecipesTab from './components/RecipesTab'
@@ -23,8 +23,9 @@ import WasteTab from './components/WasteTab'
 import ScheduleTab from './components/ScheduleTab'
 import ProfitLossTab from './components/ProfitLossTab'
 import EndOfDayModal from './components/EndOfDayModal'
+import BakeryExpensesTab from './components/ExpensesTab'
 
-type Tab = 'overview' | 'recipes' | 'production' | 'sales' | 'pantry' | 'waste' | 'schedule' | 'pnl'
+type Tab = 'overview' | 'recipes' | 'production' | 'sales' | 'pantry' | 'waste' | 'schedule' | 'pnl' | 'expenses'
 
 // ─── How it Works Modal ───────────────────────────────────────────────────────
 
@@ -189,7 +190,8 @@ export default function BakeryPage() {
     { key: 'pantry',     label: t('bakeryPantryTab'),     Icon: Package },
     { key: 'waste',      label: t('bakeryWasteTab'),      Icon: Trash2 },
     { key: 'schedule',   label: t('bakeryScheduleTab'),   Icon: Calendar },
-    { key: 'pnl',        label: t('bakeryProfitLossTab'), Icon: BarChart3 }
+    { key: 'pnl',        label: t('bakeryProfitLossTab'), Icon: BarChart3 },
+    { key: 'expenses',   label: 'Expenses',               Icon: Receipt }
   ]
 
   return (
@@ -252,8 +254,9 @@ export default function BakeryPage() {
         {active === 'sales'      && <SalesTab />}
         {active === 'pantry'     && <PantryTab />}
         {active === 'waste'      && <WasteTab />}
-        {active === 'schedule'   && <ScheduleTab />}
-        {active === 'pnl'        && <ProfitLossTab />}
+        {active === 'schedule'  && <ScheduleTab />}
+        {active === 'pnl'       && <ProfitLossTab />}
+        {active === 'expenses'  && <BakeryExpensesTab />}
       </div>
     </div>
   )

@@ -24,7 +24,7 @@ function resolveEnabledPlugins(): string[] {
 const enabledPlugins = resolveEnabledPlugins()
 
 // Auto-enable commerce when any dependent plugin is enabled (they reference Product, Customer etc.)
-const DEPENDS_ON_COMMERCE = ['bakery', 'restaurant', 'warehouse']
+const DEPENDS_ON_COMMERCE = ['restaurant', 'warehouse']
 if (DEPENDS_ON_COMMERCE.some(p => enabledPlugins.includes(p)) && !enabledPlugins.includes('commerce')) {
   enabledPlugins.push('commerce')
 }

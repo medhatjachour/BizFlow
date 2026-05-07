@@ -12,8 +12,6 @@ model Recipe {
   id                String              @id @default(uuid())
   name              String
   description       String?
-  outputProductId   String?             // Optional link to a Product in stock
-  outputProduct     Product?            @relation("RecipeOutputProduct", fields: [outputProductId], references: [id], onDelete: SetNull)
   yieldQty          Float               @default(1)    // How many units this recipe produces
   yieldUnit         String              @default("pcs") // e.g. "pcs", "kg", "loaves"
   sellingPrice      Float?                             // Default selling price per yield unit
@@ -30,7 +28,6 @@ model Recipe {
 
   @@index([name])
   @@index([isActive])
-  @@index([outputProductId])
 }
 
 // RecipeIngredient: One ingredient line in a recipe
@@ -64,6 +61,7 @@ model ProductionBatch {
   expiresAt     DateTime?                // When this batch expires (batchDate + recipe.expiryDays)
   notes         String?
   sales         BakerySale[] // Sales linked to this batch
+  wasteLogs     WasteLog[]   @relation("BatchWasteLogs")
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -97,28 +95,22 @@ model PantryIngredient {
 model WasteLog {
   id                 String            @id @default(uuid())
   wasteType          String            @default("other")
-  // 'ingredient'       — raw pantry ingredient lost (deducts pantry stock)
-  // 'finished_product' — finished product units lost (deducts product variant stock)
-  // 'production_batch' — entire production batch scrapped (linked to a batch)
-  // 'other'            — free-text, no stock deduction
   recipeId           String?
   recipe             Recipe?           @relation(fields: [recipeId], references: [id], onDelete: SetNull)
-  productId          String?
-  product            Product?          @relation("ProductWasteLogs", fields: [productId], references: [id], onDelete: SetNull)
   pantryIngredientId String?
   pantryIngredient   PantryIngredient? @relation(fields: [pantryIngredientId], references: [id], onDelete: SetNull)
-  productionBatchId  String?           // Optional link to a specific batch
-  itemName           String            // Free-text name (ingredient or product name)
+  productionBatchId  String?
+  productionBatch    ProductionBatch?  @relation("BatchWasteLogs", fields: [productionBatchId], references: [id], onDelete: SetNull)
+  itemName           String
   quantity           Float
   unit               String            @default("pcs")
-  cost               Float             @default(0)   // Estimated value lost
-  reason             String?           // e.g. "Expired", "Dropped", "Overbaked"
+  cost               Float             @default(0)
+  reason             String?
   wasteDate          DateTime          @default(now())
   notes              String?
   createdAt          DateTime          @default(now())
 
   @@index([recipeId])
-  @@index([productId])
   @@index([pantryIngredientId])
   @@index([wasteType])
   @@index([wasteDate])
@@ -161,4 +153,23 @@ model ProductionSchedule {
   @@index([recipeId])
   @@index([scheduledDate])
   @@index([status])
+}
+
+// BakeryExpense: Tracks bakery operating costs (ingredients, equipment, packaging, etc.)
+model BakeryExpense {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now())
+  // ingredients | equipment | packaging | rent | utilities | marketing | maintenance | salaries | other
+  category      String   @default("other")
+  description   String
+  amount        Float
+  vendor        String?
+  paymentMethod String   @default("cash") // cash | card | transfer | cheque
+  recurrence    String   @default("one_time") // one_time | weekly | monthly | yearly
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
 }
