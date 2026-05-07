@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   ShoppingBag, Plus, Trash2, Loader2, AlertTriangle,
   TrendingUp, Package, DollarSign, Calendar, Filter, X,
-  Search, ArrowLeft, Tag, Pencil, Check, ChevronDown, ChevronUp
+  Search, ArrowLeft, Tag, Pencil, Check, ChevronDown
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import Pagination from './Pagination'
@@ -133,8 +133,11 @@ export default function SalesTab() {
 
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  // Show / hide Available to Sell panel
-  const [showAvailable, setShowAvailable] = useState(true)
+  // Sub-tab: 'sell' = POS panel, 'history' = sales log
+  const [activeSubTab, setActiveSubTab] = useState<'sell' | 'history'>('sell')
+
+  // POS quick-filter
+  const [posFilter, setPosFilter] = useState<'' | 'expiring' | 'noprice'>('')
 
   // ── Inline price editing ──
   const [editingPriceId, setEditingPriceId]     = useState<string | null>(null)
@@ -165,10 +168,15 @@ export default function SalesTab() {
   }, [sellableBatches])
 
   const filteredGroups = useMemo(() => {
-    if (!searchQuery) return byRecipe
-    const q = searchQuery.toLowerCase()
-    return byRecipe.filter(g => g.recipe.name.toLowerCase().includes(q))
-  }, [byRecipe, searchQuery])
+    let groups = byRecipe
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      groups = groups.filter(g => g.recipe.name.toLowerCase().includes(q))
+    }
+    if (posFilter === 'expiring') groups = groups.filter(g => g.earliestExpiry && daysUntil(g.earliestExpiry) <= 3)
+    if (posFilter === 'noprice')  groups = groups.filter(g => !g.recipe.sellingPrice)
+    return groups
+  }, [byRecipe, searchQuery, posFilter])
 
   const selectedGroup = useMemo(
     () => byRecipe.find(g => g.recipe.id === selectedRecipeId) ?? null,
@@ -282,6 +290,8 @@ export default function SalesTab() {
       setSaleQty(1)
       setSaleNotes('')
       setShowNotes(false)
+      setSelectedRecipeId(null)
+      setSelectedBatchId(null)
       setPage(1)
       await Promise.all([loadData(), loadSellableBatches()])
     } catch (e: any) {
@@ -369,6 +379,11 @@ export default function SalesTab() {
     )
   }
 
+  const subTabs = [
+    { key: 'sell' as const,    label: 'Sell',           icon: <ShoppingBag className="h-4 w-4" /> },
+    { key: 'history' as const, label: 'Sales History',   icon: <Calendar className="h-4 w-4" /> },
+  ]
+
   return (
     <div className="space-y-6">
 
@@ -380,312 +395,318 @@ export default function SalesTab() {
         <KpiCard icon={<TrendingUp  className="h-5 w-5 text-amber-600" />}   label={t('bakerySaleAvgValue')}     value={`$${fmtCurrency(avgSaleValue)}`}           color="bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      {/* ── Sub-tab bar ── */}
+      <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1 w-fit">
+        {subTabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveSubTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeSubTab === tab.key
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            {tab.icon}{tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* ── Left: POS Panel ── */}
-        {(showAvailable || selectedGroup || showCustom) && (
-        <div className="xl:col-span-1 space-y-4">
+      {/* ── Sell tab ── */}
+      {activeSubTab === 'sell' && (
+      <div className="space-y-4">
 
-          {/* ── SELL CONFIRM PANEL (recipe selected) ── */}
-          {selectedGroup && (
-            <SellConfirmPanel
-              group={selectedGroup}
-              selectedBatch={selectedBatch}
-              onSelectBatch={id => { setSelectedBatchId(id); setSaleQty(1) }}
-              saleQty={saleQty}
-              onQtyChange={setSaleQty}
-              priceInput={priceInput}
-              onPriceChange={setPriceInput}
-              effectivePrice={effectivePrice}
-              saleTotal={saleTotal}
-              saleDate={saleDate}
-              onDateChange={setSaleDate}
-              saleNotes={saleNotes}
-              onNotesChange={setSaleNotes}
-              showNotes={showNotes}
-              onToggleNotes={() => setShowNotes(v => !v)}
-              submitting={submitting}
-              error={error}
-              onSell={handleSell}
-              onBack={() => { setSelectedRecipeId(null); setSelectedBatchId(null); setError(null) }}
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-52">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={`Search ${byRecipe.length} product${byRecipe.length !== 1 ? 's' : ''}…`}
+              className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-9 pr-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
-          )}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {([
+              { key: '' as const,          label: 'All',         count: byRecipe.length },
+              { key: 'expiring' as const,  label: '⚠ Expiring', count: byRecipe.filter(g => g.earliestExpiry && daysUntil(g.earliestExpiry) <= 3).length },
+              { key: 'noprice' as const,   label: 'No Price',    count: byRecipe.filter(g => !g.recipe.sellingPrice).length },
+            ] as const).map(f => (
+              <button
+                key={f.key}
+                onClick={() => setPosFilter(f.key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                  posFilter === f.key
+                    ? 'bg-amber-500 border-amber-500 text-white'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                }`}
+              >
+                {f.label}{f.count > 0 && posFilter !== f.key ? <span className="ml-1.5 opacity-60">({f.count})</span> : null}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => { setShowCustom(true); setError(null) }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 text-sm text-slate-500 dark:text-slate-400 hover:border-amber-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4" /> Custom Sale
+          </button>
+        </div>
 
-          {/* ── CUSTOM SALE FORM ── */}
-          {!selectedGroup && showCustom && (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
-                <button
-                  onClick={() => { setShowCustom(false); setError(null) }}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+        {/* Product grid — full width, responsive columns */}
+        {filteredGroups.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Package className="h-10 w-10 text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {byRecipe.length === 0 ? 'No produced batches with stock' : 'No products match your search'}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              {byRecipe.length === 0 ? 'Log a production batch in the Production tab first' : 'Try a different search or filter'}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {filteredGroups.map(group => {
+              const expDays  = group.earliestExpiry ? daysUntil(group.earliestExpiry) : null
+              const hasPrice = group.recipe.sellingPrice != null && group.recipe.sellingPrice > 0
+              const urgency  =
+                expDays === null ? 'none'     :
+                expDays <= 0    ? 'expired'   :
+                expDays <= 1    ? 'critical'  :
+                expDays <= 3    ? 'warn'      : 'ok'
+
+              if (editingPriceId === group.recipe.id) {
+                return (
+                  <div key={group.recipe.id} className="rounded-xl border-2 border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 flex flex-col gap-2 min-h-[130px]">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{group.recipe.name}</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400">Set price / {group.recipe.yieldUnit}</p>
+                    <div className="flex items-center gap-1 mt-auto">
+                      <div className="relative flex-1">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                        <input
+                          autoFocus type="number" min="0" step="0.01"
+                          value={editingPriceValue}
+                          onChange={e => setEditingPriceValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleSavePrice(group.recipe.id)
+                            if (e.key === 'Escape') { setEditingPriceId(null); setEditingPriceValue('') }
+                          }}
+                          className="w-full pl-5 pr-1 py-1 rounded-lg border border-amber-300 dark:border-amber-700 text-xs dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        />
+                      </div>
+                      <button onClick={() => handleSavePrice(group.recipe.id)} disabled={savingPrice || !editingPriceValue}
+                        className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                        {savingPrice ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                      </button>
+                      <button onClick={() => { setEditingPriceId(null); setEditingPriceValue('') }}
+                        className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              }
+
+              return (
+                <div
+                  key={group.recipe.id}
+                  className={`group/card relative rounded-xl border transition-all overflow-hidden cursor-pointer ${
+                    urgency === 'expired'  ? 'border-red-300 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10 hover:border-red-400' :
+                    urgency === 'critical' ? 'border-orange-300 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10 hover:border-orange-400' :
+                    urgency === 'warn'     ? 'border-amber-200 dark:border-amber-700 bg-white dark:bg-slate-800 hover:border-amber-400' :
+                    'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10'
+                  }`}
+                  onClick={() => handleSelectRecipe(group)}
                 >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
+                  {urgency !== 'none' && urgency !== 'ok' && (
+                    <div className={`h-1 ${
+                      urgency === 'expired' ? 'bg-red-500' :
+                      urgency === 'critical' ? 'bg-orange-500' : 'bg-amber-400'
+                    }`} />
+                  )}
+                  <div className="p-3 flex flex-col gap-1.5 min-h-[120px]">
+                    <p className="text-xs font-semibold text-slate-800 dark:text-white group-hover/card:text-amber-700 dark:group-hover/card:text-amber-400 transition-colors leading-tight line-clamp-2 pr-5">
+                      {group.recipe.name}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{group.totalAvailable}</span> {group.recipe.yieldUnit}
+                      {group.batches.length > 1 && <span className="text-slate-400 dark:text-slate-500"> · {group.batches.length}b</span>}
+                    </p>
+                    {expDays !== null && (
+                      <span className={`self-start text-xs px-1.5 py-0.5 rounded-full font-medium w-fit ${
+                        urgency === 'expired'  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        urgency === 'critical' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        urgency === 'warn'     ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                        'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                      }`}>
+                        {expDays <= 0 ? 'Expired' : expDays === 1 ? 'Exp tomorrow' : `Exp ${expDays}d`}
+                      </span>
+                    )}
+                    <div className="mt-auto pt-2 border-t border-slate-100 dark:border-slate-700/50">
+                      {hasPrice ? (
+                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                          ${group.recipe.sellingPrice!.toFixed(2)}<span className="text-xs font-normal text-slate-400 ml-0.5">/{group.recipe.yieldUnit}</span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-amber-600 dark:text-amber-500 italic">No price set</p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); setEditingPriceId(group.recipe.id); setEditingPriceValue(group.recipe.sellingPrice ? group.recipe.sellingPrice.toFixed(2) : '') }}
+                    title="Set price"
+                    className="absolute top-2 right-2 p-1 rounded-md text-slate-300 dark:text-slate-600 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 opacity-0 group-hover/card:opacity-100 transition-all"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Sell confirm modal */}
+        {selectedGroup && (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => { setSelectedRecipeId(null); setSelectedBatchId(null); setError(null) }}
+          >
+            <div className="w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <SellConfirmPanel
+                group={selectedGroup}
+                selectedBatch={selectedBatch}
+                onSelectBatch={id => { setSelectedBatchId(id); setSaleQty(1) }}
+                saleQty={saleQty}
+                onQtyChange={setSaleQty}
+                priceInput={priceInput}
+                onPriceChange={setPriceInput}
+                effectivePrice={effectivePrice}
+                saleTotal={saleTotal}
+                saleDate={saleDate}
+                onDateChange={setSaleDate}
+                saleNotes={saleNotes}
+                onNotesChange={setSaleNotes}
+                showNotes={showNotes}
+                onToggleNotes={() => setShowNotes(v => !v)}
+                submitting={submitting}
+                error={error}
+                onSell={handleSell}
+                onBack={() => { setSelectedRecipeId(null); setSelectedBatchId(null); setError(null) }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Custom sale modal */}
+        {showCustom && (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => { setShowCustom(false); setError(null) }}
+          >
+            <div
+              className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-800 dark:text-white">Custom Sale</h2>
                   <p className="text-xs text-slate-400 dark:text-slate-500">Record a sale without a tracked batch</p>
                 </div>
+                <button onClick={() => { setShowCustom(false); setError(null) }}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-
               {error && (
-                <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                <div className="mx-5 mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {error}
                 </div>
               )}
-
-              <form onSubmit={handleCustomSell} className="p-4 space-y-3">
+              <form onSubmit={handleCustomSell} className="p-5 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Recipe <span className="text-slate-400">(optional)</span>
-                  </label>
-                  <select
-                    value={customRecipeId}
-                    onChange={e => setCustomRecipeId(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Recipe <span className="text-slate-400">(optional)</span></label>
+                  <select value={customRecipeId} onChange={e => setCustomRecipeId(e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400">
                     <option value="">— no recipe —</option>
-                    {recipes.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}{r.sellingPrice ? ` · $${r.sellingPrice.toFixed(2)}` : ''}
-                      </option>
-                    ))}
+                    {recipes.map(r => <option key={r.id} value={r.id}>{r.name}{r.sellingPrice ? ` · $${r.sellingPrice.toFixed(2)}` : ''}</option>)}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
-                    Item name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={customItemName}
-                    onChange={e => setCustomItemName(e.target.value)}
-                    placeholder="e.g. Sourdough Loaf"
-                    required
-                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Item name <span className="text-red-500">*</span></label>
+                  <input type="text" value={customItemName} onChange={e => setCustomItemName(e.target.value)} placeholder="e.g. Sourdough Loaf" required
+                    className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
                 </div>
-
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Qty <span className="text-red-500">*</span></label>
                     <input type="number" min="0.01" step="0.01" value={customQty} onChange={e => setCustomQty(e.target.value)} required
-                      className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                      className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Unit price <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                       <input type="number" min="0" step="0.01" value={customPrice} onChange={e => setCustomPrice(e.target.value)} placeholder="0.00" required
-                        className="w-full rounded-lg border border-slate-300 dark:border-slate-600 pl-6 pr-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                        className="w-full rounded-lg border border-slate-300 dark:border-slate-600 pl-6 pr-3 py-2 text-sm dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
                     </div>
                   </div>
                 </div>
-
                 {customQty && customPrice && !isNaN(+customQty) && !isNaN(+customPrice) && (
                   <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3 py-2 flex justify-between text-xs">
                     <span className="text-emerald-700 dark:text-emerald-400">Total</span>
                     <span className="font-bold text-emerald-800 dark:text-emerald-300">${fmtCurrency(+customQty * +customPrice)}</span>
                   </div>
                 )}
-
                 <input type="date" value={customDate} onChange={e => setCustomDate(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
-
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400" />
                 <textarea value={customNotes} onChange={e => setCustomNotes(e.target.value)} rows={2} placeholder="Notes…"
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-700 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-amber-400" />
-
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm dark:bg-slate-800 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-amber-400" />
                 <button type="submit" disabled={customSubmitting || !customItemName.trim() || !customPrice}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors">
                   {customSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-4 w-4" /> Record Sale</>}
                 </button>
               </form>
             </div>
-          )}
+          </div>
+        )}
+      </div>
+      )}
 
-          {/* ── PRODUCT LIST ── */}
-          {!selectedGroup && !showCustom && (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
-                <h2 className="text-sm font-semibold text-slate-800 dark:text-white flex items-center gap-2">
-                  <ShoppingBag className="h-4 w-4 text-amber-500" /> Available to Sell
-                  <span className="text-xs font-normal text-slate-400">({filteredGroups.length})</span>
-                </h2>
-                <button
-                  onClick={() => setShowAvailable(false)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                  title="Hide panel"
-                >
-                  <ChevronUp className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Search products…"
-                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 pl-8 pr-3 py-1.5 text-xs dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  />
-                </div>
-              </div>
+      {/* ── History tab ── */}
+      {activeSubTab === 'history' && (
+      <div className="space-y-4">
 
-              <div className="p-2 grid grid-cols-2 gap-2 max-h-[460px] overflow-y-auto">
-                {filteredGroups.length === 0 ? (
-                  <div className="col-span-2 flex flex-col items-center justify-center py-12 text-center px-4">
-                    <Package className="h-8 w-8 text-slate-300 dark:text-slate-600 mb-2" />
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      {byRecipe.length === 0 ? 'No produced batches with stock' : 'No results for this search'}
-                    </p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                      {byRecipe.length === 0 ? 'Log a production batch first' : 'Try a different search term'}
-                    </p>
-                  </div>
-                ) : (
-                  filteredGroups.map(group => {
-                    const expDays  = group.earliestExpiry ? daysUntil(group.earliestExpiry) : null
-                    const hasPrice = group.recipe.sellingPrice != null && group.recipe.sellingPrice > 0
-                    const expClass =
-                      expDays === null ? '' :
-                      expDays <= 0    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                      expDays <= 1    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                      expDays <= 3    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : ''
-
-                    // ── Inline price editor card ──
-                    if (editingPriceId === group.recipe.id) {
-                      return (
-                        <div key={group.recipe.id} className="rounded-xl border-2 border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 p-3 flex flex-col gap-2">
-                          <div>
-                            <p className="text-xs font-semibold text-slate-800 dark:text-white truncate">{group.recipe.name}</p>
-                            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">price / {group.recipe.yieldUnit}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="relative flex-1">
-                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
-                              <input
-                                autoFocus
-                                type="number" min="0" step="0.01"
-                                value={editingPriceValue}
-                                onChange={e => setEditingPriceValue(e.target.value)}
-                                onKeyDown={e => {
-                                  if (e.key === 'Enter') handleSavePrice(group.recipe.id)
-                                  if (e.key === 'Escape') { setEditingPriceId(null); setEditingPriceValue('') }
-                                }}
-                                className="w-full pl-5 pr-1 py-1 rounded-lg border border-amber-300 dark:border-amber-700 text-sm dark:bg-slate-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
-                              />
-                            </div>
-                            <button
-                              onClick={() => handleSavePrice(group.recipe.id)}
-                              disabled={savingPrice || !editingPriceValue}
-                              className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                            >
-                              {savingPrice ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
-                            </button>
-                            <button
-                              onClick={() => { setEditingPriceId(null); setEditingPriceValue('') }}
-                              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    }
-
-                    // ── Normal product card ──
-                    return (
-                      <div key={group.recipe.id} className="group/card relative rounded-xl border border-slate-200 dark:border-slate-700 hover:border-amber-300 dark:hover:border-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all overflow-hidden">
-                        <div
-                          onClick={() => handleSelectRecipe(group)}
-                          className="cursor-pointer p-3 flex flex-col gap-1 h-full"
-                        >
-                          <p className="text-xs font-semibold text-slate-800 dark:text-white group-hover/card:text-amber-700 dark:group-hover/card:text-amber-400 transition-colors truncate pr-5">
-                            {group.recipe.name}
-                          </p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {group.totalAvailable} {group.recipe.yieldUnit}
-                            {group.batches.length > 1 && <span className="text-slate-400"> · {group.batches.length}b</span>}
-                          </p>
-                          {expClass && (
-                            <span className={`self-start inline-flex items-center text-xs px-1.5 py-0.5 rounded-full ${expClass}`}>
-                              {expDays! <= 0 ? '⚠ Exp' : expDays === 1 ? 'tmrw' : `${expDays}d`}
-                            </span>
-                          )}
-                          <div className="mt-auto pt-2 border-t border-slate-100 dark:border-slate-700/50">
-                            {hasPrice ? (
-                              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                                ${group.recipe.sellingPrice!.toFixed(2)}
-                                <span className="text-xs font-normal text-slate-400 dark:text-slate-500 ml-0.5">/{group.recipe.yieldUnit}</span>
-                              </span>
-                            ) : (
-                              <span className="text-xs text-amber-600 dark:text-amber-500 italic">No price set</span>
-                            )}
-                          </div>
-                        </div>
-                        {/* Hover: edit price button */}
-                        <button
-                          onClick={e => {
-                            e.stopPropagation()
-                            setEditingPriceId(group.recipe.id)
-                            setEditingPriceValue(group.recipe.sellingPrice ? group.recipe.sellingPrice.toFixed(2) : '')
-                          }}
-                          title="Set price"
-                          className="absolute top-2 right-2 p-1 rounded-md text-slate-300 dark:text-slate-600 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 opacity-0 group-hover/card:opacity-100 transition-all"
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-
-              <div className="border-t border-slate-100 dark:border-slate-700 px-4 py-2.5">
-                <button
-                  onClick={() => { setShowCustom(true); setError(null) }}
-                  className="w-full text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 flex items-center justify-center gap-1.5 transition-colors py-1"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Record custom sale (without batch)
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Top by Revenue ── */}
-          {!selectedGroup && !showCustom && summary && summary.byRecipe.length > 0 && (
-            <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
-              <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-                {t('bakerySaleTopItems')}
-              </h3>
-              <div className="space-y-2.5">
-                {summary.byRecipe.slice(0, 5).map((row, i) => {
-                  const pct = totalRevenue > 0 ? Math.round((row.totalAmount / totalRevenue) * 100) : 0
-                  return (
-                    <div key={row.recipeId ?? i}>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[140px]">
-                          {row.recipe?.name ?? 'Other'}
-                        </span>
-                        <span className="text-slate-500 dark:text-slate-400 tabular-nums">
-                          ${fmtCurrency(row.totalAmount)} · {pct}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                        <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
-                      </div>
+        {/* Top by Revenue */}
+        {summary && summary.byRecipe.length > 0 && (
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+            <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-4">
+              {t('bakerySaleTopItems')}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
+              {summary.byRecipe.map((row, i) => {
+                const pct = totalRevenue > 0 ? Math.round((row.totalAmount / totalRevenue) * 100) : 0
+                return (
+                  <div key={row.recipeId ?? i}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[160px]">
+                        {row.recipe?.name ?? 'Other'}
+                      </span>
+                      <span className="text-slate-500 dark:text-slate-400 tabular-nums shrink-0 ml-2">
+                        ${fmtCurrency(row.totalAmount)} · {pct}%
+                      </span>
                     </div>
-                  )
-                })}
-              </div>
+                    <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                      <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          )}
-        </div>
+          </div>
         )}
 
-        {/* ── Right: Sales History ── */}
-        <div className={(!showAvailable && !selectedGroup && !showCustom) ? 'xl:col-span-3' : 'xl:col-span-2'}>
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
 
             {/* Toolbar */}
@@ -694,14 +715,6 @@ export default function SalesTab() {
                 <Calendar className="h-4 w-4 text-slate-400" /> {t('bakerySaleHistory')}
               </h2>
               <div className="flex items-center gap-2">
-                {!showAvailable && !selectedGroup && !showCustom && (
-                  <button
-                    onClick={() => setShowAvailable(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-800 transition-colors"
-                  >
-                    <ShoppingBag className="h-3.5 w-3.5" /> Available to Sell
-                  </button>
-                )}
                 {hasFilters && (
                   <button onClick={clearFilters}
                     className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
@@ -853,8 +866,8 @@ export default function SalesTab() {
               </>
             )}
           </div>
-        </div>
       </div>
+      )}
     </div>
   )
 }
