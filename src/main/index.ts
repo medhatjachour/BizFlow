@@ -104,6 +104,7 @@ function createDemoExpiredWindow(linkedInUrl: string, expiryDate: Date): Browser
     maximizable: false,
     autoHideMenuBar: true,
     backgroundColor: '#f7f7f5',
+    icon,
     webPreferences: {
       sandbox: false,
       nodeIntegration: false,
@@ -205,7 +206,7 @@ function createWindow(): BrowserWindow {
     show: false, // Keep hidden until migration completes
     autoHideMenuBar: true,
     backgroundColor: '#ffffff',
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
