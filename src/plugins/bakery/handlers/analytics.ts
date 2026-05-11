@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { convertQuantity } from '../utils/unitConversion'
 
 const log = createLogger('Bakery:Analytics')
 
@@ -343,10 +344,14 @@ export function registerAnalyticsHandlers(prisma: any) {
           const pi = ing.pantryIngredient
           const inStock = pi?.currentStock ?? null
           const needed = ing.quantity
-          const canMake = (pi && needed > 0) ? Math.floor(inStock / needed) : null
-          const shortfall = (canMake !== null && canMake < 1) ? Math.max(0, needed - inStock) : 0
+          // Convert pantry stock to the recipe ingredient's unit before comparing
+          const inStockInRecipeUnit = (pi && inStock !== null && pi.unit !== ing.unit)
+            ? (convertQuantity(inStock, pi.unit, ing.unit) ?? inStock)
+            : inStock
+          const canMake = (pi && needed > 0 && inStockInRecipeUnit !== null) ? Math.floor(inStockInRecipeUnit / needed) : null
+          const shortfall = (canMake !== null && canMake < 1) ? Math.max(0, needed - (inStockInRecipeUnit ?? 0)) : 0
 
-          if (pi && needed > 0) {
+        if (pi && needed > 0 && inStockInRecipeUnit !== null) {
             if (canMake! < availableBatches) {
               availableBatches = canMake!
               limitedBy = pi.name
@@ -379,17 +384,20 @@ export function registerAnalyticsHandlers(prisma: any) {
         }
       })
 
+      const todayProductionCost = (todayBatches as any[]).reduce((s: number, b: any) => s + (b.totalCost ?? 0), 0)
+
       return {
         scheduled, expiringBatches, lowStock, reorderNeeded, capacity,
         todayBatches: (todayBatches as any[]).map((b: any) => ({
           id: b.id,
           recipeName: b.recipe.name,
           yieldUnit: b.recipe.yieldUnit,
-          quantityProduced: b.quantityProduced,
+          quantityProduced: b.unitsProduced,
           totalCost: b.totalCost
         })),
         todayRevenue,
-        todayUnitsSold
+        todayUnitsSold,
+        todayProductionCost
       }
     } catch (err) {
       log.error('bakery:getDailyOverview error', err)

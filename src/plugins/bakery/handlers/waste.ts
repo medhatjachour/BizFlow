@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { convertQuantity } from '../utils/unitConversion'
 
 const log = createLogger('Bakery:Waste')
 
@@ -83,9 +84,17 @@ export function registerWasteHandlers(prisma: any) {
         })
 
         if (data.wasteType === 'ingredient' && data.pantryIngredientId) {
+          const pantryItem = await tx.pantryIngredient.findUnique({
+            where: { id: data.pantryIngredientId },
+            select: { unit: true }
+          })
+          const pantryUnit = pantryItem?.unit ?? data.unit
+          // Convert waste quantity to pantry's unit before deducting
+          const deductQty = convertQuantity(data.quantity, data.unit, pantryUnit)
+            ?? data.quantity // fallback: same unit assumed
           await tx.pantryIngredient.update({
             where: { id: data.pantryIngredientId },
-            data: { currentStock: { decrement: data.quantity } }
+            data: { currentStock: { decrement: deductQty } }
           })
         }
 

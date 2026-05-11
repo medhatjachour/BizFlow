@@ -5,6 +5,24 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 const YIELD_UNITS = ['pcs', 'loaves', 'kg', 'g', 'dozen', 'trays', 'units', 'portions', 'boxes', 'bags', 'slices', 'rolls', 'buns', 'sheets', 'cakes']
 const INGREDIENT_UNITS = ['g', 'kg', 'ml', 'L', 'oz', 'lb', 'pcs', 'tsp', 'tbsp', 'cup', 'bunch', 'clove', 'pinch', 'stalk', 'sheet', 'slice']
 
+// ─── Unit conversion helpers ──────────────────────────────────────────────────
+const WEIGHT_TO_G: Record<string, number> = { g: 1, kg: 1000, oz: 28.3495, lb: 453.592 }
+const VOLUME_TO_ML: Record<string, number> = { ml: 1, L: 1000, tsp: 4.92892, tbsp: 14.7868, cup: 236.588 }
+
+/**
+ * Convert a cost-per-unit from one unit to another.
+ * e.g. convertCost(2, 'kg', 'g') → 0.002   ($2/kg = $0.002/g)
+ * Returns null if units are incompatible (e.g. kg → ml).
+ */
+function convertCost(cost: number, fromUnit: string, toUnit: string): number | null {
+  if (fromUnit === toUnit) return cost
+  if (fromUnit in WEIGHT_TO_G && toUnit in WEIGHT_TO_G)
+    return cost * WEIGHT_TO_G[toUnit] / WEIGHT_TO_G[fromUnit]
+  if (fromUnit in VOLUME_TO_ML && toUnit in VOLUME_TO_ML)
+    return cost * VOLUME_TO_ML[toUnit] / VOLUME_TO_ML[fromUnit]
+  return null
+}
+
 const FIELD_CLS = 'w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-colors'
 const LABEL_CLS = 'block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'
 
@@ -326,8 +344,9 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                 const autoMatch = !ing.pantryIngredientId
                   ? pantryItems.find(p => p.name.toLowerCase() === ing.name.toLowerCase())
                   : null
-                const unitMismatch = linkedItem && linkedItem.unit !== ing.unit
-                const unitMatch   = linkedItem && linkedItem.unit === ing.unit
+                const unitMismatch  = linkedItem && linkedItem.unit !== ing.unit
+                const unitMatch    = linkedItem && linkedItem.unit === ing.unit
+                const canConvert   = unitMismatch ? convertCost(linkedItem.costPerUnit, linkedItem.unit, ing.unit) !== null : false
 
                 return (
                   <div
@@ -335,14 +354,16 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                     className={`rounded-xl border p-3 space-y-2.5 transition-colors ${
                       linkedItem
                         ? unitMismatch
-                          ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10'
+                          ? canConvert
+                            ? 'border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/10'
+                            : 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10'
                           : 'border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-900/10'
                         : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-700/30'
                     }`}
                   >
-                    {/* Row 1: name / qty / unit / cost / delete */}
+                    {/* Row 1: name / qty / unit / cost / subtotal / delete */}
                     <div className="grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-4">
+                      <div className="col-span-3">
                         <label className="block text-[10px] font-medium text-slate-400 mb-0.5 uppercase tracking-wide">Ingredient *</label>
                         <input
                           list="pantry-ingredient-names"
@@ -352,8 +373,8 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                             const match = pantryItems.find(p => p.name.toLowerCase() === e.target.value.toLowerCase())
                             if (match && !ing.pantryIngredientId) {
                               setIngredient(idx, 'pantryIngredientId', match.id)
-                              // Auto-fill unit from pantry item
                               setIngredient(idx, 'unit', match.unit)
+                              setIngredient(idx, 'costPerUnit', match.costPerUnit)
                             }
                           }}
                           placeholder="e.g. Flour"
@@ -374,7 +395,18 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                         <input
                           list="ingredient-units"
                           value={ing.unit}
-                          onChange={e => setIngredient(idx, 'unit', e.target.value)}
+                          onChange={e => {
+                            const newUnit = e.target.value
+                            setIngredient(idx, 'unit', newUnit)
+                            // If linked to pantry, auto-convert cost to match new unit
+                            if (ing.pantryIngredientId) {
+                              const pi = pantryItems.find(p => p.id === ing.pantryIngredientId)
+                              if (pi) {
+                                const converted = convertCost(pi.costPerUnit, pi.unit, newUnit)
+                                if (converted !== null) setIngredient(idx, 'costPerUnit', converted)
+                              }
+                            }
+                          }}
                           placeholder="g, kg…"
                           className={`w-full rounded-xl border px-2 py-1.5 text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors ${
                             unitMismatch
@@ -383,7 +415,7 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                           }`}
                         />
                       </div>
-                      <div className="col-span-3">
+                      <div className="col-span-2">
                         <label className="block text-[10px] font-medium text-slate-400 mb-0.5 uppercase tracking-wide">Cost / {ing.unit || 'unit'}</label>
                         <input
                           type="number" min="0" step="any"
@@ -391,6 +423,12 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                           onChange={e => setIngredient(idx, 'costPerUnit', e.target.value)}
                           className="w-full rounded-xl border border-slate-200 dark:border-slate-600 px-2 py-1.5 text-sm text-right bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors"
                         />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-[10px] font-medium text-slate-400 mb-0.5 uppercase tracking-wide">Subtotal</label>
+                        <div className="w-full rounded-xl border border-slate-100 dark:border-slate-600 px-2 py-1.5 text-sm text-right bg-slate-50 dark:bg-slate-800 text-amber-600 dark:text-amber-400 font-semibold select-none">
+                          ${(Number(ing.quantity) * Number(ing.costPerUnit)).toFixed(3)}
+                        </div>
                       </div>
                       <div className="col-span-1 pt-4 flex justify-center">
                         <button
@@ -421,7 +459,10 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                             setIngredient(idx, 'pantryIngredientId', val)
                             if (val) {
                               const pi = pantryItems.find((p: any) => p.id === val)
-                              if (pi) setIngredient(idx, 'unit', pi.unit)
+                              if (pi) {
+                                setIngredient(idx, 'unit', pi.unit)
+                                setIngredient(idx, 'costPerUnit', pi.costPerUnit)
+                              }
                             }
                           }}
                           className={`flex-1 min-w-0 text-xs rounded-xl border px-2 py-1.5 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors ${
@@ -447,6 +488,7 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                             onClick={() => {
                               setIngredient(idx, 'pantryIngredientId', autoMatch.id)
                               setIngredient(idx, 'unit', autoMatch.unit)
+                              setIngredient(idx, 'costPerUnit', autoMatch.costPerUnit)
                             }}
                             className="flex items-center gap-1 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-lg px-2 py-1 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors font-medium shrink-0"
                           >
@@ -459,19 +501,28 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                         {linkedItem && (
                           <div className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg border shrink-0 ${
                             unitMismatch
-                              ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300'
+                              ? canConvert
+                                ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700 text-blue-800 dark:text-blue-300'
+                                : 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300'
                               : 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-800 dark:text-green-300'
                           }`}>
                             {unitMismatch
-                              ? <AlertTriangle className="h-3 w-3 shrink-0" />
+                              ? canConvert
+                                ? <CheckCircle2 className="h-3 w-3 shrink-0" />
+                                : <AlertTriangle className="h-3 w-3 shrink-0" />
                               : <CheckCircle2 className="h-3 w-3 shrink-0" />
                             }
                             <span className="font-semibold">
                               {linkedItem.currentStock} {linkedItem.unit} in stock
                             </span>
-                            {unitMismatch && (
+                            {unitMismatch && canConvert && (
+                              <span className="text-blue-700 dark:text-blue-400">
+                                — cost auto-converted <strong>{linkedItem.unit}→{ing.unit}</strong>
+                              </span>
+                            )}
+                            {unitMismatch && !canConvert && (
                               <span className="text-amber-700 dark:text-amber-400">
-                                — pantry uses <strong>{linkedItem.unit}</strong>, recipe uses <strong>{ing.unit}</strong>
+                                — can't convert <strong>{linkedItem.unit}</strong>↔<strong>{ing.unit}</strong>, enter cost manually
                               </span>
                             )}
                             {unitMatch && (

@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { convertQuantity } from '../utils/unitConversion'
 
 const log = createLogger('Bakery:Production')
 
@@ -70,7 +71,11 @@ export function registerProductionHandlers(prisma: any) {
     try {
       const recipe = await prisma.recipe.findUnique({
         where: { id: data.recipeId },
-        include: { ingredients: true }
+        include: {
+          ingredients: {
+            include: { pantryIngredient: { select: { id: true, unit: true } } }
+          }
+        }
       })
       if (!recipe) throw new Error('Recipe not found')
 
@@ -87,10 +92,14 @@ export function registerProductionHandlers(prisma: any) {
       return await prisma.$transaction(async (tx: any) => {
         if (data.deductFromPantry !== false) {
           for (const ing of recipe.ingredients) {
-            if (ing.pantryIngredientId) {
+            if (ing.pantryIngredientId && ing.pantryIngredient) {
+              const pantryUnit = ing.pantryIngredient.unit
+              // Convert recipe quantity to pantry's unit before deducting
+              const deductQty = convertQuantity(ing.quantity * data.quantity, ing.unit, pantryUnit)
+                ?? (ing.quantity * data.quantity) // fallback: same unit assumed
               await tx.pantryIngredient.update({
                 where: { id: ing.pantryIngredientId },
-                data: { currentStock: { decrement: ing.quantity * data.quantity } }
+                data: { currentStock: { decrement: deductQty } }
               })
             }
           }

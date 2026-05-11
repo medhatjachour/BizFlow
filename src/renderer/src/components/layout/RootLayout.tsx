@@ -30,6 +30,7 @@ import {
   PawPrint,
   Dumbbell
 } from 'lucide-react'
+import LocalIcon from '../../assets/icon.png'
 
 interface NavItem {
   name: string
@@ -101,6 +102,10 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const navigate = useNavigate()
   const { t } = useLanguage()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [iconBroken, setIconBroken] = useState(false)
+  const ICON_CANDIDATES = [LocalIcon, '/logo192.png', '/icon.png', '/build/icon.png']
+  const [iconIdx, setIconIdx] = useState(0)
+  const iconSrc = ICON_CANDIDATES[iconIdx]
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
@@ -216,9 +221,30 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
         {/* Logo & Toggle */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-slate-200 dark:border-slate-700 bg-gradient-to-r from-primary/5 to-secondary/5">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold">
-              BF
-            </div>
+            <button
+              onClick={() => navigate('/dashboard')}
+              title="BizFlow"
+              aria-label="Go to Dashboard"
+              className="group flex items-center"
+            >
+              <div className="w-8 h-8 rounded-lg bg-transparent flex items-center justify-center text-white font-bold shadow-sm transition-transform group-hover:scale-105">
+                {!iconBroken ? (
+                  <img
+                    src={iconSrc}
+                    alt="BizFlow Logo"
+                    onError={() => {
+                      const next = iconIdx + 1
+                      if (next < ICON_CANDIDATES.length) setIconIdx(next)
+                      else setIconBroken(true)
+                    }}
+                    className="w-5 h-5 object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  <LayoutDashboard className="w-5 h-5 text-white" />
+                )}
+              </div>
+            </button>
             {sidebarOpen && (
               <span className="text-xl font-bold ">
                 BizFlow
