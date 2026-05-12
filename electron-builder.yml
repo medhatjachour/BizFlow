@@ -69,6 +69,7 @@ nsis:
   # Menu category in Start Menu
   menuCategory: true
 mac:
+  icon: build/icon.icns
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
     - NSCameraUsageDescription: Application requests access to the device's camera.

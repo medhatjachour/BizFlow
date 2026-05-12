@@ -13,9 +13,6 @@ export function registerRecipeHandlers(prisma: any) {
             include: { pantryIngredient: { select: { id: true, name: true, currentStock: true, unit: true } } },
             orderBy: { createdAt: 'asc' }
           },
-          outputProduct: {
-            select: { id: true, name: true, basePrice: true, baseCost: true }
-          },
           _count: { select: { productionBatches: true } }
         },
         orderBy: { name: 'asc' }
@@ -29,9 +26,9 @@ export function registerRecipeHandlers(prisma: any) {
   ipcMain.handle('bakery:createRecipe', async (_e, data: {
     name: string
     description?: string
-    outputProductId?: string
     yieldQty: number
     yieldUnit: string
+    sellingPrice?: number
     expiryDays?: number
     notes?: string
     ingredients: Array<{
@@ -48,9 +45,9 @@ export function registerRecipeHandlers(prisma: any) {
         data: {
           name: data.name,
           description: data.description,
-          outputProductId: data.outputProductId || null,
           yieldQty: Number(data.yieldQty),
           yieldUnit: data.yieldUnit,
+          sellingPrice: data.sellingPrice != null ? Number(data.sellingPrice) : null,
           expiryDays: data.expiryDays ? Number(data.expiryDays) : null,
           notes: data.notes,
           ingredients: {
@@ -76,9 +73,9 @@ export function registerRecipeHandlers(prisma: any) {
     id: string
     name?: string
     description?: string
-    outputProductId?: string | null
     yieldQty?: number
     yieldUnit?: string
+    sellingPrice?: number | null
     expiryDays?: number | null
     notes?: string
     ingredients?: Array<{
@@ -94,6 +91,8 @@ export function registerRecipeHandlers(prisma: any) {
       const { id, ingredients, ...fields } = data
       const safeFields: any = { ...fields }
       if (safeFields.yieldQty !== undefined) safeFields.yieldQty = Number(safeFields.yieldQty)
+      if (safeFields.sellingPrice !== undefined && safeFields.sellingPrice !== null)
+        safeFields.sellingPrice = Number(safeFields.sellingPrice)
       if (safeFields.expiryDays !== undefined && safeFields.expiryDays !== null)
         safeFields.expiryDays = Number(safeFields.expiryDays)
       return await prisma.$transaction(async (tx: any) => {

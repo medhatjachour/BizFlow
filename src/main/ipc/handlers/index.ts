@@ -114,7 +114,7 @@ export async function initializePrisma(): Promise<void> {
           'EmailReport',
         ])
         if (__PLUGIN_COMMERCE__)    ['Category','Product','ProductImage','ProductVariant','ProductAttribute','VariantAttributeValue','StockMovement','Store','Customer','SaleTransaction','SaleItem','Deposit','Installment','InstallmentPlan','ReceiptTemplate','Supplier','SupplierProduct','PurchaseOrder','PurchaseOrderItem','CommerceExpense'].forEach(t => EXPECTED.add(t))
-        if (__PLUGIN_BAKERY__)      ['Recipe','RecipeIngredient','ProductionBatch','PantryIngredient','WasteLog','ProductionSchedule'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_BAKERY__)      ['Recipe','RecipeIngredient','ProductionBatch','PantryIngredient','WasteLog','ProductionSchedule','BakerySale','BakeryExpense'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_RESTAURANT__)  ['RestaurantTable','TableReservation','MenuItem','DineInOrder','DineInOrderItem'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_WAREHOUSE__)   ['WarehouseLocation','WarehouseStock','StockTransfer','StockTransferItem'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_CLINIC__)      ['ClinicPatient','ClinicSession','ClinicPrescription','ClinicCheckResult','ClinicAppointment','ClinicExpense','ClinicStaff','ClinicSalaryRecord'].forEach(t => EXPECTED.add(t))
@@ -126,10 +126,19 @@ export async function initializePrisma(): Promise<void> {
         const orphans = allTables.map((r: { name: string }) => r.name).filter(t => !EXPECTED.has(t))
         if (orphans.length > 0) {
           log.info(`[Database] 🧹 Dropping ${orphans.length} orphan table(s): ${orphans.join(', ')}`)
+          // Disable FK constraints so we can drop in any order
+          await prisma.$queryRawUnsafe('PRAGMA foreign_keys = OFF;')
+          let dropped = 0
           for (const table of orphans) {
-            await prisma.$queryRawUnsafe(`DROP TABLE IF EXISTS "${table}"`)
+            try {
+              await prisma.$queryRawUnsafe(`DROP TABLE IF EXISTS "${table}"`)
+              dropped++
+            } catch {
+              // skip tables that cannot be dropped
+            }
           }
-          log.info('[Database] ✅ Orphan tables removed')
+          await prisma.$queryRawUnsafe('PRAGMA foreign_keys = ON;')
+          log.info(`[Database] ✅ Removed ${dropped} orphan table(s)`)
         }
       } catch (cleanupErr) {
         log.warn('[Database] Orphan table cleanup failed (non-fatal):', cleanupErr)

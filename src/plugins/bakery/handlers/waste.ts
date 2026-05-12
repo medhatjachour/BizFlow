@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { convertQuantity } from '../utils/unitConversion'
 
 const log = createLogger('Bakery:Waste')
 
@@ -9,9 +10,14 @@ export function registerWasteHandlers(prisma: any) {
     wasteType?: string
     startDate?: string
     endDate?: string
-    limit?: number
+    page?: number
+    pageSize?: number
   } = {}) => {
     try {
+      const page     = Math.max(1, options.page ?? 1)
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20))
+      const skip     = (page - 1) * pageSize
+
       const where: any = {}
       if (options.recipeId) where.recipeId = options.recipeId
       if (options.wasteType) where.wasteType = options.wasteType
@@ -20,16 +26,22 @@ export function registerWasteHandlers(prisma: any) {
         if (options.startDate) where.wasteDate.gte = new Date(options.startDate)
         if (options.endDate) where.wasteDate.lte = new Date(options.endDate)
       }
-      return await prisma.wasteLog.findMany({
-        where,
-        include: {
-          recipe: { select: { id: true, name: true } },
-          product: { select: { id: true, name: true } },
-          pantryIngredient: { select: { id: true, name: true, unit: true } }
-        },
-        orderBy: { wasteDate: 'desc' },
-        take: options.limit ?? 200
-      })
+
+      const [data, total] = await Promise.all([
+        prisma.wasteLog.findMany({
+          where,
+          include: {
+            recipe: { select: { id: true, name: true } },
+            pantryIngredient: { select: { id: true, name: true, unit: true } }
+          },
+          orderBy: { wasteDate: 'desc' },
+          skip,
+          take: pageSize
+        }),
+        prisma.wasteLog.count({ where })
+      ])
+
+      return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
     } catch (err) {
       log.error('bakery:getWasteLogs error', err)
       throw err
@@ -39,7 +51,6 @@ export function registerWasteHandlers(prisma: any) {
   ipcMain.handle('bakery:createWasteLog', async (_e, data: {
     wasteType: string
     recipeId?: string
-    productId?: string
     pantryIngredientId?: string
     productionBatchId?: string
     itemName: string
@@ -56,7 +67,6 @@ export function registerWasteHandlers(prisma: any) {
           data: {
             wasteType: data.wasteType ?? 'other',
             recipeId: data.recipeId ?? null,
-            productId: data.productId ?? null,
             pantryIngredientId: data.pantryIngredientId ?? null,
             productionBatchId: data.productionBatchId ?? null,
             itemName: data.itemName,
@@ -69,20 +79,22 @@ export function registerWasteHandlers(prisma: any) {
           },
           include: {
             recipe: { select: { id: true, name: true } },
-            product: { select: { id: true, name: true } },
             pantryIngredient: { select: { id: true, name: true, unit: true } }
           }
         })
 
         if (data.wasteType === 'ingredient' && data.pantryIngredientId) {
+          const pantryItem = await tx.pantryIngredient.findUnique({
+            where: { id: data.pantryIngredientId },
+            select: { unit: true }
+          })
+          const pantryUnit = pantryItem?.unit ?? data.unit
+          // Convert waste quantity to pantry's unit before deducting
+          const deductQty = convertQuantity(data.quantity, data.unit, pantryUnit)
+            ?? data.quantity // fallback: same unit assumed
           await tx.pantryIngredient.update({
             where: { id: data.pantryIngredientId },
-            data: { currentStock: { decrement: data.quantity } }
-          })
-        } else if (data.wasteType === 'finished_product' && data.productId) {
-          await tx.productVariant.updateMany({
-            where: { productId: data.productId },
-            data: { stock: { decrement: data.quantity } }
+            data: { currentStock: { decrement: deductQty } }
           })
         }
 

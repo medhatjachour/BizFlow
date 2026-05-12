@@ -19,7 +19,8 @@ export const bakeryPreload = {
   deleteRecipe: (id: string) =>
     ipcRenderer.invoke('bakery:deleteRecipe', id),
 
-  // ─── Production ────────────────────────────────────────────────────────
+  // ─── Production ──────────────────────────────────────────────────
+  // getProductionBatches returns { data, total, page, pageSize, totalPages }
   getProductionBatches: (options?: any) =>
     ipcRenderer.invoke('bakery:getProductionBatches', options),
   createProductionBatch: (data: any) =>
@@ -28,8 +29,21 @@ export const bakeryPreload = {
     ipcRenderer.invoke('bakery:deleteProductionBatch', id),
   getAvailableBatches: () =>
     ipcRenderer.invoke('bakery:getAvailableBatches'),
+  getSellableBatches: () =>
+    ipcRenderer.invoke('bakery:getSellableBatches'),
 
-  // ─── Pantry ────────────────────────────────────────────────────────────
+  // ─── Sales ─────────────────────────────────────────────────────
+  // getSales returns { data, total, page, pageSize, totalPages }
+  getSales: (options?: any) =>
+    ipcRenderer.invoke('bakery:getSales', options),
+  createSale: (data: any) =>
+    ipcRenderer.invoke('bakery:createSale', data),
+  deleteSale: (id: string) =>
+    ipcRenderer.invoke('bakery:deleteSale', id),
+  getSalesSummary: (options?: any) =>
+    ipcRenderer.invoke('bakery:getSalesSummary', options),
+  getInventoryStatus: (options?: any) =>
+    ipcRenderer.invoke('bakery:getInventoryStatus', options),
   getPantry: () =>
     ipcRenderer.invoke('bakery:getPantry'),
   upsertPantryIngredient: (data: any) =>
@@ -40,6 +54,8 @@ export const bakeryPreload = {
     ipcRenderer.invoke('bakery:deletePantryIngredient', id),
   markPantryReordered: (data: any) =>
     ipcRenderer.invoke('bakery:markPantryReordered', data),
+  bulkRestock: (items: any[]) =>
+    ipcRenderer.invoke('bakery:bulkRestock', items),
 
   // ─── Waste ─────────────────────────────────────────────────────────────
   getWasteLogs: (options?: any) =>
@@ -73,5 +89,19 @@ export const bakeryPreload = {
   getProductionRequirements: (data: any) =>
     ipcRenderer.invoke('bakery:getProductionRequirements', data),
   getEndOfDaySuggestion: () =>
-    ipcRenderer.invoke('bakery:getEndOfDaySuggestion')
+    ipcRenderer.invoke('bakery:getEndOfDaySuggestion'),
+
+  // ─── Expenses ──────────────────────────────────────────────────────────
+  expenses: {
+    getAll: (options?: any) =>
+      ipcRenderer.invoke('bakery:expenses:getAll', options),
+    create: (data: any) =>
+      ipcRenderer.invoke('bakery:expenses:create', data),
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('bakery:expenses:update', id, data),
+    delete: (id: string) =>
+      ipcRenderer.invoke('bakery:expenses:delete', id),
+    getSummary: (options?: any) =>
+      ipcRenderer.invoke('bakery:expenses:getSummary', options),
+  }
 }

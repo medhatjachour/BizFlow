@@ -119,20 +119,20 @@ const BakeryFinanceSection: React.FC = () => {
             <Croissant size={22} className="text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Bakery Finance</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Profit & Loss · Waste Costs · Recipe Profitability</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('bakeryFinanceTitle')}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{t('bakeryFinanceSubtitle')}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <select value={dateRange} onChange={e => setDateRange(Number(e.target.value))}
             className="px-3 py-2 border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg text-sm">
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={90}>Last 90 days</option>
+            <option value={7}>{t('bakeryFinanceLast7')}</option>
+            <option value={30}>{t('bakeryFinanceLast30')}</option>
+            <option value={90}>{t('bakeryFinanceLast90')}</option>
           </select>
           <button onClick={() => loadData(true)} disabled={refreshing}
             className="flex items-center gap-2 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium disabled:opacity-50">
-            <RefreshCcw size={15} className={refreshing ? 'animate-spin' : ''} />Refresh
+            <RefreshCcw size={15} className={refreshing ? 'animate-spin' : ''} />{t('bakeryFinanceRefresh')}
           </button>
         </div>
       </div>
@@ -140,9 +140,9 @@ const BakeryFinanceSection: React.FC = () => {
       {/* Tabs */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-2 shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="flex flex-wrap gap-2">
-          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<BarChart3 size={16} />} label="P&L Overview" />
-          <TabButton active={activeTab === 'waste'} onClick={() => setActiveTab('waste')} icon={<Trash2 size={16} />} label="Waste Cost Analysis" />
-          <TabButton active={activeTab === 'recipes'} onClick={() => setActiveTab('recipes')} icon={<BookOpen size={16} />} label="Recipe Costs" />
+          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={<BarChart3 size={16} />} label={t('bakeryFinancePnL')} />
+          <TabButton active={activeTab === 'waste'} onClick={() => setActiveTab('waste')} icon={<Trash2 size={16} />} label={t('bakeryFinanceWasteTab')} />
+          <TabButton active={activeTab === 'recipes'} onClick={() => setActiveTab('recipes')} icon={<BookOpen size={16} />} label={t('bakeryFinanceRecipesTab')} />
         </div>
       </div>
 
@@ -153,15 +153,15 @@ const BakeryFinanceSection: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-pulse">{[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard icon={DollarSign} label="Revenue" value={`$${revenue.toFixed(2)}`} sub={`${dateRange}-day period`} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
-              <StatCard icon={TrendingDown} label="Total Cost" value={`$${cost.toFixed(2)}`} sub="Ingredients + overhead" color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
-              <StatCard icon={TrendingUp} label="Net Profit" value={`$${profit.toFixed(2)}`} sub={profit >= 0 ? 'Profitable period' : 'Loss period'} trend={profit >= 0 ? 'up' : 'down'} color={profit >= 0 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'} />
-              <StatCard icon={BarChart3} label="Profit Margin" value={`${margin.toFixed(1)}%`} sub={margin >= 20 ? 'Healthy margin' : 'Below target'} color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
+              <StatCard icon={DollarSign} label={t('bakeryFinanceRevenue')} value={`$${revenue.toFixed(2)}`} sub={`${dateRange}-day period`} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
+              <StatCard icon={TrendingDown} label={t('bakeryFinanceTotalCost')} value={`$${cost.toFixed(2)}`} sub={t('bakeryFinanceCostSub')} color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
+              <StatCard icon={TrendingUp} label={t('bakeryFinanceNetProfit')} value={`$${profit.toFixed(2)}`} sub={profit >= 0 ? t('bakeryFinanceProfitable') : t('bakeryFinanceLossPeriod')} trend={profit >= 0 ? 'up' : 'down'} color={profit >= 0 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'} />
+              <StatCard icon={BarChart3} label={t('bakeryFinanceProfitMargin')} value={`${margin.toFixed(1)}%`} sub={margin >= 20 ? t('bakeryFinanceHealthyMargin') : t('bakeryFinanceBelowTarget')} color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
             </div>
           )}
           {!loading && trendChartData.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Revenue vs Cost Trend</h4>
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('bakeryFinanceTrendTitle')}</h4>
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={trendChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
@@ -174,7 +174,7 @@ const BakeryFinanceSection: React.FC = () => {
                 </LineChart>
               </ResponsiveContainer>
               <div className="flex items-center gap-4 mt-3 justify-center">
-                {[{ color: '#d97706', label: 'Revenue' }, { color: '#ef4444', label: 'Cost' }, { color: '#22c55e', label: 'Profit' }].map(l => (
+                  {[{ color: '#d97706', label: t('bakeryFinanceRevenue') }, { color: '#ef4444', label: t('bakeryFinanceTotalCost') }, { color: '#22c55e', label: t('bakeryFinanceProfit') }].map(l => (
                   <div key={l.label} className="flex items-center gap-1.5"><div className="w-3 h-0.5 rounded" style={{ backgroundColor: l.color }} /><span className="text-xs text-slate-500">{l.label}</span></div>
                 ))}
               </div>
@@ -182,7 +182,7 @@ const BakeryFinanceSection: React.FC = () => {
           )}
           {!loading && trendChartData.length === 0 && (
             <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-              <BarChart3 size={40} className="opacity-30 mb-2" /><p className="text-sm">No P&L trend data available for this period</p>
+              <BarChart3 size={40} className="opacity-30 mb-2" /><p className="text-sm">{t('bakeryFinanceTrendEmpty')}</p>
             </div>
           )}
         </div>
@@ -196,13 +196,13 @@ const BakeryFinanceSection: React.FC = () => {
           ) : (
             <>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <StatCard icon={Trash2} label="Total Waste Cost" value={`$${wasteCost.toFixed(2)}`} sub="Spoiled / discarded" color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
-                <StatCard icon={AlertTriangle} label="Waste Quantity" value={wasteQty} sub="units wasted" color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
-                <StatCard icon={TrendingDown} label="Waste % of Revenue" value={revenue > 0 ? `${(wasteCost / revenue * 100).toFixed(1)}%` : '0%'} sub={wasteCost / revenue < 0.05 ? '✓ Under 5% target' : '⚠ Above 5% target'} color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+                <StatCard icon={Trash2} label={t('bakeryFinanceTotalWasteCost')} value={`$${wasteCost.toFixed(2)}`} sub={t('bakeryFinanceWasteSpoiled')} color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
+                <StatCard icon={AlertTriangle} label={t('bakeryFinanceWasteQtyLabel')} value={wasteQty} sub={t('bakeryFinanceWasteUnits')} color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
+                <StatCard icon={TrendingDown} label={t('bakeryFinanceWastePct')} value={revenue > 0 ? `${(wasteCost / revenue * 100).toFixed(1)}%` : '0%'} sub={wasteCost / revenue < 0.05 ? t('bakeryFinanceWasteUnder') : t('bakeryFinanceWasteOver')} color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
               </div>
               {wasteChartData.length > 0 && (
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">Waste by Type</h4>
+                  <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('bakeryFinanceWasteByType')}</h4>
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={wasteChartData} margin={{ top: 0, right: 4, left: -10, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
@@ -216,7 +216,7 @@ const BakeryFinanceSection: React.FC = () => {
               )}
               {(!wasteSummary || wasteCost === 0) && (
                 <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                  <CheckCircle size={40} className="opacity-30 mb-2 text-green-500" /><p className="text-sm">No waste recorded for this period</p>
+                  <CheckCircle size={40} className="opacity-30 mb-2 text-green-500" /><p className="text-sm">{t('bakeryFinanceNoWaste')}</p>
                 </div>
               )}
             </>
@@ -241,21 +241,21 @@ const BakeryFinanceSection: React.FC = () => {
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <p className="font-semibold text-slate-800 dark:text-white">{recipe.name}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{recipe.category || 'Uncategorized'} · {recipe.ingredients?.length || 0} ingredients</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{recipe.category || t('bakeryFinanceUncategorized')} · {recipe.ingredients?.length || 0} {t('bakeryFinanceIngredients')}</p>
                       </div>
                       <span className={`text-xs font-bold px-2 py-1 rounded-full ${recipeMargin >= 60 ? 'bg-green-100 text-green-700' : recipeMargin >= 35 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{recipeMargin.toFixed(1)}%</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-2">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">Ing. Cost</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t('bakeryFinanceIngCost')}</p>
                         <p className="text-sm font-bold text-red-600">${ingredientCost.toFixed(2)}</p>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-2">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">Sell Price</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t('bakeryFinanceSellPrice')}</p>
                         <p className="text-sm font-bold text-green-600">${sellingPrice.toFixed(2)}</p>
                       </div>
                       <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-2">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">Profit</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t('bakeryFinanceProfit')}</p>
                         <p className={`text-sm font-bold ${sellingPrice - ingredientCost >= 0 ? 'text-amber-600' : 'text-red-600'}`}>${(sellingPrice - ingredientCost).toFixed(2)}</p>
                       </div>
                     </div>
@@ -265,7 +265,7 @@ const BakeryFinanceSection: React.FC = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-              <BookOpen size={40} className="opacity-30 mb-2" /><p className="text-sm">No recipes configured yet</p>
+              <BookOpen size={40} className="opacity-30 mb-2" /><p className="text-sm">{t('bakeryFinanceNoRecipes')}</p>
             </div>
           )}
         </div>

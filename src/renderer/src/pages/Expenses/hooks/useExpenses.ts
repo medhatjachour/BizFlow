@@ -67,6 +67,7 @@ export function useExpenses() {
   const loadExpenses = useCallback(async () => {
     try {
       setLoading(true)
+      if (!window.api.expenses?.getAll) { setExpenses([]); return }
       const { startDate, endDate } = buildDateBounds(dateRange)
       const data = await window.api.expenses.getAll({
         startDate: startDate.toISOString(),
@@ -119,6 +120,7 @@ export function useExpenses() {
 
   const loadCOGSData = useCallback(async () => {
     try {
+      if (!window.api.saleTransactions?.getByDateRange) { setTotalCOGS(0); return }
       const { startDate, endDate } = buildDateBounds(dateRange)
       const salesData = await window.api.saleTransactions.getByDateRange({
         startDate: startDate.toISOString(),
@@ -214,7 +216,10 @@ export function useExpenses() {
     setFormData(EMPTY_FORM)
   }
 
+  const apiAvailable = typeof window !== 'undefined' && !!window.api.expenses?.getAll
+
   const handleSave = async () => {
+    if (!apiAvailable) return
     if (formData.amount <= 0)         { error(t('expenseAmountRequired'));      return }
     if (!formData.description.trim()) { error(t('expenseDescriptionRequired')); return }
 
@@ -244,6 +249,7 @@ export function useExpenses() {
   }
 
   const handleDelete = async (id: string) => {
+    if (!apiAvailable) return
     if (!confirm(t('confirmDeleteExpense'))) return
     try {
       await window.api.expenses.delete(id)
@@ -285,6 +291,7 @@ export function useExpenses() {
     dateRange, setDateRange,
     formData, setFormData,
     includeCOGS,
+    apiAvailable,
     // derived
     filteredExpenses,
     operationalExpenses,

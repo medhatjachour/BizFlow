@@ -70,6 +70,7 @@ type Overview = {
   todayBatches: TodayBatch[]
   todayRevenue: number
   todayUnitsSold: number
+  todayProductionCost: number
 }
 
 interface Props {
@@ -222,7 +223,13 @@ export default function DailyOverviewTab({ onEndOfDay }: Props) {
           icon={<DollarSign className="h-5 w-5" />}
           label={t('bakeryTodayRevenue')}
           value={`$${(data?.todayRevenue ?? 0).toFixed(2)}`}
-          sub={`${data?.todayUnitsSold ?? 0} ${t('bakeryUnitsSold')}`}
+          sub={(() => {
+            const rev = data?.todayRevenue ?? 0
+            const cost = data?.todayProductionCost ?? 0
+            if (cost === 0) return `${data?.todayUnitsSold ?? 0} ${t('bakeryUnitsSold')}`
+            const profit = rev - cost
+            return `Cost $${cost.toFixed(2)} · ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)} profit`
+          })()}
           color="purple"
         />
       </div>

@@ -104,6 +104,7 @@ function createDemoExpiredWindow(linkedInUrl: string, expiryDate: Date): Browser
     maximizable: false,
     autoHideMenuBar: true,
     backgroundColor: '#f7f7f5',
+    icon,
     webPreferences: {
       sandbox: false,
       nodeIntegration: false,
@@ -205,7 +206,7 @@ function createWindow(): BrowserWindow {
     show: false, // Keep hidden until migration completes
     autoHideMenuBar: true,
     backgroundColor: '#ffffff',
-    ...(process.platform === 'linux' ? { icon } : {}),
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -350,17 +351,25 @@ app.whenReady().then(async () => {
 
     mainLog.info('Migration check complete, showing window...')
 
-    // Seed default installment plans (only if none exist)
+    // Seed default installment plans (only if none exist — table may not exist in all module configs)
     try {
-      const planCount = await prisma.installmentPlan.count()
-      if (planCount === 0) {
-        mainLog.info('No installment plans found, seeding defaults...')
-        const planService = InstallmentPlanService.getInstance(prisma)
-        await planService.seedDefaultPlans()
-        mainLog.info('Installment plans initialized')
+      const tableRows = await prisma.$queryRawUnsafe<{ cnt: number }[]>(
+        `SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name='InstallmentPlan'`
+      )
+      if (Number(tableRows[0]?.cnt) > 0) {
+        const p = prisma as any
+        const planCount = await p.installmentPlan.count()
+        if (planCount === 0) {
+          mainLog.info('No installment plans found, seeding defaults...')
+          const planService = InstallmentPlanService.getInstance(prisma)
+          await planService.seedDefaultPlans()
+          mainLog.info('Installment plans initialized')
+        }
       }
-    } catch (error) {
-      mainLog.error('Failed to check/seed installment plans:', error)
+    } catch (error: any) {
+      if (error?.code !== 'P2021') {
+        mainLog.error('Failed to check/seed installment plans:', error)
+      }
     }
 
     // Setup daily email reports cron job (runs at 11 PM every day)

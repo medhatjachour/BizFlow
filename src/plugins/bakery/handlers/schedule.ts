@@ -9,8 +9,14 @@ export function registerScheduleHandlers(prisma: any) {
     endDate?: string
     status?: string
     recipeId?: string
+    page?: number
+    pageSize?: number
   } = {}) => {
     try {
+      const page     = Math.max(1, options.page ?? 1)
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20))
+      const skip     = (page - 1) * pageSize
+
       const where: any = {}
       if (options.recipeId) where.recipeId = options.recipeId
       if (options.status) where.status = options.status
@@ -19,11 +25,19 @@ export function registerScheduleHandlers(prisma: any) {
         if (options.startDate) where.scheduledDate.gte = new Date(options.startDate)
         if (options.endDate) where.scheduledDate.lte = new Date(options.endDate)
       }
-      return await prisma.productionSchedule.findMany({
-        where,
-        include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } },
-        orderBy: { scheduledDate: 'asc' }
-      })
+
+      const [data, total] = await Promise.all([
+        prisma.productionSchedule.findMany({
+          where,
+          include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } },
+          orderBy: { scheduledDate: 'asc' },
+          skip,
+          take: pageSize
+        }),
+        prisma.productionSchedule.count({ where })
+      ])
+
+      return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
     } catch (err) {
       log.error('bakery:getSchedule error', err)
       throw err

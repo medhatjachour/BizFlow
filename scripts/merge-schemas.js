@@ -48,13 +48,7 @@ const MODULE_REGISTRY = {
   },
   bakery: {
     file: 'schema.prisma',  // path: src/plugins/bakery/schema.prisma
-    /** Fields to inject into core models.  Key = model name, value = lines. */
-    injectFields: {
-      Product: [
-        '  recipesAsOutput    Recipe[]    @relation("RecipeOutputProduct") // Recipes that produce this product',
-        '  wasteLogs          WasteLog[]  @relation("ProductWasteLogs")    // Waste records for this product'
-      ]
-    }
+    injectFields: {}
   },
   restaurant: {
     file: 'schema.prisma',

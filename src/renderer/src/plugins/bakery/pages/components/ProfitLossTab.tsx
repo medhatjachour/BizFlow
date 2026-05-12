@@ -5,7 +5,6 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 type PLRow = {
   recipeId: string
   recipeName: string
-  outputProductId?: string
   costPerBatch: number
   totalProductionCost: number
   unitsProduced: number
@@ -78,12 +77,10 @@ export default function ProfitLossTab() {
       : null
 
   const bestRecipe = data?.rows.reduce<PLRow | null>((best, row) => {
-    if (!row.outputProductId) return best
     if (!best || row.marginPercent > (best.marginPercent ?? -Infinity)) return row
     return best
   }, null)
   const worstRecipe = data?.rows.reduce<PLRow | null>((worst, row) => {
-    if (!row.outputProductId) return worst
     if (!worst || row.marginPercent < (worst.marginPercent ?? Infinity)) return row
     return worst
   }, null)
@@ -245,11 +242,6 @@ export default function ProfitLossTab() {
                         <tr key={row.recipeId} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                           <td className="px-4 py-3 font-medium text-slate-800 dark:text-white">
                             {row.recipeName}
-                            {!row.outputProductId && (
-                              <span className="ml-2 text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-400 rounded px-1 py-0.5">
-                                {t('bakeryNotLinked')}
-                              </span>
-                            )}
                           </td>
                           <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-300">
                             {row.unitsProduced.toFixed(0)}
@@ -267,31 +259,26 @@ export default function ProfitLossTab() {
                             {(row.wasteCost ?? 0) > 0 ? `$${(row.wasteCost ?? 0).toFixed(2)}` : '—'}
                           </td>
                           <td className="px-4 py-3 text-right text-green-600">
-                            {row.outputProductId ? `$${row.totalRevenue.toFixed(2)}` : '—'}
+                            {row.totalRevenue > 0 ? `$${row.totalRevenue.toFixed(2)}` : '—'}
                           </td>
                           <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400 text-xs">
                             {rpUnit != null ? `$${rpUnit.toFixed(3)}` : '—'}
                           </td>
                           <td className={`px-4 py-3 text-right font-semibold ${profitable ? 'text-blue-600' : 'text-red-500'}`}>
-                            {row.outputProductId
-                              ? (profitable ? '+' : '') + `$${row.grossProfit.toFixed(2)}`
-                              : '—'
-                            }
+                            {(profitable ? '+' : '') + `$${row.grossProfit.toFixed(2)}`}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            {row.outputProductId ? (
-                              <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-                                profitable
-                                  ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                  : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                              }`}>
-                                {profitable
-                                  ? <TrendingUp className="h-3 w-3" />
-                                  : <TrendingDown className="h-3 w-3" />
-                                }
-                                {row.marginPercent.toFixed(1)}%
-                              </span>
-                            ) : '—'}
+                            <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                              profitable
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
+                              {profitable
+                                ? <TrendingUp className="h-3 w-3" />
+                                : <TrendingDown className="h-3 w-3" />
+                              }
+                              {row.marginPercent.toFixed(1)}%
+                            </span>
                           </td>
                         </tr>
                       )

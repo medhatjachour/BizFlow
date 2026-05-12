@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { convertQuantity } from '../utils/unitConversion'
 
 const log = createLogger('Bakery:Analytics')
 
@@ -31,15 +32,17 @@ export function registerAnalyticsHandlers(prisma: any) {
         ])
       )
 
-      const saleItems = await prisma.saleItem.findMany({
-        where: hasDates ? { transaction: { createdAt: dateFilter } } : {},
-        select: { productId: true, total: true, quantity: true }
+      const bakerySales = await prisma.bakerySale.groupBy({
+        by: ['recipeId'],
+        _sum: { totalAmount: true, quantity: true },
+        where: hasDates ? { saleDate: dateFilter } : {}
       })
-      const revenueMap = new Map<string, { total: number; qty: number }>()
-      for (const si of saleItems) {
-        const prev = revenueMap.get(si.productId) ?? { total: 0, qty: 0 }
-        revenueMap.set(si.productId, { total: prev.total + si.total, qty: prev.qty + si.quantity })
-      }
+      const revenueMap = new Map<string, { total: number; qty: number }>(
+        bakerySales.map((s: any) => [
+          s.recipeId ?? '__none__',
+          { total: s._sum.totalAmount ?? 0, qty: s._sum.quantity ?? 0 }
+        ])
+      )
 
       const wasteLogs = await prisma.wasteLog.groupBy({
         by: ['recipeId'],
@@ -56,16 +59,13 @@ export function registerAnalyticsHandlers(prisma: any) {
           (s: number, ing: any) => s + ing.quantity * ing.costPerUnit, 0
         )
         const batches = batchCostMap.get(recipe.id) ?? { totalCost: 0, unitsProduced: 0 }
-        const rev = recipe.outputProductId
-          ? (revenueMap.get(recipe.outputProductId) ?? { total: 0, qty: 0 })
-          : { total: 0, qty: 0 }
+        const rev = revenueMap.get(recipe.id) ?? { total: 0, qty: 0 }
         const wasteCost = wasteMap.get(recipe.id) ?? 0
         const grossProfit = rev.total - batches.totalCost - wasteCost
         const margin = rev.total > 0 ? (grossProfit / rev.total) * 100 : 0
         return {
           recipeId: recipe.id,
           recipeName: recipe.name,
-          outputProductId: recipe.outputProductId,
           costPerBatch,
           totalProductionCost: batches.totalCost,
           unitsProduced: batches.unitsProduced,
@@ -103,17 +103,13 @@ export function registerAnalyticsHandlers(prisma: any) {
 
       const batches = await prisma.productionBatch.findMany({
         where: { batchDate: { gte: cutoff } },
-        include: { recipe: { select: { id: true, name: true, outputProductId: true } } },
+        include: { recipe: { select: { id: true, name: true } } },
         orderBy: { batchDate: 'asc' }
       })
 
-      const saleItems = await prisma.saleItem.findMany({
-        where: { transaction: { createdAt: { gte: cutoff } } },
-        select: {
-          productId: true,
-          total: true,
-          transaction: { select: { createdAt: true } }
-        }
+      const bakerySales = await prisma.bakerySale.findMany({
+        where: { saleDate: { gte: cutoff } },
+        select: { recipeId: true, totalAmount: true, saleDate: true }
       })
 
       const getWeek = (d: Date) => {
@@ -125,11 +121,12 @@ export function registerAnalyticsHandlers(prisma: any) {
       }
 
       const revMap = new Map<string, Map<string, number>>()
-      for (const si of saleItems as any[]) {
-        const week = getWeek(new Date(si.transaction.createdAt))
-        if (!revMap.has(si.productId)) revMap.set(si.productId, new Map())
-        const m = revMap.get(si.productId)!
-        m.set(week, (m.get(week) ?? 0) + si.total)
+      for (const si of bakerySales as any[]) {
+        const week = getWeek(new Date(si.saleDate))
+        const key = si.recipeId ?? '__none__'
+        if (!revMap.has(key)) revMap.set(key, new Map())
+        const m = revMap.get(key)!
+        m.set(week, (m.get(week) ?? 0) + si.totalAmount)
       }
 
       const costMap = new Map<string, Map<string, number>>()
@@ -147,14 +144,14 @@ export function registerAnalyticsHandlers(prisma: any) {
 
       const recipes = await prisma.recipe.findMany({
         where: { isActive: true },
-        select: { id: true, name: true, outputProductId: true }
+        select: { id: true, name: true }
       })
 
       return {
         weeks: allWeeks,
         series: (recipes as any[]).map((r: any) => {
           const cMap = costMap.get(r.id) ?? new Map()
-          const rMap = r.outputProductId ? (revMap.get(r.outputProductId) ?? new Map()) : new Map()
+          const rMap = revMap.get(r.id) ?? new Map()
           return {
             recipeId: r.id,
             recipeName: r.name,
@@ -240,18 +237,18 @@ export function registerAnalyticsHandlers(prisma: any) {
 
       const batches = await prisma.productionBatch.findMany({
         where: { batchDate: { gte: todayStart, lte: todayEnd } },
-        include: { recipe: { select: { id: true, name: true, outputProductId: true, yieldUnit: true } } },
+        include: { recipe: { select: { id: true, name: true, yieldUnit: true } } },
         orderBy: { batchDate: 'desc' }
       })
 
-      const saleItems = await prisma.saleItem.findMany({
-        where: { transaction: { createdAt: { gte: todayStart, lte: todayEnd } } },
-        select: { productId: true, quantity: true }
+      const todaySalesEod = await prisma.bakerySale.groupBy({
+        by: ['recipeId'],
+        _sum: { quantity: true },
+        where: { saleDate: { gte: todayStart, lte: todayEnd } }
       })
-      const soldMap = new Map<string, number>()
-      for (const si of saleItems) {
-        soldMap.set(si.productId, (soldMap.get(si.productId) ?? 0) + si.quantity)
-      }
+      const soldMap = new Map<string, number>(
+        (todaySalesEod as any[]).map((s: any) => [s.recipeId ?? '__none__', s._sum.quantity ?? 0])
+      )
 
       const recipeMap = new Map<string, any>()
       for (const batch of batches as any[]) {
@@ -260,7 +257,6 @@ export function registerAnalyticsHandlers(prisma: any) {
           recipeMap.set(key, {
             recipeId: batch.recipeId,
             recipeName: batch.recipe.name,
-            outputProductId: batch.recipe.outputProductId,
             yieldUnit: batch.recipe.yieldUnit,
             unitsProduced: 0,
             batches: []
@@ -272,9 +268,7 @@ export function registerAnalyticsHandlers(prisma: any) {
       }
 
       return Array.from(recipeMap.values()).map((entry: any) => {
-        const unitsSold = entry.outputProductId
-          ? (soldMap.get(entry.outputProductId) ?? 0)
-          : 0
+        const unitsSold = soldMap.get(entry.recipeId) ?? 0
         const estimatedWaste = Math.max(0, entry.unitsProduced - unitsSold)
         return { ...entry, unitsSold, estimatedWaste }
       })
@@ -334,13 +328,13 @@ export function registerAnalyticsHandlers(prisma: any) {
         include: { recipe: { select: { name: true, yieldUnit: true } } }
       })
 
-      const todaySales = await prisma.saleItem.findMany({
-        where: { transaction: { createdAt: { gte: todayStart, lte: todayEnd } } },
-        select: { total: true, quantity: true }
-      }).catch(() => [] as any[])
+      const todaySales = await prisma.bakerySale.aggregate({
+        where: { saleDate: { gte: todayStart, lte: todayEnd } },
+        _sum: { totalAmount: true, quantity: true }
+      }).catch(() => ({ _sum: { totalAmount: 0, quantity: 0 } }))
 
-      const todayRevenue = (todaySales as any[]).reduce((s: number, si: any) => s + (si.total ?? 0), 0)
-      const todayUnitsSold = (todaySales as any[]).reduce((s: number, si: any) => s + (si.quantity ?? 0), 0)
+      const todayRevenue = (todaySales as any)._sum?.totalAmount ?? 0
+      const todayUnitsSold = (todaySales as any)._sum?.quantity ?? 0
 
       const capacity = recipes.map((recipe: any) => {
         let availableBatches = Infinity
@@ -350,10 +344,14 @@ export function registerAnalyticsHandlers(prisma: any) {
           const pi = ing.pantryIngredient
           const inStock = pi?.currentStock ?? null
           const needed = ing.quantity
-          const canMake = (pi && needed > 0) ? Math.floor(inStock / needed) : null
-          const shortfall = (canMake !== null && canMake < 1) ? Math.max(0, needed - inStock) : 0
+          // Convert pantry stock to the recipe ingredient's unit before comparing
+          const inStockInRecipeUnit = (pi && inStock !== null && pi.unit !== ing.unit)
+            ? (convertQuantity(inStock, pi.unit, ing.unit) ?? inStock)
+            : inStock
+          const canMake = (pi && needed > 0 && inStockInRecipeUnit !== null) ? Math.floor(inStockInRecipeUnit / needed) : null
+          const shortfall = (canMake !== null && canMake < 1) ? Math.max(0, needed - (inStockInRecipeUnit ?? 0)) : 0
 
-          if (pi && needed > 0) {
+        if (pi && needed > 0 && inStockInRecipeUnit !== null) {
             if (canMake! < availableBatches) {
               availableBatches = canMake!
               limitedBy = pi.name
@@ -386,17 +384,20 @@ export function registerAnalyticsHandlers(prisma: any) {
         }
       })
 
+      const todayProductionCost = (todayBatches as any[]).reduce((s: number, b: any) => s + (b.totalCost ?? 0), 0)
+
       return {
         scheduled, expiringBatches, lowStock, reorderNeeded, capacity,
         todayBatches: (todayBatches as any[]).map((b: any) => ({
           id: b.id,
           recipeName: b.recipe.name,
           yieldUnit: b.recipe.yieldUnit,
-          quantityProduced: b.quantityProduced,
+          quantityProduced: b.unitsProduced,
           totalCost: b.totalCost
         })),
         todayRevenue,
-        todayUnitsSold
+        todayUnitsSold,
+        todayProductionCost
       }
     } catch (err) {
       log.error('bakery:getDailyOverview error', err)
