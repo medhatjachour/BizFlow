@@ -83,7 +83,7 @@ export default function Settings() {
   const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup']
   const VET_TABS: SettingsTab[] = ['general', 'users', 'backup']
 
-  const tabs = (clinicEnabled || vetEnabled) && !import.meta.env.DEV
+  const tabs = (clinicEnabled || vetEnabled)
     ? allTabs.filter(tab => (clinicEnabled ? CLINIC_TABS : VET_TABS).includes(tab.id))
     : allTabs
 

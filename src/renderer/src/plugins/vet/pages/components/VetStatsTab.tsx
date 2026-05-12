@@ -99,8 +99,10 @@ export default function VetStatsTab() {
     const diff = (new Date(b.expiryDate).getTime() - nowMs) / 86400000
     return diff > 7 && diff <= 30 && b.quantity > 0
   })
-  const expiredValue   = expiredBatches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
-  const expiring7Value = expiring7Batches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
+  const expiredValue    = expiredBatches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
+  const expiring7Value  = expiring7Batches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
+  const expiring30Value = expiring30Batches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
+  const totalExpiryValue = expiredValue + expiring7Value + expiring30Value
   const topExpired     = [...expiredBatches]
     .sort((a: any, b: any) => (b.quantity * b.costPerUnit) - (a.quantity * a.costPerUnit))
     .slice(0, 5)
@@ -235,9 +237,16 @@ export default function VetStatsTab() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Expiry Alerts */}
                 <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5 space-y-4">
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <PackageX size={15} className="text-red-500" /> Batch Expiry Alerts
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <PackageX size={15} className="text-red-500" /> Batch Expiry Alerts
+                    </h3>
+                    {totalExpiryValue > 0 && (
+                      <span className="text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">
+                        ${totalExpiryValue.toFixed(2)} total at risk
+                      </span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className={`rounded-lg p-3 text-center ${expiredBatches.length > 0 ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700'}`}>
                       <p className={`text-2xl font-bold ${expiredBatches.length > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`}>{expiredBatches.length}</p>
@@ -252,6 +261,7 @@ export default function VetStatsTab() {
                     <div className={`rounded-lg p-3 text-center ${expiring30Batches.length > 0 ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : 'bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700'}`}>
                       <p className={`text-2xl font-bold ${expiring30Batches.length > 0 ? 'text-yellow-600 dark:text-yellow-400' : 'text-slate-400'}`}>{expiring30Batches.length}</p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Expire in 30d</p>
+                      {expiring30Batches.length > 0 && <p className="text-[10px] text-yellow-600 dark:text-yellow-400 font-medium mt-0.5">${expiring30Value.toFixed(2)}</p>}
                     </div>
                   </div>
                   {topExpired.length > 0 && (
