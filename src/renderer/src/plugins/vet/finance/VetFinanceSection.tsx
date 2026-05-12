@@ -34,6 +34,11 @@ function getCatLabel(val: string) {
 
 interface FinanceSummary {
   revenue: number
+  medicineRevenue: number
+  medicineCost: number
+  medicineProfit: number
+  medicineSales: number
+  totalRevenue: number
   totalExpenses: number
   netIncome: number
   outstanding: number
@@ -62,12 +67,24 @@ export default function VetFinanceSection() {
       ])
 
       // Build summary from stats overview + expenses summary
+      const clinicalRevenue  = sm?.revenue               ?? 0
+      const medicineRevenue  = sm?.medicineRevenue        ?? 0
+      const medicineCost     = sm?.medicineCost           ?? 0
+      const medicineProfit   = sm?.medicineProfit         ?? (medicineRevenue - medicineCost)
+      const medicineSales    = sm?.medicineSales          ?? 0
+      const totalRevenue     = clinicalRevenue + medicineRevenue
+      const totalExpenses    = expSummary?.totalExpenses  ?? 0
       setSummary({
-        revenue:       sm?.revenue               ?? 0,
-        totalExpenses: expSummary?.totalExpenses ?? 0,
-        netIncome:     (sm?.revenue ?? 0) - (expSummary?.totalExpenses ?? 0),
-        outstanding:   sm?.outstanding           ?? 0,
-        byCategory:    expSummary?.byCategory    ?? [],
+        revenue:        clinicalRevenue,
+        medicineRevenue,
+        medicineCost,
+        medicineProfit,
+        medicineSales,
+        totalRevenue,
+        totalExpenses,
+        netIncome:      totalRevenue - totalExpenses,
+        outstanding:    sm?.outstanding ?? 0,
+        byCategory:     Array.isArray(expSummary?.byCategory) ? expSummary.byCategory : [],
       })
 
       // Debtors — patients with outstanding balance
@@ -95,11 +112,17 @@ export default function VetFinanceSection() {
     { key: 'expenses' as const, label: 'Expenses',  icon: Receipt },
   ]
 
+  const medMarginPct = summary && summary.medicineRevenue > 0
+    ? (summary.medicineProfit / summary.medicineRevenue) * 100
+    : 0
+
   const kpiCards = summary ? [
-    { label: 'Revenue',       value: fmt(summary.revenue),       icon: TrendingUp,   color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800/40' },
-    { label: 'Expenses',      value: fmt(summary.totalExpenses), icon: TrendingDown, color: 'text-red-600',     bg: 'bg-red-50 dark:bg-red-900/20',          border: 'border-red-200 dark:border-red-800/40' },
-    { label: 'Net Income',    value: fmt(summary.netIncome),     icon: Banknote,     color: summary.netIncome >= 0 ? 'text-teal-600' : 'text-red-600', bg: 'bg-teal-50 dark:bg-teal-900/20', border: 'border-teal-200 dark:border-teal-800/40' },
-    { label: 'Outstanding',   value: fmt(summary.outstanding),   icon: AlertCircle,  color: summary.outstanding > 0 ? 'text-amber-600' : 'text-slate-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800/40' },
+    { label: 'Clinical Revenue',  value: fmt(summary.revenue),          icon: TrendingUp,   color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20',   border: 'border-emerald-200 dark:border-emerald-800/40' },
+    { label: 'Medicine Revenue',  value: fmt(summary.medicineRevenue),   icon: Activity,     color: 'text-violet-600',  bg: 'bg-violet-50 dark:bg-violet-900/20',     border: 'border-violet-200 dark:border-violet-800/40' },
+    { label: 'Medicine COGS',     value: fmt(summary.medicineCost),      icon: TrendingDown, color: 'text-orange-600',  bg: 'bg-orange-50 dark:bg-orange-900/20',     border: 'border-orange-200 dark:border-orange-800/40' },
+    { label: `Med Margin (${medMarginPct.toFixed(0)}%)`, value: fmt(summary.medicineProfit), icon: Banknote, color: summary.medicineProfit >= 0 ? 'text-blue-600' : 'text-red-600', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800/40' },
+    { label: 'Expenses',          value: fmt(summary.totalExpenses),     icon: AlertCircle,  color: 'text-red-600',     bg: 'bg-red-50 dark:bg-red-900/20',           border: 'border-red-200 dark:border-red-800/40' },
+    { label: 'Net Income',        value: fmt(summary.netIncome),         icon: Receipt,      color: summary.netIncome >= 0 ? 'text-teal-600' : 'text-red-600', bg: 'bg-teal-50 dark:bg-teal-900/20', border: 'border-teal-200 dark:border-teal-800/40' },
   ] : []
 
   return (
@@ -136,7 +159,7 @@ export default function VetFinanceSection() {
       ) : (
         <>
           {/* KPI row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
             {kpiCards.map(({ label, value, icon: Icon, color, bg, border }) => (
               <div key={label} className={`rounded-xl border p-4 ${bg} ${border}`}>
                 <div className="flex items-center gap-2 mb-2">
@@ -196,10 +219,14 @@ export default function VetFinanceSection() {
                 </h3>
                 <div className="space-y-3">
                   {[
-                    { label: 'Gross Revenue',     value: summary.revenue,       color: 'text-emerald-600' },
-                    { label: 'Total Expenses',    value: -summary.totalExpenses, color: 'text-red-500' },
-                    { label: 'Net Income',        value: summary.netIncome,      color: summary.netIncome >= 0 ? 'text-teal-600' : 'text-red-600', bold: true },
-                    { label: 'Unpaid / Outstanding', value: summary.outstanding, color: summary.outstanding > 0 ? 'text-amber-600' : 'text-slate-400' },
+                    { label: 'Clinical Revenue',     value: summary.revenue,          color: 'text-emerald-600' },
+                    { label: `Medicine Revenue (${summary.medicineSales} sales)`, value: summary.medicineRevenue, color: 'text-violet-600' },
+                    { label: 'Medicine COGS',        value: -summary.medicineCost,    color: 'text-orange-500' },
+                    { label: 'Medicine Gross Profit', value: summary.medicineProfit,  color: summary.medicineProfit >= 0 ? 'text-blue-600' : 'text-red-600' },
+                    { label: 'Total Revenue',        value: summary.totalRevenue,     color: 'text-blue-600', bold: true },
+                    { label: 'Total Expenses',       value: -summary.totalExpenses,   color: 'text-red-500' },
+                    { label: 'Net Income',           value: summary.netIncome,        color: summary.netIncome >= 0 ? 'text-teal-600' : 'text-red-600', bold: true },
+                    { label: 'Unpaid / Outstanding', value: summary.outstanding,      color: summary.outstanding > 0 ? 'text-amber-600' : 'text-slate-400' },
                   ].map(({ label, value, color, bold }) => (
                     <div key={label} className={`flex justify-between items-center py-2 ${bold ? 'border-t border-slate-200 dark:border-slate-700 font-semibold' : ''}`}>
                       <span className="text-sm text-slate-600 dark:text-slate-300">{label}</span>

@@ -67,8 +67,11 @@ export default function VetFollowUpsTab() {
   const navigate = useNavigate()
   const { t } = useLanguage()
 
+  const PAGE_SIZE = 10
+
   const [allFollowUps, setAllFollowUps] = useState<any[]>([])
-  const [filter,       setFilter]       = useState<FilterKey>('all')
+  const [filter,       setFilter]       = useState<FilterKey>('today')
+  const [page,         setPage]         = useState(1)
   const [loading,      setLoading]      = useState(true)
   const [clearingId,   setClearingId]   = useState<string | null>(null)
   const [bookingFor,   setBookingFor]   = useState<any | null>(null)
@@ -114,6 +117,9 @@ export default function VetFollowUpsTab() {
     if (filter === 'upcoming') return diff > 0
     return true
   })
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const FILTER_TABS: { key: FilterKey; label: string; color: string }[] = [
     { key: 'all',      label: `${t('vetFilterAll')||'All'} (${allFollowUps.length})`,          color: 'text-slate-600 dark:text-slate-300' },
@@ -166,7 +172,7 @@ export default function VetFollowUpsTab() {
       {/* Filter tabs */}
       <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700">
         {FILTER_TABS.map(tab => (
-          <button key={tab.key} onClick={() => setFilter(tab.key)}
+          <button key={tab.key} onClick={() => { setFilter(tab.key); setPage(1) }}
             className={`px-4 py-2 text-xs font-medium border-b-2 transition-all ${
               filter === tab.key
                 ? `border-current ${tab.color}`
@@ -191,7 +197,7 @@ export default function VetFollowUpsTab() {
           </div>
         ) : (
           <div className="space-y-2 pb-4">
-            {filtered.map(fu => {
+            {paginated.map(fu => {
               const diff      = daysDiff(fu.followUpDate)
               const isClearing = clearingId === fu.id
               const rowBg = diff < 0
@@ -267,6 +273,41 @@ export default function VetFollowUpsTab() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700 flex-shrink-0">
+          <p className="text-xs text-slate-400">
+            {t('vetPageLabel')||'Page'} <span className="font-semibold text-slate-600 dark:text-slate-300">{page}</span> {t('vetOfLabel')||'of'} <span className="font-semibold text-slate-600 dark:text-slate-300">{totalPages}</span>
+            {' '}·{' '}{filtered.length} {t('vetRecordsLabel')||'records'}
+          </p>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              ‹ {t('vetPrevLabel')||'Prev'}
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const start = Math.max(1, Math.min(page - 2, totalPages - 4))
+              const n = start + i
+              if (n > totalPages) return null
+              return (
+                <button key={n} onClick={() => setPage(n)}
+                  className={`w-8 h-8 text-xs font-medium rounded-lg transition-colors ${
+                    n === page
+                      ? 'bg-violet-600 text-white'
+                      : 'border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}>
+                  {n}
+                </button>
+              )
+            })}
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+              {t('vetNextLabel')||'Next'} ›
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Book appointment modal */}
       {bookingFor && (

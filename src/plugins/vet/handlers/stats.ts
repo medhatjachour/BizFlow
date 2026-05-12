@@ -27,7 +27,7 @@ export function registerVetStatsHandlers(prisma: any) {
           break
       }
 
-      const [totalPatients, newPatients, sessionRows, outstandingRows, upcomingAppts] = await Promise.all([
+      const [totalPatients, newPatients, sessionRows, outstandingRows, upcomingAppts, medSaleRows] = await Promise.all([
         prisma.vetPatient.count(),
         prisma.vetPatient.count({ where: { createdAt: { gte: start } } }),
         prisma.$queryRawUnsafe(`
@@ -47,17 +47,33 @@ export function registerVetStatsHandlers(prisma: any) {
             appointmentDate: { gte: now },
             status: { in: ['scheduled', 'confirmed'] }
           }
-        })
+        }),
+        prisma.$queryRawUnsafe(`
+          SELECT
+            COUNT(*)                                                  as saleCount,
+            COALESCE(SUM(s.totalPrice), 0)                           as medicineRevenue,
+            COALESCE(SUM(s.quantity * b.costPerUnit), 0)             as medicineCost
+          FROM VetMedicineSale s
+          JOIN VetMedicineBatch b ON s.batchId = b.id
+          WHERE s.saleDate >= ?
+        `, start) as Promise<any[]>,
       ])
+
+      const medicineRevenue = Number(medSaleRows[0]?.medicineRevenue) || 0
+      const medicineCost    = Number(medSaleRows[0]?.medicineCost)    || 0
 
       return {
         totalPatients,
         newPatients,
-        sessionCount:  Number(sessionRows[0]?.sessionCount) || 0,
-        revenue:       Number(sessionRows[0]?.revenue)      || 0,
-        collected:     Number(sessionRows[0]?.collected)    || 0,
-        outstanding:   Number(outstandingRows[0]?.outstanding) || 0,
-        upcomingAppts
+        sessionCount:    Number(sessionRows[0]?.sessionCount)      || 0,
+        revenue:         Number(sessionRows[0]?.revenue)            || 0,
+        collected:       Number(sessionRows[0]?.collected)          || 0,
+        outstanding:     Number(outstandingRows[0]?.outstanding)    || 0,
+        upcomingAppts,
+        medicineRevenue,
+        medicineCost,
+        medicineProfit:  medicineRevenue - medicineCost,
+        medicineSales:   Number(medSaleRows[0]?.saleCount)         || 0,
       }
     } catch (err) { log.error('overview', err); throw err }
   })

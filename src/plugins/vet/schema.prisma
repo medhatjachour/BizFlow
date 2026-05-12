@@ -212,3 +212,77 @@ model VetSalaryRecord {
   @@index([staffId])
   @@index([year, month])
 }
+
+// ─── Medicine Catalogue ───────────────────────────────────────────────────────
+
+model VetMedicine {
+  id           String             @id @default(uuid())
+  name         String
+  // 'antibiotic' | 'antiparasitic' | 'vaccine' | 'anesthetic' | 'supplement' | 'general' | 'other'
+  category     String             @default("general")
+  // 'tablet' | 'capsule' | 'ml' | 'vial' | 'tube' | 'bottle' | 'sachet' | 'other'
+  unit         String             @default("tablet")
+  description  String?
+  minimumStock Float              @default(0)
+  batches      VetMedicineBatch[]
+  sales        VetMedicineSale[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([name])
+  @@index([category])
+}
+
+// ─── Medicine Batch (stock lot with expiry) ────────────────────────────────────
+
+model VetMedicineBatch {
+  id              String            @id @default(uuid())
+  medicineId      String
+  medicine        VetMedicine       @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  batchNumber     String?
+  supplier        String?
+  expiryDate      DateTime
+  quantity        Float             // remaining stock
+  initialQty      Float             // original received qty
+  costPerUnit     Float             @default(0)
+  receivedDate    DateTime          @default(now())
+  notes           String?
+  // Disposal / write-off fields
+  status          String            @default("active") // 'active' | 'disposed'
+  disposedAt      DateTime?
+  disposedQty     Float?            // qty written off (usually = quantity at disposal time)
+  disposalReason  String?
+  sales           VetMedicineSale[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([medicineId])
+  @@index([expiryDate])
+  @@index([status])
+}
+
+// ─── Medicine Sale ─────────────────────────────────────────────────────────────
+
+model VetMedicineSale {
+  id            String           @id @default(uuid())
+  medicineId    String
+  medicine      VetMedicine      @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  batchId       String
+  batch         VetMedicineBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  quantity      Float
+  unitPrice     Float
+  totalPrice    Float
+  discount      Float            @default(0)
+  // Soft reference — no FK so it works without altering VetPatient model
+  patientId     String?
+  patientName   String?
+  paymentMethod String?          // 'cash' | 'card' | 'insurance' | 'other'
+  notes         String?
+  saleDate      DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+
+  @@index([medicineId])
+  @@index([batchId])
+  @@index([saleDate])
+  @@index([patientId])
+}
