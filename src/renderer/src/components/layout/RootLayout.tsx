@@ -227,7 +227,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
               aria-label="Go to Dashboard"
               className="group flex items-center"
             >
-              <div className="w-8 h-8 rounded-lg bg-transparent flex items-center justify-center text-white font-bold shadow-sm transition-transform group-hover:scale-105">
+              <div className="w-8 h-8 rounded-lg bg-transparent flex items-center justify-center text-white font-bold transition-transform group-hover:scale-105">
                 {!iconBroken ? (
                   <img
                     src={iconSrc}

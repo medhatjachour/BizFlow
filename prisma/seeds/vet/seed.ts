@@ -209,6 +209,90 @@ const APPOINTMENT_TYPES    = ['consultation','follow_up','vaccination','surgery'
 const PAST_APPT_STATUSES   = ['completed','completed','completed','cancelled','no_show'] as const
 const FUTURE_APPT_STATUSES = ['scheduled','scheduled','scheduled','confirmed'] as const
 
+// ─── Medicine catalogue ─────────────────────────────────────────────────────
+
+const MEDICINE_CATALOGUE = [
+  // Antibiotics
+  { name: 'Amoxicillin 250mg',         category: 'antibiotic',    unit: 'tablet',  minimumStock: 100, description: 'Broad-spectrum penicillin antibiotic for bacterial infections', unitPrice: 0.45, costPerUnit: 0.20 },
+  { name: 'Enrofloxacin 68mg',          category: 'antibiotic',    unit: 'tablet',  minimumStock:  50, description: 'Fluoroquinolone antibiotic for gram-negative bacteria',            unitPrice: 2.50, costPerUnit: 1.10 },
+  { name: 'Metronidazole 250mg',        category: 'antibiotic',    unit: 'tablet',  minimumStock:  80, description: 'Antibiotic and antiprotozoal for GI infections',                   unitPrice: 0.60, costPerUnit: 0.25 },
+  { name: 'Clavamox 250mg',             category: 'antibiotic',    unit: 'tablet',  minimumStock:  60, description: 'Amoxicillin-clavulanate combination antibiotic',                  unitPrice: 3.20, costPerUnit: 1.40 },
+  { name: 'Doxycycline 100mg',          category: 'antibiotic',    unit: 'capsule', minimumStock:  60, description: 'Tetracycline antibiotic for tick-borne diseases',                 unitPrice: 1.80, costPerUnit: 0.75 },
+  // Antiparasitics
+  { name: 'Frontline Plus (S)',          category: 'antiparasitic', unit: 'vial',    minimumStock:  20, description: 'Flea & tick spot-on treatment for small dogs',                    unitPrice: 18.00, costPerUnit:  9.00 },
+  { name: 'Heartgard Plus 26-50kg',     category: 'antiparasitic', unit: 'tablet',  minimumStock:  24, description: 'Heartworm prevention chewable tablet',                           unitPrice: 12.50, costPerUnit:  5.50 },
+  { name: 'Revolution (cat)',           category: 'antiparasitic', unit: 'vial',    minimumStock:  18, description: 'Selamectin parasiticide for cats',                               unitPrice: 22.00, costPerUnit: 10.00 },
+  { name: 'Panacur 250mg/5mL',          category: 'antiparasitic', unit: 'ml',      minimumStock: 200, description: 'Fenbendazole dewormer suspension',                               unitPrice:  0.40, costPerUnit:  0.15 },
+  // Vaccines
+  { name: 'Rabies Vaccine 1mL',         category: 'vaccine',       unit: 'vial',    minimumStock:  30, description: '3-year rabies vaccine for dogs and cats',                        unitPrice: 25.00, costPerUnit: 12.00 },
+  { name: 'DHPP Combo Vaccine',         category: 'vaccine',       unit: 'vial',    minimumStock:  30, description: 'Distemper, Hepatitis, Parvovirus, Parainfluenza combo',           unitPrice: 22.00, costPerUnit: 10.50 },
+  { name: 'FVRCP Vaccine',              category: 'vaccine',       unit: 'vial',    minimumStock:  25, description: 'Feline respiratory and panleukopenia combination',               unitPrice: 20.00, costPerUnit:  9.50 },
+  { name: 'Bordetella Vaccine',         category: 'vaccine',       unit: 'vial',    minimumStock:  20, description: 'Kennel cough intranasal vaccine',                                unitPrice: 18.00, costPerUnit:  8.00 },
+  // Anesthetics / Analgesics
+  { name: 'Ketamine 10% 10mL',          category: 'anesthetic',    unit: 'vial',    minimumStock:   5, description: 'Dissociative anesthetic for short procedures',                   unitPrice: 45.00, costPerUnit: 20.00 },
+  { name: 'Propofol 1% 20mL',           category: 'anesthetic',    unit: 'vial',    minimumStock:   5, description: 'IV induction agent for general anesthesia',                     unitPrice: 35.00, costPerUnit: 16.00 },
+  { name: 'Meloxicam 1.5mg/mL',         category: 'anesthetic',    unit: 'ml',      minimumStock: 100, description: 'NSAID analgesic for pain and inflammation',                      unitPrice:  0.85, costPerUnit:  0.35 },
+  // Supplements
+  { name: 'Omega-3 Fish Oil 1000mg',    category: 'supplement',    unit: 'capsule', minimumStock:  60, description: 'Fatty acid supplement for skin and coat health',                 unitPrice:  0.75, costPerUnit:  0.30 },
+  { name: 'Probiotic Paste 30g',        category: 'supplement',    unit: 'tube',    minimumStock:  15, description: 'Probiotic paste for gastrointestinal support',                   unitPrice: 18.00, costPerUnit:  8.00 },
+  { name: 'Cosequin DS Chews',          category: 'supplement',    unit: 'tablet',  minimumStock:  60, description: 'Glucosamine-chondroitin joint supplement',                       unitPrice:  1.20, costPerUnit:  0.55 },
+  { name: 'Vitamin B Complex 10mL',     category: 'supplement',    unit: 'vial',    minimumStock:  12, description: 'B-vitamin complex for metabolic support',                        unitPrice: 14.00, costPerUnit:  6.00 },
+  // General
+  { name: 'Normal Saline 500mL',        category: 'general',       unit: 'bottle',  minimumStock:  10, description: '0.9% NaCl IV solution for fluid therapy',                       unitPrice:  8.00, costPerUnit:  3.50 },
+  { name: 'Cerenia 24mg',               category: 'general',       unit: 'tablet',  minimumStock:  30, description: 'Maropitant anti-emetic for nausea and vomiting',                 unitPrice:  6.50, costPerUnit:  2.80 },
+  { name: 'Famotidine 10mg',            category: 'general',       unit: 'tablet',  minimumStock:  80, description: 'H2 blocker for gastric acid reduction',                          unitPrice:  0.55, costPerUnit:  0.20 },
+  { name: 'Apoquel 16mg',              category: 'general',       unit: 'tablet',  minimumStock:  60, description: 'Oclacitinib for allergic itch relief',                           unitPrice:  4.80, costPerUnit:  2.10 },
+  { name: 'Prednisone 5mg',             category: 'general',       unit: 'tablet',  minimumStock: 100, description: 'Corticosteroid for inflammation and immune suppression',          unitPrice:  0.50, costPerUnit:  0.18 },
+] as const
+
+const MED_SUPPLIERS = ['VetSupply Co.','MedVet Pharma','AnimalHealth Plus','VetPharm Direct','BioVet Solutions','GlobalVet Imports','PharmaVet Arabia','MedAnimal Supply']
+
+// Unit-appropriate quantity ranges for realistic dispensing amounts
+const UNIT_QTY: Record<string, [number, number]> = {
+  tablet:  [5,  120],
+  capsule: [5,   90],
+  ml:      [10, 500],
+  vial:    [1,    6],
+  tube:    [1,    4],
+  bottle:  [1,    3],
+  sachet:  [5,   30],
+  other:   [1,   20],
+}
+
+// Bulk purchase qty multiplier (for large orders)
+const BULK_QTY_FACTOR = 4
+
+// Discount tiers — 0% weighted 3× to be most common
+const DISCOUNT_TIERS: Array<{ frac: number; note: string | null }> = [
+  { frac: 0,    note: null },
+  { frac: 0,    note: null },
+  { frac: 0,    note: null },
+  { frac: 0.05, note: 'Loyalty 5%' },
+  { frac: 0.10, note: 'Regular 10%' },
+  { frac: 0.15, note: 'Bulk 15%' },
+  { frac: 0.20, note: 'Staff discount 20%' },
+  { frac: 0.25, note: 'VIP client 25%' },
+  { frac: 0.30, note: 'Clearance 30%' },
+]
+
+const SALE_NOTES = [
+  'Dispensed per prescription',
+  'Walk-in OTC purchase',
+  'Emergency dispensing – after-hours',
+  'Bulk order for boarding patients',
+  'Owner requested extra supply for travel',
+  'Partial fill – remainder on back-order',
+  'Compounded dose per vet instructions',
+  'Insurance pre-authorisation obtained',
+  'VIP client – loyalty discount applied',
+  'Donated to rescue organisation',
+  'Repeat prescription refill',
+  'Post-surgical dispensing',
+]
+
+const EMERGENCY_MARKUP = 1.25   // 25% mark-up for after-hours emergency sales
+const LOYALTY_DISCOUNT  = 0.90  // 10% base loyalty for frequent customers
+
 const SPECIES_WEIGHTS = [
   { species: 'dog',        weight: 35 },
   { species: 'cat',        weight: 30 },
@@ -278,6 +362,24 @@ type SeedSalaryRecord = {
   regularHours: number; overtimeHours: number; overtimeMultiplier: number
   doubleShiftCount: number; doubleShiftBonus: number; bonuses: number
   deductions: number; netPay: number; status: string; createdAt: Date; updatedAt: Date
+}
+
+type SeedMedicine = {
+  id: string; name: string; category: string; unit: string
+  description: string | null; minimumStock: number; createdAt: Date; updatedAt: Date
+}
+
+type SeedMedicineBatch = {
+  id: string; medicineId: string; batchNumber: string | null; supplier: string | null
+  expiryDate: Date; quantity: number; initialQty: number; costPerUnit: number
+  receivedDate: Date; notes: string | null; createdAt: Date; updatedAt: Date
+}
+
+type SeedMedicineSale = {
+  id: string; medicineId: string; batchId: string; quantity: number
+  unitPrice: number; totalPrice: number; discount: number
+  patientId: string | null; patientName: string | null
+  paymentMethod: string | null; notes: string | null; saleDate: Date; createdAt: Date
 }
 
 type ResultTemplate = { fileName: string; filePath: string; fileSize: number }
@@ -645,10 +747,212 @@ function buildCheckResults(patient: SeedPatient, templates: ResultTemplate[]): S
   })
 }
 
+// ─── medicine builders ───────────────────────────────────────────────────────
+
+function buildMedicines(): { medicines: SeedMedicine[]; batches: SeedMedicineBatch[] } {
+  const medicines: SeedMedicine[] = []
+  const batches:   SeedMedicineBatch[] = []
+  const now = new Date()
+
+  for (const med of MEDICINE_CATALOGUE) {
+    const createdAt = randDate(new Date(now.getTime() - 24 * 30 * 86_400_000), now)
+    const medicine: SeedMedicine = {
+      id: uuid(), name: med.name, category: med.category, unit: med.unit,
+      description: med.description, minimumStock: med.minimumStock,
+      createdAt, updatedAt: createdAt,
+    }
+    medicines.push(medicine)
+
+    // Guaranteed batch scenarios for full UI coverage:
+    // slot 0 → expired  (tests the "expired" badge)
+    // slot 1 → near-expiry ≤30d  (tests the "expiring soon" badge)
+    // slot 2 → healthy stock
+    // slot 3+ (optional) → additional healthy or critically low
+    const extraBatches = rand(0, 2)
+    const batchCount   = 3 + extraBatches
+
+    for (let b = 0; b < batchCount; b++) {
+      let expiryDate:  Date
+      let batchNotes:  string | null = null
+      let soldFrac:    number
+      let receivedDate: Date
+
+      if (b === 0) {
+        // Expired batch — received well in the past
+        expiryDate   = addDays(now, -rand(5, 180))
+        soldFrac     = randFloat(0.70, 0.99)   // mostly dispensed before expiry
+        receivedDate = randDate(
+          new Date(now.getTime() - 36 * 30 * 86_400_000),
+          new Date(now.getTime() -  8 * 30 * 86_400_000),
+        )
+        batchNotes = 'Expired – quarantined, do not dispense'
+      } else if (b === 1) {
+        // Near-expiry batch
+        expiryDate   = addDays(now, rand(1, 29))
+        soldFrac     = randFloat(0.40, 0.85)
+        receivedDate = randDate(
+          new Date(now.getTime() - 14 * 30 * 86_400_000),
+          new Date(now.getTime() -  2 * 30 * 86_400_000),
+        )
+        batchNotes = chance(0.6) ? 'Near expiry – use FEFO priority' : null
+      } else if (b === batchCount - 1 && chance(0.30)) {
+        // Critically low stock — triggers low-stock alert
+        expiryDate   = addDays(now, rand(90, 540))
+        soldFrac     = randFloat(0.85, 0.97)
+        receivedDate = randDate(new Date(now.getTime() - 12 * 30 * 86_400_000), now)
+        batchNotes   = chance(0.4) ? 'Reorder pending' : null
+      } else {
+        // Healthy current stock
+        expiryDate   = addDays(now, rand(90, 730))
+        soldFrac     = chance(0.6) ? randFloat(0.05, 0.60) : 0
+        receivedDate = randDate(new Date(now.getTime() - 18 * 30 * 86_400_000), now)
+        batchNotes   = chance(0.12) ? pick([
+          'Refrigerate after opening',
+          'Store below 25 °C',
+          'Keep away from direct light',
+          'Cold chain maintained on delivery',
+        ]) : null
+      }
+
+      const isCriticallyLow = b === batchCount - 1 && batchNotes === 'Reorder pending'
+      const initialQty = isCriticallyLow
+        ? rand(1, Math.max(2, Math.floor(med.minimumStock * 0.5)))
+        : rand(med.minimumStock, med.minimumStock * 6)
+      const remaining = Math.max(0, Math.round(initialQty * (1 - soldFrac)))
+
+      batches.push({
+        id: uuid(), medicineId: medicine.id,
+        batchNumber:  chance(0.88) ? `LOT-${rand(10_000, 99_999)}` : null,
+        supplier:     chance(0.85) ? pick(MED_SUPPLIERS) : null,
+        expiryDate, quantity: remaining, initialQty,
+        costPerUnit: med.costPerUnit,
+        receivedDate, notes: batchNotes,
+        createdAt: receivedDate, updatedAt: now,
+      })
+    }
+  }
+
+  return { medicines, batches }
+}
+
+function buildMedicineSales(
+  medicines:  SeedMedicine[],
+  batches:    SeedMedicineBatch[],
+  patientMap: Map<string, string>,  // patientId → patientName
+): SeedMedicineSale[] {
+  const sales: SeedMedicineSale[] = []
+  const SALE_MONTHS = 18
+  const now = new Date()
+  const patientIds = Array.from(patientMap.keys())
+
+  // Group batches by medicine (non-expired only for normal sales)
+  const batchByMed = new Map<string, SeedMedicineBatch[]>()
+  for (const b of batches) {
+    const list = batchByMed.get(b.medicineId) ?? []
+    list.push(b)
+    batchByMed.set(b.medicineId, list)
+  }
+
+  const priceMap = new Map<string, number>(
+    MEDICINE_CATALOGUE.map(m => [m.name as string, m.unitPrice])
+  )
+
+  // Payment method weighted distribution: cash 40%, card 30%, insurance 20%, other 10%
+  const PAYMENT_WEIGHTED = [
+    ...Array(4).fill('cash'),
+    ...Array(3).fill('card'),
+    ...Array(2).fill('insurance'),
+    'other',
+  ] as const
+
+  for (const medicine of medicines) {
+    const medBatches = batchByMed.get(medicine.id) ?? []
+    if (!medBatches.length) continue
+    const baseUnitPrice = priceMap.get(medicine.name) ?? randFloat(1, 30)
+    const [qtyMin, qtyMax] = UNIT_QTY[medicine.unit] ?? [1, 20]
+
+    for (let mo = SALE_MONTHS - 1; mo >= 0; mo--) {
+      const mStart = monthStart(mo)
+      const mEnd   = new Date(Math.min(now.getTime(), mStart.getTime() + 30 * 86_400_000))
+      // Higher volume in current + recent months, lower in older months
+      const baseCount = mo < 3 ? rand(5, 15) : mo < 9 ? rand(3, 10) : rand(2, 6)
+
+      for (let s = 0; s < baseCount; s++) {
+        const saleDate = randDate(mStart, mEnd)
+        if (saleDate > now) continue
+
+        // FEFO: prefer batch expiring soonest that has not expired at sale time
+        const valid = medBatches
+          .filter(b => b.expiryDate > saleDate)
+          .sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime())
+        const batch = valid.length > 0 ? valid[0] : pick(medBatches)
+
+        // Sale type: 80% regular, 12% bulk, 8% emergency
+        const saleTypeRoll = Math.random()
+        const isBulk      = saleTypeRoll > 0.88
+        const isEmergency = saleTypeRoll > 0.92
+
+        const qty = isBulk
+          ? rand(qtyMin * 2, qtyMax * BULK_QTY_FACTOR)
+          : rand(1, Math.ceil(qtyMax / 3))
+
+        // Price: emergency markup, loyalty discount, or standard
+        let effectiveUnitPrice = baseUnitPrice
+        if (isEmergency)        effectiveUnitPrice = Math.round(baseUnitPrice * EMERGENCY_MARKUP * 100) / 100
+        else if (chance(0.12))  effectiveUnitPrice = Math.round(baseUnitPrice * LOYALTY_DISCOUNT * 100) / 100
+
+        // Discount tier
+        const tier    = pick(DISCOUNT_TIERS)
+        const discAmt = tier.frac > 0
+          ? Math.round(qty * effectiveUnitPrice * tier.frac * 100) / 100
+          : 0
+        const total   = Math.round(Math.max(0, qty * effectiveUnitPrice - discAmt) * 100) / 100
+
+        // Patient link: 65% linked to a real patient, 20% walk-in with name, 15% anonymous
+        let patientId:   string | null = null
+        let patientName: string | null = null
+        const patientRoll = Math.random()
+        if (patientRoll < 0.65 && patientIds.length > 0) {
+          patientId   = pick(patientIds)
+          patientName = patientMap.get(patientId) ?? null
+        } else if (patientRoll < 0.85) {
+          patientName = `${pick(OWNER_FIRST)} ${pick(OWNER_LAST)}`
+        }
+        // else: anonymous (both null)
+
+        // Notes: emergency always gets a note; others 25% chance
+        let notes: string | null = null
+        if (isEmergency)      notes = 'Emergency dispensing – after-hours'
+        else if (isBulk)      notes = pick(['Bulk order for boarding patients', 'Owner requested extra supply for travel', 'Repeat prescription – 3-month supply'])
+        else if (tier.note)   notes = tier.note
+        else if (chance(0.20)) notes = pick(SALE_NOTES)
+
+        sales.push({
+          id: uuid(), medicineId: medicine.id, batchId: batch.id,
+          quantity: qty,
+          unitPrice: effectiveUnitPrice,
+          totalPrice: total,
+          discount: discAmt,
+          patientId,
+          patientName,
+          paymentMethod: pick(PAYMENT_WEIGHTED),
+          notes,
+          saleDate, createdAt: saleDate,
+        })
+      }
+    }
+  }
+
+  return sales
+}
+
 // ─── clear + main ─────────────────────────────────────────────────────────────
 
 async function clearVetData() {
   console.log('🗑   Clearing existing vet data...')
+  await prisma.vetMedicineSale.deleteMany({})
+  await prisma.vetMedicineBatch.deleteMany({})
+  await prisma.vetMedicine.deleteMany({})
   await prisma.vetSalaryRecord.deleteMany({})
   await prisma.vetStaff.deleteMany({})
   await prisma.vetExpense.deleteMany({})
@@ -754,6 +1058,25 @@ async function main() {
     )
   }
 
+  // ── Medicines + Batches + Sales ──────────────────────────────────────────
+  console.log('💊  Creating medicine catalogue, batches, and sales...')
+  const { medicines, batches: medBatches } = buildMedicines()
+
+  // Collect patient id+name pairs to link medicine sales to real patients
+  const patientRows = await prisma.vetPatient.findMany({ select: { id: true, name: true }, take: 1000 })
+  const patientMap  = new Map<string, string>(
+    patientRows.map((r: { id: string; name: string }) => [r.id, r.name])
+  )
+
+  const medSales = buildMedicineSales(medicines, medBatches, patientMap)
+
+  await prisma.$transaction(async (tx) => {
+    await tx.vetMedicine.createMany({ data: medicines })
+    if (medBatches.length) await tx.vetMedicineBatch.createMany({ data: medBatches })
+    if (medSales.length)   await tx.vetMedicineSale.createMany({ data: medSales })
+  }, { timeout: 120_000 })
+  console.log(`✅  Medicines=${medicines.length}  Batches=${medBatches.length}  Sales=${medSales.length}\n`)
+
   const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1)
   console.log('\n\n✅  Vet clinic seed complete\n')
   console.log(`  Owners         : ${ownerTotal.toLocaleString()}`)
@@ -765,6 +1088,9 @@ async function main() {
   console.log(`  Staff          : ${staff.length}`)
   console.log(`  Salary Records : ${salaryRecords.length}`)
   console.log(`  Expenses       : ${expenses.length}`)
+  console.log(`  Medicines      : ${medicines.length}`)
+  console.log(`  Med Batches    : ${medBatches.length}`)
+  console.log(`  Med Sales      : ${medSales.length}`)
   console.log(`  Result files   : ${resultTemplates.length} generated PDFs`)
   console.log(`  Elapsed        : ${elapsed}s\n`)
 }

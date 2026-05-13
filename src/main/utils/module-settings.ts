@@ -70,13 +70,18 @@ export function getEnabledModuleIds(): string[] {
     return envModules
   }
   const settings = readSettings()
-  return settings.enabledModules ?? ['commerce']
+  if (settings.enabledModules) return settings.enabledModules
+  // No settings file yet — default to whichever plugin was compiled in
+  const defaults: string[] = []
+  if (__PLUGIN_VET__)    defaults.push('vet')
+  if (__PLUGIN_CLINIC__) defaults.push('clinic')
+  return defaults.length > 0 ? defaults : ['commerce']
 }
 
 /** Enable or disable a module by ID. */
 export function setModuleEnabled(moduleId: string, enabled: boolean): void {
   const settings = readSettings()
-  const current = new Set(settings.enabledModules ?? ['clinic'])
+  const current = new Set(settings.enabledModules ?? getEnabledModuleIds())
   if (enabled) {
     current.add(moduleId)
   } else {

@@ -4,7 +4,7 @@ import {
   PawPrint, Users, ClipboardList, BarChart3, CalendarClock, Bell,
   Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar,
   Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight,
-  ChevronDown, ChevronUp, Mail, MapPin, Stethoscope, BadgeCheck
+  ChevronDown, ChevronUp, Mail, MapPin, Stethoscope, BadgeCheck, ShoppingCart
 } from 'lucide-react'
 import { useLanguage }  from '@renderer/contexts/LanguageContext'
 import { useToast }     from '@renderer/contexts/ToastContext'
@@ -21,8 +21,10 @@ import VetStatsTab      from './components/VetStatsTab'
 import VetAppointmentsTab from './components/VetAppointmentsTab'
 import VetFollowUpsTab  from './components/VetFollowUpsTab'
 import VetExpensesTab   from './components/VetExpensesTab'
+import VetMedicinesTab  from './components/VetMedicinesTab'
+import VetSalesTab      from './components/VetSalesTab'
 
-type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses'
+type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales'
 
 export interface VetOwner {
   id: string
@@ -452,6 +454,8 @@ export default function VetPage() {
     { key: 'sessions',     label: t('vetSessions')     || 'Sessions',     icon: ClipboardList },
     { key: 'appointments', label: t('vetAppointments') || 'Appointments', icon: CalendarClock },
     { key: 'followups',    label: t('vetFollowUps')    || 'Follow-ups',   icon: Bell },
+    { key: 'medicines' as Tab, label: t('vetMedStore')||'Medicine Store', icon: Activity },
+    { key: 'sales'     as Tab, label: t('vetSalesTab')||'Sales',           icon: ShoppingCart },
     ...(!isVetStaff
       ? [
           { key: 'stats'    as Tab, label: t('vetStats')    || 'Statistics', icon: BarChart3 },
@@ -807,6 +811,8 @@ export default function VetPage() {
         {tab === 'followups'    && <VetFollowUpsTab />}
         {tab === 'stats'        && <VetStatsTab />}
         {tab === 'expenses'     && <VetExpensesTab />}
+        {tab === 'medicines'    && <VetMedicinesTab />}
+        {tab === 'sales'        && <VetSalesTab />}
 
         {/* Vets tab */}
         {tab === 'vets' && (

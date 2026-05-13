@@ -57,12 +57,15 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
   const [followups, setFollowups] = useState<any[]>([])
 
   // Daily
-  const [daySessions,  setDaySessions]  = useState<any[]>([])
-  const [dayAppts,     setDayAppts]     = useState<any[]>([])
-  const [dayExpenses,  setDayExpenses]  = useState<any[]>([])
-  const [dayRevenue,   setDayRevenue]   = useState(0)
-  const [dayCollected, setDayCollected] = useState(0)
-  const [dayExpTotal,  setDayExpTotal]  = useState(0)
+  const [daySessions,   setDaySessions]   = useState<any[]>([])
+  const [dayAppts,      setDayAppts]      = useState<any[]>([])
+  const [dayExpenses,   setDayExpenses]   = useState<any[]>([])
+  const [dayMedSales,   setDayMedSales]   = useState<any[]>([])
+  const [dayRevenue,    setDayRevenue]    = useState(0)
+  const [dayCollected,  setDayCollected]  = useState(0)
+  const [dayExpTotal,   setDayExpTotal]   = useState(0)
+  const [dayMedRevenue, setDayMedRevenue] = useState(0)
+  const [dayMedCost,    setDayMedCost]    = useState(0)
 
   const loadMonthly = async () => {
     const now = new Date()
@@ -86,21 +89,30 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
     const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999)
     const from = todayStart.toISOString()
     const to = todayEnd.toISOString()
-    const [sessRes, apptsRes, expRes] = await Promise.all([
+    const [sessRes, apptsRes, expRes, medSalesRes] = await Promise.all([
       window.api.vet?.sessions.getRecent({ filter: 'today', skip: 0, take: 500 }).catch(() => ({ data: [] })),
       window.api.vet?.appointments.getAll({ from, to, skip: 0, take: 500 }).catch(() => ({ data: [] })),
       window.api.vet?.expenses.getAll({ period: 'today', skip: 0, take: 500 }).catch(() => ({ data: [] })),
+      window.api.vet?.medicines.getSales({ from, to, skip: 0, take: 500 }).catch(() => ({ data: [] })),
     ])
     const sessions = (sessRes as any)?.data ?? []
     const appts = (apptsRes as any)?.data ?? []
     const exps = (expRes as any)?.data ?? []
+    const medSales = (medSalesRes as any)?.data ?? []
     setDaySessions(sessions)
     setDayAppts(appts)
     setDayExpenses(exps)
+    setDayMedSales(medSales)
     const rev = sessions.reduce((s: number, x: any) => s + (Number(x.amountCharged) || 0), 0)
     const col = sessions.reduce((s: number, x: any) => s + (Number(x.amountPaid) || 0), 0)
     const exp = exps.reduce((s: number, x: any) => s + (Number(x.amount) || 0), 0)
-    setDayRevenue(rev); setDayCollected(col); setDayExpTotal(exp)
+    const medRev  = medSales.reduce((s: number, x: any) => s + (Number(x.totalPrice) || 0), 0)
+    const medCost = medSales.reduce((s: number, x: any) => {
+      const ct = Number(x.costTotal)
+      const fallback = Number(x.quantity) * Number(x.batch?.costPerUnit ?? 0)
+      return s + (Number.isFinite(ct) ? ct : fallback)
+    }, 0)
+    setDayRevenue(rev); setDayCollected(col); setDayExpTotal(exp); setDayMedRevenue(medRev); setDayMedCost(medCost)
   }
 
   const load = async () => {
@@ -140,12 +152,28 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
         ...dayExpenses.map((e: any) => [
           e.description ?? '', e.category ?? '', e.amount ?? 0, e.vendor ?? '', e.paymentMethod ?? ''
         ]),
+        [], ['--- Medicine Sales ---'],
+        ['Medicine', 'Quantity', 'Unit Price', 'Total', 'COGS', 'Gross Profit', 'Discount', 'Payment', 'Patient', 'Time'],
+        ...dayMedSales.map((ms: any) => {
+          const cogs = Number(ms.costTotal) || (Number(ms.quantity) * Number(ms.batch?.costPerUnit ?? 0))
+          return [
+            ms.medicine?.name ?? '', ms.quantity ?? 0, ms.unitPrice ?? 0,
+            ms.totalPrice ?? 0, cogs.toFixed(2), ((ms.totalPrice ?? 0) - cogs).toFixed(2),
+            ms.discount ?? 0, ms.paymentMethod ?? '',
+            ms.patientName ?? '', new Date(ms.saleDate).toLocaleTimeString()
+          ]
+        }),
         [], ['--- Summary ---'],
-        ['Revenue', dayRevenue.toFixed(2)],
+        ['Clinical Revenue', dayRevenue.toFixed(2)],
+        ['Medicine Revenue', dayMedRevenue.toFixed(2)],
+        ['Medicine COGS', dayMedCost.toFixed(2)],
+        ['Medicine Gross Profit', (dayMedRevenue - dayMedCost).toFixed(2)],
+        ['Medicine Margin %', dayMedRevenue > 0 ? (((dayMedRevenue - dayMedCost) / dayMedRevenue) * 100).toFixed(1) + '%' : '0%'],
+        ['Total Revenue', (dayRevenue + dayMedRevenue).toFixed(2)],
         ['Collected', dayCollected.toFixed(2)],
         ['Outstanding', (dayRevenue - dayCollected).toFixed(2)],
         ['Expenses', dayExpTotal.toFixed(2)],
-        ['Net Income', (dayCollected - dayExpTotal).toFixed(2)],
+        ['Net Income', (dayRevenue + dayMedRevenue - dayExpTotal).toFixed(2)],
       ]
       downloadCSV(rows, `vet-daily-report-${today}.csv`)
     } else {
@@ -154,7 +182,12 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
         ['Total Patients', overview?.totalPatients ?? 0],
         ['New Patients', overview?.newPatients ?? 0],
         ['Sessions', overview?.sessionCount ?? 0],
-        ['Revenue', overview?.revenue ?? 0],
+        ['Clinical Revenue', overview?.revenue ?? 0],
+        ['Medicine Sales', overview?.medicineSales ?? 0],
+        ['Medicine Revenue', overview?.medicineRevenue ?? 0],
+        ['Medicine COGS', overview?.medicineCost ?? 0],
+        ['Medicine Gross Profit', overview?.medicineProfit ?? 0],
+        ['Total Revenue', (overview?.revenue ?? 0) + (overview?.medicineRevenue ?? 0)],
         ['Outstanding', overview?.outstanding ?? 0],
         ['Upcoming Appointments', overview?.upcomingAppts ?? 0],
         [], ['--- Species Breakdown ---'],
@@ -218,13 +251,15 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
       ) : mode === 'monthly' ? (
         <>
           {overview && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              <StatCard icon={PawPrint}      label={t('vetTotalPatients') || 'Total Patients'}  value={overview.totalPatients ?? 0}                    color="bg-violet-100 dark:bg-violet-900/40 text-violet-600" />
-              <StatCard icon={Users}         label={t('vetNewPatients')   || 'New Patients'}     value={overview.newPatients ?? 0}                      color="bg-blue-100 dark:bg-blue-900/40 text-blue-600" />
-              <StatCard icon={ClipboardList} label={t('vetSessions')      || 'Sessions'}         value={overview.sessionCount ?? 0}                     color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
-              <StatCard icon={TrendingUp}    label={t('vetRevenue')       || 'Revenue'}          value={(overview.revenue ?? 0).toFixed(2)}             color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
-              <StatCard icon={AlertCircle}   label={t('vetOutstanding')   || 'Outstanding'}      value={(overview.outstanding ?? 0).toFixed(2)}         color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
-              <StatCard icon={CalendarClock} label={t('vetUpcomingAppts') || 'Upcoming Appts'}   value={overview.upcomingAppts ?? 0}                    color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+              <StatCard icon={PawPrint}      label={t('vetTotalPatients') || 'Total Patients'}  value={overview.totalPatients ?? 0}                                                       color="bg-violet-100 dark:bg-violet-900/40 text-violet-600" />
+              <StatCard icon={Users}         label={t('vetNewPatients')   || 'New Patients'}     value={overview.newPatients ?? 0}                                                          color="bg-blue-100 dark:bg-blue-900/40 text-blue-600" />
+              <StatCard icon={ClipboardList} label={t('vetSessions')      || 'Sessions'}         value={overview.sessionCount ?? 0}                                                         color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
+              <StatCard icon={TrendingUp}    label={t('vetRevenue')       || 'Clinical Revenue'} value={(overview.revenue ?? 0).toFixed(2)}                                                  color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
+              <StatCard icon={Activity}      label={'Medicine Sales'}                             value={`${overview.medicineSales ?? 0} · ${(overview.medicineRevenue ?? 0).toFixed(2)}`}  color="bg-purple-100 dark:bg-purple-900/40 text-purple-600" />
+              <StatCard icon={TrendingUp}    label={'Total Revenue'}                              value={((overview.revenue ?? 0) + (overview.medicineRevenue ?? 0)).toFixed(2)}             color="bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600" />
+              <StatCard icon={AlertCircle}   label={t('vetOutstanding')   || 'Outstanding'}      value={(overview.outstanding ?? 0).toFixed(2)}                                             color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
+              <StatCard icon={CalendarClock} label={t('vetUpcomingAppts') || 'Upcoming Appts'}   value={overview.upcomingAppts ?? 0}                                                        color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
             </div>
           )}
 
@@ -328,11 +363,13 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
         /* ── Daily Report ─────────────────────────────────────────────── */
         <>
           {/* Daily KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={ClipboardList} label={t('vetTotalSessions')  || 'Sessions'}      value={daySessions.length}                        color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
-            <StatCard icon={TrendingUp}    label={t('vetRevenue')        || 'Revenue'}        value={dayRevenue.toFixed(2)}                     color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
-            <StatCard icon={AlertCircle}   label={t('vetOutstanding')    || 'Outstanding'}    value={(dayRevenue - dayCollected).toFixed(2)}    color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
-            <StatCard icon={CalendarClock} label={t('vetAppointments')   || 'Appointments'}   value={dayAppts.length}                           color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <StatCard icon={ClipboardList} label={t('vetTotalSessions')  || 'Sessions'}         value={daySessions.length}                        color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
+            <StatCard icon={TrendingUp}    label={'Clinical Revenue'}                            value={dayRevenue.toFixed(2)}                     color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
+            <StatCard icon={Activity}      label={'Medicine Sales'}                              value={`${dayMedSales.length} · ${dayMedRevenue.toFixed(2)}`}  color="bg-purple-100 dark:bg-purple-900/40 text-purple-600" />
+            <StatCard icon={TrendingUp}    label={'Total Revenue'}                               value={(dayRevenue + dayMedRevenue).toFixed(2)}   color="bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600" />
+            <StatCard icon={AlertCircle}   label={t('vetOutstanding')    || 'Outstanding'}       value={(dayRevenue - dayCollected).toFixed(2)}    color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
+            <StatCard icon={CalendarClock} label={t('vetAppointments')   || 'Appointments'}      value={dayAppts.length}                           color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -427,10 +464,22 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
               {t('dailySummary') || 'Daily Summary'} — {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-8 gap-4 text-center">
               <div>
-                <p className="text-xs text-slate-400 mb-0.5">{t('vetRevenue') || 'Revenue'}</p>
+                <p className="text-xs text-slate-400 mb-0.5">{t('vetRevenue') || 'Clinical'}</p>
                 <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{dayRevenue.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Med Revenue</p>
+                <p className="text-lg font-bold text-purple-600 dark:text-purple-400">{dayMedRevenue.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Med COGS</p>
+                <p className="text-lg font-bold text-orange-500 dark:text-orange-400">-{dayMedCost.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Med Profit</p>
+                <p className={`text-lg font-bold ${(dayMedRevenue - dayMedCost) >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500'}`}>{(dayMedRevenue - dayMedCost).toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">{t('amountPaid') || 'Collected'}</p>
@@ -446,8 +495,8 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
               </div>
               <div>
                 <p className="text-xs text-slate-400 mb-0.5">{t('vetNetIncome') || 'Net Income'}</p>
-                <p className={`text-lg font-bold ${dayCollected - dayExpTotal >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
-                  {(dayCollected - dayExpTotal).toFixed(2)}
+                <p className={`text-lg font-bold ${(dayRevenue + dayMedRevenue - dayExpTotal) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                  {(dayRevenue + dayMedRevenue - dayExpTotal).toFixed(2)}
                 </p>
               </div>
             </div>

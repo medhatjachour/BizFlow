@@ -19,7 +19,10 @@ const VET_TABLES = [
   'VetCheckResult',
   'VetExpense',
   'VetStaff',
-  'VetSalaryRecord'
+  'VetSalaryRecord',
+  'VetMedicine',
+  'VetMedicineBatch',
+  'VetMedicineSale'
 ]
 
 export async function ensureVetSchema(

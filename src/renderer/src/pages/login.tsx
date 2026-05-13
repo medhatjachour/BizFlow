@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
 import { Eye, EyeOff, Store, Zap, Shield, TrendingUp, Lock, User, AlertCircle, ExternalLink } from 'lucide-react'
+import appIcon from '../assets/icon.png'
 
 // ─── App-wide licence expiry ──────────────────────────────────────────────────
 const APP_EXPIRY_DATE = new Date('2026-08-13T00:00:00')
@@ -136,8 +137,8 @@ export default function Login() {
         <div className="relative z-10">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-              <Store className="w-7 h-7 text-white" strokeWidth={2.5} />
+            <div className="w-12 h-12 bg-transparent rounded-xl flex items-center justify-center">
+              <img src={appIcon} alt="BizFlow Logo" className="w-9 h-9" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">BizFlow</h1>
@@ -366,7 +367,7 @@ export default function Login() {
           {/* Footer */}
           <div className="mt-8 text-center">
             <p className="text-xs text-slate-500 dark:text-slate-500">
-              Secure desktop POS system • Version 1.0.0
+              Secure business management system • Version 1.0.0
             </p>
           </div>
         </div>

@@ -60,8 +60,8 @@ const Finance: React.FC = () => {
     (p.id === 'bakery'     && isBakery)     ||
     (p.id === 'restaurant' && isRestaurant) ||
     (p.id === 'warehouse'  && isWarehouse)  ||
-    (p.id === 'clinic'     && isClinic)     ||
-    (p.id === 'vet'        && isVet)        ||
+    (p.id === 'clinic'     && __PLUGIN_CLINIC__ && isClinic) ||
+    (p.id === 'vet'        && __PLUGIN_VET__    && isVet)    ||
     (p.id === 'gym'        && isGym)
   )
 
