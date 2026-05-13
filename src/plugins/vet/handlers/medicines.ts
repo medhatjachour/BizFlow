@@ -70,7 +70,7 @@ export function registerVetMedicineHandlers(prisma: any) {
         const now = new Date()
         const activeBatches = m.batches.filter((b: any) => b.quantity > 0)
         const totalStock = activeBatches.reduce((sum: number, b: any) => sum + b.quantity, 0)
-        const nearestExpiry = m.batches.length > 0 ? m.batches[0].expiryDate : null
+        const nearestExpiry = activeBatches.length > 0 ? activeBatches[0].expiryDate : null
         const hasExpired = m.batches.some((b: any) =>
           new Date(b.expiryDate) < now && b.quantity > 0
         )
@@ -189,7 +189,10 @@ export function registerVetMedicineHandlers(prisma: any) {
       if (!batch) throw new Error('Batch not found')
       if (batch.status === 'disposed') throw new Error('Batch already disposed')
 
-      const writeOffQty  = data?.disposedQty ?? batch.quantity
+      const writeOffQty = data?.disposedQty ?? batch.quantity
+      if (!Number.isFinite(writeOffQty) || writeOffQty < 0 || writeOffQty > batch.quantity) {
+        throw new Error(`Invalid disposedQty: must be between 0 and ${batch.quantity}`)
+      }
       const lossAmount   = writeOffQty * (batch.costPerUnit ?? 0)
       const lotLabel     = batch.batchNumber ? ` LOT-${batch.batchNumber}` : ''
       const description  = `Medicine write-off: ${batch.medicine.name}${lotLabel} (expired stock)`
@@ -237,11 +240,22 @@ export function registerVetMedicineHandlers(prisma: any) {
       if (new Date(batch.expiryDate) < new Date()) {
         throw new Error('Cannot sell from an expired batch — please write it off as a loss first')
       }
+      if (!Number.isFinite(data.quantity) || data.quantity <= 0) {
+        throw new Error('Quantity must be a positive number')
+      }
+      if (!Number.isFinite(data.unitPrice) || data.unitPrice < 0) {
+        throw new Error('Unit price must be a non-negative number')
+      }
+      const discount = data.discount ?? 0
+      if (!Number.isFinite(discount) || discount < 0) {
+        throw new Error('Discount must be a non-negative number')
+      }
+      if (batch.medicineId !== data.medicineId) {
+        throw new Error('Medicine ID does not match the selected batch')
+      }
       if (batch.quantity < data.quantity) {
         throw new Error(`Insufficient stock. Available: ${batch.quantity}`)
       }
-
-      const discount    = data.discount ?? 0
       const totalPrice  = data.quantity * data.unitPrice - discount
 
       const [sale] = await prisma.$transaction([

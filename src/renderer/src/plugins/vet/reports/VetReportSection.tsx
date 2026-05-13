@@ -93,7 +93,7 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
       window.api.vet?.sessions.getRecent({ filter: 'today', skip: 0, take: 500 }).catch(() => ({ data: [] })),
       window.api.vet?.appointments.getAll({ from, to, skip: 0, take: 500 }).catch(() => ({ data: [] })),
       window.api.vet?.expenses.getAll({ period: 'today', skip: 0, take: 500 }).catch(() => ({ data: [] })),
-      window.api.vet?.medicines.getSales({ dateFrom: from, dateTo: to, skip: 0, take: 500 }).catch(() => ({ data: [] })),
+      window.api.vet?.medicines.getSales({ from, to, skip: 0, take: 500 }).catch(() => ({ data: [] })),
     ])
     const sessions = (sessRes as any)?.data ?? []
     const appts = (apptsRes as any)?.data ?? []
@@ -107,7 +107,11 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
     const col = sessions.reduce((s: number, x: any) => s + (Number(x.amountPaid) || 0), 0)
     const exp = exps.reduce((s: number, x: any) => s + (Number(x.amount) || 0), 0)
     const medRev  = medSales.reduce((s: number, x: any) => s + (Number(x.totalPrice) || 0), 0)
-    const medCost = medSales.reduce((s: number, x: any) => s + (Number(x.costTotal) ?? (Number(x.quantity) * Number(x.batch?.costPerUnit ?? 0))), 0)
+    const medCost = medSales.reduce((s: number, x: any) => {
+      const ct = Number(x.costTotal)
+      const fallback = Number(x.quantity) * Number(x.batch?.costPerUnit ?? 0)
+      return s + (Number.isFinite(ct) ? ct : fallback)
+    }, 0)
     setDayRevenue(rev); setDayCollected(col); setDayExpTotal(exp); setDayMedRevenue(medRev); setDayMedCost(medCost)
   }
 

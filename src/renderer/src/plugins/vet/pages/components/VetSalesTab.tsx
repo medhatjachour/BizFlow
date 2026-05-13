@@ -166,7 +166,7 @@ function SaleOperation({ onSaleRecorded }: { onSaleRecorded: () => void }) {
   const load = useCallback(async () => {
     setLoadingMeds(true)
     try {
-      const res = await api.getAll({ limit: 500 })
+      const res = await api.getAll({ skip: 0, take: 500 })
       setMedicines(res.data ?? [])
     } catch { /* silent */ }
     finally { setLoadingMeds(false) }
@@ -527,10 +527,10 @@ function SalesHistory() {
     setLoading(true)
     try {
       const res = await api.getSales({
-        dateFrom: dateFrom || undefined,
-        dateTo:   dateTo   || undefined,
-        limit:    PAGE_SIZE,
-        offset:   (page - 1) * PAGE_SIZE,
+        from: dateFrom || undefined,
+        to:   dateTo   || undefined,
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
       })
       setSales(res.data ?? [])
       setTotal(res.total ?? 0)
@@ -549,11 +549,11 @@ function SalesHistory() {
     return okMed && okPay
   })
 
-  const revenue    = sales.reduce((sum, s) => sum + s.totalPrice, 0)
-  const totalCogs  = sales.reduce((sum, s) => sum + (s.costTotal ?? s.quantity * (s.batch?.costPerUnit ?? 0)), 0)
+  const revenue    = displayed.reduce((sum, s) => sum + s.totalPrice, 0)
+  const totalCogs  = displayed.reduce((sum, s) => sum + (s.costTotal ?? s.quantity * (s.batch?.costPerUnit ?? 0)), 0)
   const grossProfit = revenue - totalCogs
   const margin     = revenue > 0 ? (grossProfit / revenue) * 100 : 0
-  const avg        = sales.length ? revenue / sales.length : 0
+  const avg        = displayed.length ? revenue / displayed.length : 0
 
   function pageNumbers() {
     const pages: number[] = []

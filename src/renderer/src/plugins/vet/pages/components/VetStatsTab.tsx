@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Loader2, TrendingUp, Users, Activity, DollarSign, AlertCircle, PawPrint, Info, Pill, ShoppingBag, PackageX, AlertTriangle, TrendingDown } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -86,26 +86,33 @@ export default function VetStatsTab() {
   }
 
   // ── Expiry computations (derived from allMedicines) ────────────────────────
-  const nowMs = Date.now()
-  const allBatches = allMedicines.flatMap((m: any) =>
-    (m.batches ?? []).map((b: any) => ({ ...b, medicineName: m.name, unit: m.unit }))
-  )
-  const expiredBatches   = allBatches.filter((b: any) => new Date(b.expiryDate).getTime() < nowMs && b.quantity > 0)
-  const expiring7Batches = allBatches.filter((b: any) => {
-    const diff = (new Date(b.expiryDate).getTime() - nowMs) / 86400000
-    return diff >= 0 && diff <= 7 && b.quantity > 0
-  })
-  const expiring30Batches = allBatches.filter((b: any) => {
-    const diff = (new Date(b.expiryDate).getTime() - nowMs) / 86400000
-    return diff > 7 && diff <= 30 && b.quantity > 0
-  })
-  const expiredValue    = expiredBatches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
-  const expiring7Value  = expiring7Batches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
-  const expiring30Value = expiring30Batches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
-  const totalExpiryValue = expiredValue + expiring7Value + expiring30Value
-  const topExpired     = [...expiredBatches]
-    .sort((a: any, b: any) => (b.quantity * b.costPerUnit) - (a.quantity * a.costPerUnit))
-    .slice(0, 5)
+  const { expiredBatches, expiring7Batches, expiring30Batches,
+          expiredValue, expiring7Value, expiring30Value,
+          totalExpiryValue, topExpired } = useMemo(() => {
+    const nowMs = Date.now()
+    const allBatches = allMedicines.flatMap((m: any) =>
+      (m.batches ?? []).map((b: any) => ({ ...b, medicineName: m.name, unit: m.unit }))
+    )
+    const expiredBatches   = allBatches.filter((b: any) => new Date(b.expiryDate).getTime() < nowMs && b.quantity > 0)
+    const expiring7Batches = allBatches.filter((b: any) => {
+      const diff = (new Date(b.expiryDate).getTime() - nowMs) / 86400000
+      return diff >= 0 && diff <= 7 && b.quantity > 0
+    })
+    const expiring30Batches = allBatches.filter((b: any) => {
+      const diff = (new Date(b.expiryDate).getTime() - nowMs) / 86400000
+      return diff > 7 && diff <= 30 && b.quantity > 0
+    })
+    const expiredValue    = expiredBatches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
+    const expiring7Value  = expiring7Batches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
+    const expiring30Value = expiring30Batches.reduce((s: number, b: any) => s + b.quantity * (b.costPerUnit ?? 0), 0)
+    const totalExpiryValue = expiredValue + expiring7Value + expiring30Value
+    const topExpired = [...expiredBatches]
+      .sort((a: any, b: any) => (b.quantity * b.costPerUnit) - (a.quantity * a.costPerUnit))
+      .slice(0, 5)
+    return { expiredBatches, expiring7Batches, expiring30Batches,
+             expiredValue, expiring7Value, expiring30Value,
+             totalExpiryValue, topExpired }
+  }, [allMedicines])
 
   return (
     <div className="p-6 space-y-6">

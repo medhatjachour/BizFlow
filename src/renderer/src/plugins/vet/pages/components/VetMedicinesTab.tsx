@@ -331,7 +331,7 @@ export default function VetMedicinesTab() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await api.getAll({ search: search || undefined, category: category !== 'all' ? category : undefined })
+      const res = await api.getAll({ search: search || undefined, category: category !== 'all' ? category : undefined, take: 1000 })
       setMedicines(res.data ?? []); setTotal(res.total ?? 0)
     } catch (err: any) { toast.error(err?.message ?? 'Failed to load') }
     finally { setLoading(false) }
