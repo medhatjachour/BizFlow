@@ -34,7 +34,7 @@ const Reports: React.FC = () => {
   const isVet        = useModuleEnabled('vet')
   const isGym        = useModuleEnabled('gym')
 
-  const anyActive = isCommerce || isBakery || isRestaurant || isWarehouse || isClinic || isVet || isGym
+  const anyActive = isCommerce || isBakery || isRestaurant || isWarehouse || (__PLUGIN_CLINIC__ && isClinic) || (__PLUGIN_VET__ && isVet) || isGym
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -107,20 +107,20 @@ const Reports: React.FC = () => {
           <Suspense fallback={<SectionFallback />}>
             <WarehouseReportSection refreshSignal={refreshSig} />
           </Suspense>
-          {isClinic && <Divider />}
+          {__PLUGIN_CLINIC__ && isClinic && <Divider />}
         </>
       )}
 
-      {isClinic && (
+      {__PLUGIN_CLINIC__ && isClinic && (
         <>
           <Suspense fallback={<SectionFallback />}>
             <ClinicReportSection refreshSignal={refreshSig} />
           </Suspense>
-          {isVet && <Divider />}
+          {__PLUGIN_VET__ && isVet && <Divider />}
         </>
       )}
 
-      {isVet && (
+      {__PLUGIN_VET__ && isVet && (
         <>
           <Suspense fallback={<SectionFallback />}>
             <VetReportSection refreshSignal={refreshSig} />
