@@ -43,6 +43,7 @@ export default function Settings() {
   const { updateSettings: updateDisplaySettingsContext } = useDisplaySettingsContext()
   const clinicEnabled = useModuleEnabled('clinic')
   const vetEnabled = useModuleEnabled('vet')
+  const bakeryEnabled = useModuleEnabled('bakery')
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
   const [saveSuccess, setSaveSuccess] = useState(false)
 
@@ -82,9 +83,10 @@ export default function Settings() {
 
   const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup']
   const VET_TABS: SettingsTab[] = ['general', 'users', 'backup']
+  const BAKERY_TABS: SettingsTab[] = ['general', 'users', 'backup']
 
-  const tabs = (clinicEnabled || vetEnabled)
-    ? allTabs.filter(tab => (clinicEnabled ? CLINIC_TABS : VET_TABS).includes(tab.id))
+  const tabs = (clinicEnabled || vetEnabled || bakeryEnabled)
+    ? allTabs.filter(tab => (clinicEnabled ? CLINIC_TABS : vetEnabled ? VET_TABS : BAKERY_TABS).includes(tab.id))
     : allTabs
 
   const handleSave = () => {

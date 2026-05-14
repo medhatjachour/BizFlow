@@ -123,7 +123,7 @@ export default function QuickActions({ userRole }: Props) {
       href: '/customers',
       color: 'amber',
       roles: ['admin', 'manager', 'sales'],
-      visible: true,
+      visible: __PLUGIN_COMMERCE__ && commerceEnabled,
     },
     {
       label: t('manageEmployees'),

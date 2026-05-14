@@ -73,8 +73,13 @@ export function getEnabledModuleIds(): string[] {
   if (settings.enabledModules) return settings.enabledModules
   // No settings file yet — default to whichever plugin was compiled in
   const defaults: string[] = []
-  if (__PLUGIN_VET__)    defaults.push('vet')
-  if (__PLUGIN_CLINIC__) defaults.push('clinic')
+  if (__PLUGIN_COMMERCE__)   defaults.push('commerce')
+  if (__PLUGIN_BAKERY__)     defaults.push('bakery')
+  if (__PLUGIN_RESTAURANT__) defaults.push('restaurant')
+  if (__PLUGIN_WAREHOUSE__)  defaults.push('warehouse')
+  if (__PLUGIN_CLINIC__)     defaults.push('clinic')
+  if (__PLUGIN_VET__)        defaults.push('vet')
+  if (__PLUGIN_GYM__)        defaults.push('gym')
   return defaults.length > 0 ? defaults : ['commerce']
 }
 
