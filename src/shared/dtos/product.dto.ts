@@ -77,6 +77,8 @@ export interface VariantResponseDTO {
   sku: string
   price: number
   stock: number
+  color?: string | null
+  size?: string | null
   attributeValues?: { attributeId: string; value: string; attribute?: { name: string } }[]
   createdAt: string
   updatedAt: string

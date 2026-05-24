@@ -13,7 +13,6 @@ import {
   ShoppingCart, Receipt, TrendingUp, Package, DollarSign, Users,
   FileText, BarChart3, Activity,
 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
@@ -46,7 +45,6 @@ const CommerceReportSection: React.FC<Props> = ({ refreshSignal }) => {
   const { t } = useLanguage()
   const { error: toastError, success } = useToast()
   const { compute } = useDashboardWorker()
-  const navigate = useNavigate()
 
   // Today's activity state
   const [todayStats, setTodayStats] = useState<TodayStats | null>(null)

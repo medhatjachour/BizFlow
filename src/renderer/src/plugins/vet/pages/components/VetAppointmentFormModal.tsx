@@ -107,7 +107,7 @@ export default function VetAppointmentFormModal({ appointment, preselectedPatien
     const loadVets = async () => {
       setVetsLoading(true)
       try {
-        const raw = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
+        const raw: any = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
         const list: VetStaff[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
         setAttendingVets(
           list
@@ -129,7 +129,11 @@ export default function VetAppointmentFormModal({ appointment, preselectedPatien
     const from = new Date(selectedDay + 'T00:00:00').toISOString()
     const to   = new Date(selectedDay + 'T23:59:59').toISOString()
     window.api.vet?.appointments.getAll({ from, to, skip: 0, take: 200 })
-      .then((res: any) => { if (!cancelled) setDayAppts(res?.data ?? []) })
+      .then((res: any) => {
+        if (cancelled) return
+        const rows = Array.isArray(res) ? res : (res?.data ?? [])
+        setDayAppts(rows)
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoadingSlots(false) })
     return () => { cancelled = true }

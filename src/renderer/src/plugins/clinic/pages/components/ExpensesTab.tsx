@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Receipt, Plus, Pencil, Trash2, Loader2, TrendingUp, TrendingDown,
-  DollarSign, AlertCircle, Check, X, ChevronDown
+  AlertCircle, Check, X, ChevronDown
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'

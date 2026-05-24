@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import type { VetPatient } from '../index'
 import { useLanguage } from '@renderer/contexts/LanguageContext'

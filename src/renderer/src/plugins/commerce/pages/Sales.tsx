@@ -1631,7 +1631,7 @@ export default function Sales(): JSX.Element {
       {/* Refund Items Modal */}
       <RefundItemsModal
         show={showRefundModal}
-        transaction={selectedTransaction}
+        transaction={selectedTransaction as any}
         onClose={() => setShowRefundModal(false)}
         onRefund={handleRefundItems}
       />

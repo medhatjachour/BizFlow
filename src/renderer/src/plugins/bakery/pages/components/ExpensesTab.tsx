@@ -221,7 +221,7 @@ function buildBounds(range: Range) {
 // ─── Main Tab ─────────────────────────────────────────────────────────────────
 export default function BakeryExpensesTab() {
   const { showToast } = useToast()
-  const { t } = useLanguage()
+  useLanguage()
 
   const [expenses, setExpenses]   = useState<BakeryExpense[]>([])
   const [summary, setSummary]     = useState<{ totalAmount: number; byCategory: any[] } | null>(null)

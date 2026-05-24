@@ -11,7 +11,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import {
   Croissant, ClipboardList, Wheat, AlertTriangle,
-  FileText, BarChart3, Activity, TrendingUp, TrendingDown, Minus,
+  FileText, BarChart3, Activity,
   ChefHat, Scale, Flame,
 } from 'lucide-react'
 import {
@@ -65,7 +65,6 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
   const [startDate, setStartDate] = useState(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0])
   const [generating, setGenerating] = useState(false)
-  const [trendResult, setTrendResult] = useState<TrendsResult | null>(null)
   const [effResult, setEffResult] = useState<EfficiencyResult | null>(null)
 
   useEffect(() => { loadData() }, [refreshSignal])
@@ -103,7 +102,9 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
           buckets.push(weekBatches.filter((b: any) => new Date(b.createdAt) >= d && new Date(b.createdAt) < next).length)
         }
         const trend = await compute<TrendsResult>('COMPUTE_TRENDS', { values: buckets, labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] })
-        if (trend) setTrendResult(trend)
+        if (trend) {
+          // Keep trend computation warm for future chart blocks.
+        }
       }
 
       if (todayBatches.length > 0) {
@@ -135,7 +136,7 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
       doc.setTextColor(0)
 
       if (reportType === 'production') {
-        const [r1, r2] = await Promise.allSettled([
+        const [r1] = await Promise.allSettled([
           api.getProductionBatches?.({ startDate: sDate.toISOString(), endDate: eDate.toISOString() }),
           api.getProductionSchedule?.({ date: sDate.toISOString() }),
         ])

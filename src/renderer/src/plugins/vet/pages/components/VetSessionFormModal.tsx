@@ -92,7 +92,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
     const loadVets = async () => {
       setVetsLoading(true)
       try {
-        const raw = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
+        const raw: any = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
         const list: VetStaff[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
         const vets = list
           .filter((staff) => staff.status === 'active')

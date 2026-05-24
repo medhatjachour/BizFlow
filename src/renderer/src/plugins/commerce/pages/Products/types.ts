@@ -42,6 +42,8 @@ export interface ProductFormErrors {
 export interface ProductFilters {
   searchQuery: string
   category: string
+  color: string
+  size: string
   store: string
   stockStatus: string
 }

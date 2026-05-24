@@ -12,7 +12,6 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
   const { success, error } = useToast()
   const [settings, setSettings] = useState<any>(null)
   const [isPrinting, setIsPrinting] = useState(false)
-  const [autoPrintTriggered, setAutoPrintTriggered] = useState(false)
   const [receiptLang, setReceiptLang] = useState<'en' | 'ar'>(
     () => (localStorage.getItem('receiptLanguage') as 'en' | 'ar') || 'en'
   )

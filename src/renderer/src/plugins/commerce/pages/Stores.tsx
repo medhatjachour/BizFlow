@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Plus, Store, MapPin, Phone, Clock, ArrowRightLeft, Edit2, Trash2 } from 'lucide-react'
 import Modal from '@renderer/components/ui/Modal'
 import AddStoreDialog from '@renderer/components/AddStoreDialog'
-import type { NewStore } from '@renderer/components/AddStoreDialog'
 import { ipc } from '@renderer/utils/ipc'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import logger from '@/shared/utils/logger'
@@ -60,7 +59,7 @@ export default function Stores(): JSX.Element {
     })
   }
 
-  const handleAddStore = async (store: NewStore) => {
+  const handleAddStore = async () => {
     // Store was already created by AddStoreDialog; just refresh the list
     await loadStores()
   }

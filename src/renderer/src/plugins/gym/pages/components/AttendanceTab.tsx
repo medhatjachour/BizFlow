@@ -284,8 +284,6 @@ export default function AttendanceTab() {
   const monthLabel = new Date(calMonth.year, calMonth.month - 1, 1)
     .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
-  const inputCls = 'w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-400'
-
   return (
     <div className="space-y-5">
       {/* ── At-Risk Alert Banner ─────────────────────────────────────────────── */}

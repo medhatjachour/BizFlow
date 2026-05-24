@@ -266,7 +266,7 @@ export default function AppointmentsTab() {
         const results = await Promise.all(days.map((d) => window.api.clinic.appointments.getAll({ date: d }).catch(() => [])))
         const map: Record<string, Appointment[]> = {}
         days.forEach((d, i) => {
-          const dayData = results[i]
+          const dayData: any = results[i]
           // Handle both array and paginated response
           map[d] = Array.isArray(dayData) ? (dayData ?? []) : (dayData?.data ?? [])
         })

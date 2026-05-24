@@ -60,7 +60,6 @@ export default function VetStaffProfileModal({ staff, onClose, onEdit }: Props) 
     setLoading(true)
 
     const now   = new Date()
-    const start = new Date(now.getFullYear() - 2, 0, 1).toISOString()
 
     Promise.allSettled([
       window.api.vet?.sessions.getRecent({ vetName: staff.name, take: 200 }),

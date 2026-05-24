@@ -63,6 +63,8 @@ export interface ProductVariant {
   barcode?: string | null
   price: number
   stock: number
+  color?: string | null
+  size?: string | null
   attributeValues?: VariantAttributeValue[]
   createdAt: Date | string
   updatedAt: Date | string

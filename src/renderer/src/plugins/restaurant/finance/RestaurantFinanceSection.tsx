@@ -8,8 +8,8 @@
 
 import { useState, useEffect } from 'react'
 import {
-  UtensilsCrossed, DollarSign, ShoppingBag, TrendingUp, TrendingDown,
-  BarChart3, Star, Users, RefreshCcw, Table2,
+  UtensilsCrossed, DollarSign, ShoppingBag, TrendingUp,
+  BarChart3, Star, RefreshCcw, Table2,
 } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line,
@@ -43,16 +43,14 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
 }
 
 const RestaurantFinanceSection: React.FC = () => {
-  const toast = useToast()
+  useToast()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [dateRange, setDateRange] = useState(30)
 
-  const [overview, setOverview] = useState<any>(null)
   const [orders, setOrders] = useState<any[]>([])
   const [menuItems, setMenuItems] = useState<any[]>([])
-  const [tables, setTables] = useState<any[]>([])
 
   useEffect(() => { loadData() }, [dateRange])
 
@@ -63,19 +61,17 @@ const RestaurantFinanceSection: React.FC = () => {
       const end = new Date(); end.setHours(23, 59, 59, 999)
       const start = new Date(); start.setDate(start.getDate() - dateRange); start.setHours(0, 0, 0, 0)
 
-      const [r1, r2, r3, r4] = await Promise.allSettled([
+      const [, r2, r3] = await Promise.allSettled([
         api.getOverview?.(),
         api.getOrders?.({ status: 'paid', startDate: start.toISOString(), endDate: end.toISOString() }),
         api.getMenuItems?.(),
         api.getTables?.(),
       ])
 
-      if (r1.status === 'fulfilled') setOverview(r1.value)
       if (r2.status === 'fulfilled') {
         setOrders(Array.isArray(r2.value) ? r2.value : [])
       }
       if (r3.status === 'fulfilled') setMenuItems(Array.isArray(r3.value) ? r3.value : [])
-      if (r4.status === 'fulfilled') setTables(Array.isArray(r4.value) ? r4.value : [])
     } catch (err) { logger.error('RestaurantFinance: loadData failed', err) }
     finally { setLoading(false); setRefreshing(false) }
   }
