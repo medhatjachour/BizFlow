@@ -3,28 +3,36 @@ import { createPortal } from 'react-dom'
 import { Info } from 'lucide-react'
 
 export default function InfoTooltip({ text, iconClassName = 'h-3.5 w-3.5' }: { text: string; iconClassName?: string }) {
-  const tipRef = useRef<HTMLSpanElement>(null)
+  const tipRef = useRef<HTMLButtonElement>(null)
   const [tipPos, setTipPos] = useState<{ top: number; left: number; isRtl: boolean } | null>(null)
 
+  const openTip = () => {
+    if (!tipRef.current) return
+
+    const r = tipRef.current.getBoundingClientRect()
+    const tooltipWidth = 224
+    const edgePadding = 12
+    const centerX = r.left + (r.width / 2)
+    const minX = edgePadding + (tooltipWidth / 2)
+    const maxX = window.innerWidth - edgePadding - (tooltipWidth / 2)
+    const clampedX = Math.min(maxX, Math.max(minX, centerX))
+    const dir = document.documentElement.dir || document.body.dir
+    setTipPos({ top: r.top, left: clampedX, isRtl: dir === 'rtl' })
+  }
+
   return (
-    <span
+    <button
+      type="button"
       ref={tipRef}
       className="inline-flex"
       onClick={(e) => e.stopPropagation()}
-      onMouseEnter={() => {
-        if (tipRef.current) {
-          const r = tipRef.current.getBoundingClientRect()
-          const tooltipWidth = 224
-          const edgePadding = 12
-          const centerX = r.left + (r.width / 2)
-          const minX = edgePadding + (tooltipWidth / 2)
-          const maxX = window.innerWidth - edgePadding - (tooltipWidth / 2)
-          const clampedX = Math.min(maxX, Math.max(minX, centerX))
-          const dir = document.documentElement.dir || document.body.dir
-          setTipPos({ top: r.top, left: clampedX, isRtl: dir === 'rtl' })
-        }
-      }}
+      onMouseEnter={openTip}
       onMouseLeave={() => setTipPos(null)}
+      onFocus={openTip}
+      onBlur={() => setTipPos(null)}
+      aria-label="More information"
+      aria-expanded={!!tipPos}
+      aria-haspopup="true"
     >
       <Info className={`${iconClassName} text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-help`} />
       {tipPos && createPortal(
@@ -44,6 +52,6 @@ export default function InfoTooltip({ text, iconClassName = 'h-3.5 w-3.5' }: { t
         </div>,
         document.body
       )}
-    </span>
+    </button>
   )
 }

@@ -637,7 +637,7 @@ export default function OperationsTab() {
                     value={line.sku}
                     onChange={e => setForm(f => ({ ...f, lines: f.lines.map((l, i) => i === idx ? { ...l, sku: e.target.value } : l) }))}
                     className="col-span-3 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
-                    placeholder="SKU"
+                    placeholder={t('warehouseSKU')}
                   />
                   <input
                     type="number"
@@ -675,7 +675,8 @@ function StagePanel({
   title,
   orders,
   onAdvance,
-  actingOrderId
+  actingOrderId,
+  t
 }: {
   icon: React.ComponentType<{ className?: string }>
   title: string

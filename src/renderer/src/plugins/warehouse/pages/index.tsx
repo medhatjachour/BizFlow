@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Warehouse, Package, MapPin, ArrowRightLeft, ClipboardList, Info, X, ArrowRight } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import OverviewTab from './components/OverviewTab'
@@ -23,7 +23,7 @@ export default function WarehousePage() {
     transfers: t('warehouseTabInfoTransfers')
   }
 
-  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
     { id: 'overview', label: t('warehouseOverviewTab'), icon: <Warehouse className="w-4 h-4" /> },
     { id: 'operations', label: t('warehouseOperationsTab'), icon: <ClipboardList className="w-4 h-4" /> },
     { id: 'locations', label: t('warehouseLocationsTab'), icon: <MapPin className="w-4 h-4" /> },

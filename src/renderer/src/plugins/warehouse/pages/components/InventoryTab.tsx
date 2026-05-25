@@ -286,8 +286,8 @@ export default function InventoryTab() {
           </div>
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm">
             <div className="text-xs text-slate-500 inline-flex items-center gap-1">
-              Healthy Rate
-              <InfoTooltip text="Healthy rate is the share of visible items that are above minimum quantity." />
+              {t('warehouseHealthyRateLabel')}
+              <InfoTooltip text={t('warehouseHealthyRateInfo')} />
             </div>
             <div className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400 mt-1">{summary.healthyRate}%</div>
           </div>
@@ -301,12 +301,12 @@ export default function InventoryTab() {
           </div>
           <div className="inline-flex items-center gap-2 text-xs">
             <span className="text-slate-400 inline-flex items-center gap-1">
-              Sort:
-              <InfoTooltip text="Risk prioritizes items that are below minimum. Name sorts alphabetically. Qty sorts by highest quantity first." />
+              {t('warehouseSortLabel')}
+              <InfoTooltip text={t('warehouseSortInfo')} />
             </span>
-            <button onClick={() => setSortBy('risk')} className={`px-2.5 py-1 rounded-md ${sortBy === 'risk' ? 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>Risk</button>
-            <button onClick={() => setSortBy('name')} className={`px-2.5 py-1 rounded-md ${sortBy === 'name' ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>Name</button>
-            <button onClick={() => setSortBy('qty')} className={`px-2.5 py-1 rounded-md ${sortBy === 'qty' ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>Qty</button>
+            <button onClick={() => setSortBy('risk')} className={`px-2.5 py-1 rounded-md ${sortBy === 'risk' ? 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{t('warehouseSortRisk')}</button>
+            <button onClick={() => setSortBy('name')} className={`px-2.5 py-1 rounded-md ${sortBy === 'name' ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{t('warehouseSortName')}</button>
+            <button onClick={() => setSortBy('qty')} className={`px-2.5 py-1 rounded-md ${sortBy === 'qty' ? 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:text-cyan-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{t('warehouseSortQty')}</button>
           </div>
         </div>
       )}
@@ -340,8 +340,8 @@ export default function InventoryTab() {
                 <th className="px-4 py-3 text-center text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseMin')}</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                   <span className="inline-flex items-center gap-1">
-                    Health
-                    <InfoTooltip text="Health compares current quantity against min quantity. Critical means immediate action." />
+                    {t('warehouseHealthLabel')}
+                    <InfoTooltip text={t('warehouseHealthInfo')} />
                   </span>
                 </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('warehouseActions')}</th>
@@ -351,7 +351,13 @@ export default function InventoryTab() {
               {sortedEntries.map(entry => {
                 const isLow = entry.quantity <= entry.minQuantity
                 const health = getHealth(entry)
-                const healthLabel = health.label === 'critical' ? 'Critical' : health.label === 'low' ? 'Low' : health.label === 'out' ? 'Out' : 'OK'
+                const healthLabel = health.label === 'critical'
+                  ? t('warehouseHealthStatusCritical')
+                  : health.label === 'low'
+                    ? t('warehouseHealthStatusLow')
+                    : health.label === 'out'
+                      ? t('warehouseHealthStatusOut')
+                      : t('warehouseHealthStatusOk')
                 return (
                   <tr key={entry.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors ${isLow ? 'bg-red-50/50 dark:bg-red-900/10' : ''}`}>
                     <td className="px-4 py-3">

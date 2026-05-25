@@ -169,10 +169,21 @@ export function registerStockHandlers(prisma: any) {
 
   ipcMain.handle('warehouse:getLowStock', async () => {
     try {
+      if (prisma.warehouseStock?.fields?.minQuantity) {
+        return await prisma.warehouseStock.findMany({
+          where: {
+            minQuantity: { gt: 0 },
+            quantity: { lte: prisma.warehouseStock.fields.minQuantity }
+          },
+          include: { location: { select: { id: true, name: true, code: true } } }
+        })
+      }
+
       const rows = await prisma.warehouseStock.findMany({
+        where: { minQuantity: { gt: 0 } },
         include: { location: { select: { id: true, name: true, code: true } } }
       })
-      return rows.filter((r: any) => Number(r.minQuantity) > 0 && Number(r.quantity) <= Number(r.minQuantity))
+      return rows.filter((r: any) => Number(r.quantity) <= Number(r.minQuantity))
     } catch (err) { log.error('getLowStock error', err); throw err }
   })
 

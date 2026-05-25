@@ -41,8 +41,9 @@ function stageDataPatch(stage: JourneyStage, actor?: string | null) {
 function makeOrderNumber(orderType: string) {
   const type = (orderType || 'ORD').slice(0, 3).toUpperCase()
   const now = new Date()
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`
-  return `WH-${type}-${stamp}`
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}${String(now.getMilliseconds()).padStart(3, '0')}`
+  const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+  return `WH-${type}-${stamp}-${rand}`
 }
 
 export function registerWarehouseOperationsHandlers(prisma: any) {

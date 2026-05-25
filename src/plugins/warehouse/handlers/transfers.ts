@@ -53,58 +53,91 @@ export function registerTransferHandlers(prisma: any) {
 
   ipcMain.handle('warehouse:updateTransferStatus', async (_e, data: { id: string; status: string; actedBy?: string }) => {
     try {
-      const update: any = { status: data.status }
-      if (data.status === 'completed') {
-        update.completedAt = new Date()
-        update.completedBy = data.actedBy ?? null
-        const transfer = await prisma.stockTransfer.findUnique({
+      return await prisma.$transaction(async (tx: any) => {
+        const transfer = await tx.stockTransfer.findUnique({
           where: { id: data.id },
           include: { items: true, fromLocation: true, toLocation: true }
         })
-        if (transfer) {
+        if (!transfer) throw new Error('Transfer not found')
+
+        if (data.status === 'completed') {
           for (const item of transfer.items) {
-            const fromStock = await prisma.warehouseStock.findFirst({
-              where: { locationId: transfer.fromLocationId, productName: item.productName }
+            const moveQty = Number(item.quantity)
+
+            const fromStock = await tx.warehouseStock.findUnique({
+              where: {
+                locationId_productName: {
+                  locationId: transfer.fromLocationId,
+                  productName: item.productName
+                }
+              }
             })
 
-            await prisma.warehouseStock.updateMany({
-              where: { locationId: transfer.fromLocationId, productName: item.productName },
-              data: { quantity: { decrement: item.quantity } }
+            if (!fromStock || Number(fromStock.quantity) < moveQty) {
+              throw new Error(`Insufficient stock for transfer item: ${item.productName}`)
+            }
+
+            const decrementResult = await tx.warehouseStock.updateMany({
+              where: {
+                id: fromStock.id,
+                quantity: { gte: moveQty }
+              },
+              data: { quantity: { decrement: moveQty } }
             })
 
-            const toStockBefore = await prisma.warehouseStock.findUnique({
-              where: { locationId_productName: { locationId: transfer.toLocationId, productName: item.productName } }
+            if (decrementResult.count !== 1) {
+              throw new Error(`Stock changed during transfer completion for: ${item.productName}`)
+            }
+
+            const toStockBefore = await tx.warehouseStock.findUnique({
+              where: {
+                locationId_productName: {
+                  locationId: transfer.toLocationId,
+                  productName: item.productName
+                }
+              }
             })
 
-            const toStock = await prisma.warehouseStock.upsert({
-              where: { locationId_productName: { locationId: transfer.toLocationId, productName: item.productName } },
-              create: { locationId: transfer.toLocationId, productName: item.productName, sku: item.sku, quantity: item.quantity, unit: item.unit || 'pcs' },
-              update: { quantity: { increment: item.quantity } }
+            const toStock = await tx.warehouseStock.upsert({
+              where: {
+                locationId_productName: {
+                  locationId: transfer.toLocationId,
+                  productName: item.productName
+                }
+              },
+              create: {
+                locationId: transfer.toLocationId,
+                productName: item.productName,
+                sku: item.sku,
+                quantity: moveQty,
+                unit: item.unit || 'pcs'
+              },
+              update: { quantity: { increment: moveQty } }
             })
 
-            await writeWarehouseMovement(prisma, {
+            await writeWarehouseMovement(tx, {
               movementType: 'transfer_out',
-              stockId: fromStock?.id,
+              stockId: fromStock.id,
               locationId: transfer.fromLocationId,
               productName: item.productName,
               sku: item.sku,
-              quantity: -Number(item.quantity),
+              quantity: -moveQty,
               unit: item.unit || 'pcs',
-              beforeQty: fromStock ? Number(fromStock.quantity) : null,
-              afterQty: fromStock ? Number(fromStock.quantity) - Number(item.quantity) : null,
+              beforeQty: Number(fromStock.quantity),
+              afterQty: Number(fromStock.quantity) - moveQty,
               sourceType: 'transfer',
               sourceId: transfer.id,
               actedBy: data.actedBy,
               notes: transfer.notes
             })
 
-            await writeWarehouseMovement(prisma, {
+            await writeWarehouseMovement(tx, {
               movementType: 'transfer_in',
               stockId: toStock.id,
               locationId: transfer.toLocationId,
               productName: item.productName,
               sku: item.sku,
-              quantity: Number(item.quantity),
+              quantity: moveQty,
               unit: item.unit || 'pcs',
               beforeQty: toStockBefore ? Number(toStockBefore.quantity) : 0,
               afterQty: Number(toStock.quantity),
@@ -115,16 +148,25 @@ export function registerTransferHandlers(prisma: any) {
             })
           }
         }
-      }
-      const updated = await prisma.stockTransfer.update({ where: { id: data.id }, data: update })
-      await writeWarehouseAudit(prisma, {
-        entityType: 'transfer',
-        entityId: updated.id,
-        action: `transfer.status.${data.status}`,
-        actor: data.actedBy,
-        details: `${updated.fromLocationId} -> ${updated.toLocationId}`
+
+        const update: any = { status: data.status }
+        if (data.status === 'completed') {
+          update.completedAt = new Date()
+          update.completedBy = data.actedBy ?? null
+        }
+
+        const updated = await tx.stockTransfer.update({ where: { id: data.id }, data: update })
+
+        await writeWarehouseAudit(tx, {
+          entityType: 'transfer',
+          entityId: updated.id,
+          action: `transfer.status.${data.status}`,
+          actor: data.actedBy,
+          details: `${updated.fromLocationId} -> ${updated.toLocationId}`
+        })
+
+        return updated
       })
-      return updated
     } catch (err) { log.error('updateTransferStatus error', err); throw err }
   })
 
