@@ -67,36 +67,42 @@ function StatusBadge({ diff }: { diff: number }) {
   )
 }
 
+const PAGE_SIZE = 20
+
 export default function FollowUpsTab() {
   const toast = useToast()
   const navigate = useNavigate()
 
-  const [filter, setFilter] = useState<Filter>('all')
-  const [followUps, setFollowUps] = useState<FollowUp[]>([])
+  const [filter, setFilter] = useState<Filter>('today')
+  const [allFollowUps, setAllFollowUps] = useState<FollowUp[]>([])
   const [loading, setLoading] = useState(true)
   const [clearingId, setClearingId] = useState<string | null>(null)
   const [bookingFor, setBookingFor] = useState<FollowUp | null>(null)
+  const [page, setPage] = useState(1)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await window.api.clinic.appointments.getAllFollowUps({ filter })
-      setFollowUps(data ?? [])
+      const data = await window.api.clinic.appointments.getAllFollowUps({ filter: 'all' })
+      setAllFollowUps(data ?? [])
     } catch {
       toast.error('Failed to load follow-ups')
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Reset to page 1 whenever the filter tab changes
+  useEffect(() => { setPage(1) }, [filter])
 
   async function handleMarkDone(fu: FollowUp) {
     setClearingId(fu.id)
     try {
       await window.api.clinic.appointments.clearFollowUp(fu.id)
       toast.success(`Follow-up for ${fu.patient.name} marked as done`)
-      setFollowUps(prev => prev.filter(f => f.id !== fu.id))
+      setAllFollowUps(prev => prev.filter(f => f.id !== fu.id))
     } catch {
       toast.error('Failed to clear follow-up')
     } finally {
@@ -104,16 +110,27 @@ export default function FollowUpsTab() {
     }
   }
 
-  // Summary counts (from current loaded list)
-  const todayCount    = followUps.filter(f => daysDiff(f.followUpDate) === 0).length
-  const overdueCount  = followUps.filter(f => daysDiff(f.followUpDate) < 0).length
-  const upcomingCount = followUps.filter(f => daysDiff(f.followUpDate) > 0).length
+  // Summary counts always computed from full dataset
+  const todayCount    = allFollowUps.filter(f => daysDiff(f.followUpDate) === 0).length
+  const overdueCount  = allFollowUps.filter(f => daysDiff(f.followUpDate) < 0).length
+  const upcomingCount = allFollowUps.filter(f => daysDiff(f.followUpDate) > 0).length
+
+  // Client-side filtered list
+  const filtered = filter === 'all'      ? allFollowUps
+    : filter === 'today'    ? allFollowUps.filter(f => daysDiff(f.followUpDate) === 0)
+    : filter === 'overdue'  ? allFollowUps.filter(f => daysDiff(f.followUpDate) < 0)
+    :                         allFollowUps.filter(f => daysDiff(f.followUpDate) > 0)
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage   = Math.min(page, totalPages)
+  const pageItems  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   const FILTER_TABS: { key: Filter; label: string; color: string }[] = [
-    { key: 'all',      label: `All (${followUps.length})`,       color: 'text-slate-600 dark:text-slate-300' },
-    { key: 'today',    label: `Due Today (${todayCount})`,        color: 'text-amber-600 dark:text-amber-400' },
-    { key: 'overdue',  label: `Overdue (${overdueCount})`,        color: 'text-red-600 dark:text-red-400' },
-    { key: 'upcoming', label: `Upcoming (${upcomingCount})`,      color: 'text-teal-600 dark:text-teal-400' },
+    { key: 'all',      label: `All (${allFollowUps.length})`,  color: 'text-slate-600 dark:text-slate-300' },
+    { key: 'today',    label: `Due Today (${todayCount})`,     color: 'text-amber-600 dark:text-amber-400' },
+    { key: 'overdue',  label: `Overdue (${overdueCount})`,     color: 'text-red-600 dark:text-red-400' },
+    { key: 'upcoming', label: `Upcoming (${upcomingCount})`,   color: 'text-teal-600 dark:text-teal-400' },
   ]
 
   return (
@@ -184,14 +201,14 @@ export default function FollowUpsTab() {
             <RefreshCw size={16} className="animate-spin" />
             <span className="text-sm">Loading...</span>
           </div>
-        ) : followUps.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-slate-400 gap-2">
             <CalendarClock size={32} className="opacity-30" />
             <p className="text-sm">No follow-ups in this category</p>
           </div>
         ) : (
           <div className="space-y-2 pb-4">
-            {followUps.map(fu => {
+            {pageItems.map(fu => {
               const diff = daysDiff(fu.followUpDate)
               const isClearing = clearingId === fu.id
               const rowBg = diff < 0
@@ -276,6 +293,31 @@ export default function FollowUpsTab() {
                 </div>
               )
             })}
+            {/* ── Pagination ──────────────────────────────────────────────── */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-xs text-slate-400">
+                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ‹ Prev
+                  </button>
+                  <span className="px-2 text-xs text-slate-500">{safePage} / {totalPages}</span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next ›
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -293,7 +335,7 @@ export default function FollowUpsTab() {
             // Auto-clear the follow-up reminder now that it's been formally scheduled
             try {
               await window.api.clinic.appointments.clearFollowUp(scheduled.id)
-              setFollowUps(prev => prev.filter(f => f.id !== scheduled.id))
+              setAllFollowUps(prev => prev.filter(f => f.id !== scheduled.id))
             } catch { /* non-critical — reminder can be manually dismissed */ }
           }}
         />

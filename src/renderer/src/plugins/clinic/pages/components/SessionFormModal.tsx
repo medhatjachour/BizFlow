@@ -1011,8 +1011,8 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
           </div>
 
           {/* ── Materials Used ──────────────────────────────────────────────────── */}
-          <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/60">
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 overflow-visible">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/60 rounded-t-xl">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <span className="text-sm font-bold text-amber-700 dark:text-amber-300">{t('sessionMaterialsTitle')}</span>
@@ -1038,7 +1038,7 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
                 />
               </div>
               {showMaterialDropdown && filteredMaterials.length > 0 && (
-                <div className="absolute z-50 left-4 right-4 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                <div className="absolute z-[200] left-4 right-4 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl max-h-44 overflow-y-auto">
                   {filteredMaterials.slice(0, 20).map(mat => (
                     <button
                       key={mat.id}
