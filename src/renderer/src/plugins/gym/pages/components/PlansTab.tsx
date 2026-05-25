@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  Plus, Pencil, Trash2, Loader2, CheckCircle, XCircle, Star,
+  Plus, Pencil, Trash2, Loader2, CheckCircle, Star,
   Dumbbell, Flame, Droplets, Users, BadgeCheck, X,
   Thermometer, Waves, Lock, Shirt, Apple, BarChart2,
   ClipboardList, Ticket, Snowflake, ListChecks

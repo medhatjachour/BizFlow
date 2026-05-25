@@ -8,6 +8,8 @@ export type ProductVariant = {
   barcode?: string
   price: number
   stock: number
+  color?: string
+  size?: string
   attributeValues?: { attributeId: string; value: string; attribute?: { name: string } }[]
 }
 

@@ -852,7 +852,7 @@ export default function PatientProfile() {
 
     const qtyRaw = rxDraft.quantity.trim()
     const parsedQty = qtyRaw === '' ? null : Number(qtyRaw)
-    if (qtyRaw !== '' && (!Number.isFinite(parsedQty) || parsedQty < 0)) {
+    if (qtyRaw !== '' && (parsedQty === null || !Number.isFinite(parsedQty) || parsedQty < 0)) {
       showToast('error', 'Quantity must be a valid number')
       return
     }

@@ -222,7 +222,6 @@ export default function ProductionTab() {
   const kpiProduced  = batches.reduce((s, b) => s + b.unitsProduced, 0)
   const kpiSold      = batches.reduce((s, b) => s + (b.unitsSold ?? 0), 0)
   const kpiLost      = batches.reduce((s, b) => s + (b.unitsLost ?? 0), 0)
-  const kpiCost      = batches.reduce((s, b) => s + b.totalCost, 0)
 
   const selectedCap  = capacity.find(c => c.recipeId === recipeId)
   const previewUnits = recipeId

@@ -49,7 +49,7 @@ function TabButton({ active, onClick, icon, label }: { active: boolean; onClick:
 
 const BakeryFinanceSection: React.FC = () => {
   const { t } = useLanguage()
-  const toast = useToast()
+  useToast()
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)

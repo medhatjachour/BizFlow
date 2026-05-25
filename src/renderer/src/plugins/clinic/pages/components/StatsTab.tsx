@@ -111,6 +111,7 @@ const AXIS_TICK = { fontSize: 10, fill: '#94a3b8' }
 
 export default function StatsTab() {
   const { t } = useLanguage()
+  const clinicStatsApi = window.api.clinic.stats as any
   const [trendDays, setTrendDays] = useState(30)
   const [overview, setOverview] = useState<Overview | null>(null)
   const [diagnoses, setDiagnoses] = useState<DiagnosisEntry[]>([])
@@ -125,11 +126,11 @@ export default function StatsTab() {
     else setRefreshing(true)
     try {
       const [ov, dx, ft, mo, bd] = await Promise.all([
-        window.api.clinic.stats.overview(),
-        window.api.clinic.stats.topDiagnoses(8),
-        window.api.clinic.stats.fullTrend(trendDays),
-        window.api.clinic.stats.monthlyTrend(6),
-        window.api.clinic.stats.breakdowns()
+        clinicStatsApi.overview(),
+        clinicStatsApi.topDiagnoses(8),
+        clinicStatsApi.fullTrend(trendDays),
+        clinicStatsApi.monthlyTrend(6),
+        clinicStatsApi.breakdowns()
       ])
       setOverview(ov)
       setDiagnoses(dx)
@@ -148,11 +149,11 @@ export default function StatsTab() {
       setLoading(true)
       try {
         const [ov, dx, ft, mo, bd] = await Promise.all([
-          window.api.clinic.stats.overview(),
-          window.api.clinic.stats.topDiagnoses(8),
-          window.api.clinic.stats.fullTrend(trendDays),
-          window.api.clinic.stats.monthlyTrend(6),
-          window.api.clinic.stats.breakdowns()
+          clinicStatsApi.overview(),
+          clinicStatsApi.topDiagnoses(8),
+          clinicStatsApi.fullTrend(trendDays),
+          clinicStatsApi.monthlyTrend(6),
+          clinicStatsApi.breakdowns()
         ])
         if (!cancelled) { setOverview(ov); setDiagnoses(dx); setFullTrend(ft); setMonthly(mo); setBreakdowns(bd) }
       } finally {
@@ -386,12 +387,12 @@ export default function StatsTab() {
             <YAxis yAxisId="right" orientation="right" tick={AXIS_TICK} tickFormatter={(v) => `$${v}`} />
             <Tooltip
               {...TOOLTIP_STYLE}
-              formatter={(value: number, name: string) => {
-                if (name === 'sessions') return [value, t('sessionsLabel')]
+              formatter={((value: number, name: string) => {
+                if (name === 'sessions') return [String(value), t('sessionsLabel')]
                 if (name === 'paid') return [formatCurrency(value), t('revenueLabel')]
                 if (name === 'charged') return [formatCurrency(value), t('chargedLabel')]
-                return [value, name]
-              }}
+                return [String(value), name]
+              }) as any}
             />
             <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }}
               formatter={(value) => {
@@ -421,11 +422,11 @@ export default function StatsTab() {
               <YAxis yAxisId="right" orientation="right" tick={AXIS_TICK} tickFormatter={(v) => `$${v}`} />
               <Tooltip
                 {...TOOLTIP_STYLE}
-                formatter={(value: number, name: string) => {
-                  if (name === 'sessions') return [value, t('sessionsLabel')]
+                formatter={((value: number, name: string) => {
+                  if (name === 'sessions') return [String(value), t('sessionsLabel')]
                   if (name === 'revenue') return [formatCurrency(value), t('revenueLabel')]
-                  return [value, name]
-                }}
+                  return [String(value), name]
+                }) as any}
               />
               <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }}
                 formatter={(value) => value === 'sessions' ? t('sessionsLabel') : t('revenueLabel')} />
@@ -468,7 +469,7 @@ export default function StatsTab() {
                     <Cell key={entry.type} fill={VISIT_TYPE_COLORS[entry.type] ?? '#94a3b8'} />
                   ))}
                 </Pie>
-                <Tooltip {...TOOLTIP_STYLE} formatter={(value: number, name: string) => [value, visitTypeLabels[name] ?? name]} />
+                <Tooltip {...TOOLTIP_STYLE} formatter={((value: number, name: string) => [String(value), visitTypeLabels[name] ?? name]) as any} />
                 <Legend wrapperStyle={{ fontSize: 11 }} formatter={(value) => visitTypeLabels[value] ?? value} />
               </PieChart>
             </ResponsiveContainer>
@@ -499,7 +500,7 @@ export default function StatsTab() {
                     <Cell key={entry.status} fill={PAYMENT_STATUS_COLORS[entry.status] ?? '#94a3b8'} />
                   ))}
                 </Pie>
-                <Tooltip {...TOOLTIP_STYLE} formatter={(value: number, name: string) => [value, paymentLabels[name] ?? name]} />
+                <Tooltip {...TOOLTIP_STYLE} formatter={((value: number, name: string) => [String(value), paymentLabels[name] ?? name]) as any} />
                 <Legend wrapperStyle={{ fontSize: 11 }} formatter={(value) => paymentLabels[value] ?? value} />
               </PieChart>
             </ResponsiveContainer>

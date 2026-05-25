@@ -18,6 +18,8 @@ model WarehouseLocation {
   stockEntries  WarehouseStock[]
   transfersFrom StockTransfer[]     @relation("TransferFrom")
   transfersTo   StockTransfer[]     @relation("TransferTo")
+  orderEvents   WarehouseOrder[]
+  movements     WarehouseStockMovement[]
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 
@@ -36,7 +38,23 @@ model WarehouseStock {
   quantity    Float             @default(0)
   unit        String            @default("pcs")
   minQuantity Float             @default(0)
+  itemType    String            @default("finished_goods") // raw_material | finished_goods | packaging | returns | damaged | quarantine
+  barcode     String?
+  lotNumber   String?
+  batchNumber String?
+  serialNumber String?
+  expiryDate  DateTime?
+  dimensions  String?
+  weight      Float?
+  volume      Float?
+  binCode     String?
+  aisleCode   String?
+  shelfCode   String?
+  palletCode  String?
+  isQuarantine Boolean          @default(false)
+  isDamaged   Boolean           @default(false)
   notes       String?
+  movements   WarehouseStockMovement[]
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
@@ -53,6 +71,8 @@ model StockTransfer {
   toLocation     WarehouseLocation @relation("TransferTo", fields: [toLocationId], references: [id], onDelete: Cascade)
   status         String            @default("draft") // draft | in_transit | completed | cancelled
   notes          String?
+  createdBy      String?
+  completedBy    String?
   transferDate   DateTime          @default(now())
   completedAt    DateTime?
   items          StockTransferItem[]
@@ -78,4 +98,106 @@ model StockTransferItem {
   updatedAt   DateTime      @updatedAt
 
   @@index([transferId])
+}
+
+model WarehouseOrder {
+  id            String               @id @default(uuid())
+  orderNumber   String               @unique
+  orderType     String               // inbound | outbound | return | work_order
+  status        String               @default("draft") // draft | pending | processing | completed | cancelled
+  workflowStage String               @default("created") // created | receiving | qc | putaway | picking | packing | shipping | done
+  sourceRef     String?              // PO/SO/WO/ASN reference
+  partnerName   String?
+  expectedDate  DateTime?
+  processedDate DateTime?
+  receivedAt    DateTime?
+  qcCompletedAt DateTime?
+  putawayAt     DateTime?
+  pickedAt      DateTime?
+  packedAt      DateTime?
+  shippedAt     DateTime?
+  locationId    String?
+  location      WarehouseLocation?   @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  priority      String               @default("normal") // low | normal | high | urgent
+  notes         String?
+  createdBy     String?
+  processedBy   String?
+  receivedBy    String?
+  qcBy          String?
+  putawayBy     String?
+  pickedBy      String?
+  packedBy      String?
+  shippedBy     String?
+  lines         WarehouseOrderLine[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([orderType])
+  @@index([status])
+  @@index([workflowStage])
+  @@index([locationId])
+  @@index([expectedDate])
+}
+
+model WarehouseOrderLine {
+  id            String          @id @default(uuid())
+  orderId       String
+  order         WarehouseOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String?
+  productName   String
+  sku           String?
+  barcode       String?
+  requestedQty  Float
+  processedQty  Float           @default(0)
+  unit          String          @default("pcs")
+  lotNumber     String?
+  batchNumber   String?
+  serialNumber  String?
+  expiryDate    DateTime?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model WarehouseStockMovement {
+  id            String            @id @default(uuid())
+  movementType  String            // in | out | adjust | transfer_in | transfer_out | receive | ship | return
+  stockId       String?
+  stock         WarehouseStock?   @relation(fields: [stockId], references: [id], onDelete: SetNull)
+  locationId    String?
+  location      WarehouseLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  productId     String?
+  productName   String
+  sku           String?
+  quantity      Float
+  unit          String            @default("pcs")
+  beforeQty     Float?
+  afterQty      Float?
+  sourceType    String?           // order | transfer | manual | count
+  sourceId      String?
+  actedBy       String?
+  notes         String?
+  createdAt     DateTime          @default(now())
+
+  @@index([movementType])
+  @@index([locationId])
+  @@index([sourceType, sourceId])
+  @@index([createdAt])
+}
+
+model WarehouseAuditLog {
+  id            String   @id @default(uuid())
+  entityType    String   // stock | transfer | order | location
+  entityId      String
+  action        String
+  actor         String?
+  details       String?
+  createdAt     DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actor])
+  @@index([createdAt])
 }

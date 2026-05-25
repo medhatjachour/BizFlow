@@ -553,7 +553,6 @@ function SalesHistory() {
   const totalCogs  = displayed.reduce((sum, s) => sum + (s.costTotal ?? s.quantity * (s.batch?.costPerUnit ?? 0)), 0)
   const grossProfit = revenue - totalCogs
   const margin     = revenue > 0 ? (grossProfit / revenue) * 100 : 0
-  const avg        = displayed.length ? revenue / displayed.length : 0
 
   function pageNumbers() {
     const pages: number[] = []

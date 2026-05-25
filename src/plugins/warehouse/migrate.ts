@@ -3,7 +3,16 @@ import { createLogger } from '../../main/utils/logger'
 
 const log = createLogger('Warehouse:Migrate')
 
-const WAREHOUSE_TABLES = ['WarehouseLocation', 'WarehouseStock', 'StockTransfer', 'StockTransferItem']
+const WAREHOUSE_TABLES = [
+  'WarehouseLocation',
+  'WarehouseStock',
+  'StockTransfer',
+  'StockTransferItem',
+  'WarehouseOrder',
+  'WarehouseOrderLine',
+  'WarehouseStockMovement',
+  'WarehouseAuditLog'
+]
 
 export async function ensureWarehouseSchema(prisma: any, dbUrl: string, cwd: string): Promise<void> {
   const missing = await getMissingTables(prisma)

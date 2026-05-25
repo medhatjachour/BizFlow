@@ -63,9 +63,6 @@ const TABLE_COLORS: Record<string, string> = {
   dirty:     'bg-slate-400',
 }
 
-// Colour palette for hour-bar chart
-const HOUR_COLORS = ['#fb7185', '#f43f5e', '#e11d48']
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function RestaurantDashboardSection({ refreshSignal }: Props) {

@@ -177,7 +177,6 @@ export default function VetAppointmentsTab() {
   const [appointments,    setAppointments]    = useState<any[]>([])
   const [weekAppts,       setWeekAppts]       = useState<Record<string, any[]>>({})
   const [loading,         setLoading]         = useState(true)
-  const [total,           setTotal]           = useState(0)
   const [viewMode,        setViewMode]        = useState<'day' | 'week'>('day')
   const [showForm,        setShowForm]        = useState(false)
   const [editTarget,      setEditTarget]      = useState<any | null>(null)
@@ -195,7 +194,6 @@ export default function VetAppointmentsTab() {
         const to   = new Date(selectedDate + 'T23:59:59').toISOString()
         const result = await window.api.vet?.appointments.getAll({ from, to, skip: 0, take: 200 })
         setAppointments(result?.data ?? [])
-        setTotal(result?.total ?? 0)
       } else {
         const days = getWeekDates(selectedDate)
         const results = await Promise.all(days.map(d => {

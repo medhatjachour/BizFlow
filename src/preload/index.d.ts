@@ -346,11 +346,18 @@ interface API {
     createProductionBatch: (data: any) => Promise<any>
     deleteProductionBatch: (id: string) => Promise<any>
     getAvailableBatches: () => Promise<any>
+    getSellableBatches: () => Promise<any>
+    getSales: (options?: any) => Promise<any>
+    createSale: (data: any) => Promise<any>
+    deleteSale: (id: string) => Promise<any>
+    getSalesSummary: (options?: any) => Promise<any>
+    getInventoryStatus: (options?: any) => Promise<any>
     getPantry: () => Promise<any>
     upsertPantryIngredient: (data: any) => Promise<any>
     adjustPantryStock: (data: any) => Promise<any>
     deletePantryIngredient: (id: string) => Promise<any>
     markPantryReordered: (data: any) => Promise<any>
+    bulkRestock: (items: any[]) => Promise<any>
     getWasteLogs: (options?: any) => Promise<any>
     createWasteLog: (data: any) => Promise<any>
     deleteWasteLog: (id: string) => Promise<any>
@@ -365,6 +372,13 @@ interface API {
     getExpiringBatches: (daysAhead?: number) => Promise<any>
     getProductionRequirements: (data: any) => Promise<any>
     getEndOfDaySuggestion: () => Promise<any>
+    expenses: {
+      getAll: (options?: any) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      getSummary: (options?: any) => Promise<any>
+    }
   }
   restaurant: {
     getTables: (options?: any) => Promise<any>
@@ -396,17 +410,25 @@ interface API {
     getStock: (options?: any) => Promise<any>
     upsertStock: (data: any) => Promise<any>
     adjustStock: (data: any) => Promise<any>
-    deleteStock: (id: string) => Promise<any>
+    deleteStock: (id: string, actedBy?: string) => Promise<any>
     getLowStock: () => Promise<any>
+    getMovements: (params?: any) => Promise<any>
+    getAuditLogs: (params?: any) => Promise<any>
     getTransfers: (options?: any) => Promise<any>
     createTransfer: (data: any) => Promise<any>
     updateTransferStatus: (data: any) => Promise<any>
     deleteTransfer: (id: string) => Promise<any>
+    getOrders: (params?: any) => Promise<any>
+    getJourneyBoard: () => Promise<any>
+    createOrder: (data: any) => Promise<any>
+    updateOrderStatus: (data: any) => Promise<any>
+    advanceOrderStage: (data: any) => Promise<any>
+    processOrder: (data: any) => Promise<any>
     getOverview: () => Promise<any>
   }
   clinic: {
     patients: {
-      getAll: (params?: { search?: string }) => Promise<any>
+      getAll: (params?: { search?: string; skip?: number; take?: number }) => Promise<any>
       searchLite: (query: string) => Promise<Array<{ id: string; name: string; phone: string; dateOfBirth?: string | null }>>
       getById: (id: string) => Promise<any>
       create: (data: any) => Promise<any>
@@ -415,7 +437,7 @@ interface API {
         getDebtors: (params?: { search?: string; skip?: number; take?: number }) => Promise<{ data: any[]; total: number; totalOutstanding: number; hasMore: boolean }>
     }
     sessions: {
-      getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all' }) => Promise<any>
+      getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; skip?: number; take?: number; startDate?: string; endDate?: string }) => Promise<any>
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>
@@ -428,6 +450,9 @@ interface API {
       overview: () => Promise<any>
       topDiagnoses: (limit?: number) => Promise<any>
       visitTrend: (days?: number) => Promise<any>
+      fullTrend: (days?: number) => Promise<any>
+      monthlyTrend: (months?: number) => Promise<any>
+      breakdowns: () => Promise<any>
       patientStats: (patientId: string) => Promise<any>
     }
     checkResults: {
@@ -438,7 +463,7 @@ interface API {
       delete: (id: string) => Promise<any>
     }
     appointments: {
-      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string }) => Promise<any[]>
+      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string; type?: string; skip?: number; take?: number }) => Promise<any>
       getToday: () => Promise<any[]>
       getUpcoming: (days?: number) => Promise<any[]>
       getFollowUpReminders: () => Promise<{ today: any[]; overdue: any[] }>
@@ -491,6 +516,7 @@ interface API {
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>
+      getFinance: (ownerId: string) => Promise<any>
     }
     patients: {
       getAll: (params?: { search?: string; skip?: number; take?: number; ownerId?: string }) => Promise<any>
@@ -502,18 +528,19 @@ interface API {
       getDebtors: (params?: { search?: string; skip?: number; take?: number }) => Promise<{ data: any[]; total: number; totalOutstanding: number; hasMore: boolean }>
     }
     sessions: {
-      getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; skip?: number; take?: number }) => Promise<any>
+      getRecent: (params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; skip?: number; take?: number; vetName?: string; startDate?: string; endDate?: string }) => Promise<any>
       getById: (id: string) => Promise<any>
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>
+      getFollowUps: (params?: any) => Promise<any>
     }
     prescriptions: {
       update: (id: string, data: any) => Promise<any>
       setActive: (id: string, isActive: boolean) => Promise<any>
     }
     appointments: {
-      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string }) => Promise<any[]>
+      getAll: (params?: { date?: string; from?: string; to?: string; status?: string; patientId?: string; skip?: number; take?: number; vetName?: string }) => Promise<any>
       getToday: () => Promise<any[]>
       getUpcoming: (days?: number) => Promise<any[]>
       getAllFollowUps: (params?: { filter?: 'all' | 'today' | 'overdue' | 'upcoming' }) => Promise<any[]>
@@ -536,22 +563,38 @@ interface API {
       delete: (id: string) => Promise<{ success: boolean }>
     }
     staff: {
-      getAll: () => Promise<any[]>
+      getAll: (params?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<{ success: boolean }>
       salary: {
         getAll: (params?: { staffId?: string; year?: number }) => Promise<any[]>
+        getRecords: (staffId: string) => Promise<any>
         upsert: (data: any) => Promise<any>
-        markPaid: (id: string) => Promise<any>
         delete: (id: string) => Promise<{ success: boolean }>
       }
     }
+    medicines: {
+      getAll: (params?: any) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      getBatches: (medicineId: string) => Promise<any>
+      addBatch: (data: any) => Promise<any>
+      updateBatch: (id: string, data: any) => Promise<any>
+      deleteBatch: (id: string) => Promise<any>
+      disposeBatch: (id: string, data?: any) => Promise<any>
+      sell: (data: any) => Promise<any>
+      getSales: (params?: any) => Promise<any>
+      getSummary: (params?: any) => Promise<any>
+    }
     stats: {
-      overview: () => Promise<any>
-      topDiagnoses: (limit?: number) => Promise<any>
-      visitTrend: (days?: number) => Promise<any>
-      monthlyTrend: (months?: number) => Promise<any>
+      overview: (period?: string) => Promise<any>
+      topDiagnoses: (limit?: number | { limit?: number }) => Promise<any>
+      visitTrend: (days?: number | { days?: number }) => Promise<any>
+      speciesBreakdown: () => Promise<any>
+      monthlyTrend: (months?: number | { months?: number }) => Promise<any>
     }
   }
   gym?: {

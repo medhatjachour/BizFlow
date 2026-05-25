@@ -8,6 +8,15 @@ export const warehouseManifest = {
   status: 'active' as const,
   routePrefix: '/warehouse',
   ipcPrefix: 'warehouse',
-  models: ['WarehouseLocation', 'WarehouseStock', 'StockTransfer', 'StockTransferItem'],
+  models: [
+    'WarehouseLocation',
+    'WarehouseStock',
+    'StockTransfer',
+    'StockTransferItem',
+    'WarehouseOrder',
+    'WarehouseOrderLine',
+    'WarehouseStockMovement',
+    'WarehouseAuditLog'
+  ],
   defaultEnabled: false
 }

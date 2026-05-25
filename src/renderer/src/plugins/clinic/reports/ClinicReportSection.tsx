@@ -11,10 +11,10 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import {
   Stethoscope, Users, CalendarClock, ClipboardList,
-  FileText, BarChart3, Activity, TrendingUp, Heart,
+  FileText, BarChart3, Activity, Heart,
 } from 'lucide-react'
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
 } from 'recharts'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
@@ -69,7 +69,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color }: { icon: any; label: 
 )
 
 const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
-  const { t } = useLanguage()
+  useLanguage()
   const { error: toastError, success } = useToast()
   const { compute } = useDashboardWorker()
 
@@ -92,7 +92,7 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
         clinic.stats.overview(),
         clinic.sessions.getRecent({ filter: 'today' }),
         clinic.appointments.getUpcoming(7),
-        clinic.patients.getAll({ limit: 200 }),
+        clinic.patients.getAll(),
       ])
 
       const overview      = overviewRes.status === 'fulfilled' ? overviewRes.value : null
@@ -143,17 +143,17 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
 
       const clinic = window.api.clinic
       if (reportType === 'sessions') {
-        const sessionsRes = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
+        const sessionsRes = await (clinic.sessions.getRecent as any)({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
         const sessions = toArray(sessionsRes)
         autoTable(doc, { startY: y, head: [['Metric', 'Value']], body: [['Total Sessions', sessions.length.toString()], ['Unique Patients', new Set(sessions.map((s: any) => s.patientId)).size.toString()]], theme: 'grid', headStyles: { fillColor: [13, 148, 136] }, styles: { fontSize: 9 }, margin: { left: 14, right: 14 } })
         y = (doc as any).lastAutoTable.finalY + 10
         autoTable(doc, { startY: y, head: [['Patient', 'Date', 'Diagnosis', 'Chief Complaint']], body: sessions.slice(0, 100).map((s: any) => [s.patient?.name || '-', new Date(s.visitDate).toLocaleDateString(), s.diagnosis || '-', s.chiefComplaint || '-']), theme: 'striped', headStyles: { fillColor: [13, 148, 136] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'patients') {
-        const ptsRes = await clinic.patients.getAll({ limit: 1000 })
+        const ptsRes = await clinic.patients.getAll()
         const pts = toArray(ptsRes)
         autoTable(doc, { startY: y, head: [['Name', 'Age', 'Gender', 'Phone', 'Registered']], body: pts.slice(0, 100).map((p: any) => [p.name || '-', toAge(p.dateOfBirth), p.gender || '-', p.phone || '-', new Date(p.createdAt).toLocaleDateString()]), theme: 'striped', headStyles: { fillColor: [99, 102, 241] }, styles: { fontSize: 8 }, margin: { left: 14, right: 14 } })
       } else if (reportType === 'prescriptions') {
-        const sessionsRes = await clinic.sessions.getRecent({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
+        const sessionsRes = await (clinic.sessions.getRecent as any)({ startDate: sDate.toISOString(), endDate: eDate.toISOString() })
         const sessions = toArray(sessionsRes)
         const rxList = sessions.flatMap((s: any) =>
           (s.prescriptions ?? []).map((rx: any) => ({ ...rx, patientName: s.patient?.name, sessionDate: s.visitDate }))

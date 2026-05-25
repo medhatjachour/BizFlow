@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   ShoppingBag, Plus, Trash2, Loader2, AlertTriangle,
   TrendingUp, Package, DollarSign, Calendar, Filter, X,
-  Search, ArrowLeft, Tag, Pencil, Check, ChevronDown
+  Search, ArrowLeft, Tag, Pencil, Check
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import Pagination from './Pagination'
@@ -91,6 +91,7 @@ const daysUntil = (d: string) =>
 
 export default function SalesTab() {
   const { t } = useLanguage()
+  const bakeryApi = window.api.bakery as any
 
   // ── Data ──
   const [recipes, setRecipes]               = useState<Recipe[]>([])
@@ -201,8 +202,8 @@ export default function SalesTab() {
 
       const [r, result, sum] = await Promise.all([
         window.api.bakery.getRecipes(),
-        window.api.bakery.getSales(opts),
-        window.api.bakery.getSalesSummary(
+        bakeryApi.getSales(opts),
+        bakeryApi.getSalesSummary(
           filterStart || filterEnd
             ? { startDate: filterStart || undefined, endDate: filterEnd || undefined }
             : {}
@@ -220,10 +221,10 @@ export default function SalesTab() {
 
   const loadSellableBatches = useCallback(async () => {
     try {
-      const batches = await window.api.bakery.getSellableBatches()
+      const batches = await bakeryApi.getSellableBatches()
       setSellableBatches(batches ?? [])
     } catch { /* silently fail */ }
-  }, [])
+  }, [bakeryApi])
 
   useEffect(() => { loadData() }, [loadData])
   useEffect(() => { loadSellableBatches() }, [loadSellableBatches])
@@ -278,7 +279,7 @@ export default function SalesTab() {
     setSubmitting(true)
     setError(null)
     try {
-      await window.api.bakery.createSale({
+      await bakeryApi.createSale({
         recipeId:  selectedBatch.recipe.id,
         batchId:   selectedBatch.id,
         itemName:  selectedBatch.recipe.name,
@@ -311,7 +312,7 @@ export default function SalesTab() {
     setCustomSubmitting(true)
     setError(null)
     try {
-      await window.api.bakery.createSale({
+      await bakeryApi.createSale({
         recipeId:  customRecipeId || undefined,
         itemName:  customItemName.trim(),
         quantity:  qty,
@@ -354,7 +355,7 @@ export default function SalesTab() {
     if (!confirm(t('bakerySaleDeleteConfirm'))) return
     setDeletingId(id)
     try {
-      await window.api.bakery.deleteSale(id)
+      await bakeryApi.deleteSale(id)
       await loadData()
     } catch (e: any) {
       setError(e.message ?? t('bakerySaleDeleteFailed'))

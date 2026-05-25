@@ -451,7 +451,7 @@ const ClinicFinanceSection: React.FC = () => {
                   <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold">{debtMeta.total}</span>
                 )}
               </div>
-              <button onClick={loadRevenue} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-600 transition-colors font-medium">
+              <button onClick={() => loadRevenue()} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-600 transition-colors font-medium">
                 <RefreshCcw size={12} className={loadingRevenue ? 'animate-spin' : ''} /> Refresh
               </button>
             </div>

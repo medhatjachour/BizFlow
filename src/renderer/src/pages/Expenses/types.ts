@@ -53,20 +53,3 @@ export interface PayrollEmployee {
   recordCount:   number
   hasPending:    boolean
 }
-  employeeId: string
-  name: string
-  role: string
-  department: string
-  baseSalary:    number
-  regularHours:  number
-  overtimeHours: number
-  overtimePay:   number
-  extraShifts:   number
-  extraShiftPay: number
-  bonuses:       number
-  deductions:    number
-  grossPay:      number
-  netPay:        number
-  recordCount:   number
-  hasPending:    boolean
-}

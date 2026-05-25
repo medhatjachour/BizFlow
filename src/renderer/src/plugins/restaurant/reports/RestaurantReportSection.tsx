@@ -11,7 +11,7 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import {
   UtensilsCrossed, Table2, CalendarClock, ShoppingBag,
-  FileText, BarChart3, Activity, DollarSign, Users, Clock,
+  FileText, BarChart3, Activity, DollarSign, Clock,
 } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
@@ -53,7 +53,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color }: { icon: any; label: 
 )
 
 const RestaurantReportSection: React.FC<Props> = ({ refreshSignal }) => {
-  const { t } = useLanguage()
+  useLanguage()
   const { error: toastError, success } = useToast()
   const { compute } = useDashboardWorker()
 
@@ -170,7 +170,6 @@ const RestaurantReportSection: React.FC<Props> = ({ refreshSignal }) => {
     label: HOUR_LABELS[i * 2],
     count: heatmap.hourCounts[i * 2] + (heatmap.hourCounts[i * 2 + 1] ?? 0)
   })) : []
-  const maxCount = Math.max(...hourChartData.map(d => d.count), 1)
   const peakBucketIdx = heatmap ? Math.floor(heatmap.peakHour / 2) : -1
 
   return (
