@@ -55,6 +55,14 @@ const reportOptions = [
   { id: 'prescriptions' as ReportType, label: 'Prescriptions Report', icon: Heart,          color: 'text-pink-600',   desc: 'Medications prescribed' },
 ]
 
+function getReportOptions(t: (k: string) => string) {
+  return [
+    { id: 'sessions'      as ReportType, label: t('sessionsReport'),      icon: ClipboardList, color: 'text-teal-600',   desc: t('sessionsReportDesc') },
+    { id: 'patients'      as ReportType, label: t('patientsReport'),      icon: Users,          color: 'text-indigo-600', desc: t('patientsReportDesc') },
+    { id: 'prescriptions' as ReportType, label: t('prescriptionsReport'), icon: Heart,          color: 'text-pink-600',   desc: t('prescriptionsReportDesc') },
+  ]
+}
+
 const DIAGNOSIS_COLORS = ['#0d9488', '#6366f1', '#f59e0b', '#e11d48', '#8b5cf6', '#06b6d4', '#22c55e', '#f97316']
 
 const StatCard = ({ icon: Icon, label, value, sub, color }: { icon: any; label: string; value: string | number; sub?: string; color: string }) => (
@@ -69,7 +77,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color }: { icon: any; label: 
 )
 
 const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
-  useLanguage()
+  const { t } = useLanguage()
   const { error: toastError, success } = useToast()
   const { compute } = useDashboardWorker()
 
@@ -132,7 +140,8 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
       const sDate = new Date(startDate)
       const eDate = new Date(endDate); eDate.setHours(23, 59, 59, 999)
       const dr = `${sDate.toLocaleDateString()} - ${eDate.toLocaleDateString()}`
-      const title = reportOptions.find(r => r.id === reportType)?.label ?? reportType
+      const reportOpts = getReportOptions(t)
+      const title = reportOpts.find(r => r.id === reportType)?.label ?? reportType
       const doc = new jsPDF()
       let y = 20
 
@@ -162,11 +171,12 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
       }
 
       const fname = `Clinic_${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
-      doc.save(fname); success(`Saved: ${fname}`)
-    } catch (err) { logger.error('ClinicReport: generate failed', err); toastError('Failed to generate report') }
+      doc.save(fname); success(`${t('savedReport')}: ${fname}`)
+    } catch (err) { logger.error('ClinicReport: generate failed', err); toastError(t('failedGenerateReport')) }
     finally { setGenerating(false) }
   }
 
+  const reportOpts = getReportOptions(t)
   const diagChartData = (diagnosisFreq?.ranked ?? []).slice(0, 8).map(d => ({ name: d.name.length > 14 ? d.name.slice(0, 12) + '…' : d.name, count: d.count }))
 
   return (
@@ -177,8 +187,8 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
           <Stethoscope size={22} className="text-teal-600 dark:text-teal-400" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Clinic Reports</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Sessions · Patients · Prescriptions</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('clinicReportsTitle')}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t('clinicReportsSubtitle')}</p>
         </div>
       </div>
 
@@ -187,12 +197,12 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
         <div className="flex items-center gap-3 mb-5">
           <div className="p-2 bg-teal-600 rounded-lg"><FileText size={17} className="text-white" /></div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Generate Report</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Select a report type and date range</p>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('generateReport')}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('selectReportDateRange')}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-          {reportOptions.map(r => {
+          {reportOpts.map(r => {
             const Icon = r.icon
             const active = reportType === r.id
             return (
@@ -208,18 +218,18 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
         {reportType && (
           <div className="flex flex-wrap items-end gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600">
             <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 Start Date</label>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 {t('reportStartDate')}</label>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
                 className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition-all text-sm" />
             </div>
             <div className="flex-1 min-w-[160px]">
-              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 End Date</label>
+              <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 {t('reportEndDate')}</label>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
                 className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition-all text-sm" />
             </div>
             <button onClick={handleGenerateReport} disabled={generating}
               className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2 font-semibold shadow-md transition-all">
-              <BarChart3 size={16} />{generating ? 'Generating…' : 'Generate PDF Report'}
+              <BarChart3 size={16} />{generating ? t('generatingReport') : t('generatePdfReport')}
             </button>
           </div>
         )}
@@ -229,9 +239,9 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
       <div className="bg-gradient-to-br from-teal-500/5 to-teal-500/10 dark:from-teal-500/10 dark:to-teal-500/5 p-6 rounded-xl border border-teal-200/50 dark:border-teal-700/30">
         <div className="flex items-center gap-2 mb-4">
           <Activity size={20} className="text-teal-600 dark:text-teal-400" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">Today's Clinic Activity</h3>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">{t('todaysClinicActivity')}</h3>
           <span className="px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full text-xs font-medium flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />Live
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />{t('liveIndicator')}
           </span>
         </div>
 
@@ -241,10 +251,10 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard icon={Users}       label="Total Patients"     value={data.patientCount}             sub="registered patients"                 color="bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400" />
-            <StatCard icon={Stethoscope} label="Sessions Today"     value={data.todaySessions.length}     sub={`${new Set(data.todaySessions.map((s: any) => s.patientId)).size} unique patients`} color="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" />
-            <StatCard icon={CalendarClock} label="Follow-ups Due"   value={data.followUps.length}         sub="within 7 days"                       color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
-            <StatCard icon={Heart}       label="Prescriptions"      value={data.todayPrescriptions.length} sub="issued today"                       color="bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400" />
+            <StatCard icon={Users}       label={t('totalPatientsLabel')}   value={data.patientCount}             sub={t('registeredPatientsNote')}                color="bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400" />
+            <StatCard icon={Stethoscope} label={t('sessionsTodayLabel')}   value={data.todaySessions.length}     sub={`${new Set(data.todaySessions.map((s: any) => s.patientId)).size} ${t('uniquePatientsNote')}`} color="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" />
+            <StatCard icon={CalendarClock} label={t('followUpsDueLabel')}  value={data.followUps.length}         sub={t('within7DaysNote')}                       color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+            <StatCard icon={Heart}       label={t('prescriptionsLabel')}    value={data.todayPrescriptions.length} sub={t('issuedTodayNote')}                      color="bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400" />
           </div>
         )}
 
@@ -254,7 +264,7 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
             {/* Diagnoses chart */}
             {diagChartData.length > 0 ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Today's Diagnosis Frequency</h4>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">{t('todaysDiagnosisFreq')}</h4>
                 <ResponsiveContainer width="100%" height={150}>
                   <BarChart data={diagChartData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
                     <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -266,13 +276,13 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
                   </BarChart>
                 </ResponsiveContainer>
                 {diagnosisFreq && (
-                  <p className="text-xs text-slate-400 mt-2">{diagnosisFreq.total} total diagnoses · {diagnosisFreq.unique} unique · Most common: <span className="font-semibold text-teal-600 dark:text-teal-400">{diagnosisFreq.ranked[0]?.name}</span></p>
+                  <p className="text-xs text-slate-400 mt-2">{diagnosisFreq.total} {t('totalDiagnosesNote')} · {diagnosisFreq.unique} {t('uniqueDiagnosesNote')} · {t('mostCommonNote')}: <span className="font-semibold text-teal-600 dark:text-teal-400">{diagnosisFreq.ranked[0]?.name}</span></p>
                 )}
               </div>
             ) : (
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 dark:text-slate-600 py-8">
                 <ClipboardList size={32} className="opacity-30 mb-2" />
-                <p className="text-sm">No diagnoses recorded today</p>
+                <p className="text-sm">{t('noDiagnosesToday')}</p>
               </div>
             )}
 
@@ -280,7 +290,7 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-2 mb-3">
                 <CalendarClock size={15} className="text-amber-600 dark:text-amber-400" />
-                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Upcoming Follow-ups (7 days)</h4>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('upcomingFollowUps7Days')}</h4>
               </div>
               {data.followUps.length > 0 ? (
                 <div className="space-y-2 max-h-40 overflow-y-auto">

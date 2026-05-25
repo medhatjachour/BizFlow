@@ -158,22 +158,39 @@ const EXPENSE_CATEGORIES = [
 ]
 
 const STARTER_MATERIALS = [
-  { name: 'Composite Resin A2', category: 'dental', unit: 'syringe', quantity: 42, minQuantity: 8, costPerUnit: 18.5, supplier: 'DentalHub', expiryInDays: 420, batchNumber: 'CR-A2-2026-01' },
-  { name: 'Composite Resin A3', category: 'dental', unit: 'syringe', quantity: 36, minQuantity: 8, costPerUnit: 18.5, supplier: 'DentalHub', expiryInDays: 390, batchNumber: 'CR-A3-2026-01' },
-  { name: 'Etching Gel 37%', category: 'consumable', unit: 'tube', quantity: 4, minQuantity: 6, costPerUnit: 9.2, supplier: 'MedSupply Co.', expiryInDays: 15, batchNumber: 'EG-37-2026-02' },
-  { name: 'Bonding Agent', category: 'dental', unit: 'bottle', quantity: 24, minQuantity: 5, costPerUnit: 24.0, supplier: 'DentalHub', expiryInDays: 300, batchNumber: 'BA-2026-04' },
-  { name: 'Local Anesthetic Carpule', category: 'medication', unit: 'box', quantity: 55, minQuantity: 12, costPerUnit: 12.0, supplier: 'Clinic Pharma', expiryInDays: -35, batchNumber: 'LA-CP-2026-03' },
-  { name: 'Irrigation Saline 500ml', category: 'consumable', unit: 'bottle', quantity: 40, minQuantity: 10, costPerUnit: 3.6, supplier: 'MedSupply Co.', expiryInDays: 540, batchNumber: 'SAL-500-2026-02' },
-  { name: 'Gauze Pads Sterile', category: 'consumable', unit: 'pack', quantity: 80, minQuantity: 20, costPerUnit: 2.1, supplier: 'SteriClean', expiryInDays: 720, batchNumber: 'GZ-2026-01' },
-  { name: 'Surgical Gloves Medium', category: 'consumable', unit: 'box', quantity: 70, minQuantity: 15, costPerUnit: 6.8, supplier: 'SteriClean', expiryInDays: 680, batchNumber: 'GL-M-2026-03' },
-  { name: 'N95 Masks', category: 'consumable', unit: 'box', quantity: 34, minQuantity: 10, costPerUnit: 11.3, supplier: 'SteriClean', expiryInDays: 640, batchNumber: 'N95-2026-02' },
-  { name: 'Suction Tips', category: 'consumable', unit: 'pack', quantity: 65, minQuantity: 12, costPerUnit: 4.2, supplier: 'DentalHub', expiryInDays: 900, batchNumber: 'ST-2026-05' },
-  { name: 'Cotton Rolls', category: 'consumable', unit: 'pack', quantity: 0, minQuantity: 15, costPerUnit: 2.8, supplier: 'DentalHub', expiryInDays: 860, batchNumber: 'CRL-2026-03' },
-  { name: 'Endodontic Files Set', category: 'device', unit: 'set', quantity: 18, minQuantity: 4, costPerUnit: 22.0, supplier: 'TechDent', expiryInDays: null, batchNumber: 'ENDO-SET-2026-01' },
-  { name: 'Temporary Filling Material', category: 'dental', unit: 'jar', quantity: 20, minQuantity: 5, costPerUnit: 13.5, supplier: 'DentalHub', expiryInDays: 330, batchNumber: 'TFM-2026-02' },
-  { name: 'Dental Cement', category: 'dental', unit: 'box', quantity: 28, minQuantity: 6, costPerUnit: 16.2, supplier: 'DentalHub', expiryInDays: 420, batchNumber: 'DC-2026-04' },
-  { name: 'Sutures 3-0', category: 'surgical', unit: 'box', quantity: 25, minQuantity: 6, costPerUnit: 14.4, supplier: 'MedSupply Co.', expiryInDays: 520, batchNumber: 'SUT-30-2026-01' },
-  { name: 'Hemostatic Sponge', category: 'surgical', unit: 'pack', quantity: 22, minQuantity: 5, costPerUnit: 8.7, supplier: 'MedSupply Co.', expiryInDays: 450, batchNumber: 'HS-2026-03', isActive: false },
+  // ── Dental ───────────────────────────────────────────────────────────────
+  { name: 'Composite Resin A2',          category: 'Dental',      unit: 'syringe', quantity: 42,  minQuantity: 8,  costPerUnit: 18.5,  supplier: 'DentalHub',       expiryInDays: 420,  batchNumber: 'CR-A2-2026-01' },
+  { name: 'Composite Resin A3',          category: 'Dental',      unit: 'syringe', quantity: 36,  minQuantity: 8,  costPerUnit: 18.5,  supplier: 'DentalHub',       expiryInDays: 390,  batchNumber: 'CR-A3-2026-01' },
+  { name: 'Bonding Agent',               category: 'Dental',      unit: 'bottle',  quantity: 24,  minQuantity: 5,  costPerUnit: 24.0,  supplier: 'DentalHub',       expiryInDays: 300,  batchNumber: 'BA-2026-04'    },
+  { name: 'Temporary Filling Material',  category: 'Dental',      unit: 'jar',     quantity: 20,  minQuantity: 5,  costPerUnit: 13.5,  supplier: 'DentalHub',       expiryInDays: 330,  batchNumber: 'TFM-2026-02'   },
+  { name: 'Dental Cement',               category: 'Dental',      unit: 'box',     quantity: 28,  minQuantity: 6,  costPerUnit: 16.2,  supplier: 'DentalHub',       expiryInDays: 420,  batchNumber: 'DC-2026-04'    },
+  { name: 'Zinc Oxide Eugenol',          category: 'Dental',      unit: 'kit',     quantity: 12,  minQuantity: 4,  costPerUnit: 11.0,  supplier: 'DentalHub',       expiryInDays: 360,  batchNumber: 'ZOE-2026-01'   },
+  { name: 'Alginate Impression Material',category: 'Dental',      unit: 'bag',     quantity: 18,  minQuantity: 4,  costPerUnit: 9.0,   supplier: 'TechDent',        expiryInDays: 180,  batchNumber: 'ALG-2026-02'   },
+  // ── Consumable ───────────────────────────────────────────────────────────
+  { name: 'Etching Gel 37%',             category: 'Consumable',  unit: 'tube',    quantity: 4,   minQuantity: 6,  costPerUnit: 9.2,   supplier: 'MedSupply Co.',   expiryInDays: 15,   batchNumber: 'EG-37-2026-02' },
+  { name: 'Irrigation Saline 500ml',     category: 'Consumable',  unit: 'bottle',  quantity: 40,  minQuantity: 10, costPerUnit: 3.6,   supplier: 'MedSupply Co.',   expiryInDays: 540,  batchNumber: 'SAL-500-2026-02'},
+  { name: 'Gauze Pads Sterile',          category: 'Consumable',  unit: 'pack',    quantity: 80,  minQuantity: 20, costPerUnit: 2.1,   supplier: 'SteriClean',      expiryInDays: 720,  batchNumber: 'GZ-2026-01'    },
+  { name: 'Surgical Gloves Medium',      category: 'Consumable',  unit: 'box',     quantity: 70,  minQuantity: 15, costPerUnit: 6.8,   supplier: 'SteriClean',      expiryInDays: 680,  batchNumber: 'GL-M-2026-03'  },
+  { name: 'N95 Masks',                   category: 'Consumable',  unit: 'box',     quantity: 34,  minQuantity: 10, costPerUnit: 11.3,  supplier: 'SteriClean',      expiryInDays: 640,  batchNumber: 'N95-2026-02'   },
+  { name: 'Suction Tips',                category: 'Consumable',  unit: 'pack',    quantity: 65,  minQuantity: 12, costPerUnit: 4.2,   supplier: 'DentalHub',       expiryInDays: 900,  batchNumber: 'ST-2026-05'    },
+  { name: 'Cotton Rolls',                category: 'Consumable',  unit: 'pack',    quantity: 0,   minQuantity: 15, costPerUnit: 2.8,   supplier: 'DentalHub',       expiryInDays: 860,  batchNumber: 'CRL-2026-03'   },
+  { name: 'Disposable Saliva Ejectors',  category: 'Consumable',  unit: 'pack',    quantity: 50,  minQuantity: 12, costPerUnit: 3.0,   supplier: 'SteriClean',      expiryInDays: 800,  batchNumber: 'DSE-2026-01'   },
+  { name: 'Paper Points #30',            category: 'Consumable',  unit: 'box',     quantity: 8,   minQuantity: 6,  costPerUnit: 5.5,   supplier: 'TechDent',        expiryInDays: 700,  batchNumber: 'PP30-2026-03'  },
+  // ── Surgical ─────────────────────────────────────────────────────────────
+  { name: 'Sutures 3-0',                 category: 'Surgical',    unit: 'box',     quantity: 25,  minQuantity: 6,  costPerUnit: 14.4,  supplier: 'MedSupply Co.',   expiryInDays: 520,  batchNumber: 'SUT-30-2026-01'},
+  { name: 'Hemostatic Sponge',           category: 'Surgical',    unit: 'pack',    quantity: 22,  minQuantity: 5,  costPerUnit: 8.7,   supplier: 'MedSupply Co.',   expiryInDays: 450,  batchNumber: 'HS-2026-03', isActive: false },
+  { name: 'Surgical Blades #15',         category: 'Surgical',    unit: 'box',     quantity: 3,   minQuantity: 5,  costPerUnit: 7.0,   supplier: 'MedSupply Co.',   expiryInDays: 600,  batchNumber: 'SB15-2026-02'  },
+  // ── Device / Instrument ──────────────────────────────────────────────────
+  { name: 'Endodontic Files Set',        category: 'Device',      unit: 'set',     quantity: 18,  minQuantity: 4,  costPerUnit: 22.0,  supplier: 'TechDent',        expiryInDays: null, batchNumber: 'ENDO-SET-2026-01'},
+  { name: 'Impression Tray Set',         category: 'Device',      unit: 'set',     quantity: 6,   minQuantity: 2,  costPerUnit: 35.0,  supplier: 'TechDent',        expiryInDays: null, batchNumber: 'ITS-2026-01'   },
+  // ── Medication ───────────────────────────────────────────────────────────
+  { name: 'Local Anesthetic Carpule',    category: 'Medication',  unit: 'box',     quantity: 55,  minQuantity: 12, costPerUnit: 12.0,  supplier: 'Clinic Pharma',   expiryInDays: -35,  batchNumber: 'LA-CP-2026-03' },
+  { name: 'Ibuprofen 400mg (sample)',    category: 'Medication',  unit: 'strip',   quantity: 30,  minQuantity: 10, costPerUnit: 1.5,   supplier: 'Clinic Pharma',   expiryInDays: 365,  batchNumber: 'IBU-400-2026-01'},
+  { name: 'Chlorhexidine Mouthwash',     category: 'Medication',  unit: 'bottle',  quantity: 20,  minQuantity: 6,  costPerUnit: 4.8,   supplier: 'Clinic Pharma',   expiryInDays: 290,  batchNumber: 'CHX-2026-04'   },
+  { name: 'Topical Fluoride Gel',        category: 'Medication',  unit: 'tube',    quantity: 15,  minQuantity: 4,  costPerUnit: 6.5,   supplier: 'Clinic Pharma',   expiryInDays: 25,   batchNumber: 'FLU-2026-02'   },
+  // ── Laboratory ───────────────────────────────────────────────────────────
+  { name: 'Plaster of Paris (dental)',   category: 'Laboratory',  unit: 'kg',      quantity: 5,   minQuantity: 2,  costPerUnit: 8.0,   supplier: 'DentalLab Pro',   expiryInDays: 365,  batchNumber: 'POP-2026-01'   },
+  { name: 'Dental Wax Blocks',           category: 'Laboratory',  unit: 'box',     quantity: 10,  minQuantity: 3,  costPerUnit: 12.0,  supplier: 'DentalLab Pro',   expiryInDays: null, batchNumber: 'DWX-2026-01'   },
 ]
 
 const PAYMENT_METHODS = ['cash', 'card', 'insurance', 'other'] as const

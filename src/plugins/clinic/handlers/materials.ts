@@ -1,5 +1,27 @@
 import { ipcMain } from 'electron'
 
+// ─── Period helpers ────────────────────────────────────────────────────────────
+function matGetPeriodRange(period: string): { start: Date; end: Date } {
+  const now = new Date()
+  const start = new Date(now)
+  switch (period) {
+    case 'today':
+      start.setHours(0, 0, 0, 0); break
+    case 'week': {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1
+      start.setDate(now.getDate() - dow); start.setHours(0, 0, 0, 0); break
+    }
+    case 'month':
+      start.setDate(1); start.setHours(0, 0, 0, 0); break
+    case 'year':
+      start.setMonth(0, 1); start.setHours(0, 0, 0, 0); break
+    default:
+      start.setDate(1); start.setHours(0, 0, 0, 0)
+  }
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  return { start, end }
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 /** Sync material.expiryDate to the nearest active-batch expiry. */
 async function syncMaterialExpiry(tx: any, materialId: string) {
@@ -387,5 +409,60 @@ export function registerMaterialHandlers(prisma: any) {
     ])
 
     return { total, lowStock, expired, expiringSoon }
+  })
+
+  // ─── Material Finance Summary ─────────────────────────────────────────────
+  ipcMain.handle('clinic:materials:financeSummary', async (_e, period = 'month') => {
+    const now = new Date()
+    const soon = new Date()
+    soon.setDate(now.getDate() + 30)
+    const { start, end } = matGetPeriodRange(period)
+
+    const MATERIAL_EXPENSE_CATS = ['material_loss', 'material_expiry', 'medical_supplies', 'medications']
+
+    const [activeMaterials, expenseRows] = await Promise.all([
+      prisma.clinicMaterial.findMany({
+        where: { isActive: true },
+        select: { name: true, quantity: true, costPerUnit: true, minQuantity: true, expiryDate: true, category: true, unit: true },
+      }),
+      prisma.clinicExpense.findMany({
+        where: { date: { gte: start, lt: end }, category: { in: MATERIAL_EXPENSE_CATS } },
+        select: { category: true, amount: true },
+      }),
+    ])
+
+    // Inventory stats
+    const inventoryValue = activeMaterials.reduce((s: number, m: any) => s + m.costPerUnit * m.quantity, 0)
+    const totalMaterials = activeMaterials.length
+    const lowStockCount = activeMaterials.filter((m: any) => m.minQuantity > 0 && m.quantity <= m.minQuantity).length
+    const expiredCount = activeMaterials.filter((m: any) => m.expiryDate && new Date(m.expiryDate) < now).length
+    const expiringSoonCount = activeMaterials.filter((m: any) => m.expiryDate && new Date(m.expiryDate) >= now && new Date(m.expiryDate) <= soon).length
+
+    // Top 8 materials by stock value
+    const topMaterials = (activeMaterials as any[])
+      .map((m: any) => ({ name: m.name, value: m.costPerUnit * m.quantity, quantity: m.quantity, unit: m.unit ?? '', category: m.category ?? '' }))
+      .sort((a: any, b: any) => b.value - a.value)
+      .slice(0, 8)
+
+    // Period expense breakdown
+    const lossAmount = expenseRows.filter((e: any) => e.category === 'material_loss').reduce((s: number, e: any) => s + e.amount, 0)
+    const expiryAmount = expenseRows.filter((e: any) => e.category === 'material_expiry').reduce((s: number, e: any) => s + e.amount, 0)
+    const suppliesSpend = expenseRows
+      .filter((e: any) => e.category === 'medical_supplies' || e.category === 'medications')
+      .reduce((s: number, e: any) => s + e.amount, 0)
+    const totalMaterialExpenses = lossAmount + expiryAmount + suppliesSpend
+
+    return {
+      inventoryValue,
+      totalMaterials,
+      lowStockCount,
+      expiredCount,
+      expiringSoonCount,
+      lossAmount,
+      expiryAmount,
+      suppliesSpend,
+      totalMaterialExpenses,
+      topMaterials,
+    }
   })
 }

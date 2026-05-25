@@ -205,5 +205,7 @@ export const clinicPreload = {
       ipcRenderer.invoke('clinic:materials:setSessionMaterials', { sessionId, items }),
     stats: () =>
       ipcRenderer.invoke('clinic:materials:stats'),
+    financeSummary: (period?: string) =>
+      ipcRenderer.invoke('clinic:materials:financeSummary', period),
   }
 }

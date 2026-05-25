@@ -14,33 +14,53 @@ import {
   TrendingUp, TrendingDown, AlertCircle, Receipt, Users,
   Loader2, RefreshCcw, Stethoscope, BarChart3,
   CheckCircle2, Banknote, ArrowUpRight, Search, X,
+  Package2, Clock,
 } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
   CartesianGrid, ComposedChart,
 } from 'recharts'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import logger from '@/shared/utils/logger'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 type Period  = 'today' | 'week' | 'month' | 'year'
-type MainTab = 'overview' | 'revenue'
+type MainTab = 'overview' | 'revenue' | 'materials'
 
-const EXPENSE_CATEGORIES = [
-  { value: 'rent',             label: 'Rent / Lease',    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  { value: 'utilities',        label: 'Utilities',        badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
-  { value: 'medical_supplies', label: 'Medical Supplies', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  { value: 'medications',      label: 'Medications',      badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
-  { value: 'equipment',        label: 'Equipment',        badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-  { value: 'maintenance',      label: 'Maintenance',      badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  { value: 'lab_fees',         label: 'Lab Fees',         badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' },
-  { value: 'insurance',        label: 'Insurance',        badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  { value: 'marketing',        label: 'Marketing',        badge: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
-  { value: 'cleaning',         label: 'Cleaning',         badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
-  { value: 'salaries',         label: 'Salaries',         badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
-  { value: 'other',            label: 'Other',            badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' },
-]
+interface MatFinanceSummary {
+  inventoryValue: number
+  totalMaterials: number
+  lowStockCount: number
+  expiredCount: number
+  expiringSoonCount: number
+  lossAmount: number
+  expiryAmount: number
+  suppliesSpend: number
+  totalMaterialExpenses: number
+  topMaterials: Array<{ name: string; value: number; quantity: number; unit: string; category: string }>
+}
+type TFn = (key: string) => string
+
+function getExpenseCategories(t: TFn) {
+  return [
+    { value: 'rent',             label: t('catRent'),            badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+    { value: 'utilities',        label: t('catUtilities'),       badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+    { value: 'medical_supplies', label: t('catMedicalSupplies'), badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+    { value: 'medications',      label: t('catMedications'),     badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
+    { value: 'equipment',        label: t('catEquipment'),       badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+    { value: 'maintenance',      label: t('catMaintenance'),     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    { value: 'lab_fees',         label: t('catLabFees'),         badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400' },
+    { value: 'insurance',        label: t('catInsurance'),       badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    { value: 'marketing',        label: t('catMarketing'),       badge: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' },
+    { value: 'cleaning',         label: t('catCleaning'),        badge: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
+    { value: 'salaries',         label: t('catSalaries'),        badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+    { value: 'material_loss',    label: t('catMaterialLoss'),    badge: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' },
+    { value: 'material_expiry',  label: t('catMaterialExpiry'),  badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+    { value: 'other',            label: t('catOther'),           badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400' },
+  ]
+}
 
 const DEBT_PAGE_SIZE = 80
 
@@ -49,8 +69,8 @@ const DEBT_PAGE_SIZE = 80
 function fmt(n: number) {
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
-function getCat(val: string) {
-  return EXPENSE_CATEGORIES.find(c => c.value === val) ?? { label: val, badge: 'bg-slate-100 text-slate-600' }
+function getCat(val: string, t: TFn) {
+  return getExpenseCategories(t).find(c => c.value === val) ?? { label: val, badge: 'bg-slate-100 text-slate-600' }
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -102,6 +122,7 @@ function KpiCard({ label, value, icon: Icon, colorClass, bgClass, sub }: {
 // ─── Main component ───────────────────────────────────────────────────────────
 const ClinicFinanceSection: React.FC = () => {
   const { showToast } = useToast()
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState<MainTab>('overview')
   const [period, setPeriod]       = useState<Period>('month')
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -121,6 +142,10 @@ const ClinicFinanceSection: React.FC = () => {
   const [loadingRevenue, setLoadingRevenue] = useState(false)
   const [loadingMoreDebt, setLoadingMoreDebt] = useState(false)
 
+  // ── materials state ───────────────────────────────────────────────────────
+  const [matFinance, setMatFinance] = useState<MatFinanceSummary | null>(null)
+  const [loadingMat, setLoadingMat] = useState(false)
+
   // ── loaders ───────────────────────────────────────────────────────────────
   const loadExpenses = useCallback(async () => {
     setLoadingExp(true)
@@ -134,7 +159,7 @@ const ClinicFinanceSection: React.FC = () => {
       setBreakdown(brk)
     } catch (e) {
       logger.error('ClinicFinance: loadExpenses failed', e)
-      showToast('error', 'Failed to load financial data')
+      showToast('error', t('failedLoadFinancial'))
     } finally {
       setLoadingExp(false)
     }
@@ -176,11 +201,11 @@ const ClinicFinanceSection: React.FC = () => {
     } catch (e) {
       logger.error('ClinicFinance: loadRevenue failed', e)
       if (!append) {
-        showToast('error', 'Failed to load outstanding balances')
+        showToast('error', t('failedLoadOutstanding'))
         setDebtPatients([])
         setDebtMeta({ total: 0, totalOutstanding: 0, hasMore: false })
       } else {
-        showToast('error', 'Failed to load more debtors')
+        showToast('error', t('failedLoadMoreDebtors'))
       }
     }
     finally {
@@ -197,23 +222,41 @@ const ClinicFinanceSection: React.FC = () => {
     }
   }, [debtSearchInput])
 
+  const loadMaterials = useCallback(async () => {
+    setLoadingMat(true)
+    try {
+      const data = await (window.api.clinic.materials as any).financeSummary(period)
+      setMatFinance(data)
+    } catch (e) {
+      logger.error('ClinicFinance: loadMaterials failed', e)
+      showToast('error', t('failedLoadMaterials'))
+    } finally {
+      setLoadingMat(false)
+    }
+  }, [period, showToast, t])
+
   useEffect(() => { loadExpenses() }, [loadExpenses])
   useEffect(() => {
     if (activeTab !== 'revenue') return
     loadRevenue({ append: false, skip: 0 })
   }, [activeTab, period, debtSearch, loadRevenue])
+  useEffect(() => {
+    if (activeTab !== 'materials') return
+    loadMaterials()
+  }, [activeTab, period, loadMaterials])
 
 
   const TAB_DEFS: { key: MainTab; icon: any; label: string }[] = [
-    { key: 'overview', icon: BarChart3, label: 'Overview' },
-    { key: 'revenue',  icon: Banknote,  label: 'Revenue'  },
+    { key: 'overview',   icon: BarChart3, label: t('tabOverview')   },
+    { key: 'revenue',    icon: Banknote,  label: t('tabRevenue')    },
+    { key: 'materials',  icon: Package2,  label: t('tabMaterials')  },
   ]
 
   const PERIOD_DEFS: { key: Period; label: string }[] = [
-    { key: 'today', label: 'Today' },
-    { key: 'week',  label: 'Week'  },
-    { key: 'month', label: 'Month' },
-    { key: 'year',  label: 'Year'  },
+    { key: 'today', label: t('periodToday') },
+    { key: 'week',  label: t('periodWeek')  },
+    { key: 'month', label: t('periodMonth') },
+    { key: 'year',  label: t('periodYear')  },
   ]
 
 
@@ -227,8 +270,8 @@ const ClinicFinanceSection: React.FC = () => {
             <Stethoscope size={20} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Clinic Finance</h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Track expenses, payroll, and revenue in one place</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t('clinicFinanceTitle')}</h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500">{t('clinicFinanceSubtitle')}</p>
           </div>
         </div>
 
@@ -246,9 +289,9 @@ const ClinicFinanceSection: React.FC = () => {
             ))}
           </div>
           <button
-            onClick={() => { loadExpenses(); if (activeTab === 'revenue') loadRevenue() }}
+            onClick={() => { loadExpenses(); if (activeTab === 'revenue') loadRevenue(); if (activeTab === 'materials') loadMaterials() }}
             className="p-2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
-            title="Refresh"
+            title={t('refreshLabel')}
           >
             <RefreshCcw size={14} className={loadingExp ? 'animate-spin' : ''} />
           </button>
@@ -282,10 +325,10 @@ const ClinicFinanceSection: React.FC = () => {
             <div className={`rounded-2xl p-6 ${summary.netIncome >= 0 ? 'bg-gradient-to-r from-teal-500 to-cyan-600' : 'bg-gradient-to-r from-red-500 to-rose-600'} shadow-lg shadow-teal-500/20 text-white`}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-semibold opacity-80 mb-1">Net Income · {PERIOD_DEFS.find(p => p.key === period)?.label}</p>
+                  <p className="text-sm font-semibold opacity-80 mb-1">{t('netIncomeLabel')} · {PERIOD_DEFS.find(p => p.key === period)?.label}</p>
                   <p className="text-4xl font-black tabular-nums tracking-tight">{summary.netIncome < 0 ? '−' : '+'}{fmt(Math.abs(summary.netIncome))}</p>
                   <p className="text-sm opacity-70 mt-1.5">
-                    {summary.netIncome >= 0 ? 'Profitable period' : 'Expenses exceed revenue'} · {fmt(summary.revenue)} collected
+                    {summary.netIncome >= 0 ? t('profitablePeriod') : t('expensesExceedRevenue')} · {fmt(summary.revenue)} {t('collectedLabel')}
                   </p>
                 </div>
                 <div className={`p-3 rounded-2xl ${summary.netIncome >= 0 ? 'bg-white/20' : 'bg-white/20'}`}>
@@ -298,15 +341,15 @@ const ClinicFinanceSection: React.FC = () => {
               {/* mini glanceable stats */}
               <div className="grid grid-cols-3 gap-4 mt-5 pt-4 border-t border-white/20">
                 <div>
-                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">Revenue</p>
+                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">{t('revenueLabel')}</p>
                   <p className="text-base font-black tabular-nums">{fmt(summary.revenue)}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">Expenses</p>
+                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">{t('expensesLabel')}</p>
                   <p className="text-base font-black tabular-nums">{fmt(summary.totalExpenses)}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">Outstanding</p>
+                  <p className="text-[11px] opacity-60 uppercase tracking-wide mb-0.5">{t('outstandingLabel')}</p>
                   <p className="text-base font-black tabular-nums">{fmt(summary.outstanding)}</p>
                 </div>
               </div>
@@ -316,29 +359,29 @@ const ClinicFinanceSection: React.FC = () => {
           {/* Secondary KPI row */}
           {!loadingExp && summary && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <KpiCard label="Payroll Cost"   value={fmt(summary.totalSalaries ?? 0)} icon={Users}       colorClass="text-violet-600 dark:text-violet-400" bgClass="bg-violet-50 dark:bg-violet-900/10"    sub="staff salaries" />
-              <KpiCard label="Total Expenses" value={fmt(summary.totalExpenses)}      icon={TrendingDown} colorClass="text-red-500 dark:text-red-400"         bgClass="bg-red-50 dark:bg-red-900/10"          sub="incl. payroll" />
-              <KpiCard label="Collection Rate"
+              <KpiCard label={t('kpiPayrollCost')}   value={fmt(summary.totalSalaries ?? 0)} icon={Users}       colorClass="text-violet-600 dark:text-violet-400" bgClass="bg-violet-50 dark:bg-violet-900/10"    sub={t('kpiStaffSalaries')} />
+              <KpiCard label={t('kpiTotalExpenses')} value={fmt(summary.totalExpenses)}      icon={TrendingDown} colorClass="text-red-500 dark:text-red-400"         bgClass="bg-red-50 dark:bg-red-900/10"          sub={t('kpiInclPayroll')} />
+              <KpiCard label={t('kpiCollectionRate')}
                 value={summary.revenue + summary.outstanding > 0 ? `${Math.round((summary.revenue / (summary.revenue + summary.outstanding)) * 100)}%` : '–'}
                 icon={TrendingUp}
                 colorClass={(summary.revenue / Math.max(1, summary.revenue + summary.outstanding)) >= 0.8 ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}
                 bgClass={(summary.revenue / Math.max(1, summary.revenue + summary.outstanding)) >= 0.8 ? 'bg-teal-50 dark:bg-teal-900/10' : 'bg-amber-50 dark:bg-amber-900/10'}
-                sub="billed vs collected"
+                sub={t('kpiBilledVsCollected')}
               />
-              <KpiCard label="Uncollected"    value={fmt(summary.outstanding)}        icon={AlertCircle}  colorClass="text-amber-600 dark:text-amber-400"     bgClass="bg-amber-50 dark:bg-amber-900/10"      sub="pending payment" />
+              <KpiCard label={t('kpiUncollected')}    value={fmt(summary.outstanding)}        icon={AlertCircle}  colorClass="text-amber-600 dark:text-amber-400"     bgClass="bg-amber-50 dark:bg-amber-900/10"      sub={t('kpiPendingPayment')} />
             </div>
           )}
 
           {/* Spend over time */}
           {breakdown.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Spend Over Time</p>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">{t('spendOverTime')}</p>
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={breakdown} margin={{ top: 0, right: 8, left: -8, bottom: 0 }} barSize={period === 'year' ? 30 : 18}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={50} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v: any) => [fmt(v), 'Expenses']} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v: any) => [fmt(v), t('expensesLabel')]} />
                   <Bar dataKey="total" radius={[6, 6, 0, 0]} fill="#14b8a6" />
                 </BarChart>
               </ResponsiveContainer>
@@ -348,12 +391,12 @@ const ClinicFinanceSection: React.FC = () => {
           {/* Expenses by category */}
           {summary && summary.byCategory.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Expenses by Category</p>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">{t('expensesByCategory')}</p>
               <div className="space-y-2.5">
                 {summary.byCategory.slice(0, 7).map(({ category, total }) => {
                   const cfg = category === 'salaries_payroll'
-                    ? { label: 'Payroll', badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' }
-                    : getCat(category)
+                    ? { label: t('payrollCategory'), badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' }
+                    : getCat(category, t)
                   const pct = Math.max(4, (total / summary.totalExpenses) * 100)
                   return (
                     <div key={category} className="flex items-center gap-3">
@@ -381,7 +424,7 @@ const ClinicFinanceSection: React.FC = () => {
           {summary ? (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <KpiCard
-                label="Total Billed"
+                label={t('kpiTotalBilled')}
                 value={fmt(summary.revenue + summary.outstanding)}
                 icon={Receipt}
                 colorClass="text-slate-700 dark:text-slate-200"
@@ -389,23 +432,23 @@ const ClinicFinanceSection: React.FC = () => {
                 sub={PERIOD_DEFS.find(p => p.key === period)?.label}
               />
               <KpiCard
-                label="Collected"
+                label={t('kpiCollected')}
                 value={fmt(summary.revenue)}
                 icon={CheckCircle2}
                 colorClass="text-emerald-600 dark:text-emerald-400"
                 bgClass="bg-emerald-50 dark:bg-emerald-900/10"
-                sub="cash in hand"
+                sub={t('kpiCashInHand')}
               />
               <KpiCard
-                label="Outstanding"
+                label={t('outstandingLabel')}
                 value={fmt(summary.outstanding)}
                 icon={AlertCircle}
                 colorClass="text-red-500 dark:text-red-400"
                 bgClass="bg-red-50 dark:bg-red-900/10"
-                sub="awaiting payment"
+                sub={t('kpiAwaitingPayment')}
               />
               <KpiCard
-                label="Collection Rate"
+                label={t('kpiCollectionRate')}
                 value={summary.revenue + summary.outstanding > 0
                   ? `${Math.round((summary.revenue / (summary.revenue + summary.outstanding)) * 100)}%`
                   : '–'}
@@ -416,7 +459,7 @@ const ClinicFinanceSection: React.FC = () => {
                 bgClass={(summary.revenue / Math.max(1, summary.revenue + summary.outstanding)) >= 0.8
                   ? 'bg-teal-50 dark:bg-teal-900/10'
                   : 'bg-amber-50 dark:bg-amber-900/10'}
-                sub="billed vs collected"
+                sub={t('kpiBilledVsCollected')}
               />
             </div>
           ) : (
@@ -428,13 +471,13 @@ const ClinicFinanceSection: React.FC = () => {
           {/* Expenses chart */}
           {revBreakdown.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">Expense Spending Over Period</p>
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4">{t('expenseSpendingOverPeriod')}</p>
               <ResponsiveContainer width="100%" height={160}>
                 <ComposedChart data={revBreakdown} margin={{ top: 0, right: 8, left: -8, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.12)" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={50} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v: any) => [fmt(v), 'Expenses']} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', fontSize: 12 }} formatter={(v: any) => [fmt(v), t('expensesLabel')]} />
                   <Bar dataKey="expenses" fill="#f87171" opacity={0.8} radius={[5, 5, 0, 0]} barSize={18} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -446,13 +489,13 @@ const ClinicFinanceSection: React.FC = () => {
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-700/60">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Outstanding Balances</span>
+                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{t('outstandingBalances')}</span>
                 {debtMeta.total > 0 && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold">{debtMeta.total}</span>
                 )}
               </div>
               <button onClick={() => loadRevenue()} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-600 transition-colors font-medium">
-                <RefreshCcw size={12} className={loadingRevenue ? 'animate-spin' : ''} /> Refresh
+                <RefreshCcw size={12} className={loadingRevenue ? 'animate-spin' : ''} /> {t('refreshLabel')}
               </button>
             </div>
 
@@ -462,7 +505,7 @@ const ClinicFinanceSection: React.FC = () => {
                 <input
                   value={debtSearchInput}
                   onChange={(e) => setDebtSearchInput(e.target.value)}
-                  placeholder="Search debtor by name, phone, national ID, folder #"
+                  placeholder={t('searchDebtorPlaceholder')}
                   className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 pl-8 pr-8 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
                 {debtSearchInput && (
@@ -486,15 +529,15 @@ const ClinicFinanceSection: React.FC = () => {
                 <div className="h-12 w-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-3">
                   <CheckCircle2 className="h-6 w-6 text-emerald-500 opacity-70" />
                 </div>
-                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">All patients are fully paid</p>
-                <p className="text-xs text-slate-400 mt-0.5">No outstanding balances</p>
+                <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{t('allPatientsPaid')}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{t('noOutstandingBalances')}</p>
               </div>
             ) : (
               <>
                 {/* Totals banner */}
                 <div className="flex items-center justify-between px-5 py-2.5 bg-red-50/70 dark:bg-red-900/10 border-b border-red-100 dark:border-red-900/20">
                   <span className="text-xs font-semibold text-red-600 dark:text-red-400">
-                    {debtMeta.total} patient{debtMeta.total !== 1 ? 's' : ''} owe a total of
+                    {debtMeta.total} {t('patientsOweTotal')}
                   </span>
                   <span className="text-sm font-black text-red-600 dark:text-red-400 tabular-nums">
                     {fmt(debtMeta.totalOutstanding)}
@@ -502,12 +545,12 @@ const ClinicFinanceSection: React.FC = () => {
                 </div>
                 {debtSearch && (
                   <div className="px-5 py-2 text-[11px] text-slate-500 border-b border-slate-100 dark:border-slate-700/40">
-                    Search results for <span className="font-semibold">"{debtSearch}"</span>
+                    {t('searchResultsFor')} <span className="font-semibold">"{debtSearch}"</span>
                   </div>
                 )}
                 {debtMeta.hasMore && !debtSearch && (
                   <div className="px-5 py-2 text-[11px] text-slate-400 border-b border-slate-100 dark:border-slate-700/40">
-                    Showing top {debtPatients.length} debtors by outstanding amount.
+                    {t('showingTopDebtors')} {debtPatients.length} {t('debtorsByAmount')}
                   </div>
                 )}
                 <div className="divide-y divide-slate-100 dark:divide-slate-700/40">
@@ -532,8 +575,8 @@ const ClinicFinanceSection: React.FC = () => {
                             </div>
                             <span className="text-[11px] text-slate-400 flex-shrink-0">{rate}%</span>
                             <span className="text-[11px] text-slate-400 hidden sm:block">
-                              Billed <strong className="text-slate-600 dark:text-slate-300">{fmt(fin.totalCharged)}</strong>
-                              {' · '}Paid <strong className="text-emerald-600 dark:text-emerald-400">{fmt(fin.totalPaid)}</strong>
+                              {t('billedLabel')} <strong className="text-slate-600 dark:text-slate-300">{fmt(fin.totalCharged)}</strong>
+                              {' · '}{t('paidLabel')} <strong className="text-emerald-600 dark:text-emerald-400">{fmt(fin.totalPaid)}</strong>
                             </span>
                           </div>
                         </div>
@@ -544,7 +587,7 @@ const ClinicFinanceSection: React.FC = () => {
                             onClick={(e) => { e.preventDefault(); window.location.hash = `/clinic/patients/${p.id}` }}
                             className="opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:underline transition-opacity flex-shrink-0"
                           >
-                            View <ArrowUpRight className="h-3 w-3" />
+                            {t('viewPatientLink')} <ArrowUpRight className="h-3 w-3" />
                           </a>
                         </div>
                       </div>
@@ -559,13 +602,205 @@ const ClinicFinanceSection: React.FC = () => {
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 disabled:opacity-60"
                     >
                       {loadingMoreDebt ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                      {loadingMoreDebt ? 'Loading more...' : `Load more (${debtMeta.total - debtPatients.length} remaining)`}
+                      {loadingMoreDebt ? t('loadingMore') : `${t('loadMore')} (${debtMeta.total - debtPatients.length} ${t('remaining')})`}
                     </button>
                   </div>
                 )}
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ─── Materials Tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'materials' && (
+        <div className="space-y-5">
+          {loadingMat ? (
+            <div className="flex justify-center items-center h-40">
+              <Loader2 className="h-7 w-7 animate-spin text-teal-500" />
+            </div>
+          ) : !matFinance ? null : (
+            <>
+              {/* KPI Row */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Inventory Value */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 bg-teal-50 dark:bg-teal-900/30 rounded-lg">
+                      <Package2 size={14} className="text-teal-600 dark:text-teal-400" />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('matInventoryValue')}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {matFinance.inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('matCurrentStock')}</p>
+                </div>
+
+                {/* Materials Spend */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                      <TrendingDown size={14} className="text-red-500 dark:text-red-400" />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('matPeriodSpend')}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {matFinance.totalMaterialExpenses.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('matPurchasesLogged')}</p>
+                </div>
+
+                {/* Material Losses */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 bg-rose-50 dark:bg-rose-900/30 rounded-lg">
+                      <AlertCircle size={14} className="text-rose-500 dark:text-rose-400" />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('matLosses')}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {matFinance.lossAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('matWastedWritten')}</p>
+                </div>
+
+                {/* Expiry Write-offs */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
+                      <Clock size={14} className="text-amber-500 dark:text-amber-400" />
+                    </div>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{t('matExpiryWriteoffs')}</span>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {matFinance.expiryAmount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('matExpiredItems')}</p>
+                </div>
+              </div>
+
+              {/* Inventory Health */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">{t('matInventoryHealth')}</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="text-center p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl">
+                    <p className="text-2xl font-bold text-slate-900 dark:text-white">{matFinance.totalMaterials}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('matTotalMaterials')}</p>
+                  </div>
+                  <div className={`text-center p-3 rounded-xl ${
+                    matFinance.lowStockCount > 0
+                      ? 'bg-amber-50 dark:bg-amber-900/20'
+                      : 'bg-slate-50 dark:bg-slate-700/40'
+                  }`}>
+                    <p className={`text-2xl font-bold ${
+                      matFinance.lowStockCount > 0
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-slate-900 dark:text-white'
+                    }`}>{matFinance.lowStockCount}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('matLowStock')}</p>
+                  </div>
+                  <div className={`text-center p-3 rounded-xl ${
+                    matFinance.expiredCount > 0
+                      ? 'bg-red-50 dark:bg-red-900/20'
+                      : 'bg-slate-50 dark:bg-slate-700/40'
+                  }`}>
+                    <p className={`text-2xl font-bold ${
+                      matFinance.expiredCount > 0
+                        ? 'text-red-600 dark:text-red-400'
+                        : 'text-slate-900 dark:text-white'
+                    }`}>{matFinance.expiredCount}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('matExpired')}</p>
+                  </div>
+                  <div className={`text-center p-3 rounded-xl ${
+                    matFinance.expiringSoonCount > 0
+                      ? 'bg-orange-50 dark:bg-orange-900/20'
+                      : 'bg-slate-50 dark:bg-slate-700/40'
+                  }`}>
+                    <p className={`text-2xl font-bold ${
+                      matFinance.expiringSoonCount > 0
+                        ? 'text-orange-600 dark:text-orange-400'
+                        : 'text-slate-900 dark:text-white'
+                    }`}>{matFinance.expiringSoonCount}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{t('matExpiringSoon')}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Spend Breakdown */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">{t('matSpendBreakdown')}</h3>
+                  {matFinance.totalMaterialExpenses === 0 ? (
+                    <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">{t('noDataAvailable')}</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {([
+                        { label: t('matMedicalSupplies'), amount: matFinance.suppliesSpend,  color: 'bg-blue-500' },
+                        { label: t('matLosses'),          amount: matFinance.lossAmount,     color: 'bg-rose-500' },
+                        { label: t('matExpiryWriteoffs'), amount: matFinance.expiryAmount,   color: 'bg-amber-500' },
+                      ] as Array<{ label: string; amount: number; color: string }>)
+                        .filter(r => r.amount > 0)
+                        .map((row) => {
+                          const pct = matFinance.totalMaterialExpenses > 0
+                            ? Math.round((row.amount / matFinance.totalMaterialExpenses) * 100)
+                            : 0
+                          return (
+                            <div key={row.label}>
+                              <div className="flex justify-between text-xs mb-1">
+                                <span className="text-slate-600 dark:text-slate-300 font-medium">{row.label}</span>
+                                <span className="text-slate-500 dark:text-slate-400">
+                                  {row.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ({pct}%)
+                                </span>
+                              </div>
+                              <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full ${row.color} rounded-full transition-all duration-500`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })
+                      }
+                    </div>
+                  )}
+                </div>
+
+                {/* Top Materials by Value */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">{t('matTopByValue')}</h3>
+                  {matFinance.topMaterials.length === 0 ? (
+                    <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">{t('matNoMaterials')}</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {matFinance.topMaterials.map((mat, i) => (
+                        <div key={i} className="flex items-center gap-3 py-2 border-b border-slate-50 dark:border-slate-700/30 last:border-0">
+                          <span className="w-5 text-xs font-bold text-slate-400 dark:text-slate-500 text-right shrink-0">{i + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">{mat.name}</p>
+                            {mat.category ? (
+                              <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 font-medium mt-0.5">
+                                {mat.category}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                              {mat.value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {mat.quantity} {mat.unit}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
