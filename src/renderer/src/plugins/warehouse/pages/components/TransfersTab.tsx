@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { Plus, RefreshCw, AlertCircle, ArrowRight, X, Trash2, Check } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Plus, RefreshCw, AlertCircle, ArrowRight, X, Trash2, Check, Search } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useToast } from '@renderer/contexts/ToastContext'
 
 interface Location { id: string; name: string; code: string; type: string }
 interface TransferItem { id: string; productName: string; sku: string; quantity: number; unit: string }
@@ -21,12 +22,15 @@ export default function TransfersTab() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [query, setQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
 
   // Create transfer modal
   const [showCreate, setShowCreate] = useState(false)
   const [createForm, setCreateForm] = useState({ fromLocationId: '', toLocationId: '', items: [{ productName: '', sku: '', quantity: '1', unit: 'pcs' }] })
   const { t } = useLanguage()
+  const toast = useToast()
 
   const load = async () => {
     setLoading(true); setError('')
@@ -42,28 +46,74 @@ export default function TransfersTab() {
 
   useEffect(() => { load() }, [filterStatus])
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault()
+        setShowCreate(true)
+        return
+      }
+
+      if (!typing && e.key === '/') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        return
+      }
+
+      if (e.key === 'Escape' && showCreate) {
+        setShowCreate(false)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showCreate])
+
   const createTransfer = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
       const items = createForm.items.filter(i => i.productName.trim()).map(i => ({ productName: i.productName, sku: i.sku || undefined, quantity: Number(i.quantity), unit: i.unit }))
-      if (items.length === 0) { alert('Add at least one item'); return }
-      await window.api.warehouse.createTransfer({ fromLocationId: createForm.fromLocationId, toLocationId: createForm.toLocationId, items })
-      setShowCreate(false); setCreateForm({ fromLocationId: '', toLocationId: '', items: [{ productName: '', sku: '', quantity: '1', unit: 'pcs' }] }); load()
-    } catch (err: any) { alert(err?.message || 'Failed to create transfer') }
+      if (items.length === 0) { toast.warning('Add at least one item'); return }
+      await window.api.warehouse.createTransfer({ fromLocationId: createForm.fromLocationId, toLocationId: createForm.toLocationId, createdBy: 'warehouse.operator', items })
+      setShowCreate(false)
+      setCreateForm({ fromLocationId: '', toLocationId: '', items: [{ productName: '', sku: '', quantity: '1', unit: 'pcs' }] })
+      toast.success('Transfer created')
+      load()
+    } catch (err: any) { toast.error(err?.message || 'Failed to create transfer') }
   }
 
   const updateStatus = async (id: string, status: string) => {
     const label = status.replace('_', ' ')
     const isComplete = status === 'completed'
     if (!confirm(`${t('warehouseStatusInTransit') ? label : label}?${isComplete ? ' This will move stock.' : ''}`)) return
-    try { await window.api.warehouse.updateTransferStatus({ id, status }); load() }
-    catch (err: any) { alert(err?.message || 'Failed') }
+    const before = transfers
+    setTransfers(prev => prev.map(tr => tr.id === id ? { ...tr, status, completedAt: status === 'completed' ? new Date().toISOString() : tr.completedAt } : tr))
+    try {
+      await window.api.warehouse.updateTransferStatus({ id, status, actedBy: 'warehouse.operator' })
+      toast.success(`Transfer moved to ${label}`)
+      load()
+    }
+    catch (err: any) {
+      setTransfers(before)
+      toast.error(err?.message || 'Failed to update transfer')
+    }
   }
 
   const del = async (id: string) => {
     if (!confirm(t('warehouseDeleteTransferConfirm'))) return
-    try { await window.api.warehouse.deleteTransfer(id); load() }
-    catch (err: any) { alert(err?.message || 'Failed') }
+    const before = transfers
+    setTransfers(prev => prev.filter(tr => tr.id !== id))
+    try {
+      await window.api.warehouse.deleteTransfer(id)
+      toast.success('Transfer deleted')
+    }
+    catch (err: any) {
+      setTransfers(before)
+      toast.error(err?.message || 'Failed to delete transfer')
+    }
   }
 
   const addItem = () => setCreateForm(f => ({ ...f, items: [...f.items, { productName: '', sku: '', quantity: '1', unit: 'pcs' }] }))
@@ -71,6 +121,25 @@ export default function TransfersTab() {
   const updateItem = (i: number, field: string, val: string) => setCreateForm(f => ({ ...f, items: f.items.map((item, idx) => idx === i ? { ...item, [field]: val } : item) }))
 
   const locName = (id: string) => locations.find(l => l.id === id)?.name ?? id
+
+  const filteredTransfers = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return transfers
+    return transfers.filter((tr) => {
+      const names = `${locName(tr.fromLocationId)} ${locName(tr.toLocationId)}`.toLowerCase()
+      const itemText = (tr.items ?? []).map((i) => `${i.productName} ${i.sku || ''}`).join(' ').toLowerCase()
+      return `${names} ${tr.status} ${itemText}`.includes(q)
+    })
+  }, [query, transfers, locations])
+
+  const stats = useMemo(() => {
+    return {
+      total: filteredTransfers.length,
+      draft: filteredTransfers.filter((t) => t.status === 'draft').length,
+      moving: filteredTransfers.filter((t) => t.status === 'in_transit').length,
+      completed: filteredTransfers.filter((t) => t.status === 'completed').length
+    }
+  }, [filteredTransfers])
 
   return (
     <div className="space-y-4">
@@ -89,20 +158,44 @@ export default function TransfersTab() {
           ))}
         </div>
         <div className="flex gap-2">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
+            <input
+              ref={searchInputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search routes or products"
+              className="pl-8 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm w-52"
+            />
+          </div>
           <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('warehouseNewTransfer')}</button>
+          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('warehouseNewTransfer')}</button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">Visible</div><div className="text-xl font-semibold text-slate-900 dark:text-white">{stats.total}</div></div>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">Draft</div><div className="text-xl font-semibold text-slate-900 dark:text-white">{stats.draft}</div></div>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">In Transit</div><div className="text-xl font-semibold text-blue-600 dark:text-blue-400">{stats.moving}</div></div>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">Completed</div><div className="text-xl font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</div></div>
       </div>
 
       {error && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="w-4 h-4" />{error}</div>}
 
       {loading ? (
-        <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400 w-6 h-6" /></div>
-      ) : transfers.length === 0 ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 animate-pulse">
+              <div className="h-3.5 w-1/2 rounded bg-slate-200 dark:bg-slate-700 mb-2" />
+              <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
+            </div>
+          ))}
+        </div>
+      ) : filteredTransfers.length === 0 ? (
         <div className="text-center py-12 text-slate-400 dark:text-slate-500">{t('warehouseNoTransfers')}</div>
       ) : (
         <div className="space-y-3">
-          {transfers.map(tr => (
+          {filteredTransfers.map(tr => (
             <div key={tr.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
               <div className="flex items-center gap-4 px-4 py-3">
                 <div className="flex-1 min-w-0">

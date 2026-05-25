@@ -410,12 +410,20 @@ interface API {
     getStock: (options?: any) => Promise<any>
     upsertStock: (data: any) => Promise<any>
     adjustStock: (data: any) => Promise<any>
-    deleteStock: (id: string) => Promise<any>
+    deleteStock: (id: string, actedBy?: string) => Promise<any>
     getLowStock: () => Promise<any>
+    getMovements: (params?: any) => Promise<any>
+    getAuditLogs: (params?: any) => Promise<any>
     getTransfers: (options?: any) => Promise<any>
     createTransfer: (data: any) => Promise<any>
     updateTransferStatus: (data: any) => Promise<any>
     deleteTransfer: (id: string) => Promise<any>
+    getOrders: (params?: any) => Promise<any>
+    getJourneyBoard: () => Promise<any>
+    createOrder: (data: any) => Promise<any>
+    updateOrderStatus: (data: any) => Promise<any>
+    advanceOrderStage: (data: any) => Promise<any>
+    processOrder: (data: any) => Promise<any>
     getOverview: () => Promise<any>
   }
   clinic: {

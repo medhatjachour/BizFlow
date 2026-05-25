@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { RefreshCw, AlertCircle, Plus, Minus, Edit2, Trash2, AlertTriangle } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { RefreshCw, AlertCircle, Plus, Minus, Edit2, Trash2, AlertTriangle, Search } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useToast } from '@renderer/contexts/ToastContext'
 
 interface Location { id: string; name: string; code: string; type: string }
 interface StockEntry { id: string; locationId: string; productName: string; productId: string | null; sku: string; quantity: number; unit: string; minQuantity: number }
@@ -13,6 +14,8 @@ export default function InventoryTab() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showLow, setShowLow] = useState(false)
+  const [query, setQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
 
   // Form state (inline add)
   const [showAdd, setShowAdd] = useState(false)
@@ -23,6 +26,7 @@ export default function InventoryTab() {
   const [editForm, setEditForm] = useState({ quantity: '0', unit: 'pcs', minQuantity: '0', sku: '' })
 
   const { t } = useLanguage()
+  const toast = useToast()
 
   const loadLocations = async () => {
     try { setLocations(await window.api.warehouse.getLocations()) }
@@ -42,37 +46,124 @@ export default function InventoryTab() {
   useEffect(() => { loadLocations() }, [])
   useEffect(() => { loadStock() }, [selectedLocation, showLow])
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n' && selectedLocation && !showLow) {
+        e.preventDefault()
+        setShowAdd(true)
+        return
+      }
+
+      if (!typing && e.key === '/') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        return
+      }
+
+      if (e.key === 'Escape') {
+        if (showAdd) setShowAdd(false)
+        if (editing) setEditing(null)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedLocation, showLow, showAdd, editing])
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedLocation) return
+    if (!selectedLocation) {
+      toast.warning('Select a location first')
+      return
+    }
+
+    const tempId = `temp-${Date.now()}`
+    const optimisticRow: StockEntry = {
+      id: tempId,
+      locationId: selectedLocation,
+      productName: addForm.productName,
+      productId: null,
+      sku: addForm.sku,
+      quantity: Number(addForm.quantity),
+      unit: addForm.unit,
+      minQuantity: Number(addForm.minQuantity)
+    }
+
+    setStock(prev => [optimisticRow, ...prev])
+
     try {
-      await window.api.warehouse.upsertStock({ locationId: selectedLocation, productName: addForm.productName, sku: addForm.sku, quantity: Number(addForm.quantity), unit: addForm.unit, minQuantity: Number(addForm.minQuantity) })
-      setShowAdd(false); setAddForm({ productName: '', sku: '', quantity: '0', unit: 'pcs', minQuantity: '0' }); loadStock()
-    } catch (err: any) { alert(err?.message || 'Failed to add') }
+      await window.api.warehouse.upsertStock({ locationId: selectedLocation, productName: addForm.productName, sku: addForm.sku, quantity: Number(addForm.quantity), unit: addForm.unit, minQuantity: Number(addForm.minQuantity), actedBy: 'warehouse.operator' })
+      setShowAdd(false)
+      setAddForm({ productName: '', sku: '', quantity: '0', unit: 'pcs', minQuantity: '0' })
+      toast.success('Stock entry created')
+      loadStock()
+    } catch (err: any) {
+      setStock(prev => prev.filter(s => s.id !== tempId))
+      toast.error(err?.message || 'Failed to add stock')
+    }
   }
 
   const handleAdjust = async (entry: StockEntry, delta: number) => {
     const newQty = Math.max(0, entry.quantity + delta)
-    try { await window.api.warehouse.adjustStock({ id: entry.id, quantity: newQty }); loadStock() }
-    catch (err: any) { alert(err?.message || 'Failed') }
+    const before = entry.quantity
+    setStock(prev => prev.map(s => s.id === entry.id ? { ...s, quantity: newQty } : s))
+    setLowStock(prev => prev.map(s => s.id === entry.id ? { ...s, quantity: newQty } : s))
+    try {
+      await window.api.warehouse.adjustStock({ id: entry.id, quantity: newQty, actedBy: 'warehouse.operator' })
+      toast.success('Quantity updated')
+    }
+    catch (err: any) {
+      setStock(prev => prev.map(s => s.id === entry.id ? { ...s, quantity: before } : s))
+      setLowStock(prev => prev.map(s => s.id === entry.id ? { ...s, quantity: before } : s))
+      toast.error(err?.message || 'Failed to update quantity')
+    }
   }
 
   const handleEditSave = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editing) return
     try {
-      await window.api.warehouse.adjustStock({ id: editing.id, quantity: Number(editForm.quantity) })
-      setEditing(null); loadStock()
-    } catch (err: any) { alert(err?.message || 'Failed') }
+      await window.api.warehouse.adjustStock({ id: editing.id, quantity: Number(editForm.quantity), actedBy: 'warehouse.operator' })
+      setEditing(null)
+      toast.success('Stock updated')
+      loadStock()
+    } catch (err: any) { toast.error(err?.message || 'Failed to save changes') }
   }
 
   const del = async (id: string) => {
     if (!confirm(t('warehouseDeleteStockConfirm'))) return
-    try { await window.api.warehouse.deleteStock(id); loadStock() }
-    catch (err: any) { alert(err?.message || 'Failed') }
+    const existing = stock.find(s => s.id === id) || lowStock.find(s => s.id === id)
+    setStock(prev => prev.filter(s => s.id !== id))
+    setLowStock(prev => prev.filter(s => s.id !== id))
+    try {
+      await window.api.warehouse.deleteStock(id, 'warehouse.operator')
+      toast.success('Stock deleted')
+    }
+    catch (err: any) {
+      if (existing) {
+        setStock(prev => [existing, ...prev])
+        setLowStock(prev => [existing, ...prev])
+      }
+      toast.error(err?.message || 'Failed to delete stock')
+    }
   }
 
   const displayEntries = showLow ? lowStock : stock
+  const filteredEntries = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return displayEntries
+    return displayEntries.filter((entry) => `${entry.productName} ${entry.sku || ''}`.toLowerCase().includes(q))
+  }, [displayEntries, query])
+
+  const summary = useMemo(() => {
+    const totalItems = filteredEntries.length
+    const low = filteredEntries.filter((e) => e.quantity <= e.minQuantity).length
+    const totalQty = filteredEntries.reduce((acc, e) => acc + Number(e.quantity || 0), 0)
+    return { totalItems, low, totalQty }
+  }, [filteredEntries])
 
   return (
     <div className="space-y-4">
@@ -90,6 +181,16 @@ export default function InventoryTab() {
             {locations.map(l => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
             <option value="__low__">{t('warehouseLowStockItems')}</option>
           </select>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
+            <input
+              ref={searchInputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search product or SKU"
+              className="pl-8 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm w-full min-w-[220px]"
+            />
+          </div>
         </div>
         <div className="flex gap-2">
           <button onClick={loadStock} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
@@ -101,14 +202,41 @@ export default function InventoryTab() {
 
       {error && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="w-4 h-4" />{error}</div>}
 
+      {(selectedLocation || showLow) && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm">
+            <div className="text-xs text-slate-500">Visible Items</div>
+            <div className="text-xl font-semibold text-slate-900 dark:text-white mt-1">{summary.totalItems}</div>
+          </div>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm">
+            <div className="text-xs text-slate-500">Total Quantity</div>
+            <div className="text-xl font-semibold text-slate-900 dark:text-white mt-1">{summary.totalQty}</div>
+          </div>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm">
+            <div className="text-xs text-slate-500">Low Stock</div>
+            <div className="text-xl font-semibold text-rose-600 dark:text-rose-400 mt-1">{summary.low}</div>
+          </div>
+        </div>
+      )}
+
       {(!selectedLocation && !showLow) ? (
         <div className="text-center py-12 text-slate-400 dark:text-slate-500">{t('warehouseSelectLocation')}</div>
       ) : loading ? (
-        <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400 w-6 h-6" /></div>
-      ) : displayEntries.length === 0 ? (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+          <div className="animate-pulse divide-y divide-slate-100 dark:divide-slate-700">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="px-4 py-3 flex items-center gap-3">
+                <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-700" />
+                <div className="h-3 w-16 rounded bg-slate-200 dark:bg-slate-700 ml-auto" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : filteredEntries.length === 0 ? (
         <div className="text-center py-12 text-slate-400 dark:text-slate-500">{showLow ? t('warehouseNoLowStock') : t('warehouseNoStockEntries')}</div>
       ) : (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 dark:border-slate-700">
@@ -121,7 +249,7 @@ export default function InventoryTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-              {displayEntries.map(entry => {
+              {filteredEntries.map(entry => {
                 const isLow = entry.quantity <= entry.minQuantity
                 return (
                   <tr key={entry.id} className={`hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors ${isLow ? 'bg-red-50/50 dark:bg-red-900/10' : ''}`}>

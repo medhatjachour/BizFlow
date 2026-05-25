@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { Plus, RefreshCw, AlertCircle, Edit2, Trash2, ChevronRight } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Plus, RefreshCw, AlertCircle, Edit2, Trash2, ChevronRight, Search } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useToast } from '@renderer/contexts/ToastContext'
 
 interface Location { id: string; name: string; code: string; type: string; parentId: string | null; isActive: boolean; children?: Location[] }
 
@@ -58,10 +59,14 @@ export default function LocationsTab() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [query, setQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+  const [typeFilter, setTypeFilter] = useState('all')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Location | null>(null)
   const [form, setForm] = useState({ name: '', code: '', type: 'bin', parentId: '' })
   const { t } = useLanguage()
+  const toast = useToast()
 
   const load = async () => {
     setLoading(true); setError('')
@@ -72,6 +77,32 @@ export default function LocationsTab() {
 
   useEffect(() => { load() }, [])
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      const typing = !!target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault()
+        openAdd()
+        return
+      }
+
+      if (!typing && e.key === '/') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+        return
+      }
+
+      if (e.key === 'Escape' && showForm) {
+        setShowForm(false)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showForm])
+
   const openAdd = () => { setEditing(null); setForm({ name: '', code: '', type: 'bin', parentId: '' }); setShowForm(true) }
   const openEdit = (l: Location) => { setEditing(l); setForm({ name: l.name, code: l.code, type: l.type, parentId: l.parentId || '' }); setShowForm(true) }
 
@@ -81,36 +112,81 @@ export default function LocationsTab() {
       const data = { name: form.name, code: form.code, type: form.type, parentId: form.parentId || undefined }
       if (editing) await window.api.warehouse.updateLocation({ id: editing.id, ...data })
       else await window.api.warehouse.createLocation(data)
-      setShowForm(false); load()
-    } catch (err: any) { alert(err?.message || 'Failed to save') }
+      setShowForm(false)
+      toast.success(editing ? 'Location updated' : 'Location created')
+      load()
+    } catch (err: any) { toast.error(err?.message || 'Failed to save location') }
   }
 
   const del = async (l: Location) => {
     if (!confirm(t('warehouseDeleteLocationConfirm').replace('{name}', l.name))) return
-    try { await window.api.warehouse.deleteLocation(l.id); load() }
-    catch (err: any) { alert(err?.message || 'Failed to delete') }
+    const before = locations
+    setLocations(prev => prev.filter(x => x.id !== l.id))
+    try {
+      await window.api.warehouse.deleteLocation(l.id)
+      toast.success('Location deleted')
+    }
+    catch (err: any) {
+      setLocations(before)
+      toast.error(err?.message || 'Failed to delete location')
+    }
   }
 
-  const tree = buildTree(locations)
+  const filteredLocations = locations.filter((l) => {
+    if (typeFilter !== 'all' && l.type !== typeFilter) return false
+    const q = query.trim().toLowerCase()
+    if (!q) return true
+    return `${l.name} ${l.code} ${l.type}`.toLowerCase().includes(q)
+  })
+
+  const tree = buildTree(filteredLocations)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500 dark:text-slate-400">{locations.length} {locations.length !== 1 ? t('warehouseLocationsCountPlural') : t('warehouseLocationsCount')}</p>
-        <div className="flex gap-2">
-          <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
-          <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('warehouseAddLocation')}</button>
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3.5 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <p className="text-sm text-slate-500 dark:text-slate-400">{filteredLocations.length} {filteredLocations.length !== 1 ? t('warehouseLocationsCountPlural') : t('warehouseLocationsCount')}</p>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" />
+              <input
+                ref={searchInputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search location name/code"
+                className="pl-8 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm w-full sm:w-56"
+              />
+            </div>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
+            >
+              <option value="all">All Types</option>
+              {TYPES.map((tp) => <option key={tp} value={tp}>{tp}</option>)}
+            </select>
+            <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
+            <button onClick={openAdd} className="flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('warehouseAddLocation')}</button>
+          </div>
         </div>
       </div>
 
       {error && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="w-4 h-4" />{error}</div>}
 
       {loading ? (
-        <div className="flex justify-center py-12"><RefreshCw className="animate-spin text-slate-400 w-6 h-6" /></div>
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm animate-pulse">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+              <div className="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-700 mb-2" />
+              <div className="h-2.5 w-1/4 rounded bg-slate-200 dark:bg-slate-700" />
+            </div>
+          ))}
+        </div>
       ) : tree.length === 0 ? (
         <div className="text-center py-12 text-slate-400 dark:text-slate-500">{t('warehouseNoLocations')}</div>
       ) : (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
           {tree.map(loc => <LocationRow key={loc.id} loc={loc} depth={0} onEdit={openEdit} onDelete={del} t={t} />)}
         </div>
       )}
