@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Plus, RefreshCw, AlertCircle, Edit2, Trash2, ChevronRight, Search } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
+import InfoTooltip from './InfoTooltip'
 
 interface Location { id: string; name: string; code: string; type: string; parentId: string | null; isActive: boolean; children?: Location[] }
 
@@ -39,6 +40,7 @@ function LocationRow({ loc, depth, onEdit, onDelete, t }: { loc: Location; depth
           <div className="flex items-center gap-2">
             <span className="font-medium text-slate-900 dark:text-white text-sm">{loc.name}</span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${TYPE_COLORS[loc.type]}`}>{loc.type}</span>
+            <InfoTooltip text={t('warehouseLocationsInfoType')} />
             {!loc.isActive && <span className="text-xs text-slate-400 dark:text-slate-500">{t('warehouseInactive')}</span>}
           </div>
           <div className="text-xs text-slate-400 font-mono">{loc.code}</div>
@@ -113,9 +115,9 @@ export default function LocationsTab() {
       if (editing) await window.api.warehouse.updateLocation({ id: editing.id, ...data })
       else await window.api.warehouse.createLocation(data)
       setShowForm(false)
-      toast.success(editing ? 'Location updated' : 'Location created')
+      toast.success(editing ? t('warehouseLocationUpdated') : t('warehouseLocationCreated'))
       load()
-    } catch (err: any) { toast.error(err?.message || 'Failed to save location') }
+    } catch (err: any) { toast.error(err?.message || t('warehouseSaveLocationFailed')) }
   }
 
   const del = async (l: Location) => {
@@ -124,11 +126,11 @@ export default function LocationsTab() {
     setLocations(prev => prev.filter(x => x.id !== l.id))
     try {
       await window.api.warehouse.deleteLocation(l.id)
-      toast.success('Location deleted')
+      toast.success(t('warehouseLocationDeleted'))
     }
     catch (err: any) {
       setLocations(before)
-      toast.error(err?.message || 'Failed to delete location')
+      toast.error(err?.message || t('warehouseDeleteLocationFailed'))
     }
   }
 
@@ -145,7 +147,10 @@ export default function LocationsTab() {
     <div className="space-y-4">
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3.5 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400">{filteredLocations.length} {filteredLocations.length !== 1 ? t('warehouseLocationsCountPlural') : t('warehouseLocationsCount')}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 inline-flex items-center gap-1.5">
+            <span>{filteredLocations.length} {filteredLocations.length !== 1 ? t('warehouseLocationsCountPlural') : t('warehouseLocationsCount')}</span>
+            <InfoTooltip text={t('warehouseLocationsInfoCount')} />
+          </p>
 
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative">
@@ -154,7 +159,7 @@ export default function LocationsTab() {
                 ref={searchInputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search location name/code"
+                placeholder={t('warehouseSearchLocationNameCode')}
                 className="pl-8 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm w-full sm:w-56"
               />
             </div>
@@ -163,9 +168,10 @@ export default function LocationsTab() {
               onChange={(e) => setTypeFilter(e.target.value)}
               className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
             >
-              <option value="all">All Types</option>
+              <option value="all">{t('warehouseAllTypes')}</option>
               {TYPES.map((tp) => <option key={tp} value={tp}>{tp}</option>)}
             </select>
+            <InfoTooltip text={t('warehouseLocationsInfoHierarchy')} />
             <button onClick={load} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-700 transition-colors"><RefreshCw className="w-4 h-4" /></button>
             <button onClick={openAdd} className="flex items-center justify-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors"><Plus className="w-4 h-4" /> {t('warehouseAddLocation')}</button>
           </div>
@@ -204,7 +210,7 @@ export default function LocationsTab() {
               <label className="block">
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('warehouseLocationCode')} * <span className="text-xs text-slate-400">({t('warehouseLocationCodeHint')})</span></span>
                 <input required value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                  placeholder="e.g. A-01-03"
+                  placeholder={t('warehouseLocationCodeExample')}
                   className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 text-sm font-mono" />
               </label>
               <label className="block">

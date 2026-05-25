@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Warehouse, Package, ArrowRightLeft, AlertTriangle, ClipboardList } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import InfoTooltip from './InfoTooltip'
 
 interface Overview {
   totalLocations: number
@@ -59,11 +60,11 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
   if (!data) return null
 
   const stats = [
-    { label: t('warehouseTotalLocations'), value: data.totalLocations, icon: <Warehouse className="w-5 h-5" />, color: 'blue', onClick: () => onNavigate('locations') },
-    { label: t('warehouseTotalSKUs'), value: data.totalSKUs, icon: <Package className="w-5 h-5" />, color: 'indigo', onClick: () => onNavigate('inventory') },
-    { label: t('warehouseLowStockAlerts'), value: data.lowStockCount, icon: <AlertTriangle className="w-5 h-5" />, color: data.lowStockCount > 0 ? 'red' : 'slate', onClick: () => onNavigate('inventory') },
-    { label: t('warehousePendingTransfers'), value: data.pendingTransfers, icon: <ArrowRightLeft className="w-5 h-5" />, color: 'amber', onClick: () => onNavigate('transfers') },
-    { label: 'Active Orders', value: data.activeOrders, icon: <ClipboardList className="w-5 h-5" />, color: 'blue', onClick: () => onNavigate('operations') }
+    { label: t('warehouseTotalLocations'), hint: t('warehouseOverviewInfoTotalLocations'), value: data.totalLocations, icon: <Warehouse className="w-5 h-5" />, color: 'blue', onClick: () => onNavigate('locations') },
+    { label: t('warehouseTotalSKUs'), hint: t('warehouseOverviewInfoTotalSkus'), value: data.totalSKUs, icon: <Package className="w-5 h-5" />, color: 'indigo', onClick: () => onNavigate('inventory') },
+    { label: t('warehouseLowStockAlerts'), hint: t('warehouseOverviewInfoLowStock'), value: data.lowStockCount, icon: <AlertTriangle className="w-5 h-5" />, color: data.lowStockCount > 0 ? 'red' : 'slate', onClick: () => onNavigate('inventory') },
+    { label: t('warehousePendingTransfers'), hint: t('warehouseOverviewInfoPendingTransfers'), value: data.pendingTransfers, icon: <ArrowRightLeft className="w-5 h-5" />, color: 'amber', onClick: () => onNavigate('transfers') },
+    { label: t('warehouseActiveOrders'), hint: t('warehouseOverviewInfoActiveOrders'), value: data.activeOrders, icon: <ClipboardList className="w-5 h-5" />, color: 'blue', onClick: () => onNavigate('operations') }
   ]
 
   const colorClasses: Record<string, string> = {
@@ -79,21 +80,21 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
       <div className="rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-teal-500 text-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Operations Snapshot</h3>
-            <p className="text-xs text-cyan-50 mt-1">Inbound and outbound queues are visible at a glance so teams can act fast.</p>
+            <h3 className="text-lg font-semibold">{t('warehouseOperationsSnapshotTitle')}</h3>
+            <p className="text-xs text-cyan-50 mt-1">{t('warehouseOperationsSnapshotSubtitle')}</p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
             <button onClick={() => onNavigate('operations')} className="rounded-lg bg-white/15 border border-white/20 px-3 py-2 hover:bg-white/25 transition-colors">
               <div className="text-xl font-semibold">{data.activeOrders}</div>
-              <div className="text-[11px] text-cyan-50">Active</div>
+              <div className="text-[11px] text-cyan-50">{t('warehouseActive')}</div>
             </button>
             <button onClick={() => onNavigate('operations')} className="rounded-lg bg-white/15 border border-white/20 px-3 py-2 hover:bg-white/25 transition-colors">
               <div className="text-xl font-semibold">{data.inboundPending}</div>
-              <div className="text-[11px] text-cyan-50">Inbound</div>
+              <div className="text-[11px] text-cyan-50">{t('warehouseInbound')}</div>
             </button>
             <button onClick={() => onNavigate('operations')} className="rounded-lg bg-white/15 border border-white/20 px-3 py-2 hover:bg-white/25 transition-colors">
               <div className="text-xl font-semibold">{data.outboundPending}</div>
-              <div className="text-[11px] text-cyan-50">Outbound</div>
+              <div className="text-[11px] text-cyan-50">{t('warehouseOutbound')}</div>
             </button>
           </div>
         </div>
@@ -106,7 +107,7 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
               {s.icon}
             </div>
             <div className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</div>
-            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{s.label}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 inline-flex items-center gap-1.5">{s.label} <InfoTooltip text={s.hint} /></div>
           </button>
         ))}
       </div>
@@ -128,7 +129,7 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
                   <span className="text-slate-400">→</span>
                   <span>{tr.toLocation.name}</span>
                 </div>
-                <div className="text-xs text-slate-400">{tr._count?.items ?? 0} items · {new Date(tr.transferDate).toLocaleDateString()}</div>
+                <div className="text-xs text-slate-400">{tr._count?.items ?? 0} {t('warehouseItems')} · {new Date(tr.transferDate).toLocaleDateString()}</div>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_COLORS[tr.status]}`}>{tr.status.replace('_', ' ')}</span>
             </div>
@@ -138,19 +139,19 @@ export default function OverviewTab({ onNavigate }: { onNavigate: (tab: Tab) => 
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
         <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900 dark:text-white">Latest Activity</h3>
-          <button onClick={() => onNavigate('operations')} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Open Operations</button>
+          <h3 className="font-semibold text-slate-900 dark:text-white">{t('warehouseLatestActivity')}</h3>
+          <button onClick={() => onNavigate('operations')} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">{t('warehouseOpenOperations')}</button>
         </div>
         <div className="divide-y divide-slate-50 dark:divide-slate-700/50">
           {(data.recentMovements ?? []).length === 0 ? (
-            <div className="px-5 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">No activity yet.</div>
+            <div className="px-5 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">{t('warehouseNoActivityYet')}</div>
           ) : (data.recentMovements ?? []).map(mv => (
             <div key={mv.id} className="px-5 py-3 text-sm">
               <div className="flex items-center justify-between">
                 <div className="font-medium text-slate-800 dark:text-slate-100">{mv.productName}</div>
                 <div className="text-slate-500">{mv.quantity > 0 ? '+' : ''}{mv.quantity} {mv.unit}</div>
               </div>
-              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{mv.movementType} · {mv.location?.name || 'N/A'} · {mv.actedBy || 'system'}</div>
+              <div className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{mv.movementType} · {mv.location?.name || t('warehouseNotAvailable')} · {mv.actedBy || t('warehouseSystem')}</div>
             </div>
           ))}
         </div>

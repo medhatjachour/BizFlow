@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, RefreshCw, AlertCircle, ArrowRight, X, Trash2, Check, Search } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
+import InfoTooltip from './InfoTooltip'
 
 interface Location { id: string; name: string; code: string; type: string }
 interface TransferItem { id: string; productName: string; sku: string; quantity: number; unit: string }
@@ -15,6 +16,14 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 const NEXT_STATUS: Record<string, string> = { draft: 'in_transit', in_transit: 'completed' }
+
+function statusHint(status: string, t: (key: string) => string): string {
+  if (status === 'draft') return t('warehouseTransfersInfoStatusDraft')
+  if (status === 'in_transit') return t('warehouseTransfersInfoStatusInTransit')
+  if (status === 'completed') return t('warehouseTransfersInfoStatusCompleted')
+  if (status === 'cancelled') return t('warehouseTransfersInfoStatusCancelled')
+  return t('warehouseTransfersInfoStatusGeneric')
+}
 
 export default function TransfersTab() {
   const [transfers, setTransfers] = useState<Transfer[]>([])
@@ -76,29 +85,29 @@ export default function TransfersTab() {
     e.preventDefault()
     try {
       const items = createForm.items.filter(i => i.productName.trim()).map(i => ({ productName: i.productName, sku: i.sku || undefined, quantity: Number(i.quantity), unit: i.unit }))
-      if (items.length === 0) { toast.warning('Add at least one item'); return }
+      if (items.length === 0) { toast.warning(t('warehouseAddAtLeastOneItem')); return }
       await window.api.warehouse.createTransfer({ fromLocationId: createForm.fromLocationId, toLocationId: createForm.toLocationId, createdBy: 'warehouse.operator', items })
       setShowCreate(false)
       setCreateForm({ fromLocationId: '', toLocationId: '', items: [{ productName: '', sku: '', quantity: '1', unit: 'pcs' }] })
-      toast.success('Transfer created')
+      toast.success(t('warehouseTransferCreated'))
       load()
-    } catch (err: any) { toast.error(err?.message || 'Failed to create transfer') }
+    } catch (err: any) { toast.error(err?.message || t('warehouseCreateTransferFailed')) }
   }
 
   const updateStatus = async (id: string, status: string) => {
     const label = status.replace('_', ' ')
     const isComplete = status === 'completed'
-    if (!confirm(`${t('warehouseStatusInTransit') ? label : label}?${isComplete ? ' This will move stock.' : ''}`)) return
+    if (!confirm(`${label}?${isComplete ? ` ${t('warehouseThisWillMoveStock')}` : ''}`)) return
     const before = transfers
     setTransfers(prev => prev.map(tr => tr.id === id ? { ...tr, status, completedAt: status === 'completed' ? new Date().toISOString() : tr.completedAt } : tr))
     try {
       await window.api.warehouse.updateTransferStatus({ id, status, actedBy: 'warehouse.operator' })
-      toast.success(`Transfer moved to ${label}`)
+      toast.success(t('warehouseTransferMovedTo').replace('{status}', label))
       load()
     }
     catch (err: any) {
       setTransfers(before)
-      toast.error(err?.message || 'Failed to update transfer')
+      toast.error(err?.message || t('warehouseUpdateTransferFailed'))
     }
   }
 
@@ -108,11 +117,11 @@ export default function TransfersTab() {
     setTransfers(prev => prev.filter(tr => tr.id !== id))
     try {
       await window.api.warehouse.deleteTransfer(id)
-      toast.success('Transfer deleted')
+      toast.success(t('warehouseTransferDeleted'))
     }
     catch (err: any) {
       setTransfers(before)
-      toast.error(err?.message || 'Failed to delete transfer')
+      toast.error(err?.message || t('warehouseDeleteTransferFailed'))
     }
   }
 
@@ -164,7 +173,7 @@ export default function TransfersTab() {
               ref={searchInputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search routes or products"
+              placeholder={t('warehouseSearchRoutesOrProducts')}
               className="pl-8 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm w-52"
             />
           </div>
@@ -174,10 +183,10 @@ export default function TransfersTab() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">Visible</div><div className="text-xl font-semibold text-slate-900 dark:text-white">{stats.total}</div></div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">Draft</div><div className="text-xl font-semibold text-slate-900 dark:text-white">{stats.draft}</div></div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">In Transit</div><div className="text-xl font-semibold text-blue-600 dark:text-blue-400">{stats.moving}</div></div>
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">Completed</div><div className="text-xl font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</div></div>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">{t('warehouseVisible')}</div><div className="text-xl font-semibold text-slate-900 dark:text-white">{stats.total}</div></div>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">{t('warehouseStatusDraft')}</div><div className="text-xl font-semibold text-slate-900 dark:text-white">{stats.draft}</div></div>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">{t('warehouseStatusInTransit')}</div><div className="text-xl font-semibold text-blue-600 dark:text-blue-400">{stats.moving}</div></div>
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm"><div className="text-xs text-slate-500">{t('warehouseStatusCompleted')}</div><div className="text-xl font-semibold text-emerald-600 dark:text-emerald-400">{stats.completed}</div></div>
       </div>
 
       {error && <div className="flex items-center gap-2 text-red-500 text-sm"><AlertCircle className="w-4 h-4" />{error}</div>}
@@ -204,20 +213,32 @@ export default function TransfersTab() {
                     <ArrowRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                     <span className="text-sm font-medium text-slate-900 dark:text-white">{locName(tr.toLocationId)}</span>
                   </div>
-                  <div className="text-xs text-slate-400">{new Date(tr.transferDate).toLocaleDateString()}{tr.completedAt ? ` · completed ${new Date(tr.completedAt).toLocaleDateString()}` : ''}</div>
+                  <div className="text-xs text-slate-400">{new Date(tr.transferDate).toLocaleDateString()}{tr.completedAt ? ` · ${t('warehouseCompletedLower')} ${new Date(tr.completedAt).toLocaleDateString()}` : ''}</div>
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0 ${STATUS_COLORS[tr.status]}`}>{tr.status.replace('_', ' ')}</span>
+                <div className="inline-flex items-center gap-1 flex-shrink-0">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_COLORS[tr.status]}`}>{tr.status.replace('_', ' ')}</span>
+                  <InfoTooltip text={statusHint(tr.status, t)} />
+                </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {NEXT_STATUS[tr.status] && (
-                    <button onClick={() => updateStatus(tr.id, NEXT_STATUS[tr.status])}
-                      title={`Advance to ${NEXT_STATUS[tr.status].replace('_', ' ')}`}
-                      className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"><Check className="w-4 h-4" /></button>
+                    <>
+                      <button onClick={() => updateStatus(tr.id, NEXT_STATUS[tr.status])}
+                        title={t('warehouseAdvanceTo').replace('{status}', NEXT_STATUS[tr.status].replace('_', ' '))}
+                        className="p-1.5 rounded-lg text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"><Check className="w-4 h-4" /></button>
+                      <InfoTooltip text={t('warehouseTransfersInfoAdvanceAction')} />
+                    </>
                   )}
                   {tr.status === 'draft' && (
-                    <button onClick={() => updateStatus(tr.id, 'cancelled')} title="Cancel" className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><X className="w-4 h-4" /></button>
+                    <>
+                      <button onClick={() => updateStatus(tr.id, 'cancelled')} title={t('warehouseCancel')} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><X className="w-4 h-4" /></button>
+                      <InfoTooltip text={t('warehouseTransfersInfoCancelAction')} />
+                    </>
                   )}
                   {(tr.status === 'cancelled' || tr.status === 'draft') && (
-                    <button onClick={() => del(tr.id)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <>
+                      <button onClick={() => del(tr.id)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <InfoTooltip text={t('warehouseTransfersInfoDeleteAction')} />
+                    </>
                   )}
                   <button onClick={() => setExpanded(expanded === tr.id ? null : tr.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-xs">
                     {expanded === tr.id ? t('warehouseHide') : t('warehouseItems')}
@@ -281,7 +302,7 @@ export default function TransfersTab() {
               {createForm.items.map((item, i) => (
                 <div key={i} className="flex gap-2 items-center">
                   <input required value={item.productName} onChange={e => updateItem(i, 'productName', e.target.value)}
-                    placeholder="Product name"
+                    placeholder={t('warehouseProductNamePlaceholder')}
                     className="flex-1 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-3 py-1.5 text-sm" />
                   <input value={item.sku} onChange={e => updateItem(i, 'sku', e.target.value)}
                     placeholder="SKU"
@@ -289,7 +310,7 @@ export default function TransfersTab() {
                   <input type="number" min="1" value={item.quantity} onChange={e => updateItem(i, 'quantity', e.target.value)}
                     className="w-16 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-2 py-1.5 text-sm text-center" />
                   <input value={item.unit} onChange={e => updateItem(i, 'unit', e.target.value)}
-                    placeholder="unit"
+                    placeholder={t('warehouseUnit')}
                     className="w-14 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white px-2 py-1.5 text-sm" />
                   {createForm.items.length > 1 && (
                     <button type="button" onClick={() => removeItem(i)} className="text-red-400 hover:text-red-600 flex-shrink-0"><X className="w-4 h-4" /></button>

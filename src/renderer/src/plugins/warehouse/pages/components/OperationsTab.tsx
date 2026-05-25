@@ -17,6 +17,8 @@ import {
   X
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import InfoTooltip from './InfoTooltip'
 
 type OrderType = 'inbound' | 'outbound'
 type Stage = 'created' | 'receiving' | 'qc' | 'putaway' | 'picking' | 'packing' | 'shipping' | 'done'
@@ -99,16 +101,16 @@ function getStage(order: WarehouseOrder): Stage {
   return order.orderType === 'inbound' ? 'receiving' : 'picking'
 }
 
-function stageLabel(stage: Stage) {
+function stageLabel(stage: Stage, t: (key: string) => string) {
   const labels: Record<Stage, string> = {
-    created: 'Created',
-    receiving: 'Receiving',
-    qc: 'Quality Check',
-    putaway: 'Putaway',
-    picking: 'Picking',
-    packing: 'Packing',
-    shipping: 'Shipping',
-    done: 'Completed'
+    created: t('warehouseStageCreated'),
+    receiving: t('warehouseStageReceiving'),
+    qc: t('warehouseStageQc'),
+    putaway: t('warehouseStagePutaway'),
+    picking: t('warehouseStagePicking'),
+    packing: t('warehouseStagePacking'),
+    shipping: t('warehouseStageShipping'),
+    done: t('warehouseStageDone')
   }
   return labels[stage]
 }
@@ -120,23 +122,23 @@ function nextStage(orderType: OrderType, stage: Stage): Stage | null {
   return steps[i + 1]
 }
 
-function primaryActionLabel(order: WarehouseOrder): string {
+function primaryActionLabel(order: WarehouseOrder, t: (key: string) => string): string {
   const stage = getStage(order)
   if (order.orderType === 'inbound') {
-    if (stage === 'created') return 'Start Receiving'
-    if (stage === 'receiving') return 'Move to QC'
-    if (stage === 'qc') return 'Approve Putaway'
-    if (stage === 'putaway') return 'Post Stock'
+    if (stage === 'created') return t('warehouseActionStartReceiving')
+    if (stage === 'receiving') return t('warehouseActionMoveToQc')
+    if (stage === 'qc') return t('warehouseActionApprovePutaway')
+    if (stage === 'putaway') return t('warehouseActionPostStock')
   }
 
   if (order.orderType === 'outbound') {
-    if (stage === 'created') return 'Start Picking'
-    if (stage === 'picking') return 'Move to Packing'
-    if (stage === 'packing') return 'Move to Shipping'
-    if (stage === 'shipping') return 'Confirm Shipment'
+    if (stage === 'created') return t('warehouseActionStartPicking')
+    if (stage === 'picking') return t('warehouseActionMoveToPacking')
+    if (stage === 'packing') return t('warehouseActionMoveToShipping')
+    if (stage === 'shipping') return t('warehouseActionConfirmShipment')
   }
 
-  return 'View'
+  return t('warehouseActionView')
 }
 
 function isPostAction(order: WarehouseOrder): boolean {
@@ -170,6 +172,7 @@ export default function OperationsTab() {
     lines: [{ productName: '', sku: '', requestedQty: '1', unit: 'pcs' }]
   })
   const toast = useToast()
+  const { t } = useLanguage()
 
   const load = async () => {
     setLoading(true)
@@ -187,7 +190,7 @@ export default function OperationsTab() {
       setAuditLogs(auditRes?.data ?? [])
       setBoard(boardRes ?? null)
     } catch {
-      toast.error('Failed to load operations data')
+      toast.error(t('warehouseLoadOperationsFailed'))
     } finally {
       setLoading(false)
     }
@@ -268,7 +271,7 @@ export default function OperationsTab() {
   const createOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.locationId) {
-      toast.warning('Select a location first')
+      toast.warning(t('warehouseSelectLocationFirst'))
       return
     }
     const lines = form.lines
@@ -281,7 +284,7 @@ export default function OperationsTab() {
       }))
 
     if (lines.length === 0) {
-      toast.warning('Add at least one line item')
+      toast.warning(t('warehouseAddAtLeastOneLineItem'))
       return
     }
 
@@ -307,10 +310,10 @@ export default function OperationsTab() {
         priority: 'normal',
         lines: [{ productName: '', sku: '', requestedQty: '1', unit: 'pcs' }]
       })
-      toast.success('Order created')
+      toast.success(t('warehouseOrderCreated'))
       await load()
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to create order')
+      toast.error(err?.message || t('warehouseCreateOrderFailed'))
     } finally {
       setCreating(false)
     }
@@ -318,7 +321,7 @@ export default function OperationsTab() {
 
   const moveOrderForward = async (order: WarehouseOrder) => {
     if (!order.locationId) {
-      toast.warning('Order has no assigned location')
+      toast.warning(t('warehouseOrderNoAssignedLocation'))
       return
     }
 
@@ -340,43 +343,43 @@ export default function OperationsTab() {
           orderId: order.id,
           locationId: order.locationId,
           actedBy: 'warehouse.operator',
-          notes: 'Posted from phase 2 operations journey'
+          notes: t('warehousePostedFromPhase2')
         })
-        toast.success(`${order.orderNumber} completed`)
+        toast.success(t('warehouseOrderCompleted').replace('{orderNumber}', order.orderNumber))
       } else {
         if (!nxt) return
         await window.api.warehouse.advanceOrderStage({
           id: order.id,
           stage: nxt,
           actedBy: 'warehouse.operator',
-          notes: `Advanced to ${nxt} from operations journey`
+          notes: t('warehouseAdvancedToStage').replace('{stage}', nxt)
         })
-        toast.success(`${order.orderNumber} moved to ${stageLabel(nxt)}`)
+        toast.success(t('warehouseOrderMovedToStage').replace('{orderNumber}', order.orderNumber).replace('{stage}', stageLabel(nxt, t)))
       }
       await load()
     } catch (err: any) {
       setOrders(prev => prev.map((o) => o.id === before.id ? before : o))
-      toast.error(err?.message || 'Failed to advance order')
+      toast.error(err?.message || t('warehouseAdvanceOrderFailed'))
     } finally {
       setActingOrderId(null)
     }
   }
 
   const viewButtons: Array<{ id: View; label: string }> = [
-    { id: 'control', label: 'Control Tower' },
-    { id: 'receiving', label: 'Receiving Journey' },
-    { id: 'outbound', label: 'Outbound Journey' },
-    { id: 'activity', label: 'Activity Feed' }
+    { id: 'control', label: t('warehouseControlTower') },
+    { id: 'receiving', label: t('warehouseReceivingJourney') },
+    { id: 'outbound', label: t('warehouseOutboundJourney') },
+    { id: 'activity', label: t('warehouseActivityFeed') }
   ]
 
   const cards = [
-    { label: 'Active Orders', value: board?.activeOrders ?? activeOrders.length, icon: ClipboardList },
-    { label: 'Receiving', value: board?.receiving ?? groupedInbound.receiving.length, icon: ScanLine },
-    { label: 'QC', value: board?.qc ?? groupedInbound.qc.length, icon: ShieldCheck },
-    { label: 'Putaway', value: board?.putaway ?? groupedInbound.putaway.length, icon: Boxes },
-    { label: 'Picking', value: board?.picking ?? groupedOutbound.picking.length, icon: ShoppingBag },
-    { label: 'Packing', value: board?.packing ?? groupedOutbound.packing.length, icon: PackageCheck },
-    { label: 'Shipping', value: board?.shipping ?? groupedOutbound.shipping.length, icon: Rocket }
+    { label: t('warehouseActiveOrders'), hint: t('warehouseOpsInfoCardActiveOrders'), value: board?.activeOrders ?? activeOrders.length, icon: ClipboardList },
+    { label: t('warehouseReceiving'), hint: t('warehouseOpsInfoCardReceiving'), value: board?.receiving ?? groupedInbound.receiving.length, icon: ScanLine },
+    { label: 'QC', hint: t('warehouseOpsInfoCardQc'), value: board?.qc ?? groupedInbound.qc.length, icon: ShieldCheck },
+    { label: t('warehousePutaway'), hint: t('warehouseOpsInfoCardPutaway'), value: board?.putaway ?? groupedInbound.putaway.length, icon: Boxes },
+    { label: t('warehousePicking'), hint: t('warehouseOpsInfoCardPicking'), value: board?.picking ?? groupedOutbound.picking.length, icon: ShoppingBag },
+    { label: t('warehousePacking'), hint: t('warehouseOpsInfoCardPacking'), value: board?.packing ?? groupedOutbound.packing.length, icon: PackageCheck },
+    { label: t('warehouseShipping'), hint: t('warehouseOpsInfoCardShipping'), value: board?.shipping ?? groupedOutbound.shipping.length, icon: Rocket }
   ]
 
   return (
@@ -384,21 +387,21 @@ export default function OperationsTab() {
       <div className="rounded-2xl bg-gradient-to-br from-cyan-600 via-blue-600 to-emerald-500 text-white p-5 shadow-md">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Warehouse Operations Control Tower</h3>
-            <p className="text-xs text-cyan-50 mt-1">Phase 2 journey: ASN and receiving flow, QC and putaway handoff, then pick-pack-ship with full actor traceability.</p>
+            <h3 className="text-lg font-semibold">{t('warehouseOperationsControlTowerTitle')}</h3>
+            <p className="text-xs text-cyan-50 mt-1">{t('warehouseOperationsControlTowerSubtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => void load()}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/30 bg-white/15 hover:bg-white/25 text-sm"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> {t('warehouseRefresh')}
             </button>
             <button
               onClick={() => setShowCreate(true)}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900/80 hover:bg-slate-900 text-white text-sm font-medium"
             >
-              <Plus className="w-4 h-4" /> New Journey Order
+              <Plus className="w-4 h-4" /> {t('warehouseNewJourneyOrder')}
             </button>
           </div>
         </div>
@@ -410,7 +413,10 @@ export default function OperationsTab() {
           return (
             <div key={card.label} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-sm">
               <div className="flex items-center justify-between">
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">{card.label}</div>
+                <div className="inline-flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span>{card.label}</span>
+                  <InfoTooltip text={card.hint} />
+                </div>
                 <Icon className="w-4 h-4 text-blue-500" />
               </div>
               <div className="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{card.value}</div>
@@ -440,7 +446,7 @@ export default function OperationsTab() {
                 ref={searchInputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search order, partner, source, SKU"
+                placeholder={t('warehouseSearchOrderPartnerSourceSku')}
                 className="pl-8 pr-3 py-2 w-full sm:w-64 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
               />
             </div>
@@ -449,7 +455,7 @@ export default function OperationsTab() {
               onChange={(e) => setLocationFilter(e.target.value)}
               className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
             >
-              <option value="all">All Locations</option>
+              <option value="all">{t('warehouseAllLocations')}</option>
               {locations.map(l => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
             </select>
           </div>
@@ -469,46 +475,48 @@ export default function OperationsTab() {
       ) : view === 'control' && (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <JourneyColumn
-            title="Inbound Lane"
-            subtitle="Receiving -> QC -> Putaway"
+            title={t('warehouseInboundLane')}
+            subtitle={t('warehouseInboundLaneSubtitle')}
             sections={[
-              { key: 'created', title: 'Created', orders: groupedInbound.created },
-              { key: 'receiving', title: 'Receiving', orders: groupedInbound.receiving },
-              { key: 'qc', title: 'Quality Check', orders: groupedInbound.qc },
-              { key: 'putaway', title: 'Putaway', orders: groupedInbound.putaway }
+              { key: 'created', title: t('warehouseStageCreated'), orders: groupedInbound.created },
+              { key: 'receiving', title: t('warehouseStageReceiving'), orders: groupedInbound.receiving },
+              { key: 'qc', title: t('warehouseStageQc'), orders: groupedInbound.qc },
+              { key: 'putaway', title: t('warehouseStagePutaway'), orders: groupedInbound.putaway }
             ]}
             onAdvance={moveOrderForward}
             actingOrderId={actingOrderId}
+            t={t}
           />
 
           <JourneyColumn
-            title="Outbound Lane"
-            subtitle="Picking -> Packing -> Shipping"
+            title={t('warehouseOutboundLane')}
+            subtitle={t('warehouseOutboundLaneSubtitle')}
             sections={[
-              { key: 'created', title: 'Created', orders: groupedOutbound.created },
-              { key: 'picking', title: 'Picking', orders: groupedOutbound.picking },
-              { key: 'packing', title: 'Packing', orders: groupedOutbound.packing },
-              { key: 'shipping', title: 'Shipping', orders: groupedOutbound.shipping }
+              { key: 'created', title: t('warehouseStageCreated'), orders: groupedOutbound.created },
+              { key: 'picking', title: t('warehouseStagePicking'), orders: groupedOutbound.picking },
+              { key: 'packing', title: t('warehouseStagePacking'), orders: groupedOutbound.packing },
+              { key: 'shipping', title: t('warehouseStageShipping'), orders: groupedOutbound.shipping }
             ]}
             onAdvance={moveOrderForward}
             actingOrderId={actingOrderId}
+            t={t}
           />
         </div>
       )}
 
       {!loading && view === 'receiving' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <StagePanel icon={ScanLine} title="Receiving Queue" orders={groupedInbound.receiving} onAdvance={moveOrderForward} actingOrderId={actingOrderId} />
-          <StagePanel icon={ShieldCheck} title="QC Queue" orders={groupedInbound.qc} onAdvance={moveOrderForward} actingOrderId={actingOrderId} />
-          <StagePanel icon={Boxes} title="Putaway Queue" orders={groupedInbound.putaway} onAdvance={moveOrderForward} actingOrderId={actingOrderId} />
+          <StagePanel icon={ScanLine} title={t('warehouseReceivingQueue')} orders={groupedInbound.receiving} onAdvance={moveOrderForward} actingOrderId={actingOrderId} t={t} />
+          <StagePanel icon={ShieldCheck} title={t('warehouseQcQueue')} orders={groupedInbound.qc} onAdvance={moveOrderForward} actingOrderId={actingOrderId} t={t} />
+          <StagePanel icon={Boxes} title={t('warehousePutawayQueue')} orders={groupedInbound.putaway} onAdvance={moveOrderForward} actingOrderId={actingOrderId} t={t} />
         </div>
       )}
 
       {!loading && view === 'outbound' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <StagePanel icon={ShoppingBag} title="Picking Queue" orders={groupedOutbound.picking} onAdvance={moveOrderForward} actingOrderId={actingOrderId} />
-          <StagePanel icon={PackageCheck} title="Packing Queue" orders={groupedOutbound.packing} onAdvance={moveOrderForward} actingOrderId={actingOrderId} />
-          <StagePanel icon={Truck} title="Shipping Queue" orders={groupedOutbound.shipping} onAdvance={moveOrderForward} actingOrderId={actingOrderId} />
+          <StagePanel icon={ShoppingBag} title={t('warehousePickingQueue')} orders={groupedOutbound.picking} onAdvance={moveOrderForward} actingOrderId={actingOrderId} t={t} />
+          <StagePanel icon={PackageCheck} title={t('warehousePackingQueue')} orders={groupedOutbound.packing} onAdvance={moveOrderForward} actingOrderId={actingOrderId} t={t} />
+          <StagePanel icon={Truck} title={t('warehouseShippingQueue')} orders={groupedOutbound.shipping} onAdvance={moveOrderForward} actingOrderId={actingOrderId} t={t} />
         </div>
       )}
 
@@ -517,18 +525,18 @@ export default function OperationsTab() {
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
             <div className="flex items-center gap-2 mb-3 text-slate-700 dark:text-slate-200">
               <Truck className="w-4 h-4" />
-              <h4 className="font-medium text-sm">Recent Stock Movements</h4>
+              <h4 className="font-medium text-sm">{t('warehouseRecentStockMovements')}</h4>
             </div>
             <div className="space-y-2 max-h-[28rem] overflow-y-auto">
-              {movements.length === 0 && <p className="text-xs text-slate-400">No movement history yet.</p>}
+              {movements.length === 0 && <p className="text-xs text-slate-400">{t('warehouseNoMovementHistoryYet')}</p>}
               {movements.map(m => (
                 <div key={m.id} className="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-slate-800 dark:text-slate-100">{m.productName}</span>
                     <span className="text-slate-500">{m.quantity > 0 ? '+' : ''}{m.quantity} {m.unit}</span>
                   </div>
-                  <div className="mt-1 text-slate-500 dark:text-slate-400">{m.movementType} · {m.location?.name || 'N/A'}</div>
-                  <div className="mt-1 text-slate-500 dark:text-slate-400">By: {m.actedBy || 'system'}</div>
+                  <div className="mt-1 text-slate-500 dark:text-slate-400">{m.movementType} · {m.location?.name || t('warehouseNotAvailable')}</div>
+                  <div className="mt-1 text-slate-500 dark:text-slate-400">{t('warehouseBy')}: {m.actedBy || t('warehouseSystem')}</div>
                 </div>
               ))}
             </div>
@@ -537,10 +545,10 @@ export default function OperationsTab() {
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
             <div className="flex items-center gap-2 mb-3 text-slate-700 dark:text-slate-200">
               <History className="w-4 h-4" />
-              <h4 className="font-medium text-sm">Who Did What</h4>
+              <h4 className="font-medium text-sm">{t('warehouseWhoDidWhat')}</h4>
             </div>
             <div className="space-y-2 max-h-[28rem] overflow-y-auto">
-              {auditLogs.length === 0 && <p className="text-xs text-slate-400">No audit records yet.</p>}
+              {auditLogs.length === 0 && <p className="text-xs text-slate-400">{t('warehouseNoAuditRecordsYet')}</p>}
               {auditLogs.map(a => (
                 <div key={a.id} className="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5 text-xs">
                   <div className="flex items-center justify-between">
@@ -548,7 +556,7 @@ export default function OperationsTab() {
                     <span className="text-slate-400">{new Date(a.createdAt).toLocaleTimeString()}</span>
                   </div>
                   <div className="mt-1 text-slate-500 dark:text-slate-400">{a.entityType} · {a.details || '-'}</div>
-                  <div className="mt-1 inline-flex items-center gap-1 text-slate-500 dark:text-slate-400"><UserCircle2 className="w-3 h-3" /> {a.actor || 'system'}</div>
+                  <div className="mt-1 inline-flex items-center gap-1 text-slate-500 dark:text-slate-400"><UserCircle2 className="w-3 h-3" /> {a.actor || t('warehouseSystem')}</div>
                 </div>
               ))}
             </div>
@@ -560,7 +568,7 @@ export default function OperationsTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <form onSubmit={createOrder} className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-base font-semibold text-slate-900 dark:text-white">Create Operational Order</h4>
+              <h4 className="text-base font-semibold text-slate-900 dark:text-white">{t('warehouseCreateOperationalOrder')}</h4>
               <button type="button" onClick={() => setShowCreate(false)} className="p-1.5 rounded-md text-slate-400 hover:text-slate-600">
                 <X className="w-4 h-4" />
               </button>
@@ -568,52 +576,52 @@ export default function OperationsTab() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <label className="block">
-                <span className="text-xs text-slate-500">Order Type</span>
+                <span className="text-xs text-slate-500">{t('warehouseOrderType')}</span>
                 <select value={form.orderType} onChange={e => setForm(f => ({ ...f, orderType: e.target.value as OrderType }))} className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm">
-                  <option value="inbound">Inbound</option>
-                  <option value="outbound">Outbound</option>
+                  <option value="inbound">{t('warehouseInbound')}</option>
+                  <option value="outbound">{t('warehouseOutbound')}</option>
                 </select>
               </label>
 
               <label className="block col-span-2">
-                <span className="text-xs text-slate-500">Location</span>
+                <span className="text-xs text-slate-500">{t('warehouseLocation')}</span>
                 <select required value={form.locationId} onChange={e => setForm(f => ({ ...f, locationId: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm">
-                  <option value="">Select location</option>
+                  <option value="">{t('warehouseSelectLocationOption')}</option>
                   {locations.map(l => <option key={l.id} value={l.id}>{l.name} ({l.code})</option>)}
                 </select>
               </label>
 
               <label className="block">
-                <span className="text-xs text-slate-500">Priority</span>
+                <span className="text-xs text-slate-500">{t('warehousePriority')}</span>
                 <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm">
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
+                  <option value="low">{t('warehousePriorityLow')}</option>
+                  <option value="normal">{t('warehousePriorityNormal')}</option>
+                  <option value="high">{t('warehousePriorityHigh')}</option>
+                  <option value="urgent">{t('warehousePriorityUrgent')}</option>
                 </select>
               </label>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-xs text-slate-500">Source Ref (PO, SO, ASN)</span>
-                <input value={form.sourceRef} onChange={e => setForm(f => ({ ...f, sourceRef: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" placeholder="PO-1023 / SO-559 / ASN-77" />
+                <span className="text-xs text-slate-500">{t('warehouseSourceRefLabel')}</span>
+                <input value={form.sourceRef} onChange={e => setForm(f => ({ ...f, sourceRef: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" placeholder={t('warehouseSourceRefPlaceholder')} />
               </label>
               <label className="block">
-                <span className="text-xs text-slate-500">Partner</span>
-                <input value={form.partnerName} onChange={e => setForm(f => ({ ...f, partnerName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" placeholder="Supplier / Customer" />
+                <span className="text-xs text-slate-500">{t('warehousePartner')}</span>
+                <input value={form.partnerName} onChange={e => setForm(f => ({ ...f, partnerName: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm" placeholder={t('warehousePartnerPlaceholder')} />
               </label>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h5 className="text-sm font-medium text-slate-800 dark:text-slate-100">Order Lines</h5>
+                <h5 className="text-sm font-medium text-slate-800 dark:text-slate-100">{t('warehouseOrderLines')}</h5>
                 <button
                   type="button"
                   onClick={() => setForm(f => ({ ...f, lines: [...f.lines, { productName: '', sku: '', requestedQty: '1', unit: 'pcs' }] }))}
                   className="text-xs px-2 py-1 rounded-md border border-slate-200 dark:border-slate-600"
                 >
-                  Add Line
+                  {t('warehouseAddLine')}
                 </button>
               </div>
 
@@ -623,7 +631,7 @@ export default function OperationsTab() {
                     value={line.productName}
                     onChange={e => setForm(f => ({ ...f, lines: f.lines.map((l, i) => i === idx ? { ...l, productName: e.target.value } : l) }))}
                     className="col-span-5 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm"
-                    placeholder="Product Name"
+                    placeholder={t('warehouseProductName')}
                   />
                   <input
                     value={line.sku}
@@ -643,16 +651,16 @@ export default function OperationsTab() {
                     onClick={() => setForm(f => ({ ...f, lines: f.lines.length === 1 ? f.lines : f.lines.filter((_, i) => i !== idx) }))}
                     className="col-span-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm"
                   >
-                    Remove
+                    {t('warehouseRemove')}
                   </button>
                 </div>
               ))}
             </div>
 
             <div className="flex justify-end gap-2 pt-1">
-              <button type="button" onClick={() => setShowCreate(false)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm">Cancel</button>
+              <button type="button" onClick={() => setShowCreate(false)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-sm">{t('warehouseCancel')}</button>
               <button disabled={creating} type="submit" className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
-                {creating ? 'Creating...' : 'Create Order'}
+                {creating ? t('warehouseCreating') : t('warehouseCreateOrder')}
               </button>
             </div>
           </form>
@@ -674,6 +682,7 @@ function StagePanel({
   orders: WarehouseOrder[]
   onAdvance: (order: WarehouseOrder) => Promise<void>
   actingOrderId: string | null
+  t: (key: string) => string
 }) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
@@ -683,9 +692,9 @@ function StagePanel({
       </div>
 
       <div className="space-y-2 max-h-[30rem] overflow-y-auto">
-        {orders.length === 0 && <p className="text-xs text-slate-400">No orders in this queue.</p>}
+        {orders.length === 0 && <p className="text-xs text-slate-400">{t('warehouseNoOrdersInQueue')}</p>}
         {orders.map(order => (
-          <OrderCard key={order.id} order={order} onAdvance={onAdvance} acting={actingOrderId === order.id} />
+          <OrderCard key={order.id} order={order} onAdvance={onAdvance} acting={actingOrderId === order.id} t={t} />
         ))}
       </div>
     </div>
@@ -697,13 +706,15 @@ function JourneyColumn({
   subtitle,
   sections,
   onAdvance,
-  actingOrderId
+  actingOrderId,
+  t
 }: {
   title: string
   subtitle: string
   sections: Array<{ key: string; title: string; orders: WarehouseOrder[] }>
   onAdvance: (order: WarehouseOrder) => Promise<void>
   actingOrderId: string | null
+  t: (key: string) => string
 }) {
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-4 shadow-sm">
@@ -720,9 +731,9 @@ function JourneyColumn({
               <span className="text-slate-400">{section.orders.length}</span>
             </div>
             <div className="space-y-2 max-h-64 overflow-y-auto">
-              {section.orders.length === 0 && <div className="text-[11px] text-slate-400">No orders</div>}
+              {section.orders.length === 0 && <div className="text-[11px] text-slate-400">{t('warehouseNoOrders')}</div>}
               {section.orders.map(order => (
-                <OrderCard key={order.id} order={order} onAdvance={onAdvance} acting={actingOrderId === order.id} compact />
+                <OrderCard key={order.id} order={order} onAdvance={onAdvance} acting={actingOrderId === order.id} compact t={t} />
               ))}
             </div>
           </div>
@@ -736,32 +747,37 @@ function OrderCard({
   order,
   onAdvance,
   acting,
-  compact
+  compact,
+  t
 }: {
   order: WarehouseOrder
   onAdvance: (order: WarehouseOrder) => Promise<void>
   acting: boolean
   compact?: boolean
+  t: (key: string) => string
 }) {
   const stage = getStage(order)
   const steps = order.orderType === 'inbound' ? INBOUND_STEPS : OUTBOUND_STEPS
   const progress = Math.max(0, steps.indexOf(stage))
-  const action = primaryActionLabel(order)
+  const action = primaryActionLabel(order, t)
   const disabled = order.status === 'completed' || stage === 'done' || !order.locationId || acting
 
   return (
     <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-2.5 bg-white dark:bg-slate-800 hover:border-cyan-200 dark:hover:border-cyan-700 transition-colors">
       <div className="flex items-center justify-between">
         <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">{order.orderNumber}</div>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[order.status] || STATUS_COLORS.draft}`}>{order.status}</span>
+        <div className="inline-flex items-center gap-1">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[order.status] || STATUS_COLORS.draft}`}>{order.status}</span>
+          <InfoTooltip text={t('warehouseOpsInfoStatusBadge')} />
+        </div>
       </div>
 
       <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-        {order.orderType.toUpperCase()} · {order.lines.length} line(s) · {stageLabel(stage)}
+        {order.orderType === 'inbound' ? t('warehouseInbound') : t('warehouseOutbound')} · {order.lines.length} {t('warehouseLines')} · {stageLabel(stage, t)}
       </div>
 
       <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
-        {order.partnerName || 'No partner'} · {order.sourceRef || 'No source ref'}
+        {order.partnerName || t('warehouseNoPartner')} · {order.sourceRef || t('warehouseNoSourceRef')}
       </div>
 
       {!compact && (
@@ -771,19 +787,22 @@ function OrderCard({
               key={s}
               className={`text-[10px] px-1.5 py-0.5 rounded-full ${idx <= progress ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}
             >
-              {stageLabel(s)}
+              {stageLabel(s, t)}
             </div>
           ))}
         </div>
       )}
 
-      <button
-        onClick={() => void onAdvance(order)}
-        disabled={disabled}
-        className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium"
-      >
-        {acting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />} {action}
-      </button>
+      <div className="mt-2 flex items-center gap-1.5">
+        <button
+          onClick={() => void onAdvance(order)}
+          disabled={disabled}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium"
+        >
+          {acting ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />} {action}
+        </button>
+        <InfoTooltip text={t('warehouseOpsInfoAdvanceAction')} />
+      </div>
     </div>
   )
 }
