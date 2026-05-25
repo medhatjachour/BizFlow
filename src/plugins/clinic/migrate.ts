@@ -11,7 +11,7 @@ import { createLogger } from '../../main/utils/logger'
 
 const log = createLogger('Clinic:Migrate')
 
-const CLINIC_TABLES = ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult', 'ClinicAppointment', 'ClinicExpense', 'ClinicStaff', 'ClinicSalaryRecord']
+const CLINIC_TABLES = ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult', 'ClinicAppointment', 'ClinicExpense', 'ClinicStaff', 'ClinicSalaryRecord', 'ClinicMaterial', 'ClinicMaterialCategory', 'ClinicMaterialBatch', 'ClinicSessionMaterial']
 
 export async function ensureClinicSchema(
   prisma: any,

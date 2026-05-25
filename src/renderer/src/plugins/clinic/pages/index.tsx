@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight, Receipt } from 'lucide-react'
+import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight, Receipt, Package } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
@@ -13,8 +13,9 @@ import StatsTab from './components/StatsTab'
 import AppointmentsTab from './components/AppointmentsTab'
 import FollowUpsTab from './components/FollowUpsTab'
 import ExpensesTab from './components/ExpensesTab'
+import MaterialsTab from './components/MaterialsTab'
 
-type Tab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses'
+type Tab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'materials'
 
 // ─── Journey help modal ─────────────────────────────────────────────────────
 function JourneyModal({ onClose }: { onClose: () => void }) {
@@ -663,6 +664,7 @@ export default function ClinicPage() {
     { key: 'followups',    label: t('clinicFollowUps') ?? 'Follow-ups', Icon: Bell, badge: overdueCount },
     { key: 'stats',        label: t('clinicStats'),                     Icon: CalendarClock },
     { key: 'expenses',     label: t('clinicExpenses')  ?? 'Expenses',   Icon: Receipt },
+    { key: 'materials',    label: t('clinicMaterials') ?? 'Materials',  Icon: Package },
   ]
 
   const staffTabs: Tab[] = ['patients', 'sessions', 'appointments', 'followups']
@@ -749,6 +751,7 @@ export default function ClinicPage() {
         {activeTab === 'appointments' && <AppointmentsTab />}
         {activeTab === 'followups'    && <FollowUpsTab />}
         {activeTab === 'expenses'     && !isClinicStaff && <ExpensesTab />}
+        {activeTab === 'materials'    && !isClinicStaff && <MaterialsTab />}
       </div>
     </div>
   )

@@ -143,5 +143,67 @@ export const clinicPreload = {
       delete: (id: string) =>
         ipcRenderer.invoke('clinic:staff:salary:delete', id)
     }
+  },
+
+  // ─── Material Categories ────────────────────────────────────────────────
+  materialCategories: {
+    getAll: () =>
+      ipcRenderer.invoke('clinic:materialCategories:getAll'),
+    create: (data: { name: string; color?: string; sortOrder?: number }) =>
+      ipcRenderer.invoke('clinic:materialCategories:create', data),
+    update: (id: string, data: { name?: string; color?: string; sortOrder?: number }) =>
+      ipcRenderer.invoke('clinic:materialCategories:update', { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('clinic:materialCategories:delete', id),
+  },
+
+  // ─── Material Batches ───────────────────────────────────────────────────
+  materialBatches: {
+    getByMaterial: (materialId: string) =>
+      ipcRenderer.invoke('clinic:materialBatches:getByMaterial', materialId),
+    create: (materialId: string, data: {
+      batchNumber?: string; quantity?: number; expiryDate?: string
+      costPerUnit?: number; supplier?: string; notes?: string
+    }) =>
+      ipcRenderer.invoke('clinic:materialBatches:create', { materialId, data }),
+    update: (id: string, data: {
+      batchNumber?: string; quantity?: number; expiryDate?: string
+      costPerUnit?: number; supplier?: string; notes?: string; isActive?: boolean
+    }) =>
+      ipcRenderer.invoke('clinic:materialBatches:update', { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('clinic:materialBatches:delete', id),
+  },
+
+  // ─── Materials ─────────────────────────────────────────────────────────────
+  materials: {
+    getAll: (params?: {
+      search?: string
+      category?: string
+      isActive?: boolean
+      stockStatus?: 'all' | 'in_stock' | 'out_of_stock' | 'low_stock'
+      expiryStatus?: 'all' | 'expired' | 'expiring_soon' | 'valid' | 'no_expiry'
+      skip?: number
+      take?: number
+      sortBy?: 'name' | 'quantity' | 'expiryDate' | 'updatedAt'
+      sortDir?: 'asc' | 'desc'
+    }) =>
+      ipcRenderer.invoke('clinic:materials:getAll', params),
+    getById: (id: string) =>
+      ipcRenderer.invoke('clinic:materials:getById', id),
+    create: (data: any) =>
+      ipcRenderer.invoke('clinic:materials:create', data),
+    update: (id: string, data: any) =>
+      ipcRenderer.invoke('clinic:materials:update', { id, data }),
+    delete: (id: string) =>
+      ipcRenderer.invoke('clinic:materials:delete', id),
+    adjustStock: (id: string, delta: number) =>
+      ipcRenderer.invoke('clinic:materials:adjustStock', { id, delta }),
+    getBySession: (sessionId: string) =>
+      ipcRenderer.invoke('clinic:materials:getBySession', sessionId),
+    setSessionMaterials: (sessionId: string, items: Array<{ materialId: string; quantityUsed: number; notes?: string; batchId?: string }>) =>
+      ipcRenderer.invoke('clinic:materials:setSessionMaterials', { sessionId, items }),
+    stats: () =>
+      ipcRenderer.invoke('clinic:materials:stats'),
   }
 }

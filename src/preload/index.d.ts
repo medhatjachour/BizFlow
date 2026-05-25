@@ -507,6 +507,39 @@ interface API {
         delete: (id: string) => Promise<{ success: boolean }>
       }
     }
+    materialCategories: {
+      getAll: () => Promise<Array<{ id: string; name: string; color: string; sortOrder: number; createdAt: string; updatedAt: string }>>
+      create: (data: { name: string; color?: string; sortOrder?: number }) => Promise<any>
+      update: (id: string, data: { name?: string; color?: string; sortOrder?: number }) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    materialBatches: {
+      getByMaterial: (materialId: string) => Promise<any[]>
+      create: (materialId: string, data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    materials: {
+      getAll: (params?: {
+        search?: string
+        category?: string
+        isActive?: boolean
+        stockStatus?: 'all' | 'in_stock' | 'out_of_stock' | 'low_stock'
+        expiryStatus?: 'all' | 'expired' | 'expiring_soon' | 'valid' | 'no_expiry'
+        skip?: number
+        take?: number
+        sortBy?: 'name' | 'quantity' | 'expiryDate' | 'updatedAt'
+        sortDir?: 'asc' | 'desc'
+      }) => Promise<{ data: any[]; total: number; hasMore: boolean; skip: number; take: number }>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      adjustStock: (id: string, delta: number) => Promise<any>
+      getBySession: (sessionId: string) => Promise<any[]>
+      setSessionMaterials: (sessionId: string, items: Array<{ materialId: string; quantityUsed: number; notes?: string; batchId?: string }>) => Promise<any[]>
+      stats: () => Promise<{ total: number; lowStock: number; expired: number; expiringSoon: number }>
+    }
   }
   vet?: {
     owners: {
