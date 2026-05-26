@@ -172,7 +172,8 @@ export const clinicPreload = {
     }) =>
       ipcRenderer.invoke('clinic:materialBatches:update', { id, data }),
     delete: (id: string) =>
-      ipcRenderer.invoke('clinic:materialBatches:delete', id),    logLoss: (data: {
+      ipcRenderer.invoke('clinic:materialBatches:delete', id),
+    logLoss: (data: {
       batchId: string; materialId: string; quantityLost: number
       reason?: string; description?: string | null; recordedBy?: string | null
     }) =>
@@ -186,7 +187,8 @@ export const clinicPreload = {
       batchId: string; materialId: string; quantityBefore: number; quantityAfter: number
       reason?: string; description?: string | null; adjustedBy?: string | null
     }) =>
-      ipcRenderer.invoke('clinic:batches:logAdjustment', data),  },
+      ipcRenderer.invoke('clinic:batches:logAdjustment', data),
+  },
 
   // ─── Materials ─────────────────────────────────────────────────────────────
   materials: {

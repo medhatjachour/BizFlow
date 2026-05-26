@@ -739,8 +739,13 @@ function BatchAdjustModal({ batch, material, onClose, onSaved }: { batch: Batch;
     const newQty = Math.max(0, batch.quantity + d)
     setSaving(true)
     try {
-      await window.api.clinic.materialBatches.update(batch.id, { quantity: newQty })
-      await window.api.clinic.materials.adjustStock(material.id, d)
+      await window.api.clinic.materialBatches.logAdjustment({
+        batchId: batch.id,
+        materialId: material.id,
+        quantityBefore: batch.quantity,
+        quantityAfter: newQty,
+        reason: 'recount',
+      })
       showToast('success', t('updatedSuccessfully'))
       onSaved()
     } catch { showToast('error', t('errorSavingRecord')) } finally { setSaving(false) }
@@ -813,8 +818,13 @@ function BatchLossModal({ batch, material, onClose, onSaved }: { batch: Batch; m
         recurrence: 'one_time',
         notes: notes.trim() || null,
       })
-      await window.api.clinic.materialBatches.update(batch.id, { quantity: Math.max(0, batch.quantity - q) })
-      await window.api.clinic.materials.adjustStock(material.id, -q)
+      await window.api.clinic.materialBatches.logLoss({
+        batchId: batch.id,
+        materialId: material.id,
+        quantityLost: q,
+        reason: 'other',
+        description: notes.trim() || null,
+      })
       showToast('success', t('expenseAdded'))
       onSaved()
     } catch { showToast('error', t('failedSaveExpense')) } finally { setSaving(false) }
@@ -893,8 +903,13 @@ function BatchExpiryModal({ batch, material, onClose, onSaved }: { batch: Batch;
         recurrence: 'one_time',
         notes: notes.trim() || null,
       })
-      await window.api.clinic.materialBatches.update(batch.id, { quantity: Math.max(0, batch.quantity - q) })
-      await window.api.clinic.materials.adjustStock(material.id, -q)
+      await window.api.clinic.materialBatches.logExpiry({
+        batchId: batch.id,
+        materialId: material.id,
+        quantityExpired: q,
+        expiryDate: batch.expiryDate ?? new Date().toISOString(),
+        notes: notes.trim() || null,
+      })
       showToast('success', t('expenseAdded'))
       onSaved()
     } catch { showToast('error', t('failedSaveExpense')) } finally { setSaving(false) }
