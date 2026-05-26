@@ -3,12 +3,14 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   CalendarClock, CheckCircle2, Calendar, RefreshCw,
-  AlertTriangle, Clock, Users, Filter, Phone, Info
+  AlertTriangle, Clock, Users, Phone, Info
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import AppointmentFormModal from './AppointmentFormModal'
 
 function FollowUpHelp() {
+  const { t } = useLanguage()
   const [tipPos, setTipPos] = useState<{ top: number; right: number } | null>(null)
   const tipRef = useRef<HTMLSpanElement>(null)
   return (
@@ -19,9 +21,9 @@ function FollowUpHelp() {
       {tipPos && createPortal(
         <div style={{ position: 'fixed', top: tipPos.top, right: tipPos.right, transform: 'translateY(-100%) translateY(-8px)', zIndex: 9999 }}
           className="w-60 rounded-xl bg-slate-900 dark:bg-slate-800 text-white text-[11px] leading-relaxed px-3 py-2.5 shadow-2xl">
-          <span className="block font-semibold text-teal-400 mb-1.5">Button guide</span>
-          <span className="block mb-1"><span className="text-teal-300 font-medium">📅 Book Appt</span> — Creates a real appointment on the calendar. Reminder disappears once booked.</span>
-          <span className="block"><span className="text-emerald-300 font-medium">✓ Done</span> — Dismisses the reminder without scheduling — for when no further action is needed.</span>
+          <span className="block font-semibold text-teal-400 mb-1.5">{t('followUpButtonGuide')}</span>
+          <span className="block mb-1"><span className="text-teal-300 font-medium">📅 {t('followUpBookApptBtn')}</span> — {t('followUpBookApptGuide')}</span>
+          <span className="block"><span className="text-emerald-300 font-medium">✓ {t('followUpDoneBtn')}</span> — {t('followUpDoneGuide')}</span>
           <span className="absolute top-full right-3 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
         </div>,
         document.body
@@ -50,70 +52,89 @@ function daysDiff(dateStr: string): number {
 }
 
 function StatusBadge({ diff }: { diff: number }) {
+  const { t } = useLanguage()
   if (diff === 0) return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-      <Clock size={10} /> Due today
+      <Clock size={10} /> {t('dueTodayBadge')}
     </span>
   )
   if (diff < 0) return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-      <AlertTriangle size={10} /> {Math.abs(diff)}d overdue
+      <AlertTriangle size={10} /> {Math.abs(diff)}{t('daysOverdue')}
     </span>
   )
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-      <CalendarClock size={10} /> in {diff}d
+      <CalendarClock size={10} /> {t('inDays')} {diff}{t('inDaysSuffix')}
     </span>
   )
 }
 
+const PAGE_SIZE = 20
+
 export default function FollowUpsTab() {
   const toast = useToast()
   const navigate = useNavigate()
+  const { t } = useLanguage()
 
-  const [filter, setFilter] = useState<Filter>('all')
-  const [followUps, setFollowUps] = useState<FollowUp[]>([])
+  const [filter, setFilter] = useState<Filter>('today')
+  const [allFollowUps, setAllFollowUps] = useState<FollowUp[]>([])
   const [loading, setLoading] = useState(true)
   const [clearingId, setClearingId] = useState<string | null>(null)
   const [bookingFor, setBookingFor] = useState<FollowUp | null>(null)
+  const [page, setPage] = useState(1)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await window.api.clinic.appointments.getAllFollowUps({ filter })
-      setFollowUps(data ?? [])
+      const data = await window.api.clinic.appointments.getAllFollowUps({ filter: 'all' })
+      setAllFollowUps(data ?? [])
     } catch {
-      toast.error('Failed to load follow-ups')
+      toast.error(t('failedLoadFollowUps'))
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Reset to page 1 whenever the filter tab changes
+  useEffect(() => { setPage(1) }, [filter])
 
   async function handleMarkDone(fu: FollowUp) {
     setClearingId(fu.id)
     try {
       await window.api.clinic.appointments.clearFollowUp(fu.id)
-      toast.success(`Follow-up for ${fu.patient.name} marked as done`)
-      setFollowUps(prev => prev.filter(f => f.id !== fu.id))
+      toast.success(t('followUpMarkedDone').replace('{name}', fu.patient.name))
+      setAllFollowUps(prev => prev.filter(f => f.id !== fu.id))
     } catch {
-      toast.error('Failed to clear follow-up')
+      toast.error(t('followUpClearFailed'))
     } finally {
       setClearingId(null)
     }
   }
 
-  // Summary counts (from current loaded list)
-  const todayCount    = followUps.filter(f => daysDiff(f.followUpDate) === 0).length
-  const overdueCount  = followUps.filter(f => daysDiff(f.followUpDate) < 0).length
-  const upcomingCount = followUps.filter(f => daysDiff(f.followUpDate) > 0).length
+  // Summary counts always computed from full dataset
+  const todayCount    = allFollowUps.filter(f => daysDiff(f.followUpDate) === 0).length
+  const overdueCount  = allFollowUps.filter(f => daysDiff(f.followUpDate) < 0).length
+  const upcomingCount = allFollowUps.filter(f => daysDiff(f.followUpDate) > 0).length
+
+  // Client-side filtered list
+  const filtered = filter === 'all'      ? allFollowUps
+    : filter === 'today'    ? allFollowUps.filter(f => daysDiff(f.followUpDate) === 0)
+    : filter === 'overdue'  ? allFollowUps.filter(f => daysDiff(f.followUpDate) < 0)
+    :                         allFollowUps.filter(f => daysDiff(f.followUpDate) > 0)
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage   = Math.min(page, totalPages)
+  const pageItems  = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
   const FILTER_TABS: { key: Filter; label: string; color: string }[] = [
-    { key: 'all',      label: `All (${followUps.length})`,       color: 'text-slate-600 dark:text-slate-300' },
-    { key: 'today',    label: `Due Today (${todayCount})`,        color: 'text-amber-600 dark:text-amber-400' },
-    { key: 'overdue',  label: `Overdue (${overdueCount})`,        color: 'text-red-600 dark:text-red-400' },
-    { key: 'upcoming', label: `Upcoming (${upcomingCount})`,      color: 'text-teal-600 dark:text-teal-400' },
+    { key: 'all',      label: `${t('followUpAll')} (${allFollowUps.length})`,  color: 'text-slate-600 dark:text-slate-300' },
+    { key: 'today',    label: `${t('followUpDueTodayTab')} (${todayCount})`,   color: 'text-amber-600 dark:text-amber-400' },
+    { key: 'overdue',  label: `${t('followUpOverdueTab')} (${overdueCount})`,  color: 'text-red-600 dark:text-red-400' },
+    { key: 'upcoming', label: `${t('followUpUpcomingTab')} (${upcomingCount})`, color: 'text-teal-600 dark:text-teal-400' },
   ]
 
   return (
@@ -123,15 +144,15 @@ export default function FollowUpsTab() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CalendarClock className="h-5 w-5 text-amber-500" />
-          <h2 className="text-base font-semibold text-slate-800 dark:text-white">Follow-up Reminders</h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400">— sessions where a follow-up date was set by the doctor</span>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-white">{t('followUpRemindersTitle')}</h2>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{t('followUpRemindersSubtitle')}</span>
         </div>
         <button
           onClick={load}
           disabled={loading}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
         >
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
+          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> {t('followUpRefreshBtn')}
         </button>
       </div>
 
@@ -141,21 +162,21 @@ export default function FollowUpsTab() {
           <AlertTriangle className="h-8 w-8 text-red-500 flex-shrink-0" />
           <div>
             <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overdueCount}</p>
-            <p className="text-xs text-red-500 dark:text-red-400 font-medium">Overdue</p>
+            <p className="text-xs text-red-500 dark:text-red-400 font-medium">{t('followUpOverdueCard')}</p>
           </div>
         </div>
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-3 flex items-center gap-3">
           <Clock className="h-8 w-8 text-amber-500 flex-shrink-0" />
           <div>
             <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{todayCount}</p>
-            <p className="text-xs text-amber-500 dark:text-amber-400 font-medium">Due Today</p>
+            <p className="text-xs text-amber-500 dark:text-amber-400 font-medium">{t('followUpDueTodayCard')}</p>
           </div>
         </div>
         <div className="bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800/40 rounded-xl p-3 flex items-center gap-3">
           <Users className="h-8 w-8 text-teal-500 flex-shrink-0" />
           <div>
             <p className="text-2xl font-bold text-teal-600 dark:text-teal-400">{upcomingCount}</p>
-            <p className="text-xs text-teal-500 dark:text-teal-400 font-medium">Upcoming</p>
+            <p className="text-xs text-teal-500 dark:text-teal-400 font-medium">{t('followUpUpcomingCard')}</p>
           </div>
         </div>
       </div>
@@ -182,16 +203,15 @@ export default function FollowUpsTab() {
         {loading ? (
           <div className="flex items-center justify-center h-40 text-slate-400 gap-2">
             <RefreshCw size={16} className="animate-spin" />
-            <span className="text-sm">Loading...</span>
-          </div>
-        ) : followUps.length === 0 ? (
+            <span className="text-sm">Loading...</span>          </div>
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-slate-400 gap-2">
             <CalendarClock size={32} className="opacity-30" />
-            <p className="text-sm">No follow-ups in this category</p>
+            <p className="text-sm">{t('noFollowUpsCategory')}</p>
           </div>
         ) : (
           <div className="space-y-2 pb-4">
-            {followUps.map(fu => {
+            {pageItems.map(fu => {
               const diff = daysDiff(fu.followUpDate)
               const isClearing = clearingId === fu.id
               const rowBg = diff < 0
@@ -241,10 +261,10 @@ export default function FollowUpsTab() {
                         </span>
                       )}
                       {fu.doctorName && (
-                        <span>Dr. {fu.doctorName}</span>
+                        <span>{fu.doctorName}</span>
                       )}
                       <span>
-                        Session: {new Date(fu.visitDate).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {t('sessionDateLabel')}: {new Date(fu.visitDate).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                     </div>
                   </div>
@@ -256,7 +276,7 @@ export default function FollowUpsTab() {
                       className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors shadow-sm"
                       title="Formally schedule this follow-up as a new appointment on the calendar. The reminder will be auto-dismissed once booked."
                     >
-                      <Calendar size={11} /> Book Appt
+                      <Calendar size={11} /> {t('followUpBookApptBtn')}
                     </button>
                     <button
                       onClick={() => handleMarkDone(fu)}
@@ -268,7 +288,7 @@ export default function FollowUpsTab() {
                         ? <RefreshCw size={11} className="animate-spin" />
                         : <CheckCircle2 size={11} />
                       }
-                      Done
+                      {t('followUpDoneBtn')}
                     </button>
                     {/* (i) button guide */}
                     <FollowUpHelp />
@@ -276,6 +296,31 @@ export default function FollowUpsTab() {
                 </div>
               )
             })}
+            {/* ── Pagination ──────────────────────────────────────────────── */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-xs text-slate-400">
+                  {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, filtered.length)} of {filtered.length}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={safePage === 1}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {t('prevPage')}
+                  </button>
+                  <span className="px-2 text-xs text-slate-500">{safePage} / {totalPages}</span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={safePage === totalPages}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {t('nextPage')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -289,13 +334,12 @@ export default function FollowUpsTab() {
           onSaved={async () => {
             const scheduled = bookingFor
             setBookingFor(null)
-            toast.success('Appointment booked')
+            toast.success(t('apptBookedFollowUp'))
             // Auto-clear the follow-up reminder now that it's been formally scheduled
             try {
               await window.api.clinic.appointments.clearFollowUp(scheduled.id)
-              setFollowUps(prev => prev.filter(f => f.id !== scheduled.id))
-            } catch { /* non-critical — reminder can be manually dismissed */ }
-          }}
+              setAllFollowUps(prev => prev.filter(f => f.id !== scheduled.id))
+            } catch { /* non-critical — reminder can be manually dismissed */ }          }}
         />
       )}
     </div>

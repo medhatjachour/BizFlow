@@ -49,6 +49,7 @@ model ClinicSession {
   dentalChart    String?              // JSON: Record<string, { conditions: string[], note: string }>
   labOrders      String?              // JSON: Array<{ testName: string, notes: string }>
   prescriptions  ClinicPrescription[]
+  sessionMaterials ClinicSessionMaterial[]
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
@@ -197,4 +198,174 @@ model ClinicSalaryRecord {
   @@index([staffId])
   @@index([year, month])
   @@index([status])
+}
+
+// ─── Material Categories ──────────────────────────────────────────────────────
+// Manageable category list for clinic materials. Populated by default on first
+// run; staff can add / rename / delete categories from the Materials tab.
+model ClinicMaterialCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique  // Display name, e.g. "Dental", "Surgical"
+  color     String   @default("teal") // Tailwind color key used in the UI
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// ─── Clinic Material Catalog ──────────────────────────────────────────────────
+// Consumable supplies / materials used in clinical sessions
+// (e.g. dental fillings, syringes, gauze, surgical threads, anesthetic capsules).
+// Each entry is a purchasable/stockable item; quantity is the sum of active batch
+// quantities (kept in sync by the batch handlers).
+// expiryDate = nearest active-batch expiry (synced automatically; null = no expiry).
+model ClinicMaterial {
+  id              String                  @id @default(uuid())
+  name            String
+  category        String?                 // soft ref to ClinicMaterialCategory.name
+  description     String?
+  unit            String                  @default("piece") // piece | box | ml | mg | etc.
+  quantity        Float                   @default(0)       // current stock (sum of active batches)
+  minQuantity     Float                   @default(0)       // low-stock alert threshold
+  costPerUnit     Float                   @default(0)       // default / last known cost
+  supplier        String?                 // primary supplier name
+  expiryDate      DateTime?               // nearest active-batch expiry (synced); null = no expiry
+  isActive        Boolean                 @default(true)
+  notes           String?
+  batches          ClinicMaterialBatch[]
+  sessionMaterials ClinicSessionMaterial[]
+  losses          ClinicMaterialLoss[]
+  expiries        ClinicMaterialExpiry[]
+  adjustments     ClinicMaterialAdjustment[]
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([name])
+  @@index([supplier])
+  @@index([category])
+  @@index([isActive])
+  @@index([quantity])
+  @@index([minQuantity])
+  @@index([updatedAt])
+  @@index([expiryDate])
+  @@index([isActive, category])
+  @@index([isActive, expiryDate])
+  @@index([isActive, updatedAt])
+}
+
+// ─── Material Batches ─────────────────────────────────────────────────────────
+// One row per physical batch received. Tracks individual batch numbers, expiry
+// dates, quantities, and per-batch cost / supplier overrides.
+// When a batch is used in a session, ClinicSessionMaterial.batchId points here.
+model ClinicMaterialBatch {
+  id          String    @id @default(uuid())
+  materialId  String
+  material    ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  batchNumber String?
+  quantity    Float     @default(0)   // remaining quantity in this batch
+  expiryDate  DateTime?
+  receivedAt  DateTime  @default(now())
+  costPerUnit Float?    // overrides material.costPerUnit for this batch
+  supplier    String?   // overrides material.supplier for this batch
+  notes       String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sessionMaterials ClinicSessionMaterial[]
+  losses       ClinicMaterialLoss[]
+  expiries     ClinicMaterialExpiry[]
+  adjustments  ClinicMaterialAdjustment[]
+
+  @@index([materialId])
+  @@index([expiryDate])
+  @@index([isActive])
+  @@index([materialId, isActive])
+}
+
+// ─── Session ↔ Material junction ─────────────────────────────────────────────
+// Records which materials were consumed in a given session and how many.
+// batchId is optional – if set, the specific batch used is tracked.
+model ClinicSessionMaterial {
+  id           String               @id @default(uuid())
+  sessionId    String
+  session      ClinicSession        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  materialId   String
+  material     ClinicMaterial       @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  batchId      String?
+  batch        ClinicMaterialBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  quantityUsed Float                @default(1)
+  notes        String?
+  createdAt    DateTime             @default(now())
+
+  @@index([sessionId])
+  @@index([materialId])
+  @@index([batchId])
+}
+
+// ─── Material Loss ────────────────────────────────────────────────────────────
+// Tracks material loss events (damage, spillage, contamination, etc.)
+// for audit trail and waste reporting.
+model ClinicMaterialLoss {
+  id           String    @id @default(uuid())
+  batchId      String
+  batch        ClinicMaterialBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  materialId   String
+  material     ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantityLost Float
+  reason       String    // damage | spillage | contamination | expiry | other
+  description  String?
+  recordedBy   String?   // user/staff member name who logged this
+  createdAt    DateTime  @default(now())
+
+  @@index([batchId])
+  @@index([materialId])
+  @@index([reason])
+  @@index([createdAt])
+}
+
+// ─── Material Expiry ──────────────────────────────────────────────────────────
+// Tracks when material batches expire (separate from loss for compliance).
+// Expired materials are moved to inactive or deleted from active inventory.
+model ClinicMaterialExpiry {
+  id           String    @id @default(uuid())
+  batchId      String
+  batch        ClinicMaterialBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  materialId   String
+  material     ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantityExpired Float
+  expiryDate   DateTime  // the expiry date of the batch
+  disposalMethod String? // discarded | returned | donated | other
+  recordedBy   String?   // user/staff member name
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  @@index([batchId])
+  @@index([materialId])
+  @@index([expiryDate])
+  @@index([createdAt])
+}
+
+// ─── Material Adjustment ─────────────────────────────────────────────────────
+// Tracks inventory adjustments (manual corrections, reconciliation, etc.)
+// with full audit trail including reason and who made the change.
+model ClinicMaterialAdjustment {
+  id           String    @id @default(uuid())
+  batchId      String
+  batch        ClinicMaterialBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  materialId   String
+  material     ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantityBefore Float
+  quantityAfter Float
+  quantityAdjusted Float  // can be positive (addition) or negative (reduction)
+  reason       String    // recount | damage | received | lost | other
+  description  String?
+  adjustedBy   String?   // user/staff member name
+  createdAt    DateTime  @default(now())
+
+  @@index([batchId])
+  @@index([materialId])
+  @@index([reason])
+  @@index([createdAt])
 }

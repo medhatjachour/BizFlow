@@ -3,7 +3,12 @@ import * as crypto from 'crypto'
 import * as fs from 'fs'
 import * as path from 'path'
 
-const prisma = new PrismaClient()
+// Resolve DB path explicitly so the seed always targets prisma/dev.db
+// regardless of how DATABASE_URL is set in .env
+const _dbPath = path.resolve(__dirname, '../../dev.db')
+const prisma = new PrismaClient({
+  datasources: { db: { url: `file:${_dbPath}` } }
+})
 
 const CONFIG = {
   patientCount: Number(process.env.CLINIC_SEED_PATIENTS ?? 7_500),
@@ -152,6 +157,42 @@ const EXPENSE_CATEGORIES = [
   'maintenance', 'lab_fees', 'insurance', 'marketing', 'cleaning', 'other'
 ]
 
+const STARTER_MATERIALS = [
+  // ── Dental ───────────────────────────────────────────────────────────────
+  { name: 'Composite Resin A2',          category: 'Dental',      unit: 'syringe', quantity: 42,  minQuantity: 8,  costPerUnit: 18.5,  supplier: 'DentalHub',       expiryInDays: 420,  batchNumber: 'CR-A2-2026-01' },
+  { name: 'Composite Resin A3',          category: 'Dental',      unit: 'syringe', quantity: 36,  minQuantity: 8,  costPerUnit: 18.5,  supplier: 'DentalHub',       expiryInDays: 390,  batchNumber: 'CR-A3-2026-01' },
+  { name: 'Bonding Agent',               category: 'Dental',      unit: 'bottle',  quantity: 24,  minQuantity: 5,  costPerUnit: 24.0,  supplier: 'DentalHub',       expiryInDays: 300,  batchNumber: 'BA-2026-04'    },
+  { name: 'Temporary Filling Material',  category: 'Dental',      unit: 'jar',     quantity: 20,  minQuantity: 5,  costPerUnit: 13.5,  supplier: 'DentalHub',       expiryInDays: 330,  batchNumber: 'TFM-2026-02'   },
+  { name: 'Dental Cement',               category: 'Dental',      unit: 'box',     quantity: 28,  minQuantity: 6,  costPerUnit: 16.2,  supplier: 'DentalHub',       expiryInDays: 420,  batchNumber: 'DC-2026-04'    },
+  { name: 'Zinc Oxide Eugenol',          category: 'Dental',      unit: 'kit',     quantity: 12,  minQuantity: 4,  costPerUnit: 11.0,  supplier: 'DentalHub',       expiryInDays: 360,  batchNumber: 'ZOE-2026-01'   },
+  { name: 'Alginate Impression Material',category: 'Dental',      unit: 'bag',     quantity: 18,  minQuantity: 4,  costPerUnit: 9.0,   supplier: 'TechDent',        expiryInDays: 180,  batchNumber: 'ALG-2026-02'   },
+  // ── Consumable ───────────────────────────────────────────────────────────
+  { name: 'Etching Gel 37%',             category: 'Consumable',  unit: 'tube',    quantity: 4,   minQuantity: 6,  costPerUnit: 9.2,   supplier: 'MedSupply Co.',   expiryInDays: 15,   batchNumber: 'EG-37-2026-02' },
+  { name: 'Irrigation Saline 500ml',     category: 'Consumable',  unit: 'bottle',  quantity: 40,  minQuantity: 10, costPerUnit: 3.6,   supplier: 'MedSupply Co.',   expiryInDays: 540,  batchNumber: 'SAL-500-2026-02'},
+  { name: 'Gauze Pads Sterile',          category: 'Consumable',  unit: 'pack',    quantity: 80,  minQuantity: 20, costPerUnit: 2.1,   supplier: 'SteriClean',      expiryInDays: 720,  batchNumber: 'GZ-2026-01'    },
+  { name: 'Surgical Gloves Medium',      category: 'Consumable',  unit: 'box',     quantity: 70,  minQuantity: 15, costPerUnit: 6.8,   supplier: 'SteriClean',      expiryInDays: 680,  batchNumber: 'GL-M-2026-03'  },
+  { name: 'N95 Masks',                   category: 'Consumable',  unit: 'box',     quantity: 34,  minQuantity: 10, costPerUnit: 11.3,  supplier: 'SteriClean',      expiryInDays: 640,  batchNumber: 'N95-2026-02'   },
+  { name: 'Suction Tips',                category: 'Consumable',  unit: 'pack',    quantity: 65,  minQuantity: 12, costPerUnit: 4.2,   supplier: 'DentalHub',       expiryInDays: 900,  batchNumber: 'ST-2026-05'    },
+  { name: 'Cotton Rolls',                category: 'Consumable',  unit: 'pack',    quantity: 0,   minQuantity: 15, costPerUnit: 2.8,   supplier: 'DentalHub',       expiryInDays: 860,  batchNumber: 'CRL-2026-03'   },
+  { name: 'Disposable Saliva Ejectors',  category: 'Consumable',  unit: 'pack',    quantity: 50,  minQuantity: 12, costPerUnit: 3.0,   supplier: 'SteriClean',      expiryInDays: 800,  batchNumber: 'DSE-2026-01'   },
+  { name: 'Paper Points #30',            category: 'Consumable',  unit: 'box',     quantity: 8,   minQuantity: 6,  costPerUnit: 5.5,   supplier: 'TechDent',        expiryInDays: 700,  batchNumber: 'PP30-2026-03'  },
+  // ── Surgical ─────────────────────────────────────────────────────────────
+  { name: 'Sutures 3-0',                 category: 'Surgical',    unit: 'box',     quantity: 25,  minQuantity: 6,  costPerUnit: 14.4,  supplier: 'MedSupply Co.',   expiryInDays: 520,  batchNumber: 'SUT-30-2026-01'},
+  { name: 'Hemostatic Sponge',           category: 'Surgical',    unit: 'pack',    quantity: 22,  minQuantity: 5,  costPerUnit: 8.7,   supplier: 'MedSupply Co.',   expiryInDays: 450,  batchNumber: 'HS-2026-03', isActive: false },
+  { name: 'Surgical Blades #15',         category: 'Surgical',    unit: 'box',     quantity: 3,   minQuantity: 5,  costPerUnit: 7.0,   supplier: 'MedSupply Co.',   expiryInDays: 600,  batchNumber: 'SB15-2026-02'  },
+  // ── Device / Instrument ──────────────────────────────────────────────────
+  { name: 'Endodontic Files Set',        category: 'Device',      unit: 'set',     quantity: 18,  minQuantity: 4,  costPerUnit: 22.0,  supplier: 'TechDent',        expiryInDays: null, batchNumber: 'ENDO-SET-2026-01'},
+  { name: 'Impression Tray Set',         category: 'Device',      unit: 'set',     quantity: 6,   minQuantity: 2,  costPerUnit: 35.0,  supplier: 'TechDent',        expiryInDays: null, batchNumber: 'ITS-2026-01'   },
+  // ── Medication ───────────────────────────────────────────────────────────
+  { name: 'Local Anesthetic Carpule',    category: 'Medication',  unit: 'box',     quantity: 55,  minQuantity: 12, costPerUnit: 12.0,  supplier: 'Clinic Pharma',   expiryInDays: -35,  batchNumber: 'LA-CP-2026-03' },
+  { name: 'Ibuprofen 400mg (sample)',    category: 'Medication',  unit: 'strip',   quantity: 30,  minQuantity: 10, costPerUnit: 1.5,   supplier: 'Clinic Pharma',   expiryInDays: 365,  batchNumber: 'IBU-400-2026-01'},
+  { name: 'Chlorhexidine Mouthwash',     category: 'Medication',  unit: 'bottle',  quantity: 20,  minQuantity: 6,  costPerUnit: 4.8,   supplier: 'Clinic Pharma',   expiryInDays: 290,  batchNumber: 'CHX-2026-04'   },
+  { name: 'Topical Fluoride Gel',        category: 'Medication',  unit: 'tube',    quantity: 15,  minQuantity: 4,  costPerUnit: 6.5,   supplier: 'Clinic Pharma',   expiryInDays: 25,   batchNumber: 'FLU-2026-02'   },
+  // ── Laboratory ───────────────────────────────────────────────────────────
+  { name: 'Plaster of Paris (dental)',   category: 'Laboratory',  unit: 'kg',      quantity: 5,   minQuantity: 2,  costPerUnit: 8.0,   supplier: 'DentalLab Pro',   expiryInDays: 365,  batchNumber: 'POP-2026-01'   },
+  { name: 'Dental Wax Blocks',           category: 'Laboratory',  unit: 'box',     quantity: 10,  minQuantity: 3,  costPerUnit: 12.0,  supplier: 'DentalLab Pro',   expiryInDays: null, batchNumber: 'DWX-2026-01'   },
+]
+
 const PAYMENT_METHODS = ['cash', 'card', 'insurance', 'other'] as const
 const VISIT_TYPES = ['first_visit', 'follow_up', 'routine', 'emergency'] as const
 const SESSION_STATUSES = ['completed', 'completed', 'completed', 'active', 'cancelled'] as const
@@ -236,6 +277,15 @@ type SeedCheckResult = {
   filePath: string
   fileSize: number
   resultDate: Date
+  createdAt: Date
+}
+
+type SeedSessionMaterial = {
+  id: string
+  sessionId: string
+  materialId: string
+  quantityUsed: number
+  notes: string | null
   createdAt: Date
 }
 
@@ -581,12 +631,18 @@ function buildPatient(index: number): SeedPatient {
   }
 }
 
-function buildSessionsForPatient(patient: SeedPatient, doctorNames: string[]) {
+function buildSessionsForPatient(
+  patient: SeedPatient,
+  doctorNames: string[],
+  materials: Array<{ id: string; isActive: boolean; quantity: number }>
+) {
   const sessions: SeedSession[] = []
   const prescriptions: SeedPrescription[] = []
   const checkResults: SeedCheckResult[] = []
+  const sessionMaterials: SeedSessionMaterial[] = []
   const sessionCount = rand(1, 24)
   let previousVisit = new Date(Math.max(patient.createdAt.getTime(), FOUR_YEARS_AGO.getTime()))
+  const usableMaterials = materials.filter(m => m.isActive)
 
   for (let i = 0; i < sessionCount; i++) {
     const gapDays = i === 0 ? rand(0, 14) : rand(12, 120)
@@ -656,9 +712,32 @@ function buildSessionsForPatient(patient: SeedPatient, doctorNames: string[]) {
     if (chance(0.18)) {
       // Placeholder check results are added later once shared files are prepared.
     }
+
+    // Session materials usage (covers the new feature and edge cases).
+    // Not every session uses materials; some use multiple items.
+    if (usableMaterials.length > 0 && chance(0.58)) {
+      const maxPick = Math.min(4, usableMaterials.length)
+      const count = rand(1, maxPick)
+      const chosenIds = new Set<string>()
+      while (chosenIds.size < count) {
+        chosenIds.add(pick(usableMaterials).id)
+      }
+      for (const materialId of Array.from(chosenIds)) {
+        sessionMaterials.push({
+          id: uuid(),
+          sessionId: session.id,
+          materialId,
+          quantityUsed: pick([0.25, 0.5, 1, 1.5, 2]),
+          notes: chance(0.35)
+            ? pick(['Procedure prep', 'Main treatment use', 'Additional sterilization', 'Follow-up treatment'])
+            : null,
+          createdAt: visitDate,
+        })
+      }
+    }
   }
 
-  return { sessions, prescriptions, checkResults }
+  return { sessions, prescriptions, checkResults, sessionMaterials }
 }
 
 function buildAppointmentsForPatient(patient: SeedPatient, doctorNames: string[]) {
@@ -719,6 +798,10 @@ async function clearClinicData() {
   await prisma.clinicSalaryRecord.deleteMany({})
   await prisma.clinicStaff.deleteMany({})
   await prisma.clinicExpense.deleteMany({})
+  await prisma.clinicSessionMaterial.deleteMany({})
+  await prisma.clinicMaterialBatch.deleteMany({})
+  await prisma.clinicMaterial.deleteMany({})
+  await prisma.clinicMaterialCategory.deleteMany({})
   await prisma.clinicPrescription.deleteMany({})
   await prisma.clinicSession.deleteMany({})
   await prisma.clinicAppointment.deleteMany({})
@@ -741,6 +824,62 @@ async function main() {
   const resultTemplates = prepareResultTemplates()
   await clearClinicData()
 
+  console.log('📦  Creating starter clinic materials...')
+  const starterMaterials = STARTER_MATERIALS.map((item, idx) => ({
+    id: uuid(),
+    name: item.name,
+    category: item.category,
+    description: `Starter inventory item #${idx + 1}`,
+    unit: item.unit,
+    quantity: item.quantity,
+    minQuantity: item.minQuantity,
+    costPerUnit: item.costPerUnit,
+    supplier: item.supplier,
+    expiryDate: item.expiryInDays == null ? null : addDays(NOW, item.expiryInDays),
+    isActive: item.isActive ?? true,
+    notes: 'Seeded starter stock for clinic-dentist module',
+    createdAt: NOW,
+    updatedAt: NOW,
+  }))
+  if (starterMaterials.length) {
+    await prisma.clinicMaterial.createMany({ data: starterMaterials })
+    // Create a matching batch for each material
+    const batches = starterMaterials.map((m, idx) => ({
+      id: uuid(),
+      materialId: m.id,
+      batchNumber: STARTER_MATERIALS[idx].batchNumber,
+      quantity: m.quantity,
+      expiryDate: m.expiryDate,
+      costPerUnit: m.costPerUnit,
+      supplier: m.supplier,
+      receivedAt: NOW,
+      isActive: m.isActive,
+      createdAt: NOW,
+      updatedAt: NOW,
+    }))
+    await prisma.clinicMaterialBatch.createMany({ data: batches })
+  }
+
+  // Seed default material categories
+  const DEFAULT_CATEGORIES = [
+    { name: 'Dental',      color: 'teal',    sortOrder: 0 },
+    { name: 'Surgical',    color: 'violet',  sortOrder: 1 },
+    { name: 'Consumable',  color: 'blue',    sortOrder: 2 },
+    { name: 'Device',      color: 'indigo',  sortOrder: 3 },
+    { name: 'Medication',  color: 'emerald', sortOrder: 4 },
+    { name: 'Laboratory',  color: 'cyan',    sortOrder: 5 },
+    { name: 'Other',       color: 'slate',   sortOrder: 6 },
+  ]
+  for (const cat of DEFAULT_CATEGORIES) {
+    await prisma.clinicMaterialCategory.upsert({
+      where: { name: cat.name },
+      create: cat,
+      update: { color: cat.color, sortOrder: cat.sortOrder },
+    })
+  }
+
+  console.log(`✅  Starter Materials=${starterMaterials.length}\n`)
+
   console.log('👥  Creating clinic staff, salaries, and expenses...')
   const staff = buildStaff()
   const salaryRecords = buildSalaryRecords(staff)
@@ -753,6 +892,7 @@ async function main() {
   console.log(`✅  Staff=${staff.length}  Salaries=${salaryRecords.length}  Expenses=${expenses.length}\n`)
 
   const doctorNames = staff.filter((member) => member.role === 'doctor').map((member) => member.name)
+  const materialPool = starterMaterials.map((m) => ({ id: m.id, isActive: m.isActive, quantity: m.quantity }))
   const batches = Math.ceil(CONFIG.patientCount / CONFIG.batchSize)
 
   let patientTotal = 0
@@ -760,6 +900,7 @@ async function main() {
   let prescriptionTotal = 0
   let appointmentTotal = 0
   let checkResultTotal = 0
+  let sessionMaterialTotal = 0
 
   for (let batch = 0; batch < batches; batch++) {
     const start = batch * CONFIG.batchSize
@@ -770,12 +911,13 @@ async function main() {
     const prescriptions: SeedPrescription[] = []
     const appointments: SeedAppointment[] = []
     const checkResults: SeedCheckResult[] = []
+    const sessionMaterials: SeedSessionMaterial[] = []
 
     for (let i = start; i < end; i++) {
       const patient = buildPatient(i)
       patients.push(patient)
 
-      const patientSessions = buildSessionsForPatient(patient, doctorNames)
+      const patientSessions = buildSessionsForPatient(patient, doctorNames, materialPool)
       const patientAppointments = buildAppointmentsForPatient(patient, doctorNames)
       const patientResults = buildCheckResults(patient, resultTemplates)
 
@@ -783,12 +925,14 @@ async function main() {
       prescriptions.push(...patientSessions.prescriptions)
       appointments.push(...patientAppointments)
       checkResults.push(...patientResults)
+      sessionMaterials.push(...patientSessions.sessionMaterials)
     }
 
     await prisma.$transaction(async (tx) => {
       await tx.clinicPatient.createMany({ data: patients })
       if (sessions.length) await tx.clinicSession.createMany({ data: sessions })
       if (prescriptions.length) await tx.clinicPrescription.createMany({ data: prescriptions })
+      if (sessionMaterials.length) await tx.clinicSessionMaterial.createMany({ data: sessionMaterials })
       if (appointments.length) await tx.clinicAppointment.createMany({ data: appointments })
       if (checkResults.length) await tx.clinicCheckResult.createMany({ data: checkResults })
     }, { timeout: 60_000 })
@@ -798,6 +942,7 @@ async function main() {
     prescriptionTotal += prescriptions.length
     appointmentTotal += appointments.length
     checkResultTotal += checkResults.length
+    sessionMaterialTotal += sessionMaterials.length
 
     const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1)
     const progress = Math.round(((batch + 1) / batches) * 100)
@@ -806,6 +951,7 @@ async function main() {
       + `patients=${patientTotal.toLocaleString()} `
       + `sessions=${sessionTotal.toLocaleString()} `
       + `appts=${appointmentTotal.toLocaleString()} `
+      + `sessionMaterials=${sessionMaterialTotal.toLocaleString()} `
       + `results=${checkResultTotal.toLocaleString()} `
       + `${elapsed}s      `
     )
@@ -817,10 +963,12 @@ async function main() {
   console.log(`  Sessions       : ${sessionTotal.toLocaleString()}`)
   console.log(`  Prescriptions  : ${prescriptionTotal.toLocaleString()}`)
   console.log(`  Appointments   : ${appointmentTotal.toLocaleString()}`)
+  console.log(`  Session Mats   : ${sessionMaterialTotal.toLocaleString()}`)
   console.log(`  Check Results  : ${checkResultTotal.toLocaleString()}`)
   console.log(`  Staff          : ${staff.length.toLocaleString()}`)
   console.log(`  Salary Records : ${salaryRecords.length.toLocaleString()}`)
   console.log(`  Expenses       : ${expenses.length.toLocaleString()}`)
+  console.log(`  Materials      : ${starterMaterials.length.toLocaleString()}`)
   console.log(`  Files          : ${resultTemplates.length.toLocaleString()} generated PDFs`)
   console.log(`  Elapsed        : ${elapsed}s\n`)
 }

@@ -45,7 +45,8 @@ export function registerSessionHandlers(prisma: any) {
         where,
         include: {
           patient: { select: { id: true, name: true, phone: true, bloodType: true } },
-          prescriptions: { orderBy: { createdAt: 'asc' } }
+          prescriptions: { orderBy: { createdAt: 'asc' } },
+          sessionMaterials: { include: { material: true }, orderBy: { createdAt: 'asc' } }
         },
         orderBy: { visitDate: 'desc' },
         skip,
@@ -72,6 +73,7 @@ export function registerSessionHandlers(prisma: any) {
       },
       include: {
         prescriptions: true,
+        sessionMaterials: { include: { material: true }, orderBy: { createdAt: 'asc' } },
         patient: { select: { id: true, name: true } }
       }
     })
@@ -95,6 +97,7 @@ export function registerSessionHandlers(prisma: any) {
         },
         include: {
           prescriptions: true,
+          sessionMaterials: { include: { material: true }, orderBy: { createdAt: 'asc' } },
           patient: { select: { id: true, name: true } }
         }
       })

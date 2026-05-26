@@ -6,6 +6,7 @@ import { registerAppointmentHandlers } from './appointments'
 import { registerClinicPdfHandlers } from './pdf'
 import { registerExpenseHandlers } from './expenses'
 import { registerClinicStaffHandlers } from './staff'
+import { registerMaterialHandlers } from './materials'
 
 export function registerClinicHandlers(prisma: any) {
   registerPatientHandlers(prisma)
@@ -16,4 +17,5 @@ export function registerClinicHandlers(prisma: any) {
   registerClinicPdfHandlers()
   registerExpenseHandlers(prisma)
   registerClinicStaffHandlers(prisma)
+  registerMaterialHandlers(prisma)
 }

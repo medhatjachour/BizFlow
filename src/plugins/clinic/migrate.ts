@@ -11,7 +11,7 @@ import { createLogger } from '../../main/utils/logger'
 
 const log = createLogger('Clinic:Migrate')
 
-const CLINIC_TABLES = ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult', 'ClinicAppointment', 'ClinicExpense', 'ClinicStaff', 'ClinicSalaryRecord']
+const CLINIC_TABLES = ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult', 'ClinicAppointment', 'ClinicExpense', 'ClinicStaff', 'ClinicSalaryRecord', 'ClinicMaterial', 'ClinicMaterialCategory', 'ClinicMaterialBatch', 'ClinicSessionMaterial', 'ClinicMaterialLoss', 'ClinicMaterialExpiry', 'ClinicMaterialAdjustment']
 
 export async function ensureClinicSchema(
   prisma: any,
@@ -83,7 +83,7 @@ function runDbPush(dbUrl: string, cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       'npx',
-      ['prisma', 'db', 'push', '--schema=prisma/merged.prisma', '--skip-generate', '--accept-data-loss'],
+      ['prisma', 'db', 'push', '--schema=prisma/merged.prisma', '--accept-data-loss'],
       {
         cwd,
         shell: true,

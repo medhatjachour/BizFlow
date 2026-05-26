@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle, Info, Printer } from 'lucide-react'
+import { ClipboardList, Loader2, Plus, ChevronDown, ChevronUp, DollarSign, CreditCard, Banknote, CheckCircle2, Clock, XCircle, MinusCircle, Info, Printer, Package } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import SessionFormModal from './SessionFormModal'
@@ -63,6 +63,15 @@ interface Session {
   dentalChart?: string | null
   labOrders?: string | null
   prescriptions: Prescription[]
+  sessionMaterials?: Array<{
+    id: string
+    materialId: string
+    batchId?: string | null
+    quantityUsed: number
+    notes?: string | null
+    material: { id: string; name: string; unit: string }
+    batch?: { id: string; batchNumber?: string | null; expiryDate?: string | null } | null
+  }>
   patient: { id: string; name: string; phone: string; bloodType?: string | null }
 }
 
@@ -426,6 +435,47 @@ function SessionCard({ session, onEdit, onDelete, onStatusChange, statusUpdating
               </div>
             )
           })()}
+
+          {/* Materials Used */}
+          {session.sessionMaterials && session.sessionMaterials.length > 0 && (
+            <div>
+              <p className="text-[11px] font-bold text-teal-500 dark:text-teal-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <Package className="h-3 w-3" /> Materials Used
+              </p>
+              <div className="rounded-xl border border-teal-200 dark:border-teal-800 overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-teal-50 dark:bg-teal-900/20">
+                    <tr>
+                      {['Material', 'Batch', 'Qty Used', 'Notes'].map(h => (
+                        <th key={h} className="px-3 py-2 text-left font-semibold text-teal-600 dark:text-teal-400">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-teal-100 dark:divide-teal-900/30">
+                    {session.sessionMaterials.map(sm => {
+                      const expDate = sm.batch?.expiryDate ? new Date(sm.batch.expiryDate) : null
+                      const isExp = expDate && expDate < new Date()
+                      return (
+                        <tr key={sm.id} className="bg-white dark:bg-slate-800">
+                          <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-200">{sm.material.name}</td>
+                          <td className="px-3 py-2 text-slate-500">
+                            {sm.batch ? (
+                              <span className="inline-flex items-center gap-1">
+                                {sm.batch.batchNumber ? <span className="font-mono text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded">#{sm.batch.batchNumber}</span> : '—'}
+                                {expDate && <span className={`text-xs ${isExp ? 'text-red-500' : 'text-slate-400'}`}>{expDate.toLocaleDateString()}</span>}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td className="px-3 py-2 text-slate-600 dark:text-slate-300 font-medium">{sm.quantityUsed} {sm.material.unit}</td>
+                          <td className="px-3 py-2 text-slate-400 italic">{sm.notes ?? '—'}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Payment detail row */}
           {(session.amountCharged != null || session.followUpDate) && (

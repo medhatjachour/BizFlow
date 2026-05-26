@@ -243,28 +243,28 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           onClick={() => setShowBooking(true)}
           className="flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-teal-500/20"
         >
-          <Plus size={15} /> Book Appointment
+          <Plus size={15} /> {t('bookAppointment')}
         </button>
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard icon={Users}        label="Total Patients"   value={raw.patientCount}
-          sub={`${ageDist?.avgAge ? `avg ${ageDist.avgAge}y` : ''}`}
+        <StatCard icon={Users}        label={t('totalPatientsLabel')}   value={raw.patientCount}
+          sub={ageDist?.avgAge ? `${t('clinicAvgNote')} ${ageDist.avgAge}y` : ''}
           color="bg-teal-100 dark:bg-teal-900/30 text-teal-600" trend="flat" />
-        <StatCard icon={Activity}     label="Sessions Today"   value={raw.todaySessions.length}
-          sub={`${raw.todaySessions.filter((s: any) => s.status === 'completed').length} done`}
+        <StatCard icon={Activity}     label={t('sessionsTodayLabel')}   value={raw.todaySessions.length}
+          sub={`${raw.todaySessions.filter((s: any) => s.status === 'completed').length} ${t('clinicDoneNote')}`}
           color="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
           trend={sessionTrend?.trend ?? 'flat'} />
-        <StatCard icon={CalendarClock} label="Follow-ups (7d)" value={raw.upcomingFollowUps.length}
-          sub="upcoming"
+        <StatCard icon={CalendarClock} label={t('clinicStatFollowUps7d')} value={raw.upcomingFollowUps.length}
+          sub={t('clinicUpcomingCount')}
           color="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
           trend={raw.upcomingFollowUps.length > 5 ? 'up' : 'flat'} />
-        <StatCard icon={Pill}          label="Prescriptions"   value={raw.prescriptionsToday.length}
-          sub="issued today"
+        <StatCard icon={Pill}          label={t('prescriptionsLabel')}   value={raw.prescriptionsToday.length}
+          sub={t('issuedTodayNote')}
           color="bg-purple-100 dark:bg-purple-900/30 text-purple-600" trend="flat" />
-        <StatCard icon={Heart}         label="Avg Patient Age" value={ageDist?.avgAge ? `${ageDist.avgAge}y` : '—'}
-          sub={ageDist?.dominant ? `most: ${ageDist.dominant}` : ''}
+        <StatCard icon={Heart}         label={t('clinicStatAvgAge')} value={ageDist?.avgAge ? `${ageDist.avgAge}y` : '—'}
+          sub={ageDist?.dominant ? `${t('clinicMostNote')}: ${ageDist.dominant}` : ''}
           color="bg-rose-100 dark:bg-rose-900/30 text-rose-600" trend="flat" />
       </div>
 
@@ -275,7 +275,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
-              <BarChart3 size={16} /> 7-Day Sessions
+              <BarChart3 size={16} /> {t('clinic7DaySessions')}
             </h3>
             {sessionTrend && (
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
@@ -296,12 +296,12 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-[100px] flex items-center justify-center text-xs text-slate-400">No session history</div>
+            <div className="h-[100px] flex items-center justify-center text-xs text-slate-400">{t('clinicNoSessionHistory')}</div>
           )}
           <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs text-slate-500">
-            <div><span className="block font-semibold text-slate-800 dark:text-white">{sessionTrend?.avg.toFixed(1) ?? '—'}</span>Avg/day</div>
-            <div><span className="block font-semibold text-slate-800 dark:text-white">{sessionTrend?.max ?? '—'}</span>Peak</div>
-            <div><span className="block font-semibold text-slate-800 dark:text-white">{raw.weekSessions.length}</span>This week</div>
+            <div><span className="block font-semibold text-slate-800 dark:text-white">{sessionTrend?.avg.toFixed(1) ?? '—'}</span>{t('clinicAvgPerDay')}</div>
+            <div><span className="block font-semibold text-slate-800 dark:text-white">{sessionTrend?.max ?? '—'}</span>{t('clinicPeak')}</div>
+            <div><span className="block font-semibold text-slate-800 dark:text-white">{raw.weekSessions.length}</span>{t('clinicThisWeek')}</div>
           </div>
         </div>
 
@@ -310,7 +310,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
               <Clock size={16} className="text-teal-500" />
-              Today's Appointments
+              {t('todaysAppointments')}
               {sortedAppointments.length > 0 && (
                 <span className="ml-1 text-xs px-1.5 py-0.5 bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-full font-medium">
                   {sortedAppointments.length}
@@ -322,13 +322,13 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
                 onClick={() => navigate('/clinic?tab=appointments')}
                 className="text-xs text-teal-600 dark:text-teal-400 hover:underline"
               >
-                View all
+                {t('viewAll')}
               </button>
               <button
                 onClick={() => setShowBooking(true)}
                 className="flex items-center gap-1 px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded-lg transition-colors shadow-sm shadow-teal-500/20"
               >
-                <Plus size={12} /> Book
+                <Plus size={12} /> {t('book')}
               </button>
             </div>
           </div>
@@ -341,9 +341,9 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
             return (
               <div className="flex gap-3 mb-3">
                 {[
-                  { label: 'Upcoming', val: upcoming,  icon: Clock,          cls: 'text-blue-500' },
-                  { label: 'Done',     val: done,       icon: CheckCircle2,   cls: 'text-emerald-500' },
-                  { label: 'Missed',   val: cancelled,  icon: XCircle,       cls: 'text-red-400' },
+                  { label: t('clinicUpcomingCount'), val: upcoming,  icon: Clock,          cls: 'text-blue-500' },
+                  { label: t('clinicDoneCount'),     val: done,       icon: CheckCircle2,   cls: 'text-emerald-500' },
+                  { label: t('clinicMissedCount'),   val: cancelled,  icon: XCircle,       cls: 'text-red-400' },
                 ].map(({ label, val, icon: Ic, cls }) => (
                   <div key={label} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <Ic size={12} className={cls} />
@@ -396,7 +396,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
                         )}
                       </div>
                       {appt.doctorName && (
-                        <p className="text-[10px] text-slate-400 truncate">Dr. {appt.doctorName}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{t('drPrefix')} {appt.doctorName}</p>
                       )}
                     </div>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 font-medium ${statusColor}`}>
@@ -409,12 +409,12 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           ) : (
             <div className="flex flex-col items-center justify-center h-32 text-slate-400 text-xs gap-2">
               <CalendarClock size={24} className="opacity-30" />
-              <p>No appointments today</p>
+              <p>{t('clinicNoApptToday')}</p>
               <button
                 onClick={() => setShowBooking(true)}
                 className="flex items-center gap-1 text-teal-600 dark:text-teal-400 font-medium hover:underline"
               >
-                <Plus size={12} /> Book first appointment
+                <Plus size={12} /> {t('bookFirstAppointment')}
               </button>
             </div>
           )}
@@ -429,7 +429,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
         {/* Age distribution */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
           <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm mb-3">
-            <Users size={16} /> Patient Age Distribution
+            <Users size={16} /> {t('patientAgeDistribution')}
           </h3>
           {ageDist && ageDist.total > 0 ? (
             <div className="space-y-2.5">
@@ -450,12 +450,12 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
                   </div>
                 )
               })}
-              <p className="text-xs text-slate-400 mt-1">Avg age: {ageDist.avgAge}y · {ageDist.total} patients with DOB</p>
+              <p className="text-xs text-slate-400 mt-1">{t('clinicAvgAgeNote')}: {ageDist.avgAge}y · {ageDist.total} {t('clinicPatientsWithDOB')}</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-28 text-slate-400 text-xs gap-2">
               <Heart size={24} className="opacity-30" />
-              No age data available
+              {t('clinicNoAgeData')}
             </div>
           )}
         </div>
@@ -464,13 +464,13 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
-              <CalendarClock size={16} className="text-amber-500" /> Upcoming Follow-ups
+              <CalendarClock size={16} className="text-amber-500" /> {t('clinicUpcomingFollowUps')}
             </h3>
             <button
               onClick={() => navigate('/clinic?tab=appointments')}
               className="text-[10px] text-teal-600 dark:text-teal-400 hover:underline"
             >
-              View all
+              {t('viewAll')}
             </button>
           </div>
           {raw.upcomingFollowUps.length > 0 ? (
@@ -492,10 +492,10 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
                       </p>
                       <p className="text-[10px] text-slate-500">
                         {new Date(appt.appointmentDate).toLocaleDateString('en', { month: 'short', day: 'numeric' })}
-                        {isOverdue && <span className="text-red-500 font-medium"> · {Math.abs(diff)}d overdue</span>}
-                        {isToday   && <span className="text-amber-600 font-medium"> · Today</span>}
-                        {!isOverdue && !isToday && <span> · in {diff}d</span>}
-                        {appt.doctorName ? ` · Dr. ${appt.doctorName}` : ''}
+                        {isOverdue && <span className="text-red-500 font-medium"> · {Math.abs(diff)}d {t('followUpOverdueCard')}</span>}
+                        {isToday   && <span className="text-amber-600 font-medium"> · {t('dueTodayBadge')}</span>}
+                        {!isOverdue && !isToday && <span> · {t('inDays')} {diff}d</span>}
+                        {appt.doctorName ? ` · ${t('drPrefix')} ${appt.doctorName}` : ''}
                       </p>
                     </div>
                   </div>
@@ -505,14 +505,14 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           ) : (
             <div className="flex flex-col items-center justify-center h-28 text-slate-400 text-xs gap-2">
               <CalendarClock size={24} className="opacity-30" />
-              No follow-up appointments
+              {t('noFollowUpsCategory')}
             </div>
           )}
         </div>
         {/* Diagnosis frequency */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
           <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 text-sm mb-3">
-            <FileText size={16} /> Top Diagnoses (7d)
+            <FileText size={16} /> {t('clinicDiagnosisFrequency')}
           </h3>
           {diagFreq && diagFreq.ranked.length > 0 ? (
             <div className="space-y-2">
@@ -533,12 +533,12 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
                   </div>
                 )
               })}
-              <p className="text-xs text-slate-400 mt-2">{diagFreq.unique} unique diagnoses · {diagFreq.total} total</p>
+              <p className="text-xs text-slate-400 mt-2">{diagFreq.unique} {t('uniqueDiagnosesNote')} · {diagFreq.total} {t('totalDiagnosesNote')}</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-32 text-slate-400 text-xs gap-2">
               <Stethoscope size={24} className="opacity-30" />
-              No diagnoses recorded
+              {t('clinicNoDiagnosesWeek')}
             </div>
           )}
         </div>

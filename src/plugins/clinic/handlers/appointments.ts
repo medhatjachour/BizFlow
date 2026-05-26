@@ -105,23 +105,57 @@ export function registerAppointmentHandlers(prisma: any) {
     try {
       const today = new Date(); today.setHours(0, 0, 0, 0)
       const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-      const where: any = { status: { not: 'completed' }, followUpDate: { not: null } }
+      // followUpDate != null means the doctor set a follow-up; cleared reminders
+      // have followUpDate set to null. Session status is irrelevant here — a
+      // "completed" session can still have an outstanding follow-up date.
+      const base = { followUpDate: { not: null } } as const
+
       if (params?.filter === 'today') {
-        where.followUpDate = { gte: today, lt: tomorrow }
-      } else if (params?.filter === 'overdue') {
-        where.followUpDate = { lt: today }
-      } else if (params?.filter === 'upcoming') {
-        where.followUpDate = { gte: tomorrow }
-      } else {
-        // 'all' — everything that has a followUpDate (uncleared)
-        where.followUpDate = { not: null }
+        return await prisma.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: today, lt: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: 'asc' },
+        })
       }
-      return await prisma.clinicSession.findMany({
-        where,
-        include: { patient: { select: { id: true, name: true, phone: true } } },
-        orderBy: { followUpDate: 'asc' },
-        take: 200
-      })
+      if (params?.filter === 'overdue') {
+        return await prisma.clinicSession.findMany({
+          where: { ...base, followUpDate: { lt: today } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: 'asc' },
+          take: 500,
+        })
+      }
+      if (params?.filter === 'upcoming') {
+        return await prisma.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: 'asc' },
+          take: 500,
+        })
+      }
+
+      // 'all' — fetch each bucket separately so the per-bucket take limits work
+      // correctly, then merge and sort by followUpDate for consistent display.
+      const [overdue, dueToday, upcoming] = await Promise.all([
+        prisma.clinicSession.findMany({
+          where: { ...base, followUpDate: { lt: today } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: 'asc' },
+          take: 200,
+        }),
+        prisma.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: today, lt: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: 'asc' },
+        }),
+        prisma.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: 'asc' },
+          take: 300,
+        }),
+      ])
+      return [...overdue, ...dueToday, ...upcoming]
     } catch (err) { log.error('getAllFollowUps error', err); throw err }
   })
 

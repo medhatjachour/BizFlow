@@ -34,14 +34,14 @@ const SectionFallback: React.FC = () => (
 
 type PluginId = 'commerce' | 'bakery' | 'restaurant' | 'warehouse' | 'clinic' | 'vet' | 'gym'
 
-const PLUGIN_TABS: { id: PluginId; label: string; icon: React.ElementType; activeClass: string; hoverClass: string }[] = [
-  { id: 'commerce',   label: 'Commerce',   icon: ShoppingCart,    activeClass: 'bg-indigo-600 text-white shadow-md', hoverClass: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' },
-  { id: 'bakery',     label: 'Bakery',     icon: Croissant,       activeClass: 'bg-amber-500 text-white shadow-md',  hoverClass: 'hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-700 dark:text-amber-300' },
-  { id: 'restaurant', label: 'Restaurant', icon: UtensilsCrossed, activeClass: 'bg-rose-600 text-white shadow-md',   hoverClass: 'hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-700 dark:text-rose-300' },
-  { id: 'warehouse',  label: 'Warehouse',  icon: Warehouse,       activeClass: 'bg-blue-600 text-white shadow-md',   hoverClass: 'hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300' },
-  { id: 'clinic',     label: 'Clinic',     icon: Stethoscope,     activeClass: 'bg-teal-600 text-white shadow-md',   hoverClass: 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-300' },
-  { id: 'vet',        label: 'Vet Clinic', icon: PawPrint,        activeClass: 'bg-violet-600 text-white shadow-md', hoverClass: 'hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-700 dark:text-violet-300' },
-  { id: 'gym',        label: 'Gym',        icon: Dumbbell,        activeClass: 'bg-orange-500 text-white shadow-md', hoverClass: 'hover:bg-orange-50 dark:hover:bg-orange-900/20 text-orange-700 dark:text-orange-300' },
+const PLUGIN_TAB_DEFS: { id: PluginId; labelKey: string; icon: React.ElementType; activeClass: string; hoverClass: string }[] = [
+  { id: 'commerce',   labelKey: 'pluginCommerce',   icon: ShoppingCart,    activeClass: 'bg-indigo-600 text-white shadow-md', hoverClass: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' },
+  { id: 'bakery',     labelKey: 'pluginBakery',     icon: Croissant,       activeClass: 'bg-amber-500 text-white shadow-md',  hoverClass: 'hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-700 dark:text-amber-300' },
+  { id: 'restaurant', labelKey: 'pluginRestaurant', icon: UtensilsCrossed, activeClass: 'bg-rose-600 text-white shadow-md',   hoverClass: 'hover:bg-rose-50 dark:hover:bg-rose-900/20 text-rose-700 dark:text-rose-300' },
+  { id: 'warehouse',  labelKey: 'pluginWarehouse',  icon: Warehouse,       activeClass: 'bg-blue-600 text-white shadow-md',   hoverClass: 'hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-700 dark:text-blue-300' },
+  { id: 'clinic',     labelKey: 'pluginClinic',     icon: Stethoscope,     activeClass: 'bg-teal-600 text-white shadow-md',   hoverClass: 'hover:bg-teal-50 dark:hover:bg-teal-900/20 text-teal-700 dark:text-teal-300' },
+  { id: 'vet',        labelKey: 'pluginVetClinic',  icon: PawPrint,        activeClass: 'bg-violet-600 text-white shadow-md', hoverClass: 'hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-700 dark:text-violet-300' },
+  { id: 'gym',        labelKey: 'pluginGym',        icon: Dumbbell,        activeClass: 'bg-orange-500 text-white shadow-md', hoverClass: 'hover:bg-orange-50 dark:hover:bg-orange-900/20 text-orange-700 dark:text-orange-300' },
 ]
 
 const Finance: React.FC = () => {
@@ -54,6 +54,8 @@ const Finance: React.FC = () => {
   const isClinic     = useModuleEnabled('clinic')
   const isVet        = useModuleEnabled('vet')
   const isGym        = useModuleEnabled('gym')
+
+  const PLUGIN_TABS = PLUGIN_TAB_DEFS.map(p => ({ ...p, label: t(p.labelKey) }))
 
   const enabledPlugins = PLUGIN_TABS.filter(p =>
     (p.id === 'commerce'   && isCommerce)   ||
@@ -84,11 +86,9 @@ const Finance: React.FC = () => {
           <TrendingUp size={24} className="text-slate-600 dark:text-slate-300" />
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Finance & Analytics</h1>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('financeAnalytics')}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {anyActive
-              ? 'Plugin-tailored financial insights and analytics'
-              : 'Enable plugins to unlock financial analytics'}
+            {anyActive ? t('financePluginSubtitle') : t('financeNoPluginSubtitle')}
           </p>
         </div>
       </div>

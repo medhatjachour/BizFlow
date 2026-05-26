@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown, Settings2, Printer } from 'lucide-react'
+import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown, Settings2, Printer, Package } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import type { Patient } from '../index'
@@ -13,6 +13,16 @@ import { useCustomSuggestions } from '../../hooks/useCustomSuggestions'
 interface LabCheckRow {
   testName: string
   notes: string
+}
+
+interface SessionMaterialRow {
+  materialId: string
+  materialName: string
+  unit: string
+  quantityUsed: string
+  notes: string
+  batchId?: string
+  batches?: Array<{ id: string; batchNumber?: string | null; quantity: number; expiryDate?: string | null }>
 }
 
 interface PrescriptionRow {
@@ -57,6 +67,15 @@ interface ExistingSession {
     startDate?: string | null
     stoppedAt?: string | null
     stopReason?: string | null
+  }>
+  sessionMaterials?: Array<{
+    id: string
+    materialId: string
+    batchId?: string | null
+    quantityUsed: number
+    notes?: string | null
+    material: { id: string; name: string; unit: string }
+    batch?: { id: string; batchNumber?: string | null } | null
   }>
   patient: { id: string; name: string }
 }
@@ -281,6 +300,57 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   }
   function removeLab(idx: number) { setLabOrders(prev => prev.filter((_, i) => i !== idx)) }
 
+  // ─── Session materials ────────────────────────────────────────────────
+  const [sessionMaterials, setSessionMaterials] = useState<SessionMaterialRow[]>(
+    existingSession?.sessionMaterials?.map(sm => ({
+      materialId: sm.materialId,
+      materialName: sm.material.name,
+      unit: sm.material.unit,
+      quantityUsed: sm.quantityUsed.toString(),
+      notes: sm.notes ?? '',
+      batchId: sm.batchId ?? undefined,
+    })) ?? []
+  )
+  const [availableMaterials, setAvailableMaterials] = useState<Array<{ id: string; name: string; unit: string; quantity: number }>>([])
+  const [materialSearch, setMaterialSearch] = useState('')
+  const [showMaterialDropdown, setShowMaterialDropdown] = useState(false)
+
+  // Load active materials for the picker
+  useEffect(() => {
+    window.api.clinic.materials.getAll({ isActive: true, take: 500 })
+      .then((res: any) => setAvailableMaterials(res?.data ?? []))
+      .catch(() => {})
+  }, [])
+
+  async function addMaterialRow(mat: { id: string; name: string; unit: string; quantity: number }) {
+    if (sessionMaterials.some(m => m.materialId === mat.id)) return // already added
+    // Load available batches for this material
+    let batches: SessionMaterialRow['batches'] = []
+    try {
+      const rawBatches = await window.api.clinic.materialBatches.getByMaterial(mat.id)
+      batches = (rawBatches ?? []).filter((b: any) => b.isActive && b.quantity > 0)
+    } catch { /* non-critical */ }
+    setSessionMaterials(prev => [...prev, {
+      materialId: mat.id, materialName: mat.name, unit: mat.unit,
+      quantityUsed: '1', notes: '', batchId: batches?.[0]?.id, batches,
+    }])
+    setMaterialSearch('')
+    setShowMaterialDropdown(false)
+  }
+
+  function updateMaterialRow(idx: number, field: keyof Pick<SessionMaterialRow, 'quantityUsed' | 'notes' | 'batchId'>, value: string) {
+    setSessionMaterials(prev => prev.map((m, i) => i !== idx ? m : { ...m, [field]: value }))
+  }
+
+  function removeMaterialRow(idx: number) {
+    setSessionMaterials(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const filteredMaterials = availableMaterials.filter(m => {
+    const q = materialSearch.trim().toLowerCase()
+    return !q || m.name.toLowerCase().includes(q)
+  }).filter(m => !sessionMaterials.some(sm => sm.materialId === m.id))
+
   const [prescriptions, setPrescriptions] = useState<PrescriptionRow[]>(
     existingSession?.prescriptions?.map((rx) => ({
       medicineName: rx.medicineName,
@@ -361,9 +431,23 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
 
       if (existingSession) {
         await window.api.clinic.sessions.update(existingSession.id, payload)
+        // Sync materials used in this session
+        const materialItems = sessionMaterials
+          .filter(m => m.materialId && parseFloat(m.quantityUsed) > 0)
+          .map(m => ({ materialId: m.materialId, quantityUsed: parseFloat(m.quantityUsed), notes: m.notes || undefined, batchId: m.batchId || undefined }))
+        await window.api.clinic.materials.setSessionMaterials(existingSession.id, materialItems)
         showToast('success', t('savedSuccessfully'))
       } else {
-        await window.api.clinic.sessions.create(payload)
+        const created = await window.api.clinic.sessions.create(payload)
+        // Sync materials used in this session (after creation)
+        if (sessionMaterials.length > 0) {
+          const materialItems = sessionMaterials
+            .filter(m => m.materialId && parseFloat(m.quantityUsed) > 0)
+            .map(m => ({ materialId: m.materialId, quantityUsed: parseFloat(m.quantityUsed), notes: m.notes || undefined, batchId: m.batchId || undefined }))
+          if (materialItems.length > 0) {
+            await window.api.clinic.materials.setSessionMaterials(created.id, materialItems)
+          }
+        }
         // Auto-mark the source appointment as completed when starting from one
         if (defaultAppointment) {
           try {
@@ -926,7 +1010,114 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
             )}
           </div>
 
-         
+          {/* ── Materials Used ──────────────────────────────────────────────────── */}
+          <div className="rounded-xl border border-amber-200 dark:border-amber-800/60 overflow-visible">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/60 rounded-t-xl">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-sm font-bold text-amber-700 dark:text-amber-300">{t('sessionMaterialsTitle')}</span>
+                {sessionMaterials.length > 0 && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200 font-bold">
+                    {sessionMaterials.length}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Material picker input */}
+            <div className="px-4 pt-3 pb-1 relative">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder={t('sessionMaterialsSearch')}
+                  value={materialSearch}
+                  onChange={e => { setMaterialSearch(e.target.value); setShowMaterialDropdown(true) }}
+                  onFocus={() => setShowMaterialDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowMaterialDropdown(false), 150)}
+                />
+              </div>
+              {showMaterialDropdown && filteredMaterials.length > 0 && (
+                <div className="absolute z-[200] left-4 right-4 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-xl max-h-44 overflow-y-auto">
+                  {filteredMaterials.slice(0, 20).map(mat => (
+                    <button
+                      key={mat.id}
+                      type="button"
+                      onMouseDown={() => addMaterialRow(mat)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-between border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors"
+                    >
+                      <span className="text-sm text-slate-900 dark:text-white">{mat.name}</span>
+                      <span className="text-xs text-slate-400">{mat.quantity} {mat.unit} {t('available')}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected material rows */}
+            {sessionMaterials.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-3 pb-4 italic">{t('noMaterialsUsed')}</p>
+            ) : (
+              <div className="px-4 pb-3 space-y-2" onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}>
+                {sessionMaterials.map((m, idx) => (
+                  <div key={idx} className="flex gap-2 items-start">
+                    <div className="flex-1 space-y-1.5">
+                      <div className="grid grid-cols-5 gap-2 items-end">
+                        <div className="col-span-2">
+                          {idx === 0 && <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('materialName')}</label>}
+                          <div className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-300 truncate">{m.materialName}</div>
+                        </div>
+                        <div>
+                          {idx === 0 && <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('materialQuantity')}</label>}
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number" min="0.01" step="0.01"
+                              className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                              value={m.quantityUsed}
+                              onChange={e => updateMaterialRow(idx, 'quantityUsed', e.target.value)}
+                            />
+                            <span className="text-xs text-slate-400 whitespace-nowrap">{m.unit}</span>
+                          </div>
+                        </div>
+                        <div className="col-span-2">
+                          {idx === 0 && <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('notes')}</label>}
+                          <input
+                            className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            placeholder={t('optional')}
+                            value={m.notes}
+                            onChange={e => updateMaterialRow(idx, 'notes', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      {/* Batch picker – only shown if the material has tracked batches */}
+                      {m.batches && m.batches.length > 0 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-400 shrink-0">{t('batch') ?? 'Batch'}:</span>
+                          <select
+                            className="flex-1 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-700 px-2 py-1 text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            value={m.batchId ?? ''}
+                            onChange={e => updateMaterialRow(idx, 'batchId', e.target.value)}
+                          >
+                            <option value="">{t('noBatch') ?? 'No specific batch'}</option>
+                            {m.batches.map(b => (
+                              <option key={b.id} value={b.id}>
+                                {b.batchNumber ? `#${b.batchNumber} – ` : ''}{b.quantity} {m.unit}
+                                {b.expiryDate ? ` (exp ${new Date(b.expiryDate).toLocaleDateString()})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => removeMaterialRow(idx)}
+                      className="p-1.5 text-red-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0 mt-1">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Footer */}
           <div className="flex justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-700">
