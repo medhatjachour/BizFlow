@@ -33,8 +33,8 @@ async function getMissingTables(prisma: any): Promise<string[]> {
 
 function runDbPush(dbUrl: string, cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const proc = spawn('npx', ['prisma', 'db', 'push', '--schema=prisma/merged.prisma', '--skip-generate', '--accept-data-loss'], {
-      cwd, shell: true, env: { ...process.env, DATABASE_URL: dbUrl }
+    const proc = spawn('npx', ['prisma', 'db', 'push', '--schema=prisma/merged.prisma', '--accept-data-loss'], {
+        cwd, shell: true, env: { ...process.env, DATABASE_URL: dbUrl }
     })
     let output = ''
     let stderrOutput = ''

@@ -50,6 +50,7 @@ nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
+  include: build/installer.nsh
   createDesktopShortcut: always
   createStartMenuShortcut: true
   oneClick: false

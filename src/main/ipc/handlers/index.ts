@@ -117,7 +117,7 @@ export async function initializePrisma(): Promise<void> {
         if (__PLUGIN_BAKERY__)      ['Recipe','RecipeIngredient','ProductionBatch','PantryIngredient','WasteLog','ProductionSchedule','BakerySale','BakeryExpense'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_RESTAURANT__)  ['RestaurantTable','TableReservation','MenuItem','DineInOrder','DineInOrderItem'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_WAREHOUSE__)   ['WarehouseLocation','WarehouseStock','StockTransfer','StockTransferItem'].forEach(t => EXPECTED.add(t))
-        if (__PLUGIN_CLINIC__)      ['ClinicPatient','ClinicSession','ClinicPrescription','ClinicCheckResult','ClinicAppointment','ClinicExpense','ClinicStaff','ClinicSalaryRecord'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_CLINIC__)      ['ClinicPatient','ClinicSession','ClinicPrescription','ClinicCheckResult','ClinicAppointment','ClinicExpense','ClinicStaff','ClinicSalaryRecord','ClinicMaterial','ClinicMaterialCategory','ClinicMaterialBatch','ClinicSessionMaterial','ClinicMaterialLoss','ClinicMaterialExpiry','ClinicMaterialAdjustment'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_VET__)         ['VetOwner','VetPatient','VetSession','VetPrescription','VetAppointment','VetCheckResult','VetExpense','VetStaff','VetSalaryRecord','VetMedicine','VetMedicineBatch','VetMedicineSale'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_GYM__)         ['GymCoach','GymTrainee','GymPlan','GymSubscription','GymFreeze','GymWalkSession','GymExpense','GymMeasurement','GymGoal','GymLocker','GymLockerAssignment','GymProgram','GymProgramDay','GymProgramExercise','GymProgramAssignment','GymShift'].forEach(t => EXPECTED.add(t))
         const allTables: { name: string }[] = await prisma.$queryRawUnsafe(

@@ -465,4 +465,171 @@ export function registerMaterialHandlers(prisma: any) {
       topMaterials,
     }
   })
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // AUDIT TRAIL: Batch Loss, Expiry, Adjustment
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // ─── Log batch loss (damage, spillage, contamination, etc.) ──────────────
+  ipcMain.handle('clinic:batches:logLoss', async (_e, {
+    batchId,
+    materialId,
+    quantityLost,
+    reason = 'other',
+    description = null,
+    recordedBy = null,
+  }: {
+    batchId: string
+    materialId: string
+    quantityLost: number
+    reason?: string
+    description?: string | null
+    recordedBy?: string | null
+  }) => {
+    return prisma.$transaction(async (tx: any) => {
+      // Create loss record (audit trail)
+      const loss = await tx.clinicMaterialLoss.create({
+        data: {
+          batchId,
+          materialId,
+          quantityLost,
+          reason,
+          description,
+          recordedBy,
+        },
+      })
+
+      // Update batch quantity
+      const batch = await tx.clinicMaterialBatch.findUnique({ where: { id: batchId } })
+      if (!batch) throw new Error('BATCH_NOT_FOUND')
+
+      const newBatchQty = Math.max(0, batch.quantity - quantityLost)
+      await tx.clinicMaterialBatch.update({
+        where: { id: batchId },
+        data: { quantity: newBatchQty },
+      })
+
+      // Update material stock
+      await tx.clinicMaterial.update({
+        where: { id: materialId },
+        data: { quantity: { decrement: quantityLost } },
+      })
+
+      // Sync expiry date
+      await syncMaterialExpiry(tx, materialId)
+
+      return loss
+    })
+  })
+
+  // ─── Log batch expiry ────────────────────────────────────────────────────
+  ipcMain.handle('clinic:batches:logExpiry', async (_e, {
+    batchId,
+    materialId,
+    quantityExpired,
+    expiryDate,
+    disposalMethod = null,
+    recordedBy = null,
+    notes = null,
+  }: {
+    batchId: string
+    materialId: string
+    quantityExpired: number
+    expiryDate: string
+    disposalMethod?: string | null
+    recordedBy?: string | null
+    notes?: string | null
+  }) => {
+    return prisma.$transaction(async (tx: any) => {
+      // Create expiry record (audit trail)
+      const expiry = await tx.clinicMaterialExpiry.create({
+        data: {
+          batchId,
+          materialId,
+          quantityExpired,
+          expiryDate: new Date(expiryDate),
+          disposalMethod,
+          recordedBy,
+          notes,
+        },
+      })
+
+      // Update batch quantity
+      const batch = await tx.clinicMaterialBatch.findUnique({ where: { id: batchId } })
+      if (!batch) throw new Error('BATCH_NOT_FOUND')
+
+      const newBatchQty = Math.max(0, batch.quantity - quantityExpired)
+      await tx.clinicMaterialBatch.update({
+        where: { id: batchId },
+        data: { quantity: newBatchQty },
+      })
+
+      // Update material stock
+      await tx.clinicMaterial.update({
+        where: { id: materialId },
+        data: { quantity: { decrement: quantityExpired } },
+      })
+
+      // Sync expiry date
+      await syncMaterialExpiry(tx, materialId)
+
+      return expiry
+    })
+  })
+
+  // ─── Log batch adjustment (recount, received, etc.) ────────────────────────
+  ipcMain.handle('clinic:batches:logAdjustment', async (_e, {
+    batchId,
+    materialId,
+    quantityBefore,
+    quantityAfter,
+    reason = 'recount',
+    description = null,
+    adjustedBy = null,
+  }: {
+    batchId: string
+    materialId: string
+    quantityBefore: number
+    quantityAfter: number
+    reason?: string
+    description?: string | null
+    adjustedBy?: string | null
+  }) => {
+    return prisma.$transaction(async (tx: any) => {
+      const quantityAdjusted = quantityAfter - quantityBefore
+
+      // Create adjustment record (audit trail)
+      const adjustment = await tx.clinicMaterialAdjustment.create({
+        data: {
+          batchId,
+          materialId,
+          quantityBefore,
+          quantityAfter: Math.max(0, quantityAfter),
+          quantityAdjusted,
+          reason,
+          description,
+          adjustedBy,
+        },
+      })
+
+      // Update batch quantity
+      await tx.clinicMaterialBatch.update({
+        where: { id: batchId },
+        data: { quantity: Math.max(0, quantityAfter) },
+      })
+
+      // Update material stock by the delta
+      if (quantityAdjusted !== 0) {
+        await tx.clinicMaterial.update({
+          where: { id: materialId },
+          data: { quantity: { increment: quantityAdjusted } },
+        })
+      }
+
+      // Sync expiry date
+      await syncMaterialExpiry(tx, materialId)
+
+      return adjustment
+    })
+  })
 }
