@@ -241,17 +241,9 @@ export default function Sales(): JSX.Element {
     })
   }
 
-  const filteredTransactions = useMemo(() => {
-    let filtered = transactions.filter(transaction => 
-      (transaction.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       transaction.user?.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       transaction.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       transaction.items.some(item => 
-         item.product?.name.toLowerCase().includes(searchQuery.toLowerCase())
-       ))
-    )
+  const dateFilteredTransactions = useMemo(() => {
+    let filtered = transactions
 
-    // Apply date filter
     if (dateFilter !== 'all') {
       const now = new Date()
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -276,14 +268,28 @@ export default function Sales(): JSX.Element {
     }
 
     return filtered
-  }, [transactions, searchQuery, dateFilter])
+  }, [transactions, dateFilter])
+
+  const filteredTransactions = useMemo(() => {
+    const query = searchQuery.toLowerCase()
+    if (!query.trim()) return dateFilteredTransactions
+
+    return dateFilteredTransactions.filter(transaction =>
+      (transaction.customerName?.toLowerCase().includes(query) ||
+       transaction.user?.username.toLowerCase().includes(query) ||
+       transaction.id.toLowerCase().includes(query) ||
+       transaction.items.some(item =>
+         item.product?.name.toLowerCase().includes(query)
+       ))
+    )
+  }, [dateFilteredTransactions, searchQuery])
 
   // Installments are now filtered server-side, so we just return them as-is
   const filteredInstallments = installments
 
   const stats = useMemo(() => {
     // Include completed and partially_refunded transactions
-    const activeTransactions = filteredTransactions.filter(t => 
+    const activeTransactions = dateFilteredTransactions.filter(t => 
       t.status === 'completed' || t.status === 'partially_refunded'
     )
     
@@ -308,7 +314,7 @@ export default function Sales(): JSX.Element {
     // Calculate today's stats
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const todayTransactions = transactions.filter(t => {
+    const todayTransactions = dateFilteredTransactions.filter(t => {
       const transactionDate = new Date(t.createdAt)
       return transactionDate >= today && (t.status === 'completed' || t.status === 'partially_refunded')
     })
@@ -321,7 +327,7 @@ export default function Sales(): JSX.Element {
     // Calculate yesterday's stats for comparison
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
-    const yesterdayTransactions = transactions.filter(t => {
+    const yesterdayTransactions = dateFilteredTransactions.filter(t => {
       const transactionDate = new Date(t.createdAt)
       return transactionDate >= yesterday && transactionDate < today && (t.status === 'completed' || t.status === 'partially_refunded')
     })
@@ -344,7 +350,7 @@ export default function Sales(): JSX.Element {
     startOfWeek.setDate(today.getDate() - today.getDay())
     startOfWeek.setHours(0, 0, 0, 0)
     
-    const thisWeekTransactions = transactions.filter(t => {
+    const thisWeekTransactions = dateFilteredTransactions.filter(t => {
       const transactionDate = new Date(t.createdAt)
       return transactionDate >= startOfWeek && (t.status === 'completed' || t.status === 'partially_refunded')
     })
@@ -357,7 +363,7 @@ export default function Sales(): JSX.Element {
     lastWeekStart.setDate(lastWeekStart.getDate() - 7)
     const lastWeekEnd = new Date(startOfWeek)
     
-    const lastWeekTransactions = transactions.filter(t => {
+    const lastWeekTransactions = dateFilteredTransactions.filter(t => {
       const transactionDate = new Date(t.createdAt)
       return transactionDate >= lastWeekStart && transactionDate < lastWeekEnd && (t.status === 'completed' || t.status === 'partially_refunded')
     })
@@ -380,9 +386,9 @@ export default function Sales(): JSX.Element {
       revenueChange,
       salesChange,
       weeklyRevenueChange,
-      hasData: filteredTransactions.length > 0
+      hasData: dateFilteredTransactions.length > 0
     }
-  }, [filteredTransactions, transactions])
+  }, [dateFilteredTransactions])
 
   // Pagination
   const paginatedTransactions = useMemo(() => {
@@ -922,7 +928,7 @@ export default function Sales(): JSX.Element {
       )}
 
       {/* Filters and Sales Table - Only for sales tab */}
-      {activeTab === 'sales' && stats.hasData && (
+      {activeTab === 'sales' && transactions.length > 0 && (
         <div className="glass-card p-4">
         <div className="flex gap-4 items-center flex-wrap">
           <div className="flex-1 min-w-[250px] relative">
@@ -959,7 +965,7 @@ export default function Sales(): JSX.Element {
       )}
 
       {/* Transactions Table */}
-      {activeTab === 'sales' && stats.hasData && (
+      {activeTab === 'sales' && (loading || transactions.length > 0) && (
         <div className="glass-card overflow-hidden">
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Transactions</h2>

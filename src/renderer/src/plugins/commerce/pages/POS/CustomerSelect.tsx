@@ -71,6 +71,7 @@ export default function CustomerSelect({
         />
         {selectedCustomer && (
           <button
+            type="button"
             onClick={() => {
               onSelectCustomer(null)
               onQueryChange('')
@@ -86,8 +87,11 @@ export default function CustomerSelect({
           <div className="absolute z-50 w-full bottom-full mb-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
             {filteredCustomers.map((customer) => (
               <button
+                type="button"
                 key={customer.id}
-                onClick={() => {
+                onMouseDown={(e) => {
+                  // Select on mousedown so input blur doesn't close the list first.
+                  e.preventDefault()
                   onSelectCustomer(customer)
                   onQueryChange('')
                   setShowDropdown(false)
