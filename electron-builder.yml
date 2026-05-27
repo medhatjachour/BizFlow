@@ -57,7 +57,7 @@ nsis:
   perMachine: false  # Allow per-user installation
   allowElevation: true  # Allow elevation if user wants system-wide install
   allowToChangeInstallationDirectory: true
-  deleteAppDataOnUninstall: false  # Keep user data on uninstall
+  deleteAppDataOnUninstall: true  # Remove user data on uninstall
   runAfterFinish: true  # Launch app after installation
   # NSIS installer customization
   installerIcon: build/icon.ico
