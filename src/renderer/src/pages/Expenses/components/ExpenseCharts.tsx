@@ -19,8 +19,8 @@ interface CategoryEntry {
 
 interface Props {
   categoriesForCharts: CategoryEntry[]
-  totalWithSalaries: number
   includeCOGS: boolean
+  includeSalaries: boolean
   t: (key: string) => string
 }
 
@@ -44,20 +44,22 @@ const BAR_COLOR = (id: string) => {
   return { bg: 'rgba(239, 68, 68, 0.8)', border: 'rgb(239, 68, 68)' }
 }
 
-export default function ExpenseCharts({ categoriesForCharts, totalWithSalaries, includeCOGS, t }: Props) {
+export default function ExpenseCharts({ categoriesForCharts, includeCOGS, includeSalaries, t }: Props) {
   if (categoriesForCharts.length === 0) return null
 
   const labels = categoriesForCharts.map(c => t(c.nameKey))
   const values = categoriesForCharts.map(c => c.total)
+  const chartTotal = values.reduce((sum, value) => sum + value, 0)
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
         <h3 className="font-semibold text-slate-900 dark:text-white mb-4">
-          {includeCOGS
-            ? t('expensesByCategoryIncludingSalariesAndCOGS')
-            : t('expensesByCategoryExcludingSalariesAndCOGS')}
+          {t('categoryBreakdown')}
         </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+          Includes: {includeCOGS ? 'COGS' : 'No COGS'} • {includeSalaries ? 'Salaries' : 'No Salaries'}
+        </p>
         <div className="h-64">
           <Pie
             data={{
@@ -77,8 +79,8 @@ export default function ExpenseCharts({ categoriesForCharts, totalWithSalaries, 
                 tooltip: {
                   callbacks: {
                     label: ctx => {
-                      const pct = totalWithSalaries > 0
-                        ? ((ctx.parsed / totalWithSalaries) * 100).toFixed(1)
+                      const pct = chartTotal > 0
+                        ? ((ctx.parsed / chartTotal) * 100).toFixed(1)
                         : '0.0'
                       return `${ctx.label}: $${ctx.parsed.toFixed(2)} (${pct}%)`
                     },

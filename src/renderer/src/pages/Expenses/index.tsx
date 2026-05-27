@@ -74,6 +74,7 @@ export default function Expenses() {
         expenseCount={s.filteredExpenses.length}
         employeeCount={s.employeeCount}
         includeCOGS={s.includeCOGS}
+        includeSalaries={s.includeSalaries}
         t={s.t}
       />
 
@@ -84,13 +85,17 @@ export default function Expenses() {
         setFilterCategory={s.setFilterCategory}
         dateRange={s.dateRange}
         setDateRange={s.setDateRange}
+        includeCOGS={s.includeCOGS}
+        setIncludeCOGS={s.setIncludeCOGS}
+        includeSalaries={s.includeSalaries}
+        setIncludeSalaries={s.setIncludeSalaries}
         t={s.t}
       />
 
       <ExpenseCharts
         categoriesForCharts={s.categoriesForCharts}
-        totalWithSalaries={s.totalWithSalaries}
         includeCOGS={s.includeCOGS}
+        includeSalaries={s.includeSalaries}
         t={s.t}
       />
 

@@ -48,6 +48,7 @@ export function useExpenses() {
   const [employeeCount, setEmployeeCount] = useState(0)
   const [totalCOGS, setTotalCOGS] = useState(0)
   const [includeCOGS, setIncludeCOGS] = useState(true)
+  const [includeSalaries, setIncludeSalaries] = useState(true)
   const [formData, setFormData] = useState<ExpenseFormData>(EMPTY_FORM)
 
   const buildDateBounds = useCallback((range: DateRange) => {
@@ -144,7 +145,13 @@ export function useExpenses() {
     loadSalaryData()
     loadCOGSData()
     setIncludeCOGS(localStorage.getItem('includeCOGSInCalculations') !== 'false')
+    setIncludeSalaries(localStorage.getItem('includeSalariesInCalculations') !== 'false')
   }, [loadExpenses, loadSalaryData, loadCOGSData])
+
+  useEffect(() => {
+    localStorage.setItem('includeCOGSInCalculations', String(includeCOGS))
+    localStorage.setItem('includeSalariesInCalculations', String(includeSalaries))
+  }, [includeCOGS, includeSalaries])
 
   // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -168,7 +175,7 @@ export function useExpenses() {
 
   const operationalExpenses = filteredExpenses.reduce((s, e) => s + e.amount, 0)
   const totalExpenses = operationalExpenses + (includeCOGS ? totalCOGS : 0)
-  const totalWithSalaries = totalExpenses + totalSalaries
+  const totalWithSalaries = totalExpenses + (includeSalaries ? totalSalaries : 0)
 
   const expensesByCategory = EXPENSE_CATEGORIES.map(cat => ({
     ...cat,
@@ -177,7 +184,7 @@ export function useExpenses() {
 
   const categoriesForCharts = [
     ...expensesByCategory,
-    ...(totalSalaries > 0
+    ...(totalSalaries > 0 && includeSalaries
       ? [{ id: 'salaries' as const, nameKey: 'employeeSalaries', color: 'bg-purple-500', total: totalSalaries }]
       : []),
     ...(totalCOGS > 0 && includeCOGS
@@ -291,6 +298,9 @@ export function useExpenses() {
     dateRange, setDateRange,
     formData, setFormData,
     includeCOGS,
+    includeSalaries,
+    setIncludeCOGS,
+    setIncludeSalaries,
     apiAvailable,
     // derived
     filteredExpenses,
