@@ -103,13 +103,13 @@ export default function PantryTab() {
   const save = async () => {
     setFormError('')
     const name = form.name.trim()
-    if (!name) { setFormError('Ingredient name is required.'); return }
-    if (isDuplicateName) { setFormError('An ingredient with this name already exists.'); return }
-    if (!form.unit.trim()) { setFormError('Unit is required.'); return }
-    if (Number(form.costPerUnit) < 0) { setFormError('Cost per unit cannot be negative.'); return }
-    if (form.lowStockThreshold !== '' && Number(form.lowStockThreshold) < 0) { setFormError('Low stock threshold cannot be negative.'); return }
-    if (form.reorderPoint !== '' && Number(form.reorderPoint) < 0) { setFormError('Reorder point cannot be negative.'); return }
-    if (form.reorderQuantity !== '' && Number(form.reorderQuantity) < 0) { setFormError('Reorder quantity cannot be negative.'); return }
+    if (!name) { setFormError(t('bakeryIngredientNameRequired')); return }
+    if (isDuplicateName) { setFormError(t('bakeryDuplicateIngredient')); return }
+    if (!form.unit.trim()) { setFormError(t('bakeryUnitRequired')); return }
+    if (Number(form.costPerUnit) < 0) { setFormError(t('bakeryCostNegative')); return }
+    if (form.lowStockThreshold !== '' && Number(form.lowStockThreshold) < 0) { setFormError(t('bakeryLowThresholdNegative')); return }
+    if (form.reorderPoint !== '' && Number(form.reorderPoint) < 0) { setFormError(t('bakeryReorderPointNegative')); return }
+    if (form.reorderQuantity !== '' && Number(form.reorderQuantity) < 0) { setFormError(t('bakeryReorderQtyNegative')); return }
 
     setSaving(true)
     try {
@@ -129,9 +129,9 @@ export default function PantryTab() {
       load()
     } catch (err: any) {
       if (err?.message === 'DUPLICATE_NAME') {
-        setFormError('An ingredient with this name already exists.')
+        setFormError(t('bakeryDuplicateIngredient'))
       } else {
-        setFormError('Failed to save. Please check your input and try again.')
+        setFormError(t('bakerySaveInputError'))
       }
     } finally {
       setSaving(false)
@@ -274,7 +274,7 @@ export default function PantryTab() {
               className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <ShoppingCart className="h-4 w-4" />
-              Restock All
+              {t('bakeryRestockAll')}
             </button>
           )}
           <button
@@ -318,10 +318,10 @@ export default function PantryTab() {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      {form.id ? 'Edit Ingredient' : 'Add Ingredient'}
+                      {form.id ? t('bakeryEditIngredient') : t('bakeryAddIngredient')}
                     </h3>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {form.id ? 'Update ingredient details and stock settings' : 'Track a new pantry ingredient'}
+                      {form.id ? t('bakeryEditIngredientDesc') : t('bakeryAddIngredientDesc')}
                     </p>
                   </div>
                 </div>
@@ -340,13 +340,13 @@ export default function PantryTab() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Warehouse className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Basic Info</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('bakeryBasicInfo')}</span>
                   </div>
                   <div className="space-y-3">
                     {/* Name */}
                     <div>
                       <label className={labelCls}>
-                        Ingredient Name <span className="text-red-500 normal-case">*</span>
+                        {t('bakeryIngredientName')} <span className="text-red-500 normal-case">*</span>
                       </label>
                       <input
                         autoFocus
@@ -359,16 +359,16 @@ export default function PantryTab() {
                         }`}
                         value={form.name}
                         onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setFormError('') }}
-                        placeholder="e.g. Bread Flour, Butter, Cocoa Powder…"
+                        placeholder={t('bakeryIngredientNamePlaceholder')}
                       />
                       {!form.name.trim() && form.name !== '' && (
                         <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" /> Name is required
+                          <AlertTriangle className="h-3 w-3" /> {t('bakeryNameRequired')}
                         </p>
                       )}
                       {isDuplicateName && (
                         <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" /> "{form.name.trim()}" already exists in your pantry
+                          <AlertTriangle className="h-3 w-3" /> "{form.name.trim()}" {t('bakeryNameAlreadyExists')}
                         </p>
                       )}
                     </div>
@@ -376,7 +376,7 @@ export default function PantryTab() {
                     {/* Stock + Unit row */}
                     <div className="grid grid-cols-5 gap-3">
                       <div className="col-span-3">
-                        <label className={labelCls}>Current Stock</label>
+                        <label className={labelCls}>{t('bakeryCurrentStock')}</label>
                         <input
                           type="number" step="0.01" min="0"
                           className={inputCls}
@@ -385,7 +385,7 @@ export default function PantryTab() {
                         />
                       </div>
                       <div className="col-span-2">
-                        <label className={labelCls}>Unit</label>
+                        <label className={labelCls}>{t('bakeryUnit')}</label>
                         <input
                           list="pantry-unit-suggestions"
                           className={inputCls}
@@ -423,10 +423,10 @@ export default function PantryTab() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <DollarSign className="h-3.5 w-3.5 text-green-500" />
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pricing</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('bakeryPricing')}</span>
                   </div>
                   <div>
-                    <label className={labelCls}>Cost per {form.unit || 'unit'}</label>
+                    <label className={labelCls}>{t('bakeryCostPer', { unit: form.unit || t('bakeryUnit') })}</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                       <input
@@ -440,7 +440,7 @@ export default function PantryTab() {
                     {stockValue && (
                       <p className="text-xs text-green-600 dark:text-green-400 mt-1.5 flex items-center gap-1">
                         <CheckCircle2 className="h-3 w-3" />
-                        Total stock value: <span className="font-semibold">${stockValue}</span>
+                        {t('bakeryTotalStockValue')} <span className="font-semibold">${stockValue}</span>
                       </p>
                     )}
                   </div>
@@ -450,13 +450,13 @@ export default function PantryTab() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Bell className="h-3.5 w-3.5 text-red-500" />
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Stock Alerts</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('bakeryStockAlertsSection')}</span>
                   </div>
                   <div className="rounded-xl border border-slate-100 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700 overflow-hidden">
                     <div className="px-4 py-3 flex items-center justify-between gap-4 bg-slate-50 dark:bg-slate-700/30">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Low Stock Alert</p>
-                        <p className="text-xs text-slate-400 mt-0.5">Show warning when stock falls at or below this level</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('bakeryLowStockAlert')}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{t('bakeryLowStockAlertDesc')}</p>
                       </div>
                       <input
                         type="number" step="0.01" min="0" placeholder="—"
@@ -467,8 +467,8 @@ export default function PantryTab() {
                     </div>
                     <div className="px-4 py-3 flex items-center justify-between gap-4 bg-white dark:bg-slate-800">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Reorder Point</p>
-                        <p className="text-xs text-slate-400 mt-0.5">Trigger reorder badge when stock hits this level</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('bakeryReorderPoint')}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{t('bakeryReorderPointDesc')}</p>
                       </div>
                       <input
                         type="number" step="0.01" min="0" placeholder="—"
@@ -499,8 +499,8 @@ export default function PantryTab() {
                           {rop != null && <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-amber-400 rounded" style={{ left: `${Math.min((rop / max) * 100, 100)}%` }} title={`Reorder: ${rop}`} />}
                         </div>
                         <div className="flex gap-3 text-[10px] text-slate-400">
-                          {rop != null && <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-amber-400" />Reorder at {rop}</span>}
-                          {low != null && <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-400" />Alert at {low}</span>}
+                          {rop != null && <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-amber-400" />{t('bakeryReorderPoint')}: {rop}</span>}
+                          {low != null && <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-400" />{t('bakeryLowStockAlert')}: {low}</span>}
                         </div>
                       </div>
                     )
@@ -511,7 +511,7 @@ export default function PantryTab() {
                    Number(form.lowStockThreshold) > Number(form.reorderPoint) && (
                     <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 text-xs text-amber-700 dark:text-amber-400">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      <span>Low stock alert ({form.lowStockThreshold} {form.unit}) is set higher than reorder point ({form.reorderPoint} {form.unit}). This means you'll be alerted about low stock before the reorder badge even appears — consider raising the reorder point so you can reorder in advance.</span>
+                      <span>{t('bakeryThresholdWarning', { low: form.lowStockThreshold, rop: form.reorderPoint, unit: form.unit })}</span>
                     </div>
                   )}
                 </div>
@@ -520,25 +520,25 @@ export default function PantryTab() {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <RotateCcw className="h-3.5 w-3.5 text-blue-500" />
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Reorder Settings</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('bakeryReorderSettings')}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelCls}>Reorder Qty <span className="normal-case font-normal text-slate-400">({form.unit || 'unit'})</span></label>
+                      <label className={labelCls}>{t('bakeryReorderQuantity')} <span className="normal-case font-normal text-slate-400">({form.unit || t('bakeryUnit')})</span></label>
                       <input
                         type="number" step="0.01" min="0" placeholder="e.g. 2000"
                         className={inputCls}
                         value={form.reorderQuantity}
                         onChange={e => setForm(f => ({ ...f, reorderQuantity: e.target.value }))}
                       />
-                      <p className="text-[11px] text-slate-400 mt-1">How much to order each time</p>
+                      <p className="text-[11px] text-slate-400 mt-1">{t('bakeryReorderQtyHint')}</p>
                     </div>
                     <div>
-                      <label className={labelCls}>Supplier</label>
+                      <label className={labelCls}>{t('bakerySupplierName')}</label>
                       <input
                         className={inputCls}
                         value={form.supplierName}
-                        placeholder="Supplier name (optional)"
+                        placeholder={t('bakerySupplierPlaceholder')}
                         onChange={e => setForm(f => ({ ...f, supplierName: e.target.value }))}
                       />
                     </div>
@@ -548,13 +548,13 @@ export default function PantryTab() {
                 {/* Section 5 — Notes */}
                 <div>
                   <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-                    Notes <span className="normal-case font-normal text-slate-400">(optional)</span>
+                    {t('bakeryNotesLabel')} <span className="normal-case font-normal text-slate-400">{t('bakeryNotesOptionalLabel')}</span>
                   </label>
                   <textarea
                     rows={2}
                     className={`${inputCls} resize-none`}
                     value={form.notes}
-                    placeholder="Storage conditions, allergens, handling instructions…"
+                    placeholder={t('bakeryStorageNotesPlaceholder')}
                     onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   />
                 </div>
@@ -590,8 +590,8 @@ export default function PantryTab() {
                       className="flex items-center gap-2 px-5 py-2 text-sm rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-50 transition-colors shadow-sm"
                     >
                       {saving
-                        ? <><span className="animate-spin inline-block">⟳</span> Saving…</>
-                        : form.id ? 'Save Changes' : 'Add Ingredient'
+                        ? <><span className="animate-spin inline-block">⟳</span> {t('bakerySaving')}</>
+                        : form.id ? t('bakerySaveChanges') : t('bakeryAddIngredient')
                       }
                     </button>
                   </div>

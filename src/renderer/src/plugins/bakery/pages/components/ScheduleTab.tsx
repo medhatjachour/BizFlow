@@ -221,7 +221,7 @@ export default function ScheduleTab() {
               {/* ── Recipe ── */}
               <div>
                 <label className={LABEL_CLS}>
-                  <span className="flex items-center gap-1.5"><ChefHat className="h-3.5 w-3.5" /> Recipe <span className="text-red-500">*</span></span>
+                  <span className="flex items-center gap-1.5"><ChefHat className="h-3.5 w-3.5" /> {t('bakeryRecipeName')} <span className="text-red-500">*</span></span>
                 </label>
                 <select
                   className={FIELD_CLS}
