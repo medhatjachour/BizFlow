@@ -74,6 +74,8 @@ export const bakeryPreload = {
     ipcRenderer.invoke('bakery:createScheduleItem', data),
   updateScheduleItem: (data: any) =>
     ipcRenderer.invoke('bakery:updateScheduleItem', data),
+  completeScheduleAndCreateBatch: (data: any) =>
+    ipcRenderer.invoke('bakery:completeScheduleAndCreateBatch', data),
   deleteScheduleItem: (id: string) =>
     ipcRenderer.invoke('bakery:deleteScheduleItem', id),
 

@@ -309,7 +309,7 @@ export default function BakeryExpensesTab() {
               const meta = catMeta(c.category)
               return (
                 <div key={c.category} className="flex items-center gap-3">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${meta.color}`}>{meta.label}</span>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${meta.color} min-w-[80px]`}>{meta.label}</span>
                   <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: meta.bar }} />
                   </div>

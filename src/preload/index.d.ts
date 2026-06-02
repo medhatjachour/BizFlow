@@ -365,6 +365,7 @@ interface API {
     getSchedule: (options?: any) => Promise<any>
     createScheduleItem: (data: any) => Promise<any>
     updateScheduleItem: (data: any) => Promise<any>
+    completeScheduleAndCreateBatch: (data: any) => Promise<any>
     deleteScheduleItem: (id: string) => Promise<any>
     getDailyOverview: () => Promise<any>
     getProfitLoss: (options: any) => Promise<any>

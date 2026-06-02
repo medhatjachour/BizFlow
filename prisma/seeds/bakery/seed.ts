@@ -69,7 +69,7 @@ const LAST_NAMES  = ["Hassan","Ali","Ibrahim","Mahmoud","Khalil","Nasser","Farou
 
 const WASTE_REASONS = ["Expired","Dropped","Overbaked","Underbaked","Contaminated","Quality rejection","Overproduction"] as string[]
 const WASTE_TYPES   = ["ingredient","finished_product","production_batch","other"] as string[]
-const FT_EXPENSE_CATS = ["rent","utilities","salary","ingredients","equipment","marketing","maintenance","other"] as string[]
+const FT_EXPENSE_CATS = ["rent","utilities","salaries","ingredients","equipment","marketing","maintenance","other"] as string[]
 
 // -- PANTRY -------------------------------------------------------------------
 const PANTRY_DEFS = [
@@ -449,10 +449,17 @@ async function main() {
   // 4. PANTRY
   console.log("Creating pantry ingredients...")
   const pantryItems: any[] = []
-  for (const def of PANTRY_DEFS) {
+  for (let i = 0; i < PANTRY_DEFS.length; i++) {
+    const def = PANTRY_DEFS[i]
+    // Keep a subset intentionally low to exercise low-stock/reorder UI flows.
+    const shouldBeLow = i % 5 === 0
+    const currentStock = shouldBeLow
+      ? rp(Math.max(0.05, def.lowStock * 0.35), Math.max(0.1, def.lowStock * 0.9))
+      : rp(def.reorderPoint! * 1.5, def.reorderPoint! * 4)
+
     const item = await prisma.pantryIngredient.create({ data: {
       name: def.name,
-      currentStock:      rp(def.reorderPoint! * 1.5, def.reorderPoint! * 4),
+      currentStock,
       unit:              def.unit,
       costPerUnit:       def.costPerUnit,
       lowStockThreshold: def.lowStock,
@@ -460,7 +467,7 @@ async function main() {
       reorderQuantity:   def.reorderQty,
       lastOrderedDate:   randomDate(daysAgo(14), NOW),
       supplierName:      def.supplier,
-      notes: null,
+      notes: shouldBeLow ? "Intentional low stock for dashboard demo" : null,
     }})
     pantryItems.push(item)
   }
@@ -482,6 +489,7 @@ async function main() {
       await prisma.recipeIngredient.create({ data: {
         recipeId: recipe.id, name: ing.name,
         quantity: ing.quantity, unit: ing.unit, costPerUnit: ing.costPerUnit,
+        supplierName: pantry?.supplierName ?? null,
         pantryIngredientId: pantry?.id ?? null,
       }})
     }
@@ -542,11 +550,21 @@ async function main() {
     if (schedDate.getDay() === 0) continue
     const recipe  = recipes[d % recipes.length]
     const planned = rp(2, 5)
-    const done    = Math.random() > 0.1
+    // Historical status mix to exercise all Schedule filters.
+    const statusRoll = Math.random()
+    const status = statusRoll < 0.72
+      ? "completed"
+      : statusRoll < 0.86
+        ? "cancelled"
+        : statusRoll < 0.95
+          ? "planned"
+          : "in-progress"
     schedRecords.push({
       id: uuid(), recipeId: recipe.id, scheduledDate: schedDate,
-      plannedQuantity: planned, actualQuantity: done ? rp(planned * 0.8, planned * 1.1) : null,
-      status: done ? "completed" : "cancelled", notes: null,
+      plannedQuantity: planned,
+      actualQuantity: status === "completed" ? rp(planned * 0.8, planned * 1.1) : null,
+      status,
+      notes: status === "in-progress" ? "Carry-over production run" : null,
       createdAt: schedDate, updatedAt: schedDate,
     })
     if (schedRecords.length >= 500) {

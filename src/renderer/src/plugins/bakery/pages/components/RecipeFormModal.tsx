@@ -566,9 +566,7 @@ export default function RecipeFormModal({ open, recipe, onClose, onSaved }: Prop
                 <div className="relative">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="float"
                     value={form.sellingPrice}
                     onChange={e => setField('sellingPrice', e.target.value)}
                     placeholder="0.00"

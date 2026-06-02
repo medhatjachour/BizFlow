@@ -191,7 +191,7 @@ export default function BakeryPage() {
     { key: 'waste',      label: t('bakeryWasteTab'),      Icon: Trash2 },
     { key: 'schedule',   label: t('bakeryScheduleTab'),   Icon: Calendar },
     { key: 'pnl',        label: t('bakeryProfitLossTab'), Icon: BarChart3 },
-    { key: 'expenses',   label: 'Expenses',               Icon: Receipt }
+    { key: 'expenses',   label: t('expenses'),   Icon: Receipt }
   ]
 
   return (

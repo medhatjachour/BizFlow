@@ -139,6 +139,8 @@ export default function ProductionTab() {
       setQuantity('1')
       setNotes('')
       setPage(1)
+      setShowLogForm(false)
+      setShowConfirm(false)
       await loadData()
     } catch (e: any) {
       setError(e.message ?? t('bakeryLoadDataFailed'))

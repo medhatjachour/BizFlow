@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { convertQuantity } from '../utils/unitConversion'
 
 const log = createLogger('Bakery:Schedule')
 
@@ -14,7 +15,7 @@ export function registerScheduleHandlers(prisma: any) {
   } = {}) => {
     try {
       const page     = Math.max(1, options.page ?? 1)
-      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20))
+      const pageSize = Math.min(5000, Math.max(1, options.pageSize ?? 20))
       const skip     = (page - 1) * pageSize
 
       const where: any = {}
@@ -30,7 +31,8 @@ export function registerScheduleHandlers(prisma: any) {
         prisma.productionSchedule.findMany({
           where,
           include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } },
-          orderBy: { scheduledDate: 'asc' },
+          // Newest first so recently added schedules are visible on first page.
+          orderBy: { scheduledDate: 'desc' },
           skip,
           take: pageSize
         }),
@@ -59,7 +61,7 @@ export function registerScheduleHandlers(prisma: any) {
           notes: data.notes ?? null,
           status: 'planned'
         },
-        include: { recipe: { select: { id: true, name: true } } }
+        include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } }
       })
     } catch (err) {
       log.error('bakery:createScheduleItem error', err)
@@ -87,6 +89,92 @@ export function registerScheduleHandlers(prisma: any) {
       })
     } catch (err) {
       log.error('bakery:updateScheduleItem error', err)
+      throw err
+    }
+  })
+
+  ipcMain.handle('bakery:completeScheduleAndCreateBatch', async (_e, data: {
+    id: string
+    actualQuantity: number
+    notes?: string
+  }) => {
+    try {
+      const qty = Number(data.actualQuantity)
+      if (!Number.isFinite(qty) || qty <= 0) {
+        throw new Error('actualQuantity must be greater than 0')
+      }
+
+      return await prisma.$transaction(async (tx: any) => {
+        const schedule = await tx.productionSchedule.findUnique({
+          where: { id: data.id },
+          include: {
+            recipe: {
+              include: {
+                ingredients: {
+                  include: { pantryIngredient: { select: { id: true, unit: true } } }
+                }
+              }
+            }
+          }
+        })
+
+        if (!schedule) throw new Error('Schedule item not found')
+        if (schedule.status === 'cancelled') throw new Error('Cannot complete a cancelled schedule item')
+        if (schedule.status === 'completed') throw new Error('Schedule item is already completed')
+
+        const recipe = schedule.recipe
+        const ingredientCostPerBatch = recipe.ingredients.reduce(
+          (sum: number, ing: any) => sum + ing.quantity * ing.costPerUnit,
+          0
+        )
+        const unitsProduced = qty * recipe.yieldQty
+        const totalCost = ingredientCostPerBatch * qty
+        const batchDate = new Date(schedule.scheduledDate)
+        const expiresAt = recipe.expiryDays
+          ? new Date(batchDate.getTime() + recipe.expiryDays * 86400000)
+          : null
+
+        for (const ing of recipe.ingredients) {
+          if (ing.pantryIngredientId && ing.pantryIngredient) {
+            const pantryUnit = ing.pantryIngredient.unit
+            const deductQty = convertQuantity(ing.quantity * qty, ing.unit, pantryUnit)
+              ?? (ing.quantity * qty)
+            await tx.pantryIngredient.update({
+              where: { id: ing.pantryIngredientId },
+              data: { currentStock: { decrement: deductQty } }
+            })
+          }
+        }
+
+        const updatedSchedule = await tx.productionSchedule.update({
+          where: { id: data.id },
+          data: {
+            status: 'completed',
+            actualQuantity: qty,
+            ...(data.notes !== undefined ? { notes: data.notes } : {})
+          },
+          include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } }
+        })
+
+        const batch = await tx.productionBatch.create({
+          data: {
+            recipeId: schedule.recipeId,
+            quantity: qty,
+            unitsProduced,
+            totalCost,
+            batchDate,
+            expiresAt,
+            notes: `From schedule ${schedule.id}${schedule.notes ? ` | ${schedule.notes}` : ''}`
+          },
+          include: {
+            recipe: { select: { id: true, name: true, yieldUnit: true, expiryDays: true } }
+          }
+        })
+
+        return { schedule: updatedSchedule, batch }
+      })
+    } catch (err) {
+      log.error('bakery:completeScheduleAndCreateBatch error', err)
       throw err
     }
   })

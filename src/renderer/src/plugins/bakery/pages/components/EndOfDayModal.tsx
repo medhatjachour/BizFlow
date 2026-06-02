@@ -74,10 +74,10 @@ export default function EndOfDayModal({ onClose, onWasteLogged }: Props) {
   const totalWaste = entries.reduce((s, e) => s + (unsoldEdits[e.recipeId] ?? e.estimatedWaste), 0)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800 bg-rose-50 dark:bg-rose-900/20">
+        <div className="shrink-0 flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800 bg-rose-50 dark:bg-rose-900/20">
           <div className="flex items-center gap-2">
             <Sunset className="h-5 w-5 text-rose-500" />
             <div>
@@ -91,7 +91,7 @@ export default function EndOfDayModal({ onClose, onWasteLogged }: Props) {
         </div>
 
         {/* Body */}
-        <div className="p-5">
+        <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
@@ -161,7 +161,7 @@ export default function EndOfDayModal({ onClose, onWasteLogged }: Props) {
 
         {/* Footer */}
         {!done && !loading && entries.length > 0 && (
-          <div className="flex justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-800">
+          <div className="shrink-0 flex justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-800">
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
