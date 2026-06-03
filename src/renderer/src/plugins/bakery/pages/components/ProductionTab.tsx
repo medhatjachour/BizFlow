@@ -245,7 +245,7 @@ export default function ProductionTab() {
           recipeId={recipeId}
           quantity={parseFloat(quantity) || 1}
           onConfirm={doCreateBatch}
-          onClose={() => setShowConfirm(false)}
+          onClose={() => { setShowConfirm(false); setShowLogForm(true) }}
         />
       )}
 
@@ -635,7 +635,7 @@ export default function ProductionTab() {
                       className="px-4 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 transition-colors"
                     >{t('bakeryCancelBtn')}</button>
                     <button
-                      onClick={() => { if (recipeId) setShowConfirm(true) }}
+                      onClick={() => { if (recipeId) { setShowLogForm(false); setShowConfirm(true) } }}
                       disabled={submitting || !recipeId || !quantity || parseFloat(quantity) <= 0}
                       className="flex items-center gap-2 px-5 py-2 text-sm rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold disabled:opacity-50 transition-colors shadow-sm"
                     >

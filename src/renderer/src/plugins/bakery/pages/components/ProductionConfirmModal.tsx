@@ -59,7 +59,7 @@ export default function ProductionConfirmModal({ recipeId, quantity, onConfirm, 
     setConfirming(true)
     try {
       await onConfirm()
-      onClose()
+      // onConfirm (doCreateBatch) handles closing all modals on success
     } catch (e: any) {
       setError(e.message)
       setConfirming(false)
