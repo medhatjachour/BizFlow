@@ -221,7 +221,10 @@ model VetMedicine {
   // 'antibiotic' | 'antiparasitic' | 'vaccine' | 'anesthetic' | 'supplement' | 'general' | 'other'
   category     String             @default("general")
   // 'tablet' | 'capsule' | 'ml' | 'vial' | 'tube' | 'bottle' | 'sachet' | 'other'
-  unit         String             @default("tablet")
+  unit                 String             @default("tablet")  // container unit label
+  // Unit conversion — optional. Enables selling by sub-unit (e.g. sell ml from a bottle).
+  subUnit              String?            // e.g. 'ml', 'cc', 'mg'
+  subUnitsPerContainer Float?             // e.g. 100 (100 ml per bottle)
   description  String?
   minimumStock Float              @default(0)
   batches      VetMedicineBatch[]
@@ -245,6 +248,7 @@ model VetMedicineBatch {
   quantity        Float             // remaining stock
   initialQty      Float             // original received qty
   costPerUnit     Float             @default(0)
+  sellingPrice    Float?            // intended selling price per unit (set at batch receipt)
   receivedDate    DateTime          @default(now())
   notes           String?
   // Disposal / write-off fields
@@ -273,10 +277,15 @@ model VetMedicineSale {
   unitPrice     Float
   totalPrice    Float
   discount      Float            @default(0)
-  // Soft reference — no FK so it works without altering VetPatient model
+  // Soft references — no FK so they work without strict FK constraints
   patientId     String?
   patientName   String?
+  ownerId       String?          // Links to VetOwner (customer)
+  ownerName     String?          // Denormalised for display without a join
   paymentMethod String?          // 'cash' | 'card' | 'insurance' | 'other'
+  saleUnit      String?          // 'container' | 'sub' — which unit was used when selling
+  amountPaid    Float?           // how much has been collected (NULL = fully paid at sale time)
+  paymentStatus String?          @default("paid") // 'paid' | 'partial' | 'unpaid'
   notes         String?
   saleDate      DateTime         @default(now())
   createdAt     DateTime         @default(now())
@@ -285,4 +294,5 @@ model VetMedicineSale {
   @@index([batchId])
   @@index([saleDate])
   @@index([patientId])
+  @@index([ownerId])
 }

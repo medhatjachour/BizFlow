@@ -284,6 +284,106 @@ export function registerVetMedicineHandlers(prisma: any) {
     } catch (err) { log.error('sell', err); throw err }
   })
 
+  // ─── Sell Combo (multi-item cart) ─────────────────────────────────────────
+  ipcMain.handle('vet:medicines:sellCombo', async (_e, data: {
+    items: Array<{
+      medicineId: string; batchId: string; quantity: number;
+      unitPrice: number; discount?: number; saleUnit?: string
+    }>
+    ownerId?: string; ownerName?: string;
+    paymentMethod?: string; notes?: string; saleDate?: string;
+    amountPaid?: number
+  }) => {
+    try {
+      if (!data.items || data.items.length === 0) throw new Error('No items in cart')
+
+      const saleDate = data.saleDate ? new Date(data.saleDate) : new Date()
+      const totalCart = data.items.reduce((s, it) => {
+        const disc = it.discount ?? 0
+        return s + Math.max(0, it.quantity * it.unitPrice - disc)
+      }, 0)
+      const amountPaid   = data.amountPaid != null ? data.amountPaid : totalCart
+      const paymentStatus = amountPaid >= totalCart - 0.005 ? 'paid'
+        : amountPaid > 0 ? 'partial' : 'unpaid'
+
+      // Validate all items first
+      for (const it of data.items) {
+        const batch = await prisma.vetMedicineBatch.findUnique({ where: { id: it.batchId } })
+        if (!batch) throw new Error(`Batch not found: ${it.batchId}`)
+        if (batch.status === 'disposed') throw new Error(`Batch ${it.batchId} has been disposed`)
+        if (new Date(batch.expiryDate) < new Date()) throw new Error(`Batch ${batch.batchNumber ?? it.batchId} is expired — write it off first`)
+        if (batch.medicineId !== it.medicineId) throw new Error('Medicine/batch mismatch')
+
+        // Convert quantity to container units for stock deduction
+        const medicine = await prisma.vetMedicine.findUnique({ where: { id: it.medicineId } })
+        const deductQty = (it.saleUnit === 'sub' && medicine?.subUnitsPerContainer)
+          ? it.quantity / medicine.subUnitsPerContainer
+          : it.quantity
+        if (batch.quantity < deductQty - 0.0001) {
+          throw new Error(`Insufficient stock for ${medicine?.name ?? it.medicineId}. Available: ${batch.quantity}`)
+        }
+      }
+
+      // Run everything in a single transaction
+      const sales = await prisma.$transaction(async (tx: any) => {
+        const created = []
+        for (const it of data.items) {
+          const medicine = await tx.vetMedicine.findUnique({ where: { id: it.medicineId } })
+          const deductQty = (it.saleUnit === 'sub' && medicine?.subUnitsPerContainer)
+            ? it.quantity / medicine.subUnitsPerContainer
+            : it.quantity
+
+          const disc       = it.discount ?? 0
+          const totalPrice = Math.max(0, it.quantity * it.unitPrice - disc)
+          // Distribute amountPaid proportionally across items
+          const itemFraction = totalCart > 0 ? totalPrice / totalCart : 1
+          const itemPaid = amountPaid * itemFraction
+
+          const sale = await tx.vetMedicineSale.create({
+            data: {
+              medicineId:    it.medicineId,
+              batchId:       it.batchId,
+              quantity:      it.quantity,
+              unitPrice:     it.unitPrice,
+              totalPrice,
+              discount:      disc,
+              saleUnit:      it.saleUnit ?? 'container',
+              ownerId:       data.ownerId    ?? null,
+              ownerName:     data.ownerName  ?? null,
+              paymentMethod: data.paymentMethod ?? null,
+              amountPaid:    itemPaid,
+              paymentStatus,
+              notes:         data.notes ?? null,
+              saleDate,
+            }
+          })
+          await tx.vetMedicineBatch.update({
+            where: { id: it.batchId },
+            data:  { quantity: { decrement: deductQty } }
+          })
+          created.push(sale)
+        }
+        return created
+      })
+
+      return { count: sales.length, sales }
+    } catch (err) { log.error('sellCombo', err); throw err }
+  })
+
+  // ─── Update Sale Payment ───────────────────────────────────────────────────
+  ipcMain.handle('vet:medicines:updateSalePayment', async (_e, id: string, amountPaid: number) => {
+    try {
+      const sale = await prisma.vetMedicineSale.findUnique({ where: { id } })
+      if (!sale) throw new Error('Sale not found')
+      const status = amountPaid >= sale.totalPrice - 0.005 ? 'paid'
+        : amountPaid > 0 ? 'partial' : 'unpaid'
+      return await prisma.vetMedicineSale.update({
+        where: { id },
+        data: { amountPaid, paymentStatus: status }
+      })
+    } catch (err) { log.error('updateSalePayment', err); throw err }
+  })
+
   // ─── Get Sales ────────────────────────────────────────────────────────────
   ipcMain.handle('vet:medicines:getSales', async (_e, params?: {
     medicineId?: string; patientId?: string;
