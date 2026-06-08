@@ -326,7 +326,7 @@ export function registerVetMedicineHandlers(prisma: any) {
 
       // Run everything in a single transaction
       const sales = await prisma.$transaction(async (tx: any) => {
-        const created = []
+        const created: any[] = []
         for (const it of data.items) {
           const medicine = await tx.vetMedicine.findUnique({ where: { id: it.medicineId } })
           const deductQty = (it.saleUnit === 'sub' && medicine?.subUnitsPerContainer)
