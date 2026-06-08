@@ -87,9 +87,13 @@ export const vetPreload = {
     deleteBatch:  (id: string)                         => ipcRenderer.invoke('vet:medicines:deleteBatch', id),
     disposeBatch: (id: string, data?: any)             => ipcRenderer.invoke('vet:medicines:disposeBatch', id, data),
     sell:         (data: any)                          => ipcRenderer.invoke('vet:medicines:sell', data),
-    getSales:     (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSales', params),
-    getSummary:   (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSummary', params)
+    sellCombo:          (data: any)                          => ipcRenderer.invoke('vet:medicines:sellCombo', data),
+    getSales:           (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSales', params),
+    getSummary:         (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSummary', params),
+    getDailySales:      (params?: any)                       => ipcRenderer.invoke('vet:medicines:getDailySales', params),
+    updateSalePayment:  (id: string, amountPaid: number)     => ipcRenderer.invoke('vet:medicines:updateSalePayment', id, amountPaid)
   },
+
 
   // ── Stats ──────────────────────────────────────────────────────────────────
   stats: {
