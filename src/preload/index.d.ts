@@ -620,8 +620,11 @@ interface API {
       deleteBatch: (id: string) => Promise<any>
       disposeBatch: (id: string, data?: any) => Promise<any>
       sell: (data: any) => Promise<any>
+      sellCombo: (data: any) => Promise<any>
       getSales: (params?: any) => Promise<any>
       getSummary: (params?: any) => Promise<any>
+      updateSalePayment: (id: string, amountPaid: number) => Promise<any>
+
     }
     stats: {
       overview: (period?: string) => Promise<any>
