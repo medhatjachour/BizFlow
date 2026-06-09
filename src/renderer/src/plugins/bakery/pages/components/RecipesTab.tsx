@@ -151,7 +151,7 @@ export default function RecipesTab() {
                     </p>
                   </div>
                   <div className="text-center">
-                    <p className="text-xs text-slate-400">{t('bakeryCostPer')} {recipe.yieldUnit}</p>
+                    <p className="text-xs text-slate-400">{t('bakeryCostPerUnit')} {recipe.yieldUnit}</p>
                     <p className="font-medium text-amber-600 dark:text-amber-400">
                       ${unitCost.toFixed(2)}
                     </p>

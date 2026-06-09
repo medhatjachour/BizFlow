@@ -122,7 +122,7 @@ export default function RecipeCardModal({ recipe, onClose }: Props) {
                 </tr>
                 <tr>
                   <td colSpan={3} className="pb-1 text-xs text-slate-500 print:text-slate-600">
-                    {t('bakeryCostPer')} {recipe.yieldUnit}
+                    {t('bakeryCostPerUnit')} {recipe.yieldUnit}
                   </td>
                   <td className="pb-1 text-end text-xs font-medium text-slate-600 dark:text-slate-400 print:text-slate-700">{costPerUnit.toFixed(2)}</td>
                 </tr>

@@ -302,7 +302,10 @@ export function registerVetMedicineHandlers(prisma: any) {
         const disc = it.discount ?? 0
         return s + Math.max(0, it.quantity * it.unitPrice - disc)
       }, 0)
-      const amountPaid   = data.amountPaid != null ? data.amountPaid : totalCart
+      let amountPaid = data.amountPaid != null ? data.amountPaid : totalCart
+      // Validate and clamp amountPaid to [0, totalCart]
+      if (isNaN(amountPaid) || amountPaid < 0) amountPaid = 0
+      if (amountPaid > totalCart) amountPaid = totalCart
       const paymentStatus = amountPaid >= totalCart - 0.005 ? 'paid'
         : amountPaid > 0 ? 'partial' : 'unpaid'
 
@@ -357,10 +360,12 @@ export function registerVetMedicineHandlers(prisma: any) {
               saleDate,
             }
           })
-          await tx.vetMedicineBatch.update({
-            where: { id: it.batchId },
+          // Atomic conditional update: fail if insufficient stock (prevents race condition)
+          const updated = await tx.vetMedicineBatch.updateMany({
+            where: { id: it.batchId, quantity: { gte: deductQty - 0.0001 } },
             data:  { quantity: { decrement: deductQty } }
           })
+          if (updated.count !== 1) throw new Error('Insufficient stock (batch quantity changed)')
           created.push(sale)
         }
         return created
@@ -375,11 +380,15 @@ export function registerVetMedicineHandlers(prisma: any) {
     try {
       const sale = await prisma.vetMedicineSale.findUnique({ where: { id } })
       if (!sale) throw new Error('Sale not found')
-      const status = amountPaid >= sale.totalPrice - 0.005 ? 'paid'
-        : amountPaid > 0 ? 'partial' : 'unpaid'
+      // Validate and clamp amountPaid to [0, totalPrice]
+      let validAmount = amountPaid
+      if (isNaN(validAmount) || validAmount < 0) validAmount = 0
+      if (validAmount > sale.totalPrice) validAmount = sale.totalPrice
+      const status = validAmount >= sale.totalPrice - 0.005 ? 'paid'
+        : validAmount > 0 ? 'partial' : 'unpaid'
       return await prisma.vetMedicineSale.update({
         where: { id },
-        data: { amountPaid, paymentStatus: status }
+        data: { amountPaid: validAmount, paymentStatus: status }
       })
     } catch (err) { log.error('updateSalePayment', err); throw err }
   })

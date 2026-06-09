@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  ShoppingCart, Search, X, Loader2, Receipt, Calendar, User, CreditCard,
+  ShoppingCart, Search, X, Loader2, Receipt, Calendar, User,
   Package, CheckCircle2, ChevronLeft, ChevronRight, TrendingUp,
   Pill, Plus, DollarSign, BarChart2, Pencil, AlertCircle,
   UserCheck, UserPlus, PanelRightClose, PanelRightOpen, ExternalLink
@@ -33,8 +33,8 @@ interface Sale {
   id: string; quantity: number; unitPrice: number; totalPrice: number
   discount: number; patientName?: string | null; ownerName?: string | null; ownerId?: string | null
   paymentMethod?: string | null; amountPaid?: number | null; paymentStatus?: string | null
-  notes?: string | null; saleDate: string
-  medicine: { id: string; name: string; unit: string; category?: string }
+  notes?: string | null; saleDate: string; saleUnit?: 'container' | 'sub'
+  medicine: { id: string; name: string; unit: string; subUnit?: string | null; category?: string }
   batch: { id: string; batchNumber?: string | null; expiryDate: string; costPerUnit?: number }
   costPerUnit?: number; costTotal?: number; grossProfit?: number
 }
@@ -290,6 +290,8 @@ function SaleOperation({ onSaleRecorded }: { onSaleRecorded: () => void }) {
     let newPrice: string = itemForm.unitPrice
     if (unit === 'sub' && selectedMed?.subUnitsPerContainer && basePrice > 0) {
       newPrice = (basePrice / selectedMed.subUnitsPerContainer).toFixed(4)
+    } else if (unit === 'container' && selectedMed?.subUnitsPerContainer && basePrice > 0) {
+      newPrice = (basePrice * selectedMed.subUnitsPerContainer).toFixed(2)
     } else if (unit === 'container' && basePrice > 0) {
       newPrice = String(basePrice)
     }
@@ -339,7 +341,7 @@ function SaleOperation({ onSaleRecorded }: { onSaleRecorded: () => void }) {
     }
 
     if (exceedsBatch) {
-      toast.error(`Only ${batchAvailable} ${activeUnit} available in this batch`); return
+      toast.error(`Only ${batchAvailableNet} ${activeUnit} available${alreadyInCartQty > 0 ? ` (${alreadyInCartQty} already in cart)` : ''}`); return
     }
     const newItem: CartItem = {
       id: editingId ?? (Date.now().toString(36) + Math.random().toString(36).slice(2)),
@@ -1051,7 +1053,7 @@ function SaleRow({ s, cogs, profit, paidAmt, remaining, pstatus, statusMap, onPa
         </td>
         <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{s.ownerName ?? s.patientName ?? '—'}</td>
         <td className="px-4 py-3 font-medium text-slate-900 dark:text-white whitespace-nowrap">
-          {s.quantity} <span className="text-slate-400 font-normal">{s.medicine.unit}</span>
+          {s.quantity} <span className="text-slate-400 font-normal">{s.saleUnit === 'sub' ? (s.medicine.subUnit ?? 'sub') : s.medicine.unit}</span>
         </td>
         <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{s.unitPrice > 0 ? `$${s.unitPrice.toFixed(2)}` : '—'}</td>
         <td className="px-4 py-3">{s.discount > 0 ? <span className="text-emerald-600 dark:text-emerald-400">-${s.discount.toFixed(2)}</span> : <span className="text-slate-400">—</span>}</td>
@@ -1171,12 +1173,17 @@ function SalesHistory() {
       const q = search.toLowerCase()
       if (!s.medicine.name.toLowerCase().includes(q) && !(s.ownerName ?? s.patientName ?? '').toLowerCase().includes(q)) return false
     }
-    if (catFilter !== 'all' && s.medicine.category !== catFilter) return false
+    if (catFilter !== 'all' && s.medicine.category && s.medicine.category !== catFilter) return false
     return true
   })
 
   const revenue    = displayed.reduce((sum, s) => sum + s.totalPrice, 0)
-  const totalCogs  = displayed.reduce((sum, s) => sum + (s.costTotal ?? s.quantity * (s.batch?.costPerUnit ?? 0)), 0)
+  const totalCogs  = displayed.reduce((sum, s) => {
+    const qty = s.saleUnit === 'sub' && s.medicine?.subUnit
+      ? s.quantity / (s.medicine?.subUnitsPerContainer ?? 1)
+      : s.quantity
+    return sum + (s.costTotal ?? qty * (s.batch?.costPerUnit ?? 0))
+  }, 0)
   const grossProfit = revenue - totalCogs
   const margin     = revenue > 0 ? (grossProfit / revenue) * 100 : 0
 

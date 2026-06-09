@@ -426,7 +426,7 @@ export default function PantryTab() {
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('bakeryPricing')}</span>
                   </div>
                   <div>
-                    <label className={labelCls}>{t('bakeryCostPer', { unit: form.unit || t('bakeryUnit') })}</label>
+                    <label className={labelCls}>{t('bakeryCostPerUnit', { unit: form.unit || t('bakeryUnit') })}</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
                       <input

@@ -375,11 +375,16 @@ function MedicineModal({ initial, categories, units, onRefresh, onUnitsChange, o
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true)
     try {
+      const trimmedSubUnit = form.subUnit.trim() || null
+      const subUnitsPerContainer = trimmedSubUnit && form.subUnitsPerContainer
+        ? parseFloat(form.subUnitsPerContainer)
+        : null
+      const isValidRatio = subUnitsPerContainer && isFinite(subUnitsPerContainer) && subUnitsPerContainer > 0
       const data: any = {
         ...form,
         minimumStock: parseFloat(form.minimumStock) || 0,
-        subUnit: form.subUnit.trim() || null,
-        subUnitsPerContainer: form.subUnitsPerContainer ? parseFloat(form.subUnitsPerContainer) : null
+        subUnit: trimmedSubUnit,
+        subUnitsPerContainer: isValidRatio ? subUnitsPerContainer : null
       }
       if (initial) await api.update(initial.id, data)
       else         await api.create(data)
