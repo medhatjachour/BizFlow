@@ -4,11 +4,11 @@
  */
 
 import { useState } from 'react'
-import { 
-  Settings as SettingsIcon, 
-  Bell, 
-  CreditCard, 
-  Receipt, 
+import {
+  Settings as SettingsIcon,
+  Bell,
+  CreditCard,
+  Receipt,
   Database,
   Save,
   Monitor,
@@ -60,7 +60,7 @@ export default function Settings() {
     setDisplaySettings,
     saveSettings
   } = useSettings()
-  
+
   // Sync display settings with DisplaySettingsContext
   const handleDisplaySettingsChange = (newSettings: typeof displaySettings) => {
     setDisplaySettings(newSettings)
@@ -78,16 +78,19 @@ export default function Settings() {
     { id: 'email' as SettingsTab, name: 'Email Reports', icon: Mail },
     { id: 'backup' as SettingsTab, name: t('backup'), icon: Database },
     { id: 'archive' as SettingsTab, name: t('archive'), icon: Archive },
-    { id: 'modules' as SettingsTab, name: 'Modules', icon: Puzzle },
+    { id: 'modules' as SettingsTab, name: 'Modules', icon: Puzzle }
   ]
 
   const CLINIC_TABS: SettingsTab[] = ['general', 'users', 'backup']
   const VET_TABS: SettingsTab[] = ['general', 'users', 'backup']
   const BAKERY_TABS: SettingsTab[] = ['general', 'users', 'backup']
 
-  const tabs = (clinicEnabled || vetEnabled || bakeryEnabled)
-    ? allTabs.filter(tab => (clinicEnabled ? CLINIC_TABS : vetEnabled ? VET_TABS : BAKERY_TABS).includes(tab.id))
-    : allTabs
+  const tabs =
+    clinicEnabled || vetEnabled || bakeryEnabled
+      ? allTabs.filter((tab) =>
+          (clinicEnabled ? CLINIC_TABS : vetEnabled ? VET_TABS : BAKERY_TABS).includes(tab.id)
+        )
+      : allTabs
 
   const handleSave = () => {
     try {
@@ -110,9 +113,7 @@ export default function Settings() {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             {t('settings')}
           </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            {t('manageAppPreferences')}
-          </p>
+          <p className="text-slate-600 dark:text-slate-400">{t('manageAppPreferences')}</p>
         </div>
         <button
           onClick={handleSave}
@@ -133,14 +134,14 @@ export default function Settings() {
       )}
 
       {/* Tabs and Content */}
-      <div className="flex gap-6">
+      <div className="flex  gap-6 ">
         {/* Sidebar Tabs */}
         <div className="w-64 flex-shrink-0">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="sticky top-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
             {tabs.map((tab) => {
               const Icon = tab.icon
               const isActive = activeTab === tab.id
-              
+
               return (
                 <button
                   key={tab.id}
@@ -172,34 +173,19 @@ export default function Settings() {
           )}
 
           {activeTab === 'display' && (
-            <DisplaySettings
-              settings={displaySettings}
-              onChange={handleDisplaySettingsChange}
-            />
+            <DisplaySettings settings={displaySettings} onChange={handleDisplaySettingsChange} />
           )}
 
-          {activeTab === 'categories' && (
-            <CategorySettings />
-          )}
+          {activeTab === 'categories' && <CategorySettings />}
 
-       
-
-          {activeTab === 'users' && (
-            <UserManagementSettings />
-          )}
+          {activeTab === 'users' && <UserManagementSettings />}
 
           {activeTab === 'payments' && (
-            <PaymentMethodsSettings
-              settings={paymentMethods}
-              onChange={setPaymentMethods}
-            />
+            <PaymentMethodsSettings settings={paymentMethods} onChange={setPaymentMethods} />
           )}
 
           {activeTab === 'tax' && (
-            <TaxReceiptSettings
-              settings={taxReceiptSettings}
-              onChange={setTaxReceiptSettings}
-            />
+            <TaxReceiptSettings settings={taxReceiptSettings} onChange={setTaxReceiptSettings} />
           )}
 
           {activeTab === 'notifications' && (
@@ -209,24 +195,15 @@ export default function Settings() {
             />
           )}
 
-          {activeTab === 'email' && (
-            <EmailSettings onSave={handleSave} />
-          )}
+          {activeTab === 'email' && <EmailSettings onSave={handleSave} />}
 
           {activeTab === 'backup' && (
-            <BackupSettings
-              settings={backupSettings}
-              onChange={setBackupSettings}
-            />
+            <BackupSettings settings={backupSettings} onChange={setBackupSettings} />
           )}
 
-          {activeTab === 'archive' && (
-            <ArchiveManagementSettings />
-          )}
+          {activeTab === 'archive' && <ArchiveManagementSettings />}
 
-          {activeTab === 'modules' && (
-            <ModulesSettings />
-          )}
+          {activeTab === 'modules' && <ModulesSettings />}
         </div>
       </div>
     </div>
