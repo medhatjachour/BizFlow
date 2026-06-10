@@ -284,13 +284,14 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
                   to={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`
-                    flex items-center gap-3 rounded-xl px-3 py-2.5
+                    flex items-center gap-3 rounded-xl px-2.5 py-2.5
                     text-sm font-medium transition-all duration-200
                     group relative
                     ${isActive
                       ? 'bg-gradient-to-r from-primary to-secondary text-white shadow-lg shadow-primary/30'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50'
                     }
+                    ${!sidebarOpen && 'justify-center'}
                   `}
                   title={!sidebarOpen ? item.name : undefined}
                   aria-label={`Navigate to ${item.name}`}
@@ -303,12 +304,6 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
                     aria-hidden="true"
                   />
                   {sidebarOpen && <span>{t(item.translationKey as any)}</span>}
-                  
-                  {!sidebarOpen && (
-                    <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-xs rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50" role="tooltip">
-                      {t(item.translationKey as any)}
-                    </div>
-                  )}
                 </Link>
               )
             })}
