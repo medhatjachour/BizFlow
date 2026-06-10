@@ -101,7 +101,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [iconBroken, setIconBroken] = useState(false)
   const ICON_CANDIDATES = [LocalIcon, '/logo192.png', '/icon.png', '/build/icon.png']
   const [iconIdx, setIconIdx] = useState(0)
