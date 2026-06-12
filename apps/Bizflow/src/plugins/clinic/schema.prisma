@@ -1,0 +1,371 @@
+// Clinic Plugin – Prisma Schema
+// This file is merged into prisma/merged.prisma by scripts/merge-schemas.js
+// Do NOT add a datasource or generator block here.
+
+model ClinicPatient {
+  id           String          @id @default(uuid())
+  name         String
+  dateOfBirth  DateTime?
+  gender       String?         // 'male' | 'female' | 'other'
+  phone        String
+  email        String?
+  address      String?
+  nationalId   String?         @unique
+  folderNumber String?         @unique // Clinic file/folder reference number
+  bloodType    String?         // 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-'
+  allergies    String?
+  medicalNotes String?
+  sessions     ClinicSession[]
+  checkResults ClinicCheckResult[]
+  appointments ClinicAppointment[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  // Search indexes for patient lookup (name, phone, ID, folder)
+  @@index([name])
+  @@index([phone])
+  @@index([nationalId])
+  @@index([folderNumber])
+  @@index([createdAt])
+}
+
+model ClinicSession {
+  id             String               @id @default(uuid())
+  patientId      String
+  patient        ClinicPatient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  visitDate      DateTime             @default(now())
+  visitType      String               @default("routine") // 'first_visit' | 'follow_up' | 'routine' | 'emergency'
+  doctorName     String?
+  chiefComplaint String
+  vitals         String?              // JSON: { bp?, temp?, weight?, height?, pulse?, o2sat? }
+  diagnosis      String?
+  notes          String?
+  followUpDate   DateTime?
+  status         String               @default("completed") // 'active' | 'completed' | 'cancelled'
+  amountCharged  Float?
+  amountPaid     Float?
+  paymentStatus  String               @default("unpaid")   // 'paid' | 'partial' | 'unpaid' | 'waived'
+  paymentMethod  String?              // 'cash' | 'card' | 'insurance' | 'other'
+  dentalChart    String?              // JSON: Record<string, { conditions: string[], note: string }>
+  labOrders      String?              // JSON: Array<{ testName: string, notes: string }>
+  prescriptions  ClinicPrescription[]
+  sessionMaterials ClinicSessionMaterial[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([patientId])
+  @@index([visitDate])
+  @@index([status])
+  @@index([paymentStatus])
+}
+
+model ClinicPrescription {
+  id           String        @id @default(uuid())
+  sessionId    String
+  session      ClinicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  medicineName String
+  dosage       String?       // e.g. "500mg"
+  frequency    String?       // e.g. "3x daily"
+  duration     String?       // e.g. "7 days"
+  quantity     Int?
+  instructions String?
+  isActive     Boolean       @default(true)   // Is patient currently taking this medicine?
+  startDate    DateTime?                       // When the patient started (defaults to session date)
+  stoppedAt    DateTime?                       // When the medicine was discontinued
+  stopReason   String?                         // 'completed' | 'side_effects' | 'not_effective' | 'other'
+  createdAt    DateTime      @default(now())
+
+  @@index([sessionId])
+  @@index([isActive])
+}
+
+model ClinicCheckResult {
+  id          String        @id @default(uuid())
+  patientId   String
+  patient     ClinicPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  fileName    String        // Original file name (for display)
+  filePath    String        // Absolute path on disk
+  fileSize    Int?          // bytes
+  resultDate  DateTime      @default(now())
+  createdAt   DateTime      @default(now())
+
+  @@index([patientId])
+  @@index([resultDate])
+}
+
+model ClinicAppointment {
+  id              String        @id @default(uuid())
+  patientId       String
+  patient         ClinicPatient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentDate DateTime
+  duration        Int?          @default(30)  // minutes
+  type            String        @default("consultation") // 'consultation' | 'follow_up' | 'procedure' | 'checkup'
+  doctorName      String?
+  notes           String?
+  status          String        @default("scheduled") // 'scheduled' | 'confirmed' | 'completed' | 'cancelled' | 'no_show'
+  reminderSent    Boolean       @default(false)
+  amountCharged   Float?
+  amountPaid      Float?
+  paymentMethod   String?       // 'cash' | 'card' | 'insurance' | 'other'
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([patientId])
+  @@index([appointmentDate])
+  @@index([status])
+}
+
+// ─── Clinic Expenses ──────────────────────────────────────────────────────────
+// Clinic-specific operating costs. No "cost of goods" — categories are
+// tailored to a medical practice (rent, utilities, medical supplies, etc.)
+model ClinicExpense {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now())
+  // rent | utilities | medical_supplies | medications | equipment |
+  // maintenance | lab_fees | insurance | marketing | cleaning | salaries | other
+  category      String
+  description   String
+  amount        Float
+  vendor        String?  // Supplier / landlord / service provider
+  paymentMethod String   @default("cash") // cash | card | transfer | cheque
+  recurrence    String   @default("one_time") // one_time | weekly | monthly | yearly
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@index([recurrence])
+}
+
+// ─── Clinic Staff ─────────────────────────────────────────────────────────────
+// Clinic-specific staff (doctors, nurses, receptionists…).
+// Separate from the generic Employee module.
+model ClinicStaff {
+  id              String               @id @default(uuid())
+  name            String
+  role            String               // doctor | nurse | receptionist | technician | pharmacist | other
+  phone           String?
+  email           String?
+  employmentType  String               @default("full_time") // full_time | part_time | contract
+  status          String               @default("active")    // active | inactive
+  baseSalary      Float                @default(0)           // monthly amount for full_time/contract
+  salaryType      String               @default("monthly")   // monthly | hourly | daily
+  hourlyRate      Float?               // for part_time / hourly salary type
+  overtimeRate    Float                @default(1.5)         // multiplier  (1.5 = time-and-a-half)
+  doubleShiftRate Float                @default(0)           // extra flat pay per double shift
+  hireDate        DateTime             @default(now())
+  notes           String?
+  employeeId      String?              // optional link to a global Employee record (cross-DB soft reference)
+  salaryRecords   ClinicSalaryRecord[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([name])
+  @@index([role])
+  @@index([status])
+  @@index([employeeId])
+}
+
+// ─── Clinic Salary Records ────────────────────────────────────────────────────
+// One record per staff member per month.
+// Supports full-time (fixed + OT), part-time (hours × rate + OT), contract,
+// double shifts, bonuses, and deductions.
+model ClinicSalaryRecord {
+  id                 String      @id @default(uuid())
+  staffId            String
+  staff              ClinicStaff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  month              Int         // 1–12
+  year               Int
+  baseSalary         Float       // snapshot of applicable rate for this period
+  regularHours       Float       @default(0)   // actual hours worked (part_time / hourly)
+  overtimeHours      Float       @default(0)
+  overtimeMultiplier Float       @default(1.5) // e.g. 1.5 or 2.0
+  doubleShiftCount   Int         @default(0)   // number of double shifts worked
+  doubleShiftBonus   Float       @default(0)   // flat bonus per double shift
+  bonuses            Float       @default(0)
+  deductions         Float       @default(0)
+  netPay             Float       // computed and stored for record-keeping
+  status             String      @default("pending") // pending | paid
+  paidDate           DateTime?
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@unique([staffId, month, year])
+  @@index([staffId])
+  @@index([year, month])
+  @@index([status])
+}
+
+// ─── Material Categories ──────────────────────────────────────────────────────
+// Manageable category list for clinic materials. Populated by default on first
+// run; staff can add / rename / delete categories from the Materials tab.
+model ClinicMaterialCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique  // Display name, e.g. "Dental", "Surgical"
+  color     String   @default("teal") // Tailwind color key used in the UI
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+}
+
+// ─── Clinic Material Catalog ──────────────────────────────────────────────────
+// Consumable supplies / materials used in clinical sessions
+// (e.g. dental fillings, syringes, gauze, surgical threads, anesthetic capsules).
+// Each entry is a purchasable/stockable item; quantity is the sum of active batch
+// quantities (kept in sync by the batch handlers).
+// expiryDate = nearest active-batch expiry (synced automatically; null = no expiry).
+model ClinicMaterial {
+  id              String                  @id @default(uuid())
+  name            String
+  category        String?                 // soft ref to ClinicMaterialCategory.name
+  description     String?
+  unit            String                  @default("piece") // piece | box | ml | mg | etc.
+  quantity        Float                   @default(0)       // current stock (sum of active batches)
+  minQuantity     Float                   @default(0)       // low-stock alert threshold
+  costPerUnit     Float                   @default(0)       // default / last known cost
+  supplier        String?                 // primary supplier name
+  expiryDate      DateTime?               // nearest active-batch expiry (synced); null = no expiry
+  isActive        Boolean                 @default(true)
+  notes           String?
+  batches          ClinicMaterialBatch[]
+  sessionMaterials ClinicSessionMaterial[]
+  losses          ClinicMaterialLoss[]
+  expiries        ClinicMaterialExpiry[]
+  adjustments     ClinicMaterialAdjustment[]
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([name])
+  @@index([supplier])
+  @@index([category])
+  @@index([isActive])
+  @@index([quantity])
+  @@index([minQuantity])
+  @@index([updatedAt])
+  @@index([expiryDate])
+  @@index([isActive, category])
+  @@index([isActive, expiryDate])
+  @@index([isActive, updatedAt])
+}
+
+// ─── Material Batches ─────────────────────────────────────────────────────────
+// One row per physical batch received. Tracks individual batch numbers, expiry
+// dates, quantities, and per-batch cost / supplier overrides.
+// When a batch is used in a session, ClinicSessionMaterial.batchId points here.
+model ClinicMaterialBatch {
+  id          String    @id @default(uuid())
+  materialId  String
+  material    ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  batchNumber String?
+  quantity    Float     @default(0)   // remaining quantity in this batch
+  expiryDate  DateTime?
+  receivedAt  DateTime  @default(now())
+  costPerUnit Float?    // overrides material.costPerUnit for this batch
+  supplier    String?   // overrides material.supplier for this batch
+  notes       String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  sessionMaterials ClinicSessionMaterial[]
+  losses       ClinicMaterialLoss[]
+  expiries     ClinicMaterialExpiry[]
+  adjustments  ClinicMaterialAdjustment[]
+
+  @@index([materialId])
+  @@index([expiryDate])
+  @@index([isActive])
+  @@index([materialId, isActive])
+}
+
+// ─── Session ↔ Material junction ─────────────────────────────────────────────
+// Records which materials were consumed in a given session and how many.
+// batchId is optional – if set, the specific batch used is tracked.
+model ClinicSessionMaterial {
+  id           String               @id @default(uuid())
+  sessionId    String
+  session      ClinicSession        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  materialId   String
+  material     ClinicMaterial       @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  batchId      String?
+  batch        ClinicMaterialBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  quantityUsed Float                @default(1)
+  notes        String?
+  createdAt    DateTime             @default(now())
+
+  @@index([sessionId])
+  @@index([materialId])
+  @@index([batchId])
+}
+
+// ─── Material Loss ────────────────────────────────────────────────────────────
+// Tracks material loss events (damage, spillage, contamination, etc.)
+// for audit trail and waste reporting.
+model ClinicMaterialLoss {
+  id           String    @id @default(uuid())
+  batchId      String
+  batch        ClinicMaterialBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  materialId   String
+  material     ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantityLost Float
+  reason       String    // damage | spillage | contamination | expiry | other
+  description  String?
+  recordedBy   String?   // user/staff member name who logged this
+  createdAt    DateTime  @default(now())
+
+  @@index([batchId])
+  @@index([materialId])
+  @@index([reason])
+  @@index([createdAt])
+}
+
+// ─── Material Expiry ──────────────────────────────────────────────────────────
+// Tracks when material batches expire (separate from loss for compliance).
+// Expired materials are moved to inactive or deleted from active inventory.
+model ClinicMaterialExpiry {
+  id           String    @id @default(uuid())
+  batchId      String
+  batch        ClinicMaterialBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  materialId   String
+  material     ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantityExpired Float
+  expiryDate   DateTime  // the expiry date of the batch
+  disposalMethod String? // discarded | returned | donated | other
+  recordedBy   String?   // user/staff member name
+  notes        String?
+  createdAt    DateTime  @default(now())
+
+  @@index([batchId])
+  @@index([materialId])
+  @@index([expiryDate])
+  @@index([createdAt])
+}
+
+// ─── Material Adjustment ─────────────────────────────────────────────────────
+// Tracks inventory adjustments (manual corrections, reconciliation, etc.)
+// with full audit trail including reason and who made the change.
+model ClinicMaterialAdjustment {
+  id           String    @id @default(uuid())
+  batchId      String
+  batch        ClinicMaterialBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  materialId   String
+  material     ClinicMaterial @relation(fields: [materialId], references: [id], onDelete: Restrict)
+  quantityBefore Float
+  quantityAfter Float
+  quantityAdjusted Float  // can be positive (addition) or negative (reduction)
+  reason       String    // recount | damage | received | lost | other
+  description  String?
+  adjustedBy   String?   // user/staff member name
+  createdAt    DateTime  @default(now())
+
+  @@index([batchId])
+  @@index([materialId])
+  @@index([reason])
+  @@index([createdAt])
+}

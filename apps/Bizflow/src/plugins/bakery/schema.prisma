@@ -1,0 +1,175 @@
+// ─── Bakery Module ──────────────────────────────────────────────────────────
+// Module: bakery
+// Status: Planned
+// Use Case: Production scheduling, recipes, batches, pantry, waste tracking
+//
+// NOTE: This file is merged into prisma/merged.prisma at build time via
+//       scripts/merge-schemas.js — do NOT run prisma generate directly on it.
+// ────────────────────────────────────────────────────────────────────────────
+
+// Recipe: A named formula that produces a finished baked product
+model Recipe {
+  id                String              @id @default(uuid())
+  name              String
+  description       String?
+  yieldQty          Float               @default(1)    // How many units this recipe produces
+  yieldUnit         String              @default("pcs") // e.g. "pcs", "kg", "loaves"
+  sellingPrice      Float?                             // Default selling price per yield unit
+  notes             String?
+  isActive          Boolean             @default(true)
+  expiryDays        Int?                // Shelf life in days for produced items
+  ingredients       RecipeIngredient[]
+  productionBatches ProductionBatch[]
+  schedules         ProductionSchedule[]
+  wasteLogs         WasteLog[]
+  sales             BakerySale[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([name])
+  @@index([isActive])
+}
+
+// RecipeIngredient: One ingredient line in a recipe
+model RecipeIngredient {
+  id                 String            @id @default(uuid())
+  recipeId           String
+  recipe             Recipe            @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  name               String            // e.g. "Flour", "Sugar", "Eggs"
+  quantity           Float             // Amount needed per recipe batch
+  unit               String            @default("g")   // e.g. "g", "kg", "ml", "pcs"
+  costPerUnit        Float             @default(0)     // Cost per 1 unit of this ingredient
+  supplierName       String?           // Which supplier provides this ingredient
+  pantryIngredientId String?           // Optional link to PantryIngredient for stock tracking
+  pantryIngredient   PantryIngredient? @relation(fields: [pantryIngredientId], references: [id], onDelete: SetNull)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([recipeId])
+  @@index([pantryIngredientId])
+}
+
+// ProductionBatch: A recorded production run for a recipe
+model ProductionBatch {
+  id            String       @id @default(uuid())
+  recipeId      String
+  recipe        Recipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  batchDate     DateTime     @default(now())
+  quantity      Float        // Number of recipe batches produced (multiplier on yieldQty)
+  unitsProduced Float        // = quantity * recipe.yieldQty (pre-computed for convenience)
+  totalCost     Float        @default(0) // Sum of all ingredient costs for this batch
+  expiresAt     DateTime?                // When this batch expires (batchDate + recipe.expiryDays)
+  notes         String?
+  sales         BakerySale[] // Sales linked to this batch
+  wasteLogs     WasteLog[]   @relation("BatchWasteLogs")
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([recipeId])
+  @@index([batchDate])
+  @@index([expiresAt])
+}
+
+// PantryIngredient: Tracks the current stock of a bakery ingredient
+model PantryIngredient {
+  id                String             @id @default(uuid())
+  name              String             @unique
+  currentStock      Float              @default(0)
+  unit              String             @default("g")
+  costPerUnit       Float              @default(0)
+  lowStockThreshold Float              @default(0)   // Alert if stock < this value
+  reorderPoint      Float?             // Reorder when stock drops to this level
+  reorderQuantity   Float?             // Suggested quantity to order
+  lastOrderedDate   DateTime?          // When it was last ordered
+  supplierName      String?
+  notes             String?
+  recipeIngredients RecipeIngredient[]
+  wasteLogs         WasteLog[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([name])
+}
+
+// WasteLog: Records waste of produced items or raw ingredients
+model WasteLog {
+  id                 String            @id @default(uuid())
+  wasteType          String            @default("other")
+  recipeId           String?
+  recipe             Recipe?           @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  pantryIngredientId String?
+  pantryIngredient   PantryIngredient? @relation(fields: [pantryIngredientId], references: [id], onDelete: SetNull)
+  productionBatchId  String?
+  productionBatch    ProductionBatch?  @relation("BatchWasteLogs", fields: [productionBatchId], references: [id], onDelete: SetNull)
+  itemName           String
+  quantity           Float
+  unit               String            @default("pcs")
+  cost               Float             @default(0)
+  reason             String?
+  wasteDate          DateTime          @default(now())
+  notes              String?
+  createdAt          DateTime          @default(now())
+
+  @@index([recipeId])
+  @@index([pantryIngredientId])
+  @@index([wasteType])
+  @@index([wasteDate])
+}
+
+// BakerySale: Records the sale of bakery products (directly, without commerce module)
+model BakerySale {
+  id          String           @id @default(uuid())
+  recipeId    String?
+  recipe      Recipe?          @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  batchId     String?          // Optional — which batch these units came from
+  batch       ProductionBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  itemName    String           // Name of the item sold (copied from recipe for history)
+  quantity    Float            // Units sold
+  unitPrice   Float            // Price per unit
+  totalAmount Float            // quantity * unitPrice (pre-computed)
+  saleDate    DateTime         @default(now())
+  notes       String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([recipeId])
+  @@index([batchId])
+  @@index([saleDate])
+}
+
+// ProductionSchedule: Plans which recipe to bake on which day
+model ProductionSchedule {
+  id              String   @id @default(uuid())
+  recipeId        String
+  recipe          Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  scheduledDate   DateTime
+  plannedQuantity Float    @default(1)  // Number of recipe batches planned
+  actualQuantity  Float?               // Actual batches produced (filled when completed)
+  status          String   @default("planned") // planned | in-progress | completed | cancelled
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([recipeId])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+// BakeryExpense: Tracks bakery operating costs (ingredients, equipment, packaging, etc.)
+model BakeryExpense {
+  id            String   @id @default(uuid())
+  date          DateTime @default(now())
+  // ingredients | equipment | packaging | rent | utilities | marketing | maintenance | salaries | other
+  category      String   @default("other")
+  description   String
+  amount        Float
+  vendor        String?
+  paymentMethod String   @default("cash") // cash | card | transfer | cheque
+  recurrence    String   @default("one_time") // one_time | weekly | monthly | yearly
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+}

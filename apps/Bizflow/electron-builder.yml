@@ -1,0 +1,95 @@
+appId: com.bizflow.app
+productName: BizFlow
+directories:
+  buildResources: build
+  output: dist
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!prisma/seed*.ts'
+  - '!prisma/dev.db-journal'
+  - '!prisma/dev.db-wal'
+  - '!prisma/*-journal'
+  - out/**
+  - src/generated/**/*.{js,node,d.ts}
+  - node_modules/.prisma/**
+  - node_modules/@prisma/client/**
+  - package.json
+  - prisma/template.db
+  - prisma/schema.prisma
+extraResources:
+  - from: prisma/template.db
+    to: prisma/template.db
+  - from: prisma/schema.prisma
+    to: prisma/schema.prisma
+asarUnpack:
+  - resources/**
+  - src/generated/prisma/**
+  - node_modules/@prisma/client/**
+  - node_modules/.prisma/**
+  - node_modules/@prisma/engines/**
+  - prisma/**
+win:
+  executableName: BizFlow
+  icon: build/icon.ico
+  sign: null  # Set to signing script path for production
+  target:
+    - target: nsis
+      arch:
+        - x64
+  # Optional: Code signing (uncomment for production)
+  # certificateFile: ${WINDOWS_CERTIFICATE_FILE}
+  # certificatePassword: ${WINDOWS_CERTIFICATE_PASSWORD}
+  # Ensure native modules work properly
+  requestedExecutionLevel: asInvoker
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  include: build/installer.nsh
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  oneClick: false
+  perMachine: false  # Allow per-user installation
+  allowElevation: true  # Allow elevation if user wants system-wide install
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: true  # Remove user data on uninstall
+  runAfterFinish: true  # Launch app after installation
+  # NSIS installer customization
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  # Custom installer images (optional - commented out, using defaults)
+  # installerHeader: build/installerHeader.bmp  # 150x57 pixels
+  # installerSidebar: build/installerSidebar.bmp  # 164x314 pixels
+  # Display language
+  language: 1033  # English
+  # Menu category in Start Menu
+  menuCategory: true
+mac:
+  icon: build/icon.icns
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  notarize: false
+dmg:
+  artifactName: ${name}-${version}.${ext}
+linux:
+  target:
+    - AppImage
+    - snap
+    - deb
+  maintainer: electronjs.org
+  category: Utility
+appImage:
+  artifactName: ${name}-${version}.${ext}
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://example.com/auto-updates

@@ -1,0 +1,677 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BizFlow – Professional Product Overview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: #f8f9fb; color: #1e293b; font-size: 14px; line-height: 1.6; }
+
+    /* ═══════════════════════════════════════ PRINT ══ */
+    @media print {
+      body { background: #fff; font-size: 11px; }
+      .no-print { display: none !important; }
+      .page-break { page-break-before: always; }
+      .plugin-card, .shot-card, .feature-card { page-break-inside: avoid; }
+      .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .plugin-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .stat-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .hero-stat { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+
+    /* ═══════════════════════════════════════ COVER ══ */
+    .cover {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #312e81 100%);
+      color: #fff;
+      padding: 90px 0 70px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 900px 600px at 20% 60%, rgba(59,130,246,.18) 0%, transparent 70%),
+        radial-gradient(ellipse 600px 400px at 80% 20%, rgba(139,92,246,.15) 0%, transparent 70%);
+    }
+    .cover-inner { position: relative; z-index: 1; max-width: 780px; margin: 0 auto; padding: 0 32px; }
+    .cover-logo { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 36px; }
+    .logo-icon {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 0 40px rgba(59,130,246,.4);
+    }
+    .logo-name { text-align: left; }
+    .logo-name h1 { font-size: 42px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+    .logo-name p { font-size: 12px; letter-spacing: 3px; text-transform: uppercase; opacity: .55; }
+    .cover-tagline { font-size: 20px; opacity: .9; max-width: 620px; margin: 0 auto 20px; line-height: 1.65; font-weight: 300; }
+    .cover-tagline strong { font-weight: 700; color: #93c5fd; }
+    .cover-divider { width: 60px; height: 3px; background: linear-gradient(90deg,#3b82f6,#8b5cf6); border-radius: 2px; margin: 24px auto 32px; }
+    .cover-badges { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+    .badge { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 20px; padding: 6px 16px; font-size: 12px; font-weight: 600; backdrop-filter: blur(4px); }
+    .hero-stats { display: flex; gap: 0; justify-content: center; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; overflow: hidden; background: rgba(255,255,255,.05); backdrop-filter: blur(8px); max-width: 560px; margin: 0 auto; }
+    .hero-stat { flex: 1; padding: 20px 16px; text-align: center; border-right: 1px solid rgba(255,255,255,.1); }
+    .hero-stat:last-child { border-right: none; }
+    .hero-stat .n { font-size: 30px; font-weight: 900; color: #60a5fa; line-height: 1; margin-bottom: 4px; }
+    .hero-stat .l { font-size: 11px; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ═══════════════════════════════════════ LAYOUT ══ */
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 28px; }
+    .section { padding: 56px 0; }
+    .section + .section { border-top: 1px solid #e2e8f0; }
+    .section-eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #3b82f6; margin-bottom: 8px; }
+    .section-title { font-size: 28px; font-weight: 900; color: #0f172a; margin-bottom: 8px; letter-spacing: -.5px; }
+    .section-sub { color: #64748b; font-size: 15px; max-width: 680px; line-height: 1.65; }
+
+    /* ═══════════════════════════════════════ CORE FEATURES ══ */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 32px; }
+    .feature-card {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 18px 20px; display: flex; gap: 14px; align-items: flex-start;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      transition: box-shadow .2s;
+    }
+    .feature-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+    .fi { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+    .ft { font-weight: 700; font-size: 13px; margin-bottom: 4px; color: #0f172a; }
+    .fd { font-size: 12px; color: #64748b; line-height: 1.55; }
+
+    /* ═══════════════════════════════════════ SCREENSHOTS SECTION ══ */
+    .shots-intro { background: #0f172a; color: #fff; padding: 56px 0 0; }
+    .shots-intro .container { padding-bottom: 0; }
+    .shots-eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #60a5fa; margin-bottom: 8px; }
+    .shots-title { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+    .shots-sub { color: #94a3b8; font-size: 15px; max-width: 600px; line-height: 1.65; margin-bottom: 40px; }
+
+    .shots-tabs { display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,.08); padding-bottom: 0; }
+    .shots-tab {
+      padding: 10px 18px; font-size: 12px; font-weight: 600; color: #64748b;
+      border: none; background: none; cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .shots-tab.active { color: #60a5fa; border-bottom-color: #3b82f6; }
+
+    .shots-body { background: #0f172a; padding: 40px 0 56px; }
+    .shots-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .shots-grid.two-col { grid-template-columns: repeat(2, 1fr); }
+    .shot-card {
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.08);
+      background: #1e293b;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    }
+    .shot-bar {
+      background: #0f172a; padding: 9px 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .shot-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .shot-dot.r { background: #ef4444; }
+    .shot-dot.y { background: #f59e0b; }
+    .shot-dot.g { background: #22c55e; }
+    .shot-label { font-size: 11px; color: #475569; font-weight: 600; margin-left: 6px; }
+    .shot-card img { width: 100%; display: block; }
+    .shot-cap { padding: 10px 14px; font-size: 11px; font-weight: 600; color: #64748b; background: #1e293b; border-top: 1px solid rgba(255,255,255,.06); }
+
+    /* ═══════════════════════════════════════ MODULES ══ */
+    .plugin-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; margin-bottom: 32px; box-shadow: 0 2px 8px rgba(0,0,0,.05); }
+    .plugin-header { padding: 22px 26px; display: flex; align-items: flex-start; gap: 16px; }
+    .plugin-emoji { font-size: 38px; flex-shrink: 0; margin-top: 2px; }
+    .plugin-name { font-size: 21px; font-weight: 900; color: #0f172a; line-height: 1.2; }
+    .plugin-name span { font-size: 14px; font-weight: 400; }
+    .plugin-desc { font-size: 13px; color: #64748b; margin-top: 6px; line-height: 1.6; max-width: 600px; }
+    .status-badge { margin-left: auto; flex-shrink: 0; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; align-self: flex-start; }
+    .status-active { background: #dcfce7; color: #15803d; }
+    .status-wip { background: #ede9fe; color: #7c3aed; }
+    .plugin-body { padding: 0 26px 26px; }
+    .plugin-sublabel { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 10px; display: flex; align-items: center; gap: 8px; }
+    .plugin-sublabel::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+    .features-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+    .fl-item { display: flex; align-items: flex-start; gap: 8px; background: #f8fafc; border-radius: 8px; padding: 9px 12px; }
+    .check { color: #2563eb; font-size: 12px; flex-shrink: 0; margin-top: 2px; font-weight: 700; }
+    .check.dim { color: #cbd5e1; }
+    .flt { font-size: 12px; color: #334155; line-height: 1.45; }
+    .flt.dim { color: #94a3b8; }
+
+    /* PLUGIN HEADER ACCENTS */
+    .accent-indigo .plugin-header { background: linear-gradient(135deg,#eef2ff,#e0e7ff); border-bottom: 3px solid #4f46e5; }
+    .accent-amber  .plugin-header { background: linear-gradient(135deg,#fffbeb,#fef3c7); border-bottom: 3px solid #d97706; }
+    .accent-teal   .plugin-header { background: linear-gradient(135deg,#f0fdfa,#ccfbf1); border-bottom: 3px solid #0d9488; }
+    .accent-orange .plugin-header { background: linear-gradient(135deg,#fff7ed,#ffedd5); border-bottom: 3px solid #ea580c; }
+    .accent-blue   .plugin-header { background: linear-gradient(135deg,#eff6ff,#dbeafe); border-bottom: 3px solid #2563eb; }
+    .accent-green  .plugin-header { background: linear-gradient(135deg,#f0fdf4,#dcfce7); border-bottom: 3px solid #16a34a; }
+    .accent-purple .plugin-header { background: linear-gradient(135deg,#faf5ff,#ede9fe); border-bottom: 3px solid #7c3aed; }
+
+    /* PLUGIN INLINE SCREENSHOTS */
+    .plugin-shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+    .plugin-shots.two { grid-template-columns: repeat(2, 1fr); }
+    .ps-item { border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+    .ps-bar { background: #1e293b; padding: 6px 10px; display: flex; align-items: center; gap: 5px; }
+    .ps-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .ps-dot.r { background: #ef4444; }
+    .ps-dot.y { background: #f59e0b; }
+    .ps-dot.g { background: #22c55e; }
+    .ps-item img { width: 100%; display: block; }
+    .ps-cap { padding: 6px 10px; font-size: 10px; font-weight: 600; color: #64748b; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+
+    /* ═══════════════════════════════════════ STAT STRIP ══ */
+    .stat-strip { background: linear-gradient(135deg, #1e3a8a, #312e81); color: #fff; padding: 48px 0; }
+    .stat-row { display: flex; gap: 0; border: 1px solid rgba(255,255,255,.12); border-radius: 16px; overflow: hidden; }
+    .stat-box { flex: 1; padding: 28px 20px; text-align: center; border-right: 1px solid rgba(255,255,255,.1); }
+    .stat-box:last-child { border-right: none; }
+    .stat-box .n { font-size: 36px; font-weight: 900; color: #60a5fa; line-height: 1; margin-bottom: 6px; }
+    .stat-box .l { font-size: 12px; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ═══════════════════════════════════════ TECH STACK ══ */
+    .tech-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 32px; }
+    .tech-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 16px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+    .tech-item .ti { font-size: 30px; margin-bottom: 8px; }
+    .tech-item .tn { font-weight: 800; font-size: 13px; color: #0f172a; }
+    .tech-item .td { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+
+    /* ═══════════════════════════════════════ FOOTER ══ */
+    .footer { background: #0f172a; color: #475569; text-align: center; padding: 40px 28px; font-size: 13px; }
+    .footer .f-logo { font-size: 22px; font-weight: 900; color: #f1f5f9; margin-bottom: 6px; }
+    .footer .f-sub { font-size: 12px; opacity: .5; margin-top: 10px; }
+
+    /* ═══════════════════════════════════════ PRINT BTN ══ */
+    .print-btn {
+      position: fixed; bottom: 28px; right: 28px;
+      background: linear-gradient(135deg,#2563eb,#4f46e5);
+      color: #fff; border: none; padding: 13px 26px;
+      border-radius: 10px; font-size: 13px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 4px 20px rgba(37,99,235,.5);
+      z-index: 999; display: flex; align-items: center; gap: 8px;
+    }
+    .print-btn:hover { box-shadow: 0 6px 30px rgba(37,99,235,.7); }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ COVER ══ -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="cover-logo">
+      <div class="logo-icon">&#9889;</div>
+      <div class="logo-name">
+        <h1>BizFlow</h1>
+        <p>Business Management Platform</p>
+      </div>
+    </div>
+    <p class="cover-tagline">
+      The <strong>all-in-one offline desktop platform</strong> that adapts to your business —
+      retail, bakeries, restaurants, medical &amp; dental clinics, veterinary clinics, warehouses, and gyms.
+    </p>
+    <div class="cover-divider"></div>
+    <div class="cover-badges">
+      <span class="badge">&#128421; Windows &middot; macOS &middot; Linux</span>
+      <span class="badge">&#128268; 100% Offline — No Subscription</span>
+      <span class="badge">&#9889; Plugin Architecture</span>
+      <span class="badge">Arabic &amp; English + RTL</span>
+      <span class="badge">&#128272; Role-Based Access</span>
+      <span class="badge">&#128424; Thermal Printer Support</span>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="n">7</div><div class="l">Business Modules</div></div>
+      <div class="hero-stat"><div class="n">100%</div><div class="l">Offline &amp; Private</div></div>
+      <div class="hero-stat"><div class="n">0</div><div class="l">Monthly Fees</div></div>
+      <div class="hero-stat"><div class="n">2</div><div class="l">Languages</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ CORE PLATFORM ══ -->
+<div class="container">
+  <div class="section">
+    <div class="section-eyebrow">Foundation</div>
+    <h2 class="section-title">Core Platform — Shared by Every Module</h2>
+    <p class="section-sub">Every BizFlow module is built on the same powerful engine. Whether you run a clinic or a bakery, you get the full suite of business tools out of the box.</p>
+    <div class="features-grid">
+      <div class="feature-card"><div class="fi">&#128722;</div><div><div class="ft">Point of Sale (POS)</div><div class="fd">Barcode scanning, variant picker, multi-item discounts, and instant thermal receipt printing at checkout.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128230;</div><div><div class="ft">Inventory Tracking</div><div class="fd">Real-time stock per variant, configurable low-stock alerts, and a full movement log with timestamps and reasons.</div></div></div>
+      <div class="feature-card"><div class="fi">&#10133;</div><div><div class="ft">Easy Product Creation</div><div class="fd">Add a product in seconds with the guided form. Use <strong>Batch Mode</strong> to create dozens of colour/size variants in a single step.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128202;</div><div><div class="ft">Finance Dashboard</div><div class="fd">Revenue, expenses, and profit/loss charts with date-range filtering. Income and costs tracked side-by-side.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128200;</div><div><div class="ft">Reports — PDF &amp; CSV</div><div class="fd">One-click generation of sales, inventory, financial, and customer analytics. Fully customisable date ranges.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128101;</div><div><div class="ft">Customer Management</div><div class="fd">Profiles with Bronze / Silver / Gold loyalty tiers, purchase history, outstanding balance, and contact info.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128179;</div><div><div class="ft">Installment &amp; Deposit Plans</div><div class="fd">Credit sales with per-sale installment schedules, deposit recording, and remaining balance tracking.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128119;</div><div><div class="ft">Employee Management</div><div class="fd">Staff directory, role assignment, base salary, overtime, extra-shift pay, and monthly payroll summaries.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128184;</div><div><div class="ft">Expense Ledger</div><div class="fd">Log by category (rent, utilities, marketing…), vendor, payment method, and recurrence type.</div></div></div>
+      <div class="feature-card"><div class="fi">&#127919;</div><div><div class="ft">Goal Tracking</div><div class="fd">Daily and monthly revenue targets per store with colour-coded KPI progress indicators.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128272;</div><div><div class="ft">Role-Based Access Control</div><div class="fd">Admin, Manager, and Cashier roles. Permission-gated routes and actions. Passwords hashed with bcrypt.</div></div></div>
+      <div class="feature-card"><div class="fi">&#127978;</div><div><div class="ft">Multi-Store Support</div><div class="fd">Manage multiple locations, each with its own stock, sales, staff assignments, and revenue goals.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128424;</div><div><div class="ft">Thermal Printer Receipts</div><div class="fd">ESC/POS integration. Auto-prints branded, itemised receipts with totals, discounts, and payment method.</div></div></div>
+      <div class="feature-card"><div class="fi">&#127760;</div><div><div class="ft">Bilingual — Arabic &amp; English</div><div class="fd">Full Arabic and English interface with RTL layout. Switch language from Settings without restart.</div></div></div>
+      <div class="feature-card"><div class="fi">&#128274;</div><div><div class="ft">Fully Offline &amp; Secure</div><div class="fd">All data stored locally in SQLite. Sandboxed renderer. IPC-only bridge between UI and backend.</div></div></div>
+      <div class="feature-card"><div class="fi">&#129518;</div><div><div class="ft">Price Calculator</div><div class="fd">Cost input, margin targets, tax computation, and real-time profit display before setting the selling price.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ SCREENSHOT GALLERY ══ -->
+<div class="shots-intro">
+  <div class="container">
+    <div class="shots-eyebrow">Product Screenshots</div>
+    <div class="shots-title">See It In Action</div>
+    <p class="shots-sub">Real screenshots from the live application across the core business flows.</p>
+  </div>
+</div>
+<div class="shots-body">
+  <div class="container">
+    <div class="shots-grid">
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Dashboard</span></div>
+        <img src="../samples/dashboard.png" alt="Dashboard" />
+        <div class="shot-cap">&#127968; Real-time revenue, goals &amp; KPIs</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Point of Sale</span></div>
+        <img src="../samples/POS.png" alt="POS" />
+        <div class="shot-cap">&#128722; Barcode scanning, cart &amp; checkout</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Products</span></div>
+        <img src="../samples/products.png" alt="Products" />
+        <div class="shot-cap">&#128230; Product catalogue with variants &amp; filters</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Inventory</span></div>
+        <img src="../samples/inventory.png" alt="Inventory" />
+        <div class="shot-cap">&#128220; Stock levels, movements &amp; low-stock alerts</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Finance</span></div>
+        <img src="../samples/finince.png" alt="Finance" />
+        <div class="shot-cap">&#128200; Revenue, expenses &amp; profit charts</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Expense Ledger</span></div>
+        <img src="../samples/expense Page.png" alt="Expenses" />
+        <div class="shot-cap">&#128184; Categorised expenses by vendor &amp; recurrence</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Sales History</span></div>
+        <img src="../samples/sales.png" alt="Sales" />
+        <div class="shot-cap">&#128176; Complete sales log with item breakdown</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Customer Profile</span></div>
+        <img src="../samples/customerProfile.png" alt="Customer" />
+        <div class="shot-cap">&#11088; Loyalty tier, balance &amp; purchase history</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Reports</span></div>
+        <img src="../samples/reportPage.png" alt="Reports" />
+        <div class="shot-cap">&#128202; Analytics, PDF export &amp; date range filters</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ STATS STRIP ══ -->
+<div class="stat-strip">
+  <div class="container">
+    <div class="stat-row">
+      <div class="stat-box"><div class="n">7</div><div class="l">Business Modules</div></div>
+      <div class="stat-box"><div class="n">24+</div><div class="l">Screens &amp; Pages</div></div>
+      <div class="stat-box"><div class="n">3</div><div class="l">User Roles</div></div>
+      <div class="stat-box"><div class="n">100%</div><div class="l">Data Privacy</div></div>
+      <div class="stat-box"><div class="n">0</div><div class="l">Cloud Dependency</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ MODULES ══ -->
+<div class="container">
+  <div class="section page-break">
+    <div class="section-eyebrow">Plugin Architecture</div>
+    <h2 class="section-title">Business Modules — Deep Dive</h2>
+    <p class="section-sub">Each module is fully self-contained: its own database schema, backend handlers, IPC bridge, and UI pages. Enable only what your business needs — disabled modules leave zero footprint.</p>
+  </div>
+</div>
+
+<!-- ── COMMERCE ── -->
+<div class="container">
+  <div class="plugin-card accent-indigo">
+    <div class="plugin-header">
+      <div class="plugin-emoji">&#128722;</div>
+      <div>
+        <div class="plugin-name">Commerce <span style="color:#6366f1;">— Retail &amp; General Trade</span></div>
+        <div class="plugin-desc">The complete retail stack from product catalogue to closed sale. Covers supplier management, purchase orders, expense tracking, installment plans, and customer deposits. Perfect for shops, boutiques, supermarkets, and any product-based business.</div>
+      </div>
+      <span class="status-badge status-active">Active</span>
+    </div>
+    <div class="plugin-body">
+      <div class="plugin-sublabel">Products &amp; Catalogue</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Product form: name, SKU, category, images, cost &amp; price</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Barcode — type manually or auto-generate in one click</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Single-variant mode for simple products</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Batch Variant Mode — create many colour/size combos at once</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Extra attributes: material, weight, dimensions, custom fields</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Category management with hierarchy &amp; colour coding</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Multi-image gallery with zoom viewer</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Filters by category, colour, size, store, stock status</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Low-stock threshold alert per variant</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Full stock movement log: timestamp, reason, quantity delta</span></div>
+      </div>
+      <div class="plugin-sublabel">Sales &amp; POS</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Barcode scanner integration at checkout</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Variant picker with live stock count per colour/size</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Per-item and cart-wide discounts</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Payment methods: cash, card, bank transfer</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Thermal receipt auto-printed on every sale</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Installment plans: schedule &amp; track all payments</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Customer deposit recording &amp; outstanding balance view</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Sales history with full item breakdown</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Daily cashier summary: sales, cash in/out, discounts given</span></div>
+      </div>
+      <div class="plugin-sublabel">Suppliers &amp; Purchasing</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Supplier registry with linked products</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Purchase orders with multi-line items &amp; unit cost</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">PO status: draft / ordered / partially received / completed</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Stock auto-updated on PO receipt confirmation</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Expense ledger: rent, utilities, marketing, salaries…</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Filter expenses by vendor, method &amp; recurrence</span></div>
+      </div>
+      <div class="plugin-sublabel">Screenshots</div>
+      <div class="plugin-shots">
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/products.png" alt="Products" /><div class="ps-cap">Product catalogue</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/POS.png" alt="POS" /><div class="ps-cap">Point of Sale</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/add_porducts.png" alt="Add Product" /><div class="ps-cap">Add / Edit product</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/viewVierntOFProductIn Pos.png" alt="Variant" /><div class="ps-cap">Variant picker at POS</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/inventory.png" alt="Inventory" /><div class="ps-cap">Inventory &amp; stock levels</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/calcuate Price.png" alt="Price Calc" /><div class="ps-cap">Price calculator</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BAKERY ── -->
+  <div class="plugin-card accent-amber">
+    <div class="plugin-header">
+      <div class="plugin-emoji">&#129360;</div>
+      <div>
+        <div class="plugin-name">Bakery</div>
+        <div class="plugin-desc">End-to-end production management — from raw ingredient tracking to batch scheduling, waste logging, and profitability analysis. Finished goods flow directly into the core POS for sale.</div>
+      </div>
+      <span class="status-badge status-active">Active</span>
+    </div>
+    <div class="plugin-body">
+      <div class="plugin-sublabel">Recipes &amp; Ingredients</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Recipe builder: ingredient list, quantities &amp; units (g, kg, L, pcs…)</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Cost-per-batch auto-calculated from ingredient prices</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Expected yield per batch (units produced)</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Cost-per-unit = cost ÷ yield, shown in real time</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Pantry: ingredient stock with unit tracking</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Low-stock alerts on pantry ingredients</span></div>
+      </div>
+      <div class="plugin-sublabel">Production &amp; Operations</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Batch lifecycle: planned → in-progress → finished</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Ingredients auto-deducted from pantry on batch start</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Actual yield recorded at finish vs. expected</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Waste log: quantity &amp; reason per batch</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Daily production schedule &amp; task planning</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">P&amp;L per product: production cost vs. sales revenue</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Best-seller ranking by units produced &amp; sold</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Finished goods added to product stock for POS sale</span></div>
+      </div>
+      <div class="plugin-sublabel">Screenshots</div>
+      <div class="plugin-shots two">
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/bakery.png" alt="Bakery" /><div class="ps-cap">Bakery overview &amp; batches</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/recipes.png" alt="Recipes" /><div class="ps-cap">Recipe builder &amp; cost analysis</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CLINIC ── -->
+  <div class="plugin-card accent-teal">
+    <div class="plugin-header">
+      <div class="plugin-emoji">&#127973;</div>
+      <div>
+        <div class="plugin-name">Medical Clinic <span style="color:#0d9488;">+ Dentist Mode</span></div>
+        <div class="plugin-desc">Full patient practice management for general medicine and dental clinics. One-click <strong>Dentist Mode</strong> unlocks an interactive 32-tooth odontogram on every session form — no separate dental software needed.</div>
+      </div>
+      <span class="status-badge status-active">Active</span>
+    </div>
+    <div class="plugin-body">
+      <div class="plugin-sublabel">Patient Management</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Patient registry: name, DOB, gender, blood type, contact</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Chronic conditions, allergies &amp; ongoing medication notes</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Full visit history timeline per patient</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Check result uploads (PDF/images) with built-in viewer</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Outstanding balance &amp; billing history per patient</span></div>
+      </div>
+      <div class="plugin-sublabel">Appointments &amp; Sessions</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Appointment scheduling with date, time &amp; reason</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Daily queue: waiting / in-session / done statuses</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Session form: complaint, diagnosis, vitals (BP, temp, pulse, SpO2)</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Prescription builder: medicine, dosage, frequency, duration</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Follow-up date scheduling inside the session form</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Per-session billing: charged, paid, status &amp; payment method</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Daily clinic stats: sessions, revenue, outstanding</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Clinic expense tracking (staff, supplies, equipment, rent)</span></div>
+      </div>
+      <div class="plugin-sublabel">&#129463; Dentist Mode — one-click toggle</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Interactive 32-tooth odontogram on every session form</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Click any tooth to record condition or planned treatment</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Conditions: caries, filling, crown, extraction, implant, missing…</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Dental chart saved &amp; shown in patient visit history</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Session count with dental chart shown on patient profile</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Disable any time — reverts to standard medical view instantly</span></div>
+      </div>
+      <div class="plugin-sublabel">Screenshots</div>
+      <div class="plugin-shots">
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/clinic.png" alt="Clinic" /><div class="ps-cap">Clinic dashboard &amp; queue</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/patient page.png" alt="Patient" /><div class="ps-cap">Patient profile &amp; history</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/patient session.png" alt="Session" /><div class="ps-cap">Session — dental chart &amp; Rx</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESTAURANT ── -->
+  <div class="plugin-card accent-orange">
+    <div class="plugin-header">
+      <div class="plugin-emoji">&#127869;</div>
+      <div>
+        <div class="plugin-name">Restaurant</div>
+        <div class="plugin-desc">Dine-in operations from visual table layout to kitchen queue management. Integrates fully with core POS, finance, and reporting modules.</div>
+      </div>
+      <span class="status-badge status-active">Active</span>
+    </div>
+    <div class="plugin-body">
+      <div class="plugin-sublabel">Tables &amp; Reservations</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Visual floor plan: create and arrange tables with capacity</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Live table status: available / occupied / reserved</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Reservation booking: guest name, date, time, party size</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Reservation status: confirmed / no-show / cancelled</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Walk-in seat assignment from the floor plan</span></div>
+      </div>
+      <div class="plugin-sublabel">Menu &amp; Orders</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Digital menu builder: categories, items, descriptions, prices &amp; images</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Item availability toggle (86'd items hidden from order screen)</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Per-table order creation with item-level notes</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Order status per item: pending / preparing / served</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Kitchen queue view for back-of-house staff</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Per-table billing with discount &amp; split-payment support</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Order history &amp; best-selling items ranking</span></div>
+      </div>
+      <div class="plugin-sublabel">Screenshots</div>
+      <div class="plugin-shots two">
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/restaruant.png" alt="Restaurant" /><div class="ps-cap">Table layout &amp; reservations</div></div>
+        <div class="ps-item"><div class="ps-bar"><div class="ps-dot r"></div><div class="ps-dot y"></div><div class="ps-dot g"></div></div><img src="../samples/restaraunt menu.png" alt="Menu" /><div class="ps-cap">Digital menu management</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VET ── -->
+  <div class="plugin-card accent-green">
+    <div class="plugin-header">
+      <div class="plugin-emoji">&#128062;</div>
+      <div>
+        <div class="plugin-name">Veterinary Clinic</div>
+        <div class="plugin-desc">Owner-and-pet record system with full visit history, vet prescriptions, appointment scheduling, vaccine tracking, and per-session billing.</div>
+      </div>
+      <span class="status-badge status-active">Active</span>
+    </div>
+    <div class="plugin-body">
+      <div class="plugin-sublabel">Owner &amp; Pet Profiles</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Owner profiles: name, phone, email, address</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Pet profiles: species, breed, gender, DOB, weight, colour</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Microchip ID with uniqueness validation</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Known allergies &amp; chronic condition notes per pet</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Multiple pets per owner, each with independent history</span></div>
+      </div>
+      <div class="plugin-sublabel">Visits &amp; Clinical Records</div>
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Visit types: wellness, vaccination, surgery, emergency, grooming</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Vitals: weight, temperature, heart rate, resp. rate, CRT</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Diagnosis, prognosis, follow-up date &amp; clinical notes</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Prescription builder: medicine, dosage, frequency, duration</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Check result file uploads (blood work, X-rays) per visit</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Vaccine record with next-due date alerts</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Appointment scheduling: confirmed / no-show / cancelled</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Per-session billing: cash / card / insurance — paid / partial / unpaid</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Outstanding balance tracking per owner</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WAREHOUSE ── -->
+  <div class="plugin-card accent-blue">
+    <div class="plugin-header">
+      <div class="plugin-emoji">&#127981;</div>
+      <div>
+        <div class="plugin-name">Warehouse</div>
+        <div class="plugin-desc">Multi-location inventory with bin-level stock tracking and controlled transfer orders between zones. Ideal for distributors and businesses with multiple storage sites.</div>
+      </div>
+      <span class="status-badge status-active">Active</span>
+    </div>
+    <div class="plugin-body">
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Multiple warehouse locations / zones / branches</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Bin-level stock per product per location</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Inbound &amp; outbound movement logs with timestamps</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Stock transfer orders between locations</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Transfer status: pending / in-transit / completed</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Inventory valuation per location at cost price</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Low-stock alerts per location independently</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Integration with core product catalogue &amp; POS</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GYM ── -->
+  <div class="plugin-card accent-purple">
+    <div class="plugin-header">
+      <div class="plugin-emoji">&#127947;</div>
+      <div>
+        <div class="plugin-name">Gym <span style="color:#7c3aed;">— Fitness &amp; Wellness Centres</span></div>
+        <div class="plugin-desc">Member management and subscription billing for gyms and fitness centres.</div>
+      </div>
+      <span class="status-badge status-wip">In Progress</span>
+    </div>
+    <div class="plugin-body">
+      <div class="features-list">
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Member profiles: name, photo, phone, emergency contact</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Membership plans (monthly, quarterly, annual)</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Subscription start/end dates with expiry alerts</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Payment &amp; renewal tracking per member</span></div>
+        <div class="fl-item"><span class="check">&#10004;</span><span class="flt">Revenue &amp; active membership dashboard</span></div>
+        <div class="fl-item"><span class="check dim">&#9711;</span><span class="flt dim">Check-in / attendance log — coming soon</span></div>
+        <div class="fl-item"><span class="check dim">&#9711;</span><span class="flt dim">Class scheduling &amp; trainer assignment — coming soon</span></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container modules -->
+
+<!-- ═══════════════════════════ MORE SCREENSHOTS ══ -->
+<div class="shots-intro" style="padding-bottom:0;">
+  <div class="container">
+    <div class="shots-eyebrow">More From The App</div>
+    <div class="shots-title">Employees, Finance &amp; Reports</div>
+    <p class="shots-sub" style="margin-bottom:40px;">The shared platform screens available across all business modules.</p>
+  </div>
+</div>
+<div class="shots-body">
+  <div class="container">
+    <div class="shots-grid">
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Employees</span></div>
+        <img src="../samples/employees page.png" alt="Employees" />
+        <div class="shot-cap">&#128119; Employee directory &amp; role management</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Employee Profile</span></div>
+        <img src="../samples/employee profile.png" alt="Employee Profile" />
+        <div class="shot-cap">&#128203; Salary, payroll &amp; shift history</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Finance</span></div>
+        <img src="../samples/finince.png" alt="Finance" />
+        <div class="shot-cap">&#128200; Revenue, expenses &amp; profit/loss charts</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Expenses</span></div>
+        <img src="../samples/expense Page.png" alt="Expenses" />
+        <div class="shot-cap">&#128184; Expense ledger by vendor &amp; recurrence</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Report Page</span></div>
+        <img src="../samples/showRport.png" alt="Report" />
+        <div class="shot-cap">&#128202; Generated report with charts &amp; tables</div>
+      </div>
+      <div class="shot-card">
+        <div class="shot-bar"><div class="shot-dot r"></div><div class="shot-dot y"></div><div class="shot-dot g"></div><span class="shot-label">Report Builder</span></div>
+        <img src="../samples/reportPage.png" alt="Reports" />
+        <div class="shot-cap">&#128200; Report builder with date-range filters</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ TECH STACK ══ -->
+<div class="container">
+  <div class="section">
+    <div class="section-eyebrow">Under The Hood</div>
+    <h2 class="section-title">Technology Stack</h2>
+    <p class="section-sub">Built with modern, battle-tested open-source tools — no vendor lock-in, no cloud dependency, no surprise fees.</p>
+    <div class="tech-grid">
+      <div class="tech-item"><div class="ti">&#9889;</div><div class="tn">Electron</div><div class="td">Cross-platform desktop shell</div></div>
+      <div class="tech-item"><div class="ti">&#9883;</div><div class="tn">React 18</div><div class="td">UI component framework</div></div>
+      <div class="tech-item"><div class="ti">&#127912;</div><div class="tn">Tailwind CSS</div><div class="td">Utility-first styling</div></div>
+      <div class="tech-item"><div class="ti">&#128311;</div><div class="tn">TypeScript</div><div class="td">End-to-end type safety</div></div>
+      <div class="tech-item"><div class="ti">&#128447;</div><div class="tn">Prisma v5</div><div class="td">ORM + schema migrations</div></div>
+      <div class="tech-item"><div class="ti">&#129382;</div><div class="tn">SQLite</div><div class="td">Embedded local database</div></div>
+      <div class="tech-item"><div class="ti">&#128640;</div><div class="tn">electron-vite</div><div class="td">Fast dev &amp; build pipeline</div></div>
+      <div class="tech-item"><div class="ti">&#128256;</div><div class="tn">React Router</div><div class="td">Client-side routing</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ FOOTER ══ -->
+<div class="footer">
+  <div class="f-logo">&#9889; BizFlow</div>
+  <div>All-in-One Offline Business Management Platform &middot; &copy; 2026</div>
+  <div class="f-sub">All data stored locally on your machine. No subscription. No internet required. No cloud dependency.</div>
+</div>
+
+<button class="print-btn no-print" onclick="window.print()">&#128424; Save as PDF</button>
+
+</body>
+</html>
