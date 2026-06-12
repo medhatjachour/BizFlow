@@ -23,6 +23,10 @@ export const metadata: Metadata = {
     "inventory",
     "try in browser",
     "desktop app",
+    "bakery app",
+    "clinic app",
+    "vet app",
+    "dentist app",
   ],
   icons: { icon: "/brand/bizflow-icon.png" },
 };
