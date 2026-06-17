@@ -2,10 +2,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Pill, Plus, Pencil, Trash2, ChevronDown, ChevronUp, Loader2,
-  PackagePlus, AlertTriangle, Clock, Search, X, Package, Info, XCircle, Settings
+  PackagePlus, AlertTriangle, Clock, Search, X, Package, Info, XCircle, Settings,
+  History, Calendar, ShoppingCart, ArrowDownToLine, TrendingUp, DollarSign
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import VetPeriodFilter from './VetPeriodFilter'
 
 const api = (window as any).api?.vet?.medicines
 const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500'
@@ -277,29 +279,42 @@ function CategoryManagerModal({ onRefresh, onClose }: {
 
 // ── Unit Manager Modal ──────────────────────────────────────────────────────
 
-function UnitManagerModal({ units, onChange, onClose }: {
-  units: string[]; onChange: (units: string[]) => void; onClose: () => void
+function UnitManagerModal({ onChange, onClose }: {
+  onChange: (units: string[]) => void; onClose: () => void
 }) {
   const { t } = useLanguage()
+  const [rows, setRows] = useState<{ id: string; name: string; isDefault?: boolean }[]>([])
   const [input, setInput] = useState('')
   const [error, setError] = useState('')
 
-  function add() {
+  async function load() {
+    try {
+      const r = await (window as any).api?.vet?.medicineUnits?.getAll()
+      const list = r ?? []
+      setRows(list)
+      const names = list.map((u: any) => u.name)
+      saveUnits(names)
+      onChange(names)
+    } catch {}
+  }
+  useEffect(() => { load() }, [])
+
+  async function add() {
     const v = input.trim().toLowerCase()
     if (!v) { setError(t('vetUnitNameRequired') || 'Unit name is required'); return }
-    if (units.includes(v)) { setError(t('vetUnitExists') || 'Unit already exists'); return }
-    const next = [...units, v]
-    saveUnits(next)
-    onChange(next)
-    setInput('')
-    setError('')
+    if (rows.some(u => u.name === v)) { setError(t('vetUnitExists') || 'Unit already exists'); return }
+    try {
+      await (window as any).api?.vet?.medicineUnits?.create({ name: v })
+      setInput(''); setError(''); await load()
+    } catch (e: any) { setError(e?.message ?? 'Failed to add') }
   }
 
-  function remove(unit: string) {
-    const next = units.filter(u => u !== unit)
-    saveUnits(next)
-    onChange(next)
+  async function remove(u: { id: string; name: string }) {
+    try { await (window as any).api?.vet?.medicineUnits?.delete(u.id); await load() }
+    catch { setError('Failed to remove') }
   }
+
+  const units = rows.map(r => r.name)
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
@@ -324,10 +339,10 @@ function UnitManagerModal({ units, onChange, onClose }: {
           </div>
           {error && <p className="text-xs text-red-500">{error}</p>}
           <div className="flex flex-wrap gap-2">
-            {units.map(unit => (
-              <span key={unit} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300">
-                <span className="capitalize">{unit}</span>
-                <button onClick={() => remove(unit)}
+            {rows.map(u => (
+              <span key={u.id} className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300">
+                <span className="capitalize">{u.name}</span>
+                <button onClick={() => remove(u)}
                   className="text-violet-400 hover:text-red-500 transition-colors"
                   title={t('vetDeleteUnit') || 'Remove'}>
                   <X size={12} />
@@ -434,7 +449,7 @@ function MedicineModal({ initial, categories, units, onRefresh, onUnitsChange, o
               </div>
             </div>
           </div>
-          {showUnitMgr && <UnitManagerModal units={units} onChange={onUnitsChange} onClose={() => setShowUnitMgr(false)} />}
+          {showUnitMgr && <UnitManagerModal onChange={onUnitsChange} onClose={() => setShowUnitMgr(false)} />}
           {showCatMgr  && <CategoryManagerModal onRefresh={onRefresh} onClose={() => setShowCatMgr(false)} />}
           {/* Unit conversion — optional */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2 bg-slate-50/50 dark:bg-slate-800/50">
@@ -764,11 +779,197 @@ function DisposeConfirm({
   )
 }
 
+// ── Medicine History Modal ─────────────────────────────────────────────────
+
+interface HistoryEvent {
+  id: string; type: 'received' | 'sold' | 'disposed'; date: string
+  batchNumber?: string | null; quantity: number; unit: string; subUnit?: string | null
+  saleUnit?: string; costPerUnit?: number; totalCost?: number; totalPrice?: number
+  unitPrice?: number; discount?: number; grossProfit?: number; lossAmount?: number
+  supplier?: string | null; expiryDate?: string; reason?: string | null
+  ownerName?: string | null; paymentStatus?: string; notes?: string | null
+}
+
+function MedicineHistoryModal({ medicineId, medicineName, onClose }: {
+  medicineId: string; medicineName: string; onClose: () => void
+}) {
+  const { t } = useLanguage()
+  const [loading, setLoading] = useState(true)
+  const [events, setEvents] = useState<HistoryEvent[]>([])
+  const [summary, setSummary] = useState<any | null>(null)
+  const [medUnit, setMedUnit] = useState('')
+  const [range, setRange] = useState<{ from?: string; to?: string }>({})
+  const [typeFilter, setTypeFilter] = useState<'all' | 'received' | 'sold' | 'disposed'>('all')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await api.getHistory(medicineId, { from: range.from, to: range.to })
+      setEvents(res?.events ?? [])
+      setSummary(res?.summary ?? null)
+      setMedUnit(res?.medicine?.unit ?? '')
+    } catch { setEvents([]); setSummary(null) }
+    finally { setLoading(false) }
+  }, [medicineId, range.from, range.to])
+
+  useEffect(() => { load() }, [load])
+
+  const shown = events.filter(e => typeFilter === 'all' || e.type === typeFilter)
+
+  const EVENT_META: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+    received: { icon: ArrowDownToLine, color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-100 dark:bg-blue-900/30',     label: t('vetHistReceived') || 'Stock received' },
+    sold:     { icon: ShoppingCart,    color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/30', label: t('vetHistSold') || 'Sold' },
+    disposed: { icon: XCircle,         color: 'text-red-600 dark:text-red-400',       bg: 'bg-red-100 dark:bg-red-900/30',       label: t('vetHistDisposed') || 'Written off' },
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6" onClick={onClose}>
+      <div className="w-full max-w-3xl max-h-full bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+              <History className="h-4.5 w-4.5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900 dark:text-white">{medicineName}</h2>
+              <p className="text-xs text-slate-400">{t('vetMedicineHistory') || 'Inventory history & activity'}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="px-6 py-3 border-b border-slate-100 dark:border-slate-800 shrink-0 space-y-2.5">
+          <VetPeriodFilter onChange={r => setRange({ from: r.from, to: r.to })} defaultPreset="all" />
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">{t('vetHistType') || 'Type'}:</span>
+            {(['all', 'received', 'sold', 'disposed'] as const).map(ty => (
+              <button key={ty} onClick={() => setTypeFilter(ty)}
+                className={`px-2 py-0.5 text-[10px] font-semibold rounded-md capitalize transition-colors
+                  ${typeFilter === ty ? 'bg-violet-600 text-white'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-violet-400 dark:hover:border-violet-600'}`}>
+                {ty === 'all' ? (t('vetFilterAll') || 'All') : EVENT_META[ty]?.label ?? ty}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Summary cards */}
+        {summary && (
+          <div className="px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5 shrink-0 border-b border-slate-100 dark:border-slate-800">
+            {[
+              { label: t('vetHistReceivedTotal') || 'Received', val: `${summary.totalReceived ?? 0} ${medUnit}`, icon: ArrowDownToLine, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+              { label: t('vetHistRevenue') || 'Revenue', val: `$${(summary.salesRevenue ?? 0).toFixed(2)}`, icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+              { label: t('vetHistProfit') || 'Profit', val: `$${(summary.salesProfit ?? 0).toFixed(2)}`, icon: DollarSign, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20' },
+              { label: t('vetHistLoss') || 'Write-off loss', val: `$${(summary.disposalLoss ?? 0).toFixed(2)}`, icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20' },
+            ].map(s => (
+              <div key={s.label} className={`${s.bg} rounded-xl px-3 py-2 flex items-center gap-2.5`}>
+                <s.icon className={`h-5 w-5 shrink-0 ${s.color}`} />
+                <div className="min-w-0">
+                  <p className={`text-sm font-black ${s.color} leading-none truncate`}>{s.val}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Timeline */}
+        <div className="flex-1 overflow-y-auto px-6 py-4">
+          {loading ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-violet-500" /></div>
+          ) : shown.length === 0 ? (
+            <div className="text-center py-14 text-slate-400">
+              <History className="h-9 w-9 mx-auto mb-3 opacity-30" />
+              <p className="text-sm font-medium">{t('vetHistNoEvents') || 'No activity in this period'}</p>
+            </div>
+          ) : (
+            <div className="relative pl-6 space-y-1">
+              {/* vertical line */}
+              <div className="absolute left-2 top-2 bottom-2 w-px bg-slate-200 dark:bg-slate-700" />
+              {shown.map(e => {
+                const meta = EVENT_META[e.type]
+                const Icon = meta.icon
+                const d = new Date(e.date)
+                const unitLabel = e.type === 'sold' && e.saleUnit === 'sub' && e.subUnit ? e.subUnit : (e.unit || medUnit)
+                return (
+                  <div key={e.id} className="relative flex gap-3 py-2">
+                    <div className={`absolute -left-6 mt-0.5 w-4 h-4 rounded-full ${meta.bg} ring-4 ring-white dark:ring-slate-900 flex items-center justify-center`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${meta.color.replace('text-', 'bg-')}`} />
+                    </div>
+                    <div className={`w-8 h-8 rounded-lg ${meta.bg} flex items-center justify-center shrink-0`}>
+                      <Icon className={`h-4 w-4 ${meta.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white">{meta.label}</span>
+                          {e.batchNumber && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">LOT {e.batchNumber}</span>}
+                          {e.type === 'sold' && e.paymentStatus && e.paymentStatus !== 'paid' && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 capitalize">{e.paymentStatus}</span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400 flex items-center gap-1 shrink-0">
+                          <Calendar className="h-3 w-3" /> {d.toLocaleDateString()} {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {e.type === 'received' && (
+                          <>
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">+{e.quantity} {unitLabel}</span>
+                            {e.costPerUnit ? ` @ $${e.costPerUnit.toFixed(2)} = $${(e.totalCost ?? 0).toFixed(2)}` : ''}
+                            {e.supplier ? ` · ${e.supplier}` : ''}
+                            {e.expiryDate ? ` · ${t('vetExpPrefix') || 'Exp:'} ${new Date(e.expiryDate).toLocaleDateString()}` : ''}
+                          </>
+                        )}
+                        {e.type === 'sold' && (
+                          <>
+                            <span className="font-semibold text-red-500">−{e.quantity} {unitLabel}</span>
+                            {` @ $${(e.unitPrice ?? 0).toFixed(2)} = $${(e.totalPrice ?? 0).toFixed(2)}`}
+                            {(e.discount ?? 0) > 0 ? ` · −$${(e.discount ?? 0).toFixed(2)} disc` : ''}
+                            {e.ownerName ? ` · ${e.ownerName}` : ''}
+                            {typeof e.grossProfit === 'number' ? <span className={e.grossProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>{` · ${e.grossProfit >= 0 ? '+' : ''}$${e.grossProfit.toFixed(2)} ${t('vetProfit') || 'profit'}`}</span> : ''}
+                          </>
+                        )}
+                        {e.type === 'disposed' && (
+                          <>
+                            <span className="font-semibold text-red-500">−{e.quantity} {unitLabel}</span>
+                            {` · −$${(e.lossAmount ?? 0).toFixed(2)} ${t('vetHistLoss') || 'loss'}`}
+                            {e.reason ? ` · ${e.reason}` : ''}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-between">
+          <p className="text-xs text-slate-400">
+            {shown.length} {shown.length === 1 ? (t('vetHistEvent') || 'event') : (t('vetHistEvents') || 'events')}
+          </p>
+          <button onClick={onClose} className="px-4 py-1.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            {t('vetClose') || 'Close'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Main Tab ──────────────────────────────────────────────────────────────────
 
 export default function VetMedicinesTab() {
-  const toast = useToast()
   const { t } = useLanguage()
+  const toast = useToast()
   const [medicines, setMedicines] = useState<Medicine[]>([])
   const [total, setTotal]         = useState(0)
   const [loading, setLoading]     = useState(false)
@@ -778,15 +979,23 @@ export default function VetMedicinesTab() {
 
   const [dbCategories, setDbCategories] = useState<{ id: string; name: string; color: string }[]>([])
   const [units, setUnits]           = useState<string[]>(loadUnits)
+  // Container units are persisted in the DB; localStorage is just a warm cache.
+  useEffect(() => {
+    ;(window as any).api?.vet?.medicineUnits?.getAll()
+      .then((r: { name: string }[]) => { if (r?.length) { const names = r.map(u => u.name); setUnits(names); saveUnits(names) } })
+      .catch(() => {})
+  }, [])
   const [showCatManager, setShowCatManager] = useState(false)
   const [medModal, setMedModal]     = useState<{ open: boolean; item: Medicine | null }>({ open: false, item: null })
   const [batchModal, setBatchModal] = useState<{ open: boolean; medId: string; unit: string; item: Batch | null }>({ open: false, medId: '', unit: '', item: null })
   const [delTarget, setDelTarget]   = useState<{ type: 'medicine' | 'batch'; id: string; label: string } | null>(null)
   const [deleting, setDeleting]     = useState(false)
   const [showLowStock, setShowLowStock] = useState(false)
+  const [medPage, setMedPage] = useState(1)
   const [batchFilter,  setBatchFilter]  = useState<'expired' | 'expiring' | null>(null)
   const [disposeTarget, setDisposeTarget] = useState<{ batch: Batch; medicineName: string; unit: string } | null>(null)
   const [disposing, setDisposing]   = useState(false)
+  const [historyTarget, setHistoryTarget] = useState<{ id: string; name: string } | null>(null)
 
   // Reset active category filter if its category was deleted
   const categoryNames = ['all', ...dbCategories.map(c => c.name)]
@@ -851,6 +1060,13 @@ export default function VetMedicinesTab() {
     return medicines
   })()
 
+  // Client-side pagination keeps the list snappy with large catalogues (500+).
+  const MED_PAGE_SIZE = 24
+  const medTotalPages = Math.max(1, Math.ceil(displayedMedicines.length / MED_PAGE_SIZE))
+  const safePage = Math.min(medPage, medTotalPages)
+  const pagedMedicines = displayedMedicines.slice((safePage - 1) * MED_PAGE_SIZE, safePage * MED_PAGE_SIZE)
+  useEffect(() => { setMedPage(1) }, [search, category, showLowStock, batchFilter])
+
   return (
     <div className="p-6 space-y-5">
 
@@ -890,12 +1106,13 @@ export default function VetMedicinesTab() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {[
           { label: t('vetTotalMedicines')||'Total Medicines',   value: total,                                                                  icon: Pill,          color: 'text-violet-600 dark:text-violet-400', clickable: true,     filterKey: null },
           { label: t('vetExpiredBatches')||'Expired Batches',   value: medicines.filter(m => m.hasExpired).length,                            icon: AlertTriangle, color: 'text-red-600 dark:text-red-400',        clickable: true,     filterKey: 'expired' as const },
           { label: t('vetExpiring30')||'Expiring ≤30 days', value: medicines.filter(m => m.expiresWithin30Days && !m.hasExpired).length,  icon: Clock,         color: 'text-amber-600 dark:text-amber-400',    clickable: true,     filterKey: 'expiring' as const },
           { label: t('vetLowStockCard')||'Low Stock',         value: lowStockMeds.length,                                                   icon: Package,       color: 'text-orange-600 dark:text-orange-400',  clickable: true,     filterKey: null },
+          { label: t('vetStockValue')||'Stock Value',         value: `$${medicines.reduce((sum, m) => sum + (m.batches?.reduce((bs, b) => bs + b.quantity * (b.costPerUnit || 0), 0) ?? 0), 0).toFixed(0)}`, icon: DollarSign, color: 'text-emerald-600 dark:text-emerald-400', clickable: false, filterKey: null },
         ].map(s => {
           const isTotal         = s.label === (t('vetTotalMedicines')||'Total Medicines')
           const anyFilterActive  = showLowStock || batchFilter !== null || category !== 'all'
@@ -995,7 +1212,7 @@ export default function VetMedicinesTab() {
               </button>
             </div>
           )}
-          {displayedMedicines.map(med => (
+          {pagedMedicines.map(med => (
             <div key={med.id} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
               {/* Medicine header */}
               <div className="flex items-center gap-3 px-4 py-3">
@@ -1033,6 +1250,10 @@ export default function VetMedicinesTab() {
                 </div>
 
                 <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={() => setHistoryTarget({ id: med.id, name: med.name })} title={t('vetViewHistory') || 'View history'}
+                    className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-400 hover:text-blue-500 transition-colors">
+                    <History size={15} />
+                  </button>
                   <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, item: null })} title="Receive batch"
                     className="p-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-500 transition-colors">
                     <PackagePlus size={15} />
@@ -1063,8 +1284,8 @@ export default function VetMedicinesTab() {
                         <table className="w-full text-xs">
                           <thead>
                             <tr className="bg-slate-50 dark:bg-slate-700/40 text-slate-500 dark:text-slate-400">
-                            {[t('vetBatchNumHeader')||'Batch #', t('vetExpiryHeader')||'Expiry', t('vetRemainingHeader')||'Remaining', t('vetInitialHeader')||'Initial', t('vetCostUnitHeader')||'Cost/unit', t('vetBatchSupplier')||'Supplier', ''].map(h => (
-                                <th key={h} className="px-4 py-2 text-left font-medium whitespace-nowrap">{h}</th>
+                            {[t('vetBatchNumHeader')||'Batch #', t('vetExpiryHeader')||'Expiry', t('vetRemainingHeader')||'Remaining', t('vetInitialHeader')||'Initial', t('vetCostUnitHeader')||'Cost/unit', t('vetSellPriceHeader')||'Sell price', t('vetValueHeader')||'Stock value', t('vetBatchSupplier')||'Supplier', ''].map((h, i) => (
+                                <th key={`${h}-${i}`} className="px-4 py-2 text-left font-medium whitespace-nowrap">{h}</th>
                               ))}
                             </tr>
                           </thead>
@@ -1073,6 +1294,8 @@ export default function VetMedicinesTab() {
                               const days  = daysUntil(b.expiryDate)
                               const isExp = days < 0
                               const isWarn = !isExp && days <= 30
+                              const stockValue = b.quantity * (b.costPerUnit ?? 0)
+                              const margin = (b.sellingPrice && b.costPerUnit) ? ((b.sellingPrice - b.costPerUnit) / b.sellingPrice) * 100 : null
                               return (
                                 <tr key={b.id} className={`transition-colors ${isExp ? 'bg-red-50/60 dark:bg-red-900/10' : isWarn ? 'bg-amber-50/60 dark:bg-amber-900/10' : 'hover:bg-slate-50/60 dark:hover:bg-slate-700/20'}`}>
                                   <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{b.batchNumber ?? '—'}</td>
@@ -1080,6 +1303,12 @@ export default function VetMedicinesTab() {
                                   <td className="px-4 py-2.5 font-semibold text-slate-900 dark:text-white">{b.quantity} <span className="text-slate-400 font-normal">{med.unit}</span></td>
                                   <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{b.initialQty}</td>
                                   <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300">{b.costPerUnit > 0 ? `$${b.costPerUnit.toFixed(2)}` : '—'}</td>
+                                  <td className="px-4 py-2.5 whitespace-nowrap">
+                                    {b.sellingPrice != null
+                                      ? <span className="text-violet-600 dark:text-violet-400 font-medium">${b.sellingPrice.toFixed(2)}{margin != null && <span className="ml-1 text-[10px] text-emerald-600 dark:text-emerald-400">{margin >= 0 ? '+' : ''}{margin.toFixed(0)}%</span>}</span>
+                                      : <span className="text-slate-400">—</span>}
+                                  </td>
+                                  <td className="px-4 py-2.5 text-slate-600 dark:text-slate-300">{stockValue > 0 ? `$${stockValue.toFixed(2)}` : '—'}</td>
                                   <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{b.supplier ?? '—'}</td>
                                   <td className="px-4 py-2.5">
                                     <div className="flex items-center gap-1">
@@ -1118,6 +1347,24 @@ export default function VetMedicinesTab() {
               )}
             </div>
           ))}
+          {medTotalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-xs text-slate-400">
+                {t('vetShowing') || 'Showing'} {(safePage - 1) * MED_PAGE_SIZE + 1}–{Math.min(safePage * MED_PAGE_SIZE, displayedMedicines.length)} {t('vetOfLabel') || 'of'} {displayedMedicines.length}
+              </p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setMedPage(p => Math.max(1, p - 1))} disabled={safePage === 1}
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <ChevronUp className="h-3.5 w-3.5 -rotate-90" />
+                </button>
+                <span className="px-3 text-xs font-semibold text-slate-600 dark:text-slate-300">{safePage} / {medTotalPages}</span>
+                <button onClick={() => setMedPage(p => Math.min(medTotalPages, p + 1))} disabled={safePage === medTotalPages}
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                  <ChevronDown className="h-3.5 w-3.5 -rotate-90" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1153,6 +1400,13 @@ export default function VetMedicinesTab() {
           busy={disposing}
           onConfirm={confirmDispose}
           onCancel={() => setDisposeTarget(null)}
+        />
+      )}
+      {historyTarget && (
+        <MedicineHistoryModal
+          medicineId={historyTarget.id}
+          medicineName={historyTarget.name}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
     </div>

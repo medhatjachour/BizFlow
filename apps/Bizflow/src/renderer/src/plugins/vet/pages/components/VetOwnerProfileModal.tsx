@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
-import { X, Pencil, PawPrint, Phone, Mail, MapPin, FileText, Plus, Eye, Calendar, Activity, DollarSign, TrendingUp, CreditCard } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { X, Pencil, PawPrint, Phone, Mail, MapPin, FileText, Plus, Eye, Calendar, Activity, DollarSign, Wallet, Loader2 } from 'lucide-react'
 import type { VetOwner, VetOwnerWithPets } from '../index'
+import { useToast } from '@renderer/contexts/ToastContext'
 
 const SPECIES_EMOJI: Record<string, string> = {
   dog: '🐕', cat: '🐈', bird: '🦜', rabbit: '🐇',
@@ -34,13 +35,39 @@ interface Props {
 export default function VetOwnerProfileModal({
   owner, onClose, onEdit, onAddPet, onViewPet, onBook, onWalkIn
 }: Props) {
-  const [finance, setFinance] = useState<{ totalCharged: number; totalPaid: number; outstanding: number } | null>(null)
+  const [finance, setFinance] = useState<any | null>(null)
+  const [settleKind, setSettleKind] = useState<'session' | 'sales' | null>(null)
+  const [settleAmount, setSettleAmount] = useState('')
+  const [settling, setSettling] = useState(false)
+  const toast = useToast()
 
-  useEffect(() => {
+  const loadFinance = useCallback(() => {
     window.api.vet?.owners.getFinance(owner.id)
       .then((f: any) => setFinance(f))
       .catch(() => {})
   }, [owner.id])
+
+  useEffect(() => { loadFinance() }, [loadFinance])
+
+  const settleOutstanding = settleKind === 'sales'
+    ? (finance?.sales?.outstanding ?? 0)
+    : (finance?.outstanding ?? 0)
+
+  async function doSettle(payAll: boolean) {
+    if (!settleKind || !finance) return
+    const amt = payAll ? undefined : parseFloat(settleAmount)
+    if (!payAll && (isNaN(amt as number) || (amt as number) <= 0)) { toast.error('Enter a valid amount'); return }
+    setSettling(true)
+    try {
+      const res = settleKind === 'sales'
+        ? await window.api.vet?.medicines.settleOwnerSales(owner.id, payAll ? {} : { amount: amt })
+        : await window.api.vet?.sessions.settleOwner(owner.id, payAll ? {} : { amount: amt })
+      toast.success(`Settled $${(res?.applied ?? 0).toFixed(2)} across ${res?.settledCount ?? 0} ${settleKind === 'sales' ? 'sale' : 'session'}(s)`)
+      setSettleKind(null); setSettleAmount('')
+      loadFinance()
+    } catch (e: any) { toast.error(e?.message ?? 'Failed to settle') }
+    finally { setSettling(false) }
+  }
 
   const fmtMoney = (n: number) =>
     n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -115,28 +142,82 @@ export default function VetOwnerProfileModal({
           </div>
         )}
 
-        {/* ── Finance strip ─────────────────────────────────── */}
+        {/* ── Finance strip (sessions + pharmacy, separate) ─────── */}
         {finance && (
-          <div className="grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-700 border-b border-slate-100 dark:border-slate-700 flex-shrink-0">
-            <div className="flex flex-col items-center py-3 px-4 gap-0.5">
-              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                <DollarSign className="h-3 w-3" /> Total Charged
-              </span>
-              <span className="text-base font-bold tabular-nums text-slate-800 dark:text-white">{fmtMoney(finance.totalCharged)}</span>
-            </div>
-            <div className="flex flex-col items-center py-3 px-4 gap-0.5">
-              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
-                <CreditCard className="h-3 w-3" /> Paid
-              </span>
-              <span className="text-base font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{fmtMoney(finance.totalPaid)}</span>
-            </div>
-            <div className="flex flex-col items-center py-3 px-4 gap-0.5">
-              <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-red-400">
-                <TrendingUp className="h-3 w-3" /> Outstanding
-              </span>
-              <span className={`text-base font-bold tabular-nums ${finance.outstanding > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                {fmtMoney(finance.outstanding)}
-              </span>
+          <div className="border-b border-slate-100 dark:border-slate-700 flex-shrink-0 divide-y divide-slate-100 dark:divide-slate-700">
+            {([
+              { key: 'session' as const, label: 'Clinical Sessions', icon: Activity, charged: finance.sessions?.charged ?? finance.totalCharged ?? 0, paid: finance.sessions?.paid ?? finance.totalPaid ?? 0, outstanding: finance.sessions?.outstanding ?? finance.outstanding ?? 0 },
+              { key: 'sales' as const,   label: 'Pharmacy / Sales',  icon: DollarSign, charged: finance.sales?.charged ?? 0, paid: finance.sales?.paid ?? 0, outstanding: finance.sales?.outstanding ?? 0 },
+            ]).map(row => (
+              <div key={row.key} className="flex items-center gap-3 px-5 py-2.5">
+                <div className="flex items-center gap-1.5 w-36 shrink-0">
+                  <row.icon className="h-3.5 w-3.5 text-slate-400" />
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{row.label}</span>
+                </div>
+                <div className="flex-1 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-400">Charged</p>
+                    <p className="text-sm font-bold tabular-nums text-slate-800 dark:text-white">{fmtMoney(row.charged)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-emerald-500">Paid</p>
+                    <p className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{fmtMoney(row.paid)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-red-400">Outstanding</p>
+                    <p className={`text-sm font-bold tabular-nums ${row.outstanding > 0.005 ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>{fmtMoney(row.outstanding)}</p>
+                  </div>
+                </div>
+                <div className="w-20 shrink-0 flex justify-end">
+                  {row.outstanding > 0.005 && (
+                    <button onClick={() => { setSettleKind(row.key); setSettleAmount(row.outstanding.toFixed(2)) }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors">
+                      <Wallet className="h-3 w-3" /> Settle
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Settle outstanding dialog ─────────────────────────── */}
+        {settleKind && finance && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4" onClick={() => setSettleKind(null)}>
+            <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0"><Wallet className="h-5 w-5 text-violet-600 dark:text-violet-400" /></div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white">Settle {settleKind === 'sales' ? 'pharmacy' : 'session'} balance</h3>
+                  <p className="text-xs text-slate-400">{owner.name}</p>
+                </div>
+              </div>
+              <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 p-3 mb-4 flex items-center justify-between">
+                <span className="text-sm text-slate-600 dark:text-slate-300">Outstanding</span>
+                <span className="font-black text-red-600 dark:text-red-400">${settleOutstanding.toFixed(2)}</span>
+              </div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Amount to pay</label>
+              <div className="relative mb-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                <input type="number" min="0" max={settleOutstanding} step="any" value={settleAmount}
+                  onChange={e => {
+                    const n = parseFloat(e.target.value)
+                    if (!isNaN(n) && n > settleOutstanding) setSettleAmount(settleOutstanding.toFixed(2))
+                    else setSettleAmount(e.target.value)
+                  }}
+                  className="w-full pl-6 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+              </div>
+              <p className="text-[11px] text-slate-400 mb-4">Applied to the oldest unpaid {settleKind === 'sales' ? 'sales' : 'sessions'} first.</p>
+              <div className="flex gap-3">
+                <button onClick={() => doSettle(false)} disabled={settling}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-900/30 hover:bg-violet-200 rounded-lg disabled:opacity-50 transition-colors">
+                  {settling ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Pay amount'}
+                </button>
+                <button onClick={() => doSettle(true)} disabled={settling}
+                  className="flex-1 px-4 py-2 text-sm font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-lg disabled:opacity-50 transition-colors">
+                  {settling ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'Pay all'}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -32,7 +32,9 @@ export const vetPreload = {
     updatePrescription: (id: string, data: any)    => ipcRenderer.invoke('vet:sessions:updatePrescription', id, data),
     stopPrescription:   (id: string, reason: string) => ipcRenderer.invoke('vet:sessions:stopPrescription', id, reason),
     deletePrescription: (id: string)               => ipcRenderer.invoke('vet:sessions:deletePrescription', id),
-    getFollowUps:       (params?: any)              => ipcRenderer.invoke('vet:sessions:getFollowUps', params)
+    getFollowUps:       (params?: any)              => ipcRenderer.invoke('vet:sessions:getFollowUps', params),
+    settlePayment:      (id: string, data?: any)    => ipcRenderer.invoke('vet:sessions:settlePayment', id, data),
+    settleOwner:        (ownerId: string, data?: any) => ipcRenderer.invoke('vet:sessions:settleOwner', ownerId, data)
   },
 
   // ── Appointments ───────────────────────────────────────────────────────────
@@ -55,7 +57,7 @@ export const vetPreload = {
   // ── Expenses ───────────────────────────────────────────────────────────────
   expenses: {
     getAll:   (params?: any)           => ipcRenderer.invoke('vet:expenses:getAll', params),
-    summary:  (period?: string)        => ipcRenderer.invoke('vet:expenses:summary', period),
+    summary:  (arg?: any)              => ipcRenderer.invoke('vet:expenses:summary', arg),
     create:   (data: any)             => ipcRenderer.invoke('vet:expenses:create', data),
     update:   (id: string, data: any) => ipcRenderer.invoke('vet:expenses:update', id, data),
     delete:   (id: string)            => ipcRenderer.invoke('vet:expenses:delete', id)
@@ -89,8 +91,28 @@ export const vetPreload = {
     sell:         (data: any)                          => ipcRenderer.invoke('vet:medicines:sell', data),
     sellCombo:          (data: any)                          => ipcRenderer.invoke('vet:medicines:sellCombo', data),
     getSales:           (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSales', params),
+    getSaleGroups:      (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSaleGroups', params),
+    getHistory:         (medicineId: string, params?: any)   => ipcRenderer.invoke('vet:medicines:getHistory', medicineId, params),
     getSummary:         (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSummary', params),
-    updateSalePayment:  (id: string, amountPaid: number)     => ipcRenderer.invoke('vet:medicines:updateSalePayment', id, amountPaid)
+    updateSalePayment:  (id: string, amountPaid: number)     => ipcRenderer.invoke('vet:medicines:updateSalePayment', id, amountPaid),
+    updateSale:         (id: string, data: any)              => ipcRenderer.invoke('vet:medicines:updateSale', id, data),
+    refundSale:         (id: string, data?: any)             => ipcRenderer.invoke('vet:medicines:refundSale', id, data),
+    refundSaleGroup:    (groupKey: string, data?: any)       => ipcRenderer.invoke('vet:medicines:refundSaleGroup', groupKey, data),
+    settleOwnerSales:   (ownerId: string, data?: any)        => ipcRenderer.invoke('vet:medicines:settleOwnerSales', ownerId, data)
+  },
+
+  // ── Medicine Categories & Units ───────────────────────────────────────────
+  medicineCategories: {
+    getAll:        ()                          => ipcRenderer.invoke('vet:medicineCategories:getAll'),
+    create:        (data: any)                 => ipcRenderer.invoke('vet:medicineCategories:create', data),
+    update:        (id: string, data: any)     => ipcRenderer.invoke('vet:medicineCategories:update', id, data),
+    delete:        (id: string)                => ipcRenderer.invoke('vet:medicineCategories:delete', id),
+    getUsageCount: (name: string)              => ipcRenderer.invoke('vet:medicineCategories:getUsageCount', name)
+  },
+  medicineUnits: {
+    getAll: ()             => ipcRenderer.invoke('vet:medicineUnits:getAll'),
+    create: (data: any)    => ipcRenderer.invoke('vet:medicineUnits:create', data),
+    delete: (id: string)   => ipcRenderer.invoke('vet:medicineUnits:delete', id)
   },
 
 

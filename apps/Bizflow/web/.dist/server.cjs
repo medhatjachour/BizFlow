@@ -1,0 +1,22237 @@
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// apps/bizflow/web/shims/electron.node.ts
+var electron_node_exports = {};
+__export(electron_node_exports, {
+  BrowserWindow: () => BrowserWindow,
+  Menu: () => Menu,
+  __handlers: () => __handlers,
+  app: () => app,
+  default: () => electron_node_default,
+  dialog: () => dialog,
+  ipcMain: () => ipcMain,
+  ipcRenderer: () => ipcRenderer,
+  nativeImage: () => nativeImage,
+  session: () => session,
+  shell: () => shell
+});
+var import_node_os, import_node_path, import_node_fs, __handlers, ipcMain, dataDir, app, BrowserWindow, shell, dialog, Menu, nativeImage, ipcRenderer, session, electron_node_default;
+var init_electron_node = __esm({
+  "apps/bizflow/web/shims/electron.node.ts"() {
+    import_node_os = __toESM(require("node:os"));
+    import_node_path = __toESM(require("node:path"));
+    import_node_fs = __toESM(require("node:fs"));
+    __handlers = /* @__PURE__ */ new Map();
+    ipcMain = {
+      handle(channel, fn) {
+        __handlers.set(channel, fn);
+      },
+      handleOnce(channel, fn) {
+        __handlers.set(channel, fn);
+      },
+      on() {
+      },
+      removeHandler(channel) {
+        __handlers.delete(channel);
+      },
+      removeAllListeners() {
+      }
+    };
+    dataDir = import_node_path.default.join(import_node_os.default.tmpdir(), "bizflow-web-data");
+    import_node_fs.default.mkdirSync(dataDir, { recursive: true });
+    app = {
+      getPath(name) {
+        const p = name === "temp" ? import_node_os.default.tmpdir() : import_node_path.default.join(dataDir, name);
+        import_node_fs.default.mkdirSync(p, { recursive: true });
+        return p;
+      },
+      getName: () => "BizFlow",
+      getVersion: () => "1.0.0",
+      getAppPath: () => process.cwd(),
+      getLocale: () => "en-US",
+      whenReady: () => Promise.resolve(),
+      on() {
+      },
+      once() {
+      },
+      quit() {
+      },
+      exit() {
+      },
+      relaunch() {
+      },
+      setName() {
+      },
+      isReady: () => true
+    };
+    BrowserWindow = class {
+      webContents = {
+        send() {
+        },
+        on() {
+        },
+        setWindowOpenHandler() {
+        },
+        openDevTools() {
+        },
+        session: { webRequest: { onHeadersReceived() {
+        } } }
+      };
+      loadURL() {
+        return Promise.resolve();
+      }
+      loadFile() {
+        return Promise.resolve();
+      }
+      on() {
+      }
+      once() {
+      }
+      show() {
+      }
+      focus() {
+      }
+      maximize() {
+      }
+      close() {
+      }
+      setMenuBarVisibility() {
+      }
+      static getAllWindows() {
+        return [];
+      }
+      static getFocusedWindow() {
+        return null;
+      }
+    };
+    shell = {
+      openExternal: () => Promise.resolve(),
+      openPath: () => Promise.resolve(""),
+      showItemInFolder: () => {
+      }
+    };
+    dialog = {
+      showOpenDialog: () => Promise.resolve({ canceled: true, filePaths: [] }),
+      showSaveDialog: () => Promise.resolve({ canceled: true, filePath: "" }),
+      showMessageBox: () => Promise.resolve({ response: 0 }),
+      showErrorBox: () => {
+      }
+    };
+    Menu = {
+      setApplicationMenu() {
+      },
+      buildFromTemplate: () => ({})
+    };
+    nativeImage = {
+      createFromPath: () => ({ isEmpty: () => true }),
+      createEmpty: () => ({ isEmpty: () => true })
+    };
+    ipcRenderer = {
+      invoke: () => Promise.resolve(),
+      on() {
+      },
+      send() {
+      }
+    };
+    session = {
+      defaultSession: { webRequest: { onHeadersReceived() {
+      } } }
+    };
+    electron_node_default = {
+      app,
+      ipcMain,
+      ipcRenderer,
+      BrowserWindow,
+      shell,
+      dialog,
+      Menu,
+      nativeImage,
+      session
+    };
+  }
+});
+
+// apps/bizflow/node_modules/bcryptjs/dist/bcrypt.js
+var require_bcrypt = __commonJS({
+  "apps/bizflow/node_modules/bcryptjs/dist/bcrypt.js"(exports, module2) {
+    (function(global, factory) {
+      if (typeof define === "function" && define["amd"])
+        define([], factory);
+      else if (typeof require === "function" && typeof module2 === "object" && module2 && module2["exports"])
+        module2["exports"] = factory();
+      else
+        (global["dcodeIO"] = global["dcodeIO"] || {})["bcrypt"] = factory();
+    })(exports, function() {
+      "use strict";
+      var bcrypt4 = {};
+      var randomFallback = null;
+      function random(len) {
+        if (typeof module2 !== "undefined" && module2 && module2["exports"])
+          try {
+            return require("crypto")["randomBytes"](len);
+          } catch (e) {
+          }
+        try {
+          var a;
+          (self["crypto"] || self["msCrypto"])["getRandomValues"](a = new Uint32Array(len));
+          return Array.prototype.slice.call(a);
+        } catch (e) {
+        }
+        if (!randomFallback)
+          throw Error("Neither WebCryptoAPI nor a crypto module is available. Use bcrypt.setRandomFallback to set an alternative");
+        return randomFallback(len);
+      }
+      var randomAvailable = false;
+      try {
+        random(1);
+        randomAvailable = true;
+      } catch (e) {
+      }
+      randomFallback = null;
+      bcrypt4.setRandomFallback = function(random2) {
+        randomFallback = random2;
+      };
+      bcrypt4.genSaltSync = function(rounds, seed_length) {
+        rounds = rounds || GENSALT_DEFAULT_LOG2_ROUNDS;
+        if (typeof rounds !== "number")
+          throw Error("Illegal arguments: " + typeof rounds + ", " + typeof seed_length);
+        if (rounds < 4)
+          rounds = 4;
+        else if (rounds > 31)
+          rounds = 31;
+        var salt = [];
+        salt.push("$2a$");
+        if (rounds < 10)
+          salt.push("0");
+        salt.push(rounds.toString());
+        salt.push("$");
+        salt.push(base64_encode(random(BCRYPT_SALT_LEN), BCRYPT_SALT_LEN));
+        return salt.join("");
+      };
+      bcrypt4.genSalt = function(rounds, seed_length, callback) {
+        if (typeof seed_length === "function")
+          callback = seed_length, seed_length = void 0;
+        if (typeof rounds === "function")
+          callback = rounds, rounds = void 0;
+        if (typeof rounds === "undefined")
+          rounds = GENSALT_DEFAULT_LOG2_ROUNDS;
+        else if (typeof rounds !== "number")
+          throw Error("illegal arguments: " + typeof rounds);
+        function _async(callback2) {
+          nextTick(function() {
+            try {
+              callback2(null, bcrypt4.genSaltSync(rounds));
+            } catch (err) {
+              callback2(err);
+            }
+          });
+        }
+        if (callback) {
+          if (typeof callback !== "function")
+            throw Error("Illegal callback: " + typeof callback);
+          _async(callback);
+        } else
+          return new Promise(function(resolve4, reject) {
+            _async(function(err, res) {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve4(res);
+            });
+          });
+      };
+      bcrypt4.hashSync = function(s, salt) {
+        if (typeof salt === "undefined")
+          salt = GENSALT_DEFAULT_LOG2_ROUNDS;
+        if (typeof salt === "number")
+          salt = bcrypt4.genSaltSync(salt);
+        if (typeof s !== "string" || typeof salt !== "string")
+          throw Error("Illegal arguments: " + typeof s + ", " + typeof salt);
+        return _hash(s, salt);
+      };
+      bcrypt4.hash = function(s, salt, callback, progressCallback) {
+        function _async(callback2) {
+          if (typeof s === "string" && typeof salt === "number")
+            bcrypt4.genSalt(salt, function(err, salt2) {
+              _hash(s, salt2, callback2, progressCallback);
+            });
+          else if (typeof s === "string" && typeof salt === "string")
+            _hash(s, salt, callback2, progressCallback);
+          else
+            nextTick(callback2.bind(this, Error("Illegal arguments: " + typeof s + ", " + typeof salt)));
+        }
+        if (callback) {
+          if (typeof callback !== "function")
+            throw Error("Illegal callback: " + typeof callback);
+          _async(callback);
+        } else
+          return new Promise(function(resolve4, reject) {
+            _async(function(err, res) {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve4(res);
+            });
+          });
+      };
+      function safeStringCompare(known, unknown) {
+        var right = 0, wrong = 0;
+        for (var i = 0, k = known.length; i < k; ++i) {
+          if (known.charCodeAt(i) === unknown.charCodeAt(i))
+            ++right;
+          else
+            ++wrong;
+        }
+        if (right < 0)
+          return false;
+        return wrong === 0;
+      }
+      bcrypt4.compareSync = function(s, hash2) {
+        if (typeof s !== "string" || typeof hash2 !== "string")
+          throw Error("Illegal arguments: " + typeof s + ", " + typeof hash2);
+        if (hash2.length !== 60)
+          return false;
+        return safeStringCompare(bcrypt4.hashSync(s, hash2.substr(0, hash2.length - 31)), hash2);
+      };
+      bcrypt4.compare = function(s, hash2, callback, progressCallback) {
+        function _async(callback2) {
+          if (typeof s !== "string" || typeof hash2 !== "string") {
+            nextTick(callback2.bind(this, Error("Illegal arguments: " + typeof s + ", " + typeof hash2)));
+            return;
+          }
+          if (hash2.length !== 60) {
+            nextTick(callback2.bind(this, null, false));
+            return;
+          }
+          bcrypt4.hash(s, hash2.substr(0, 29), function(err, comp) {
+            if (err)
+              callback2(err);
+            else
+              callback2(null, safeStringCompare(comp, hash2));
+          }, progressCallback);
+        }
+        if (callback) {
+          if (typeof callback !== "function")
+            throw Error("Illegal callback: " + typeof callback);
+          _async(callback);
+        } else
+          return new Promise(function(resolve4, reject) {
+            _async(function(err, res) {
+              if (err) {
+                reject(err);
+                return;
+              }
+              resolve4(res);
+            });
+          });
+      };
+      bcrypt4.getRounds = function(hash2) {
+        if (typeof hash2 !== "string")
+          throw Error("Illegal arguments: " + typeof hash2);
+        return parseInt(hash2.split("$")[2], 10);
+      };
+      bcrypt4.getSalt = function(hash2) {
+        if (typeof hash2 !== "string")
+          throw Error("Illegal arguments: " + typeof hash2);
+        if (hash2.length !== 60)
+          throw Error("Illegal hash length: " + hash2.length + " != 60");
+        return hash2.substring(0, 29);
+      };
+      var nextTick = typeof process !== "undefined" && process && typeof process.nextTick === "function" ? typeof setImmediate === "function" ? setImmediate : process.nextTick : setTimeout;
+      function stringToBytes(str) {
+        var out = [], i = 0;
+        utfx.encodeUTF16toUTF8(function() {
+          if (i >= str.length)
+            return null;
+          return str.charCodeAt(i++);
+        }, function(b) {
+          out.push(b);
+        });
+        return out;
+      }
+      var BASE64_CODE = "./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789".split("");
+      var BASE64_INDEX = [
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        0,
+        1,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        -1,
+        -1,
+        -1,
+        -1,
+        -1
+      ];
+      var stringFromCharCode = String.fromCharCode;
+      function base64_encode(b, len) {
+        var off = 0, rs = [], c1, c2;
+        if (len <= 0 || len > b.length)
+          throw Error("Illegal len: " + len);
+        while (off < len) {
+          c1 = b[off++] & 255;
+          rs.push(BASE64_CODE[c1 >> 2 & 63]);
+          c1 = (c1 & 3) << 4;
+          if (off >= len) {
+            rs.push(BASE64_CODE[c1 & 63]);
+            break;
+          }
+          c2 = b[off++] & 255;
+          c1 |= c2 >> 4 & 15;
+          rs.push(BASE64_CODE[c1 & 63]);
+          c1 = (c2 & 15) << 2;
+          if (off >= len) {
+            rs.push(BASE64_CODE[c1 & 63]);
+            break;
+          }
+          c2 = b[off++] & 255;
+          c1 |= c2 >> 6 & 3;
+          rs.push(BASE64_CODE[c1 & 63]);
+          rs.push(BASE64_CODE[c2 & 63]);
+        }
+        return rs.join("");
+      }
+      function base64_decode(s, len) {
+        var off = 0, slen = s.length, olen = 0, rs = [], c1, c2, c3, c4, o, code;
+        if (len <= 0)
+          throw Error("Illegal len: " + len);
+        while (off < slen - 1 && olen < len) {
+          code = s.charCodeAt(off++);
+          c1 = code < BASE64_INDEX.length ? BASE64_INDEX[code] : -1;
+          code = s.charCodeAt(off++);
+          c2 = code < BASE64_INDEX.length ? BASE64_INDEX[code] : -1;
+          if (c1 == -1 || c2 == -1)
+            break;
+          o = c1 << 2 >>> 0;
+          o |= (c2 & 48) >> 4;
+          rs.push(stringFromCharCode(o));
+          if (++olen >= len || off >= slen)
+            break;
+          code = s.charCodeAt(off++);
+          c3 = code < BASE64_INDEX.length ? BASE64_INDEX[code] : -1;
+          if (c3 == -1)
+            break;
+          o = (c2 & 15) << 4 >>> 0;
+          o |= (c3 & 60) >> 2;
+          rs.push(stringFromCharCode(o));
+          if (++olen >= len || off >= slen)
+            break;
+          code = s.charCodeAt(off++);
+          c4 = code < BASE64_INDEX.length ? BASE64_INDEX[code] : -1;
+          o = (c3 & 3) << 6 >>> 0;
+          o |= c4;
+          rs.push(stringFromCharCode(o));
+          ++olen;
+        }
+        var res = [];
+        for (off = 0; off < olen; off++)
+          res.push(rs[off].charCodeAt(0));
+        return res;
+      }
+      var utfx = function() {
+        "use strict";
+        var utfx2 = {};
+        utfx2.MAX_CODEPOINT = 1114111;
+        utfx2.encodeUTF8 = function(src, dst) {
+          var cp = null;
+          if (typeof src === "number")
+            cp = src, src = function() {
+              return null;
+            };
+          while (cp !== null || (cp = src()) !== null) {
+            if (cp < 128)
+              dst(cp & 127);
+            else if (cp < 2048)
+              dst(cp >> 6 & 31 | 192), dst(cp & 63 | 128);
+            else if (cp < 65536)
+              dst(cp >> 12 & 15 | 224), dst(cp >> 6 & 63 | 128), dst(cp & 63 | 128);
+            else
+              dst(cp >> 18 & 7 | 240), dst(cp >> 12 & 63 | 128), dst(cp >> 6 & 63 | 128), dst(cp & 63 | 128);
+            cp = null;
+          }
+        };
+        utfx2.decodeUTF8 = function(src, dst) {
+          var a, b, c, d, fail = function(b2) {
+            b2 = b2.slice(0, b2.indexOf(null));
+            var err = Error(b2.toString());
+            err.name = "TruncatedError";
+            err["bytes"] = b2;
+            throw err;
+          };
+          while ((a = src()) !== null) {
+            if ((a & 128) === 0)
+              dst(a);
+            else if ((a & 224) === 192)
+              (b = src()) === null && fail([a, b]), dst((a & 31) << 6 | b & 63);
+            else if ((a & 240) === 224)
+              ((b = src()) === null || (c = src()) === null) && fail([a, b, c]), dst((a & 15) << 12 | (b & 63) << 6 | c & 63);
+            else if ((a & 248) === 240)
+              ((b = src()) === null || (c = src()) === null || (d = src()) === null) && fail([a, b, c, d]), dst((a & 7) << 18 | (b & 63) << 12 | (c & 63) << 6 | d & 63);
+            else
+              throw RangeError("Illegal starting byte: " + a);
+          }
+        };
+        utfx2.UTF16toUTF8 = function(src, dst) {
+          var c1, c2 = null;
+          while (true) {
+            if ((c1 = c2 !== null ? c2 : src()) === null)
+              break;
+            if (c1 >= 55296 && c1 <= 57343) {
+              if ((c2 = src()) !== null) {
+                if (c2 >= 56320 && c2 <= 57343) {
+                  dst((c1 - 55296) * 1024 + c2 - 56320 + 65536);
+                  c2 = null;
+                  continue;
+                }
+              }
+            }
+            dst(c1);
+          }
+          if (c2 !== null)
+            dst(c2);
+        };
+        utfx2.UTF8toUTF16 = function(src, dst) {
+          var cp = null;
+          if (typeof src === "number")
+            cp = src, src = function() {
+              return null;
+            };
+          while (cp !== null || (cp = src()) !== null) {
+            if (cp <= 65535)
+              dst(cp);
+            else
+              cp -= 65536, dst((cp >> 10) + 55296), dst(cp % 1024 + 56320);
+            cp = null;
+          }
+        };
+        utfx2.encodeUTF16toUTF8 = function(src, dst) {
+          utfx2.UTF16toUTF8(src, function(cp) {
+            utfx2.encodeUTF8(cp, dst);
+          });
+        };
+        utfx2.decodeUTF8toUTF16 = function(src, dst) {
+          utfx2.decodeUTF8(src, function(cp) {
+            utfx2.UTF8toUTF16(cp, dst);
+          });
+        };
+        utfx2.calculateCodePoint = function(cp) {
+          return cp < 128 ? 1 : cp < 2048 ? 2 : cp < 65536 ? 3 : 4;
+        };
+        utfx2.calculateUTF8 = function(src) {
+          var cp, l = 0;
+          while ((cp = src()) !== null)
+            l += utfx2.calculateCodePoint(cp);
+          return l;
+        };
+        utfx2.calculateUTF16asUTF8 = function(src) {
+          var n = 0, l = 0;
+          utfx2.UTF16toUTF8(src, function(cp) {
+            ++n;
+            l += utfx2.calculateCodePoint(cp);
+          });
+          return [n, l];
+        };
+        return utfx2;
+      }();
+      Date.now = Date.now || function() {
+        return +/* @__PURE__ */ new Date();
+      };
+      var BCRYPT_SALT_LEN = 16;
+      var GENSALT_DEFAULT_LOG2_ROUNDS = 10;
+      var BLOWFISH_NUM_ROUNDS = 16;
+      var MAX_EXECUTION_TIME = 100;
+      var P_ORIG = [
+        608135816,
+        2242054355,
+        320440878,
+        57701188,
+        2752067618,
+        698298832,
+        137296536,
+        3964562569,
+        1160258022,
+        953160567,
+        3193202383,
+        887688300,
+        3232508343,
+        3380367581,
+        1065670069,
+        3041331479,
+        2450970073,
+        2306472731
+      ];
+      var S_ORIG = [
+        3509652390,
+        2564797868,
+        805139163,
+        3491422135,
+        3101798381,
+        1780907670,
+        3128725573,
+        4046225305,
+        614570311,
+        3012652279,
+        134345442,
+        2240740374,
+        1667834072,
+        1901547113,
+        2757295779,
+        4103290238,
+        227898511,
+        1921955416,
+        1904987480,
+        2182433518,
+        2069144605,
+        3260701109,
+        2620446009,
+        720527379,
+        3318853667,
+        677414384,
+        3393288472,
+        3101374703,
+        2390351024,
+        1614419982,
+        1822297739,
+        2954791486,
+        3608508353,
+        3174124327,
+        2024746970,
+        1432378464,
+        3864339955,
+        2857741204,
+        1464375394,
+        1676153920,
+        1439316330,
+        715854006,
+        3033291828,
+        289532110,
+        2706671279,
+        2087905683,
+        3018724369,
+        1668267050,
+        732546397,
+        1947742710,
+        3462151702,
+        2609353502,
+        2950085171,
+        1814351708,
+        2050118529,
+        680887927,
+        999245976,
+        1800124847,
+        3300911131,
+        1713906067,
+        1641548236,
+        4213287313,
+        1216130144,
+        1575780402,
+        4018429277,
+        3917837745,
+        3693486850,
+        3949271944,
+        596196993,
+        3549867205,
+        258830323,
+        2213823033,
+        772490370,
+        2760122372,
+        1774776394,
+        2652871518,
+        566650946,
+        4142492826,
+        1728879713,
+        2882767088,
+        1783734482,
+        3629395816,
+        2517608232,
+        2874225571,
+        1861159788,
+        326777828,
+        3124490320,
+        2130389656,
+        2716951837,
+        967770486,
+        1724537150,
+        2185432712,
+        2364442137,
+        1164943284,
+        2105845187,
+        998989502,
+        3765401048,
+        2244026483,
+        1075463327,
+        1455516326,
+        1322494562,
+        910128902,
+        469688178,
+        1117454909,
+        936433444,
+        3490320968,
+        3675253459,
+        1240580251,
+        122909385,
+        2157517691,
+        634681816,
+        4142456567,
+        3825094682,
+        3061402683,
+        2540495037,
+        79693498,
+        3249098678,
+        1084186820,
+        1583128258,
+        426386531,
+        1761308591,
+        1047286709,
+        322548459,
+        995290223,
+        1845252383,
+        2603652396,
+        3431023940,
+        2942221577,
+        3202600964,
+        3727903485,
+        1712269319,
+        422464435,
+        3234572375,
+        1170764815,
+        3523960633,
+        3117677531,
+        1434042557,
+        442511882,
+        3600875718,
+        1076654713,
+        1738483198,
+        4213154764,
+        2393238008,
+        3677496056,
+        1014306527,
+        4251020053,
+        793779912,
+        2902807211,
+        842905082,
+        4246964064,
+        1395751752,
+        1040244610,
+        2656851899,
+        3396308128,
+        445077038,
+        3742853595,
+        3577915638,
+        679411651,
+        2892444358,
+        2354009459,
+        1767581616,
+        3150600392,
+        3791627101,
+        3102740896,
+        284835224,
+        4246832056,
+        1258075500,
+        768725851,
+        2589189241,
+        3069724005,
+        3532540348,
+        1274779536,
+        3789419226,
+        2764799539,
+        1660621633,
+        3471099624,
+        4011903706,
+        913787905,
+        3497959166,
+        737222580,
+        2514213453,
+        2928710040,
+        3937242737,
+        1804850592,
+        3499020752,
+        2949064160,
+        2386320175,
+        2390070455,
+        2415321851,
+        4061277028,
+        2290661394,
+        2416832540,
+        1336762016,
+        1754252060,
+        3520065937,
+        3014181293,
+        791618072,
+        3188594551,
+        3933548030,
+        2332172193,
+        3852520463,
+        3043980520,
+        413987798,
+        3465142937,
+        3030929376,
+        4245938359,
+        2093235073,
+        3534596313,
+        375366246,
+        2157278981,
+        2479649556,
+        555357303,
+        3870105701,
+        2008414854,
+        3344188149,
+        4221384143,
+        3956125452,
+        2067696032,
+        3594591187,
+        2921233993,
+        2428461,
+        544322398,
+        577241275,
+        1471733935,
+        610547355,
+        4027169054,
+        1432588573,
+        1507829418,
+        2025931657,
+        3646575487,
+        545086370,
+        48609733,
+        2200306550,
+        1653985193,
+        298326376,
+        1316178497,
+        3007786442,
+        2064951626,
+        458293330,
+        2589141269,
+        3591329599,
+        3164325604,
+        727753846,
+        2179363840,
+        146436021,
+        1461446943,
+        4069977195,
+        705550613,
+        3059967265,
+        3887724982,
+        4281599278,
+        3313849956,
+        1404054877,
+        2845806497,
+        146425753,
+        1854211946,
+        1266315497,
+        3048417604,
+        3681880366,
+        3289982499,
+        290971e4,
+        1235738493,
+        2632868024,
+        2414719590,
+        3970600049,
+        1771706367,
+        1449415276,
+        3266420449,
+        422970021,
+        1963543593,
+        2690192192,
+        3826793022,
+        1062508698,
+        1531092325,
+        1804592342,
+        2583117782,
+        2714934279,
+        4024971509,
+        1294809318,
+        4028980673,
+        1289560198,
+        2221992742,
+        1669523910,
+        35572830,
+        157838143,
+        1052438473,
+        1016535060,
+        1802137761,
+        1753167236,
+        1386275462,
+        3080475397,
+        2857371447,
+        1040679964,
+        2145300060,
+        2390574316,
+        1461121720,
+        2956646967,
+        4031777805,
+        4028374788,
+        33600511,
+        2920084762,
+        1018524850,
+        629373528,
+        3691585981,
+        3515945977,
+        2091462646,
+        2486323059,
+        586499841,
+        988145025,
+        935516892,
+        3367335476,
+        2599673255,
+        2839830854,
+        265290510,
+        3972581182,
+        2759138881,
+        3795373465,
+        1005194799,
+        847297441,
+        406762289,
+        1314163512,
+        1332590856,
+        1866599683,
+        4127851711,
+        750260880,
+        613907577,
+        1450815602,
+        3165620655,
+        3734664991,
+        3650291728,
+        3012275730,
+        3704569646,
+        1427272223,
+        778793252,
+        1343938022,
+        2676280711,
+        2052605720,
+        1946737175,
+        3164576444,
+        3914038668,
+        3967478842,
+        3682934266,
+        1661551462,
+        3294938066,
+        4011595847,
+        840292616,
+        3712170807,
+        616741398,
+        312560963,
+        711312465,
+        1351876610,
+        322626781,
+        1910503582,
+        271666773,
+        2175563734,
+        1594956187,
+        70604529,
+        3617834859,
+        1007753275,
+        1495573769,
+        4069517037,
+        2549218298,
+        2663038764,
+        504708206,
+        2263041392,
+        3941167025,
+        2249088522,
+        1514023603,
+        1998579484,
+        1312622330,
+        694541497,
+        2582060303,
+        2151582166,
+        1382467621,
+        776784248,
+        2618340202,
+        3323268794,
+        2497899128,
+        2784771155,
+        503983604,
+        4076293799,
+        907881277,
+        423175695,
+        432175456,
+        1378068232,
+        4145222326,
+        3954048622,
+        3938656102,
+        3820766613,
+        2793130115,
+        2977904593,
+        26017576,
+        3274890735,
+        3194772133,
+        1700274565,
+        1756076034,
+        4006520079,
+        3677328699,
+        720338349,
+        1533947780,
+        354530856,
+        688349552,
+        3973924725,
+        1637815568,
+        332179504,
+        3949051286,
+        53804574,
+        2852348879,
+        3044236432,
+        1282449977,
+        3583942155,
+        3416972820,
+        4006381244,
+        1617046695,
+        2628476075,
+        3002303598,
+        1686838959,
+        431878346,
+        2686675385,
+        1700445008,
+        1080580658,
+        1009431731,
+        832498133,
+        3223435511,
+        2605976345,
+        2271191193,
+        2516031870,
+        1648197032,
+        4164389018,
+        2548247927,
+        300782431,
+        375919233,
+        238389289,
+        3353747414,
+        2531188641,
+        2019080857,
+        1475708069,
+        455242339,
+        2609103871,
+        448939670,
+        3451063019,
+        1395535956,
+        2413381860,
+        1841049896,
+        1491858159,
+        885456874,
+        4264095073,
+        4001119347,
+        1565136089,
+        3898914787,
+        1108368660,
+        540939232,
+        1173283510,
+        2745871338,
+        3681308437,
+        4207628240,
+        3343053890,
+        4016749493,
+        1699691293,
+        1103962373,
+        3625875870,
+        2256883143,
+        3830138730,
+        1031889488,
+        3479347698,
+        1535977030,
+        4236805024,
+        3251091107,
+        2132092099,
+        1774941330,
+        1199868427,
+        1452454533,
+        157007616,
+        2904115357,
+        342012276,
+        595725824,
+        1480756522,
+        206960106,
+        497939518,
+        591360097,
+        863170706,
+        2375253569,
+        3596610801,
+        1814182875,
+        2094937945,
+        3421402208,
+        1082520231,
+        3463918190,
+        2785509508,
+        435703966,
+        3908032597,
+        1641649973,
+        2842273706,
+        3305899714,
+        1510255612,
+        2148256476,
+        2655287854,
+        3276092548,
+        4258621189,
+        236887753,
+        3681803219,
+        274041037,
+        1734335097,
+        3815195456,
+        3317970021,
+        1899903192,
+        1026095262,
+        4050517792,
+        356393447,
+        2410691914,
+        3873677099,
+        3682840055,
+        3913112168,
+        2491498743,
+        4132185628,
+        2489919796,
+        1091903735,
+        1979897079,
+        3170134830,
+        3567386728,
+        3557303409,
+        857797738,
+        1136121015,
+        1342202287,
+        507115054,
+        2535736646,
+        337727348,
+        3213592640,
+        1301675037,
+        2528481711,
+        1895095763,
+        1721773893,
+        3216771564,
+        62756741,
+        2142006736,
+        835421444,
+        2531993523,
+        1442658625,
+        3659876326,
+        2882144922,
+        676362277,
+        1392781812,
+        170690266,
+        3921047035,
+        1759253602,
+        3611846912,
+        1745797284,
+        664899054,
+        1329594018,
+        3901205900,
+        3045908486,
+        2062866102,
+        2865634940,
+        3543621612,
+        3464012697,
+        1080764994,
+        553557557,
+        3656615353,
+        3996768171,
+        991055499,
+        499776247,
+        1265440854,
+        648242737,
+        3940784050,
+        980351604,
+        3713745714,
+        1749149687,
+        3396870395,
+        4211799374,
+        3640570775,
+        1161844396,
+        3125318951,
+        1431517754,
+        545492359,
+        4268468663,
+        3499529547,
+        1437099964,
+        2702547544,
+        3433638243,
+        2581715763,
+        2787789398,
+        1060185593,
+        1593081372,
+        2418618748,
+        4260947970,
+        69676912,
+        2159744348,
+        86519011,
+        2512459080,
+        3838209314,
+        1220612927,
+        3339683548,
+        133810670,
+        1090789135,
+        1078426020,
+        1569222167,
+        845107691,
+        3583754449,
+        4072456591,
+        1091646820,
+        628848692,
+        1613405280,
+        3757631651,
+        526609435,
+        236106946,
+        48312990,
+        2942717905,
+        3402727701,
+        1797494240,
+        859738849,
+        992217954,
+        4005476642,
+        2243076622,
+        3870952857,
+        3732016268,
+        765654824,
+        3490871365,
+        2511836413,
+        1685915746,
+        3888969200,
+        1414112111,
+        2273134842,
+        3281911079,
+        4080962846,
+        172450625,
+        2569994100,
+        980381355,
+        4109958455,
+        2819808352,
+        2716589560,
+        2568741196,
+        3681446669,
+        3329971472,
+        1835478071,
+        660984891,
+        3704678404,
+        4045999559,
+        3422617507,
+        3040415634,
+        1762651403,
+        1719377915,
+        3470491036,
+        2693910283,
+        3642056355,
+        3138596744,
+        1364962596,
+        2073328063,
+        1983633131,
+        926494387,
+        3423689081,
+        2150032023,
+        4096667949,
+        1749200295,
+        3328846651,
+        309677260,
+        2016342300,
+        1779581495,
+        3079819751,
+        111262694,
+        1274766160,
+        443224088,
+        298511866,
+        1025883608,
+        3806446537,
+        1145181785,
+        168956806,
+        3641502830,
+        3584813610,
+        1689216846,
+        3666258015,
+        3200248200,
+        1692713982,
+        2646376535,
+        4042768518,
+        1618508792,
+        1610833997,
+        3523052358,
+        4130873264,
+        2001055236,
+        3610705100,
+        2202168115,
+        4028541809,
+        2961195399,
+        1006657119,
+        2006996926,
+        3186142756,
+        1430667929,
+        3210227297,
+        1314452623,
+        4074634658,
+        4101304120,
+        2273951170,
+        1399257539,
+        3367210612,
+        3027628629,
+        1190975929,
+        2062231137,
+        2333990788,
+        2221543033,
+        2438960610,
+        1181637006,
+        548689776,
+        2362791313,
+        3372408396,
+        3104550113,
+        3145860560,
+        296247880,
+        1970579870,
+        3078560182,
+        3769228297,
+        1714227617,
+        3291629107,
+        3898220290,
+        166772364,
+        1251581989,
+        493813264,
+        448347421,
+        195405023,
+        2709975567,
+        677966185,
+        3703036547,
+        1463355134,
+        2715995803,
+        1338867538,
+        1343315457,
+        2802222074,
+        2684532164,
+        233230375,
+        2599980071,
+        2000651841,
+        3277868038,
+        1638401717,
+        4028070440,
+        3237316320,
+        6314154,
+        819756386,
+        300326615,
+        590932579,
+        1405279636,
+        3267499572,
+        3150704214,
+        2428286686,
+        3959192993,
+        3461946742,
+        1862657033,
+        1266418056,
+        963775037,
+        2089974820,
+        2263052895,
+        1917689273,
+        448879540,
+        3550394620,
+        3981727096,
+        150775221,
+        3627908307,
+        1303187396,
+        508620638,
+        2975983352,
+        2726630617,
+        1817252668,
+        1876281319,
+        1457606340,
+        908771278,
+        3720792119,
+        3617206836,
+        2455994898,
+        1729034894,
+        1080033504,
+        976866871,
+        3556439503,
+        2881648439,
+        1522871579,
+        1555064734,
+        1336096578,
+        3548522304,
+        2579274686,
+        3574697629,
+        3205460757,
+        3593280638,
+        3338716283,
+        3079412587,
+        564236357,
+        2993598910,
+        1781952180,
+        1464380207,
+        3163844217,
+        3332601554,
+        1699332808,
+        1393555694,
+        1183702653,
+        3581086237,
+        1288719814,
+        691649499,
+        2847557200,
+        2895455976,
+        3193889540,
+        2717570544,
+        1781354906,
+        1676643554,
+        2592534050,
+        3230253752,
+        1126444790,
+        2770207658,
+        2633158820,
+        2210423226,
+        2615765581,
+        2414155088,
+        3127139286,
+        673620729,
+        2805611233,
+        1269405062,
+        4015350505,
+        3341807571,
+        4149409754,
+        1057255273,
+        2012875353,
+        2162469141,
+        2276492801,
+        2601117357,
+        993977747,
+        3918593370,
+        2654263191,
+        753973209,
+        36408145,
+        2530585658,
+        25011837,
+        3520020182,
+        2088578344,
+        530523599,
+        2918365339,
+        1524020338,
+        1518925132,
+        3760827505,
+        3759777254,
+        1202760957,
+        3985898139,
+        3906192525,
+        674977740,
+        4174734889,
+        2031300136,
+        2019492241,
+        3983892565,
+        4153806404,
+        3822280332,
+        352677332,
+        2297720250,
+        60907813,
+        90501309,
+        3286998549,
+        1016092578,
+        2535922412,
+        2839152426,
+        457141659,
+        509813237,
+        4120667899,
+        652014361,
+        1966332200,
+        2975202805,
+        55981186,
+        2327461051,
+        676427537,
+        3255491064,
+        2882294119,
+        3433927263,
+        1307055953,
+        942726286,
+        933058658,
+        2468411793,
+        3933900994,
+        4215176142,
+        1361170020,
+        2001714738,
+        2830558078,
+        3274259782,
+        1222529897,
+        1679025792,
+        2729314320,
+        3714953764,
+        1770335741,
+        151462246,
+        3013232138,
+        1682292957,
+        1483529935,
+        471910574,
+        1539241949,
+        458788160,
+        3436315007,
+        1807016891,
+        3718408830,
+        978976581,
+        1043663428,
+        3165965781,
+        1927990952,
+        4200891579,
+        2372276910,
+        3208408903,
+        3533431907,
+        1412390302,
+        2931980059,
+        4132332400,
+        1947078029,
+        3881505623,
+        4168226417,
+        2941484381,
+        1077988104,
+        1320477388,
+        886195818,
+        18198404,
+        3786409e3,
+        2509781533,
+        112762804,
+        3463356488,
+        1866414978,
+        891333506,
+        18488651,
+        661792760,
+        1628790961,
+        3885187036,
+        3141171499,
+        876946877,
+        2693282273,
+        1372485963,
+        791857591,
+        2686433993,
+        3759982718,
+        3167212022,
+        3472953795,
+        2716379847,
+        445679433,
+        3561995674,
+        3504004811,
+        3574258232,
+        54117162,
+        3331405415,
+        2381918588,
+        3769707343,
+        4154350007,
+        1140177722,
+        4074052095,
+        668550556,
+        3214352940,
+        367459370,
+        261225585,
+        2610173221,
+        4209349473,
+        3468074219,
+        3265815641,
+        314222801,
+        3066103646,
+        3808782860,
+        282218597,
+        3406013506,
+        3773591054,
+        379116347,
+        1285071038,
+        846784868,
+        2669647154,
+        3771962079,
+        3550491691,
+        2305946142,
+        453669953,
+        1268987020,
+        3317592352,
+        3279303384,
+        3744833421,
+        2610507566,
+        3859509063,
+        266596637,
+        3847019092,
+        517658769,
+        3462560207,
+        3443424879,
+        370717030,
+        4247526661,
+        2224018117,
+        4143653529,
+        4112773975,
+        2788324899,
+        2477274417,
+        1456262402,
+        2901442914,
+        1517677493,
+        1846949527,
+        2295493580,
+        3734397586,
+        2176403920,
+        1280348187,
+        1908823572,
+        3871786941,
+        846861322,
+        1172426758,
+        3287448474,
+        3383383037,
+        1655181056,
+        3139813346,
+        901632758,
+        1897031941,
+        2986607138,
+        3066810236,
+        3447102507,
+        1393639104,
+        373351379,
+        950779232,
+        625454576,
+        3124240540,
+        4148612726,
+        2007998917,
+        544563296,
+        2244738638,
+        2330496472,
+        2058025392,
+        1291430526,
+        424198748,
+        50039436,
+        29584100,
+        3605783033,
+        2429876329,
+        2791104160,
+        1057563949,
+        3255363231,
+        3075367218,
+        3463963227,
+        1469046755,
+        985887462
+      ];
+      var C_ORIG = [
+        1332899944,
+        1700884034,
+        1701343084,
+        1684370003,
+        1668446532,
+        1869963892
+      ];
+      function _encipher(lr, off, P, S) {
+        var n, l = lr[off], r = lr[off + 1];
+        l ^= P[0];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[1];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[2];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[3];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[4];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[5];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[6];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[7];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[8];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[9];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[10];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[11];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[12];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[13];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[14];
+        n = S[l >>> 24];
+        n += S[256 | l >> 16 & 255];
+        n ^= S[512 | l >> 8 & 255];
+        n += S[768 | l & 255];
+        r ^= n ^ P[15];
+        n = S[r >>> 24];
+        n += S[256 | r >> 16 & 255];
+        n ^= S[512 | r >> 8 & 255];
+        n += S[768 | r & 255];
+        l ^= n ^ P[16];
+        lr[off] = r ^ P[BLOWFISH_NUM_ROUNDS + 1];
+        lr[off + 1] = l;
+        return lr;
+      }
+      function _streamtoword(data, offp) {
+        for (var i = 0, word = 0; i < 4; ++i)
+          word = word << 8 | data[offp] & 255, offp = (offp + 1) % data.length;
+        return { key: word, offp };
+      }
+      function _key(key, P, S) {
+        var offset = 0, lr = [0, 0], plen = P.length, slen = S.length, sw;
+        for (var i = 0; i < plen; i++)
+          sw = _streamtoword(key, offset), offset = sw.offp, P[i] = P[i] ^ sw.key;
+        for (i = 0; i < plen; i += 2)
+          lr = _encipher(lr, 0, P, S), P[i] = lr[0], P[i + 1] = lr[1];
+        for (i = 0; i < slen; i += 2)
+          lr = _encipher(lr, 0, P, S), S[i] = lr[0], S[i + 1] = lr[1];
+      }
+      function _ekskey(data, key, P, S) {
+        var offp = 0, lr = [0, 0], plen = P.length, slen = S.length, sw;
+        for (var i = 0; i < plen; i++)
+          sw = _streamtoword(key, offp), offp = sw.offp, P[i] = P[i] ^ sw.key;
+        offp = 0;
+        for (i = 0; i < plen; i += 2)
+          sw = _streamtoword(data, offp), offp = sw.offp, lr[0] ^= sw.key, sw = _streamtoword(data, offp), offp = sw.offp, lr[1] ^= sw.key, lr = _encipher(lr, 0, P, S), P[i] = lr[0], P[i + 1] = lr[1];
+        for (i = 0; i < slen; i += 2)
+          sw = _streamtoword(data, offp), offp = sw.offp, lr[0] ^= sw.key, sw = _streamtoword(data, offp), offp = sw.offp, lr[1] ^= sw.key, lr = _encipher(lr, 0, P, S), S[i] = lr[0], S[i + 1] = lr[1];
+      }
+      function _crypt(b, salt, rounds, callback, progressCallback) {
+        var cdata = C_ORIG.slice(), clen = cdata.length, err;
+        if (rounds < 4 || rounds > 31) {
+          err = Error("Illegal number of rounds (4-31): " + rounds);
+          if (callback) {
+            nextTick(callback.bind(this, err));
+            return;
+          } else
+            throw err;
+        }
+        if (salt.length !== BCRYPT_SALT_LEN) {
+          err = Error("Illegal salt length: " + salt.length + " != " + BCRYPT_SALT_LEN);
+          if (callback) {
+            nextTick(callback.bind(this, err));
+            return;
+          } else
+            throw err;
+        }
+        rounds = 1 << rounds >>> 0;
+        var P, S, i = 0, j;
+        if (Int32Array) {
+          P = new Int32Array(P_ORIG);
+          S = new Int32Array(S_ORIG);
+        } else {
+          P = P_ORIG.slice();
+          S = S_ORIG.slice();
+        }
+        _ekskey(salt, b, P, S);
+        function next() {
+          if (progressCallback)
+            progressCallback(i / rounds);
+          if (i < rounds) {
+            var start = Date.now();
+            for (; i < rounds; ) {
+              i = i + 1;
+              _key(b, P, S);
+              _key(salt, P, S);
+              if (Date.now() - start > MAX_EXECUTION_TIME)
+                break;
+            }
+          } else {
+            for (i = 0; i < 64; i++)
+              for (j = 0; j < clen >> 1; j++)
+                _encipher(cdata, j << 1, P, S);
+            var ret = [];
+            for (i = 0; i < clen; i++)
+              ret.push((cdata[i] >> 24 & 255) >>> 0), ret.push((cdata[i] >> 16 & 255) >>> 0), ret.push((cdata[i] >> 8 & 255) >>> 0), ret.push((cdata[i] & 255) >>> 0);
+            if (callback) {
+              callback(null, ret);
+              return;
+            } else
+              return ret;
+          }
+          if (callback)
+            nextTick(next);
+        }
+        if (typeof callback !== "undefined") {
+          next();
+        } else {
+          var res;
+          while (true)
+            if (typeof (res = next()) !== "undefined")
+              return res || [];
+        }
+      }
+      function _hash(s, salt, callback, progressCallback) {
+        var err;
+        if (typeof s !== "string" || typeof salt !== "string") {
+          err = Error("Invalid string / salt: Not a string");
+          if (callback) {
+            nextTick(callback.bind(this, err));
+            return;
+          } else
+            throw err;
+        }
+        var minor, offset;
+        if (salt.charAt(0) !== "$" || salt.charAt(1) !== "2") {
+          err = Error("Invalid salt version: " + salt.substring(0, 2));
+          if (callback) {
+            nextTick(callback.bind(this, err));
+            return;
+          } else
+            throw err;
+        }
+        if (salt.charAt(2) === "$")
+          minor = String.fromCharCode(0), offset = 3;
+        else {
+          minor = salt.charAt(2);
+          if (minor !== "a" && minor !== "b" && minor !== "y" || salt.charAt(3) !== "$") {
+            err = Error("Invalid salt revision: " + salt.substring(2, 4));
+            if (callback) {
+              nextTick(callback.bind(this, err));
+              return;
+            } else
+              throw err;
+          }
+          offset = 4;
+        }
+        if (salt.charAt(offset + 2) > "$") {
+          err = Error("Missing salt rounds");
+          if (callback) {
+            nextTick(callback.bind(this, err));
+            return;
+          } else
+            throw err;
+        }
+        var r1 = parseInt(salt.substring(offset, offset + 1), 10) * 10, r2 = parseInt(salt.substring(offset + 1, offset + 2), 10), rounds = r1 + r2, real_salt = salt.substring(offset + 3, offset + 25);
+        s += minor >= "a" ? "\0" : "";
+        var passwordb = stringToBytes(s), saltb = base64_decode(real_salt, BCRYPT_SALT_LEN);
+        function finish(bytes) {
+          var res = [];
+          res.push("$2");
+          if (minor >= "a")
+            res.push(minor);
+          res.push("$");
+          if (rounds < 10)
+            res.push("0");
+          res.push(rounds.toString());
+          res.push("$");
+          res.push(base64_encode(saltb, saltb.length));
+          res.push(base64_encode(bytes, C_ORIG.length * 4 - 1));
+          return res.join("");
+        }
+        if (typeof callback == "undefined")
+          return finish(_crypt(passwordb, saltb, rounds));
+        else {
+          _crypt(passwordb, saltb, rounds, function(err2, bytes) {
+            if (err2)
+              callback(err2, null);
+            else
+              callback(null, finish(bytes));
+          }, progressCallback);
+        }
+      }
+      bcrypt4.encodeBase64 = base64_encode;
+      bcrypt4.decodeBase64 = base64_decode;
+      return bcrypt4;
+    });
+  }
+});
+
+// apps/bizflow/node_modules/bcryptjs/index.js
+var require_bcryptjs = __commonJS({
+  "apps/bizflow/node_modules/bcryptjs/index.js"(exports, module2) {
+    module2.exports = require_bcrypt();
+  }
+});
+
+// apps/bizflow/web/server.ts
+var import_node_http = __toESM(require("node:http"));
+var import_node_path6 = __toESM(require("node:path"));
+init_electron_node();
+
+// apps/bizflow/web/session-db.ts
+var import_node_async_hooks = require("node:async_hooks");
+var import_node_fs2 = __toESM(require("node:fs"));
+var import_node_path2 = __toESM(require("node:path"));
+var als = new import_node_async_hooks.AsyncLocalStorage();
+var sessions = /* @__PURE__ */ new Map();
+var warmed = /* @__PURE__ */ new WeakSet();
+var DEFAULT_SESSION = "default";
+var MAX_SESSIONS = Math.max(1, Number(process.env.BRIDGE_MAX_SESSIONS) || 50);
+var SESSION_TTL_MS = Math.max(
+  6e4,
+  Number(process.env.BRIDGE_SESSION_TTL_MS) || 30 * 6e4
+);
+var PrismaCtor;
+var templateDbPath = "";
+var sessionsDir = "";
+var fallbackClient = null;
+function makeClient(dbPath) {
+  return new PrismaCtor({
+    datasources: {
+      db: { url: `file:${dbPath}?connection_limit=1&journal_mode=WAL` }
+    },
+    log: ["error"]
+  });
+}
+function sanitizeId(raw) {
+  const clean = String(raw ?? "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+  return clean || DEFAULT_SESSION;
+}
+function configureSessionDb(opts) {
+  PrismaCtor = opts.PrismaClient;
+  templateDbPath = opts.templateDbPath;
+  sessionsDir = opts.sessionsDir;
+  import_node_fs2.default.rmSync(sessionsDir, { recursive: true, force: true });
+  import_node_fs2.default.mkdirSync(sessionsDir, { recursive: true });
+  fallbackClient = getSessionClient(DEFAULT_SESSION);
+}
+function disposeEntry(id, entry) {
+  sessions.delete(id);
+  entry.client.$disconnect?.().catch(() => {
+  });
+  for (const suffix of ["", "-wal", "-shm", "-journal"]) {
+    import_node_fs2.default.rm(entry.dbPath + suffix, { force: true }, () => {
+    });
+  }
+}
+function evict() {
+  const now = Date.now();
+  for (const [id, entry] of sessions) {
+    if (id === DEFAULT_SESSION)
+      continue;
+    if (now - entry.lastUsed > SESSION_TTL_MS)
+      disposeEntry(id, entry);
+  }
+  while (sessions.size > MAX_SESSIONS) {
+    let oldestId = null;
+    let oldest = Infinity;
+    for (const [id, entry] of sessions) {
+      if (id === DEFAULT_SESSION)
+        continue;
+      if (entry.lastUsed < oldest) {
+        oldest = entry.lastUsed;
+        oldestId = id;
+      }
+    }
+    if (!oldestId)
+      break;
+    disposeEntry(oldestId, sessions.get(oldestId));
+  }
+}
+function getSessionClient(rawId) {
+  const id = sanitizeId(rawId);
+  let entry = sessions.get(id);
+  if (!entry) {
+    const dbPath = import_node_path2.default.join(sessionsDir, `${id}.db`);
+    import_node_fs2.default.copyFileSync(templateDbPath, dbPath);
+    entry = { client: makeClient(dbPath), dbPath, lastUsed: Date.now() };
+    sessions.set(id, entry);
+    evict();
+  }
+  entry.lastUsed = Date.now();
+  return entry.client;
+}
+async function ensureReady(client) {
+  if (warmed.has(client))
+    return;
+  warmed.add(client);
+  for (const pragma of [
+    "PRAGMA busy_timeout = 10000;",
+    "PRAGMA journal_mode = WAL;",
+    "PRAGMA foreign_keys = ON;"
+  ]) {
+    try {
+      await client.$queryRawUnsafe(pragma);
+    } catch {
+    }
+  }
+}
+function runWithClient(client, fn) {
+  return als.run(client, fn);
+}
+function sessionCount() {
+  return sessions.size;
+}
+function createPrismaProxy() {
+  const resolve4 = () => als.getStore() || fallbackClient;
+  return new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        const client = resolve4();
+        if (!client)
+          return void 0;
+        const value = client[prop];
+        return typeof value === "function" ? value.bind(client) : value;
+      },
+      has(_target, prop) {
+        const client = resolve4();
+        return client ? prop in client : false;
+      }
+    }
+  );
+}
+
+// apps/bizflow/src/main/ipc/handlers/auth.handlers.ts
+init_electron_node();
+var import_bcryptjs = __toESM(require_bcryptjs());
+
+// apps/bizflow/src/main/utils/logger.ts
+var import_fs = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
+
+// apps/bizflow/web/shims/electron-log.node.ts
+var import_node_os2 = __toESM(require("node:os"));
+var import_node_path3 = __toESM(require("node:path"));
+var logFile = import_node_path3.default.join(import_node_os2.default.tmpdir(), "bizflow-web-data", "app.log");
+var log = {
+  info: (...a) => console.log("[info]", ...a),
+  warn: (...a) => console.warn("[warn]", ...a),
+  error: (...a) => console.error("[error]", ...a),
+  debug: () => {
+  },
+  verbose: () => {
+  },
+  initialize: () => {
+  },
+  transports: {
+    file: {
+      level: "debug",
+      format: "",
+      resolvePathFn: void 0,
+      getFile: () => ({ path: logFile })
+    },
+    console: { level: "warn", format: "" }
+  },
+  errorHandler: { startCatching: () => {
+  } },
+  scope: () => log
+};
+var electron_log_node_default = log;
+
+// apps/bizflow/src/main/utils/logger.ts
+electron_log_node_default.initialize();
+electron_log_node_default.transports.file.resolvePathFn = (variables) => {
+  const date = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  return import_path.default.join(variables.electronDefaultDir, `${date}.log`);
+};
+function pruneOldLogs(logDir2, keepDays = 30) {
+  try {
+    if (!import_fs.default.existsSync(logDir2))
+      return;
+    const cutoff = Date.now() - keepDays * 24 * 60 * 60 * 1e3;
+    for (const file of import_fs.default.readdirSync(logDir2)) {
+      if (!/^\d{4}-\d{2}-\d{2}\.log$/.test(file))
+        continue;
+      const fullPath = import_path.default.join(logDir2, file);
+      if (import_fs.default.statSync(fullPath).mtimeMs < cutoff)
+        import_fs.default.unlinkSync(fullPath);
+    }
+  } catch {
+  }
+}
+electron_log_node_default.transports.file.level = "debug";
+electron_log_node_default.transports.file.format = "[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}";
+var isDev = process.env.NODE_ENV === "development";
+electron_log_node_default.transports.console.level = isDev ? "debug" : "warn";
+electron_log_node_default.transports.console.format = "[{h}:{i}:{s}] [{level}] {text}";
+electron_log_node_default.errorHandler.startCatching({
+  showDialog: false,
+  onError: ({ error }) => {
+    electron_log_node_default.error("[Process] Uncaught error:", error);
+  }
+});
+var logDir = import_path.default.dirname(electron_log_node_default.transports.file.getFile().path);
+pruneOldLogs(logDir);
+function createLogger(namespace) {
+  return {
+    info: (...args) => electron_log_node_default.info(`[${namespace}]`, ...args),
+    warn: (...args) => electron_log_node_default.warn(`[${namespace}]`, ...args),
+    error: (...args) => electron_log_node_default.error(`[${namespace}]`, ...args),
+    debug: (...args) => electron_log_node_default.debug(`[${namespace}]`, ...args),
+    verbose: (...args) => electron_log_node_default.verbose(`[${namespace}]`, ...args)
+  };
+}
+
+// apps/bizflow/src/main/ipc/handlers/auth.handlers.ts
+var log2 = createLogger("Auth");
+function registerAuthHandlers(prisma2) {
+  ipcMain.handle("auth:login", async (_, { username, password }) => {
+    try {
+      if (prisma2) {
+        const user = await prisma2.user.findUnique({ where: { username } });
+        if (!user) {
+          log2.info(`\u274C Login failed: User '${username}' not found`);
+          return { success: false, message: "Invalid username or password" };
+        }
+        const isValid = await import_bcryptjs.default.compare(password, user.passwordHash);
+        if (!isValid) {
+          log2.info(`\u274C Login failed: Invalid password for user '${username}'`);
+          return { success: false, message: "Invalid username or password" };
+        }
+        if (!user.isActive) {
+          log2.info(`\u274C Login failed: User '${username}' is inactive`);
+          return { success: false, message: "Account is inactive. Contact administrator." };
+        }
+        await prisma2.user.update({
+          where: { id: user.id },
+          data: { lastLogin: /* @__PURE__ */ new Date() }
+        });
+        log2.info(`\u2705 Login successful: ${user.username} (${user.role}) - ID: ${user.id}`);
+        return { success: true, user: { id: user.id, username: user.username, role: user.role } };
+      }
+      log2.warn("\u26A0\uFE0F Using mock login - database not available");
+      return { success: true, user: { id: "1", username, role: "admin" } };
+    } catch (error) {
+      log2.error("\u274C Login error:", error);
+      return { success: false, message: "An error occurred during login" };
+    }
+  });
+  ipcMain.handle("auth:create", async (_, { username, password, role = "sales" }) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      if (!username || !password)
+        return { success: false, message: "Username and password are required" };
+      const existing = await prisma2.user.findUnique({ where: { username } });
+      if (existing)
+        return { success: false, message: "Username already exists" };
+      const passwordHash = await import_bcryptjs.default.hash(password, 10);
+      const user = await prisma2.user.create({ data: { username, passwordHash, role } });
+      return { success: true, user: { id: user.id, username: user.username, role: user.role } };
+    } catch (error) {
+      log2.error("\u274C Create user error:", error);
+      return { success: false, message: "Failed to create user" };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/dashboard.handlers.ts
+init_electron_node();
+var log3 = createLogger("Dashboard");
+function registerDashboardHandlers(prisma2) {
+  ipcMain.handle("dashboard:getMetrics", async () => {
+    try {
+      if (prisma2) {
+        const totalSales = await prisma2.saleTransaction.aggregate({
+          where: { status: "completed" },
+          _sum: { total: true },
+          _count: true
+        });
+        const profitData = await prisma2.$queryRaw`
+          SELECT SUM((si.price - si.cost) * si.quantity) as profit
+          FROM SaleItem si
+          JOIN SaleTransaction st ON si.transactionId = st.id
+          WHERE st.status = 'completed'
+        `;
+        const profit = profitData[0]?.profit || 0;
+        return {
+          sales: totalSales._sum.total || 0,
+          orders: totalSales._count || 0,
+          profit: Math.round(profit * 100) / 100
+        };
+      }
+      return { sales: 0, orders: 0, profit: 0 };
+    } catch (error) {
+      log3.error("Error fetching dashboard metrics:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("dashboard:getSalesChart", async (_, { startDate, endDate }) => {
+    try {
+      if (!prisma2)
+        return [];
+      const rows = await prisma2.$queryRaw`
+          SELECT
+            strftime('%Y-%m-%d', datetime(createdAt / 1000, 'unixepoch')) AS date,
+            CAST(SUM(total) AS REAL)                                       AS total,
+            COUNT(*)                                                       AS count
+          FROM SaleTransaction
+          WHERE createdAt >= ${new Date(startDate).getTime()}
+            AND createdAt <= ${new Date(endDate).getTime()}
+            AND status IN ('completed', 'partially_refunded')
+          GROUP BY strftime('%Y-%m-%d', datetime(createdAt / 1000, 'unixepoch'))
+          ORDER BY date ASC
+        `;
+      return rows.map((r) => ({
+        date: r.date,
+        total: Number(r.total),
+        count: Number(r.count)
+      }));
+    } catch (error) {
+      log3.error("Error fetching sales chart data:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("dashboard:getTopProducts", async (_, { startDate, endDate, limit = 5 }) => {
+    try {
+      if (!prisma2)
+        return [];
+      const rows = await prisma2.$queryRaw`
+          SELECT
+            si.productId,
+            p.name,
+            CAST(SUM(si.total) AS REAL) AS revenue,
+            SUM(si.quantity)            AS quantity
+          FROM SaleItem si
+          JOIN SaleTransaction st ON si.transactionId = st.id
+          JOIN Product p           ON si.productId   = p.id
+          WHERE st.createdAt >= ${new Date(startDate).getTime()}
+            AND st.createdAt <= ${new Date(endDate).getTime()}
+            AND st.status = 'completed'
+          GROUP BY si.productId, p.name
+          ORDER BY revenue DESC
+          LIMIT ${limit}
+        `;
+      return rows.map((r) => ({
+        productId: r.productId,
+        name: r.name,
+        revenue: Number(r.revenue),
+        quantity: Number(r.quantity)
+      }));
+    } catch (error) {
+      log3.error("Error fetching top products:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("dashboard:getRecentActivity", async (_, { limit = 10 } = {}) => {
+    try {
+      if (!prisma2)
+        return [];
+      const transactions = await prisma2.saleTransaction.findMany({
+        where: { status: "completed" },
+        select: {
+          id: true,
+          total: true,
+          paymentMethod: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+          user: { select: { username: true } },
+          _count: { select: { items: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit
+      });
+      return transactions.map((t) => ({ ...t, itemCount: t._count.items, _count: void 0 }));
+    } catch (error) {
+      log3.error("Error fetching recent activity:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("dashboard:getDayStats", async (_, { startDate, endDate }) => {
+    try {
+      if (!prisma2)
+        return { total: 0, count: 0 };
+      const result = await prisma2.saleTransaction.aggregate({
+        where: {
+          status: { in: ["completed", "partially_refunded"] },
+          createdAt: { gte: new Date(startDate), lte: new Date(endDate) }
+        },
+        _sum: { total: true },
+        _count: true
+      });
+      return { total: result._sum.total ?? 0, count: result._count ?? 0 };
+    } catch (error) {
+      log3.error("Error fetching day stats:", error);
+      return { total: 0, count: 0 };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/finance.handlers.ts
+init_electron_node();
+var log4 = createLogger("Finance");
+function registerFinanceHandlers(prisma2) {
+  ipcMain.handle("finance:addTransaction", async (_, { type, amount, description, userId }) => {
+    try {
+      if (prisma2) {
+        const transaction = await prisma2.financialTransaction.create({
+          data: { type, amount, description, userId }
+        });
+        return { success: true, transaction };
+      }
+      return { success: true, transaction: { id: "t_mock", type, amount, description, userId } };
+    } catch (error) {
+      log4.error("Error adding transaction:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("finance:getTransactions", async (_, { startDate, endDate }) => {
+    try {
+      if (prisma2) {
+        const transactions = await prisma2.financialTransaction.findMany({
+          where: {
+            createdAt: {
+              gte: new Date(startDate),
+              lte: new Date(endDate)
+            }
+          },
+          orderBy: { createdAt: "desc" },
+          include: { user: { select: { username: true } } }
+        });
+        return transactions;
+      }
+      return [];
+    } catch (error) {
+      log4.error("Error fetching transactions:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("finance:getStats", async () => {
+    try {
+      if (prisma2) {
+        const now = /* @__PURE__ */ new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthlyTransactions = await prisma2.financialTransaction.findMany({
+          where: { createdAt: { gte: startOfMonth } }
+        });
+        const income = monthlyTransactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+        const expenses = monthlyTransactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+        return {
+          totalIncome: income,
+          totalExpenses: expenses,
+          netProfit: income - expenses,
+          transactionCount: monthlyTransactions.length
+        };
+      }
+      return {
+        totalIncome: 0,
+        totalExpenses: 0,
+        netProfit: 0,
+        transactionCount: 0
+      };
+    } catch (error) {
+      log4.error("Error fetching finance stats:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("finance:updateTransaction", async (_, { id, data }) => {
+    try {
+      if (prisma2) {
+        const transaction = await prisma2.financialTransaction.update({
+          where: { id },
+          data: {
+            amount: data.amount,
+            description: data.description,
+            type: data.type
+          }
+        });
+        return { success: true, transaction };
+      }
+      return { success: true, transaction: { id, ...data } };
+    } catch (error) {
+      log4.error("Error updating transaction:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("finance:deleteTransaction", async (_, id) => {
+    try {
+      if (prisma2) {
+        await prisma2.financialTransaction.delete({
+          where: { id }
+        });
+        return { success: true };
+      }
+      return { success: true };
+    } catch (error) {
+      log4.error("Error deleting transaction:", error);
+      throw error;
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/employees.handlers.ts
+init_electron_node();
+var log5 = createLogger("Employees");
+var EMPLOYEE_INCLUDE = {
+  attendance: { orderBy: { date: "desc" }, take: 90 },
+  documents: { orderBy: { uploadedAt: "desc" } },
+  activityLogs: { orderBy: { createdAt: "desc" }, take: 50 },
+  payrollRecords: { orderBy: [{ year: "desc" }, { month: "desc" }], take: 24 },
+  shifts: { orderBy: { date: "desc" }, take: 60 },
+  overtimeRecords: { orderBy: { date: "desc" }, take: 60 }
+};
+function computeAttendanceSummary(attendance) {
+  const total = attendance.length;
+  const present = attendance.filter((a) => a.status === "present").length;
+  const absent = attendance.filter((a) => a.status === "absent").length;
+  const late = attendance.filter((a) => a.status === "late").length;
+  const onLeave = attendance.filter((a) => a.status === "leave").length;
+  const rate = total > 0 ? Math.round(present / total * 100) : 0;
+  return { total, present, absent, late, onLeave, rate };
+}
+function registerEmployeesHandlers(prisma2) {
+  ipcMain.handle("employees:getAll", async () => {
+    try {
+      if (!prisma2)
+        return [];
+      return await prisma2.employee.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          _count: { select: { attendance: true, activityLogs: true } }
+        }
+      });
+    } catch (error) {
+      log5.error("Error fetching employees:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("employees:getById", async (_, id) => {
+    try {
+      if (!prisma2)
+        return null;
+      const emp = await prisma2.employee.findUnique({
+        where: { id },
+        include: EMPLOYEE_INCLUDE
+      });
+      if (!emp)
+        return null;
+      return {
+        ...emp,
+        attendanceSummary: computeAttendanceSummary(emp.attendance)
+      };
+    } catch (error) {
+      log5.error("Error fetching employee:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("employees:create", async (_, employeeData) => {
+    try {
+      if (!prisma2)
+        return { success: false, message: "Database not available" };
+      const employee = await prisma2.employee.create({ data: employeeData });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId: employee.id,
+          action: "employee_created",
+          details: `Employee profile created`,
+          performedBy: employeeData.createdBy ?? null
+        }
+      });
+      return { success: true, employee };
+    } catch (error) {
+      log5.error("Error creating employee:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:update", async (_, { id, employeeData }) => {
+    try {
+      if (!prisma2)
+        return { success: false, message: "Database not available" };
+      const { performedBy, ...data } = employeeData;
+      const employee = await prisma2.employee.update({ where: { id }, data });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId: id,
+          action: "profile_updated",
+          details: `Profile fields updated: ${Object.keys(data).join(", ")}`,
+          performedBy: performedBy ?? null
+        }
+      });
+      return { success: true, employee };
+    } catch (error) {
+      log5.error("Error updating employee:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false, message: "Database not available" };
+      await prisma2.employee.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log5.error("Error deleting employee:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:attendance:upsert", async (_, { employeeId, date, status, checkIn, checkOut, notes }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const dayStart = new Date(date);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const record = await prisma2.employeeAttendance.upsert({
+        where: { employeeId_date: { employeeId, date: dayStart } },
+        create: { employeeId, date: dayStart, status, checkIn, checkOut, notes },
+        update: { status, checkIn, checkOut, notes }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId,
+          action: "attendance_recorded",
+          details: `${status} on ${dayStart.toLocaleDateString()}`,
+          performedBy: null
+        }
+      });
+      return { success: true, record };
+    } catch (error) {
+      log5.error("Error upserting attendance:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:attendance:getRange", async (_, { employeeId, from, to }) => {
+    try {
+      if (!prisma2)
+        return [];
+      return await prisma2.employeeAttendance.findMany({
+        where: {
+          employeeId,
+          date: { gte: new Date(from), lte: new Date(to) }
+        },
+        orderBy: { date: "asc" }
+      });
+    } catch (error) {
+      log5.error("Error fetching attendance range:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("employees:attendance:checkIn", async (_, { employeeId }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const now = /* @__PURE__ */ new Date();
+      const dayStart = new Date(now);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const existing = await prisma2.employeeAttendance.findUnique({
+        where: { employeeId_date: { employeeId, date: dayStart } }
+      });
+      if (existing?.checkIn) {
+        return {
+          success: false,
+          alreadyIn: true,
+          message: `Already checked in today at ${new Date(existing.checkIn).toLocaleTimeString()}`
+        };
+      }
+      const record = await prisma2.employeeAttendance.upsert({
+        where: { employeeId_date: { employeeId, date: dayStart } },
+        create: { employeeId, date: dayStart, status: "present", checkIn: now },
+        update: { checkIn: now, status: "present" }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId, action: "checked_in", details: `Checked in at ${now.toLocaleTimeString()}` }
+      });
+      return { success: true, record };
+    } catch (error) {
+      log5.error("Error checking in:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:attendance:checkOut", async (_, { employeeId }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const now = /* @__PURE__ */ new Date();
+      const dayStart = new Date(now);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const existing = await prisma2.employeeAttendance.findUnique({
+        where: { employeeId_date: { employeeId, date: dayStart } }
+      });
+      if (!existing?.checkIn) {
+        return { success: false, message: "Employee has not checked in today" };
+      }
+      if (existing.checkOut) {
+        return {
+          success: false,
+          alreadyOut: true,
+          message: `Already checked out today at ${new Date(existing.checkOut).toLocaleTimeString()}`
+        };
+      }
+      const record = await prisma2.employeeAttendance.update({
+        where: { employeeId_date: { employeeId, date: dayStart } },
+        data: { checkOut: now }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId, action: "checked_out", details: `Checked out at ${now.toLocaleTimeString()}` }
+      });
+      return { success: true, record };
+    } catch (error) {
+      log5.error("Error checking out:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  async function computeOvertimeForMonth(employeeId, month, year, baseSalary) {
+    if (!prisma2)
+      return { overtimeHours: 0, overtimePay: 0 };
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 1);
+    const records = await prisma2.employeeOvertime.findMany({
+      where: { employeeId, date: { gte: monthStart, lt: monthEnd } }
+    });
+    const overtimeHours = records.reduce((s, r) => s + (r.hours ?? 0), 0);
+    const hourlyRate = baseSalary > 0 ? baseSalary / 160 : 0;
+    const overtimePay = records.reduce(
+      (s, r) => s + (r.hours ?? 0) * hourlyRate * (r.multiplier ?? 1.5),
+      0
+    );
+    return { overtimeHours, overtimePay };
+  }
+  async function countExtraShiftsForMonth(employeeId, month, year) {
+    if (!prisma2)
+      return 0;
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 1);
+    const shifts = await prisma2.employeeShift.findMany({
+      where: { employeeId, date: { gte: monthStart, lt: monthEnd } }
+    });
+    const byDay = {};
+    for (const s of shifts) {
+      const key = new Date(s.date).toISOString().slice(0, 10);
+      byDay[key] = (byDay[key] ?? 0) + 1;
+    }
+    let extras = shifts.filter((s) => s.shiftType === "extra").length;
+    for (const count of Object.values(byDay)) {
+      if (count > 1)
+        extras += count - 1;
+    }
+    return extras;
+  }
+  ipcMain.handle("employees:payroll:upsert", async (_, {
+    employeeId,
+    month,
+    year,
+    baseSalary,
+    regularHours,
+    overtimeHours,
+    overtimePay,
+    extraShifts,
+    extraShiftPay,
+    extraShiftBonusPerShift,
+    bonuses,
+    deductions,
+    notes,
+    status,
+    paidDate,
+    performedBy
+  }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const base = baseSalary ?? 0;
+      const bon = bonuses ?? 0;
+      const ded = deductions ?? 0;
+      let otHours = overtimeHours ?? null;
+      let otPay = overtimePay ?? null;
+      if (otPay == null) {
+        const ot = await computeOvertimeForMonth(employeeId, month, year, base);
+        otHours = ot.overtimeHours;
+        otPay = ot.overtimePay;
+      }
+      let xShifts = extraShifts ?? null;
+      let xPay = extraShiftPay ?? null;
+      if (xPay == null) {
+        xShifts = await countExtraShiftsForMonth(employeeId, month, year);
+        const bonusPerShift = extraShiftBonusPerShift ?? 0;
+        xPay = xShifts * bonusPerShift;
+      }
+      const grossPay = base + otPay + xPay + bon;
+      const netPay = grossPay - ded;
+      const data = {
+        baseSalary: base,
+        regularHours: regularHours ?? 0,
+        overtimeHours: otHours,
+        overtimePay: otPay,
+        extraShifts: xShifts,
+        extraShiftPay: xPay,
+        bonuses: bon,
+        deductions: ded,
+        grossPay,
+        netPay,
+        status: status ?? "pending",
+        notes: notes ?? null,
+        paidDate: paidDate ? new Date(paidDate) : null
+      };
+      const record = await prisma2.employeePayroll.upsert({
+        where: { employeeId_month_year: { employeeId, month, year } },
+        create: { employeeId, month, year, ...data },
+        update: data
+      });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId,
+          action: status === "paid" ? "payroll_paid" : "payroll_updated",
+          details: `Payroll ${month}/${year}: base $${base.toFixed(2)}, OT $${otPay.toFixed(2)}, extra-shifts $${xPay.toFixed(2)}, net $${netPay.toFixed(2)}`,
+          performedBy: performedBy ?? null
+        }
+      });
+      return { success: true, record };
+    } catch (error) {
+      log5.error("Error upserting payroll:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:payroll:compute", async (_, { employeeId, month, year, baseSalary, extraShiftBonusPerShift }) => {
+    try {
+      if (!prisma2)
+        return null;
+      const base = baseSalary ?? 0;
+      const [ot, xShifts] = await Promise.all([
+        computeOvertimeForMonth(employeeId, month, year, base),
+        countExtraShiftsForMonth(employeeId, month, year)
+      ]);
+      const bonusPerShift = extraShiftBonusPerShift ?? 0;
+      const xPay = xShifts * bonusPerShift;
+      const grossPay = base + ot.overtimePay + xPay;
+      return {
+        baseSalary: base,
+        regularHours: 0,
+        overtimeHours: ot.overtimeHours,
+        overtimePay: ot.overtimePay,
+        extraShifts: xShifts,
+        extraShiftPay: xPay,
+        bonuses: 0,
+        deductions: 0,
+        grossPay,
+        netPay: grossPay
+      };
+    } catch (error) {
+      log5.error("Error computing payroll:", error);
+      return null;
+    }
+  });
+  ipcMain.handle("employees:payroll:getAll", async (_, { year }) => {
+    try {
+      if (!prisma2)
+        return [];
+      return await prisma2.employeePayroll.findMany({
+        where: { year },
+        include: { employee: { select: { id: true, name: true, role: true, department: true, salary: true, salaryType: true } } },
+        orderBy: [{ month: "desc" }, { employee: { name: "asc" } }]
+      });
+    } catch (error) {
+      log5.error("Error fetching payroll:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("employees:payroll:markPaid", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const record = await prisma2.employeePayroll.update({
+        where: { id },
+        data: { status: "paid", paidDate: /* @__PURE__ */ new Date() }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId: record.employeeId,
+          action: "payroll_paid",
+          details: `Payroll ${record.month}/${record.year} marked as paid`,
+          performedBy: null
+        }
+      });
+      return { success: true, record };
+    } catch (error) {
+      log5.error("Error marking payroll as paid:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:payroll:getSummary", async (_, { startYear, startMonth, endYear, endMonth }) => {
+    try {
+      if (!prisma2)
+        return { employees: [], totals: {} };
+      const records = await prisma2.employeePayroll.findMany({
+        where: {
+          OR: [
+            // entirely inside single year
+            ...startYear === endYear ? [{ year: startYear, month: { gte: startMonth, lte: endMonth } }] : [
+              { year: startYear, month: { gte: startMonth } },
+              { year: { gt: startYear, lt: endYear } },
+              { year: endYear, month: { lte: endMonth } }
+            ]
+          ]
+        },
+        include: { employee: { select: { id: true, name: true, role: true, department: true } } },
+        orderBy: [{ year: "asc" }, { month: "asc" }]
+      });
+      const empMap = {};
+      for (const r of records) {
+        if (!empMap[r.employeeId]) {
+          empMap[r.employeeId] = {
+            employeeId: r.employeeId,
+            name: r.employee?.name ?? "Unknown",
+            role: r.employee?.role ?? "",
+            department: r.employee?.department ?? "",
+            baseSalary: 0,
+            regularHours: 0,
+            overtimeHours: 0,
+            overtimePay: 0,
+            extraShifts: 0,
+            extraShiftPay: 0,
+            bonuses: 0,
+            deductions: 0,
+            grossPay: 0,
+            netPay: 0,
+            recordCount: 0,
+            hasPending: false
+          };
+        }
+        const e = empMap[r.employeeId];
+        e.baseSalary += r.baseSalary ?? 0;
+        e.regularHours += r.regularHours ?? 0;
+        e.overtimeHours += r.overtimeHours ?? 0;
+        e.overtimePay += r.overtimePay ?? 0;
+        e.extraShifts += r.extraShifts ?? 0;
+        e.extraShiftPay += r.extraShiftPay ?? 0;
+        e.bonuses += r.bonuses ?? 0;
+        e.deductions += r.deductions ?? 0;
+        e.grossPay += r.grossPay ?? 0;
+        e.netPay += r.netPay ?? 0;
+        e.recordCount += 1;
+        if (r.status !== "paid")
+          e.hasPending = true;
+      }
+      const employees = Object.values(empMap);
+      const totals = employees.reduce((acc, e) => ({
+        baseSalary: (acc.baseSalary ?? 0) + e.baseSalary,
+        regularHours: (acc.regularHours ?? 0) + e.regularHours,
+        overtimeHours: (acc.overtimeHours ?? 0) + e.overtimeHours,
+        overtimePay: (acc.overtimePay ?? 0) + e.overtimePay,
+        extraShifts: (acc.extraShifts ?? 0) + e.extraShifts,
+        extraShiftPay: (acc.extraShiftPay ?? 0) + e.extraShiftPay,
+        bonuses: (acc.bonuses ?? 0) + e.bonuses,
+        deductions: (acc.deductions ?? 0) + e.deductions,
+        grossPay: (acc.grossPay ?? 0) + e.grossPay,
+        netPay: (acc.netPay ?? 0) + e.netPay
+      }), {});
+      return { employees, totals };
+    } catch (error) {
+      log5.error("Error fetching payroll summary:", error);
+      return { employees: [], totals: {} };
+    }
+  });
+  ipcMain.handle("employees:activity:add", async (_, { employeeId, action, details, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const log_ = await prisma2.employeeActivityLog.create({
+        data: { employeeId, action, details, performedBy: performedBy ?? null }
+      });
+      return { success: true, log: log_ };
+    } catch (error) {
+      log5.error("Error adding activity log:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:search", async (_, { query, status, department, role }) => {
+    try {
+      if (!prisma2)
+        return [];
+      const where = {};
+      if (status)
+        where.status = status;
+      if (department)
+        where.department = department;
+      if (role)
+        where.role = role;
+      if (query) {
+        where.OR = [
+          { name: { contains: query } },
+          { email: { contains: query } },
+          { phone: { contains: query } },
+          { role: { contains: query } },
+          { department: { contains: query } }
+        ];
+      }
+      return await prisma2.employee.findMany({
+        where,
+        orderBy: { name: "asc" },
+        include: { _count: { select: { attendance: true, activityLogs: true } } }
+      });
+    } catch (error) {
+      log5.error("Error searching employees:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("employees:stats", async () => {
+    try {
+      if (!prisma2)
+        return null;
+      const today = /* @__PURE__ */ new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const [total, active, onLeave, terminatedCount, todayAttendance, payrollThisMonth] = await Promise.all([
+        prisma2.employee.count(),
+        prisma2.employee.count({ where: { status: "active" } }),
+        prisma2.employee.count({ where: { status: "on-leave" } }),
+        prisma2.employee.count({ where: { status: "terminated" } }),
+        prisma2.employeeAttendance.findMany({
+          where: { date: today },
+          select: { status: true }
+        }),
+        prisma2.employeePayroll.aggregate({
+          where: { month: today.getMonth() + 1, year: today.getFullYear() },
+          _sum: { netPay: true }
+        })
+      ]);
+      const presentToday = todayAttendance.filter((a) => a.status === "present").length;
+      return {
+        total,
+        active,
+        onLeave,
+        terminated: terminatedCount,
+        presentToday,
+        attendanceRate: active > 0 ? Math.round(presentToday / active * 100) : 0,
+        payrollThisMonth: payrollThisMonth._sum.netPay ?? 0
+      };
+    } catch (error) {
+      log5.error("Error fetching employee stats:", error);
+      return null;
+    }
+  });
+  ipcMain.handle("employees:shifts:add", async (_, { employeeId, date, shiftType, startTime, endTime, breakMins, notes }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const dayStart = new Date(date);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const shift = await prisma2.employeeShift.create({
+        data: { employeeId, date: dayStart, shiftType: shiftType || "morning", startTime, endTime, breakMins: breakMins ?? 0, notes: notes || null }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId, action: "shift_added", details: `Shift ${shiftType} on ${dayStart.toLocaleDateString()}: ${startTime}\u2013${endTime}` }
+      });
+      return { success: true, shift };
+    } catch (error) {
+      log5.error("Error adding shift:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:shifts:getAll", async (_, { employeeId }) => {
+    try {
+      if (!prisma2)
+        return [];
+      return await prisma2.employeeShift.findMany({
+        where: { employeeId },
+        orderBy: { date: "desc" }
+      });
+    } catch (error) {
+      log5.error("Error fetching shifts:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("employees:shifts:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const shift = await prisma2.employeeShift.findUnique({ where: { id } });
+      await prisma2.employeeShift.delete({ where: { id } });
+      if (shift) {
+        await prisma2.employeeActivityLog.create({
+          data: { employeeId: shift.employeeId, action: "shift_deleted", details: `Shift ${shift.shiftType} deleted` }
+        });
+      }
+      return { success: true };
+    } catch (error) {
+      log5.error("Error deleting shift:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:overtime:add", async (_, { employeeId, date, hours, reason, multiplier }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const dayStart = new Date(date);
+      dayStart.setUTCHours(0, 0, 0, 0);
+      const ot = await prisma2.employeeOvertime.create({
+        data: { employeeId, date: dayStart, hours, reason: reason || null, multiplier: multiplier ?? 1.5, approved: false }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId, action: "overtime_logged", details: `${hours}h overtime on ${dayStart.toLocaleDateString()}` }
+      });
+      return { success: true, overtime: ot };
+    } catch (error) {
+      log5.error("Error adding overtime:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:overtime:approve", async (_, { id, approvedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const ot = await prisma2.employeeOvertime.update({
+        where: { id },
+        data: { approved: true, approvedBy: approvedBy ?? null }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId: ot.employeeId, action: "overtime_approved", details: `${ot.hours}h overtime approved`, performedBy: approvedBy ?? null }
+      });
+      return { success: true, overtime: ot };
+    } catch (error) {
+      log5.error("Error approving overtime:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:overtime:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      await prisma2.employeeOvertime.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log5.error("Error deleting overtime:", error);
+      return { success: false, message: error.message };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/customers.handlers.ts
+init_electron_node();
+var XLSX = __toESM(require("xlsx"));
+var log6 = createLogger("Customers");
+function registerCustomersHandlers(prisma2) {
+  async function recalculateCustomerTotalSpent(customerId) {
+    if (!prisma2)
+      return;
+    try {
+      const result = await prisma2.saleTransaction.aggregate({
+        where: {
+          customerId,
+          status: "completed"
+          // Only count completed transactions
+        },
+        _sum: {
+          total: true
+        }
+      });
+      const totalSpent = result._sum.total || 0;
+      await prisma2.customer.update({
+        where: { id: customerId },
+        data: { totalSpent }
+      });
+    } catch (error) {
+      log6.error("Error recalculating customer totalSpent:", error);
+    }
+  }
+  ipcMain.handle("customers:getCount", async () => {
+    try {
+      if (!prisma2)
+        return 0;
+      return await prisma2.customer.count();
+    } catch (error) {
+      log6.error("Error counting customers:", error);
+      return 0;
+    }
+  });
+  ipcMain.handle("customers:getAll", async (_, options = {}) => {
+    try {
+      if (prisma2) {
+        const {
+          limit = 100,
+          offset = 0,
+          searchTerm = ""
+        } = options;
+        const where = {
+          isArchived: false
+          // Always exclude archived customers
+        };
+        if (searchTerm) {
+          where.OR = [
+            { name: { contains: searchTerm } },
+            { email: { contains: searchTerm } },
+            { phone: { contains: searchTerm } }
+          ];
+        }
+        const [customers, totalCount] = await Promise.all([
+          prisma2.customer.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            take: limit,
+            skip: offset,
+            include: {
+              saleTransactions: {
+                where: { status: "completed" },
+                select: {
+                  id: true,
+                  total: true,
+                  createdAt: true
+                }
+              }
+            }
+          }),
+          prisma2.customer.count({ where })
+        ]);
+        const customersWithRealStats = customers.map((customer) => {
+          const realTotalSpent = customer.saleTransactions.reduce(
+            (sum, t) => sum + t.total,
+            0
+          );
+          const purchaseCount = customer.saleTransactions.length;
+          return {
+            ...customer,
+            totalSpent: realTotalSpent,
+            purchaseCount,
+            saleTransactions: void 0
+            // Remove from response to reduce payload
+          };
+        });
+        return {
+          customers: customersWithRealStats,
+          totalCount,
+          hasMore: offset + limit < totalCount
+        };
+      }
+      return { customers: [], totalCount: 0, hasMore: false };
+    } catch (error) {
+      log6.error("Error fetching customers:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("customers:create", async (_, customerData) => {
+    try {
+      if (prisma2) {
+        const normalizedData = {
+          ...customerData,
+          email: customerData.email?.trim() || null
+        };
+        const existingCustomer = await prisma2.customer.findUnique({
+          where: { phone: normalizedData.phone }
+        });
+        if (existingCustomer) {
+          return {
+            success: false,
+            message: "A customer with this phone number already exists",
+            existingCustomer
+          };
+        }
+        const customer = await prisma2.customer.create({ data: normalizedData });
+        return { success: true, customer };
+      }
+      return { success: false, message: "Database not available" };
+    } catch (error) {
+      log6.error("Error creating customer:", error);
+      if (error.code === "P2002") {
+        return { success: false, message: "A customer with this phone number already exists" };
+      }
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("customers:update", async (_, { id, customerData }) => {
+    try {
+      if (prisma2) {
+        const normalizedData = {
+          ...customerData,
+          email: customerData.email?.trim() || null
+        };
+        if (normalizedData.phone) {
+          const existingCustomer = await prisma2.customer.findUnique({
+            where: { phone: normalizedData.phone }
+          });
+          if (existingCustomer && existingCustomer.id !== id) {
+            return {
+              success: false,
+              message: "A customer with this phone number already exists",
+              existingCustomer
+            };
+          }
+        }
+        const customer = await prisma2.customer.update({ where: { id }, data: normalizedData });
+        return { success: true, customer };
+      }
+      return { success: false, message: "Database not available" };
+    } catch (error) {
+      log6.error("Error updating customer:", error);
+      if (error.code === "P2002") {
+        return { success: false, message: "A customer with this phone number already exists" };
+      }
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("customers:delete", async (_, id) => {
+    try {
+      if (prisma2) {
+        await prisma2.customer.delete({ where: { id } });
+        return { success: true };
+      }
+      return { success: false, message: "Database not available" };
+    } catch (error) {
+      log6.error("Error deleting customer:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("customers:getPurchaseHistory", async (_, customerId) => {
+    try {
+      if (prisma2) {
+        const transactions = await prisma2.saleTransaction.findMany({
+          where: { customerId },
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: {
+                    name: true,
+                    baseSKU: true
+                  }
+                }
+              }
+            },
+            deposits: true,
+            installments: true
+          },
+          orderBy: { createdAt: "desc" },
+          take: 50
+          // Last 50 transactions
+        });
+        return transactions;
+      }
+      return [];
+    } catch (error) {
+      log6.error("Error fetching purchase history:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("customers:getProfile", async (_, customerId) => {
+    try {
+      if (!prisma2)
+        return null;
+      const customer = await prisma2.customer.findUnique({
+        where: { id: customerId },
+        include: {
+          saleTransactions: {
+            include: {
+              items: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      baseSKU: true,
+                      category: { select: { name: true } }
+                    }
+                  }
+                }
+              },
+              user: {
+                select: {
+                  username: true,
+                  fullName: true
+                }
+              }
+            },
+            orderBy: { createdAt: "desc" }
+          },
+          deposits: {
+            orderBy: { date: "desc" }
+          },
+          installments: {
+            orderBy: { dueDate: "asc" },
+            include: {
+              sale: {
+                select: {
+                  id: true,
+                  total: true,
+                  createdAt: true
+                }
+              }
+            }
+          }
+        }
+      });
+      if (!customer)
+        return null;
+      const completedTransactions = customer.saleTransactions.filter((t) => t.status === "completed");
+      const partiallyRefundedTransactions = customer.saleTransactions.filter((t) => t.status === "partially_refunded");
+      const totalSpent = completedTransactions.reduce((sum, t) => sum + t.total, 0) + partiallyRefundedTransactions.reduce((sum, tx) => {
+        const refundedAmount = tx.items.reduce((itemSum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return itemSum + refunded * (item.finalPrice || item.price);
+        }, 0);
+        return sum + (tx.total - refundedAmount);
+      }, 0);
+      const totalPurchases = customer.saleTransactions.length;
+      const averagePurchase = totalPurchases > 0 ? totalSpent / totalPurchases : 0;
+      const totalItems = customer.saleTransactions.reduce((sum, t) => {
+        return sum + t.items.reduce((itemSum, item) => {
+          return itemSum + (item.quantity - (item.refundedQuantity || 0));
+        }, 0);
+      }, 0);
+      const productPurchases = {};
+      customer.saleTransactions.forEach((t) => {
+        t.items.forEach((item) => {
+          const productName = item.product?.name || "Unknown";
+          if (!productPurchases[productName]) {
+            productPurchases[productName] = { name: productName, count: 0, spent: 0 };
+          }
+          const quantity = item.quantity - (item.refundedQuantity || 0);
+          productPurchases[productName].count += quantity;
+          productPurchases[productName].spent += (item.finalPrice || item.price) * quantity;
+        });
+      });
+      const topProducts = Object.values(productPurchases).sort((a, b) => b.spent - a.spent).slice(0, 5);
+      const categorySpending = {};
+      customer.saleTransactions.forEach((t) => {
+        t.items.forEach((item) => {
+          const category = item.product?.category?.name || "Uncategorized";
+          const quantity = item.quantity - (item.refundedQuantity || 0);
+          const amount = (item.finalPrice || item.price) * quantity;
+          categorySpending[category] = (categorySpending[category] || 0) + amount;
+        });
+      });
+      const totalInstallments = customer.installments.length;
+      const paidInstallments = customer.installments.filter((i) => i.status === "paid").length;
+      const pendingInstallments = customer.installments.filter((i) => i.status === "pending").length;
+      const overdueInstallments = customer.installments.filter((i) => i.status === "overdue").length;
+      const totalInstallmentAmount = customer.installments.reduce((sum, i) => sum + i.amount, 0);
+      const paidInstallmentAmount = customer.installments.filter((i) => i.status === "paid").reduce((sum, i) => sum + i.amount, 0);
+      const remainingInstallmentAmount = totalInstallmentAmount - paidInstallmentAmount;
+      const totalDeposits = customer.deposits.reduce((sum, d) => sum + d.amount, 0);
+      const firstPurchase = customer.saleTransactions.length > 0 ? customer.saleTransactions[customer.saleTransactions.length - 1].createdAt : null;
+      const lastPurchase = customer.saleTransactions.length > 0 ? customer.saleTransactions[0].createdAt : null;
+      let purchaseFrequency = 0;
+      if (firstPurchase && totalPurchases > 1) {
+        const daysSinceFirst = (Date.now() - new Date(firstPurchase).getTime()) / (1e3 * 60 * 60 * 24);
+        const monthsSinceFirst = daysSinceFirst / 30;
+        purchaseFrequency = monthsSinceFirst > 0 ? totalPurchases / monthsSinceFirst : 0;
+      }
+      return {
+        ...customer,
+        statistics: {
+          totalSpent,
+          totalPurchases,
+          averagePurchase,
+          totalItems,
+          totalDeposits,
+          firstPurchase,
+          lastPurchase,
+          purchaseFrequency,
+          installments: {
+            total: totalInstallments,
+            paid: paidInstallments,
+            pending: pendingInstallments,
+            overdue: overdueInstallments,
+            totalAmount: totalInstallmentAmount,
+            paidAmount: paidInstallmentAmount,
+            remainingAmount: remainingInstallmentAmount
+          }
+        },
+        topProducts,
+        categorySpending
+      };
+    } catch (error) {
+      log6.error("Error fetching customer profile:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("customers:recalculateTotalSpent", async (_, customerId) => {
+    try {
+      await recalculateCustomerTotalSpent(customerId);
+      return { success: true };
+    } catch (error) {
+      log6.error("Error recalculating totalSpent:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  function sanitizeVCardField(value) {
+    if (!value)
+      return "";
+    return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\r/g, "").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  }
+  ipcMain.handle("customers:export", async (_, { format, searchTerm = "" }) => {
+    try {
+      if (!prisma2)
+        return { success: false, message: "Database not available" };
+      const where = {
+        isArchived: false
+      };
+      if (searchTerm) {
+        where.OR = [
+          { name: { contains: searchTerm } },
+          { email: { contains: searchTerm } },
+          { phone: { contains: searchTerm } }
+        ];
+      }
+      const MAX_EXPORT_LIMIT = 1e4;
+      const customerCount = await prisma2.customer.count({ where });
+      if (customerCount > MAX_EXPORT_LIMIT) {
+        return {
+          success: false,
+          message: `Export limited to ${MAX_EXPORT_LIMIT} customers. Found ${customerCount}. Please use search to filter.`
+        };
+      }
+      const customers = await prisma2.customer.findMany({
+        where,
+        orderBy: { name: "asc" },
+        take: MAX_EXPORT_LIMIT,
+        include: {
+          saleTransactions: {
+            where: {
+              OR: [
+                { status: "completed" },
+                { status: "partially_refunded" }
+              ]
+            },
+            select: {
+              status: true,
+              total: true,
+              items: {
+                select: {
+                  price: true,
+                  finalPrice: true,
+                  refundedQuantity: true
+                }
+              }
+            }
+          }
+        }
+      });
+      const customersWithStats = customers.map((customer) => {
+        const completedTotal = customer.saleTransactions.filter((t) => t.status === "completed").reduce((sum, t) => sum + t.total, 0);
+        const partiallyRefundedTotal = customer.saleTransactions.filter((t) => t.status === "partially_refunded").reduce((sum, tx) => {
+          const refundedAmount = tx.items.reduce((itemSum, item) => {
+            const refunded = item.refundedQuantity || 0;
+            return itemSum + refunded * (item.finalPrice || item.price);
+          }, 0);
+          return sum + (tx.total - refundedAmount);
+        }, 0);
+        return {
+          id: customer.id,
+          name: customer.name,
+          email: customer.email || "",
+          phone: customer.phone,
+          loyaltyTier: customer.loyaltyTier,
+          totalSpent: completedTotal + partiallyRefundedTotal,
+          createdAt: customer.createdAt
+        };
+      });
+      const timestamp = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      if (format === "excel") {
+        const ws = XLSX.utils.json_to_sheet(customersWithStats.map((c) => ({
+          "Name": c.name,
+          "Email": c.email,
+          "Phone": c.phone,
+          "Loyalty Tier": c.loyaltyTier,
+          "Total Spent": c.totalSpent,
+          "Member Since": new Date(c.createdAt).toLocaleDateString()
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Customers");
+        const excelBuffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+        return {
+          success: true,
+          data: excelBuffer,
+          filename: `customers-${timestamp}.xlsx`,
+          count: customersWithStats.length
+        };
+      } else if (format === "csv") {
+        const ws = XLSX.utils.json_to_sheet(customersWithStats.map((c) => ({
+          "Name": c.name,
+          "Email": c.email,
+          "Phone": c.phone,
+          "Loyalty Tier": c.loyaltyTier,
+          "Total Spent": c.totalSpent,
+          "Member Since": new Date(c.createdAt).toLocaleDateString()
+        })));
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        return {
+          success: true,
+          data: Buffer.from(csv),
+          filename: `customers-${timestamp}.csv`,
+          count: customersWithStats.length
+        };
+      } else if (format === "vcf") {
+        const vcards = customersWithStats.map((c) => {
+          const vcard = [
+            "BEGIN:VCARD",
+            "VERSION:3.0",
+            `FN:${sanitizeVCardField(c.name)}`,
+            `TEL;TYPE=CELL:${sanitizeVCardField(c.phone)}`,
+            c.email ? `EMAIL:${sanitizeVCardField(c.email)}` : "",
+            `NOTE:${sanitizeVCardField(`Loyalty Tier: ${c.loyaltyTier} | Total Spent: $${c.totalSpent.toFixed(2)}`)}`,
+            "END:VCARD"
+          ].filter((line) => line).join("\r\n");
+          return vcard;
+        }).join("\r\n");
+        return {
+          success: true,
+          data: Buffer.from(vcards),
+          filename: `customers-${timestamp}.vcf`,
+          count: customersWithStats.length
+        };
+      } else {
+        return { success: false, message: "Invalid export format" };
+      }
+    } catch (error) {
+      log6.error("Error exporting customers:", error);
+      return { success: false, message: error.message };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/search.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/InventoryService.ts
+var log7 = createLogger("Inventory");
+var InventoryService = class _InventoryService {
+  static instance;
+  prisma;
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  /**
+   * Get or create singleton instance
+   */
+  static getInstance(prisma2) {
+    if (!_InventoryService.instance) {
+      _InventoryService.instance = new _InventoryService(prisma2);
+    }
+    return _InventoryService.instance;
+  }
+  /**
+   * Get all inventory items with pagination and optimized queries
+   * PERFORMANCE: Excludes images by default to prevent serialization errors with large datasets
+   */
+  async getAllInventory(options = {}) {
+    const { includeImages = false, category, searchTerm } = options;
+    const where = {
+      isArchived: false
+      // Filter out archived products
+    };
+    if (category) {
+      where.category = category;
+    }
+    if (searchTerm) {
+      where.OR = [
+        { name: { contains: searchTerm } },
+        { baseSKU: { contains: searchTerm } },
+        { description: { contains: searchTerm } }
+      ];
+    }
+    const products = await this.prisma.product.findMany({
+      where,
+      include: {
+        variants: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
+          }
+        },
+        // Include all images when requested (not just first one)
+        images: includeImages ? {
+          orderBy: { order: "asc" }
+        } : false,
+        store: {
+          select: {
+            id: true,
+            name: true,
+            location: true
+          }
+        }
+      },
+      orderBy: { name: "asc" },
+      // Limit to prevent memory issues - client should use pagination
+      take: 1e3
+    });
+    return products.map((product) => this.enrichInventoryItem(product, includeImages));
+  }
+  /**
+   * Get inventory metrics and analytics using raw SQL for performance
+   * PERFORMANCE: Uses aggregated SQL queries instead of loading all products
+   */
+  async getInventoryMetrics() {
+    const [totalProducts] = await this.prisma.$queryRaw`
+      SELECT COUNT(*) as count FROM Product WHERE isArchived = 0
+    `;
+    const [variantStats] = await this.prisma.$queryRaw`
+      SELECT 
+        COUNT(*) as total,
+        SUM(stock) as totalStock,
+        SUM(price * stock) as totalValue
+      FROM ProductVariant
+      WHERE productId IN (SELECT id FROM Product WHERE isArchived = 0)
+    `;
+    const [lowStockCount] = await this.prisma.$queryRaw`
+      SELECT COUNT(DISTINCT productId) as count
+      FROM ProductVariant
+      WHERE stock > 0 AND stock <= 10
+        AND productId IN (SELECT id FROM Product WHERE isArchived = 0)
+    `;
+    const [outOfStockCount] = await this.prisma.$queryRaw`
+      SELECT COUNT(DISTINCT productId) as count
+      FROM ProductVariant
+      WHERE stock = 0
+        AND productId IN (SELECT id FROM Product WHERE isArchived = 0)
+    `;
+    const totalRetailValue = Number(variantStats.totalValue || 0);
+    const totalStockValue = totalRetailValue * 0.6;
+    return {
+      totalProducts: Number(totalProducts.count || 0),
+      totalVariants: Number(variantStats.total || 0),
+      totalPieces: Number(variantStats.totalStock || 0),
+      totalStockValue,
+      totalRetailValue,
+      potentialProfit: totalRetailValue - totalStockValue,
+      lowStockCount: Number(lowStockCount.count || 0),
+      outOfStockCount: Number(outOfStockCount.count || 0)
+    };
+  }
+  /**
+   * Get top stocked items using optimized query
+   * PERFORMANCE: Uses SQL ORDER BY and LIMIT instead of loading all items
+   */
+  async getTopStockedItems(limit = 5) {
+    const products = await this.prisma.product.findMany({
+      include: {
+        variants: {
+          orderBy: { stock: "desc" },
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
+          }
+        },
+        images: false,
+        // Don't load images
+        store: {
+          select: { id: true, name: true, location: true }
+        }
+      },
+      take: limit * 2,
+      // Get more products to account for variants
+      orderBy: { name: "asc" }
+    });
+    const enriched = products.map((p) => this.enrichInventoryItem(p, false));
+    return enriched.sort((a, b) => b.totalStock - a.totalStock).slice(0, limit);
+  }
+  /**
+   * Get low stock items using optimized query
+   * PERFORMANCE: Uses WHERE clause in SQL instead of filtering in memory
+   */
+  async getLowStockItems(threshold = 10) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        variants: {
+          some: {
+            stock: {
+              gt: 0,
+              lte: threshold
+            }
+          }
+        }
+      },
+      include: {
+        variants: {
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
+          }
+        },
+        images: false,
+        // Don't load images
+        store: {
+          select: { id: true, name: true, location: true }
+        }
+      },
+      take: 100
+    });
+    return products.map((p) => this.enrichInventoryItem(p, false)).filter((item) => item.totalStock <= threshold && item.totalStock > 0);
+  }
+  /**
+   * Get out of stock items using optimized query
+   */
+  async getOutOfStockItems() {
+    const products = await this.prisma.product.findMany({
+      where: {
+        variants: {
+          every: {
+            stock: 0
+          }
+        }
+      },
+      include: {
+        variants: {
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
+          }
+        },
+        images: false,
+        store: {
+          select: { id: true, name: true, location: true }
+        }
+      },
+      take: 100
+    });
+    return products.map((p) => this.enrichInventoryItem(p, false));
+  }
+  /**
+   * Get stock movement history for a product
+   */
+  async getStockMovementHistory(productId) {
+    const movements = await this.prisma.stockMovement.findMany({
+      where: {
+        product: {
+          id: productId
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        user: { select: { username: true } },
+        productVariant: true
+      }
+    });
+    return movements.map((movement) => ({
+      id: movement.id,
+      productId: movement.productVariant?.productId || productId,
+      variantId: movement.variantId || void 0,
+      quantity: movement.quantity,
+      type: movement.type,
+      timestamp: movement.createdAt,
+      userId: movement.userId,
+      notes: movement.notes || `${movement.type} by ${movement.user?.username || "system"}`
+    }));
+  }
+  /**
+   * Search inventory by name, SKU, or category - optimized version
+   * PERFORMANCE: Limits results and excludes images
+   */
+  async searchInventory(query) {
+    const lowerQuery = query.toLowerCase();
+    const products = await this.prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: lowerQuery } },
+          { baseSKU: { contains: lowerQuery } },
+          { category: { contains: lowerQuery } },
+          { description: { contains: lowerQuery } }
+        ]
+      },
+      include: {
+        variants: {
+          orderBy: { createdAt: "asc" },
+          include: {
+            attributeValues: { include: { attribute: { select: { name: true } } } }
+          }
+        },
+        images: false,
+        // Don't load images for search
+        store: {
+          select: { id: true, name: true, location: true }
+        }
+      },
+      take: 100
+      // Limit search results
+    });
+    return products.map((product) => this.enrichInventoryItem(product, false));
+  }
+  /**
+   * Update stock for a variant
+   */
+  async updateVariantStock(variantId, newStock) {
+    log7.info(`Updating variant stock: variantId=${variantId} newStock=${newStock}`);
+    try {
+      await this.prisma.productVariant.update({
+        where: { id: variantId },
+        data: { stock: newStock }
+      });
+      log7.debug(`Stock updated: variantId=${variantId} -> ${newStock}`);
+    } catch (error) {
+      log7.error(`Failed to update stock for variantId=${variantId}:`, error);
+      throw error;
+    }
+  }
+  /**
+   * Enrich product with calculated fields (Factory pattern)
+   * PERFORMANCE: Optional image inclusion to reduce payload size
+   */
+  enrichInventoryItem(product, includeImages = false) {
+    const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+    const stockValue = product.variants.length > 0 ? product.variants.reduce((sum, v) => sum + v.price * 0.6 * v.stock, 0) : product.baseCost * totalStock;
+    const retailValue = product.variants.length > 0 ? product.variants.reduce((sum, v) => sum + v.price * v.stock, 0) : product.basePrice * totalStock;
+    let stockStatus;
+    if (totalStock === 0)
+      stockStatus = "out";
+    else if (totalStock <= 10)
+      stockStatus = "low";
+    else if (totalStock <= 50)
+      stockStatus = "normal";
+    else
+      stockStatus = "high";
+    const enriched = {
+      ...product,
+      images: includeImages && product.images ? product.images : [],
+      totalStock,
+      stockValue,
+      retailValue,
+      variantCount: product.variants.length,
+      stockStatus
+    };
+    return enriched;
+  }
+};
+
+// apps/bizflow/src/main/services/PredictionService.ts
+var log8 = createLogger("Predictions");
+var PredictionService = class {
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  /**
+   * Forecast revenue for next N days using linear regression
+   */
+  async forecastRevenue(days = 30, historicalDays = 90) {
+    try {
+      const startDate = /* @__PURE__ */ new Date();
+      startDate.setDate(startDate.getDate() - historicalDays);
+      const transactions = await this.prisma.saleTransaction.findMany({
+        where: {
+          createdAt: {
+            gte: startDate
+          },
+          status: "completed"
+        },
+        orderBy: {
+          createdAt: "asc"
+        }
+      });
+      const dailySales = this.groupTransactionsByDay(transactions);
+      const dataPoints = Object.entries(dailySales).map(([date, revenue], index) => ({
+        x: index,
+        y: revenue,
+        date
+      }));
+      if (dataPoints.length < 3) {
+        const avgRevenue2 = dataPoints.length > 0 ? this.average(dataPoints.map((p) => p.y)) : 0;
+        const simplePredictions = [];
+        const today2 = /* @__PURE__ */ new Date();
+        for (let i = 1; i <= days; i++) {
+          const futureDate = new Date(today2);
+          futureDate.setDate(futureDate.getDate() + i);
+          const dailyVariation = avgRevenue2 * (0.95 + Math.random() * 0.1);
+          simplePredictions.push({
+            date: futureDate.toISOString().split("T")[0],
+            predictedRevenue: Math.max(100, dailyVariation),
+            confidence: Math.max(30, 70 - i),
+            // Low confidence
+            lowerBound: Math.max(50, dailyVariation * 0.7),
+            upperBound: dailyVariation * 1.3
+          });
+        }
+        return {
+          predictions: simplePredictions,
+          trend: "stable",
+          trendStrength: 0,
+          seasonalityDetected: false,
+          growthRate: 0
+        };
+      }
+      const { slope, intercept } = this.linearRegression(dataPoints);
+      const seasonalityDetected = this.detectSeasonality(dataPoints);
+      let growthRate = 0;
+      const minRevenueThreshold = 100;
+      if (dataPoints.length >= 14) {
+        const recentAvg = this.average(dataPoints.slice(-7).map((p) => p.y));
+        const oldAvg = this.average(dataPoints.slice(-14, -7).map((p) => p.y));
+        if (oldAvg >= minRevenueThreshold && recentAvg >= minRevenueThreshold) {
+          const rawGrowth = (recentAvg - oldAvg) / oldAvg * 100;
+          growthRate = Math.max(-200, Math.min(200, rawGrowth));
+          if (rawGrowth !== growthRate) {
+          }
+        }
+      } else if (dataPoints.length >= 7) {
+        const midpoint = Math.floor(dataPoints.length / 2);
+        const recentAvg = this.average(dataPoints.slice(midpoint).map((p) => p.y));
+        const oldAvg = this.average(dataPoints.slice(0, midpoint).map((p) => p.y));
+        if (oldAvg >= minRevenueThreshold && recentAvg >= minRevenueThreshold) {
+          growthRate = (recentAvg - oldAvg) / oldAvg * 100;
+          growthRate = Math.max(-200, Math.min(200, growthRate));
+        }
+      } else {
+        const avgRevenue2 = this.average(dataPoints.map((p) => p.y));
+        if (avgRevenue2 >= minRevenueThreshold) {
+          growthRate = slope * 7 / avgRevenue2 * 100;
+          growthRate = Math.max(-200, Math.min(200, growthRate));
+        }
+      }
+      const trend = slope > 0.5 ? "up" : slope < -0.5 ? "down" : "stable";
+      const trendStrength = Math.min(100, Math.abs(slope) * 20);
+      const predictions = dataPoints.map((p) => slope * p.x + intercept);
+      const stdDev = this.standardDeviation(
+        dataPoints.map((p, i) => p.y - predictions[i])
+      );
+      const forecastPredictions = [];
+      const lastX = dataPoints.length - 1;
+      const today = /* @__PURE__ */ new Date();
+      const avgRevenue = this.average(dataPoints.slice(-Math.min(7, dataPoints.length)).map((p) => p.y));
+      const isVeryFlatTrend = Math.abs(slope) < 0.5;
+      for (let i = 1; i <= days; i++) {
+        const x = lastX + i;
+        let predictedRevenue = slope * x + intercept;
+        if (isVeryFlatTrend || predictedRevenue < avgRevenue * 0.5 || predictedRevenue > avgRevenue * 2) {
+          const historicalStdDev = stdDev > 0 ? stdDev : avgRevenue * 0.1;
+          const weeklyPattern = Math.sin((i - 1) / 7 * Math.PI * 2) * historicalStdDev * 0.3;
+          const randomNoise = (Math.random() - 0.5) * historicalStdDev * 0.2;
+          predictedRevenue = avgRevenue + weeklyPattern + randomNoise;
+        }
+        const dayFactor = 1 + i / days * 0.5;
+        const effectiveStdDev = Math.max(stdDev, avgRevenue * 0.05);
+        const margin = 1.96 * effectiveStdDev * dayFactor;
+        const futureDate = new Date(today);
+        futureDate.setDate(futureDate.getDate() + i);
+        forecastPredictions.push({
+          date: futureDate.toISOString().split("T")[0],
+          predictedRevenue: Math.max(0, predictedRevenue),
+          confidence: Math.max(20, 100 - i * 1.2),
+          // Minimum 20% confidence
+          lowerBound: Math.max(0, predictedRevenue - margin),
+          upperBound: Math.max(0, predictedRevenue + margin)
+        });
+      }
+      return {
+        predictions: forecastPredictions,
+        trend,
+        trendStrength,
+        seasonalityDetected,
+        growthRate
+      };
+    } catch (error) {
+      log8.error("Error forecasting revenue:", error);
+      throw error;
+    }
+  }
+  /**
+   * Project cash flow for next N days
+   */
+  async projectCashFlow(days = 30) {
+    try {
+      const forecast = await this.forecastRevenue(days);
+      const thirtyDaysAgo = /* @__PURE__ */ new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const transactions = await this.prisma.saleTransaction.findMany({
+        where: {
+          createdAt: {
+            gte: thirtyDaysAgo
+          },
+          status: "completed"
+        },
+        include: {
+          items: {
+            include: {
+              product: true
+            }
+          }
+        }
+      });
+      const expenses = await this.prisma.financialTransaction.findMany({
+        where: {
+          type: "expense",
+          createdAt: {
+            gte: thirtyDaysAgo
+          }
+        }
+      });
+      const totalRevenue = transactions.reduce((sum, txn) => sum + txn.total, 0);
+      let totalCOGS = 0;
+      transactions.forEach((txn) => {
+        txn.items.forEach((item) => {
+          totalCOGS += item.quantity * item.product.baseCost;
+        });
+      });
+      const cogsPercentage = totalRevenue > 0 ? totalCOGS / totalRevenue : 0.5;
+      const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const expenseDays = expenses.length > 0 ? expenses.length : 30;
+      const avgDailyExpenses = totalExpenses / expenseDays;
+      let cumulativeCash = totalRevenue - totalCOGS - totalExpenses;
+      const projections = forecast.predictions.map((pred) => {
+        const expectedInflow = pred.predictedRevenue;
+        const expectedCOGS = expectedInflow * cogsPercentage;
+        const expectedOutflow = expectedCOGS + avgDailyExpenses;
+        const netCashFlow = expectedInflow - expectedOutflow;
+        cumulativeCash += netCashFlow;
+        return {
+          date: pred.date,
+          expectedInflow,
+          expectedOutflow,
+          netCashFlow,
+          cumulativeCash
+        };
+      });
+      const avgNetCashFlow = this.average(projections.map((p) => p.netCashFlow));
+      const burnRate = avgDailyExpenses;
+      let runway = null;
+      if (burnRate > 0 && cumulativeCash > 0) {
+        runway = Math.floor(cumulativeCash / burnRate);
+      }
+      let recommendation = "";
+      if (runway !== null && runway < 30) {
+        recommendation = `\u26A0\uFE0F Cash runway is critically low (${runway} days). Immediate action required.`;
+      } else if (avgNetCashFlow < 0) {
+        recommendation = "\u26A0\uFE0F Negative cash flow detected. Consider cost reduction or revenue increase strategies.";
+      } else {
+        recommendation = "\u2705 Cash flow is positive. Consider reinvesting in growth.";
+      }
+      return {
+        projections,
+        burnRate,
+        runway,
+        recommendation
+      };
+    } catch (error) {
+      log8.error("Error projecting cash flow:", error);
+      throw error;
+    }
+  }
+  /**
+   * Generate smart insights for products
+   */
+  async generateProductInsights(limit = 10) {
+    try {
+      const thirtyDaysAgo = /* @__PURE__ */ new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const sixtyDaysAgo = /* @__PURE__ */ new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      const [recentTransactions, olderTransactions] = await Promise.all([
+        this.prisma.saleTransaction.findMany({
+          where: {
+            createdAt: { gte: thirtyDaysAgo },
+            status: "completed"
+          },
+          include: {
+            items: {
+              include: {
+                product: true
+              }
+            }
+          }
+        }),
+        this.prisma.saleTransaction.findMany({
+          where: {
+            createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
+            status: "completed"
+          },
+          include: {
+            items: {
+              include: {
+                product: true
+              }
+            }
+          }
+        })
+      ]);
+      const productMetrics = /* @__PURE__ */ new Map();
+      recentTransactions.forEach((txn) => {
+        txn.items.forEach((item) => {
+          const key = item.product.id;
+          if (!productMetrics.has(key)) {
+            productMetrics.set(key, {
+              productId: item.product.id,
+              productName: item.product.name,
+              recentSales: 0,
+              recentRevenue: 0,
+              olderSales: 0,
+              olderRevenue: 0,
+              totalCost: 0,
+              totalProfit: 0
+            });
+          }
+          const metrics = productMetrics.get(key);
+          const cost = item.quantity * item.product.baseCost;
+          const profit = item.total - cost;
+          metrics.recentSales += item.quantity;
+          metrics.recentRevenue += item.total;
+          metrics.totalCost += cost;
+          metrics.totalProfit += profit;
+        });
+      });
+      olderTransactions.forEach((txn) => {
+        txn.items.forEach((item) => {
+          const key = item.product.id;
+          if (productMetrics.has(key)) {
+            const metrics = productMetrics.get(key);
+            metrics.olderSales += item.quantity;
+            metrics.olderRevenue += item.total;
+          }
+        });
+      });
+      const insights = [];
+      productMetrics.forEach((metrics) => {
+        const profitMargin = metrics.recentRevenue > 0 ? metrics.totalProfit / metrics.recentRevenue * 100 : 0;
+        const salesChange = metrics.olderSales > 0 ? (metrics.recentSales - metrics.olderSales) / metrics.olderSales * 100 : metrics.recentSales > 0 ? 100 : 0;
+        const trend = salesChange > 15 ? "up" : salesChange < -15 ? "down" : "stable";
+        const unitsPerDay = metrics.recentSales / 30;
+        const velocityScore = Math.min(100, unitsPerDay * 20);
+        let insight = "";
+        let type = "success";
+        const recommendations = [];
+        if (trend === "up" && profitMargin > 35 && velocityScore > 50) {
+          insight = `\u{1F3C6} Star product! ${salesChange.toFixed(0)}% growth, ${profitMargin.toFixed(0)}% margin, high demand`;
+          type = "success";
+          recommendations.push(`Stock up: currently selling ${unitsPerDay.toFixed(1)} units/day`);
+          recommendations.push("Feature prominently in store/website");
+          recommendations.push("Consider premium positioning or slight price increase");
+          recommendations.push("Create product bundles to boost related items");
+        } else if (profitMargin > 40 && velocityScore < 50 && trend !== "down") {
+          insight = `\u{1F48E} Hidden gem: ${profitMargin.toFixed(0)}% margins but underperforming sales`;
+          type = "opportunity";
+          recommendations.push("Increase visibility with better placement");
+          recommendations.push("Run targeted promotions to boost volume");
+          recommendations.push("Improve product photos/descriptions");
+          recommendations.push(`Current: ${unitsPerDay.toFixed(1)} units/day - target 3-5/day`);
+        } else if (trend === "up" && salesChange > 50) {
+          insight = `\u{1F680} Trending: ${salesChange.toFixed(0)}% growth! Customer demand surging`;
+          type = "success";
+          recommendations.push(`High demand: ${unitsPerDay.toFixed(1)} units/day and growing`);
+          recommendations.push("Ensure adequate stock to avoid stockouts");
+          recommendations.push("Consider raising price by 10-15%");
+          recommendations.push("Analyze what makes this product successful");
+        } else if (trend === "down" && salesChange < -30) {
+          insight = `\u{1F4C9} Steep decline: ${Math.abs(salesChange).toFixed(0)}% drop. Urgent action needed`;
+          type = "warning";
+          recommendations.push("Run clearance promotion (20-30% off)");
+          recommendations.push("Review: Has price/quality/competition changed?");
+          recommendations.push("Consider discontinuing if no improvement in 2 weeks");
+          recommendations.push(`Down from ${(unitsPerDay * (1 + Math.abs(salesChange) / 100)).toFixed(1)} to ${unitsPerDay.toFixed(1)} units/day`);
+        } else if (trend === "down") {
+          insight = `\u26A0\uFE0F Softening demand: ${Math.abs(salesChange).toFixed(0)}% decline`;
+          type = "warning";
+          recommendations.push("Test promotional pricing (10-15% off)");
+          recommendations.push("Refresh product images and descriptions");
+          recommendations.push("Bundle with popular items");
+          recommendations.push("Reduce reorder quantity by 30%");
+        } else if (velocityScore < 15 && metrics.recentSales > 0) {
+          insight = `\u{1F40C} Slow seller: Only ${unitsPerDay.toFixed(1)} units/day, low turnover`;
+          type = "warning";
+          recommendations.push("Mark down 25-40% to clear inventory");
+          recommendations.push("Stop reordering until stock < 10 units");
+          recommendations.push("Consider: Is this product still relevant?");
+          recommendations.push("Free up cash/space for better-performing items");
+        } else if (metrics.recentSales === 0 && metrics.olderSales > 0) {
+          insight = `\u274C Dead stock: Zero sales this month (had ${metrics.olderSales} last month)`;
+          type = "warning";
+          recommendations.push("Immediate clearance: 40-50% discount");
+          recommendations.push("Consider donating/liquidating if still no sales");
+          recommendations.push("Discontinue and remove from inventory");
+        } else if (metrics.olderSales === 0 && metrics.recentSales > 5) {
+          insight = `\u2728 New arrival performing well: ${metrics.recentSales} sales already!`;
+          type = "success";
+          recommendations.push("Monitor closely - early signs are positive");
+          recommendations.push("Gather customer feedback");
+          recommendations.push("Consider expanding similar product line");
+        } else if (trend === "stable" && metrics.recentRevenue > 500 && profitMargin > 25) {
+          insight = `\u2B50 Steady earner: Consistent $${metrics.recentRevenue.toFixed(0)} revenue, ${profitMargin.toFixed(0)}% margin`;
+          type = "success";
+          recommendations.push("Core product - maintain stock levels");
+          recommendations.push("Test slight price increase (5%)");
+          recommendations.push(`Reliable ${unitsPerDay.toFixed(1)} units/day`);
+        } else if (profitMargin < 20 && velocityScore > 40) {
+          insight = `\u26A1 Volume seller but low ${profitMargin.toFixed(0)}% margin - losing money?`;
+          type = "warning";
+          recommendations.push("Increase price by 10-20% to improve margins");
+          recommendations.push("Negotiate better supplier cost");
+          recommendations.push("High volume (${unitsPerDay.toFixed(1)}/day) means price increase won't hurt much");
+        }
+        if (insight && recommendations.length > 0) {
+          insights.push({
+            productId: metrics.productId,
+            productName: metrics.productName,
+            insight,
+            type,
+            metrics: {
+              sales: metrics.recentSales,
+              revenue: metrics.recentRevenue,
+              profitMargin,
+              trend,
+              velocityScore
+            },
+            recommendations
+          });
+        }
+      });
+      insights.sort((a, b) => {
+        const typeOrder = { warning: 0, opportunity: 1, success: 2 };
+        if (typeOrder[a.type] !== typeOrder[b.type]) {
+          return typeOrder[a.type] - typeOrder[b.type];
+        }
+        return b.metrics.revenue - a.metrics.revenue;
+      });
+      return insights.slice(0, limit);
+    } catch (error) {
+      log8.error("Error generating product insights:", error);
+      throw error;
+    }
+  }
+  /**
+   * Calculate overall financial health score
+   */
+  async calculateFinancialHealth() {
+    try {
+      const thirtyDaysAgo = /* @__PURE__ */ new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const [transactions, expenses] = await Promise.all([
+        this.prisma.saleTransaction.findMany({
+          where: {
+            createdAt: { gte: thirtyDaysAgo },
+            status: "completed"
+          },
+          include: {
+            items: {
+              include: {
+                product: true
+              }
+            }
+          }
+        }),
+        this.prisma.financialTransaction.findMany({
+          where: {
+            type: "expense",
+            createdAt: { gte: thirtyDaysAgo }
+          }
+        })
+      ]);
+      const totalRevenue = transactions.reduce((sum, txn) => sum + txn.total, 0);
+      let totalCOGS = 0;
+      let totalUnitsSold = 0;
+      transactions.forEach((txn) => {
+        txn.items.forEach((item) => {
+          const cost = item.quantity * item.product.baseCost;
+          totalCOGS += cost;
+          totalUnitsSold += item.quantity;
+        });
+      });
+      const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+      const grossProfit = totalRevenue - totalCOGS;
+      const netProfit = grossProfit - totalExpenses;
+      const profitMargin = totalRevenue > 0 ? netProfit / totalRevenue * 100 : 0;
+      const variants = await this.prisma.productVariant.findMany({
+        select: { stock: true }
+      });
+      const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+      const avgInventory = totalStock > 0 ? totalStock : 1;
+      const inventoryTurnover = avgInventory > 0 ? totalUnitsSold / avgInventory * (365 / 30) : 0;
+      const forecast = await this.forecastRevenue(30, 30);
+      const growthRate = forecast.growthRate;
+      const cashPosition = netProfit;
+      const expenseRatio = totalRevenue > 0 ? totalExpenses / totalRevenue * 100 : 0;
+      const cogsRatio = totalRevenue > 0 ? totalCOGS / totalRevenue * 100 : 0;
+      const indicators = {
+        profitMargin: {
+          value: profitMargin,
+          status: profitMargin >= 20 ? "good" : profitMargin >= 10 ? "fair" : "poor"
+        },
+        inventoryTurnover: {
+          value: inventoryTurnover,
+          status: inventoryTurnover >= 6 ? "good" : inventoryTurnover >= 3 ? "fair" : "poor"
+        },
+        growthRate: {
+          value: growthRate,
+          status: growthRate >= 15 ? "good" : growthRate >= 5 ? "fair" : "poor"
+        },
+        cashPosition: {
+          value: cashPosition,
+          status: cashPosition >= totalExpenses * 2 ? "good" : cashPosition >= totalExpenses ? "fair" : "poor"
+        }
+      };
+      const weights = { profitMargin: 30, inventoryTurnover: 25, growthRate: 25, cashPosition: 20 };
+      const statusScores = { good: 100, fair: 60, poor: 30 };
+      const hasData = totalRevenue > 0 || totalExpenses > 0 || totalUnitsSold > 0;
+      const score = hasData ? Math.round(
+        (statusScores[indicators.profitMargin.status] * weights.profitMargin + statusScores[indicators.inventoryTurnover.status] * weights.inventoryTurnover + statusScores[indicators.growthRate.status] * weights.growthRate + statusScores[indicators.cashPosition.status] * weights.cashPosition) / 100
+      ) : 0;
+      const alerts = [];
+      const recommendations = [];
+      if (indicators.profitMargin.status === "poor") {
+        if (profitMargin < 0) {
+          alerts.push("\u{1F6A8} Critical: Operating at a loss! Net profit is negative.");
+          recommendations.push("Immediate action required: Review all costs and pricing");
+          recommendations.push("Consider pausing low-margin products");
+          recommendations.push("Negotiate better supplier rates or find alternatives");
+        } else {
+          alerts.push("\u26A0\uFE0F Low profit margins detected (below 10%)");
+          recommendations.push("Increase prices by 5-10% on high-demand products");
+          recommendations.push("Reduce operational expenses where possible");
+          recommendations.push("Focus on selling high-margin items");
+        }
+      } else if (indicators.profitMargin.status === "fair") {
+        recommendations.push("Good progress! Aim for 20%+ margins by optimizing costs");
+      }
+      if (indicators.inventoryTurnover.status === "poor") {
+        alerts.push("\u26A0\uFE0F Slow inventory turnover (below 3x annually)");
+        recommendations.push("Run promotions on slow-moving inventory");
+        recommendations.push("Reduce reorder quantities by 30-50%");
+        recommendations.push("Consider seasonal clearance sales");
+      } else if (indicators.inventoryTurnover.status === "fair") {
+        recommendations.push("Inventory moving steadily. Target 6+ turns per year.");
+      } else {
+        recommendations.push("Excellent inventory velocity! Monitor for stockouts.");
+      }
+      if (indicators.growthRate.status === "poor") {
+        if (growthRate < 0) {
+          alerts.push("\u{1F6A8} Revenue declining! Sales are down vs. previous period.");
+          recommendations.push("Launch customer retention campaigns immediately");
+          recommendations.push("Analyze why customers are not returning");
+          recommendations.push("Review competitor pricing and offerings");
+        } else {
+          alerts.push("\u26A0\uFE0F Stagnant growth (below 5%)");
+          recommendations.push("Invest in marketing and customer acquisition");
+          recommendations.push("Introduce new products or services");
+          recommendations.push("Explore new sales channels (online, B2B, etc.)");
+        }
+      } else if (indicators.growthRate.status === "fair") {
+        recommendations.push("Growing steadily. Push for 15%+ growth with marketing.");
+      }
+      if (indicators.cashPosition.status === "poor") {
+        alerts.push("\u26A0\uFE0F Low cash reserves (less than 1 month expenses)");
+        recommendations.push("Prioritize collecting outstanding payments");
+        recommendations.push("Consider a line of credit for emergencies");
+        recommendations.push("Reduce non-essential expenses immediately");
+      } else if (indicators.cashPosition.status === "fair") {
+        recommendations.push("Adequate cash reserves. Build to 2-3 months of expenses.");
+      } else {
+        recommendations.push("Strong cash position! Consider reinvesting in growth.");
+      }
+      if (expenseRatio > 40) {
+        alerts.push("\u26A0\uFE0F High expense ratio (operating costs over 40% of revenue)");
+        recommendations.push("Audit all expenses and eliminate non-essentials");
+      }
+      if (cogsRatio > 60) {
+        alerts.push("\u26A0\uFE0F High cost of goods (COGS over 60% of revenue)");
+        recommendations.push("Negotiate better supplier pricing");
+        recommendations.push("Consider alternative suppliers");
+      }
+      const grade = score >= 80 ? "A" : score >= 60 ? "B" : score >= 40 ? "C" : score >= 20 ? "D" : "F";
+      return {
+        score,
+        grade,
+        indicators,
+        alerts,
+        recommendations
+      };
+    } catch (error) {
+      log8.error("Error calculating financial health:", error);
+      throw error;
+    }
+  }
+  // ========== HELPER METHODS ==========
+  groupTransactionsByDay(transactions) {
+    const grouped = {};
+    transactions.forEach((txn) => {
+      const date = txn.createdAt.toISOString().split("T")[0];
+      grouped[date] = (grouped[date] || 0) + txn.total;
+    });
+    return grouped;
+  }
+  linearRegression(points) {
+    const n = points.length;
+    const sumX = points.reduce((sum, p) => sum + p.x, 0);
+    const sumY = points.reduce((sum, p) => sum + p.y, 0);
+    const sumXY = points.reduce((sum, p) => sum + p.x * p.y, 0);
+    const sumXX = points.reduce((sum, p) => sum + p.x * p.x, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    return { slope, intercept };
+  }
+  detectSeasonality(points) {
+    if (points.length < 28)
+      return false;
+    const values = points.map((p) => p.y);
+    const weeklyLag = 7;
+    const correlation = this.autocorrelation(values, weeklyLag);
+    return Math.abs(correlation) > 0.5;
+  }
+  autocorrelation(values, lag) {
+    if (values.length <= lag)
+      return 0;
+    const mean = this.average(values);
+    const subset = values.slice(lag);
+    const originalSubset = values.slice(0, -lag);
+    let numerator = 0;
+    let denominator = 0;
+    for (let i = 0; i < subset.length; i++) {
+      numerator += (subset[i] - mean) * (originalSubset[i] - mean);
+      denominator += (originalSubset[i] - mean) ** 2;
+    }
+    return denominator !== 0 ? numerator / denominator : 0;
+  }
+  average(values) {
+    return values.length > 0 ? values.reduce((sum, v) => sum + v, 0) / values.length : 0;
+  }
+  standardDeviation(values) {
+    const avg = this.average(values);
+    const squaredDiffs = values.map((v) => (v - avg) ** 2);
+    const variance = this.average(squaredDiffs);
+    return Math.sqrt(variance);
+  }
+};
+
+// apps/bizflow/src/main/services/ImageService.ts
+var fs4 = __toESM(require("fs"));
+var path5 = __toESM(require("path"));
+var crypto = __toESM(require("crypto"));
+init_electron_node();
+var log9 = createLogger("Image");
+var ImageService = class {
+  imagesDir;
+  constructor() {
+    const isDev2 = process.env.NODE_ENV === "development";
+    if (isDev2) {
+      this.imagesDir = path5.resolve(process.cwd(), "prisma", "images");
+    } else {
+      const dbDir = path5.dirname(path5.join(app.getPath("userData"), "database.db"));
+      this.imagesDir = path5.join(dbDir, "images");
+    }
+    if (!fs4.existsSync(this.imagesDir)) {
+      fs4.mkdirSync(this.imagesDir, { recursive: true });
+    }
+  }
+  /**
+   * Save a Base64 image to filesystem
+   * @param base64Data - Base64 encoded image (with or without data URI prefix)
+   * @param originalName - Optional original filename for extension detection
+   * @returns Filename of saved image
+   */
+  async saveImage(base64Data, originalName) {
+    try {
+      let base64Content;
+      let mimeType;
+      if (base64Data.startsWith("data:")) {
+        const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+        if (!matches) {
+          throw new Error("Invalid data URI format");
+        }
+        mimeType = matches[1];
+        base64Content = matches[2];
+      } else {
+        base64Content = base64Data;
+        mimeType = this.getMimeTypeFromName(originalName) || "image/jpeg";
+      }
+      const extension = this.getExtensionFromMime(mimeType);
+      const hash2 = crypto.createHash("md5").update(base64Content).digest("hex");
+      const filename = `${hash2}${extension}`;
+      const filePath = path5.join(this.imagesDir, filename);
+      if (fs4.existsSync(filePath)) {
+        return filename;
+      }
+      const buffer = Buffer.from(base64Content, "base64");
+      fs4.writeFileSync(filePath, buffer);
+      return filename;
+    } catch (error) {
+      log9.error("[ImageService] Failed to save image:", error);
+      throw new Error("Failed to save image");
+    }
+  }
+  /**
+   * Get image as Base64 data URL for display
+   * @param filename - Image filename
+   * @returns Base64 data URL
+   */
+  async getImageDataUrl(filename) {
+    try {
+      const filePath = path5.join(this.imagesDir, filename);
+      if (!fs4.existsSync(filePath)) {
+        log9.warn(`[ImageService] Image not found: ${filename}`);
+        return null;
+      }
+      const buffer = fs4.readFileSync(filePath);
+      const base64 = buffer.toString("base64");
+      const ext = path5.extname(filename).toLowerCase();
+      const mimeType = this.getMimeTypeFromExtension(ext);
+      return `data:${mimeType};base64,${base64}`;
+    } catch (error) {
+      log9.error(`[ImageService] Failed to read image ${filename}:`, error);
+      return null;
+    }
+  }
+  /**
+   * Check if image file exists
+   * @param filename - Image filename
+   * @returns True if exists
+   */
+  imageExists(filename) {
+    const filePath = path5.join(this.imagesDir, filename);
+    return fs4.existsSync(filePath);
+  }
+  /**
+   * Delete image file
+   * @param filename - Image filename
+   */
+  async deleteImage(filename) {
+    try {
+      const filePath = path5.join(this.imagesDir, filename);
+      if (fs4.existsSync(filePath)) {
+        fs4.unlinkSync(filePath);
+      }
+    } catch (error) {
+      log9.error(`[ImageService] Failed to delete image ${filename}:`, error);
+      throw error;
+    }
+  }
+  /**
+   * Clean up orphaned images (not referenced in database)
+   * @param referencedFilenames - Array of filenames currently in database
+   * @returns Number of deleted files
+   */
+  async cleanupOrphanedImages(referencedFilenames) {
+    try {
+      const files = fs4.readdirSync(this.imagesDir);
+      const referencedSet = new Set(referencedFilenames);
+      let deletedCount = 0;
+      for (const file of files) {
+        if (!referencedSet.has(file)) {
+          const filePath = path5.join(this.imagesDir, file);
+          fs4.unlinkSync(filePath);
+          deletedCount++;
+        }
+      }
+      return deletedCount;
+    } catch (error) {
+      log9.error("[ImageService] Cleanup failed:", error);
+      throw error;
+    }
+  }
+  /**
+   * Get total disk usage of images directory
+   * @returns Size in bytes
+   */
+  getImagesDiskUsage() {
+    try {
+      const files = fs4.readdirSync(this.imagesDir);
+      let totalSize = 0;
+      for (const file of files) {
+        const filePath = path5.join(this.imagesDir, file);
+        const stats = fs4.statSync(filePath);
+        totalSize += stats.size;
+      }
+      return totalSize;
+    } catch (error) {
+      log9.error("[ImageService] Failed to get disk usage:", error);
+      return 0;
+    }
+  }
+  /**
+   * Get images directory path (for debugging)
+   */
+  getImagesDirectory() {
+    return this.imagesDir;
+  }
+  // Helper methods
+  getMimeTypeFromName(filename) {
+    if (!filename)
+      return null;
+    const ext = path5.extname(filename).toLowerCase();
+    return this.getMimeTypeFromExtension(ext);
+  }
+  getMimeTypeFromExtension(ext) {
+    const mimeTypes = {
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
+      ".svg": "image/svg+xml",
+      ".bmp": "image/bmp"
+    };
+    return mimeTypes[ext] || "image/jpeg";
+  }
+  getExtensionFromMime(mimeType) {
+    const extensions = {
+      "image/jpeg": ".jpg",
+      "image/png": ".png",
+      "image/gif": ".gif",
+      "image/webp": ".webp",
+      "image/svg+xml": ".svg",
+      "image/bmp": ".bmp"
+    };
+    return extensions[mimeType] || ".jpg";
+  }
+};
+var imageServiceInstance = null;
+function getImageService() {
+  if (!imageServiceInstance) {
+    imageServiceInstance = new ImageService();
+  }
+  return imageServiceInstance;
+}
+
+// apps/bizflow/src/main/ipc/handlers/search.handlers.ts
+var log10 = createLogger("Search");
+function registerSearchHandlers(prisma2) {
+  ipcMain.handle("search:products", async (_, options) => {
+    try {
+      if (!prisma2) {
+        log10.warn("[search:products] Prisma not initialized - returning empty results");
+        return {
+          items: [],
+          totalCount: 0,
+          page: 1,
+          totalPages: 0,
+          hasMore: false
+        };
+      }
+      const {
+        filters,
+        sort = { field: "name", direction: "asc" },
+        pagination,
+        includeImages = false,
+        enrichData = false
+      } = options;
+      const where = buildWhereClause(filters);
+      if (process.env.NODE_ENV === "development" && filters.query) {
+        log10.info("[search:products] Searching for:", filters.query.substring(0, 20));
+      }
+      const [products, totalCount] = await Promise.all([
+        prisma2.product.findMany({
+          where,
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                icon: true,
+                color: true
+              }
+            },
+            variants: {
+              select: {
+                id: true,
+                sku: true,
+                barcode: true,
+                price: true,
+                stock: true,
+                createdAt: true,
+                updatedAt: true,
+                attributeValues: {
+                  include: { attribute: { select: { name: true } } }
+                }
+              },
+              orderBy: { createdAt: "asc" }
+            },
+            images: includeImages ? {
+              orderBy: { order: "asc" },
+              take: 1
+              // Only first image for list view
+            } : false,
+            store: {
+              select: {
+                id: true,
+                name: true,
+                location: true
+              }
+            }
+          },
+          orderBy: buildOrderByClause(sort),
+          skip: (pagination.page - 1) * pagination.limit,
+          take: pagination.limit
+        }),
+        prisma2.product.count({ where })
+      ]);
+      if (includeImages) {
+        const imageService = getImageService();
+        let loadedCount = 0;
+        for (const product of products) {
+          if (product.images && product.images.length > 0) {
+            for (const image of product.images) {
+              if (image.filename) {
+                const dataUrl = await imageService.getImageDataUrl(image.filename);
+                image.imageData = dataUrl;
+                loadedCount++;
+              }
+            }
+          }
+        }
+      }
+      const items = enrichData ? products.map((p) => enrichProduct(p)) : products.map((p) => ({
+        ...p,
+        category: p.category?.name || "Uncategorized",
+        totalStock: p.variants.reduce((sum, v) => sum + v.stock, 0)
+      }));
+      const totalPages = Math.ceil(totalCount / pagination.limit);
+      return {
+        items,
+        totalCount,
+        page: pagination.page,
+        totalPages,
+        hasMore: pagination.page < totalPages
+      };
+    } catch (error) {
+      log10.error("Error in search:products:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("search:inventory", async (_, options) => {
+    try {
+      if (!prisma2) {
+        return {
+          items: [],
+          totalCount: 0,
+          page: 1,
+          totalPages: 0,
+          hasMore: false,
+          metrics: null
+        };
+      }
+      const {
+        filters,
+        sort = { field: "name", direction: "asc" },
+        pagination,
+        includeImages = false,
+        includeMetrics = true
+      } = options;
+      const where = buildWhereClause(filters);
+      const inventoryService = InventoryService.getInstance(prisma2);
+      const [products, totalCount, metrics] = await Promise.all([
+        prisma2.product.findMany({
+          where,
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true
+              }
+            },
+            variants: {
+              select: {
+                id: true,
+                sku: true,
+                barcode: true,
+                price: true,
+                stock: true,
+                createdAt: true,
+                updatedAt: true,
+                attributeValues: {
+                  include: { attribute: { select: { name: true } } }
+                }
+              },
+              orderBy: { createdAt: "asc" }
+            },
+            images: includeImages ? {
+              orderBy: { order: "asc" }
+            } : false,
+            store: {
+              select: {
+                id: true,
+                name: true,
+                location: true
+              }
+            }
+          },
+          orderBy: buildOrderByClause(sort),
+          skip: (pagination.page - 1) * pagination.limit,
+          take: pagination.limit
+        }),
+        prisma2.product.count({ where }),
+        includeMetrics ? inventoryService.getInventoryMetrics() : Promise.resolve(null)
+      ]);
+      if (includeImages) {
+        const imageService = getImageService();
+        for (const product of products) {
+          if (product.images && product.images.length > 0) {
+            for (const image of product.images) {
+              if (image.filename) {
+                const dataUrl = await imageService.getImageDataUrl(image.filename);
+                image.imageData = dataUrl;
+              }
+            }
+          }
+        }
+      }
+      const items = products.map((product) => {
+        const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+        const stockValue = product.variants.reduce(
+          (sum, v) => sum + v.price * 0.6 * v.stock,
+          0
+        );
+        const retailValue = product.variants.reduce(
+          (sum, v) => sum + v.price * v.stock,
+          0
+        );
+        let stockStatus;
+        if (totalStock === 0)
+          stockStatus = "out";
+        else if (totalStock <= 10)
+          stockStatus = "low";
+        else if (totalStock <= 50)
+          stockStatus = "normal";
+        else
+          stockStatus = "high";
+        return {
+          ...product,
+          category: product.category?.name || "Uncategorized",
+          totalStock,
+          stockValue,
+          retailValue,
+          variantCount: product.variants.length,
+          stockStatus
+        };
+      });
+      const totalPages = Math.ceil(totalCount / pagination.limit);
+      return {
+        items,
+        totalCount,
+        page: pagination.page,
+        totalPages,
+        hasMore: pagination.page < totalPages,
+        metrics
+      };
+    } catch (error) {
+      log10.error("Error in search:inventory:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("search:getFilterMetadata", async () => {
+    try {
+      if (!prisma2)
+        return null;
+      const [categories, variants, priceStats] = await Promise.all([
+        // Get all categories with product counts
+        prisma2.category.findMany({
+          select: {
+            id: true,
+            name: true,
+            icon: true,
+            color: true,
+            _count: {
+              select: { products: true }
+            }
+          },
+          orderBy: { name: "asc" }
+        }),
+        // Get unique attribute values for filter dropdowns
+        prisma2.variantAttributeValue.findMany({
+          select: {
+            value: true,
+            attribute: { select: { name: true } }
+          },
+          distinct: ["value", "attributeId"]
+        }),
+        // Get price range
+        prisma2.$queryRaw`
+          SELECT 
+            MIN(basePrice) as min,
+            MAX(basePrice) as max
+          FROM Product
+        `
+      ]);
+      const attributeMap = /* @__PURE__ */ new Map();
+      for (const av of variants) {
+        const name = av.attribute?.name;
+        if (!name)
+          continue;
+        if (!attributeMap.has(name))
+          attributeMap.set(name, /* @__PURE__ */ new Set());
+        attributeMap.get(name).add(av.value);
+      }
+      const attributes = [...attributeMap.entries()].map(([name, vals]) => ({
+        name,
+        values: [...vals].sort()
+      }));
+      return {
+        categories,
+        attributes,
+        // Keep for backward compat (empty — no longer hardcoded color/size)
+        colors: [],
+        sizes: [],
+        priceRange: {
+          min: priceStats[0]?.min || 0,
+          max: priceStats[0]?.max || 1e3
+        }
+      };
+    } catch (error) {
+      log10.error("Error getting filter metadata:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("search:sales", async (_, options) => {
+    try {
+      if (!prisma2) {
+        return {
+          sales: [],
+          totalCount: 0,
+          page: 1,
+          totalPages: 0,
+          hasMore: false
+        };
+      }
+      const {
+        filters,
+        sort = { field: "createdAt", direction: "desc" },
+        pagination
+      } = options;
+      const where = {};
+      if (filters.startDate || filters.endDate) {
+        where.createdAt = {};
+        if (filters.startDate) {
+          where.createdAt.gte = new Date(filters.startDate);
+        }
+        if (filters.endDate) {
+          where.createdAt.lte = new Date(filters.endDate);
+        }
+      }
+      if (filters.minAmount !== void 0 || filters.maxAmount !== void 0) {
+        where.total = {};
+        if (filters.minAmount !== void 0) {
+          where.total.gte = filters.minAmount;
+        }
+        if (filters.maxAmount !== void 0) {
+          where.total.lte = filters.maxAmount;
+        }
+      }
+      if (filters.customerId) {
+        where.customerId = filters.customerId;
+      }
+      if (filters.employeeId) {
+        where.userId = filters.employeeId;
+      }
+      if (filters.query) {
+        where.OR = [
+          { id: { contains: filters.query } },
+          { customerName: { contains: filters.query } }
+        ];
+      }
+      const [sales, totalCount] = await Promise.all([
+        prisma2.saleTransaction.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true
+              }
+            },
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    baseSKU: true
+                  }
+                }
+              }
+            }
+          },
+          orderBy: { [sort.field]: sort.direction },
+          skip: (pagination.page - 1) * pagination.limit,
+          take: pagination.limit
+        }),
+        prisma2.saleTransaction.count({ where })
+      ]);
+      const totalPages = Math.ceil(totalCount / pagination.limit);
+      return {
+        sales,
+        totalCount,
+        page: pagination.page,
+        totalPages,
+        hasMore: pagination.page < totalPages
+      };
+    } catch (error) {
+      log10.error("Error searching sales:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("search:finance", async (_, options) => {
+    try {
+      if (!prisma2) {
+        return {
+          currentMetrics: {},
+          previousMetrics: {},
+          topProducts: [],
+          salesByDay: [],
+          salesByCategory: []
+        };
+      }
+      const { startDate, endDate, previousStartDate, previousEndDate } = options;
+      const currentWhere = {};
+      const previousWhere = {};
+      if (startDate && endDate) {
+        currentWhere.createdAt = {
+          gte: new Date(startDate),
+          lte: new Date(endDate)
+        };
+      }
+      if (previousStartDate && previousEndDate) {
+        previousWhere.createdAt = {
+          gte: new Date(previousStartDate),
+          lte: new Date(previousEndDate)
+        };
+      }
+      const [currentTransactions, previousTransactions, currentExpenses, previousExpenses] = await Promise.all([
+        prisma2.saleTransaction.findMany({
+          where: {
+            ...currentWhere,
+            status: { in: ["completed", "partially_refunded"] }
+          },
+          include: {
+            items: {
+              include: {
+                product: {
+                  include: {
+                    category: true
+                  }
+                }
+              }
+            }
+          }
+        }),
+        prisma2.saleTransaction.findMany({
+          where: {
+            ...previousWhere,
+            status: { in: ["completed", "partially_refunded"] }
+          },
+          select: {
+            id: true,
+            total: true,
+            subtotal: true,
+            createdAt: true,
+            items: {
+              select: {
+                refundedQuantity: true,
+                price: true
+              }
+            }
+          }
+        }),
+        prisma2.financialTransaction.findMany({
+          where: { ...currentWhere, type: "expense" },
+          select: {
+            amount: true
+          }
+        }),
+        prisma2.financialTransaction.findMany({
+          where: { ...previousWhere, type: "expense" },
+          select: {
+            amount: true
+          }
+        })
+      ]);
+      let currentRevenue = 0;
+      let currentRevenueWithTax = 0;
+      let totalRefundedAmount = 0;
+      let totalRefundedAmountWithTax = 0;
+      let totalRefundedItems = 0;
+      currentTransactions.forEach((txn) => {
+        const refundedAmount = txn.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          if (refunded > 0) {
+            totalRefundedItems += refunded;
+            return sum + refunded * item.price;
+          }
+          return sum;
+        }, 0);
+        totalRefundedAmount += refundedAmount;
+        const txnSubtotal = txn.subtotal ?? txn.total;
+        const txnTax = txn.total - txnSubtotal;
+        const refundedWithTax = txnSubtotal > 0 ? refundedAmount + refundedAmount / txnSubtotal * txnTax : refundedAmount;
+        totalRefundedAmountWithTax += refundedWithTax;
+        currentRevenue += txnSubtotal - refundedAmount;
+        currentRevenueWithTax += txn.total - refundedWithTax;
+      });
+      const currentTransactionCount = currentTransactions.length;
+      let previousRevenue = 0;
+      let previousRevenueWithTax = 0;
+      let previousRefundedAmount = 0;
+      let previousRefundedAmountWithTax = 0;
+      previousTransactions.forEach((txn) => {
+        const refundedAmount = txn.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return sum + refunded * item.price;
+        }, 0);
+        previousRefundedAmount += refundedAmount;
+        const txnSubtotal = txn.subtotal ?? txn.total;
+        const txnTax = txn.total - txnSubtotal;
+        const refundedWithTax = txnSubtotal > 0 ? refundedAmount + refundedAmount / txnSubtotal * txnTax : refundedAmount;
+        previousRefundedAmountWithTax += refundedWithTax;
+        previousRevenue += txnSubtotal - refundedAmount;
+        previousRevenueWithTax += txn.total - refundedWithTax;
+      });
+      const previousTransactionCount = previousTransactions.length;
+      const revenueChange = previousRevenue > 0 ? (currentRevenue - previousRevenue) / previousRevenue * 100 : 0;
+      const transactionsChange = previousTransactionCount > 0 ? (currentTransactionCount - previousTransactionCount) / previousTransactionCount * 100 : 0;
+      const avgOrderValue = currentTransactionCount > 0 ? currentRevenue / currentTransactionCount : 0;
+      const previousAvgOrderValue = previousTransactionCount > 0 ? previousRevenue / previousTransactionCount : 0;
+      const avgOrderValueChange = previousAvgOrderValue > 0 ? (avgOrderValue - previousAvgOrderValue) / previousAvgOrderValue * 100 : 0;
+      const productSales = /* @__PURE__ */ new Map();
+      let totalCost = 0;
+      let totalRevenue = 0;
+      currentTransactions.forEach((transaction) => {
+        transaction.items.forEach((item) => {
+          const productId = item.product.id;
+          const productName = item.product.name;
+          const refundedQty = item.refundedQuantity || 0;
+          const activeQty = item.quantity - refundedQty;
+          const refundedRevenue = refundedQty * item.price;
+          const activeRevenue = item.total - refundedRevenue;
+          const unitCost = item.product.baseCost || 0;
+          const activeCost = activeQty * unitCost;
+          totalCost += activeCost;
+          totalRevenue += activeRevenue;
+          if (productSales.has(productId)) {
+            const existing = productSales.get(productId);
+            existing.revenue += activeRevenue;
+            existing.qty += activeQty;
+            existing.cost += activeCost;
+          } else {
+            productSales.set(productId, { name: productName, revenue: activeRevenue, qty: activeQty, cost: activeCost });
+          }
+        });
+      });
+      const topProducts = Array.from(productSales.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 10).map((p) => ({
+        name: p.name,
+        revenue: p.revenue,
+        quantity: p.qty,
+        cost: p.cost,
+        profit: p.revenue - p.cost,
+        profitMargin: p.revenue > 0 ? (p.revenue - p.cost) / p.revenue * 100 : 0
+      }));
+      const salesByDay = /* @__PURE__ */ new Map();
+      currentTransactions.forEach((transaction) => {
+        const day = new Date(transaction.createdAt).toISOString().split("T")[0];
+        const refundedAmount = transaction.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return sum + refunded * item.price;
+        }, 0);
+        const netRevenue = transaction.total - refundedAmount;
+        salesByDay.set(day, (salesByDay.get(day) || 0) + netRevenue);
+      });
+      const salesByDayArray = Array.from(salesByDay.entries()).map(([date, revenue]) => ({ date, revenue })).sort((a, b) => a.date.localeCompare(b.date));
+      const categoryMap = /* @__PURE__ */ new Map();
+      currentTransactions.forEach((transaction) => {
+        transaction.items.forEach((item) => {
+          const categoryName = item.product.category?.name || "Uncategorized";
+          const refundedQty = item.refundedQuantity || 0;
+          const refundedRevenue = refundedQty * item.price;
+          const activeRevenue = item.total - refundedRevenue;
+          categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + activeRevenue);
+        });
+      });
+      const salesByCategory = Array.from(categoryMap.entries()).map(([name, revenue]) => ({ name, revenue })).sort((a, b) => b.revenue - a.revenue);
+      const totalOperationalExpenses = currentExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const previousTotalExpenses = previousExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const grossProfit = totalRevenue - totalCost;
+      const totalProfit = grossProfit - totalOperationalExpenses;
+      const profitMargin = totalRevenue > 0 ? totalProfit / totalRevenue * 100 : 0;
+      const costRatio = totalRevenue > 0 ? totalCost / totalRevenue : 0;
+      const previousGrossProfit = previousRevenue - previousRevenue * costRatio;
+      const previousTotalProfit = previousGrossProfit - previousTotalExpenses;
+      const profitChange = previousTotalProfit > 0 ? (totalProfit - previousTotalProfit) / previousTotalProfit * 100 : 0;
+      const refundedTransactionsCount = currentTransactions.filter(
+        (t) => t.status === "partially_refunded" || t.items.some((i) => (i.refundedQuantity || 0) > 0)
+      ).length;
+      const refundRate = currentTransactionCount > 0 ? refundedTransactionsCount / currentTransactionCount * 100 : 0;
+      return {
+        currentMetrics: {
+          revenue: currentRevenue,
+          // Pre-tax
+          revenueWithTax: currentRevenueWithTax,
+          // With tax
+          transactions: currentTransactionCount,
+          avgOrderValue,
+          revenueChange,
+          transactionsChange,
+          avgOrderValueChange,
+          totalProfit,
+          profitMargin,
+          totalCost,
+          totalExpenses: totalOperationalExpenses,
+          grossProfit,
+          profitChange,
+          // Refund statistics
+          totalRefunded: totalRefundedAmount,
+          // Pre-tax
+          totalRefundedWithTax: totalRefundedAmountWithTax,
+          // With tax
+          refundedItems: totalRefundedItems,
+          refundedTransactions: refundedTransactionsCount,
+          refundRate
+        },
+        previousMetrics: {
+          revenue: previousRevenue,
+          revenueWithTax: previousRevenueWithTax,
+          transactions: previousTransactionCount,
+          avgOrderValue: previousAvgOrderValue,
+          totalRefunded: previousRefundedAmount,
+          totalRefundedWithTax: previousRefundedAmountWithTax
+        },
+        topProducts,
+        salesByDay: salesByDayArray,
+        salesByCategory
+      };
+    } catch (error) {
+      log10.error("Error fetching finance data:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("forecast:revenue", async (_, options) => {
+    try {
+      if (!prisma2) {
+        throw new Error("Database not initialized");
+      }
+      const predictionService = new PredictionService(prisma2);
+      const forecast = await predictionService.forecastRevenue(
+        options.days || 30,
+        options.historicalDays || 90
+      );
+      return forecast;
+    } catch (error) {
+      log10.error("Error forecasting revenue:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("forecast:cashflow", async (_, options) => {
+    try {
+      if (!prisma2) {
+        throw new Error("Database not initialized");
+      }
+      const predictionService = new PredictionService(prisma2);
+      const projection = await predictionService.projectCashFlow(options.days || 30);
+      return projection;
+    } catch (error) {
+      log10.error("Error projecting cash flow:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("insights:products", async (_, options) => {
+    try {
+      if (!prisma2) {
+        throw new Error("Database not initialized");
+      }
+      const predictionService = new PredictionService(prisma2);
+      const insights = await predictionService.generateProductInsights(options.limit || 10);
+      return insights;
+    } catch (error) {
+      log10.error("Error generating product insights:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("health:financial", async () => {
+    try {
+      if (!prisma2) {
+        throw new Error("Database not initialized");
+      }
+      const predictionService = new PredictionService(prisma2);
+      const health = await predictionService.calculateFinancialHealth();
+      return health;
+    } catch (error) {
+      log10.error("Error calculating financial health:", error);
+      throw error;
+    }
+  });
+}
+function buildWhereClause(filters) {
+  const where = {};
+  const andConditions = [];
+  if (filters.showArchivedOnly) {
+    andConditions.push({ isArchived: true });
+  } else if (!filters.includeArchived) {
+    andConditions.push({ isArchived: false });
+  }
+  if (filters.barcode && filters.barcode.trim()) {
+    const barcode = filters.barcode.trim();
+    andConditions.push({
+      variants: {
+        some: {
+          barcode: { equals: barcode }
+        }
+      }
+    });
+  } else if (filters.query && filters.query.trim()) {
+    const query = filters.query.trim();
+    andConditions.push({
+      OR: [
+        { name: { contains: query } },
+        { baseSKU: { contains: query } },
+        { description: { contains: query } },
+        // Include barcode in text search
+        { variants: { some: { barcode: { contains: query } } } }
+      ]
+    });
+  }
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    const firstId = filters.categoryIds[0];
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(firstId);
+    if (isUUID) {
+      andConditions.push({ categoryId: { in: filters.categoryIds } });
+    } else {
+      andConditions.push({
+        category: {
+          name: { in: filters.categoryIds }
+        }
+      });
+    }
+  }
+  if (filters.storeId) {
+    andConditions.push({ storeId: filters.storeId });
+  }
+  if (filters.priceRange) {
+    const priceCondition = {};
+    if (filters.priceRange.min !== void 0) {
+      priceCondition.gte = filters.priceRange.min;
+    }
+    if (filters.priceRange.max !== void 0) {
+      priceCondition.lte = filters.priceRange.max;
+    }
+    if (Object.keys(priceCondition).length > 0) {
+      andConditions.push({ basePrice: priceCondition });
+    }
+  }
+  if (filters.stockStatus && filters.stockStatus.length > 0) {
+    const stockConditions = filters.stockStatus.map((status) => {
+      switch (status) {
+        case "out":
+          return { variants: { every: { stock: 0 } } };
+        case "low":
+          return { variants: { some: { stock: { gte: 1, lte: 10 } } } };
+        case "normal":
+          return { variants: { some: { stock: { gte: 11, lte: 50 } } } };
+        case "high":
+          return { variants: { some: { stock: { gt: 50 } } } };
+        default:
+          return null;
+      }
+    }).filter(Boolean);
+    if (stockConditions.length === 1) {
+      andConditions.push(stockConditions[0]);
+    } else if (stockConditions.length > 1) {
+      andConditions.push({ OR: stockConditions });
+    }
+  }
+  if (andConditions.length === 0) {
+    return where;
+  } else if (andConditions.length === 1) {
+    return andConditions[0];
+  } else {
+    where.AND = andConditions;
+    return where;
+  }
+}
+function buildOrderByClause(sort) {
+  const { field, direction } = sort;
+  if (field === "category") {
+    return { category: { name: direction } };
+  }
+  if (["totalStock", "stockValue", "retailValue"].includes(field)) {
+    return { createdAt: "desc" };
+  }
+  return { [field]: direction };
+}
+function enrichProduct(product) {
+  const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+  const stockValue = product.variants.reduce(
+    (sum, v) => sum + v.price * 0.6 * v.stock,
+    0
+  );
+  const retailValue = product.variants.reduce(
+    (sum, v) => sum + v.price * v.stock,
+    0
+  );
+  let stockStatus;
+  if (totalStock === 0)
+    stockStatus = "out";
+  else if (totalStock <= 10)
+    stockStatus = "low";
+  else if (totalStock <= 50)
+    stockStatus = "normal";
+  else
+    stockStatus = "high";
+  return {
+    ...product,
+    category: product.category?.name || "Uncategorized",
+    totalStock,
+    stockValue,
+    retailValue,
+    variantCount: product.variants.length,
+    stockStatus
+  };
+}
+
+// apps/bizflow/src/main/ipc/handlers/user.handlers.ts
+init_electron_node();
+var bcrypt2 = __toESM(require_bcryptjs());
+var log11 = createLogger("Users");
+function registerUserHandlers(prisma2) {
+  ipcMain.handle("users:getAll", async () => {
+    try {
+      const users = await prisma2.user.findMany({
+        orderBy: {
+          createdAt: "desc"
+        },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          isActive: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+      return { success: true, data: users };
+    } catch (error) {
+      log11.error("[Users] Failed to get users:", error);
+      return { success: false, error: "Failed to load users" };
+    }
+  });
+  ipcMain.handle("users:getById", async (_event, userId) => {
+    try {
+      const user = await prisma2.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          isActive: true,
+          lastLogin: true,
+          createdAt: true,
+          updatedAt: true
+        }
+      });
+      if (!user) {
+        return { success: false, error: "User not found" };
+      }
+      return { success: true, data: user };
+    } catch (error) {
+      log11.error("[Users] Failed to get user:", error);
+      return { success: false, error: "Failed to load user" };
+    }
+  });
+  ipcMain.handle("users:create", async (_event, userData) => {
+    try {
+      const existingUser = await prisma2.user.findUnique({
+        where: { username: userData.username }
+      });
+      if (existingUser) {
+        return { success: false, error: "Username already exists" };
+      }
+      if (userData.email) {
+        const existingEmail = await prisma2.user.findUnique({
+          where: { email: userData.email }
+        });
+        if (existingEmail) {
+          return { success: false, error: "Email already in use" };
+        }
+      }
+      const passwordHash = await bcrypt2.hash(userData.password, 10);
+      const user = await prisma2.user.create({
+        data: {
+          username: userData.username,
+          passwordHash,
+          fullName: userData.fullName || null,
+          email: userData.email || null,
+          phone: userData.phone || null,
+          role: userData.role,
+          isActive: true
+        },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          isActive: true,
+          createdAt: true
+        }
+      });
+      return { success: true, data: user };
+    } catch (error) {
+      log11.error("[Users] Failed to create user:", error);
+      return { success: false, error: "Failed to create user" };
+    }
+  });
+  ipcMain.handle("users:update", async (_event, userId, updateData) => {
+    try {
+      const existingUser = await prisma2.user.findUnique({
+        where: { id: userId }
+      });
+      if (!existingUser) {
+        return { success: false, error: "User not found" };
+      }
+      if (updateData.email && updateData.email !== existingUser.email) {
+        const emailInUse = await prisma2.user.findFirst({
+          where: {
+            email: updateData.email,
+            NOT: { id: userId }
+          }
+        });
+        if (emailInUse) {
+          return { success: false, error: "Email already in use" };
+        }
+      }
+      const user = await prisma2.user.update({
+        where: { id: userId },
+        data: {
+          fullName: updateData.fullName !== void 0 ? updateData.fullName : void 0,
+          email: updateData.email !== void 0 ? updateData.email : void 0,
+          phone: updateData.phone !== void 0 ? updateData.phone : void 0,
+          role: updateData.role,
+          isActive: updateData.isActive
+        },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          isActive: true,
+          updatedAt: true
+        }
+      });
+      return { success: true, data: user };
+    } catch (error) {
+      log11.error("[Users] Failed to update user:", error);
+      return { success: false, error: "Failed to update user" };
+    }
+  });
+  ipcMain.handle("users:changePassword", async (_event, userId, newPassword) => {
+    try {
+      const existingUser = await prisma2.user.findUnique({
+        where: { id: userId }
+      });
+      if (!existingUser) {
+        return { success: false, error: "User not found" };
+      }
+      const passwordHash = await bcrypt2.hash(newPassword, 10);
+      await prisma2.user.update({
+        where: { id: userId },
+        data: { passwordHash }
+      });
+      return { success: true };
+    } catch (error) {
+      log11.error("[Users] Failed to change password:", error);
+      return { success: false, error: "Failed to change password" };
+    }
+  });
+  ipcMain.handle("users:delete", async (_event, userId) => {
+    try {
+      const existingUser = await prisma2.user.findUnique({
+        where: { id: userId }
+      });
+      if (!existingUser) {
+        return { success: false, error: "User not found" };
+      }
+      if (existingUser.role === "admin") {
+        const adminCount = await prisma2.user.count({
+          where: { role: "admin", isActive: true }
+        });
+        if (adminCount <= 1) {
+          return { success: false, error: "Cannot delete the last admin user" };
+        }
+      }
+      await prisma2.$transaction(async (tx) => {
+        await tx.saleTransaction.deleteMany({
+          where: { userId }
+        });
+        await tx.sale.deleteMany({
+          where: { userId }
+        });
+        await tx.financialTransaction.deleteMany({
+          where: { userId }
+        });
+        await tx.user.delete({
+          where: { id: userId }
+        });
+      });
+      return { success: true };
+    } catch (error) {
+      log11.error("[Users] Failed to delete user:", error);
+      return { success: false, error: "Failed to delete user. Please try again." };
+    }
+  });
+  ipcMain.handle("users:updateLastLogin", async (_event, userId) => {
+    try {
+      await prisma2.user.update({
+        where: { id: userId },
+        data: { lastLogin: /* @__PURE__ */ new Date() }
+      });
+      return { success: true };
+    } catch (error) {
+      log11.error("[Users] Failed to update last login:", error);
+      return { success: false, error: "Failed to update last login" };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/reports.handlers.ts
+init_electron_node();
+var log12 = createLogger("Reports");
+function registerReportsHandlers(prisma2) {
+  ipcMain.handle("reports:getSalesData", async (_, { startDate, endDate, filters }) => {
+    try {
+      if (!prisma2)
+        return { success: false, data: null };
+      const whereClause = {
+        createdAt: {
+          gte: new Date(startDate),
+          lte: new Date(endDate)
+        }
+      };
+      if (filters?.status) {
+        whereClause.status = filters.status;
+      }
+      if (filters?.userId) {
+        whereClause.userId = filters.userId;
+      }
+      const saleTransactions = await prisma2.saleTransaction.findMany({
+        where: whereClause,
+        include: {
+          items: {
+            include: {
+              product: {
+                include: {
+                  category: true
+                }
+              }
+            }
+          },
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          },
+          customer: true
+        },
+        orderBy: {
+          createdAt: "desc"
+        }
+      });
+      const totalSales = saleTransactions.length;
+      let totalRevenue = 0;
+      let totalRefunded = 0;
+      let refundedTransactions = 0;
+      saleTransactions.forEach((sale) => {
+        const refundedAmount = sale.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return sum + refunded * item.price;
+        }, 0);
+        if (refundedAmount > 0 || sale.status === "partially_refunded") {
+          refundedTransactions++;
+          totalRefunded += refundedAmount;
+        }
+        totalRevenue += sale.total - refundedAmount;
+      });
+      const averageOrderValue = totalSales > 0 ? totalRevenue / totalSales : 0;
+      const byPaymentMethod = saleTransactions.reduce((acc, sale) => {
+        acc[sale.paymentMethod] = (acc[sale.paymentMethod] || 0) + sale.total;
+        return acc;
+      }, {});
+      const byCategory = {};
+      const productSales = {};
+      saleTransactions.forEach((transaction) => {
+        transaction.items.forEach((item) => {
+          const category = item.product?.category?.name || "Uncategorized";
+          const refundedQty = item.refundedQuantity || 0;
+          const activeQty = item.quantity - refundedQty;
+          const refundedRevenue = refundedQty * item.price;
+          const activeRevenue = item.total - refundedRevenue;
+          byCategory[category] = (byCategory[category] || 0) + activeRevenue;
+          const productName = item.product?.name || "Unknown";
+          if (!productSales[productName]) {
+            productSales[productName] = { name: productName, quantity: 0, revenue: 0 };
+          }
+          productSales[productName].quantity += activeQty;
+          productSales[productName].revenue += activeRevenue;
+        });
+      });
+      const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
+      const dailySales = saleTransactions.reduce((acc, transaction) => {
+        const date = new Date(transaction.createdAt).toISOString().split("T")[0];
+        if (!acc[date]) {
+          acc[date] = { date, sales: 0, revenue: 0, orders: 0, refunded: 0 };
+        }
+        const refundedAmount = transaction.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return sum + refunded * item.price;
+        }, 0);
+        const netRevenue = transaction.total - refundedAmount;
+        const activeItems = transaction.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return sum + (item.quantity - refunded);
+        }, 0);
+        acc[date].orders += 1;
+        acc[date].revenue += netRevenue;
+        acc[date].sales += activeItems;
+        acc[date].refunded += refundedAmount;
+        return acc;
+      }, {});
+      return {
+        success: true,
+        data: {
+          summary: {
+            totalSales,
+            totalRevenue,
+            averageOrderValue,
+            totalRefunded,
+            refundedTransactions,
+            refundRate: totalSales > 0 ? refundedTransactions / totalSales * 100 : 0,
+            dateRange: { startDate, endDate }
+          },
+          saleTransactions,
+          byPaymentMethod,
+          byCategory,
+          topProducts,
+          dailyBreakdown: Object.values(dailySales).sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          )
+        }
+      };
+    } catch (error) {
+      log12.error("[Reports] Error generating sales report:", error);
+      return { success: false, error: "Failed to generate sales report" };
+    }
+  });
+  ipcMain.handle("reports:getInventoryData", async () => {
+    try {
+      if (!prisma2)
+        return { success: false, data: null };
+      const products = await prisma2.product.findMany({
+        where: {
+          isArchived: false
+          // Filter out archived products
+        },
+        include: {
+          category: true,
+          variants: {
+            include: {
+              attributeValues: { include: { attribute: { select: { name: true } } } }
+            }
+          },
+          images: {
+            take: 1,
+            orderBy: { order: "asc" }
+          }
+        }
+      });
+      let totalValue = 0;
+      let totalItems = 0;
+      let lowStockCount = 0;
+      let outOfStockCount = 0;
+      const inventoryData = products.map((product) => {
+        if (product.hasVariants && product.variants.length > 0) {
+          const variantStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+          const variantValue = product.variants.reduce((sum, v) => sum + v.price * v.stock, 0);
+          totalValue += variantValue;
+          totalItems += variantStock;
+          const hasLowStock = product.variants.some((v) => v.stock < 10 && v.stock > 0);
+          const hasOutOfStock = product.variants.some((v) => v.stock === 0);
+          if (hasLowStock)
+            lowStockCount++;
+          if (hasOutOfStock)
+            outOfStockCount++;
+          return {
+            id: product.id,
+            name: product.name,
+            sku: product.baseSKU,
+            category: product.category?.name || "Uncategorized",
+            stock: variantStock,
+            value: variantValue,
+            status: hasOutOfStock ? "Out of Stock" : hasLowStock ? "Low Stock" : "In Stock",
+            hasVariants: true,
+            variants: product.variants.map((v) => ({
+              sku: v.sku,
+              attributeValues: v.attributeValues,
+              stock: v.stock,
+              price: v.price
+            }))
+          };
+        } else {
+          const stock = product.variants[0]?.stock || 0;
+          const value = stock * product.basePrice;
+          totalValue += value;
+          totalItems += stock;
+          if (stock === 0)
+            outOfStockCount++;
+          else if (stock < 10)
+            lowStockCount++;
+          return {
+            id: product.id,
+            name: product.name,
+            sku: product.baseSKU,
+            category: product.category?.name || "Uncategorized",
+            stock,
+            value,
+            status: stock === 0 ? "Out of Stock" : stock < 10 ? "Low Stock" : "In Stock",
+            hasVariants: false
+          };
+        }
+      });
+      const byCategory = inventoryData.reduce((acc, item) => {
+        if (!acc[item.category]) {
+          acc[item.category] = { count: 0, value: 0, stock: 0 };
+        }
+        acc[item.category].count += 1;
+        acc[item.category].value += item.value;
+        acc[item.category].stock += item.stock;
+        return acc;
+      }, {});
+      return {
+        success: true,
+        data: {
+          summary: {
+            totalProducts: products.length,
+            totalItems,
+            totalValue,
+            lowStockCount,
+            outOfStockCount,
+            categories: Object.keys(byCategory).length
+          },
+          inventory: inventoryData,
+          byCategory,
+          lowStockItems: inventoryData.filter((item) => item.status === "Low Stock"),
+          outOfStockItems: inventoryData.filter((item) => item.status === "Out of Stock")
+        }
+      };
+    } catch (error) {
+      log12.error("[Reports] Error generating inventory report:", error);
+      return { success: false, error: "Failed to generate inventory report" };
+    }
+  });
+  ipcMain.handle("reports:getFinancialData", async (_, { startDate, endDate }) => {
+    try {
+      if (!prisma2)
+        return { success: false, data: null };
+      const saleTransactions = await prisma2.saleTransaction.findMany({
+        where: {
+          createdAt: {
+            gte: new Date(startDate),
+            lte: new Date(endDate)
+          },
+          status: { in: ["completed", "partially_refunded"] }
+        },
+        include: {
+          items: {
+            include: {
+              product: true
+            }
+          }
+        }
+      });
+      let totalRevenue = 0;
+      let totalCOGS = 0;
+      let totalRefunded = 0;
+      saleTransactions.forEach((sale) => {
+        const refundedAmount = sale.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return sum + refunded * item.price;
+        }, 0);
+        totalRefunded += refundedAmount;
+        totalRevenue += sale.total - refundedAmount;
+        sale.items.forEach((item) => {
+          const refundedQty = item.refundedQuantity || 0;
+          const netQty = item.quantity - refundedQty;
+          if (netQty > 0 && item.product?.baseCost) {
+            totalCOGS += netQty * item.product.baseCost;
+          }
+        });
+      });
+      const transactions = await prisma2.financialTransaction.findMany({
+        where: {
+          createdAt: {
+            gte: new Date(startDate),
+            lte: new Date(endDate)
+          }
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          }
+        }
+      });
+      const employees = await prisma2.employee.findMany({
+        where: {
+          createdAt: {
+            lte: new Date(endDate)
+          }
+        }
+      });
+      const totalSalaryExpense = employees.reduce((sum, emp) => sum + (emp.salary || 0), 0);
+      const startTime = new Date(startDate).getTime();
+      const endTime = new Date(endDate).getTime();
+      const daysInRange = Math.ceil((endTime - startTime) / (1e3 * 60 * 60 * 24));
+      let salaryExpenseForPeriod = 0;
+      if (daysInRange <= 1) {
+        salaryExpenseForPeriod = totalSalaryExpense / 30;
+      } else if (daysInRange <= 7) {
+        salaryExpenseForPeriod = totalSalaryExpense / 4.33;
+      } else {
+        const monthsInRange = daysInRange / 30;
+        salaryExpenseForPeriod = totalSalaryExpense * monthsInRange;
+      }
+      const income = transactions.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
+      const expensesFromTransactions = transactions.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+      const totalExpenses = expensesFromTransactions + salaryExpenseForPeriod + totalCOGS;
+      const netProfit = totalRevenue + income - totalExpenses;
+      const profitMargin = totalRevenue > 0 ? netProfit / totalRevenue * 100 : 0;
+      const dailyFinancials = saleTransactions.reduce((acc, sale) => {
+        const date = new Date(sale.createdAt).toISOString().split("T")[0];
+        if (!acc[date]) {
+          acc[date] = { date, revenue: 0, expenses: 0, cogs: 0, profit: 0, refunded: 0 };
+        }
+        const refundedAmount = sale.items.reduce((sum, item) => {
+          const refunded = item.refundedQuantity || 0;
+          return sum + refunded * item.price;
+        }, 0);
+        const netRevenue = sale.total - refundedAmount;
+        acc[date].revenue += netRevenue;
+        acc[date].refunded += refundedAmount;
+        let saleCOGS = 0;
+        sale.items.forEach((item) => {
+          const refundedQty = item.refundedQuantity || 0;
+          const netQty = item.quantity - refundedQty;
+          if (netQty > 0 && item.product?.baseCost) {
+            saleCOGS += netQty * item.product.baseCost;
+          }
+        });
+        acc[date].cogs += saleCOGS;
+        return acc;
+      }, {});
+      transactions.forEach((transaction) => {
+        const date = new Date(transaction.createdAt).toISOString().split("T")[0];
+        if (dailyFinancials[date]) {
+          if (transaction.type === "expense") {
+            dailyFinancials[date].expenses += transaction.amount;
+          } else {
+            dailyFinancials[date].revenue += transaction.amount;
+          }
+          dailyFinancials[date].expenses += dailyFinancials[date].cogs;
+          dailyFinancials[date].profit = dailyFinancials[date].revenue - dailyFinancials[date].expenses;
+        }
+      });
+      const dailySalaryExpense = salaryExpenseForPeriod / Math.max(1, Object.keys(dailyFinancials).length);
+      Object.keys(dailyFinancials).forEach((date) => {
+        dailyFinancials[date].expenses += dailySalaryExpense;
+        dailyFinancials[date].salaryExpense = dailySalaryExpense;
+        dailyFinancials[date].netProfit = dailyFinancials[date].revenue - dailyFinancials[date].expenses;
+      });
+      const expensesByDescription = transactions.filter((t) => t.type === "expense").reduce((acc, t) => {
+        acc[t.description] = (acc[t.description] || 0) + t.amount;
+        return acc;
+      }, {});
+      expensesByDescription["Employee Salaries"] = salaryExpenseForPeriod;
+      expensesByDescription["Cost of Goods Sold"] = totalCOGS;
+      return {
+        success: true,
+        data: {
+          summary: {
+            totalRevenue: totalRevenue + income,
+            totalCOGS,
+            totalExpenses,
+            salaryExpense: salaryExpenseForPeriod,
+            otherExpenses: expensesFromTransactions,
+            totalRefunded,
+            netProfit,
+            profitMargin,
+            salesCount: saleTransactions.length,
+            employeeCount: employees.length,
+            dateRange: { startDate, endDate }
+          },
+          transactions,
+          dailyBreakdown: Object.values(dailyFinancials).sort(
+            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+          ),
+          expensesByCategory: expensesByDescription
+        }
+      };
+    } catch (error) {
+      log12.error("[Reports] Error generating financial report:", error);
+      return { success: false, error: "Failed to generate financial report" };
+    }
+  });
+  ipcMain.handle("reports:getCustomerData", async (_, { startDate, endDate }) => {
+    try {
+      if (!prisma2)
+        return { success: false, data: null };
+      const customers = await prisma2.customer.findMany({
+        where: {
+          isArchived: false
+          // Filter out archived customers
+        },
+        orderBy: {
+          totalSpent: "desc"
+        }
+      });
+      const totalCustomers = customers.length;
+      const totalSpent = customers.reduce((sum, c) => sum + c.totalSpent, 0);
+      const averageSpent = totalCustomers > 0 ? totalSpent / totalCustomers : 0;
+      const byLoyaltyTier = customers.reduce((acc, customer) => {
+        acc[customer.loyaltyTier] = (acc[customer.loyaltyTier] || 0) + 1;
+        return acc;
+      }, {});
+      const newCustomers = customers.filter((c) => {
+        const created = new Date(c.createdAt);
+        return created >= new Date(startDate) && created <= new Date(endDate);
+      });
+      const orderCountRows = await prisma2.saleTransaction.groupBy({
+        by: ["customerId"],
+        where: { customerId: { not: null } },
+        _count: { id: true }
+      });
+      const customerOrderCounts = {};
+      for (const row of orderCountRows) {
+        if (row.customerId)
+          customerOrderCounts[row.customerId] = row._count.id;
+      }
+      const topCustomers = customers.slice(0, 10).map((c) => ({
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        totalSpent: c.totalSpent,
+        loyaltyTier: c.loyaltyTier,
+        orderCount: customerOrderCounts[c.id] || 0
+      }));
+      return {
+        success: true,
+        data: {
+          summary: {
+            totalCustomers,
+            newCustomers: newCustomers.length,
+            totalSpent,
+            averageSpent,
+            dateRange: { startDate, endDate }
+          },
+          customers,
+          topCustomers,
+          byLoyaltyTier
+        }
+      };
+    } catch (error) {
+      log12.error("[Reports] Error generating customer report:", error);
+      return { success: false, error: "Failed to generate customer report" };
+    }
+  });
+  ipcMain.handle("reports:getQuickInsights", async () => {
+    try {
+      if (!prisma2)
+        return { success: false, data: null };
+      const today = /* @__PURE__ */ new Date();
+      today.setHours(0, 0, 0, 0);
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      const [todayAgg, lowStockVariants, newCustomers] = await Promise.all([
+        // Today's revenue + order count via aggregate (no full table scan)
+        prisma2.saleTransaction.aggregate({
+          where: { createdAt: { gte: today }, status: "completed" },
+          _sum: { total: true },
+          _count: true
+        }),
+        // Count distinct products that have at least one variant with low stock
+        // Uses existing (productId) + (stock) indexes — no full-product load
+        prisma2.productVariant.findMany({
+          where: {
+            stock: { gt: 0, lt: 10 },
+            product: { isArchived: false }
+          },
+          select: { productId: true },
+          distinct: ["productId"]
+        }),
+        // Customer count — already a simple aggregate
+        prisma2.customer.count({ where: { createdAt: { gte: startOfMonth } } })
+      ]);
+      return {
+        success: true,
+        data: {
+          todayRevenue: todayAgg._sum.total ?? 0,
+          todayOrders: todayAgg._count ?? 0,
+          lowStockItems: lowStockVariants.length,
+          newCustomers
+        }
+      };
+    } catch (error) {
+      log12.error("[Reports] Error getting quick insights:", error);
+      return { success: false, error: "Failed to get quick insights" };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/analytics.handlers.ts
+init_electron_node();
+var import_node_path4 = __toESM(require("node:path"));
+
+// apps/bizflow/src/main/database/init.ts
+var path6 = __toESM(require("node:path"));
+init_electron_node();
+var log13 = createLogger("DBInit");
+function getDatabasePath() {
+  const isDev2 = process.env.NODE_ENV === "development";
+  return isDev2 ? path6.resolve(process.cwd(), "prisma", "dev.db") : path6.join(app.getPath("userData"), "database.db");
+}
+
+// apps/bizflow/src/main/database/optimization.ts
+var log14 = createLogger("DBOptimize");
+var QueryCache = class {
+  cache = /* @__PURE__ */ new Map();
+  defaultTTL;
+  constructor(defaultTTL = 6e4) {
+    this.defaultTTL = defaultTTL;
+  }
+  /**
+   * Get from cache
+   */
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry)
+      return null;
+    if (entry.expires < Date.now()) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.data;
+  }
+  /**
+   * Set in cache
+   */
+  set(key, data, ttl = this.defaultTTL) {
+    this.cache.set(key, {
+      data,
+      expires: Date.now() + ttl
+    });
+  }
+  /**
+   * Delete from cache
+   */
+  delete(key) {
+    this.cache.delete(key);
+  }
+  /**
+   * Clear entire cache
+   */
+  clear() {
+    this.cache.clear();
+  }
+  /**
+   * Clear expired entries
+   */
+  clearExpired() {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.expires < now) {
+        this.cache.delete(key);
+      }
+    }
+  }
+};
+
+// apps/bizflow/src/main/services/StoreAnalyticsService.ts
+var log15 = createLogger("StoreAnalytics");
+var StoreAnalyticsService = class _StoreAnalyticsService {
+  static instance = null;
+  prisma;
+  cache;
+  constructor(prisma2) {
+    this.prisma = prisma2;
+    this.cache = new QueryCache();
+  }
+  static getInstance(prisma2) {
+    if (!_StoreAnalyticsService.instance) {
+      _StoreAnalyticsService.instance = new _StoreAnalyticsService(prisma2);
+    }
+    return _StoreAnalyticsService.instance;
+  }
+  /**
+   * Compare multiple stores - OPTIMIZED with raw SQL
+   * 100x faster than JavaScript aggregation for large datasets
+   */
+  async compareStores(storeIds, startDate, endDate) {
+    const cacheKey = `store-comparison:${storeIds.join(",")}:${startDate?.getTime()}:${endDate?.getTime()}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    try {
+      const stores = await this.prisma.store.findMany({
+        where: storeIds.length > 0 ? { id: { in: storeIds } } : void 0,
+        select: { id: true, name: true, status: true }
+      });
+      const activeStores = stores.filter((s) => s.status === "active");
+      const metricsPromises = activeStores.map(async (store) => {
+        return this.getStoreMetrics(store.id, store.name, startDate, endDate);
+      });
+      const storeMetrics = await Promise.all(metricsPromises);
+      const result = {
+        stores: storeMetrics,
+        dateRange: {
+          startDate: startDate || /* @__PURE__ */ new Date(0),
+          endDate: endDate || /* @__PURE__ */ new Date()
+        }
+      };
+      this.cache.set(cacheKey, result, 5 * 60 * 1e3);
+      return result;
+    } catch (error) {
+      log15.error("Error comparing stores:", error);
+      throw error;
+    }
+  }
+  /**
+   * Build date filter with parameterized query placeholders
+   * Returns both the filter string and number of parameters added
+   */
+  buildDateFilter(startDate, endDate) {
+    const conditions = [];
+    let paramCount = 0;
+    if (startDate) {
+      conditions.push("AND st.createdAt >= ?");
+      paramCount++;
+    }
+    if (endDate) {
+      conditions.push("AND st.createdAt <= ?");
+      paramCount++;
+    }
+    return {
+      filter: conditions.join(" "),
+      paramCount
+    };
+  }
+  /**
+   * Get comprehensive metrics for a single store
+   * Uses raw SQL for optimal performance with parameterized queries
+   */
+  async getStoreMetrics(storeId, storeName, startDate, endDate) {
+    try {
+      const dateFilterInfo = this.buildDateFilter(startDate, endDate);
+      const salesQuery = `
+        SELECT 
+          CAST(COUNT(DISTINCT st.id) AS INTEGER) as transactions,
+          ROUND(COALESCE(SUM(st.total), 0), 2) as revenue,
+          ROUND(COALESCE(SUM((si.finalPrice - COALESCE(pv.cost, 0)) * si.quantity), 0), 2) as profit
+        FROM SaleTransaction st
+        LEFT JOIN SaleItem si ON si.transactionId = st.id
+        LEFT JOIN Product p ON si.productId = p.id
+        LEFT JOIN ProductVariant pv ON si.variantId = pv.id
+        WHERE st.status = 'completed'
+          AND (p.storeId = ? OR p.storeId IS NULL)
+          ${dateFilterInfo.filter}
+      `;
+      const salesParams = [storeId];
+      if (startDate)
+        salesParams.push(startDate.getTime());
+      if (endDate)
+        salesParams.push(endDate.getTime());
+      const salesData = await this.prisma.$queryRawUnsafe(salesQuery, ...salesParams);
+      const sales = salesData[0] || { transactions: 0, revenue: 0, profit: 0 };
+      const inventoryQuery = `
+        SELECT 
+          CAST(COUNT(DISTINCT p.id) AS INTEGER) as productCount,
+          ROUND(COALESCE(SUM(pv.stock * pv.cost), 0), 2) as inventoryValue
+        FROM Product p
+        LEFT JOIN ProductVariant pv ON pv.productId = p.id
+        WHERE p.isArchived = 0
+          AND (p.storeId = ? OR p.storeId IS NULL)
+      `;
+      const inventoryData = await this.prisma.$queryRawUnsafe(inventoryQuery, storeId);
+      const inventory = inventoryData[0] || { productCount: 0, inventoryValue: 0 };
+      const revenue = Number(sales.revenue) || 0;
+      const profit = Number(sales.profit) || 0;
+      const transactions = Number(sales.transactions) || 0;
+      const profitMargin = revenue > 0 ? profit / revenue * 100 : 0;
+      const averageOrderValue = transactions > 0 ? revenue / transactions : 0;
+      return {
+        storeId,
+        storeName,
+        revenue,
+        profit,
+        profitMargin: Math.round(profitMargin * 100) / 100,
+        transactions,
+        inventoryValue: Number(inventory.inventoryValue) || 0,
+        productCount: Number(inventory.productCount) || 0,
+        averageOrderValue: Math.round(averageOrderValue * 100) / 100
+      };
+    } catch (error) {
+      log15.error(`Error getting metrics for store ${storeId}:`, error);
+      return {
+        storeId,
+        storeName,
+        revenue: 0,
+        profit: 0,
+        profitMargin: 0,
+        transactions: 0,
+        inventoryValue: 0,
+        productCount: 0,
+        averageOrderValue: 0
+      };
+    }
+  }
+  /**
+   * Get top performing stores
+   */
+  async getTopStores(limit = 10, startDate, endDate) {
+    const allStores = await this.prisma.store.findMany({
+      where: { status: "active" },
+      select: { id: true, name: true }
+    });
+    const metricsPromises = allStores.map(
+      (store) => this.getStoreMetrics(store.id, store.name, startDate, endDate)
+    );
+    const metrics = await Promise.all(metricsPromises);
+    return metrics.sort((a, b) => b.revenue - a.revenue).slice(0, limit);
+  }
+  /**
+   * Get store performance trends over time
+   */
+  async getStoreTrends(storeId, interval = "day", days = 30) {
+    try {
+      const endDate = /* @__PURE__ */ new Date();
+      const startDate = /* @__PURE__ */ new Date();
+      startDate.setDate(startDate.getDate() - days);
+      const dateFormat = interval === "day" ? "strftime('%Y-%m-%d', datetime(st.createdAt / 1000, 'unixepoch'))" : interval === "week" ? "strftime('%Y-W%W', datetime(st.createdAt / 1000, 'unixepoch'))" : "strftime('%Y-%m', datetime(st.createdAt / 1000, 'unixepoch'))";
+      const query = `
+        SELECT 
+          ${dateFormat} as date,
+          ROUND(COALESCE(SUM(st.total), 0), 2) as revenue,
+          ROUND(COALESCE(SUM((si.finalPrice - COALESCE(pv.cost, 0)) * si.quantity), 0), 2) as profit,
+          CAST(COUNT(DISTINCT st.id) AS INTEGER) as transactions
+        FROM SaleTransaction st
+        LEFT JOIN SaleItem si ON si.transactionId = st.id
+        LEFT JOIN Product p ON si.productId = p.id
+        LEFT JOIN ProductVariant pv ON si.variantId = pv.id
+        WHERE st.status = 'completed'
+          AND (p.storeId = ? OR p.storeId IS NULL)
+          AND st.createdAt >= ?
+          AND st.createdAt <= ?
+        GROUP BY date
+        ORDER BY date ASC
+      `;
+      const data = await this.prisma.$queryRawUnsafe(
+        query,
+        storeId,
+        startDate.getTime(),
+        endDate.getTime()
+      );
+      return data.map((row) => ({
+        date: row.date,
+        revenue: Number(row.revenue) || 0,
+        profit: Number(row.profit) || 0,
+        transactions: Number(row.transactions) || 0
+      }));
+    } catch (error) {
+      log15.error("Error getting store trends:", error);
+      return [];
+    }
+  }
+  /**
+   * Clear cache for store analytics
+   */
+  clearCache() {
+    this.cache.clear();
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/analytics.handlers.ts
+var log16 = createLogger("Analytics");
+function initializePrisma() {
+  try {
+    const isDev2 = process.env.NODE_ENV === "development";
+    let PrismaClient;
+    if (isDev2) {
+      const prismaPath = import_node_path4.default.resolve(process.cwd(), "src", "generated", "prisma");
+      PrismaClient = require(prismaPath).PrismaClient;
+    } else {
+      const prismaPath = import_node_path4.default.resolve(__dirname, "..", "..", "..", "app.asar.unpacked", "src", "generated", "prisma");
+      PrismaClient = require(prismaPath).PrismaClient;
+    }
+    if (PrismaClient) {
+      const dbPath = getDatabasePath();
+      return new PrismaClient({
+        datasources: {
+          db: {
+            url: `file:${dbPath}?connection_limit=1&timeout=60000&journal_mode=WAL`
+          }
+        }
+      });
+    }
+  } catch (error) {
+    log16.error("\u274C Failed to initialize Prisma for analytics:", error);
+  }
+  return null;
+}
+var prisma = null;
+function registerAnalyticsHandlers() {
+  prisma = initializePrisma();
+  if (!prisma) {
+    log16.warn("\u26A0\uFE0F  Analytics handlers registered but Prisma client unavailable");
+    return;
+  }
+  ;
+  (async () => {
+    try {
+      await prisma.$queryRawUnsafe("PRAGMA journal_mode = WAL;");
+      await prisma.$queryRawUnsafe("PRAGMA synchronous = NORMAL;");
+      await prisma.$queryRawUnsafe("PRAGMA cache_size = -32768;");
+      await prisma.$queryRawUnsafe("PRAGMA temp_store = MEMORY;");
+      await prisma.$queryRawUnsafe("PRAGMA mmap_size = 268435456;");
+      await prisma.$queryRawUnsafe("PRAGMA busy_timeout = 10000;");
+    } catch (e) {
+      log16.error("[Analytics] Failed to apply SQLite PRAGMAs:", e);
+    }
+  })();
+  ipcMain.handle("analytics:recordStockMovement", async (_, data) => {
+    try {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: data.variantId },
+        include: { product: true }
+      });
+      if (!variant) {
+        throw new Error("Product variant not found");
+      }
+      const previousStock = variant.stock;
+      const newStock = previousStock + data.quantity;
+      if (newStock < 0) {
+        throw new Error("Insufficient stock for this operation");
+      }
+      const movement = await prisma.stockMovement.create({
+        data: {
+          variantId: data.variantId,
+          type: data.type,
+          quantity: data.quantity,
+          previousStock,
+          newStock,
+          reason: data.reason,
+          referenceId: data.referenceId,
+          userId: data.userId,
+          notes: data.notes
+        },
+        include: {
+          variant: {
+            include: {
+              product: true
+            }
+          },
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          }
+        }
+      });
+      await prisma.productVariant.update({
+        where: { id: data.variantId },
+        data: {
+          stock: newStock,
+          lastRestocked: data.type === "RESTOCK" ? /* @__PURE__ */ new Date() : void 0
+        }
+      });
+      return movement;
+    } catch (error) {
+      log16.error("\u274C Error recording stock movement:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getStockMovementHistory", async (_, variantId, options) => {
+    try {
+      const movements = await prisma.stockMovement.findMany({
+        where: {
+          variantId,
+          ...options?.type && { type: options.type },
+          ...options?.startDate && options?.endDate && {
+            createdAt: {
+              gte: new Date(options.startDate),
+              lte: new Date(options.endDate)
+            }
+          }
+        },
+        include: {
+          variant: {
+            include: {
+              product: true
+            }
+          },
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: options?.limit || 100
+      });
+      return movements;
+    } catch (error) {
+      log16.error("\u274C Error fetching movement history:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getStockoutHistory", async (_, variantId) => {
+    try {
+      const stockouts = await prisma.stockMovement.findMany({
+        where: {
+          variantId,
+          newStock: 0
+        },
+        include: {
+          variant: {
+            include: {
+              product: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        }
+      });
+      const stockoutHistory = await Promise.all(
+        stockouts.map(async (stockout) => {
+          const nextRestock = await prisma.stockMovement.findFirst({
+            where: {
+              variantId,
+              type: "RESTOCK",
+              createdAt: {
+                gt: stockout.createdAt
+              }
+            },
+            orderBy: {
+              createdAt: "asc"
+            }
+          });
+          const daysOutOfStock = nextRestock ? Math.ceil((nextRestock.createdAt.getTime() - stockout.createdAt.getTime()) / (1e3 * 60 * 60 * 24)) : null;
+          return {
+            stockoutDate: stockout.createdAt,
+            restockDate: nextRestock?.createdAt || null,
+            daysOutOfStock,
+            restockQuantity: nextRestock?.quantity || null,
+            stillOutOfStock: !nextRestock
+          };
+        })
+      );
+      const totalStockouts = stockoutHistory.length;
+      const avgDaysOutOfStock = stockoutHistory.filter((s) => s.daysOutOfStock !== null).reduce((sum, s) => sum + (s.daysOutOfStock || 0), 0) / (stockoutHistory.filter((s) => s.daysOutOfStock !== null).length || 1);
+      return {
+        totalStockouts,
+        avgDaysOutOfStock: Math.round(avgDaysOutOfStock * 10) / 10,
+        history: stockoutHistory
+      };
+    } catch (error) {
+      log16.error("\u274C Error fetching stockout history:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getRestockHistory", async (_, variantId, limit = 50) => {
+    try {
+      const restocks = await prisma.stockMovement.findMany({
+        where: {
+          variantId,
+          type: "RESTOCK"
+        },
+        include: {
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          },
+          variant: {
+            include: {
+              product: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: limit
+      });
+      const totalRestocked = restocks.reduce((sum, r) => sum + r.quantity, 0);
+      const avgRestockQuantity = restocks.length > 0 ? totalRestocked / restocks.length : 0;
+      return {
+        totalRestocks: restocks.length,
+        totalQuantity: totalRestocked,
+        avgQuantity: Math.round(avgRestockQuantity),
+        restocks
+      };
+    } catch (error) {
+      log16.error("\u274C Error fetching restock history:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getProductSalesStats", async (_, productId, options) => {
+    try {
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        include: {
+          category: true,
+          variants: true
+        }
+      });
+      if (!product) {
+        throw new Error("Product not found");
+      }
+      const whereClause = {
+        productId,
+        transaction: {
+          status: "completed"
+        }
+      };
+      if (options?.startDate && options?.endDate) {
+        whereClause.createdAt = {
+          gte: new Date(options.startDate),
+          lte: new Date(options.endDate)
+        };
+      }
+      const saleItems = await prisma.saleItem.findMany({
+        where: whereClause,
+        include: {
+          transaction: true
+        },
+        orderBy: {
+          createdAt: "asc"
+        }
+      });
+      const totalUnitsSold = saleItems.reduce((sum, item) => sum + item.quantity, 0);
+      const totalRevenue = saleItems.reduce((sum, item) => sum + item.total, 0);
+      const totalTransactions = new Set(saleItems.map((item) => item.transactionId)).size;
+      const avgUnitsPerSale = totalTransactions > 0 ? totalUnitsSold / totalTransactions : 0;
+      const avgRevenuePerSale = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
+      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+      return {
+        product: {
+          id: product.id,
+          name: product.name,
+          baseSKU: product.baseSKU,
+          category: product.category.name
+        },
+        totalUnitsSold,
+        totalRevenue,
+        totalTransactions,
+        avgUnitsPerSale: Math.round(avgUnitsPerSale * 10) / 10,
+        avgRevenuePerSale: Math.round(avgRevenuePerSale * 100) / 100,
+        currentStock: totalStock,
+        turnoverRate: totalStock > 0 ? totalUnitsSold / totalStock : 0
+      };
+    } catch (error) {
+      log16.error("\u274C Error fetching product sales stats:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getProductSalesTrend", async (_, productId, options) => {
+    try {
+      let dateFormat;
+      switch (options.period) {
+        case "daily":
+          dateFormat = "date(si.createdAt / 1000, 'unixepoch')";
+          break;
+        case "weekly":
+          dateFormat = "date(si.createdAt / 1000, 'unixepoch', 'weekday 0', '-7 days')";
+          break;
+        case "monthly":
+          dateFormat = "strftime('%Y-%m', si.createdAt / 1000, 'unixepoch')";
+          break;
+        case "yearly":
+          dateFormat = "strftime('%Y', si.createdAt / 1000, 'unixepoch')";
+          break;
+        default:
+          dateFormat = "date(si.createdAt / 1000, 'unixepoch')";
+      }
+      let query = `
+      SELECT 
+        ${dateFormat} as period,
+        CAST(SUM(si.quantity) AS INTEGER) as unitsSold,
+        ROUND(SUM(si.total), 2) as revenue,
+        COUNT(*) as transactions,
+        ROUND(CAST(SUM(si.quantity) AS REAL) / COUNT(*), 1) as avgUnitsPerTransaction
+      FROM SaleItem si
+      JOIN SaleTransaction st ON si.transactionId = st.id
+      WHERE si.productId = ? AND st.status = 'completed'
+    `;
+      const params = [productId];
+      if (options.startDate && options.endDate) {
+        const startTimestamp = new Date(options.startDate).getTime();
+        const endTimestamp = new Date(options.endDate).getTime();
+        query += ` AND si.createdAt >= ? AND si.createdAt <= ?`;
+        params.push(startTimestamp, endTimestamp);
+      }
+      query += `
+      GROUP BY period
+      ORDER BY period ASC
+    `;
+      const trend = await prisma.$queryRawUnsafe(query, ...params);
+      const serializedTrend = trend.map((t) => ({
+        ...t,
+        unitsSold: Number(t.unitsSold),
+        transactions: Number(t.transactions)
+      }));
+      return serializedTrend;
+    } catch (error) {
+      log16.error("\u274C Error fetching sales trend:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getTopSellingProducts", async (_, options) => {
+    try {
+      const limit = options.limit || 10;
+      let query = `
+      SELECT 
+        p.id as productId,
+        p.name as productName,
+        COALESCE(c.name, 'Uncategorized') as category,
+        CAST(SUM(si.quantity) AS INTEGER) as unitsSold,
+        ROUND(SUM(si.total), 2) as revenue,
+        COUNT(DISTINCT si.transactionId) as transactions,
+        ROUND(CAST(SUM(si.quantity) AS REAL) / COUNT(DISTINCT si.transactionId), 1) as avgUnitsPerTransaction
+      FROM SaleItem si
+      JOIN Product p ON si.productId = p.id
+      LEFT JOIN Category c ON p.categoryId = c.id
+      JOIN SaleTransaction st ON si.transactionId = st.id
+      WHERE st.status = 'completed'
+    `;
+      const params = [];
+      if (options.startDate && options.endDate) {
+        const startTimestamp = new Date(options.startDate).getTime();
+        const endTimestamp = new Date(options.endDate).getTime();
+        query += ` AND si.createdAt >= ? AND si.createdAt <= ?`;
+        params.push(startTimestamp, endTimestamp);
+      }
+      if (options.categoryId) {
+        query += ` AND p.categoryId = ?`;
+        params.push(options.categoryId);
+      }
+      query += `
+      GROUP BY p.id, p.name, c.name
+      ORDER BY unitsSold DESC
+      LIMIT ?
+    `;
+      params.push(limit);
+      const topProducts = await prisma.$queryRawUnsafe(query, ...params);
+      const serializedProducts = topProducts.map((p) => ({
+        ...p,
+        unitsSold: Number(p.unitsSold),
+        transactions: Number(p.transactions)
+      }));
+      return serializedProducts;
+    } catch (error) {
+      log16.error("\u274C Error fetching top selling products:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getOverallStats", async (_, options) => {
+    try {
+      let query = `
+      SELECT 
+        CAST(SUM(si.quantity) AS INTEGER) as totalUnitsSold,
+        ROUND(SUM(si.total), 2) as totalRevenue,
+        COUNT(DISTINCT si.transactionId) as totalTransactions,
+        COUNT(DISTINCT si.productId) as uniqueProducts
+      FROM SaleItem si
+      JOIN SaleTransaction st ON si.transactionId = st.id
+      WHERE st.status = 'completed'
+    `;
+      const params = [];
+      if (options.startDate && options.endDate) {
+        const startTimestamp = new Date(options.startDate).getTime();
+        const endTimestamp = new Date(options.endDate).getTime();
+        query += ` AND si.createdAt >= ? AND si.createdAt <= ?`;
+        params.push(startTimestamp, endTimestamp);
+      }
+      const result = await prisma.$queryRawUnsafe(query, ...params);
+      const stats = result[0];
+      const finalStats = {
+        totalUnitsSold: Number(stats.totalUnitsSold) || 0,
+        totalRevenue: Number(stats.totalRevenue) || 0,
+        totalTransactions: Number(stats.totalTransactions) || 0,
+        uniqueProducts: Number(stats.uniqueProducts) || 0,
+        avgOrderValue: stats.totalTransactions > 0 ? Number(stats.totalRevenue) / Number(stats.totalTransactions) : 0
+      };
+      return finalStats;
+    } catch (error) {
+      log16.error("\u274C Error fetching overall stats:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getAllStockMovements", async (_, options) => {
+    try {
+      const limit = options?.limit || 50;
+      let query = `
+      SELECT 
+        sm.id,
+        sm.type,
+        sm.quantity,
+        sm.previousStock,
+        sm.newStock,
+        sm.reason,
+        sm.notes,
+        sm.createdAt,
+        p.name as productName,
+        COALESCE(v.sku, p.baseSKU) as productSku,
+        u.username,
+        u.fullName
+      FROM StockMovement sm
+      JOIN ProductVariant v ON sm.variantId = v.id
+      JOIN Product p ON v.productId = p.id
+      LEFT JOIN User u ON sm.userId = u.id
+      WHERE 1=1
+    `;
+      const params = [];
+      if (options?.type) {
+        query += ` AND sm.type = ?`;
+        params.push(options.type);
+      }
+      if (options?.startDate) {
+        query += ` AND sm.createdAt >= ?`;
+        params.push(new Date(options.startDate).toISOString());
+      }
+      if (options?.endDate) {
+        query += ` AND sm.createdAt <= ?`;
+        params.push(new Date(options.endDate).toISOString());
+      }
+      if (options?.search) {
+        query += ` AND (p.name LIKE ? OR v.sku LIKE ? OR p.baseSKU LIKE ?)`;
+        const searchTerm = `%${options.search}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
+      }
+      query += `
+      ORDER BY sm.createdAt DESC
+      LIMIT ?
+    `;
+      params.push(limit);
+      const movements = await prisma.$queryRawUnsafe(query, ...params);
+      return movements.map((m) => ({
+        id: m.id,
+        type: m.type,
+        quantity: m.quantity,
+        previousStock: m.previousStock,
+        newStock: m.newStock,
+        reason: m.reason,
+        notes: m.notes,
+        createdAt: m.createdAt,
+        product: {
+          name: m.productName,
+          sku: m.productSku
+        },
+        user: m.username ? {
+          username: m.username,
+          fullName: m.fullName
+        } : null
+      }));
+    } catch (error) {
+      log16.error("\u274C Error fetching all stock movements:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:compareStores", async (_, options) => {
+    try {
+      if (!prisma) {
+        log16.error("\u274C Prisma not initialized for store comparison");
+        return { stores: [], dateRange: { startDate: /* @__PURE__ */ new Date(), endDate: /* @__PURE__ */ new Date() } };
+      }
+      const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
+      const { storeIds = [], startDate, endDate } = options;
+      const start = startDate ? new Date(startDate) : void 0;
+      const end = endDate ? new Date(endDate) : void 0;
+      const comparison = await storeAnalytics.compareStores(storeIds, start, end);
+      return comparison;
+    } catch (error) {
+      log16.error("\u274C Error comparing stores:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getStoreMetrics", async (_, options) => {
+    try {
+      if (!prisma) {
+        log16.error("\u274C Prisma not initialized for store metrics");
+        return null;
+      }
+      const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
+      const { storeId, storeName, startDate, endDate } = options;
+      const start = startDate ? new Date(startDate) : void 0;
+      const end = endDate ? new Date(endDate) : void 0;
+      const metrics = await storeAnalytics.getStoreMetrics(storeId, storeName, start, end);
+      return metrics;
+    } catch (error) {
+      log16.error("\u274C Error getting store metrics:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getTopStores", async (_, options) => {
+    try {
+      if (!prisma) {
+        log16.error("\u274C Prisma not initialized for top stores");
+        return [];
+      }
+      const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
+      const { limit = 10, startDate, endDate } = options;
+      const start = startDate ? new Date(startDate) : void 0;
+      const end = endDate ? new Date(endDate) : void 0;
+      const topStores = await storeAnalytics.getTopStores(limit, start, end);
+      return topStores;
+    } catch (error) {
+      log16.error("\u274C Error getting top stores:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("analytics:getStoreTrends", async (_, options) => {
+    try {
+      if (!prisma) {
+        log16.error("\u274C Prisma not initialized for store trends");
+        return [];
+      }
+      const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
+      const { storeId, interval = "day", days = 30 } = options;
+      const trends = await storeAnalytics.getStoreTrends(storeId, interval, days);
+      return trends;
+    } catch (error) {
+      log16.error("\u274C Error getting store trends:", error);
+      throw error;
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/module.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/utils/module-settings.ts
+var import_fs2 = __toESM(require("fs"));
+var import_path2 = __toESM(require("path"));
+init_electron_node();
+var log17 = createLogger("ModuleSettings");
+var SETTINGS_FILENAME = "bizflow-settings.json";
+function getSettingsPath() {
+  const userData = app.getPath("userData");
+  return import_path2.default.join(userData, SETTINGS_FILENAME);
+}
+function readSettings() {
+  const filePath = getSettingsPath();
+  try {
+    if (!import_fs2.default.existsSync(filePath))
+      return {};
+    const raw = import_fs2.default.readFileSync(filePath, "utf8");
+    return JSON.parse(raw);
+  } catch (err) {
+    log17.warn("Could not read settings file:", err);
+    return {};
+  }
+}
+function writeSettings(settings) {
+  const filePath = getSettingsPath();
+  try {
+    import_fs2.default.writeFileSync(filePath, JSON.stringify(settings, null, 2), "utf8");
+  } catch (err) {
+    log17.error("Could not write settings file:", err);
+  }
+}
+function getEnabledModuleIds() {
+  const envModules = process.env.ENABLED_MODULES?.split(",").map((s) => s.trim()).filter(Boolean);
+  if (envModules && envModules.length > 0) {
+    return envModules;
+  }
+  const settings = readSettings();
+  if (settings.enabledModules)
+    return settings.enabledModules;
+  const defaults = [];
+  if (true)
+    defaults.push("commerce");
+  if (true)
+    defaults.push("bakery");
+  if (true)
+    defaults.push("restaurant");
+  if (true)
+    defaults.push("warehouse");
+  if (true)
+    defaults.push("clinic");
+  if (true)
+    defaults.push("vet");
+  if (true)
+    defaults.push("gym");
+  return defaults.length > 0 ? defaults : ["commerce"];
+}
+function setModuleEnabled(moduleId, enabled) {
+  const settings = readSettings();
+  const current = new Set(settings.enabledModules ?? getEnabledModuleIds());
+  if (enabled) {
+    current.add(moduleId);
+  } else {
+    current.delete(moduleId);
+  }
+  writeSettings({ ...settings, enabledModules: Array.from(current) });
+}
+
+// apps/bizflow/src/main/ipc/handlers/module.handlers.ts
+var log18 = createLogger("ModuleHandlers");
+function registerModuleHandlers() {
+  ipcMain.handle("module:getEnabled", () => {
+    return getEnabledModuleIds();
+  });
+  ipcMain.handle("module:setEnabled", (_event, { moduleId, enabled }) => {
+    setModuleEnabled(moduleId, enabled);
+    log18.info(`Module "${moduleId}" ${enabled ? "enabled" : "disabled"}`);
+  });
+  ipcMain.handle("module:relaunch", () => {
+    log18.info("Relaunching app to apply module changes\u2026");
+    app.relaunch();
+    app.exit(0);
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/log.handlers.ts
+init_electron_node();
+var rendererLog = createLogger("Renderer");
+function registerLogHandlers() {
+  ipcMain.handle("log:fromRenderer", (_event, entry) => {
+    const { level, message, data } = entry;
+    if (data !== void 0) {
+      rendererLog[level](message, data);
+    } else {
+      rendererLog[level](message);
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/sales.handlers.ts
+init_electron_node();
+var log19 = createLogger("Sales");
+function registerSalesHandlers(prisma2) {
+  ipcMain.handle("sales:create", async (_, saleData) => {
+    try {
+      log19.warn("sales:create is deprecated - use sale-transactions:create instead");
+      const { productId, variantId, userId, quantity, price, total, paymentMethod } = saleData;
+      if (prisma2) {
+        const result = await prisma2.$transaction(async (tx) => {
+          const transaction = await tx.saleTransaction.create({
+            data: {
+              userId,
+              customerId: null,
+              subtotal: price * quantity,
+              tax: 0,
+              discount: 0,
+              total,
+              paymentMethod,
+              status: "completed"
+            }
+          });
+          await tx.saleItem.create({
+            data: {
+              transactionId: transaction.id,
+              productId,
+              variantId,
+              quantity,
+              price,
+              cost: 0,
+              total
+            }
+          });
+          if (variantId) {
+            await tx.productVariant.update({
+              where: { id: variantId },
+              data: { stock: { decrement: quantity } }
+            });
+          }
+          return transaction;
+        }, {
+          maxWait: 3e4,
+          timeout: 3e4
+        });
+        return { success: true, sale: result };
+      }
+      return { success: true, sale: { id: "s_mock", ...saleData, status: "completed" } };
+    } catch (error) {
+      log19.error("Error creating sale:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("sales:getAll", async () => {
+    try {
+      log19.warn("sales:getAll is deprecated - use sale-transactions:getAll instead");
+      if (prisma2) {
+        const transactions = await prisma2.saleTransaction.findMany({
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: {
+                    name: true,
+                    category: true
+                  }
+                }
+              }
+            },
+            user: {
+              select: {
+                username: true
+              }
+            }
+          },
+          orderBy: { createdAt: "desc" }
+        });
+        return transactions;
+      }
+      return [];
+    } catch (error) {
+      log19.error("Error fetching sales:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("sales:getByDateRange", async (_, options = {}) => {
+    try {
+      log19.warn("sales:getByDateRange is deprecated - use sale-transactions:getByDateRange instead");
+      const { startDate, endDate } = options;
+      if (!prisma2)
+        return [];
+      const where = {};
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate)
+          where.createdAt.gte = new Date(startDate);
+        if (endDate)
+          where.createdAt.lte = new Date(endDate);
+      }
+      const transactions = await prisma2.saleTransaction.findMany({
+        where,
+        select: {
+          id: true,
+          total: true,
+          createdAt: true,
+          paymentMethod: true,
+          status: true,
+          customer: {
+            select: {
+              name: true
+            }
+          },
+          items: {
+            select: {
+              quantity: true
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" }
+      });
+      return transactions;
+    } catch (error) {
+      log19.error("Error fetching sales by date range:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("sales:getStats", async (_, options = {}) => {
+    try {
+      log19.warn("sales:getStats is deprecated - use analytics:getOverallStats instead");
+      if (!prisma2)
+        return null;
+      const { startDate, endDate } = options;
+      const where = {};
+      if (startDate || endDate) {
+        where.createdAt = {};
+        if (startDate)
+          where.createdAt.gte = new Date(startDate);
+        if (endDate)
+          where.createdAt.lte = new Date(endDate);
+      }
+      const [totalSales, completedSales, refundedSales] = await Promise.all([
+        prisma2.saleTransaction.count({ where }),
+        prisma2.saleTransaction.count({ where: { ...where, status: "completed" } }),
+        prisma2.saleTransaction.count({ where: { ...where, status: "refunded" } })
+      ]);
+      const revenue = await prisma2.saleTransaction.aggregate({
+        where: { ...where, status: "completed" },
+        _sum: { total: true }
+      });
+      return {
+        totalSales,
+        completedSales,
+        refundedSales,
+        totalRevenue: revenue._sum.total || 0
+      };
+    } catch (error) {
+      log19.error("Error fetching sales stats:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("sales:refund", async (_, saleId) => {
+    try {
+      log19.warn("sales:refund is deprecated - use sale-transactions:refund instead");
+      if (prisma2) {
+        const transaction = await prisma2.saleTransaction.update({
+          where: { id: saleId },
+          data: { status: "refunded" },
+          include: {
+            items: {
+              include: {
+                product: true,
+                variant: true
+              }
+            },
+            user: {
+              select: {
+                username: true
+              }
+            }
+          }
+        });
+        for (const item of transaction.items) {
+          if (item.variantId) {
+            const variant = await prisma2.productVariant.findUnique({
+              where: { id: item.variantId }
+            });
+            if (variant) {
+              const previousStock = variant.stock;
+              const newStock = previousStock + item.quantity;
+              await prisma2.productVariant.update({
+                where: { id: item.variantId },
+                data: { stock: newStock }
+              });
+              await prisma2.stockMovement.create({
+                data: {
+                  variantId: item.variantId,
+                  type: "RETURN",
+                  quantity: item.quantity,
+                  // Positive for returns
+                  previousStock,
+                  newStock,
+                  referenceId: saleId,
+                  userId: transaction.userId,
+                  reason: "Refund/Return",
+                  notes: `Refund of sale ${saleId}`
+                }
+              });
+            }
+          }
+        }
+        return { success: true, transaction };
+      }
+      return { success: false, message: "Database not available" };
+    } catch (error) {
+      log19.error("Error refunding sale:", error);
+      throw error;
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/sale-transactions.handlers.ts
+init_electron_node();
+var log20 = createLogger("SaleTransactions");
+function registerSaleTransactionHandlers(prisma2) {
+  ipcMain.handle("saleTransactions:create", async (_, { items, transactionData }) => {
+    try {
+      if (!prisma2) {
+        return { success: false, error: "Database not initialized" };
+      }
+      if (!items || items.length === 0) {
+        return { success: false, error: "No items provided" };
+      }
+      if (!transactionData.userId) {
+        return { success: false, error: "User ID required" };
+      }
+      const result = await prisma2.$transaction(async (tx) => {
+        const saleTransaction = await tx.saleTransaction.create({
+          data: {
+            userId: transactionData.userId,
+            customerId: transactionData.customerId || null,
+            paymentMethod: transactionData.paymentMethod || "cash",
+            status: "completed",
+            customerName: transactionData.customerName || null,
+            subtotal: transactionData.subtotal,
+            tax: transactionData.tax || 0,
+            total: transactionData.total
+          }
+        });
+        const saleItems = await Promise.all(
+          items.map(
+            (item) => tx.saleItem.create({
+              data: {
+                transactionId: saleTransaction.id,
+                productId: item.productId,
+                variantId: item.variantId || null,
+                quantity: item.quantity,
+                price: item.price,
+                total: item.price * item.quantity,
+                // Discount fields
+                discountType: item.discountType || "NONE",
+                discountValue: item.discountValue || 0,
+                finalPrice: item.price,
+                // price passed is already the final price after discount
+                discountReason: item.discountReason || null,
+                discountAppliedBy: item.discountAppliedBy || null,
+                discountAppliedAt: item.discountAppliedBy ? /* @__PURE__ */ new Date() : null
+              }
+            })
+          )
+        );
+        await Promise.all(
+          items.map(async (item) => {
+            if (item.variantId) {
+              const variant = await tx.productVariant.findUnique({
+                where: { id: item.variantId }
+              });
+              if (variant) {
+                const previousStock = variant.stock;
+                const newStock = previousStock - item.quantity;
+                await tx.productVariant.update({
+                  where: { id: item.variantId },
+                  data: { stock: newStock }
+                });
+                await tx.stockMovement.create({
+                  data: {
+                    variantId: item.variantId,
+                    type: "SALE",
+                    quantity: -item.quantity,
+                    // Negative for sales
+                    previousStock,
+                    newStock,
+                    referenceId: saleTransaction.id,
+                    userId: transactionData.userId,
+                    notes: `Sale transaction ${saleTransaction.id}`
+                  }
+                });
+              }
+            } else {
+              const product = await tx.product.findUnique({
+                where: { id: item.productId },
+                include: { variants: true }
+              });
+              if (product && product.variants && product.variants.length > 0) {
+                const defaultVariant = product.variants[0];
+                if (defaultVariant && defaultVariant.stock >= item.quantity) {
+                  const previousStock = defaultVariant.stock;
+                  const newStock = previousStock - item.quantity;
+                  await tx.productVariant.update({
+                    where: { id: defaultVariant.id },
+                    data: { stock: newStock }
+                  });
+                  const saleItemToUpdate = saleItems.find((si) => si.productId === item.productId);
+                  if (saleItemToUpdate) {
+                    await tx.saleItem.update({
+                      where: { id: saleItemToUpdate.id },
+                      data: { variantId: defaultVariant.id }
+                    });
+                  }
+                  await tx.stockMovement.create({
+                    data: {
+                      variantId: defaultVariant.id,
+                      type: "SALE",
+                      quantity: -item.quantity,
+                      previousStock,
+                      newStock,
+                      referenceId: saleTransaction.id,
+                      userId: transactionData.userId,
+                      notes: `Sale transaction ${saleTransaction.id} (simple product)`
+                    }
+                  });
+                }
+              }
+            }
+            return Promise.resolve();
+          })
+        );
+        return { transaction: saleTransaction, items: saleItems };
+      }, {
+        maxWait: 3e4,
+        timeout: 3e4
+      });
+      const transactionWithUser = await prisma2.saleTransaction.findUnique({
+        where: { id: result.transaction.id },
+        include: {
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          },
+          customer: {
+            select: {
+              name: true,
+              phone: true
+            }
+          },
+          installments: {
+            orderBy: {
+              dueDate: "asc"
+            }
+          },
+          deposits: true
+        }
+      });
+      if (transactionData.customerId) {
+        try {
+          const customerTotal = await prisma2.saleTransaction.aggregate({
+            where: {
+              customerId: transactionData.customerId,
+              status: "completed"
+            },
+            _sum: { total: true }
+          });
+          await prisma2.customer.update({
+            where: { id: transactionData.customerId },
+            data: { totalSpent: customerTotal._sum.total || 0 }
+          });
+        } catch (error) {
+          log20.error("Error updating customer totalSpent:", error);
+        }
+      }
+      return { success: true, transaction: transactionWithUser, items: result.items };
+    } catch (error) {
+      log20.error("Error creating sale transaction:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("saleTransactions:getAll", async () => {
+    try {
+      if (!prisma2)
+        return [];
+      const transactions = await prisma2.saleTransaction.findMany({
+        include: {
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  category: {
+                    select: {
+                      name: true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          deposits: true,
+          installments: true
+        },
+        orderBy: { createdAt: "desc" }
+      });
+      return transactions;
+    } catch (error) {
+      log20.error("Error fetching sale transactions:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("saleTransactions:getById", async (_, id) => {
+    try {
+      if (!prisma2)
+        return null;
+      const transaction = await prisma2.saleTransaction.findUnique({
+        where: { id },
+        include: {
+          user: {
+            select: {
+              username: true,
+              fullName: true
+            }
+          },
+          customer: {
+            select: {
+              name: true,
+              phone: true,
+              email: true
+            }
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  baseSKU: true,
+                  category: {
+                    select: {
+                      name: true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          installments: {
+            orderBy: {
+              dueDate: "asc"
+            }
+          },
+          deposits: {
+            orderBy: {
+              createdAt: "desc"
+            }
+          }
+        }
+      });
+      return transaction;
+    } catch (error) {
+      log20.error("Error fetching sale transaction:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("saleTransactions:refund", async (_, id) => {
+    try {
+      if (!prisma2) {
+        return { success: false, error: "Database not initialized" };
+      }
+      const result = await prisma2.$transaction(async (tx) => {
+        const transaction = await tx.saleTransaction.findUnique({
+          where: { id },
+          include: { items: true }
+        });
+        if (!transaction) {
+          throw new Error("Transaction not found");
+        }
+        if (transaction.status === "refunded") {
+          throw new Error("Transaction already refunded");
+        }
+        const updated = await tx.saleTransaction.update({
+          where: { id },
+          data: { status: "refunded" }
+        });
+        await Promise.all(
+          transaction.items.map(async (item) => {
+            if (item.variantId) {
+              const variant = await tx.productVariant.findUnique({
+                where: { id: item.variantId },
+                include: {
+                  product: {
+                    select: { name: true, baseSKU: true }
+                  }
+                }
+              });
+              if (variant) {
+                const previousStock = variant.stock;
+                const newStock = previousStock + item.quantity;
+                await tx.productVariant.update({
+                  where: { id: item.variantId },
+                  data: { stock: newStock }
+                });
+                await tx.stockMovement.create({
+                  data: {
+                    variantId: item.variantId,
+                    type: "RETURN",
+                    quantity: item.quantity,
+                    // Positive for returns
+                    previousStock,
+                    newStock,
+                    referenceId: transaction.id,
+                    userId: transaction.userId,
+                    reason: "Refund/Return",
+                    notes: `Refund of transaction ${transaction.id}`
+                  }
+                });
+              } else {
+                log20.error(`[REFUND-ALL] ERROR: Variant ${item.variantId} not found!`);
+              }
+            } else {
+              log20.warn(`[REFUND-ALL] Item ${item.id} has no variantId, searching for default variant...`);
+              const product = await tx.product.findUnique({
+                where: { id: item.productId },
+                include: { variants: true }
+              });
+              if (product && product.variants && product.variants.length > 0) {
+                const defaultVariant = product.variants[0];
+                const previousStock = defaultVariant.stock;
+                const newStock = previousStock + item.quantity;
+                await tx.productVariant.update({
+                  where: { id: defaultVariant.id },
+                  data: { stock: newStock }
+                });
+                await tx.saleItem.update({
+                  where: { id: item.id },
+                  data: { variantId: defaultVariant.id }
+                });
+                await tx.stockMovement.create({
+                  data: {
+                    variantId: defaultVariant.id,
+                    type: "RETURN",
+                    quantity: item.quantity,
+                    previousStock,
+                    newStock,
+                    referenceId: transaction.id,
+                    userId: transaction.userId,
+                    reason: "Refund/Return",
+                    notes: `Refund of transaction ${transaction.id} (legacy null variantId)`
+                  }
+                });
+              } else {
+                log20.error(`[REFUND-ALL] ERROR: Could not find product or variants for item ${item.id}`);
+              }
+            }
+            return Promise.resolve();
+          })
+        );
+        return updated;
+      });
+      if (result.customerId) {
+        try {
+          const customerTotal = await prisma2.saleTransaction.aggregate({
+            where: {
+              customerId: result.customerId,
+              status: "completed"
+            },
+            _sum: { total: true }
+          });
+          await prisma2.customer.update({
+            where: { id: result.customerId },
+            data: { totalSpent: customerTotal._sum.total || 0 }
+          });
+        } catch (error) {
+          log20.error("Error updating customer totalSpent after refund:", error);
+        }
+      }
+      return { success: true, transaction: result };
+    } catch (error) {
+      log20.error("Error refunding transaction:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("saleTransactions:refundItems", async (_, { transactionId, items }) => {
+    try {
+      if (!prisma2) {
+        return { success: false, error: "Database not initialized" };
+      }
+      const result = await prisma2.$transaction(async (tx) => {
+        const transaction = await tx.saleTransaction.findUnique({
+          where: { id: transactionId },
+          include: { items: true }
+        });
+        if (!transaction) {
+          throw new Error("Transaction not found");
+        }
+        if (transaction.status === "refunded") {
+          throw new Error("Transaction already fully refunded");
+        }
+        for (const refundItem of items) {
+          const saleItem = transaction.items.find((item) => item.id === refundItem.saleItemId);
+          if (!saleItem) {
+            throw new Error(`Sale item ${refundItem.saleItemId} not found`);
+          }
+          const remainingQuantity = saleItem.quantity - saleItem.refundedQuantity;
+          if (refundItem.quantityToRefund <= 0) {
+            throw new Error("Refund quantity must be greater than 0");
+          }
+          if (refundItem.quantityToRefund > remainingQuantity) {
+            throw new Error(`Cannot refund ${refundItem.quantityToRefund} units. Only ${remainingQuantity} units available for refund`);
+          }
+          const newRefundedQuantity = saleItem.refundedQuantity + refundItem.quantityToRefund;
+          const isFullyRefunded = newRefundedQuantity === saleItem.quantity;
+          await tx.saleItem.update({
+            where: { id: refundItem.saleItemId },
+            data: {
+              refundedQuantity: newRefundedQuantity,
+              refundedAt: isFullyRefunded && !saleItem.refundedAt ? /* @__PURE__ */ new Date() : saleItem.refundedAt
+            }
+          });
+          if (saleItem.variantId) {
+            const variant = await tx.productVariant.findUnique({
+              where: { id: saleItem.variantId },
+              include: {
+                product: {
+                  select: { name: true, baseSKU: true }
+                }
+              }
+            });
+            if (variant) {
+              log20.info(`[REFUND] Variant found:`, {
+                id: variant.id,
+                sku: variant.sku,
+                product: variant.product.name,
+                currentStock: variant.stock
+              });
+              const previousStock = variant.stock;
+              const newStock = previousStock + refundItem.quantityToRefund;
+              await tx.productVariant.update({
+                where: { id: saleItem.variantId },
+                data: { stock: newStock }
+              });
+              await tx.stockMovement.create({
+                data: {
+                  variantId: saleItem.variantId,
+                  type: "RETURN",
+                  quantity: refundItem.quantityToRefund,
+                  previousStock,
+                  newStock,
+                  referenceId: transactionId,
+                  userId: transaction.userId,
+                  reason: "Partial Refund",
+                  notes: `Partial refund: ${refundItem.quantityToRefund} of ${saleItem.quantity} units from transaction ${transactionId}`
+                }
+              });
+            } else {
+              log20.error(`[REFUND] ERROR: Variant ${saleItem.variantId} not found in database!`);
+            }
+          } else {
+            log20.warn(`[REFUND] Sale item ${saleItem.id} has no variantId, searching for default variant...`);
+            const product = await tx.product.findUnique({
+              where: { id: saleItem.productId },
+              include: { variants: true }
+            });
+            if (product && product.variants && product.variants.length > 0) {
+              const defaultVariant = product.variants[0];
+              const previousStock = defaultVariant.stock;
+              const newStock = previousStock + refundItem.quantityToRefund;
+              await tx.productVariant.update({
+                where: { id: defaultVariant.id },
+                data: { stock: newStock }
+              });
+              await tx.saleItem.update({
+                where: { id: saleItem.id },
+                data: { variantId: defaultVariant.id }
+              });
+              await tx.stockMovement.create({
+                data: {
+                  variantId: defaultVariant.id,
+                  type: "RETURN",
+                  quantity: refundItem.quantityToRefund,
+                  previousStock,
+                  newStock,
+                  referenceId: transactionId,
+                  userId: transaction.userId,
+                  reason: "Partial Refund",
+                  notes: `Partial refund: ${refundItem.quantityToRefund} of ${saleItem.quantity} units from transaction ${transactionId} (legacy null variantId)`
+                }
+              });
+            } else {
+              log20.error(`[REFUND] ERROR: Could not find product or variants for sale item ${saleItem.id}`);
+            }
+          }
+        }
+        const updatedItems = await tx.saleItem.findMany({
+          where: { transactionId }
+        });
+        const allFullyRefunded = updatedItems.every(
+          (item) => item.refundedQuantity === item.quantity
+        );
+        const anyRefunded = updatedItems.some(
+          (item) => item.refundedQuantity > 0
+        );
+        const newStatus = allFullyRefunded ? "refunded" : anyRefunded ? "partially_refunded" : "completed";
+        const updatedTransaction = await tx.saleTransaction.update({
+          where: { id: transactionId },
+          data: { status: newStatus }
+        });
+        return updatedTransaction;
+      });
+      if (result.customerId) {
+        try {
+          const completedTotal = await prisma2.saleTransaction.aggregate({
+            where: {
+              customerId: result.customerId,
+              status: "completed"
+            },
+            _sum: { total: true }
+          });
+          const partiallyRefundedTransactions = await prisma2.saleTransaction.findMany({
+            where: {
+              customerId: result.customerId,
+              status: "partially_refunded"
+            },
+            select: {
+              total: true,
+              items: {
+                select: {
+                  price: true,
+                  refundedQuantity: true
+                }
+              }
+            }
+          });
+          const partiallyRefundedTotal = partiallyRefundedTransactions.reduce((sum, tx) => {
+            const refundedAmount = tx.items.reduce((itemSum, item) => {
+              const refunded = item.refundedQuantity || 0;
+              return itemSum + refunded * (item.finalPrice || item.price);
+            }, 0);
+            return sum + (tx.total - refundedAmount);
+          }, 0);
+          const totalSpent = (completedTotal._sum.total || 0) + partiallyRefundedTotal;
+          await prisma2.customer.update({
+            where: { id: result.customerId },
+            data: { totalSpent }
+          });
+        } catch (error) {
+          log20.error("Error updating customer totalSpent:", error);
+        }
+      }
+      return { success: true, transaction: result };
+    } catch (error) {
+      log20.error("Error refunding items:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("saleTransactions:getByDateRange", async (_, { startDate, endDate }) => {
+    try {
+      if (!prisma2)
+        return [];
+      const transactions = await prisma2.saleTransaction.findMany({
+        where: {
+          createdAt: {
+            gte: new Date(startDate),
+            lte: new Date(endDate)
+          }
+        },
+        include: {
+          user: {
+            select: {
+              username: true
+            }
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  baseCost: true,
+                  category: {
+                    select: {
+                      name: true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          deposits: true,
+          installments: true
+        },
+        orderBy: { createdAt: "desc" }
+      });
+      return transactions;
+    } catch (error) {
+      log20.error("Error fetching transactions by date range:", error);
+      throw error;
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/inventory.handlers.ts
+init_electron_node();
+var log21 = createLogger("Inventory");
+function registerInventoryHandlers(prisma2) {
+  const inventoryService = InventoryService.getInstance(prisma2);
+  ipcMain.handle("inventory:getAll", async () => {
+    try {
+      return await inventoryService.getAllInventory({ includeImages: true });
+    } catch (error) {
+      log21.error("Error fetching inventory:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:getMetrics", async () => {
+    try {
+      return await inventoryService.getInventoryMetrics();
+    } catch (error) {
+      log21.error("Error fetching metrics:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:getTopStocked", async (_, limit = 5) => {
+    try {
+      return await inventoryService.getTopStockedItems(limit);
+    } catch (error) {
+      log21.error("Error fetching top stocked items:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:getLowStock", async (_, threshold = 10) => {
+    try {
+      return await inventoryService.getLowStockItems(threshold);
+    } catch (error) {
+      log21.error("Error fetching low stock items:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:getOutOfStock", async () => {
+    try {
+      return await inventoryService.getOutOfStockItems();
+    } catch (error) {
+      log21.error("Error fetching out of stock items:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:search", async (_, query) => {
+    try {
+      return await inventoryService.searchInventory(query);
+    } catch (error) {
+      log21.error("Error searching inventory:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:getStockHistory", async (_, productId) => {
+    try {
+      return await inventoryService.getStockMovementHistory(productId);
+    } catch (error) {
+      log21.error("Error fetching stock history:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:updateStock", async (_, { variantId, stock }) => {
+    try {
+      await inventoryService.updateVariantStock(variantId, stock);
+      return { success: true };
+    } catch (error) {
+      log21.error("Error updating stock:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:getProducts", async () => {
+    try {
+      return await inventoryService.getAllInventory();
+    } catch (error) {
+      log21.error("Error fetching products:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("inventory:searchByBarcode", async (_, barcode) => {
+    try {
+      if (!barcode || typeof barcode !== "string") {
+        return null;
+      }
+      const trimmedBarcode = barcode.trim();
+      const variant = await prisma2.productVariant.findUnique({
+        where: { barcode: trimmedBarcode },
+        include: {
+          attributeValues: { include: { attribute: { select: { name: true } } } },
+          product: {
+            include: {
+              category: true,
+              images: true,
+              variants: {
+                include: {
+                  attributeValues: { include: { attribute: { select: { name: true } } } }
+                }
+              }
+            }
+          }
+        }
+      });
+      if (variant) {
+        return {
+          id: variant.product.id,
+          name: variant.product.name,
+          baseSKU: variant.product.baseSKU,
+          category: variant.product.category,
+          price: variant.product.price,
+          cost: variant.product.cost,
+          hasVariants: variant.product.hasVariants,
+          selectedVariant: {
+            id: variant.id,
+            sku: variant.sku,
+            barcode: variant.barcode,
+            attributeValues: variant.attributeValues,
+            stock: variant.stock,
+            price: variant.price,
+            cost: variant.cost
+          },
+          variants: variant.product.variants,
+          images: variant.product.images
+        };
+      }
+      const product = await prisma2.product.findUnique({
+        where: { baseBarcode: trimmedBarcode },
+        include: {
+          category: true,
+          images: true,
+          variants: {
+            include: {
+              attributeValues: { include: { attribute: { select: { name: true } } } }
+            }
+          }
+        }
+      });
+      if (product) {
+        if (product.hasVariants && product.variants.length > 0) {
+          const firstVariant = product.variants[0];
+          return {
+            id: product.id,
+            name: product.name,
+            baseSKU: product.baseSKU,
+            category: product.category,
+            price: product.price,
+            cost: product.cost,
+            hasVariants: product.hasVariants,
+            selectedVariant: {
+              id: firstVariant.id,
+              sku: firstVariant.sku,
+              barcode: firstVariant.barcode,
+              attributeValues: firstVariant.attributeValues,
+              stock: firstVariant.stock,
+              price: firstVariant.price,
+              cost: firstVariant.cost
+            },
+            variants: product.variants,
+            images: product.images
+          };
+        }
+        return {
+          id: product.id,
+          name: product.name,
+          baseSKU: product.baseSKU,
+          category: product.category,
+          price: product.price,
+          cost: product.cost,
+          hasVariants: product.hasVariants,
+          selectedVariant: null,
+          variants: product.variants,
+          images: product.images
+        };
+      }
+      return null;
+    } catch (error) {
+      log21.error("Error searching by barcode:", error);
+      return null;
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/products.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/CacheService.ts
+var log22 = createLogger("Cache");
+var CacheService = class _CacheService {
+  static instance;
+  cache = /* @__PURE__ */ new Map();
+  DEFAULT_TTL = 60 * 1e3;
+  // 1 minute
+  MAX_ENTRIES = 100;
+  // Prevent memory bloat
+  constructor() {
+    setInterval(() => this.cleanup(), 60 * 1e3);
+    log22.debug("CacheService initialised (max entries: 100, default TTL: 60s)");
+  }
+  /**
+   * Get singleton instance
+   */
+  static getInstance() {
+    if (!_CacheService.instance) {
+      _CacheService.instance = new _CacheService();
+    }
+    return _CacheService.instance;
+  }
+  /**
+   * Get cached value
+   * Returns null if not found or expired
+   */
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      log22.debug("Cache miss", { key });
+      return null;
+    }
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      log22.debug("Cache expired", { key });
+      return null;
+    }
+    log22.debug("Cache hit", { key });
+    return entry.data;
+  }
+  /**
+   * Set cached value with optional TTL
+   */
+  set(key, data, ttl) {
+    if (this.cache.size >= this.MAX_ENTRIES && !this.cache.has(key)) {
+      log22.warn("Cache full, evicting oldest entry", { size: this.cache.size });
+      this.evictOldest();
+    }
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl: ttl || this.DEFAULT_TTL
+    });
+    log22.debug("Cache set", { key, ttlMs: ttl || this.DEFAULT_TTL });
+  }
+  /**
+   * Check if key exists and is not expired
+   */
+  has(key) {
+    return this.get(key) !== null;
+  }
+  /**
+   * Delete specific cache entry
+   */
+  delete(key) {
+    this.cache.delete(key);
+  }
+  /**
+   * Clear all cache entries
+   */
+  clear() {
+    this.cache.clear();
+  }
+  /**
+   * Invalidate cache entries by pattern
+   * Example: invalidatePattern('products:*') clears all product-related caches
+   */
+  invalidatePattern(pattern) {
+    const regex = new RegExp(pattern.replace("*", ".*"));
+    let deleted = 0;
+    for (const key of this.cache.keys()) {
+      if (regex.test(key)) {
+        this.cache.delete(key);
+        deleted++;
+      }
+    }
+    log22.debug("Cache invalidated by pattern", { pattern, deleted });
+  }
+  /**
+   * Get or compute cached value
+   * If cache miss, execute computeFn and cache the result
+   */
+  async getOrCompute(key, computeFn, ttl) {
+    const cached = this.get(key);
+    if (cached !== null) {
+      return cached;
+    }
+    const computed = await computeFn();
+    this.set(key, computed, ttl);
+    return computed;
+  }
+  /**
+   * Remove expired entries
+   */
+  cleanup() {
+    const now = Date.now();
+    let deleted = 0;
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key);
+        deleted++;
+      }
+    }
+    if (deleted > 0)
+      log22.debug("Cache cleanup", { deleted, remaining: this.cache.size });
+  }
+  /**
+   * Evict oldest entry when max size reached
+   */
+  evictOldest() {
+    let oldestKey = null;
+    let oldestTime = Infinity;
+    for (const [key, entry] of this.cache.entries()) {
+      if (entry.timestamp < oldestTime) {
+        oldestTime = entry.timestamp;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) {
+      this.cache.delete(oldestKey);
+    }
+  }
+  /**
+   * Get cache statistics
+   */
+  getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.MAX_ENTRIES
+    };
+  }
+};
+var cacheService = CacheService.getInstance();
+var CacheKeys = {
+  DASHBOARD_METRICS: "dashboard:metrics",
+  PRODUCT_STATS: "products:stats",
+  INVENTORY_METRICS: "inventory:metrics",
+  SALES_SUMMARY: "sales:summary",
+  LOW_STOCK_ITEMS: "inventory:lowStock",
+  TOP_STOCKED_ITEMS: "inventory:topStocked",
+  // Dynamic keys
+  productById: (id) => `product:${id}`,
+  inventoryByCategory: (category) => `inventory:category:${category}`,
+  salesByDateRange: (start, end) => `sales:${start}:${end}`
+};
+
+// apps/bizflow/src/main/ipc/handlers/products.handlers.ts
+var log23 = createLogger("Products");
+var ATTR_INCLUDE = {
+  attributeValues: {
+    include: {
+      attribute: { select: { name: true } }
+    }
+  }
+};
+async function createVariantAttributes(tx, productId, variantId, attributes) {
+  if (!attributes || attributes.length === 0)
+    return;
+  const seen = /* @__PURE__ */ new Map();
+  for (const attr of attributes) {
+    seen.set(attr.name.toLowerCase(), attr.value);
+  }
+  const deduped = attributes.filter((attr) => {
+    const key = attr.name.toLowerCase();
+    if (seen.has(key)) {
+      seen.delete(key);
+      return true;
+    }
+    return false;
+  });
+  for (const attr of deduped) {
+    let prodAttr = await tx.productAttribute.findFirst({
+      where: { productId, name: attr.name }
+    });
+    if (!prodAttr) {
+      prodAttr = await tx.productAttribute.create({
+        data: { productId, name: attr.name, position: 0 }
+      });
+    }
+    await tx.variantAttributeValue.create({
+      data: { variantId, attributeId: prodAttr.id, value: attr.value }
+    });
+  }
+}
+function registerProductsHandlers(prisma2) {
+  ipcMain.handle("products:getAll", async (_, options = {}) => {
+    try {
+      if (!prisma2)
+        return [];
+      const {
+        includeImages = false,
+        limit = 500,
+        offset = 0,
+        searchTerm = "",
+        category = ""
+      } = options;
+      const where = {
+        isArchived: false
+        // Filter out archived products
+      };
+      if (searchTerm) {
+        where.OR = [
+          { name: { contains: searchTerm } },
+          { baseSKU: { contains: searchTerm } },
+          { description: { contains: searchTerm } }
+        ];
+      }
+      if (category) {
+        where.category = category;
+      }
+      const products = await prisma2.product.findMany({
+        where,
+        include: {
+          // Only load images if explicitly requested
+          images: includeImages ? {
+            orderBy: { order: "asc" },
+            take: 1
+            // Only first image for list view
+          } : false,
+          variants: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              sku: true,
+              barcode: true,
+              price: true,
+              stock: true,
+              createdAt: true,
+              updatedAt: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              }
+            }
+          },
+          store: {
+            select: {
+              id: true,
+              name: true,
+              location: true
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        // NEWEST FIRST
+        take: limit,
+        skip: offset
+      });
+      if (includeImages) {
+        const imageService = getImageService();
+        for (const product of products) {
+          if (product.images && product.images.length > 0) {
+            for (const image of product.images) {
+              if (image.filename) {
+                const dataUrl = await imageService.getImageDataUrl(image.filename);
+                image.imageData = dataUrl;
+              }
+            }
+          }
+        }
+      }
+      const totalCount = await prisma2.product.count({ where });
+      return {
+        products,
+        totalCount,
+        hasMore: offset + limit < totalCount
+      };
+    } catch (error) {
+      log23.error("Error fetching products:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("products:getById", async (_, id) => {
+    try {
+      if (!prisma2)
+        return null;
+      const product = await prisma2.product.findUnique({
+        where: { id },
+        include: {
+          images: { orderBy: { order: "asc" } },
+          variants: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              productId: true,
+              sku: true,
+              barcode: true,
+              price: true,
+              cost: true,
+              stock: true,
+              createdAt: true,
+              updatedAt: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              }
+            }
+          },
+          store: true,
+          category: true
+        }
+      });
+      if (!product)
+        return null;
+      const imageService = getImageService();
+      if (product.images && product.images.length > 0) {
+        for (const image of product.images) {
+          if (image.filename) {
+            const dataUrl = await imageService.getImageDataUrl(image.filename);
+            image.imageData = dataUrl;
+          }
+        }
+      }
+      return product;
+    } catch (error) {
+      log23.error("Error fetching product:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("products:getVariantById", async (_, id) => {
+    try {
+      if (!prisma2)
+        return null;
+      const variant = await prisma2.productVariant.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          productId: true,
+          sku: true,
+          barcode: true,
+          price: true,
+          cost: true,
+          stock: true,
+          createdAt: true,
+          updatedAt: true,
+          attributeValues: {
+            include: { attribute: { select: { name: true } } }
+          }
+        }
+      });
+      return variant;
+    } catch (error) {
+      log23.error("Error fetching product variant:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("products:create", async (_, productData) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const { images, variants, baseStock, category, ...product } = productData;
+      if (product.hasVariants === false && product.baseSKU) {
+        const existingVariant = await prisma2.productVariant.findUnique({
+          where: { sku: product.baseSKU }
+        });
+        if (existingVariant) {
+          return { success: false, message: `SKU "${product.baseSKU}" already exists. Please use a unique SKU.` };
+        }
+      }
+      if (variants?.length) {
+        for (const variant of variants) {
+          if (variant.sku) {
+            const existingVariant = await prisma2.productVariant.findUnique({
+              where: { sku: variant.sku }
+            });
+            if (existingVariant) {
+              return { success: false, message: `SKU "${variant.sku}" already exists. Please use a unique SKU.` };
+            }
+          }
+        }
+      }
+      let categoryId = product.categoryId;
+      if (category && !categoryId) {
+        const existingCategory = await prisma2.category.findFirst({
+          where: { name: category }
+        });
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          const newCategory = await prisma2.category.create({
+            data: { name: category }
+          });
+          categoryId = newCategory.id;
+        }
+      }
+      const imageService = getImageService();
+      const imageFilenames = [];
+      if (images?.length) {
+        for (let idx = 0; idx < images.length; idx++) {
+          const base64Data = images[idx];
+          try {
+            const filename = await imageService.saveImage(base64Data);
+            imageFilenames.push({ filename, order: idx });
+          } catch (error) {
+            log23.error(`Failed to save image ${idx}:`, error);
+          }
+        }
+      }
+      const newProduct = await prisma2.$transaction(async (tx) => {
+        const created = await tx.product.create({
+          data: {
+            ...product,
+            categoryId,
+            images: imageFilenames.length ? {
+              create: imageFilenames.map(({ filename, order }) => ({ filename, order }))
+            } : void 0
+          }
+        });
+        const variantList = variants?.length ? variants : product.hasVariants === false && baseStock !== void 0 ? [{ sku: product.baseSKU, barcode: product.baseBarcode || void 0, price: product.basePrice, cost: product.baseCost || void 0, stock: baseStock, attributes: [] }] : [];
+        for (const v of variantList) {
+          const newVariant = await tx.productVariant.create({
+            data: {
+              productId: created.id,
+              sku: v.sku,
+              barcode: v.barcode || void 0,
+              price: v.price,
+              cost: v.cost || void 0,
+              stock: v.stock
+            }
+          });
+          await createVariantAttributes(tx, created.id, newVariant.id, v.attributes || []);
+        }
+        return await tx.product.findUnique({
+          where: { id: created.id },
+          include: {
+            images: true,
+            variants: { include: ATTR_INCLUDE },
+            store: true,
+            category: true
+          }
+        });
+      });
+      if (newProduct.images && newProduct.images.length > 0) {
+        for (const image of newProduct.images) {
+          if (image.filename) {
+            const dataUrl = await imageService.getImageDataUrl(image.filename);
+            image.imageData = dataUrl;
+          }
+        }
+      }
+      cacheService.invalidatePattern("products:*");
+      cacheService.invalidatePattern("inventory:*");
+      return { success: true, product: newProduct };
+    } catch (error) {
+      log23.error("Error creating product:", error);
+      if (error.code === "P2002" && error.meta?.target?.includes("barcode")) {
+        return { success: false, message: "This barcode is already used by another product. Please use a unique barcode." };
+      }
+      if (error.code === "P2002" && error.meta?.target?.includes("sku")) {
+        return { success: false, message: "This SKU is already used by another product. Please use a unique SKU." };
+      }
+      return { success: false, message: error.message || "Failed to create product. Please try again." };
+    }
+  });
+  ipcMain.handle("products:update", async (_, { id, productData }) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const { images, variants, baseStock, category, ...product } = productData;
+      if (product.hasVariants === false && product.baseSKU) {
+        const existingVariant = await prisma2.productVariant.findFirst({
+          where: {
+            sku: product.baseSKU,
+            productId: { not: id }
+          }
+        });
+        if (existingVariant) {
+          return { success: false, message: `SKU "${product.baseSKU}" already exists in another product. Please use a unique SKU.` };
+        }
+      }
+      if (variants?.length) {
+        for (const variant of variants) {
+          if (variant.sku) {
+            const existingVariant = await prisma2.productVariant.findFirst({
+              where: {
+                sku: variant.sku,
+                productId: { not: id }
+              }
+            });
+            if (existingVariant) {
+              return { success: false, message: `SKU "${variant.sku}" already exists in another product. Please use a unique SKU.` };
+            }
+          }
+        }
+      }
+      let categoryId = product.categoryId;
+      if (category && !categoryId) {
+        const existingCategory = await prisma2.category.findFirst({
+          where: { name: category }
+        });
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          const newCategory = await prisma2.category.create({
+            data: { name: category }
+          });
+          categoryId = newCategory.id;
+        }
+      }
+      const imageService = getImageService();
+      const existingProduct = await prisma2.product.findUnique({
+        where: { id },
+        include: { images: { orderBy: { order: "asc" } } }
+      });
+      const existingImageMap = /* @__PURE__ */ new Map();
+      if (existingProduct?.images) {
+        for (const img of existingProduct.images) {
+          if (img.filename) {
+            const dataUrl = await imageService.getImageDataUrl(img.filename);
+            if (dataUrl) {
+              existingImageMap.set(dataUrl, img.filename);
+            }
+          }
+        }
+      }
+      const imageFilenames = [];
+      if (images?.length) {
+        for (let idx = 0; idx < images.length; idx++) {
+          const imageData = images[idx];
+          if (existingImageMap.has(imageData)) {
+            const filename = existingImageMap.get(imageData);
+            imageFilenames.push({ filename, order: idx });
+          } else if (imageData.startsWith("data:image/")) {
+            try {
+              const filename = await imageService.saveImage(imageData);
+              imageFilenames.push({ filename, order: idx });
+            } catch (error) {
+              log23.error(`Failed to save new image ${idx}:`, error);
+            }
+          } else {
+            log23.warn(`[products:update] Unrecognized image format at index ${idx}`);
+          }
+        }
+      }
+      const updated = await prisma2.$transaction(async (tx) => {
+        const existingVariants = await tx.productVariant.findMany({
+          where: { productId: id },
+          select: { id: true, sku: true, stock: true, price: true, barcode: true }
+        });
+        const existingVariantMap = new Map(existingVariants.map((v) => [v.sku, v]));
+        await tx.productImage.deleteMany({ where: { productId: id } });
+        if (variants?.length) {
+          const skusToKeep = new Set(variants.map((v) => v.sku));
+          const skusToDelete = existingVariants.filter((v) => !skusToKeep.has(v.sku)).map((v) => v.sku);
+          if (skusToDelete.length > 0) {
+            await tx.productVariant.deleteMany({ where: { productId: id, sku: { in: skusToDelete } } });
+          }
+          for (const v of variants) {
+            const existing = existingVariantMap.get(v.sku);
+            if (existing) {
+              const updates = {};
+              if (v.price !== existing.price)
+                updates.price = v.price;
+              if (v.barcode !== existing.barcode)
+                updates.barcode = v.barcode;
+              if (Object.keys(updates).length > 0) {
+                await tx.productVariant.updateMany({ where: { productId: id, sku: v.sku }, data: updates });
+              }
+              await tx.variantAttributeValue.deleteMany({ where: { variantId: existing.id } });
+              await createVariantAttributes(tx, id, existing.id, v.attributes || []);
+            } else {
+              const newV = await tx.productVariant.create({
+                data: { productId: id, sku: v.sku, barcode: v.barcode || void 0, price: v.price, stock: v.stock }
+              });
+              await createVariantAttributes(tx, id, newV.id, v.attributes || []);
+            }
+          }
+        } else if (product.hasVariants === false && baseStock !== void 0) {
+          const defaultVariant = existingVariants.find((v) => v.sku === product.baseSKU);
+          if (defaultVariant) {
+            await tx.productVariant.updateMany({
+              where: { productId: id, sku: product.baseSKU },
+              data: { price: product.basePrice, barcode: product.baseBarcode || void 0, cost: product.baseCost || void 0 }
+            });
+          } else {
+            await tx.productVariant.create({
+              data: { productId: id, sku: product.baseSKU, barcode: product.baseBarcode || void 0, price: product.basePrice, cost: product.baseCost || void 0, stock: baseStock }
+            });
+          }
+        }
+        return await tx.product.update({
+          where: { id },
+          data: {
+            ...product,
+            categoryId,
+            images: imageFilenames.length ? {
+              create: imageFilenames.map(({ filename, order }) => ({ filename, order }))
+            } : void 0
+          },
+          include: {
+            images: true,
+            variants: { include: ATTR_INCLUDE },
+            store: true,
+            category: true
+          }
+        });
+      });
+      if (existingProduct?.images && imageFilenames.length > 0) {
+        const newFilenames = imageFilenames.map((img) => img.filename);
+        const filesToDelete = existingProduct.images.filter((img) => img.filename && !newFilenames.includes(img.filename)).map((img) => img.filename);
+        if (filesToDelete.length > 0) {
+          log23.info(`[products:update] Scheduling deletion of ${filesToDelete.length} unused images`);
+          setTimeout(async () => {
+            for (const filename of filesToDelete) {
+              try {
+                await imageService.deleteImage(filename);
+                log23.info(`[products:update] Deleted old image: ${filename}`);
+              } catch (err) {
+                log23.error(`Failed to delete old image ${filename}:`, err);
+              }
+            }
+          }, 2e3);
+        }
+      }
+      if (updated.images && updated.images.length > 0) {
+        for (const image of updated.images) {
+          if (image.filename) {
+            const dataUrl = await imageService.getImageDataUrl(image.filename);
+            image.imageData = dataUrl;
+          }
+        }
+      }
+      cacheService.invalidatePattern("products:*");
+      cacheService.invalidatePattern("inventory:*");
+      cacheService.delete(CacheKeys.productById(id));
+      return { success: true, product: updated };
+    } catch (error) {
+      log23.error("Error updating product:", error);
+      if (error.code === "P2002" && error.meta?.target?.includes("barcode")) {
+        return { success: false, message: "This barcode is already used by another product variant. Please use a unique barcode." };
+      }
+      if (error.code === "P2002" && error.meta?.target?.includes("sku")) {
+        return { success: false, message: "This SKU is already used by another product. Please use a unique SKU." };
+      }
+      return { success: false, message: error.message || "Failed to update product. Please try again." };
+    }
+  });
+  ipcMain.handle("products:delete", async (_, id) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const salesCount = await prisma2.saleItem.count({
+        where: { productId: id }
+      });
+      if (salesCount > 0) {
+        return {
+          success: false,
+          message: `Cannot delete product with ${salesCount} sales. Archive it instead.`
+        };
+      }
+      const imageService = getImageService();
+      const product = await prisma2.product.findUnique({
+        where: { id },
+        include: { images: true }
+      });
+      await prisma2.product.delete({ where: { id } });
+      if (product?.images) {
+        for (const image of product.images) {
+          if (image.filename) {
+            try {
+              await imageService.deleteImage(image.filename);
+            } catch (error) {
+              log23.error(`Failed to delete image file ${image.filename}:`, error);
+            }
+          }
+        }
+      }
+      cacheService.invalidatePattern("products:*");
+      cacheService.invalidatePattern("inventory:*");
+      cacheService.delete(CacheKeys.productById(id));
+      return { success: true };
+    } catch (error) {
+      log23.error("Error deleting product:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("products:getStats", async () => {
+    try {
+      if (!prisma2)
+        return null;
+      return await cacheService.getOrCompute(
+        CacheKeys.PRODUCT_STATS,
+        async () => {
+          const [totalProducts] = await prisma2.$queryRaw`
+            SELECT COUNT(*) as count FROM Product
+          `;
+          const [totalVariants] = await prisma2.$queryRaw`
+            SELECT COUNT(*) as count FROM ProductVariant
+          `;
+          const [lowStock] = await prisma2.$queryRaw`
+            SELECT COUNT(DISTINCT productId) as count
+            FROM ProductVariant
+            WHERE stock > 0 AND stock <= 10
+          `;
+          return {
+            totalProducts: Number(totalProducts.count || 0),
+            totalVariants: Number(totalVariants.count || 0),
+            lowStockCount: Number(lowStock.count || 0)
+          };
+        },
+        60 * 1e3
+        // Cache for 1 minute
+      );
+    } catch (error) {
+      log23.error("Error fetching product stats:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("products:search", async (_, options = {}) => {
+    try {
+      if (!prisma2)
+        return [];
+      const { query = "", limit = 50 } = options;
+      if (!query || query.trim() === "")
+        return [];
+      const products = await prisma2.product.findMany({
+        where: {
+          isArchived: false,
+          // Filter out archived products
+          OR: [
+            { name: { contains: query } },
+            { baseSKU: { contains: query } },
+            { description: { contains: query } }
+          ]
+        },
+        include: {
+          variants: {
+            select: {
+              stock: true
+            }
+          }
+        },
+        take: limit,
+        orderBy: [
+          // Prioritize exact matches first
+          { name: "asc" }
+        ]
+      });
+      return products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        baseSKU: product.baseSKU,
+        category: product.category,
+        basePrice: product.basePrice,
+        totalStock: product.variants.reduce((sum, v) => sum + v.stock, 0),
+        imageUrl: null
+        // Can be enhanced later
+      }));
+    } catch (error) {
+      log23.error("Error searching products:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("products:searchPaginated", async (_, options = {}) => {
+    try {
+      if (!prisma2)
+        return { products: [], pagination: { page: 1, limit: 50, total: 0, totalPages: 0, hasMore: false } };
+      const {
+        searchTerm = "",
+        category = "",
+        stockStatus = [],
+        priceMin,
+        priceMax,
+        sortBy = "name",
+        sortOrder = "asc",
+        page = 1,
+        limit = 50,
+        includeImages = false
+      } = options;
+      const where = {};
+      if (searchTerm) {
+        where.OR = [
+          { name: { contains: searchTerm } },
+          { baseSKU: { contains: searchTerm } },
+          { description: { contains: searchTerm } }
+        ];
+      }
+      if (category) {
+        where.category = category;
+      }
+      if (priceMin !== void 0 || priceMax !== void 0) {
+        where.basePrice = {};
+        if (priceMin !== void 0)
+          where.basePrice.gte = priceMin;
+        if (priceMax !== void 0)
+          where.basePrice.lte = priceMax;
+      }
+      if (stockStatus.length > 0) {
+        if (stockStatus.includes("out")) {
+          where.variants = { none: { stock: { gt: 0 } } };
+        } else if (stockStatus.includes("low")) {
+          where.variants = { some: { stock: { lte: 10, gt: 0 } } };
+        } else if (stockStatus.includes("normal") || stockStatus.includes("high")) {
+          where.variants = { some: { stock: { gt: 10 } } };
+        }
+      }
+      const [products, total] = await Promise.all([
+        prisma2.product.findMany({
+          where,
+          include: {
+            images: includeImages ? {
+              orderBy: { order: "asc" },
+              take: 1
+            } : false,
+            variants: {
+              select: {
+                id: true,
+                sku: true,
+                price: true,
+                stock: true,
+                attributeValues: {
+                  include: { attribute: { select: { name: true } } }
+                }
+              },
+              orderBy: { createdAt: "asc" }
+            }
+          },
+          orderBy: { [sortBy]: sortOrder },
+          take: limit,
+          skip: (page - 1) * limit
+        }),
+        prisma2.product.count({ where })
+      ]);
+      const totalPages = Math.ceil(total / limit);
+      return {
+        products: products.map((p) => ({
+          ...p,
+          totalStock: p.variants.reduce((sum, v) => sum + v.stock, 0)
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasMore: page < totalPages
+        }
+      };
+    } catch (error) {
+      log23.error("Error searching products with pagination:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("products:getCategories", async () => {
+    try {
+      if (!prisma2)
+        return [];
+      const categories = await prisma2.product.findMany({
+        select: { category: true },
+        distinct: ["category"],
+        orderBy: { category: "asc" }
+      });
+      return categories.map((c) => c.category).filter(Boolean);
+    } catch (error) {
+      log23.error("Error fetching categories:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("products:batchCreate", async (_, productsData) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      if (!productsData?.length) {
+        return { success: false, message: "No products provided" };
+      }
+      const results = [];
+      await prisma2.$transaction(async (tx) => {
+        for (const productData of productsData) {
+          const { images, variants, baseStock, ...product } = productData;
+          const created = await tx.product.create({ data: { ...product } });
+          for (const v of variants || []) {
+            const newV = await tx.productVariant.create({
+              data: { productId: created.id, sku: v.sku, barcode: v.barcode || void 0, price: v.price, cost: v.cost || void 0, stock: v.stock }
+            });
+            await createVariantAttributes(tx, created.id, newV.id, v.attributes || []);
+          }
+          results.push(created);
+        }
+      });
+      cacheService.invalidatePattern("products:*");
+      cacheService.invalidatePattern("inventory:*");
+      return {
+        success: true,
+        created: results.length,
+        message: `Successfully created ${results.length} products`
+      };
+    } catch (error) {
+      log23.error("Error batch creating products:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("products:batchUpdate", async (_, updates) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      if (!updates?.length) {
+        return { success: false, message: "No updates provided" };
+      }
+      const results = await prisma2.$transaction(
+        updates.map(({ id, data }) => {
+          return prisma2.product.update({
+            where: { id },
+            data
+          });
+        })
+      );
+      cacheService.invalidatePattern("products:*");
+      cacheService.invalidatePattern("inventory:*");
+      updates.forEach(({ id }) => cacheService.delete(CacheKeys.productById(id)));
+      return {
+        success: true,
+        updated: results.length,
+        message: `Successfully updated ${results.length} products`
+      };
+    } catch (error) {
+      log23.error("Error batch updating products:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("products:batchDelete", async (_, ids) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      if (!ids?.length) {
+        return { success: false, message: "No IDs provided" };
+      }
+      const result = await prisma2.product.deleteMany({
+        where: {
+          id: { in: ids }
+        }
+      });
+      cacheService.invalidatePattern("products:*");
+      cacheService.invalidatePattern("inventory:*");
+      ids.forEach((id) => cacheService.delete(CacheKeys.productById(id)));
+      return {
+        success: true,
+        deleted: result.count,
+        message: `Successfully deleted ${result.count} products`
+      };
+    } catch (error) {
+      log23.error("Error batch deleting products:", error);
+      return { success: false, message: error.message };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/categories.handlers.ts
+init_electron_node();
+var log24 = createLogger("Categories");
+function registerCategoriesHandlers(prisma2) {
+  ipcMain.handle("categories:getAll", async () => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const categories = await prisma2.category.findMany({
+        include: {
+          _count: {
+            select: { products: true }
+          }
+        },
+        orderBy: {
+          name: "asc"
+        }
+      });
+      const categoriesWithCount = categories.map((cat) => ({
+        ...cat,
+        productCount: cat._count.products,
+        _count: void 0
+      }));
+      return { success: true, categories: categoriesWithCount };
+    } catch (error) {
+      log24.error("Error fetching categories:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("categories:getById", async (_, id) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const category = await prisma2.category.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: { products: true }
+          }
+        }
+      });
+      if (!category) {
+        return { success: false, message: "Category not found" };
+      }
+      return {
+        success: true,
+        category: {
+          ...category,
+          productCount: category._count.products
+        }
+      };
+    } catch (error) {
+      log24.error("Error fetching category:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("categories:create", async (_, categoryData) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const newCategory = await prisma2.category.create({
+        data: {
+          name: categoryData.name,
+          description: categoryData.description || null,
+          icon: categoryData.icon || null,
+          color: categoryData.color || null
+        }
+      });
+      return { success: true, category: newCategory };
+    } catch (error) {
+      log24.error("Error creating category:", error);
+      if (error.code === "P2002") {
+        return { success: false, message: "A category with this name already exists" };
+      }
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("categories:update", async (_, { id, categoryData }) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const updated = await prisma2.category.update({
+        where: { id },
+        data: {
+          name: categoryData.name,
+          description: categoryData.description || null,
+          icon: categoryData.icon || null,
+          color: categoryData.color || null
+        }
+      });
+      return { success: true, category: updated };
+    } catch (error) {
+      log24.error("Error updating category:", error);
+      if (error.code === "P2002") {
+        return { success: false, message: "A category with this name already exists" };
+      }
+      if (error.code === "P2025") {
+        return { success: false, message: "Category not found" };
+      }
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("categories:delete", async (_, id) => {
+    try {
+      if (!prisma2) {
+        return { success: false, message: "Database not available" };
+      }
+      const category = await prisma2.category.findUnique({
+        where: { id },
+        include: {
+          _count: {
+            select: { products: true }
+          }
+        }
+      });
+      if (!category) {
+        return { success: false, message: "Category not found" };
+      }
+      if (category._count.products > 0) {
+        return {
+          success: false,
+          message: `Cannot delete category with ${category._count.products} products. Please reassign or delete the products first.`
+        };
+      }
+      await prisma2.category.delete({
+        where: { id }
+      });
+      return { success: true, message: "Category deleted successfully" };
+    } catch (error) {
+      log24.error("Error deleting category:", error);
+      return { success: false, message: error.message };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/stores.handlers.ts
+init_electron_node();
+var log25 = createLogger("Stores");
+function registerStoresHandlers(prisma2) {
+  ipcMain.handle("stores:getAll", async () => {
+    try {
+      if (prisma2) {
+        return await prisma2.store.findMany({ orderBy: { createdAt: "desc" } });
+      }
+      return [];
+    } catch (error) {
+      log25.error("Error fetching stores:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("stores:create", async (_, storeData) => {
+    try {
+      if (prisma2) {
+        const store = await prisma2.store.create({ data: storeData });
+        return { success: true, store };
+      }
+      return { success: false, message: "Database not available" };
+    } catch (error) {
+      log25.error("Error creating store:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("stores:update", async (_, { id, storeData }) => {
+    try {
+      if (prisma2) {
+        const store = await prisma2.store.update({ where: { id }, data: storeData });
+        return { success: true, store };
+      }
+      return { success: false, message: "Database not available" };
+    } catch (error) {
+      log25.error("Error updating store:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("stores:delete", async (_, id) => {
+    try {
+      if (prisma2) {
+        await prisma2.store.delete({ where: { id } });
+        return { success: true };
+      }
+      return { success: false, message: "Database not available" };
+    } catch (error) {
+      log25.error("Error deleting store:", error);
+      return { success: false, message: error.message };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/deposits.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/DepositService.ts
+var log26 = createLogger("Deposit");
+var DepositService = class {
+  prisma;
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  async createDeposit(data) {
+    log26.info(`Creating deposit: amount=${data.amount} method=${data.method} customerId=${data.customerId ?? "none"}`);
+    try {
+      const deposit = await this.prisma.deposit.create({
+        data: {
+          amount: data.amount,
+          date: data.date ?? /* @__PURE__ */ new Date(),
+          method: data.method,
+          status: data.status ?? "paid",
+          note: data.note,
+          customerId: data.customerId ?? null,
+          saleId: data.saleId ?? null
+        }
+      });
+      log26.debug(`Deposit created: id=${deposit.id}`);
+      return deposit;
+    } catch (error) {
+      log26.error("Failed to create deposit:", error);
+      throw error;
+    }
+  }
+  async getDepositsByCustomer(customerId) {
+    return this.prisma.deposit.findMany({
+      where: { customerId },
+      orderBy: { date: "desc" }
+    });
+  }
+  async getDepositsBySale(saleId) {
+    return this.prisma.deposit.findMany({
+      where: { saleId },
+      orderBy: { date: "desc" }
+    });
+  }
+  async listDeposits() {
+    return this.prisma.deposit.findMany({ orderBy: { date: "desc" } });
+  }
+  async linkDepositsToSale(depositIds, saleId) {
+    log26.info(`Linking ${depositIds.length} deposit(s) to saleId=${saleId}`);
+    try {
+      const result = await this.prisma.deposit.updateMany({
+        where: {
+          id: { in: depositIds },
+          saleId: null
+          // Only update deposits that aren't already linked to a sale
+        },
+        data: { saleId }
+      });
+      log26.debug(`Linked ${result.count} deposit(s) to saleId=${saleId}`);
+      return result;
+    } catch (error) {
+      log26.error(`Failed to link deposits to saleId=${saleId}:`, error);
+      throw error;
+    }
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/deposits.handlers.ts
+var log27 = createLogger("Deposits");
+function registerDepositsHandlers(prisma2) {
+  const depositService = new DepositService(prisma2);
+  ipcMain.handle("deposits:create", async (_, data) => {
+    try {
+      const deposit = await depositService.createDeposit(data);
+      return { success: true, deposit };
+    } catch (error) {
+      log27.error("Error creating deposit:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("deposits:list", async () => {
+    try {
+      const deposits = await depositService.listDeposits();
+      return deposits;
+    } catch (error) {
+      log27.error("Error listing deposits:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("deposits:getByCustomer", async (_, customerId) => {
+    try {
+      const deposits = await depositService.getDepositsByCustomer(customerId);
+      return deposits;
+    } catch (error) {
+      log27.error("Error getting deposits by customer:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("deposits:getBySale", async (_, saleId) => {
+    try {
+      const deposits = await depositService.getDepositsBySale(saleId);
+      return deposits;
+    } catch (error) {
+      log27.error("Error getting deposits by sale:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("deposits:linkToSale", async (_, { depositIds, saleId }) => {
+    try {
+      const result = await depositService.linkDepositsToSale(depositIds, saleId);
+      return { success: true, result };
+    } catch (error) {
+      log27.error("Error linking deposits to sale:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/installments.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/InstallmentService.ts
+var log28 = createLogger("Installment");
+var InstallmentService = class {
+  prisma;
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  async createInstallment(data) {
+    const dueDate = data.dueDate instanceof Date ? data.dueDate : new Date(data.dueDate);
+    const paidDate = data.paidDate ? data.paidDate instanceof Date ? data.paidDate : new Date(data.paidDate) : null;
+    log28.info(`Creating installment: amount=${data.amount} dueDate=${dueDate.toISOString()} customerId=${data.customerId ?? "none"}`);
+    try {
+      const result = await this.prisma.installment.create({
+        data: {
+          amount: data.amount,
+          dueDate,
+          paidDate: paidDate ?? null,
+          status: data.status ?? "pending",
+          note: data.note,
+          customerId: data.customerId ?? null,
+          saleId: data.saleId ?? null
+        }
+      });
+      log28.debug(`Installment created: id=${result.id}`);
+      return result;
+    } catch (error) {
+      log28.error("Failed to create installment:", error);
+      throw error;
+    }
+  }
+  async getInstallmentsByCustomer(customerId) {
+    return this.prisma.installment.findMany({
+      where: { customerId },
+      orderBy: { dueDate: "asc" }
+    });
+  }
+  async getInstallmentsBySale(saleId) {
+    return this.prisma.installment.findMany({
+      where: { saleId },
+      orderBy: { dueDate: "asc" }
+    });
+  }
+  async listInstallments(options) {
+    const { page = 1, limit = 50, status, search, dateFilter } = options || {};
+    let where = {};
+    if (status && status !== "all") {
+      where.status = status;
+    }
+    if (dateFilter && dateFilter !== "all") {
+      const now = /* @__PURE__ */ new Date();
+      switch (dateFilter) {
+        case "today":
+          where.dueDate = {
+            gte: new Date(now.getFullYear(), now.getMonth(), now.getDate()),
+            lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+          };
+          break;
+        case "week":
+          const startOfWeek = new Date(now);
+          startOfWeek.setDate(now.getDate() - now.getDay());
+          startOfWeek.setHours(0, 0, 0, 0);
+          where.dueDate = {
+            gte: startOfWeek,
+            lt: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+          };
+          break;
+        case "month":
+          where.dueDate = {
+            gte: new Date(now.getFullYear(), now.getMonth(), 1),
+            lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+          };
+          break;
+        case "overdue":
+          where.dueDate = { lt: now };
+          where.status = { not: "paid" };
+          break;
+      }
+    }
+    if (search) {
+      where.OR = [
+        { customer: { name: { contains: search } } },
+        { saleId: { contains: search } }
+      ];
+    }
+    const [installments, total] = await Promise.all([
+      this.prisma.installment.findMany({
+        where,
+        include: {
+          customer: true
+        },
+        orderBy: { dueDate: "asc" },
+        skip: (page - 1) * limit,
+        take: limit
+      }),
+      this.prisma.installment.count({ where })
+    ]);
+    return {
+      installments,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+  async getUpcomingReminders(daysAhead = 7) {
+    const futureDate = /* @__PURE__ */ new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+    return this.prisma.installment.findMany({
+      where: {
+        status: "pending",
+        dueDate: {
+          lte: futureDate,
+          gte: /* @__PURE__ */ new Date()
+        }
+      },
+      include: {
+        customer: true
+      },
+      orderBy: { dueDate: "asc" }
+    });
+  }
+  async getOverdueInstallments() {
+    return this.prisma.installment.findMany({
+      where: {
+        status: "pending",
+        dueDate: {
+          lt: /* @__PURE__ */ new Date()
+        }
+      },
+      include: {
+        customer: true
+      },
+      orderBy: { dueDate: "asc" }
+    });
+  }
+  async markAsPaid(installmentId, paidDate) {
+    log28.info(`Marking installment as paid: id=${installmentId}`);
+    try {
+      const result = await this.prisma.installment.update({
+        where: { id: installmentId },
+        data: {
+          status: "paid",
+          paidDate: paidDate ?? /* @__PURE__ */ new Date()
+        }
+      });
+      log28.debug(`Installment marked paid: id=${installmentId}`);
+      return result;
+    } catch (error) {
+      log28.error(`Failed to mark installment as paid: id=${installmentId}:`, error);
+      throw error;
+    }
+  }
+  async markAsOverdue(installmentId) {
+    log28.info(`Marking installment as overdue: id=${installmentId}`);
+    try {
+      const result = await this.prisma.installment.update({
+        where: { id: installmentId },
+        data: { status: "overdue" }
+      });
+      return result;
+    } catch (error) {
+      log28.error(`Failed to mark installment as overdue: id=${installmentId}:`, error);
+      throw error;
+    }
+  }
+  async linkInstallmentsToSale(installmentIds, saleId) {
+    log28.info(`Linking ${installmentIds.length} installment(s) to saleId=${saleId}`);
+    try {
+      const result = await this.prisma.installment.updateMany({
+        where: {
+          id: { in: installmentIds },
+          saleId: null
+          // Only update installments that aren't already linked to a sale
+        },
+        data: { saleId }
+      });
+      log28.debug(`Linked ${result.count} installment(s) to saleId=${saleId}`);
+      return result;
+    } catch (error) {
+      log28.error(`Failed to link installments to saleId=${saleId}:`, error);
+      throw error;
+    }
+  }
+};
+
+// apps/bizflow/src/main/services/InstallmentPlanService.ts
+var log29 = createLogger("InstallmentPlan");
+var InstallmentPlanService = class _InstallmentPlanService {
+  static instance = null;
+  prisma;
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  static getInstance(prisma2) {
+    if (!_InstallmentPlanService.instance) {
+      _InstallmentPlanService.instance = new _InstallmentPlanService(prisma2);
+    }
+    return _InstallmentPlanService.instance;
+  }
+  /**
+   * Calculate payment schedule for a sale with a plan
+   */
+  async calculateSchedule(saleTotal, planId, customDownPayment) {
+    try {
+      const plan = await this.prisma.installmentPlan.findUnique({
+        where: { id: planId }
+      });
+      if (!plan) {
+        throw new Error(`Installment plan ${planId} not found`);
+      }
+      if (!plan.isActive) {
+        throw new Error(`Installment plan ${plan.name} is not active`);
+      }
+      const downPaymentPercent = plan.downPaymentPercent / 100;
+      const calculatedDownPayment = saleTotal * downPaymentPercent;
+      const downPayment = customDownPayment !== void 0 ? customDownPayment : calculatedDownPayment;
+      const remainingAmount = saleTotal - downPayment;
+      const interestRate = plan.interestRate / 100;
+      const interestAmount = remainingAmount * interestRate;
+      const totalWithInterest = remainingAmount + interestAmount;
+      const installmentAmount = totalWithInterest / plan.numberOfPayments;
+      const installments = [];
+      const startDate = /* @__PURE__ */ new Date();
+      for (let i = 0; i < plan.numberOfPayments; i++) {
+        const dueDate = new Date(startDate);
+        dueDate.setDate(dueDate.getDate() + plan.intervalDays * (i + 1));
+        installments.push({
+          amount: Math.round(installmentAmount * 100) / 100,
+          dueDate,
+          paymentNumber: i + 1
+        });
+      }
+      return {
+        downPayment: Math.round(downPayment * 100) / 100,
+        installments,
+        totalAmount: Math.round(saleTotal * 100) / 100,
+        totalWithInterest: Math.round((downPayment + totalWithInterest) * 100) / 100,
+        interestAmount: Math.round(interestAmount * 100) / 100
+      };
+    } catch (error) {
+      log29.error("Error calculating schedule:", error);
+      throw error;
+    }
+  }
+  /**
+   * Create installments for a sale transaction
+   */
+  async createInstallmentsForSale(saleId, customerId, schedule) {
+    try {
+      if (schedule.downPayment > 0) {
+        await this.prisma.deposit.create({
+          data: {
+            amount: schedule.downPayment,
+            date: /* @__PURE__ */ new Date(),
+            method: "cash",
+            // Can be overridden
+            status: "paid",
+            note: "Down payment",
+            customerId,
+            saleId
+          }
+        });
+      }
+      for (const installment of schedule.installments) {
+        await this.prisma.installment.create({
+          data: {
+            amount: installment.amount,
+            dueDate: installment.dueDate,
+            status: "pending",
+            note: `Payment ${installment.paymentNumber} of ${schedule.installments.length}`,
+            customerId,
+            saleId
+          }
+        });
+      }
+    } catch (error) {
+      log29.error("Error creating installments:", error);
+      throw error;
+    }
+  }
+  /**
+   * Get all active plans
+   */
+  async getActivePlans() {
+    try {
+      const plans = await this.prisma.installmentPlan.findMany({
+        where: { isActive: true },
+        orderBy: { numberOfPayments: "asc" }
+      });
+      return plans;
+    } catch (error) {
+      log29.error("Error fetching plans:", error);
+      return [];
+    }
+  }
+  /**
+   * Get plan by ID
+   */
+  async getPlanById(id) {
+    try {
+      return await this.prisma.installmentPlan.findUnique({
+        where: { id }
+      });
+    } catch (error) {
+      log29.error("Error fetching plan:", error);
+      return null;
+    }
+  }
+  /**
+   * Create default plans if none exist
+   */
+  async seedDefaultPlans() {
+    try {
+      const existingPlans = await this.prisma.installmentPlan.count();
+      if (existingPlans > 0) {
+        log29.info("\u2705 Installment plans already exist");
+        return;
+      }
+      const defaultPlans = [
+        {
+          name: "3-Month Plan",
+          downPaymentPercent: 30,
+          numberOfPayments: 3,
+          intervalDays: 30,
+          interestRate: 5,
+          description: "30% down payment, 3 monthly installments with 5% interest",
+          isActive: true
+        },
+        {
+          name: "6-Month Plan",
+          downPaymentPercent: 20,
+          numberOfPayments: 6,
+          intervalDays: 30,
+          interestRate: 8,
+          description: "20% down payment, 6 monthly installments with 8% interest",
+          isActive: true
+        },
+        {
+          name: "12-Month Plan",
+          downPaymentPercent: 10,
+          numberOfPayments: 12,
+          intervalDays: 30,
+          interestRate: 12,
+          description: "10% down payment, 12 monthly installments with 12% interest",
+          isActive: true
+        },
+        {
+          name: "Weekly 4-Week Plan",
+          downPaymentPercent: 25,
+          numberOfPayments: 4,
+          intervalDays: 7,
+          interestRate: 2,
+          description: "25% down payment, 4 weekly installments with 2% interest",
+          isActive: true
+        },
+        {
+          name: "No Interest 3-Month",
+          downPaymentPercent: 50,
+          numberOfPayments: 3,
+          intervalDays: 30,
+          interestRate: 0,
+          description: "50% down payment, 3 monthly installments with no interest",
+          isActive: true
+        }
+      ];
+      for (const plan of defaultPlans) {
+        await this.prisma.installmentPlan.create({ data: plan });
+      }
+      log29.info("\u2705 Created default installment plans");
+    } catch (error) {
+      log29.error("Error seeding plans:", error);
+    }
+  }
+  /**
+   * Calculate late fees for overdue installments
+   */
+  async calculateLateFees(installmentId, dailyLateFeePercent = 0.1) {
+    try {
+      const installment = await this.prisma.installment.findUnique({
+        where: { id: installmentId }
+      });
+      if (!installment || installment.status !== "overdue") {
+        return 0;
+      }
+      const dueDate = new Date(installment.dueDate);
+      const now = /* @__PURE__ */ new Date();
+      const daysLate = Math.floor((now.getTime() - dueDate.getTime()) / (1e3 * 60 * 60 * 24));
+      if (daysLate <= 0) {
+        return 0;
+      }
+      const lateFeeRate = dailyLateFeePercent / 100;
+      const lateFee = installment.amount * lateFeeRate * daysLate;
+      return Math.round(lateFee * 100) / 100;
+    } catch (error) {
+      log29.error("Error calculating late fees:", error);
+      return 0;
+    }
+  }
+  /**
+   * Mark overdue installments
+   */
+  async markOverdueInstallments() {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const result = await this.prisma.installment.updateMany({
+        where: {
+          status: "pending",
+          dueDate: {
+            lt: now
+          }
+        },
+        data: {
+          status: "overdue"
+        }
+      });
+      return result.count;
+    } catch (error) {
+      log29.error("Error marking overdue installments:", error);
+      return 0;
+    }
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/installments.handlers.ts
+var log30 = createLogger("Installments");
+function registerInstallmentsHandlers(prisma2) {
+  const installmentService = new InstallmentService(prisma2);
+  ipcMain.handle("installments:create", async (_, data) => {
+    try {
+      const installment = await installmentService.createInstallment(data);
+      return { success: true, installment };
+    } catch (error) {
+      log30.error("Error creating installment:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installments:list", async (_, options) => {
+    try {
+      const result = await installmentService.listInstallments(options);
+      return result;
+    } catch (error) {
+      log30.error("Error listing installments:", error);
+      return { installments: [], total: 0, page: 1, limit: 50, totalPages: 0 };
+    }
+  });
+  ipcMain.handle("installments:getByCustomer", async (_, customerId) => {
+    try {
+      const installments = await installmentService.getInstallmentsByCustomer(customerId);
+      return installments;
+    } catch (error) {
+      log30.error("Error getting installments by customer:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("installments:getBySale", async (_, saleId) => {
+    try {
+      const installments = await installmentService.getInstallmentsBySale(saleId);
+      return installments;
+    } catch (error) {
+      log30.error("Error getting installments by sale:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("installments:getUpcomingReminders", async (_, daysAhead) => {
+    try {
+      const reminders = await installmentService.getUpcomingReminders(daysAhead);
+      return reminders;
+    } catch (error) {
+      log30.error("Error getting upcoming reminders:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("installments:getOverdue", async () => {
+    try {
+      const overdue = await installmentService.getOverdueInstallments();
+      return overdue;
+    } catch (error) {
+      log30.error("Error getting overdue installments:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("installments:markAsPaid", async (_, { installmentId, paidDate }) => {
+    try {
+      const installment = await installmentService.markAsPaid(installmentId, paidDate ? new Date(paidDate) : void 0);
+      return { success: true, installment };
+    } catch (error) {
+      log30.error("Error marking installment as paid:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installments:markAsOverdue", async (_, installmentId) => {
+    try {
+      const installment = await installmentService.markAsOverdue(installmentId);
+      return { success: true, installment };
+    } catch (error) {
+      log30.error("Error marking installment as overdue:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installments:linkToSale", async (_, { installmentIds, saleId }) => {
+    try {
+      const result = await installmentService.linkInstallmentsToSale(installmentIds, saleId);
+      return { success: true, result };
+    } catch (error) {
+      log30.error("Error linking installments to sale:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  const planService = InstallmentPlanService.getInstance(prisma2);
+  ipcMain.handle("installment-plans:getAll", async () => {
+    try {
+      const plans = await prisma2.installmentPlan.findMany({
+        orderBy: [
+          { isActive: "desc" },
+          { name: "asc" }
+        ]
+      });
+      return plans;
+    } catch (error) {
+      log30.error("Error getting all plans:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("installment-plans:getActive", async () => {
+    try {
+      const plans = await planService.getActivePlans();
+      return plans;
+    } catch (error) {
+      log30.error("Error getting active plans:", error);
+      return [];
+    }
+  });
+  ipcMain.handle("installment-plans:create", async (_, planData) => {
+    try {
+      const plan = await prisma2.installmentPlan.create({
+        data: planData
+      });
+      return { success: true, plan };
+    } catch (error) {
+      log30.error("Error creating plan:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installment-plans:update", async (_, { id, data }) => {
+    try {
+      const plan = await prisma2.installmentPlan.update({
+        where: { id },
+        data
+      });
+      return { success: true, plan };
+    } catch (error) {
+      log30.error("Error updating plan:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installment-plans:delete", async (_, id) => {
+    try {
+      await prisma2.installmentPlan.delete({
+        where: { id }
+      });
+      return { success: true };
+    } catch (error) {
+      log30.error("Error deleting plan:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installment-plans:calculateSchedule", async (_, { saleTotal, planId, customDownPayment }) => {
+    try {
+      const schedule = await planService.calculateSchedule(saleTotal, planId, customDownPayment);
+      const serializedSchedule = {
+        ...schedule,
+        installments: schedule.installments.map((inst) => ({
+          amount: inst.amount,
+          dueDate: inst.dueDate.toISOString(),
+          paymentNumber: inst.paymentNumber
+        }))
+      };
+      return { success: true, schedule: serializedSchedule };
+    } catch (error) {
+      log30.error("Error calculating schedule:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installment-plans:createInstallmentsForSale", async (_, { saleId, customerId, schedule }) => {
+    try {
+      await planService.createInstallmentsForSale(saleId, customerId, schedule);
+      return { success: true };
+    } catch (error) {
+      log30.error("Error creating installments for sale:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installment-plans:seedDefaults", async () => {
+    try {
+      await planService.seedDefaultPlans();
+      return { success: true };
+    } catch (error) {
+      log30.error("Error seeding default plans:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installments:calculateLateFees", async (_, { installmentId, dailyLateFeePercent }) => {
+    try {
+      const lateFee = await planService.calculateLateFees(installmentId, dailyLateFeePercent);
+      return { success: true, lateFee };
+    } catch (error) {
+      log30.error("Error calculating late fees:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("installments:markOverdueBatch", async () => {
+    try {
+      const count = await planService.markOverdueInstallments();
+      return { success: true, count };
+    } catch (error) {
+      log30.error("Error marking overdue installments:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/receipts.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/ReceiptService.ts
+var log31 = createLogger("Receipt");
+var ReceiptService = class {
+  prisma;
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  async generateDepositReceipt(depositId) {
+    log31.info(`Generating deposit receipt: depositId=${depositId}`);
+    const deposit = await this.prisma.deposit.findUnique({
+      where: { id: depositId },
+      include: {
+        customer: true,
+        sale: {
+          include: {
+            items: {
+              include: {
+                product: true,
+                variant: true
+              }
+            }
+          }
+        }
+      }
+    });
+    if (!deposit) {
+      log31.error(`Deposit not found: depositId=${depositId}`);
+      throw new Error("Deposit not found");
+    }
+    const receipt = {
+      type: "deposit",
+      id: deposit.id,
+      date: deposit.date,
+      amount: deposit.amount,
+      method: deposit.method,
+      note: deposit.note,
+      customer: deposit.customer ? {
+        id: deposit.customer.id,
+        name: deposit.customer.name,
+        phone: deposit.customer.phone
+      } : null,
+      sale: deposit.sale ? {
+        id: deposit.sale.id,
+        total: deposit.sale.total,
+        items: deposit.sale.items.map((item) => ({
+          productName: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total
+        }))
+      } : null
+    };
+    return receipt;
+  }
+  async generateInstallmentReceipt(installmentId) {
+    log31.info(`Generating installment receipt: installmentId=${installmentId}`);
+    const installment = await this.prisma.installment.findUnique({
+      where: { id: installmentId },
+      include: {
+        customer: true,
+        sale: {
+          include: {
+            items: {
+              include: {
+                product: true,
+                variant: true
+              }
+            }
+          }
+        }
+      }
+    });
+    if (!installment) {
+      log31.error(`Installment not found: installmentId=${installmentId}`);
+      throw new Error("Installment not found");
+    }
+    const receipt = {
+      type: "installment",
+      id: installment.id,
+      dueDate: installment.dueDate,
+      paidDate: installment.paidDate,
+      amount: installment.amount,
+      status: installment.status,
+      note: installment.note,
+      customer: installment.customer ? {
+        id: installment.customer.id,
+        name: installment.customer.name,
+        phone: installment.customer.phone
+      } : null,
+      sale: installment.sale ? {
+        id: installment.sale.id,
+        total: installment.sale.total,
+        items: installment.sale.saleItems.map((item) => ({
+          productName: item.product.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total
+        }))
+      } : null
+    };
+    return receipt;
+  }
+  generateThermalReceipt(receipt) {
+    const commands = [];
+    commands.push("\x1B@");
+    commands.push("\x1B!0");
+    commands.push("\x1Ba");
+    commands.push("BIZFLOW\n");
+    commands.push("PAYMENT RECEIPT\n\n");
+    commands.push("\x1Ba\0");
+    if (receipt.type === "deposit") {
+      commands.push(`Deposit ID: ${receipt.id.slice(-8)}
+`);
+      commands.push(`Date: ${new Date(receipt.date).toLocaleDateString()}
+`);
+      commands.push(`Amount: $${receipt.amount.toFixed(2)}
+`);
+      commands.push(`Method: ${receipt.method}
+`);
+    } else {
+      commands.push(`Installment ID: ${receipt.id.slice(-8)}
+`);
+      commands.push(`Due Date: ${new Date(receipt.dueDate).toLocaleDateString()}
+`);
+      if (receipt.paidDate) {
+        commands.push(`Paid Date: ${new Date(receipt.paidDate).toLocaleDateString()}
+`);
+      }
+      commands.push(`Amount: $${receipt.amount.toFixed(2)}
+`);
+      commands.push(`Status: ${receipt.status}
+`);
+    }
+    if (receipt.customer) {
+      commands.push(`Customer: ${receipt.customer.name}
+`);
+      commands.push(`Phone: ${receipt.customer.phone}
+`);
+    }
+    if (receipt.note) {
+      commands.push(`Note: ${receipt.note}
+`);
+    }
+    commands.push("\n");
+    if (receipt.sale) {
+      commands.push("Sale Details:\n");
+      commands.push("-".repeat(32) + "\n");
+      receipt.sale.items.forEach((item) => {
+        commands.push(`${item.productName.substring(0, 20)}
+`);
+        commands.push(`  ${item.quantity} x $${item.price.toFixed(2)} = $${item.total.toFixed(2)}
+`);
+      });
+      commands.push("-".repeat(32) + "\n");
+      commands.push(`Total: $${receipt.sale.total.toFixed(2)}
+
+`);
+    }
+    commands.push("Thank you for your business!\n");
+    commands.push((/* @__PURE__ */ new Date()).toLocaleString() + "\n\n");
+    commands.push("\x1Bi");
+    return commands.join("");
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/receipts.handlers.ts
+var log32 = createLogger("Receipts");
+function registerReceiptHandlers(prisma2) {
+  const receiptService = new ReceiptService(prisma2);
+  ipcMain.handle("receipts:generateDeposit", async (_, depositId) => {
+    try {
+      const receipt = await receiptService.generateDepositReceipt(depositId);
+      return { success: true, receipt };
+    } catch (error) {
+      log32.error("Error generating deposit receipt:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("receipts:generateInstallment", async (_, installmentId) => {
+    try {
+      const receipt = await receiptService.generateInstallmentReceipt(installmentId);
+      return { success: true, receipt };
+    } catch (error) {
+      log32.error("Error generating installment receipt:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("receipts:generateThermal", async (_, receipt) => {
+    try {
+      const thermalData = receiptService.generateThermalReceipt(receipt);
+      return { success: true, thermalData };
+    } catch (error) {
+      log32.error("Error generating thermal receipt:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/reorder.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/ReorderAnalysisService.ts
+var log33 = createLogger("ReorderAnalysis");
+var ReorderAnalysisService = class {
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  /**
+   * Analyze inventory levels and generate reorder alerts
+   */
+  async analyzeReorderNeeds() {
+    log33.info("Starting reorder analysis");
+    const variants = await this.prisma.productVariant.findMany({
+      where: {
+        product: {
+          isArchived: false
+        }
+      },
+      include: {
+        product: {
+          include: {
+            supplierProducts: {
+              where: { isPreferred: true },
+              include: { supplier: true },
+              take: 1
+            }
+          }
+        },
+        stockMovements: {
+          where: {
+            type: "SALE",
+            createdAt: {
+              gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1e3)
+              // Last 90 days
+            }
+          },
+          orderBy: { createdAt: "desc" }
+        }
+      }
+    });
+    const alerts = [];
+    for (const variant of variants) {
+      const alert = await this.analyzeVariant(variant);
+      if (alert) {
+        alerts.push(alert);
+      }
+    }
+    alerts.sort((a, b) => {
+      const priorityOrder = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+      return priorityOrder[b.priority] - priorityOrder[a.priority];
+    });
+    const summary = {
+      totalAlerts: alerts.length,
+      criticalCount: alerts.filter((a) => a.priority === "CRITICAL").length,
+      highCount: alerts.filter((a) => a.priority === "HIGH").length,
+      mediumCount: alerts.filter((a) => a.priority === "MEDIUM").length,
+      lowCount: alerts.filter((a) => a.priority === "LOW").length
+    };
+    log33.info("Reorder analysis complete", summary);
+    if (summary.criticalCount > 0) {
+      const criticalItems = alerts.filter((a) => a.priority === "CRITICAL").map((a) => `${a.productName} (stock: ${a.currentStock})`).join(", ");
+      log33.warn(`${summary.criticalCount} CRITICAL reorder alert(s): ${criticalItems}`);
+    }
+    return { alerts, summary };
+  }
+  /**
+   * Analyze a single product variant for reorder needs
+   */
+  async analyzeVariant(variant) {
+    const { product, stockMovements } = variant;
+    if (variant.stock > variant.reorderPoint) {
+      return null;
+    }
+    const avgDailySales = this.calculateAvgDailySales(stockMovements);
+    const daysToDepletion = avgDailySales > 0 ? Math.floor(variant.stock / avgDailySales) : 999;
+    const priority = this.determinePriority(variant.stock, variant.reorderPoint, daysToDepletion);
+    const suggestedOrderQty = this.calculateSuggestedOrderQty(variant, avgDailySales);
+    const supplierInfo = product.supplierProducts[0] ? {
+      supplierName: product.supplierProducts[0].supplier.name,
+      cost: product.supplierProducts[0].cost,
+      leadTime: product.supplierProducts[0].leadTime || 7
+      // Default 7 days
+    } : void 0;
+    const lastSoldDate = stockMovements.length > 0 ? stockMovements[0].createdAt : void 0;
+    return {
+      productId: product.id,
+      variantId: variant.id,
+      productName: product.name,
+      variantName: this.getVariantName(variant),
+      currentStock: variant.stock,
+      reorderPoint: variant.reorderPoint,
+      suggestedOrderQty,
+      daysToDepletion,
+      priority,
+      lastSoldDate,
+      avgDailySales,
+      supplierInfo
+    };
+  }
+  /**
+   * Calculate average daily sales from stock movements
+   */
+  calculateAvgDailySales(stockMovements) {
+    if (stockMovements.length === 0)
+      return 0;
+    const totalSold = stockMovements.reduce((sum, movement) => sum + Math.abs(movement.quantity), 0);
+    const daysSpan = 90;
+    return totalSold / daysSpan;
+  }
+  /**
+   * Determine alert priority based on stock level and depletion rate
+   */
+  determinePriority(currentStock, reorderPoint, daysToDepletion) {
+    const stockRatio = currentStock / reorderPoint;
+    if (currentStock === 0 || daysToDepletion <= 1) {
+      return "CRITICAL";
+    } else if (stockRatio <= 0.25 || daysToDepletion <= 3) {
+      return "HIGH";
+    } else if (stockRatio <= 0.5 || daysToDepletion <= 7) {
+      return "MEDIUM";
+    } else {
+      return "LOW";
+    }
+  }
+  /**
+   * Calculate suggested order quantity based on sales velocity and lead time
+   */
+  calculateSuggestedOrderQty(variant, avgDailySales) {
+    const leadTime = variant.product.supplierProducts[0]?.leadTime || 7;
+    const demandDuringLeadTime = Math.ceil(avgDailySales * leadTime);
+    const safetyStock = Math.ceil(variant.reorderPoint * 0.2);
+    const optimalStock = variant.reorderPoint * 2;
+    const reorderQty = Math.max(
+      optimalStock - variant.stock + demandDuringLeadTime + safetyStock,
+      variant.reorderPoint
+      // Minimum order quantity
+    );
+    return Math.ceil(reorderQty);
+  }
+  /**
+   * Generate a human-readable variant name
+   */
+  getVariantName(variant) {
+    if (variant.attributeValues && variant.attributeValues.length > 0) {
+      return variant.attributeValues.map((av) => av.value).join(" / ");
+    }
+    return "Default";
+  }
+  /**
+   * Get reorder alerts for a specific product
+   */
+  async getProductReorderAlerts(productId) {
+    const analysis = await this.analyzeReorderNeeds();
+    return analysis.alerts.filter((alert) => alert.productId === productId);
+  }
+  /**
+   * Get alerts by priority level
+   */
+  async getAlertsByPriority(priority) {
+    const analysis = await this.analyzeReorderNeeds();
+    return analysis.alerts.filter((alert) => alert.priority === priority);
+  }
+  /**
+   * Get alerts that need immediate attention (critical and high priority)
+   */
+  async getUrgentAlerts() {
+    const analysis = await this.analyzeReorderNeeds();
+    return analysis.alerts.filter((alert) => alert.priority === "CRITICAL" || alert.priority === "HIGH");
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/reorder.handlers.ts
+var log34 = createLogger("Reorder");
+function setupReorderHandlers(prisma2) {
+  const reorderService = new ReorderAnalysisService(prisma2);
+  ipcMain.handle("reorder:getAlerts", async () => {
+    try {
+      const analysis = await reorderService.analyzeReorderNeeds();
+      return { success: true, data: analysis };
+    } catch (error) {
+      log34.error("Error getting reorder alerts:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("reorder:getProductAlerts", async (_, productId) => {
+    try {
+      const alerts = await reorderService.getProductReorderAlerts(productId);
+      return { success: true, data: alerts };
+    } catch (error) {
+      log34.error("Error getting product reorder alerts:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("reorder:getAlertsByPriority", async (_, priority) => {
+    try {
+      const alerts = await reorderService.getAlertsByPriority(priority);
+      return { success: true, data: alerts };
+    } catch (error) {
+      log34.error("Error getting alerts by priority:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("reorder:getUrgentAlerts", async () => {
+    try {
+      const alerts = await reorderService.getUrgentAlerts();
+      return { success: true, data: alerts };
+    } catch (error) {
+      log34.error("Error getting urgent alerts:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("reorder:getSummary", async () => {
+    try {
+      const analysis = await reorderService.analyzeReorderNeeds();
+      return { success: true, data: analysis.summary };
+    } catch (error) {
+      log34.error("Error getting reorder summary:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/suppliers.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/shared/interfaces/IRepository.ts
+var RepositoryError = class extends Error {
+  constructor(message, code) {
+    super(message);
+    this.code = code;
+    this.name = "RepositoryError";
+  }
+};
+var EntityNotFoundError = class extends RepositoryError {
+  constructor(entityName, id) {
+    super(`${entityName} with ID ${id} not found`, "ENTITY_NOT_FOUND");
+    this.name = "EntityNotFoundError";
+  }
+};
+var DuplicateEntityError = class extends RepositoryError {
+  constructor(entityName, field, value) {
+    super(`${entityName} with ${field}=${value} already exists`, "DUPLICATE_ENTITY");
+    this.name = "DuplicateEntityError";
+  }
+};
+
+// apps/bizflow/src/main/repositories/SupplierRepository.ts
+var SupplierRepository = class {
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  /**
+   * Find supplier by ID
+   */
+  async findById(id) {
+    return this.prisma.supplier.findUnique({
+      where: { id },
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true
+              }
+            }
+          }
+        },
+        purchaseOrders: {
+          select: {
+            id: true,
+            totalAmount: true,
+            status: true
+          }
+        }
+      }
+    });
+  }
+  /**
+   * Find supplier by name
+   */
+  async findByName(name) {
+    return this.prisma.supplier.findFirst({
+      where: { name },
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true
+              }
+            }
+          }
+        },
+        purchaseOrders: {
+          select: {
+            id: true,
+            totalAmount: true,
+            status: true
+          }
+        }
+      }
+    });
+  }
+  /**
+   * Find all suppliers
+   */
+  async findAll(options = {}) {
+    const { where, include, orderBy, skip, take, select } = options;
+    return this.prisma.supplier.findMany({
+      where,
+      include: include ?? {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true
+              }
+            }
+          }
+        },
+        purchaseOrders: {
+          select: {
+            id: true,
+            totalAmount: true,
+            status: true
+          }
+        }
+      },
+      orderBy,
+      skip,
+      take,
+      select
+    });
+  }
+  /**
+   * Search suppliers
+   */
+  async search(query) {
+    return this.findAll({
+      where: {
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { contactName: { contains: query, mode: "insensitive" } },
+          { email: { contains: query, mode: "insensitive" } },
+          { phone: { contains: query } }
+        ]
+      },
+      orderBy: { name: "asc" }
+    });
+  }
+  /**
+   * Get paginated suppliers
+   */
+  async findPaginated(page = 1, pageSize = 20, options = {}) {
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+    const [data, total] = await Promise.all([
+      this.findAll({ ...options, skip, take }),
+      this.count(options)
+    ]);
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1
+    };
+  }
+  /**
+   * Create new supplier
+   */
+  async create(data) {
+    const existing = await this.findByName(data.name);
+    if (existing) {
+      throw new DuplicateEntityError("Supplier", "name", data.name);
+    }
+    return this.prisma.supplier.create({
+      data,
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true
+              }
+            }
+          }
+        },
+        purchaseOrders: {
+          select: {
+            id: true,
+            totalAmount: true,
+            status: true
+          }
+        }
+      }
+    });
+  }
+  /**
+   * Update supplier
+   */
+  async update(id, data) {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new EntityNotFoundError("Supplier", id);
+    }
+    if (data.name && data.name !== existing.name) {
+      const duplicate = await this.findByName(data.name);
+      if (duplicate) {
+        throw new DuplicateEntityError("Supplier", "name", data.name);
+      }
+    }
+    return this.prisma.supplier.update({
+      where: { id },
+      data,
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true
+              }
+            }
+          }
+        },
+        purchaseOrders: {
+          select: {
+            id: true,
+            totalAmount: true,
+            status: true
+          }
+        }
+      }
+    });
+  }
+  /**
+   * Delete supplier
+   */
+  async delete(id) {
+    try {
+      const poCount = await this.prisma.purchaseOrder.count({
+        where: { supplierId: id }
+      });
+      if (poCount > 0) {
+        throw new Error(`Cannot delete supplier with ${poCount} purchase orders. Deactivate it instead.`);
+      }
+      await this.prisma.supplier.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      if (error.code === "P2025") {
+        throw new EntityNotFoundError("Supplier", id);
+      }
+      throw error;
+    }
+  }
+  /**
+   * Count suppliers
+   */
+  async count(options = {}) {
+    return this.prisma.supplier.count({
+      where: options.where
+    });
+  }
+  /**
+   * Check if supplier exists
+   */
+  async exists(id) {
+    const count = await this.prisma.supplier.count({
+      where: { id }
+    });
+    return count > 0;
+  }
+  /**
+   * Find supplier products
+   */
+  async findSupplierProducts(supplierId) {
+    return this.prisma.supplierProduct.findMany({
+      where: { supplierId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            baseSKU: true
+          }
+        }
+      },
+      orderBy: { product: { name: "asc" } }
+    });
+  }
+  /**
+   * Add product to supplier
+   */
+  async addSupplierProduct(data) {
+    const supplier = await this.findById(data.supplierId);
+    if (!supplier) {
+      throw new EntityNotFoundError("Supplier", data.supplierId);
+    }
+    const product = await this.prisma.product.findUnique({
+      where: { id: data.productId }
+    });
+    if (!product) {
+      throw new EntityNotFoundError("Product", data.productId);
+    }
+    const existing = await this.prisma.supplierProduct.findUnique({
+      where: {
+        supplierId_productId: {
+          supplierId: data.supplierId,
+          productId: data.productId
+        }
+      }
+    });
+    if (existing) {
+      throw new DuplicateEntityError("SupplierProduct", "supplierId_productId", `${data.supplierId}_${data.productId}`);
+    }
+    return this.prisma.supplierProduct.create({
+      data,
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            baseSKU: true
+          }
+        }
+      }
+    });
+  }
+  /**
+   * Update supplier product
+   */
+  async updateSupplierProduct(id, data) {
+    return this.prisma.supplierProduct.update({
+      where: { id },
+      data,
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            baseSKU: true
+          }
+        }
+      }
+    });
+  }
+  /**
+   * Remove product from supplier
+   */
+  async removeSupplierProduct(id) {
+    try {
+      await this.prisma.supplierProduct.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      if (error.code === "P2025") {
+        throw new EntityNotFoundError("SupplierProduct", id);
+      }
+      throw error;
+    }
+  }
+  /**
+   * Get preferred suppliers for a product
+   */
+  async getPreferredSuppliersForProduct(productId) {
+    return this.prisma.supplier.findMany({
+      where: {
+        products: {
+          some: {
+            productId,
+            isPreferred: true
+          }
+        }
+      },
+      include: {
+        products: {
+          where: { productId },
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true
+              }
+            }
+          }
+        },
+        purchaseOrders: {
+          select: {
+            id: true,
+            totalAmount: true,
+            status: true
+          }
+        }
+      }
+    });
+  }
+};
+
+// apps/bizflow/src/shared/mappers/SupplierMapper.ts
+var SupplierMapper = class {
+  /**
+   * Map Supplier entity to Response DTO
+   */
+  static toResponseDTO(supplier) {
+    const productCount = supplier.products.length;
+    const totalPurchaseOrders = supplier.purchaseOrders.length;
+    const totalPurchased = supplier.purchaseOrders.filter((po) => po.status === "received").reduce((sum, po) => sum + po.totalAmount, 0);
+    return {
+      id: supplier.id,
+      name: supplier.name,
+      contactName: supplier.contactName,
+      email: supplier.email,
+      phone: supplier.phone,
+      address: supplier.address,
+      paymentTerms: supplier.paymentTerms,
+      isActive: supplier.isActive,
+      notes: supplier.notes,
+      productCount,
+      totalPurchaseOrders,
+      totalPurchased,
+      createdAt: supplier.createdAt.toISOString(),
+      updatedAt: supplier.updatedAt.toISOString()
+    };
+  }
+  /**
+   * Map array of Suppliers to Response DTOs
+   */
+  static toResponseDTOs(suppliers) {
+    return suppliers.map((s) => this.toResponseDTO(s));
+  }
+  /**
+   * Map SupplierProduct to Response DTO
+   */
+  static toSupplierProductDTO(supplierProduct) {
+    return {
+      id: supplierProduct.id,
+      supplierId: supplierProduct.supplierId,
+      productId: supplierProduct.productId,
+      productName: supplierProduct.product.name,
+      productSKU: supplierProduct.product.baseSKU,
+      sku: supplierProduct.sku,
+      cost: supplierProduct.cost,
+      leadTime: supplierProduct.leadTime,
+      minOrderQty: supplierProduct.minOrderQty,
+      isPreferred: supplierProduct.isPreferred,
+      createdAt: supplierProduct.createdAt.toISOString(),
+      updatedAt: supplierProduct.updatedAt.toISOString()
+    };
+  }
+  /**
+   * Map array of SupplierProducts to Response DTOs
+   */
+  static toSupplierProductDTOs(supplierProducts) {
+    return supplierProducts.map((sp) => this.toSupplierProductDTO(sp));
+  }
+  /**
+   * Map Create DTO to Repository Data
+   */
+  static toCreateData(dto) {
+    return {
+      name: dto.name.trim(),
+      contactName: dto.contactName?.trim(),
+      email: dto.email?.trim().toLowerCase(),
+      phone: dto.phone?.trim(),
+      address: dto.address?.trim(),
+      paymentTerms: dto.paymentTerms?.trim(),
+      notes: dto.notes?.trim()
+    };
+  }
+  /**
+   * Map Update DTO to Repository Data
+   */
+  static toUpdateData(dto) {
+    const data = {};
+    if (dto.name !== void 0)
+      data.name = dto.name.trim();
+    if (dto.contactName !== void 0)
+      data.contactName = dto.contactName?.trim();
+    if (dto.email !== void 0)
+      data.email = dto.email?.trim().toLowerCase();
+    if (dto.phone !== void 0)
+      data.phone = dto.phone?.trim();
+    if (dto.address !== void 0)
+      data.address = dto.address?.trim();
+    if (dto.paymentTerms !== void 0)
+      data.paymentTerms = dto.paymentTerms?.trim();
+    if (dto.isActive !== void 0)
+      data.isActive = dto.isActive;
+    if (dto.notes !== void 0)
+      data.notes = dto.notes?.trim();
+    return data;
+  }
+  /**
+   * Map Create Supplier Product DTO to Repository Data
+   */
+  static toCreateSupplierProductData(dto) {
+    return {
+      supplierId: dto.supplierId,
+      productId: dto.productId,
+      sku: dto.sku?.trim(),
+      cost: Number(dto.cost),
+      leadTime: dto.leadTime,
+      minOrderQty: dto.minOrderQty ?? 1,
+      isPreferred: dto.isPreferred ?? false
+    };
+  }
+  /**
+   * Map Update Supplier Product DTO to Repository Data
+   */
+  static toUpdateSupplierProductData(dto) {
+    const data = {};
+    if (dto.sku !== void 0)
+      data.sku = dto.sku?.trim();
+    if (dto.cost !== void 0)
+      data.cost = Number(dto.cost);
+    if (dto.leadTime !== void 0)
+      data.leadTime = dto.leadTime;
+    if (dto.minOrderQty !== void 0)
+      data.minOrderQty = dto.minOrderQty;
+    if (dto.isPreferred !== void 0)
+      data.isPreferred = dto.isPreferred;
+    return data;
+  }
+};
+
+// apps/bizflow/src/shared/utils/logger.ts
+function sendToMain(level, args) {
+  try {
+    const api = window?.api?.log;
+    if (api?.[level]) {
+      const [first, ...rest] = args;
+      const message = typeof first === "string" ? first : JSON.stringify(first);
+      const data = rest.length === 1 ? rest[0] : rest.length > 1 ? rest : void 0;
+      const serialized = data !== void 0 && typeof data === "object" ? (() => {
+        if (data instanceof Error) {
+          return JSON.stringify({ name: data.name, message: data.message, stack: data.stack });
+        }
+        try {
+          return JSON.stringify(data);
+        } catch {
+          return String(data);
+        }
+      })() : data;
+      api[level](message, serialized);
+    }
+  } catch {
+  }
+}
+var isDevelopment = process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+var logger = {
+  /** General information */
+  info: (...args) => {
+    if (isDevelopment)
+      console.log("\u2139\uFE0F", ...args);
+    else
+      sendToMain("info", args);
+  },
+  /** Successful operations */
+  success: (...args) => {
+    if (isDevelopment)
+      console.log("\u2705", ...args);
+    else
+      sendToMain("info", args);
+  },
+  /** Always logged — forwarded to main log file in production */
+  error: (...args) => {
+    console.error("\u274C", ...args);
+    sendToMain("error", args);
+  },
+  /** Warnings — forwarded to main log file in production */
+  warn: (...args) => {
+    if (isDevelopment)
+      console.warn("\u26A0\uFE0F", ...args);
+    sendToMain("warn", args);
+  },
+  /** Debug — dev only */
+  debug: (...args) => {
+    if (isDevelopment)
+      console.debug("\u{1F41B}", ...args);
+  },
+  /** Trace — dev only */
+  trace: (...args) => {
+    if (isDevelopment)
+      console.trace("\u{1F50D}", ...args);
+  }
+};
+var logger_default = logger;
+
+// apps/bizflow/src/shared/events/EventBus.ts
+var EventBus = class _EventBus {
+  static instance;
+  handlers;
+  wildcardHandlers;
+  constructor() {
+    this.handlers = /* @__PURE__ */ new Map();
+    this.wildcardHandlers = /* @__PURE__ */ new Set();
+  }
+  /**
+   * Get singleton instance
+   */
+  static getInstance() {
+    if (!_EventBus.instance) {
+      _EventBus.instance = new _EventBus();
+    }
+    return _EventBus.instance;
+  }
+  /**
+   * Subscribe to event
+   */
+  on(event, handler) {
+    if (!this.handlers.has(event)) {
+      this.handlers.set(event, /* @__PURE__ */ new Set());
+    }
+    const eventHandlers = this.handlers.get(event);
+    eventHandlers.add(handler);
+    return {
+      unsubscribe: () => {
+        eventHandlers.delete(handler);
+        if (eventHandlers.size === 0) {
+          this.handlers.delete(event);
+        }
+      }
+    };
+  }
+  /**
+   * Subscribe to all events (wildcard)
+   */
+  onAny(handler) {
+    this.wildcardHandlers.add(handler);
+    return {
+      unsubscribe: () => {
+        this.wildcardHandlers.delete(handler);
+      }
+    };
+  }
+  /**
+   * Subscribe once (auto-unsubscribe after first call)
+   */
+  once(event, handler) {
+    let subscription;
+    const wrappedHandler = async (data) => {
+      subscription.unsubscribe();
+      await handler(data);
+    };
+    subscription = this.on(event, wrappedHandler);
+    return subscription;
+  }
+  /**
+   * Publish event
+   */
+  async emit(event, data) {
+    const eventHandlers = this.handlers.get(event);
+    if (eventHandlers) {
+      const promises = Array.from(eventHandlers).map(
+        (handler) => Promise.resolve(handler(data)).catch((error) => {
+          logger_default.error(`Error in handler for event "${String(event)}":`, error);
+        })
+      );
+      await Promise.all(promises);
+    }
+    if (this.wildcardHandlers.size > 0) {
+      const promises = Array.from(this.wildcardHandlers).map(
+        (handler) => Promise.resolve(handler({ event, data })).catch((error) => {
+          logger_default.error(`Error in wildcard handler for event "${String(event)}":`, error);
+        })
+      );
+      await Promise.all(promises);
+    }
+  }
+  /**
+   * Publish event synchronously (fire and forget)
+   */
+  emitSync(event, data) {
+    const eventHandlers = this.handlers.get(event);
+    if (eventHandlers) {
+      eventHandlers.forEach((handler) => {
+        try {
+          handler(data);
+        } catch (error) {
+          logger_default.error(`Error in handler for event "${String(event)}":`, error);
+        }
+      });
+    }
+    this.wildcardHandlers.forEach((handler) => {
+      try {
+        handler({ event, data });
+      } catch (error) {
+        logger_default.error(`Error in wildcard handler for event "${String(event)}":`, error);
+      }
+    });
+  }
+  /**
+   * Remove all handlers for event
+   */
+  off(event) {
+    this.handlers.delete(event);
+  }
+  /**
+   * Remove all handlers
+   */
+  clear() {
+    this.handlers.clear();
+    this.wildcardHandlers.clear();
+  }
+  /**
+   * Get number of handlers for event
+   */
+  listenerCount(event) {
+    return this.handlers.get(event)?.size || 0;
+  }
+  /**
+   * Get all event names with handlers
+   */
+  eventNames() {
+    return Array.from(this.handlers.keys());
+  }
+};
+var eventBus = EventBus.getInstance();
+
+// apps/bizflow/src/main/services/SupplierService.ts
+var log35 = createLogger("Suppliers");
+var SupplierServiceError = class extends Error {
+  constructor(message, code) {
+    super(message);
+    this.code = code;
+    this.name = "SupplierServiceError";
+  }
+};
+var SupplierService = class {
+  supplierRepository;
+  constructor(prisma2) {
+    this.supplierRepository = new SupplierRepository(prisma2);
+  }
+  /**
+   * Create new supplier
+   */
+  async createSupplier(dto) {
+    try {
+      log35.info("Creating supplier", { name: dto.name });
+      this.validateSupplierData(dto);
+      const existing = await this.supplierRepository.findByName(dto.name);
+      if (existing) {
+        throw new DuplicateEntityError("Supplier", "name", dto.name);
+      }
+      const createData = SupplierMapper.toCreateData(dto);
+      const supplier = await this.supplierRepository.create(createData);
+      log35.info("Supplier created", { id: supplier.id, name: supplier.name });
+      await eventBus.emit("supplier:created", {
+        supplierId: supplier.id,
+        name: supplier.name
+      });
+      return SupplierMapper.toResponseDTO(supplier);
+    } catch (error) {
+      log35.error("Failed to create supplier", { error, dto });
+      if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
+        throw error;
+      }
+      const code = error.code || "CREATE_FAILED";
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SupplierServiceError(`Failed to create supplier: ${errorMessage}`, code);
+    }
+  }
+  /**
+   * Get supplier by ID
+   */
+  async getSupplier(id) {
+    try {
+      const supplier = await this.supplierRepository.findById(id);
+      if (!supplier) {
+        throw new EntityNotFoundError("Supplier", id);
+      }
+      return SupplierMapper.toResponseDTO(supplier);
+    } catch (error) {
+      log35.error("Failed to get supplier", { error, id });
+      throw error;
+    }
+  }
+  /**
+   * Query suppliers with filters and pagination
+   */
+  async querySuppliers(query) {
+    try {
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 20;
+      const options = {};
+      if (query.search) {
+        const suppliers = await this.supplierRepository.search(query.search);
+        return {
+          data: SupplierMapper.toResponseDTOs(suppliers),
+          total: suppliers.length,
+          page: 1,
+          pageSize: suppliers.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false
+        };
+      }
+      if (query.isActive !== void 0) {
+        options.where = { ...options.where, isActive: query.isActive };
+      }
+      if (query.sortBy) {
+        options.orderBy = { [query.sortBy]: query.sortOrder || "asc" };
+      } else {
+        options.orderBy = { name: "asc" };
+      }
+      const result = await this.supplierRepository.findPaginated(page, pageSize, options);
+      return {
+        data: SupplierMapper.toResponseDTOs(result.data),
+        total: result.total,
+        page: result.page,
+        pageSize: result.pageSize,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrevious: result.hasPrevious
+      };
+    } catch (error) {
+      log35.error("Failed to query suppliers", { error, query });
+      throw error;
+    }
+  }
+  /**
+   * Update supplier
+   */
+  async updateSupplier(id, dto) {
+    try {
+      log35.info("Updating supplier", { id });
+      if (dto.email && !this.isValidEmail(dto.email)) {
+        throw new SupplierServiceError("Invalid email format", "INVALID_EMAIL");
+      }
+      const updateData = SupplierMapper.toUpdateData(dto);
+      const supplier = await this.supplierRepository.update(id, updateData);
+      log35.info("Supplier updated", { id, name: supplier.name });
+      await eventBus.emit("supplier:updated", {
+        supplierId: supplier.id,
+        name: supplier.name
+      });
+      return SupplierMapper.toResponseDTO(supplier);
+    } catch (error) {
+      log35.error("Failed to update supplier", { error, id, dto });
+      if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
+        throw error;
+      }
+      const code = error.code || "UPDATE_FAILED";
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SupplierServiceError(`Failed to update supplier: ${errorMessage}`, code);
+    }
+  }
+  /**
+   * Delete supplier (soft delete by deactivating)
+   */
+  async deleteSupplier(id) {
+    try {
+      log35.info("Deleting supplier", { id });
+      const supplier = await this.supplierRepository.update(id, { isActive: false });
+      log35.info("Supplier deactivated", { id, name: supplier.name });
+      await eventBus.emit("supplier:deleted", {
+        supplierId: supplier.id,
+        name: supplier.name
+      });
+      return true;
+    } catch (error) {
+      log35.error("Failed to delete supplier", { error, id });
+      if (error instanceof EntityNotFoundError) {
+        throw error;
+      }
+      const code = error.code || "DELETE_FAILED";
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SupplierServiceError(`Failed to delete supplier: ${errorMessage}`, code);
+    }
+  }
+  /**
+   * Add product to supplier
+   */
+  async addSupplierProduct(dto) {
+    try {
+      log35.info("Adding product to supplier", { supplierId: dto.supplierId, productId: dto.productId });
+      if (dto.cost < 0) {
+        throw new SupplierServiceError("Cost cannot be negative", "INVALID_COST");
+      }
+      if (dto.minOrderQty && dto.minOrderQty < 1) {
+        throw new SupplierServiceError("Minimum order quantity must be at least 1", "INVALID_MIN_ORDER_QTY");
+      }
+      const createData = SupplierMapper.toCreateSupplierProductData(dto);
+      const supplierProduct = await this.supplierRepository.addSupplierProduct(createData);
+      log35.info("Product added to supplier", {
+        supplierId: supplierProduct.supplierId,
+        productId: supplierProduct.productId
+      });
+      await eventBus.emit("supplier:product-added", {
+        supplierId: supplierProduct.supplierId,
+        productId: supplierProduct.productId
+      });
+      return SupplierMapper.toSupplierProductDTO(supplierProduct);
+    } catch (error) {
+      log35.error("Failed to add supplier product", { error, dto });
+      if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
+        throw error;
+      }
+      const code = error.code || "ADD_PRODUCT_FAILED";
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SupplierServiceError(`Failed to add product to supplier: ${errorMessage}`, code);
+    }
+  }
+  /**
+   * Update supplier product
+   */
+  async updateSupplierProduct(id, dto) {
+    try {
+      log35.info("Updating supplier product", { id });
+      if (dto.cost !== void 0 && dto.cost < 0) {
+        throw new SupplierServiceError("Cost cannot be negative", "INVALID_COST");
+      }
+      if (dto.minOrderQty !== void 0 && dto.minOrderQty < 1) {
+        throw new SupplierServiceError("Minimum order quantity must be at least 1", "INVALID_MIN_ORDER_QTY");
+      }
+      const updateData = SupplierMapper.toUpdateSupplierProductData(dto);
+      const supplierProduct = await this.supplierRepository.updateSupplierProduct(id, updateData);
+      log35.info("Supplier product updated", { id });
+      await eventBus.emit("supplier:product-updated", {
+        supplierId: supplierProduct.supplierId,
+        productId: supplierProduct.productId
+      });
+      return SupplierMapper.toSupplierProductDTO(supplierProduct);
+    } catch (error) {
+      log35.error("Failed to update supplier product", { error, id, dto });
+      if (error instanceof EntityNotFoundError || error instanceof SupplierServiceError) {
+        throw error;
+      }
+      const code = error.code || "UPDATE_PRODUCT_FAILED";
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SupplierServiceError(`Failed to update supplier product: ${errorMessage}`, code);
+    }
+  }
+  /**
+   * Remove product from supplier
+   */
+  async removeSupplierProduct(id) {
+    try {
+      log35.info("Removing product from supplier", { id });
+      const result = await this.supplierRepository.removeSupplierProduct(id);
+      log35.info("Product removed from supplier", { id });
+      await eventBus.emit("supplier:product-removed", { supplierProductId: id });
+      return result;
+    } catch (error) {
+      log35.error("Failed to remove supplier product", { error, id });
+      if (error instanceof EntityNotFoundError) {
+        throw error;
+      }
+      const code = error.code || "REMOVE_PRODUCT_FAILED";
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new SupplierServiceError(`Failed to remove product from supplier: ${errorMessage}`, code);
+    }
+  }
+  /**
+   * Get supplier products
+   */
+  async getSupplierProducts(supplierId) {
+    try {
+      const supplierProducts = await this.supplierRepository.findSupplierProducts(supplierId);
+      return SupplierMapper.toSupplierProductDTOs(supplierProducts);
+    } catch (error) {
+      log35.error("Failed to get supplier products", { error, supplierId });
+      throw error;
+    }
+  }
+  /**
+   * Get preferred suppliers for a product
+   */
+  async getPreferredSuppliersForProduct(productId) {
+    try {
+      const suppliers = await this.supplierRepository.getPreferredSuppliersForProduct(productId);
+      return SupplierMapper.toResponseDTOs(suppliers);
+    } catch (error) {
+      log35.error("Failed to get preferred suppliers for product", { error, productId });
+      throw error;
+    }
+  }
+  /**
+   * Validate supplier data
+   */
+  validateSupplierData(dto) {
+    if (!dto.name || dto.name.trim().length === 0) {
+      throw new SupplierServiceError("Supplier name is required", "MISSING_NAME");
+    }
+    if (dto.name.length > 100) {
+      throw new SupplierServiceError("Supplier name cannot exceed 100 characters", "NAME_TOO_LONG");
+    }
+    if (dto.email && !this.isValidEmail(dto.email)) {
+      throw new SupplierServiceError("Invalid email format", "INVALID_EMAIL");
+    }
+    if (dto.phone && dto.phone.length > 20) {
+      throw new SupplierServiceError("Phone number cannot exceed 20 characters", "PHONE_TOO_LONG");
+    }
+    if (dto.paymentTerms && dto.paymentTerms.length > 50) {
+      throw new SupplierServiceError("Payment terms cannot exceed 50 characters", "PAYMENT_TERMS_TOO_LONG");
+    }
+  }
+  /**
+   * Validate email format
+   */
+  isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/suppliers.handlers.ts
+var log36 = createLogger("Suppliers");
+var supplierService = null;
+function registerSupplierHandlers(prisma2) {
+  if (!prisma2) {
+    log36.error("Prisma not available for supplier handlers");
+    return;
+  }
+  supplierService = new SupplierService(prisma2);
+  ipcMain.handle("suppliers:getAll", async (_, options = {}) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const {
+        page = 1,
+        pageSize = 20,
+        search,
+        isActive,
+        sortBy,
+        sortOrder
+      } = options;
+      const query = {
+        page,
+        pageSize,
+        search,
+        isActive,
+        sortBy,
+        sortOrder
+      };
+      const result = await supplierService.querySuppliers(query);
+      return { success: true, data: result };
+    } catch (error) {
+      log36.error("Error fetching suppliers:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:getById", async (_, id) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const supplier = await supplierService.getSupplier(id);
+      return { success: true, data: supplier };
+    } catch (error) {
+      log36.error("Error fetching supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:create", async (_, supplierData) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const supplier = await supplierService.createSupplier(supplierData);
+      return { success: true, data: supplier };
+    } catch (error) {
+      log36.error("Error creating supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:update", async (_, id, updateData) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const supplier = await supplierService.updateSupplier(id, updateData);
+      return { success: true, data: supplier };
+    } catch (error) {
+      log36.error("Error updating supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:delete", async (_, id) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const result = await supplierService.deleteSupplier(id);
+      return { success: true, data: result };
+    } catch (error) {
+      log36.error("Error deleting supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:getProducts", async (_, supplierId) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const products = await supplierService.getSupplierProducts(supplierId);
+      return { success: true, data: products };
+    } catch (error) {
+      log36.error("Error fetching supplier products:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:addProduct", async (_, supplierProductData) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const supplierProduct = await supplierService.addSupplierProduct(supplierProductData);
+      return { success: true, data: supplierProduct };
+    } catch (error) {
+      log36.error("Error adding product to supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:addSupplierProduct", async (_, supplierId, supplierProductData) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const supplierProduct = await supplierService.addSupplierProduct(supplierProductData);
+      return { success: true, data: supplierProduct };
+    } catch (error) {
+      log36.error("Error adding product to supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:getSupplierProducts", async (_, supplierId) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const products = await supplierService.getSupplierProducts(supplierId);
+      return { success: true, data: products };
+    } catch (error) {
+      log36.error("Error getting supplier products:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:updateProduct", async (_, id, updateData) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const supplierProduct = await supplierService.updateSupplierProduct(id, updateData);
+      return { success: true, data: supplierProduct };
+    } catch (error) {
+      log36.error("Error updating supplier product:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:removeProduct", async (_, id) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const result = await supplierService.removeSupplierProduct(id);
+      return { success: true, data: result };
+    } catch (error) {
+      log36.error("Error removing product from supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:removeSupplierProduct", async (_, id) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const result = await supplierService.removeSupplierProduct(id);
+      return { success: true, data: result };
+    } catch (error) {
+      log36.error("Error removing product from supplier:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:getPreferredForProduct", async (_, productId) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const suppliers = await supplierService.getPreferredSuppliersForProduct(productId);
+      return { success: true, data: suppliers };
+    } catch (error) {
+      log36.error("Error fetching preferred suppliers for product:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  ipcMain.handle("suppliers:search", async (_, query) => {
+    try {
+      if (!supplierService) {
+        return { success: false, message: "Supplier service not available" };
+      }
+      const suppliers = await supplierService.querySuppliers({ search: query });
+      return { success: true, data: suppliers.data };
+    } catch (error) {
+      log36.error("Error searching suppliers:", error);
+      return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
+    }
+  });
+  log36.info("Supplier IPC handlers registered");
+}
+
+// apps/bizflow/src/main/ipc/handlers/purchase-orders.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/PurchaseOrderService.ts
+var log37 = createLogger("PurchaseOrders");
+var PurchaseOrderService = class {
+  constructor(purchaseOrderRepository, supplierService2, productService, prisma2) {
+    this.purchaseOrderRepository = purchaseOrderRepository;
+    this.supplierService = supplierService2;
+    this.productService = productService;
+    this.prisma = prisma2;
+  }
+  async getAllPurchaseOrders(filters) {
+    log37.debug("Fetching all purchase orders", { filters });
+    return this.purchaseOrderRepository.findAll(filters);
+  }
+  async getPurchaseOrderById(id) {
+    return this.purchaseOrderRepository.findById(id);
+  }
+  async getPurchaseOrderByPoNumber(poNumber) {
+    return this.purchaseOrderRepository.findByPoNumber(poNumber);
+  }
+  async createPurchaseOrder(data, orderedBy) {
+    log37.info("Creating purchase order", { supplierId: data.supplierId, itemCount: data.items.length, orderedBy });
+    const supplier = await this.supplierService.getSupplier(data.supplierId);
+    if (!supplier) {
+      log37.warn("Purchase order creation failed: supplier not found", { supplierId: data.supplierId });
+      throw new Error("Supplier not found");
+    }
+    for (const item of data.items) {
+      const product = await this.productService.getProduct(item.productId);
+      if (!product) {
+        throw new Error(`Product ${item.productId} not found`);
+      }
+      const supplierProduct = await this.prisma.supplierProduct.findUnique({
+        where: {
+          supplierId_productId: {
+            supplierId: data.supplierId,
+            productId: item.productId
+          }
+        }
+      });
+      if (!supplierProduct) {
+        throw new Error(`Product ${product.name} is not supplied by ${supplier.name}`);
+      }
+      if (item.unitCost <= 0) {
+        throw new Error(`Invalid unit cost for product ${product.name}`);
+      }
+      if (item.quantity <= 0) {
+        throw new Error(`Invalid quantity for product ${product.name}`);
+      }
+    }
+    const result = await this.purchaseOrderRepository.create(data, orderedBy);
+    log37.info("Purchase order created", { id: result.id, poNumber: result.poNumber, supplier: supplier.name });
+    return result;
+  }
+  async updatePurchaseOrder(id, data) {
+    log37.info("Updating purchase order", { id, status: data.status });
+    const existingPO = await this.purchaseOrderRepository.findById(id);
+    if (!existingPO) {
+      log37.warn("Purchase order not found for update", { id });
+      throw new Error("Purchase order not found");
+    }
+    if (data.status === "received" && existingPO.status !== "received") {
+      await this.receivePurchaseOrder(id, data.receivedDate);
+    }
+    const result = await this.purchaseOrderRepository.update(id, data);
+    log37.info("Purchase order updated", { id, newStatus: data.status });
+    return result;
+  }
+  async deletePurchaseOrder(id) {
+    log37.info("Deleting purchase order", { id });
+    const existingPO = await this.purchaseOrderRepository.findById(id);
+    if (!existingPO) {
+      log37.warn("Purchase order not found for deletion", { id });
+      throw new Error("Purchase order not found");
+    }
+    if (existingPO.status !== "draft") {
+      log37.warn("Attempted to delete non-draft purchase order", { id, status: existingPO.status });
+      throw new Error("Only draft purchase orders can be deleted");
+    }
+    await this.purchaseOrderRepository.delete(id);
+    log37.info("Purchase order deleted", { id });
+  }
+  async receivePurchaseOrder(id, receivedDate) {
+    log37.info("Receiving purchase order", { id });
+    const po = await this.purchaseOrderRepository.findById(id);
+    if (!po) {
+      log37.warn("Purchase order not found for receipt", { id });
+      throw new Error("Purchase order not found");
+    }
+    if (po.status !== "ordered") {
+      log37.warn("Cannot receive purchase order in current status", { id, status: po.status });
+      throw new Error("Only ordered purchase orders can be received");
+    }
+    await this.prisma.$transaction(async (tx) => {
+      for (const item of po.items) {
+        let variantId = item.variantId;
+        if (!variantId) {
+          const variants = await tx.productVariant.findMany({
+            where: { productId: item.productId }
+          });
+          if (variants.length === 1) {
+            variantId = variants[0].id;
+          } else if (variants.length > 1) {
+            variantId = variants[0].id;
+          }
+        }
+        if (variantId) {
+          const variant = await tx.productVariant.findUnique({
+            where: { id: variantId },
+            select: { stock: true }
+          });
+          const previousStock = variant?.stock || 0;
+          const newStock = previousStock + item.quantity;
+          await tx.productVariant.update({
+            where: { id: variantId },
+            data: { stock: { increment: item.quantity } }
+          });
+          await tx.stockMovement.create({
+            data: {
+              variantId,
+              type: "restock",
+              quantity: item.quantity,
+              reason: `PO-${po.poNumber}`,
+              notes: `Purchase order receipt`,
+              userId: null,
+              previousStock,
+              newStock
+            }
+          });
+        }
+      }
+    });
+    const result = await this.purchaseOrderRepository.update(id, {
+      status: "received",
+      receivedDate: receivedDate || /* @__PURE__ */ new Date()
+    });
+    log37.info("Purchase order received and stock updated", { id, itemCount: po.items.length });
+    return result;
+  }
+  async getPurchaseOrderSummary() {
+    return this.purchaseOrderRepository.getSummary();
+  }
+  async getOverduePurchaseOrders() {
+    const now = /* @__PURE__ */ new Date();
+    return this.purchaseOrderRepository.findAll({
+      status: "ordered",
+      endDate: now
+      // Expected date before now
+    });
+  }
+  async getPendingPurchaseOrders() {
+    return this.purchaseOrderRepository.findAll({
+      status: "ordered"
+    });
+  }
+};
+
+// apps/bizflow/src/main/repositories/ProductRepository.ts
+var ProductRepository = class {
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  /**
+   * Find product by ID
+   */
+  async findById(id) {
+    return this.prisma.product.findUnique({
+      where: { id },
+      include: {
+        variants: true,
+        images: {
+          orderBy: { order: "asc" }
+        }
+      }
+    });
+  }
+  /**
+   * Find product by SKU
+   */
+  async findBySKU(sku) {
+    return this.prisma.product.findUnique({
+      where: { baseSKU: sku },
+      include: {
+        variants: true,
+        images: true
+      }
+    });
+  }
+  /**
+   * Find all products
+   */
+  async findAll(options = {}) {
+    const { where, include, orderBy, skip, take, select } = options;
+    return this.prisma.product.findMany({
+      where,
+      include: include ?? {
+        variants: true,
+        images: true
+      },
+      orderBy,
+      skip,
+      take,
+      select
+    });
+  }
+  /**
+   * Find products by category
+   */
+  async findByCategory(category) {
+    return this.findAll({
+      where: { category },
+      orderBy: { name: "asc" }
+    });
+  }
+  /**
+   * Find products by store
+   */
+  async findByStore(storeId) {
+    return this.findAll({
+      where: { storeId },
+      orderBy: { name: "asc" }
+    });
+  }
+  /**
+   * Search products
+   */
+  async search(query) {
+    return this.findAll({
+      where: {
+        OR: [
+          { name: { contains: query } },
+          { baseSKU: { contains: query } },
+          { category: { contains: query } },
+          { description: { contains: query } }
+        ]
+      },
+      orderBy: { name: "asc" }
+    });
+  }
+  /**
+   * Get paginated products
+   */
+  async findPaginated(page = 1, pageSize = 20, options = {}) {
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+    const [data, total] = await Promise.all([
+      this.findAll({ ...options, skip, take }),
+      this.count(options)
+    ]);
+    const totalPages = Math.ceil(total / pageSize);
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrevious: page > 1
+    };
+  }
+  /**
+   * Create new product
+   */
+  async create(data) {
+    const existing = await this.findBySKU(data.baseSKU);
+    if (existing) {
+      throw new DuplicateEntityError("Product", "baseSKU", data.baseSKU);
+    }
+    const { variants, images, ...productData } = data;
+    return this.prisma.product.create({
+      data: {
+        ...productData,
+        variants: variants ? {
+          create: variants
+        } : void 0,
+        images: images ? {
+          create: images
+        } : void 0
+      },
+      include: {
+        variants: true,
+        images: true
+      }
+    });
+  }
+  /**
+   * Update product
+   */
+  async update(id, data) {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new EntityNotFoundError("Product", id);
+    }
+    if (data.baseSKU && data.baseSKU !== existing.baseSKU) {
+      const duplicate = await this.findBySKU(data.baseSKU);
+      if (duplicate) {
+        throw new DuplicateEntityError("Product", "baseSKU", data.baseSKU);
+      }
+    }
+    const { variants, images, ...productData } = data;
+    return this.prisma.product.update({
+      where: { id },
+      data: productData,
+      include: {
+        variants: true,
+        images: true
+      }
+    });
+  }
+  /**
+   * Delete product
+   */
+  async delete(id) {
+    try {
+      const salesCount = await this.prisma.saleItem.count({
+        where: { productId: id }
+      });
+      if (salesCount > 0) {
+        throw new Error(`Cannot delete product with ${salesCount} sales. Archive it instead.`);
+      }
+      await this.prisma.product.delete({ where: { id } });
+      return true;
+    } catch (error) {
+      if (error.code === "P2025") {
+        throw new EntityNotFoundError("Product", id);
+      }
+      throw error;
+    }
+  }
+  /**
+   * Count products
+   */
+  async count(options = {}) {
+    return this.prisma.product.count({
+      where: options.where
+    });
+  }
+  /**
+   * Check if product exists
+   */
+  async exists(id) {
+    const count = await this.prisma.product.count({
+      where: { id }
+    });
+    return count > 0;
+  }
+  /**
+   * Get products with low stock
+   */
+  async findLowStock(threshold = 10) {
+    const products = await this.findAll();
+    return products.filter((product) => {
+      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+      return totalStock <= threshold && totalStock > 0;
+    });
+  }
+  /**
+   * Get out of stock products
+   */
+  async findOutOfStock() {
+    const products = await this.findAll();
+    return products.filter((product) => {
+      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+      return totalStock === 0;
+    });
+  }
+  /**
+   * Update variant stock
+   */
+  async updateVariantStock(variantId, stock) {
+    return this.prisma.productVariant.update({
+      where: { id: variantId },
+      data: { stock }
+    });
+  }
+  /**
+   * Add product image
+   */
+  async addImage(productId, imageData, order = 0) {
+    return this.prisma.productImage.create({
+      data: {
+        productId,
+        imageData,
+        order
+      }
+    });
+  }
+  /**
+   * Delete product image
+   */
+  async deleteImage(imageId) {
+    try {
+      await this.prisma.productImage.delete({ where: { id: imageId } });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  /**
+   * Get product categories
+   */
+  async getCategories() {
+    const products = await this.prisma.product.findMany({
+      select: { category: true },
+      distinct: ["category"]
+    });
+    return products.map((p) => p.category).sort();
+  }
+};
+
+// apps/bizflow/src/shared/mappers/ProductMapper.ts
+var ProductMapper = class {
+  /**
+   * Map Product entity to Response DTO
+   */
+  static toResponseDTO(product) {
+    const prod = product;
+    const totalStock = product.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    const stockValue = product.variants.reduce((sum, v) => sum + (v.stock || 0) * (prod.baseCost || 0), 0);
+    const retailValue = product.variants.reduce((sum, v) => sum + (v.stock || 0) * (v.price || 0), 0);
+    let stockStatus;
+    if (totalStock === 0)
+      stockStatus = "out";
+    else if (totalStock <= 10)
+      stockStatus = "low";
+    else if (totalStock <= 50)
+      stockStatus = "normal";
+    else
+      stockStatus = "high";
+    return {
+      id: prod.id,
+      name: prod.name,
+      baseSKU: prod.baseSKU,
+      category: prod.category,
+      description: prod.description,
+      basePrice: prod.basePrice,
+      baseCost: prod.baseCost,
+      hasVariants: prod.hasVariants,
+      storeId: prod.storeId,
+      totalStock,
+      stockValue,
+      retailValue,
+      variantCount: product.variants.length,
+      stockStatus,
+      createdAt: prod.createdAt.toISOString(),
+      updatedAt: prod.updatedAt.toISOString(),
+      variants: product.variants.map(this.toVariantDTO),
+      images: product.images.map(this.toImageDTO)
+    };
+  }
+  /**
+   * Map array of Products to Response DTOs
+   */
+  static toResponseDTOs(products) {
+    return products.map((p) => this.toResponseDTO(p));
+  }
+  /**
+   * Map ProductVariant to Response DTO
+   */
+  static toVariantDTO(variant) {
+    return {
+      id: variant.id,
+      sku: variant.sku,
+      price: variant.price,
+      stock: variant.stock,
+      attributeValues: variant.attributeValues,
+      createdAt: variant.createdAt.toISOString(),
+      updatedAt: variant.updatedAt.toISOString()
+    };
+  }
+  /**
+   * Map ProductImage to Response DTO
+   */
+  static toImageDTO(image) {
+    return {
+      id: image.id,
+      imageData: image.imageData,
+      order: image.order,
+      createdAt: image.createdAt.toISOString()
+    };
+  }
+  /**
+   * Map Create DTO to Repository Data
+   */
+  static toCreateData(dto) {
+    return {
+      name: dto.name.trim(),
+      baseSKU: dto.baseSKU.trim().toUpperCase(),
+      category: dto.category.trim(),
+      description: dto.description?.trim(),
+      basePrice: Number(dto.basePrice),
+      baseCost: Number(dto.baseCost),
+      hasVariants: dto.hasVariants,
+      storeId: dto.storeId,
+      variants: dto.variants?.map((v) => ({
+        sku: v.sku.trim().toUpperCase(),
+        price: Number(v.price),
+        stock: Number(v.stock),
+        attributes: v.attributes
+      })),
+      images: dto.images?.map((img) => ({
+        imageData: img.imageData,
+        order: img.order
+      }))
+    };
+  }
+  /**
+   * Map Update DTO to Repository Data
+   */
+  static toUpdateData(dto) {
+    const data = {};
+    if (dto.name !== void 0)
+      data.name = dto.name.trim();
+    if (dto.baseSKU !== void 0)
+      data.baseSKU = dto.baseSKU.trim().toUpperCase();
+    if (dto.category !== void 0)
+      data.category = dto.category.trim();
+    if (dto.description !== void 0)
+      data.description = dto.description?.trim();
+    if (dto.basePrice !== void 0)
+      data.basePrice = Number(dto.basePrice);
+    if (dto.baseCost !== void 0)
+      data.baseCost = Number(dto.baseCost);
+    if (dto.hasVariants !== void 0)
+      data.hasVariants = dto.hasVariants;
+    if (dto.storeId !== void 0)
+      data.storeId = dto.storeId;
+    return data;
+  }
+};
+
+// apps/bizflow/src/main/services/ProductService.ts
+var log38 = createLogger("Products");
+var ProductServiceError = class extends Error {
+  constructor(message, code) {
+    super(message);
+    this.code = code;
+    this.name = "ProductServiceError";
+  }
+};
+var ProductService = class {
+  productRepository;
+  constructor(prisma2) {
+    this.productRepository = new ProductRepository(prisma2);
+  }
+  /**
+   * Create new product
+   */
+  async createProduct(dto) {
+    try {
+      log38.info("Creating product", { sku: dto.baseSKU });
+      this.validateProductData(dto);
+      const existing = await this.productRepository.findBySKU(dto.baseSKU);
+      if (existing) {
+        throw new DuplicateEntityError("Product", "SKU", dto.baseSKU);
+      }
+      if (dto.variants && dto.variants.length > 0) {
+        this.validateVariants(dto.variants);
+      }
+      const createData = ProductMapper.toCreateData(dto);
+      const product = await this.productRepository.create(createData);
+      log38.info("Product created", { id: product.id, sku: product.baseSKU });
+      await eventBus.emit("product:created", {
+        productId: product.id,
+        sku: product.baseSKU
+      });
+      return ProductMapper.toResponseDTO(product);
+    } catch (error) {
+      log38.error("Failed to create product", { error, dto });
+      if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof ProductServiceError) {
+        throw error;
+      }
+      const code = error.code || "CREATE_FAILED";
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new ProductServiceError(`Failed to create product: ${errorMessage}`, code);
+    }
+  }
+  /**
+   * Get product by ID
+   */
+  async getProduct(id) {
+    try {
+      const product = await this.productRepository.findById(id);
+      if (!product) {
+        throw new EntityNotFoundError("Product", id);
+      }
+      return ProductMapper.toResponseDTO(product);
+    } catch (error) {
+      log38.error("Failed to get product", { error, id });
+      throw error;
+    }
+  }
+  /**
+   * Get product by SKU
+   */
+  async getProductBySKU(sku) {
+    try {
+      const product = await this.productRepository.findBySKU(sku);
+      if (!product) {
+        throw new EntityNotFoundError("Product", sku);
+      }
+      return ProductMapper.toResponseDTO(product);
+    } catch (error) {
+      log38.error("Failed to get product by SKU", { error, sku });
+      throw error;
+    }
+  }
+  /**
+   * Query products with filters and pagination
+   */
+  async queryProducts(query) {
+    try {
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 20;
+      const options = {};
+      if (query.search) {
+        const products = await this.productRepository.search(query.search);
+        return {
+          data: ProductMapper.toResponseDTOs(products),
+          total: products.length,
+          page: 1,
+          pageSize: products.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false
+        };
+      }
+      if (query.category) {
+        options.where = { ...options.where, category: query.category };
+      }
+      if (query.storeId) {
+        options.where = { ...options.where, storeId: query.storeId };
+      }
+      if (query.minPrice !== void 0 || query.maxPrice !== void 0) {
+        options.where = {
+          ...options.where,
+          basePrice: {
+            ...query.minPrice !== void 0 && { gte: query.minPrice },
+            ...query.maxPrice !== void 0 && { lte: query.maxPrice }
+          }
+        };
+      }
+      if (query.sortBy) {
+        options.orderBy = { [query.sortBy]: query.sortOrder || "asc" };
+      }
+      const result = await this.productRepository.findPaginated(page, pageSize, options);
+      return {
+        data: ProductMapper.toResponseDTOs(result.data),
+        total: result.total,
+        page: result.page,
+        pageSize: result.pageSize,
+        totalPages: result.totalPages,
+        hasNext: result.hasNext,
+        hasPrevious: result.hasPrevious
+      };
+    } catch (error) {
+      log38.error("Failed to query products", { error, query });
+      throw error;
+    }
+  }
+  /**
+   * Update product
+   */
+  async updateProduct(id, dto) {
+    try {
+      log38.info("Updating product", { id });
+      if (dto.basePrice !== void 0 && dto.basePrice < 0) {
+        throw new ProductServiceError("Price cannot be negative", "INVALID_PRICE");
+      }
+      if (dto.baseCost !== void 0 && dto.baseCost < 0) {
+        throw new ProductServiceError("Cost cannot be negative", "INVALID_COST");
+      }
+      if (dto.baseSKU) {
+        const existing = await this.productRepository.findBySKU(dto.baseSKU);
+        if (existing && existing.id !== id) {
+          throw new DuplicateEntityError("Product", "SKU", dto.baseSKU);
+        }
+      }
+      const updateData = ProductMapper.toUpdateData(dto);
+      const product = await this.productRepository.update(id, updateData);
+      log38.info("Product updated", { id });
+      await eventBus.emit("product:updated", {
+        productId: id,
+        changes: updateData
+      });
+      return ProductMapper.toResponseDTO(product);
+    } catch (error) {
+      log38.error("Failed to update product", { error, id, dto });
+      throw error;
+    }
+  }
+  /**
+   * Delete product
+   */
+  async deleteProduct(id) {
+    try {
+      log38.info("Deleting product", { id });
+      const deleted = await this.productRepository.delete(id);
+      if (deleted) {
+        log38.info("Product deleted", { id });
+        await eventBus.emit("product:deleted", {
+          productId: id,
+          sku: "UNKNOWN"
+          // We don't have SKU after deletion
+        });
+      }
+      return deleted;
+    } catch (error) {
+      log38.error("Failed to delete product", { error, id });
+      throw error;
+    }
+  }
+  /**
+   * Update variant stock
+   */
+  async updateStock(dto) {
+    try {
+      log38.info("Updating stock", { variantId: dto.variantId, stock: dto.stock });
+      if (dto.stock < 0) {
+        throw new ProductServiceError("Stock cannot be negative", "INVALID_STOCK");
+      }
+      await this.productRepository.updateVariantStock(dto.variantId, dto.stock);
+      log38.info("Stock updated", { variantId: dto.variantId, stock: dto.stock });
+      await eventBus.emit("stock:updated", {
+        variantId: dto.variantId,
+        oldStock: 0,
+        // We don't track old value here
+        newStock: dto.stock
+      });
+    } catch (error) {
+      log38.error("Failed to update stock", { error, dto });
+      throw error;
+    }
+  }
+  /**
+   * Bulk update stock
+   */
+  async bulkUpdateStock(dto) {
+    try {
+      log38.info("Bulk updating stock", { count: dto.updates.length });
+      for (const update of dto.updates) {
+        if (update.stock < 0) {
+          throw new ProductServiceError("Stock cannot be negative", "INVALID_STOCK");
+        }
+        await this.productRepository.updateVariantStock(update.variantId, update.stock);
+      }
+      log38.info("Bulk stock update complete");
+    } catch (error) {
+      log38.error("Failed to bulk update stock", { error, dto });
+      throw error;
+    }
+  }
+  /**
+   * Get low stock products
+   */
+  async getLowStockProducts(threshold = 10) {
+    try {
+      const products = await this.productRepository.findLowStock(threshold);
+      return ProductMapper.toResponseDTOs(products);
+    } catch (error) {
+      log38.error("Failed to get low stock products", { error, threshold });
+      throw error;
+    }
+  }
+  /**
+   * Get out of stock products
+   */
+  async getOutOfStockProducts() {
+    try {
+      const products = await this.productRepository.findOutOfStock();
+      return ProductMapper.toResponseDTOs(products);
+    } catch (error) {
+      log38.error("Failed to get out of stock products", { error });
+      throw error;
+    }
+  }
+  /**
+   * Get all categories
+   */
+  async getCategories() {
+    try {
+      return await this.productRepository.getCategories();
+    } catch (error) {
+      log38.error("Failed to get categories", { error });
+      throw error;
+    }
+  }
+  /**
+   * Add product image
+   */
+  async addImage(productId, imageData, order) {
+    try {
+      log38.info("Adding product image", { productId, order });
+      await this.productRepository.addImage(productId, imageData, order);
+      log38.info("Product image added", { productId });
+    } catch (error) {
+      log38.error("Failed to add product image", { error, productId });
+      throw error;
+    }
+  }
+  /**
+   * Delete product image
+   */
+  async deleteImage(imageId) {
+    try {
+      log38.info("Deleting product image", { imageId });
+      await this.productRepository.deleteImage(imageId);
+      log38.info("Product image deleted", { imageId });
+    } catch (error) {
+      log38.error("Failed to delete product image", { error, imageId });
+      throw error;
+    }
+  }
+  /**
+   * Validate product data
+   */
+  validateProductData(dto) {
+    if (!dto.name || dto.name.trim().length === 0) {
+      throw new ProductServiceError("Product name is required", "INVALID_NAME");
+    }
+    if (!dto.baseSKU || dto.baseSKU.trim().length === 0) {
+      throw new ProductServiceError("Product SKU is required", "INVALID_SKU");
+    }
+    if (!dto.category || dto.category.trim().length === 0) {
+      throw new ProductServiceError("Product category is required", "INVALID_CATEGORY");
+    }
+    if (dto.basePrice < 0) {
+      throw new ProductServiceError("Price cannot be negative", "INVALID_PRICE");
+    }
+    if (dto.baseCost < 0) {
+      throw new ProductServiceError("Cost cannot be negative", "INVALID_COST");
+    }
+  }
+  /**
+   * Validate variants
+   */
+  validateVariants(variants) {
+    const skus = /* @__PURE__ */ new Set();
+    for (const variant of variants) {
+      if (skus.has(variant.sku)) {
+        throw new ProductServiceError(`Duplicate variant SKU: ${variant.sku}`, "DUPLICATE_VARIANT_SKU");
+      }
+      skus.add(variant.sku);
+      if (!variant.sku || variant.sku.trim().length === 0) {
+        throw new ProductServiceError("Variant SKU is required", "INVALID_VARIANT_SKU");
+      }
+      if (variant.price < 0) {
+        throw new ProductServiceError("Variant price cannot be negative", "INVALID_VARIANT_PRICE");
+      }
+      if (variant.stock < 0) {
+        throw new ProductServiceError("Variant stock cannot be negative", "INVALID_VARIANT_STOCK");
+      }
+    }
+  }
+};
+
+// apps/bizflow/src/main/repositories/PurchaseOrderRepository.ts
+var PurchaseOrderRepository = class {
+  constructor(prisma2) {
+    this.prisma = prisma2;
+  }
+  async findAll(filters) {
+    const where = {};
+    if (filters?.supplierId) {
+      where.supplierId = filters.supplierId;
+    }
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+    if (filters?.startDate || filters?.endDate) {
+      where.orderDate = {};
+      if (filters.startDate)
+        where.orderDate.gte = filters.startDate;
+      if (filters.endDate)
+        where.orderDate.lte = filters.endDate;
+    }
+    if (filters?.minAmount || filters?.maxAmount) {
+      where.totalAmount = {};
+      if (filters.minAmount)
+        where.totalAmount.gte = filters.minAmount;
+      if (filters.maxAmount)
+        where.totalAmount.lte = filters.maxAmount;
+    }
+    const purchaseOrders = await this.prisma.purchaseOrder.findMany({
+      where,
+      include: {
+        supplier: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true,
+                description: true,
+                basePrice: true,
+                baseCost: true,
+                hasVariants: true,
+                categoryId: true,
+                storeId: true,
+                createdAt: true,
+                updatedAt: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { orderDate: "desc" }
+    });
+    return purchaseOrders.map((po) => ({
+      ...po,
+      status: po.status,
+      supplier: {
+        ...po.supplier,
+        productCount: 0,
+        // Will be calculated if needed
+        totalPurchaseOrders: 0,
+        // Will be calculated if needed
+        totalPurchased: 0,
+        // Will be calculated if needed
+        createdAt: po.supplier.createdAt.toISOString(),
+        updatedAt: po.supplier.updatedAt.toISOString()
+      },
+      orderDate: po.orderDate,
+      expectedDate: po.expectedDate || void 0,
+      receivedDate: po.receivedDate || void 0,
+      notes: po.notes || void 0,
+      approvedBy: po.approvedBy || void 0,
+      items: po.items.map((item) => ({
+        ...item,
+        variantId: item.variantId || void 0,
+        product: {
+          ...item.product,
+          description: item.product.description || void 0,
+          category: null,
+          // Will be populated if needed
+          totalStock: 0,
+          // Will be calculated if needed
+          stockValue: 0,
+          retailValue: 0,
+          suppliers: []
+        },
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      })),
+      createdAt: po.createdAt,
+      updatedAt: po.updatedAt
+    }));
+  }
+  async findById(id) {
+    const purchaseOrder = await this.prisma.purchaseOrder.findUnique({
+      where: { id },
+      include: {
+        supplier: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true,
+                description: true,
+                basePrice: true,
+                baseCost: true,
+                hasVariants: true,
+                categoryId: true,
+                storeId: true,
+                createdAt: true,
+                updatedAt: true
+              }
+            }
+          }
+        }
+      }
+    });
+    if (!purchaseOrder)
+      return null;
+    return {
+      ...purchaseOrder,
+      status: purchaseOrder.status,
+      supplier: {
+        ...purchaseOrder.supplier,
+        productCount: 0,
+        // Will be calculated if needed
+        totalPurchaseOrders: 0,
+        // Will be calculated if needed
+        totalPurchased: 0,
+        // Will be calculated if needed
+        createdAt: purchaseOrder.supplier.createdAt.toISOString(),
+        updatedAt: purchaseOrder.supplier.updatedAt.toISOString()
+      },
+      orderDate: purchaseOrder.orderDate,
+      expectedDate: purchaseOrder.expectedDate || void 0,
+      receivedDate: purchaseOrder.receivedDate || void 0,
+      notes: purchaseOrder.notes || void 0,
+      approvedBy: purchaseOrder.approvedBy || void 0,
+      items: purchaseOrder.items.map((item) => ({
+        ...item,
+        variantId: item.variantId || void 0,
+        product: {
+          ...item.product,
+          description: item.product.description || void 0,
+          category: null,
+          totalStock: 0,
+          stockValue: 0,
+          retailValue: 0,
+          suppliers: []
+        },
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      })),
+      createdAt: purchaseOrder.createdAt,
+      updatedAt: purchaseOrder.updatedAt
+    };
+  }
+  async findByPoNumber(poNumber) {
+    const purchaseOrder = await this.prisma.purchaseOrder.findUnique({
+      where: { poNumber },
+      include: {
+        supplier: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true,
+                description: true,
+                basePrice: true,
+                baseCost: true,
+                hasVariants: true,
+                categoryId: true,
+                storeId: true,
+                createdAt: true,
+                updatedAt: true
+              }
+            }
+          }
+        }
+      }
+    });
+    if (!purchaseOrder)
+      return null;
+    return {
+      ...purchaseOrder,
+      status: purchaseOrder.status,
+      supplier: {
+        ...purchaseOrder.supplier,
+        productCount: 0,
+        // Will be calculated if needed
+        totalPurchaseOrders: 0,
+        // Will be calculated if needed
+        totalPurchased: 0,
+        // Will be calculated if needed
+        createdAt: purchaseOrder.supplier.createdAt.toISOString(),
+        updatedAt: purchaseOrder.supplier.updatedAt.toISOString()
+      },
+      orderDate: purchaseOrder.orderDate,
+      expectedDate: purchaseOrder.expectedDate || void 0,
+      receivedDate: purchaseOrder.receivedDate || void 0,
+      notes: purchaseOrder.notes || void 0,
+      approvedBy: purchaseOrder.approvedBy || void 0,
+      items: purchaseOrder.items.map((item) => ({
+        ...item,
+        variantId: item.variantId || void 0,
+        product: {
+          ...item.product,
+          description: item.product.description || void 0,
+          category: null,
+          totalStock: 0,
+          stockValue: 0,
+          retailValue: 0,
+          suppliers: []
+        },
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      })),
+      createdAt: purchaseOrder.createdAt,
+      updatedAt: purchaseOrder.updatedAt
+    };
+  }
+  async create(data, orderedBy) {
+    const poNumber = await this.generatePoNumber();
+    const totalAmount = data.items.reduce((sum, item) => sum + item.quantity * item.unitCost, 0) + (data.taxAmount || 0) + (data.shippingCost || 0);
+    const purchaseOrder = await this.prisma.purchaseOrder.create({
+      data: {
+        poNumber,
+        supplierId: data.supplierId,
+        expectedDate: data.expectedDate,
+        totalAmount,
+        taxAmount: data.taxAmount || 0,
+        shippingCost: data.shippingCost || 0,
+        notes: data.notes,
+        orderedBy,
+        items: {
+          create: data.items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitCost: item.unitCost,
+            totalCost: item.quantity * item.unitCost
+          }))
+        }
+      },
+      include: {
+        supplier: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true,
+                description: true,
+                basePrice: true,
+                baseCost: true,
+                hasVariants: true,
+                categoryId: true,
+                storeId: true,
+                createdAt: true,
+                updatedAt: true
+              }
+            }
+          }
+        }
+      }
+    });
+    return {
+      ...purchaseOrder,
+      status: purchaseOrder.status,
+      supplier: {
+        ...purchaseOrder.supplier,
+        productCount: 0,
+        // Will be calculated if needed
+        totalPurchaseOrders: 0,
+        // Will be calculated if needed
+        totalPurchased: 0,
+        // Will be calculated if needed
+        createdAt: purchaseOrder.supplier.createdAt.toISOString(),
+        updatedAt: purchaseOrder.supplier.updatedAt.toISOString()
+      },
+      orderDate: purchaseOrder.orderDate,
+      expectedDate: purchaseOrder.expectedDate || void 0,
+      receivedDate: purchaseOrder.receivedDate || void 0,
+      notes: purchaseOrder.notes || void 0,
+      approvedBy: purchaseOrder.approvedBy || void 0,
+      items: purchaseOrder.items.map((item) => ({
+        ...item,
+        variantId: item.variantId || void 0,
+        product: {
+          ...item.product,
+          description: item.product.description || void 0,
+          category: null,
+          totalStock: 0,
+          stockValue: 0,
+          retailValue: 0,
+          suppliers: []
+        },
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      })),
+      createdAt: purchaseOrder.createdAt,
+      updatedAt: purchaseOrder.updatedAt
+    };
+  }
+  async update(id, data) {
+    const updateData = {};
+    if (data.status)
+      updateData.status = data.status;
+    if (data.expectedDate !== void 0)
+      updateData.expectedDate = data.expectedDate;
+    if (data.receivedDate !== void 0)
+      updateData.receivedDate = data.receivedDate;
+    if (data.taxAmount !== void 0)
+      updateData.taxAmount = data.taxAmount;
+    if (data.shippingCost !== void 0)
+      updateData.shippingCost = data.shippingCost;
+    if (data.notes !== void 0)
+      updateData.notes = data.notes;
+    if (data.approvedBy !== void 0)
+      updateData.approvedBy = data.approvedBy;
+    if (data.items) {
+      const currentPo = await this.prisma.purchaseOrder.findUnique({
+        where: { id },
+        include: { items: true }
+      });
+      if (currentPo) {
+        await this.prisma.purchaseOrderItem.deleteMany({
+          where: { purchaseOrderId: id }
+        });
+        const items = data.items.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          unitCost: item.unitCost,
+          totalCost: item.quantity * item.unitCost,
+          receivedQty: item.receivedQty || 0
+        }));
+        updateData.items = { create: items };
+        updateData.totalAmount = items.reduce((sum, item) => sum + item.totalCost, 0) + (data.taxAmount || currentPo.taxAmount) + (data.shippingCost || currentPo.shippingCost);
+      }
+    }
+    const purchaseOrder = await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: updateData,
+      include: {
+        supplier: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                baseSKU: true,
+                description: true,
+                basePrice: true,
+                baseCost: true,
+                hasVariants: true,
+                categoryId: true,
+                storeId: true,
+                createdAt: true,
+                updatedAt: true
+              }
+            }
+          }
+        }
+      }
+    });
+    return {
+      ...purchaseOrder,
+      status: purchaseOrder.status,
+      supplier: {
+        ...purchaseOrder.supplier,
+        productCount: 0,
+        // Will be calculated if needed
+        totalPurchaseOrders: 0,
+        // Will be calculated if needed
+        totalPurchased: 0,
+        // Will be calculated if needed
+        createdAt: purchaseOrder.supplier.createdAt.toISOString(),
+        updatedAt: purchaseOrder.supplier.updatedAt.toISOString()
+      },
+      orderDate: purchaseOrder.orderDate,
+      expectedDate: purchaseOrder.expectedDate || void 0,
+      receivedDate: purchaseOrder.receivedDate || void 0,
+      notes: purchaseOrder.notes || void 0,
+      approvedBy: purchaseOrder.approvedBy || void 0,
+      items: purchaseOrder.items.map((item) => ({
+        ...item,
+        variantId: item.variantId || void 0,
+        product: {
+          ...item.product,
+          description: item.product.description || void 0,
+          category: null,
+          totalStock: 0,
+          stockValue: 0,
+          retailValue: 0,
+          suppliers: []
+        },
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      })),
+      createdAt: purchaseOrder.createdAt,
+      updatedAt: purchaseOrder.updatedAt
+    };
+  }
+  async delete(id) {
+    await this.prisma.purchaseOrder.delete({
+      where: { id }
+    });
+  }
+  async getSummary() {
+    const summary = await this.prisma.purchaseOrder.groupBy({
+      by: ["status"],
+      _count: { id: true },
+      _sum: { totalAmount: true }
+    });
+    const total = summary.reduce((sum, item) => sum + item._count.id, 0);
+    const totalValue = summary.reduce((sum, item) => sum + (item._sum.totalAmount || 0), 0);
+    const draft = summary.find((s) => s.status === "draft")?._count.id || 0;
+    const ordered = summary.find((s) => s.status === "ordered")?._count.id || 0;
+    const received = summary.find((s) => s.status === "received")?._count.id || 0;
+    const cancelled = summary.find((s) => s.status === "cancelled")?._count.id || 0;
+    const pendingOrders = await this.prisma.purchaseOrder.findMany({
+      where: { status: { in: ["draft", "ordered"] } },
+      select: { totalAmount: true }
+    });
+    const pendingValue = pendingOrders.reduce((sum, po) => sum + po.totalAmount, 0);
+    return {
+      total,
+      draft,
+      ordered,
+      received,
+      cancelled,
+      totalValue,
+      pendingValue
+    };
+  }
+  async generatePoNumber() {
+    const now = /* @__PURE__ */ new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const startOfMonth = new Date(year, now.getMonth(), 1);
+    const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+    const count = await this.prisma.purchaseOrder.count({
+      where: {
+        orderDate: {
+          gte: startOfMonth,
+          lte: endOfMonth
+        }
+      }
+    });
+    const sequence = String(count + 1).padStart(4, "0");
+    return `PO-${year}${month}-${sequence}`;
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/purchase-orders.handlers.ts
+var log39 = createLogger("PurchaseOrders");
+var purchaseOrderService = null;
+function setupPurchaseOrderHandlers(prisma2) {
+  if (!prisma2) {
+    log39.error("Prisma not available for purchase order handlers");
+    return;
+  }
+  const supplierService2 = new SupplierService(prisma2);
+  const productService = new ProductService(prisma2);
+  const purchaseOrderRepository = new PurchaseOrderRepository(prisma2);
+  purchaseOrderService = new PurchaseOrderService(
+    purchaseOrderRepository,
+    supplierService2,
+    productService,
+    prisma2
+  );
+  ipcMain.handle("purchase-orders:get-all", async (_, filters) => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.getAllPurchaseOrders(filters);
+    } catch (error) {
+      log39.error("Error getting purchase orders:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:get-by-id", async (_, id) => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.getPurchaseOrderById(id);
+    } catch (error) {
+      log39.error("Error getting purchase order by ID:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:get-by-po-number", async (_, poNumber) => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.getPurchaseOrderByPoNumber(poNumber);
+    } catch (error) {
+      log39.error("Error getting purchase order by PO number:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:create", async (event, data) => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      const userId = event.sender.session?.userId || "system";
+      return await purchaseOrderService.createPurchaseOrder(data, userId);
+    } catch (error) {
+      log39.error("Error creating purchase order:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:update", async (_, id, data) => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.updatePurchaseOrder(id, data);
+    } catch (error) {
+      log39.error("Error updating purchase order:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:delete", async (_, id) => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      await purchaseOrderService.deletePurchaseOrder(id);
+      return { success: true };
+    } catch (error) {
+      log39.error("Error deleting purchase order:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:receive", async (_, id, receivedDate) => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.receivePurchaseOrder(id, receivedDate);
+    } catch (error) {
+      log39.error("Error receiving purchase order:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:get-summary", async () => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.getPurchaseOrderSummary();
+    } catch (error) {
+      log39.error("Error getting purchase order summary:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:get-overdue", async () => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.getOverduePurchaseOrders();
+    } catch (error) {
+      log39.error("Error getting overdue purchase orders:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("purchase-orders:get-pending", async () => {
+    try {
+      if (!purchaseOrderService)
+        throw new Error("Purchase order service not initialized");
+      return await purchaseOrderService.getPendingPurchaseOrders();
+    } catch (error) {
+      log39.error("Error getting pending purchase orders:", error);
+      throw error;
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/receipt.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/ThermalPrinterService.ts
+var import_node_thermal_printer = require("node-thermal-printer");
+var import_child_process = require("child_process");
+var import_util = require("util");
+var import_fs3 = require("fs");
+var path9 = __toESM(require("path"));
+var os3 = __toESM(require("os"));
+var log40 = createLogger("ThermalPrinter");
+var execAsync = (0, import_util.promisify)(import_child_process.exec);
+var ThermalPrinterService = class {
+  /**
+   * Sanitize printer name to prevent command injection
+   */
+  static sanitizePrinterName(name) {
+    return name.replace(/[^a-zA-Z0-9\-_./]/g, "");
+  }
+  /**
+   * Sanitize IP address
+   */
+  static sanitizeIP(ip) {
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(ip)) {
+      throw new Error("Invalid IP address format");
+    }
+    return ip;
+  }
+  /**
+   * Print to CUPS printer using lp command with raw ESC/POS data
+   */
+  static async printToCUPS(printerName, data, settings) {
+    const safePrinterName = this.sanitizePrinterName(printerName);
+    if (!safePrinterName || safePrinterName.length === 0) {
+      throw new Error("Invalid printer name");
+    }
+    const tempFile = path9.join(os3.tmpdir(), `receipt-${Date.now()}.bin`);
+    const initCommand = Buffer.from([27, 64]);
+    const leftMargin = Buffer.from([29, 76, 0, 0]);
+    let printWidth;
+    if (settings.paperWidth === "80mm") {
+      printWidth = Buffer.from([29, 87, 64, 2]);
+    } else {
+      printWidth = Buffer.from([29, 87, 128, 1]);
+    }
+    const textBuffer = Buffer.from(data, "utf8");
+    const cutCommand = Buffer.from([29, 86, 0]);
+    const fullBuffer = Buffer.concat([initCommand, leftMargin, printWidth, textBuffer, cutCommand]);
+    await import_fs3.promises.writeFile(tempFile, fullBuffer);
+    try {
+      await execAsync(`lp -d "${safePrinterName}" -o raw "${tempFile}"`);
+    } finally {
+      try {
+        await import_fs3.promises.unlink(tempFile);
+      } catch (e) {
+        log40.error(`Failed to delete temporary print file "${tempFile}":`, e);
+      }
+    }
+  }
+  /**
+   * Get receipt label strings in English or Arabic
+   */
+  static getReceiptLabels(lang) {
+    if (lang === "ar") {
+      return {
+        tel: "\u0647\u0627\u062A\u0641",
+        taxNo: "\u0627\u0644\u0631\u0642\u0645 \u0627\u0644\u0636\u0631\u064A\u0628\u064A",
+        commReg: "\u0627\u0644\u0633\u062C\u0644 \u0627\u0644\u062A\u062C\u0627\u0631\u064A",
+        receiptNum: "\u0631\u0642\u0645 \u0627\u0644\u0625\u064A\u0635\u0627\u0644",
+        date: "\u0627\u0644\u062A\u0627\u0631\u064A\u062E",
+        cashier: "\u0627\u0644\u0643\u0627\u0634\u064A\u0631",
+        customer: "\u0627\u0644\u0639\u0645\u064A\u0644",
+        phone: "\u0627\u0644\u0647\u0627\u062A\u0641",
+        subtotal: "\u0627\u0644\u0645\u062C\u0645\u0648\u0639 \u0627\u0644\u0641\u0631\u0639\u064A",
+        vat: "\u0636\u0631\u064A\u0628\u0629 \u0627\u0644\u0642\u064A\u0645\u0629 \u0627\u0644\u0645\u0636\u0627\u0641\u0629",
+        total: "\u0627\u0644\u0627\u062C\u0645\u0627\u0644\u064A \u0627\u0644\u0643\u0644\u064A",
+        payment: "\u0637\u0631\u064A\u0642\u0629 \u0627\u0644\u062F\u0641\u0639",
+        discount: "\u062E\u0635\u0645",
+        afterDiscount: "\u0628\u0639\u062F \u0627\u0644\u062E\u0635\u0645",
+        fixedDiscount: "\u062E\u0635\u0645 \u062B\u0627\u0628\u062A",
+        installmentPlan: "\u062E\u0637\u0629 \u0627\u0644\u0627\u0642\u0633\u0627\u0637",
+        depositPaid: "\u0627\u0644\u062F\u0641\u0639\u0629 \u0627\u0644\u0645\u0642\u062F\u0645\u0629",
+        remaining: "\u0627\u0644\u0645\u062A\u0628\u0642\u064A",
+        statusPaid: "\u0645\u062F\u0641\u0648\u0639",
+        statusOverdue: "\u0645\u062A\u0627\u062E\u0631",
+        thankYou: "\u0634\u0643\u0631\u0627 \u0644\u0632\u064A\u0627\u0631\u062A\u0643\u0645!",
+        appreciate: "\u0646\u0642\u062F\u0631 \u062A\u0639\u0627\u0645\u0644\u0643\u0645 \u0645\u0639\u0646\u0627",
+        item: "\u0627\u0644\u0635\u0646\u0641",
+        qty: "\u0643",
+        price: "\u0627\u0644\u0633\u0639\u0631",
+        totalCol: "\u0627\u0644\u0625\u062C\u0645\u0627\u0644\u064A"
+      };
+    }
+    return {
+      tel: "Tel",
+      taxNo: "Tax No",
+      commReg: "Comm Reg",
+      receiptNum: "Receipt #",
+      date: "Date",
+      cashier: "Cashier",
+      customer: "Customer",
+      phone: "Phone",
+      subtotal: "Subtotal",
+      vat: "VAT",
+      total: "TOTAL",
+      payment: "Payment",
+      discount: "Discount",
+      afterDiscount: "After Discount",
+      fixedDiscount: "Fixed Discount",
+      installmentPlan: "INSTALLMENT PLAN",
+      depositPaid: "Deposit Paid",
+      remaining: "Remaining",
+      statusPaid: "PAID",
+      statusOverdue: "OVERDUE",
+      thankYou: "Thank you for your visit!",
+      appreciate: "We appreciate your business",
+      item: "Item",
+      qty: "Qty",
+      price: "Price",
+      totalCol: "Total"
+    };
+  }
+  /**
+   * Format receipt as plain text for thermal printing
+   */
+  static formatReceiptText(data, settings) {
+    const lbl = this.getReceiptLabels(settings.receiptLanguage || "en");
+    const locale = settings.receiptLanguage === "ar" ? "ar-EG" : "en-US";
+    const width = settings.paperWidth === "80mm" ? 48 : 32;
+    const line = "=".repeat(width);
+    const dashes = "-".repeat(width);
+    let text = "\n";
+    text += data.storeName.toUpperCase() + "\n";
+    text += data.storeAddress + "\n";
+    text += `${lbl.tel}: ${data.storePhone}
+`;
+    if (data.storeEmail)
+      text += data.storeEmail + "\n";
+    text += "\n";
+    text += dashes + "\n";
+    text += `${lbl.taxNo}: ${data.taxNumber}
+`;
+    if (data.commercialRegister)
+      text += `${lbl.commReg}: ${data.commercialRegister}
+`;
+    text += dashes + "\n";
+    text += "\n";
+    text += `${lbl.receiptNum}: ${data.receiptNumber}
+`;
+    text += `${lbl.date}: ${data.date.toLocaleString(locale, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    })}
+`;
+    if (data.username)
+      text += `${lbl.cashier}: ${data.username}
+`;
+    if (data.customerName)
+      text += `${lbl.customer}: ${data.customerName}
+`;
+    if (data.customerPhone)
+      text += `${lbl.phone}: ${data.customerPhone}
+`;
+    text += dashes + "\n";
+    data.items.forEach((item) => {
+      const hasDiscount = item.discountType && item.discountType !== "NONE" && item.discountValue !== void 0 && item.discountValue > 0;
+      let originalPrice = item.price;
+      let itemDiscount = 0;
+      if (hasDiscount && item.discountValue !== void 0) {
+        if (item.discountType === "PERCENTAGE") {
+          originalPrice = item.price / (1 - item.discountValue / 100);
+          itemDiscount = originalPrice * item.quantity - item.price * item.quantity;
+        } else {
+          originalPrice = item.price + item.discountValue / item.quantity;
+          itemDiscount = item.discountValue;
+        }
+      }
+      const originalTotal = originalPrice * item.quantity;
+      const finalTotal = item.price * item.quantity;
+      text += item.name + "\n";
+      text += `${item.quantity} x ${originalPrice.toFixed(2)} = ${originalTotal.toFixed(2)} EGP
+`;
+      if (hasDiscount) {
+        const discountLabel = item.discountType === "PERCENTAGE" ? `${lbl.discount} ${item.discountValue}%` : lbl.fixedDiscount;
+        text += `${discountLabel}: -${itemDiscount.toFixed(2)} EGP
+`;
+        text += `${lbl.afterDiscount}: ${finalTotal.toFixed(2)} EGP
+`;
+      }
+      text += dashes + "\n";
+    });
+    text += "\n";
+    text += `${lbl.subtotal}: ${data.subtotal.toFixed(2)} EGP
+`;
+    text += `${lbl.vat} (${data.taxRate}%): ${data.tax.toFixed(2)} EGP
+`;
+    text += line + "\n";
+    text += `${lbl.total}: ${data.total.toFixed(2)} EGP
+`;
+    text += line + "\n";
+    text += "\n";
+    text += `${lbl.payment}: ${data.paymentMethod}
+`;
+    if (data.installments && data.installments.length > 0) {
+      text += "\n";
+      text += dashes + "\n";
+      text += `${lbl.installmentPlan}
+`;
+      text += dashes + "\n";
+      if (data.depositAmount) {
+        text += `${lbl.depositPaid}: ${data.depositAmount.toFixed(2)} EGP
+`;
+        text += "\n";
+      }
+      data.installments.forEach((inst, idx) => {
+        const status = inst.status === "paid" ? ` ${lbl.statusPaid}` : inst.status === "overdue" ? ` ${lbl.statusOverdue}` : "";
+        const dateStr = inst.dueDate.toLocaleDateString(locale, { month: "2-digit", day: "2-digit", year: "2-digit" });
+        text += `#${idx + 1} ${dateStr}
+`;
+        text += `   ${inst.amount.toFixed(2)} EGP${status}
+`;
+      });
+      const remaining = data.installments.filter((i) => i.status !== "paid").reduce((sum, i) => sum + i.amount, 0);
+      text += dashes + "\n";
+      text += `${lbl.remaining}: ${remaining.toFixed(2)} EGP
+`;
+    }
+    text += "\n";
+    text += `${lbl.thankYou}
+`;
+    text += `${lbl.appreciate}
+`;
+    const blankLines = settings.receiptBottomSpacing ?? 4;
+    text += "\n".repeat(blankLines);
+    return text;
+  }
+  static createPrinter(settings) {
+    let printerInterface;
+    if (process.platform === "win32") {
+      printerInterface = path9.join(os3.tmpdir(), `escpos-buf-${process.pid}`);
+    } else if (settings.printerType === "network" && settings.printerIP) {
+      const safeIP = this.sanitizeIP(settings.printerIP);
+      printerInterface = `tcp://${safeIP}:9100`;
+    } else if (settings.printerName) {
+      if (settings.printerName.startsWith("usb://")) {
+        printerInterface = settings.printerName;
+      } else if (settings.printerName.startsWith("/")) {
+        printerInterface = settings.printerName;
+      } else {
+        printerInterface = `printer:${settings.printerName}`;
+      }
+    } else {
+      printerInterface = "/dev/usb/lp0";
+    }
+    return new import_node_thermal_printer.ThermalPrinter({
+      type: import_node_thermal_printer.PrinterTypes.EPSON,
+      interface: printerInterface,
+      removeSpecialCharacters: false,
+      lineCharacter: "-",
+      width: settings.paperWidth === "80mm" ? 48 : 32
+    });
+  }
+  /**
+   * Send a raw ESC/POS buffer to a Windows printer using winspool.drv P/Invoke.
+   * This is the official Microsoft KB138594 method — no native Node.js addon required.
+   * Works with ANY Electron version on Windows 10/11 with any thermal printer driver.
+   */
+  static async printRawToWindowsSpooler(printerName, buffer) {
+    const ts = Date.now();
+    const dataFile = path9.join(os3.tmpdir(), `escpos-${ts}.bin`);
+    const scriptFile = path9.join(os3.tmpdir(), `winspool-${ts}.ps1`);
+    const safeName = printerName.replace(/'/g, "''");
+    const safeData = dataFile;
+    const psLines = [
+      // ── C# type definition via single-quoted heredoc ─────────
+      `Add-Type -TypeDefinition @'`,
+      `using System;`,
+      `using System.Runtime.InteropServices;`,
+      `public class RawPrint {`,
+      `  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Ansi)]`,
+      `  public class DocInfoA {`,
+      `    [MarshalAs(UnmanagedType.LPStr)] public string pDocName;`,
+      `    [MarshalAs(UnmanagedType.LPStr)] public string pOutputFile;`,
+      `    [MarshalAs(UnmanagedType.LPStr)] public string pDataType;`,
+      `  }`,
+      `  [DllImport("winspool.Drv", EntryPoint="OpenPrinterA", SetLastError=true, CharSet=CharSet.Ansi, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool OpenPrinter([MarshalAs(UnmanagedType.LPStr)] string szPrinter, out IntPtr hPrinter, IntPtr pd);`,
+      `  [DllImport("winspool.Drv", EntryPoint="ClosePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool ClosePrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="StartDocPrinterA", SetLastError=true, CharSet=CharSet.Ansi, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern int StartDocPrinter(IntPtr hPrinter, int level, [In, MarshalAs(UnmanagedType.LPStruct)] DocInfoA pDocInfo);`,
+      `  [DllImport("winspool.Drv", EntryPoint="EndDocPrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool EndDocPrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="StartPagePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool StartPagePrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="EndPagePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool EndPagePrinter(IntPtr hPrinter);`,
+      `  [DllImport("winspool.Drv", EntryPoint="WritePrinter", SetLastError=true, ExactSpelling=true, CallingConvention=CallingConvention.StdCall)]`,
+      `  public static extern bool WritePrinter(IntPtr hPrinter, IntPtr pBytes, int dwCount, out int dwWritten);`,
+      `}`,
+      `'@`,
+      // ← closing heredoc — must be at column 0
+      // ── PowerShell logic ──────────────────────────────────────
+      `$pn = '${safeName}'`,
+      `$dp = '${safeData}'`,
+      `$h  = [IntPtr]::Zero`,
+      `if (-not [RawPrint]::OpenPrinter($pn, [ref]$h, [IntPtr]::Zero)) {`,
+      `  throw "Cannot open printer '$pn'. Win32 error: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"`,
+      `}`,
+      `try {`,
+      `  $di = New-Object RawPrint+DocInfoA`,
+      `  $di.pDocName  = 'ESC/POS Receipt'`,
+      `  $di.pDataType = 'RAW'`,
+      `  if ([RawPrint]::StartDocPrinter($h, 1, $di) -le 0) {`,
+      `    throw "StartDocPrinter failed. Win32 error: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())"`,
+      `  }`,
+      `  [RawPrint]::StartPagePrinter($h) | Out-Null`,
+      `  $bytes = [IO.File]::ReadAllBytes($dp)`,
+      `  $ptr   = [Runtime.InteropServices.Marshal]::AllocHGlobal($bytes.Length)`,
+      `  [Runtime.InteropServices.Marshal]::Copy($bytes, 0, $ptr, $bytes.Length)`,
+      `  $nw = 0`,
+      `  $ok = [RawPrint]::WritePrinter($h, $ptr, $bytes.Length, [ref]$nw)`,
+      `  [Runtime.InteropServices.Marshal]::FreeHGlobal($ptr)`,
+      `  [RawPrint]::EndPagePrinter($h) | Out-Null`,
+      `  [RawPrint]::EndDocPrinter($h)  | Out-Null`,
+      `  if (-not $ok) { throw "WritePrinter failed. Win32 error: $([Runtime.InteropServices.Marshal]::GetLastWin32Error())" }`,
+      `  Write-Host "OK: $nw bytes sent to $pn"`,
+      `} finally {`,
+      `  [RawPrint]::ClosePrinter($h) | Out-Null`,
+      `}`
+    ];
+    await import_fs3.promises.writeFile(dataFile, buffer);
+    await import_fs3.promises.writeFile(scriptFile, psLines.join("\r\n"), "utf8");
+    try {
+      const { stdout, stderr } = await execAsync(
+        `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${scriptFile}"`,
+        { timeout: 2e4 }
+      );
+      log40.info("\u{1F5A8}\uFE0F  winspool result:", stdout.trim());
+      if (stderr?.trim())
+        log40.warn("\u{1F5A8}\uFE0F  winspool stderr:", stderr.trim());
+    } finally {
+      try {
+        await import_fs3.promises.unlink(dataFile);
+      } catch {
+      }
+      try {
+        await import_fs3.promises.unlink(scriptFile);
+      } catch {
+      }
+    }
+  }
+  /**
+   * Format and print receipt via node-thermal-printer.
+   * Design matches the HTML receipt preview exactly.
+   * On Windows, pass windowsPrinterName to route via winspool.drv instead of execute().
+   */
+  static async formatAndPrintReceipt(printer, data, settings, windowsPrinterName) {
+    const lbl = this.getReceiptLabels(settings.receiptLanguage || "en");
+    const locale = settings.receiptLanguage === "ar" ? "ar-EG" : "en-US";
+    const isAr = settings.receiptLanguage === "ar";
+    const vatLabel = isAr ? `\u0636.\u0642.\u0645 (${data.taxRate}%):` : `${lbl.vat} (${data.taxRate}%):`;
+    printer.alignCenter();
+    printer.bold(true);
+    printer.println(data.storeName);
+    printer.bold(false);
+    if (data.storeAddress)
+      printer.println(data.storeAddress);
+    if (data.storePhone)
+      printer.println(`${lbl.tel}: ${data.storePhone}`);
+    if (data.storeEmail)
+      printer.println(data.storeEmail);
+    printer.newLine();
+    printer.drawLine();
+    printer.alignLeft();
+    if (data.taxNumber)
+      printer.println(`${lbl.taxNo}: ${data.taxNumber}`);
+    if (data.commercialRegister)
+      printer.println(`${lbl.commReg}: ${data.commercialRegister}`);
+    printer.drawLine();
+    printer.newLine();
+    printer.println(`${lbl.receiptNum}: ${data.receiptNumber}`);
+    printer.println(`${lbl.date}: ${data.date.toLocaleString(locale, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    })}`);
+    if (data.username)
+      printer.println(`${lbl.cashier}: ${data.username}`);
+    if (data.customerName)
+      printer.println(`${lbl.customer}: ${data.customerName}`);
+    if (data.customerPhone)
+      printer.println(`${lbl.phone}: ${data.customerPhone}`);
+    printer.drawLine();
+    printer.tableCustom([
+      { text: lbl.item, align: "LEFT", width: 0.42 },
+      { text: lbl.qty, align: "CENTER", width: 0.1 },
+      { text: lbl.price, align: "RIGHT", width: 0.22 },
+      { text: lbl.totalCol, align: "RIGHT", width: 0.26 }
+    ]);
+    printer.drawLine();
+    data.items.forEach((item) => {
+      const hasDiscount = item.discountType && item.discountType !== "NONE" && item.discountValue !== void 0 && item.discountValue > 0;
+      let originalPrice = item.price;
+      let itemDiscount = 0;
+      if (hasDiscount && item.discountValue !== void 0) {
+        if (item.discountType === "PERCENTAGE") {
+          originalPrice = item.price / (1 - item.discountValue / 100);
+          itemDiscount = originalPrice * item.quantity - item.price * item.quantity;
+        } else {
+          originalPrice = item.price + item.discountValue / item.quantity;
+          itemDiscount = item.discountValue;
+        }
+      }
+      const originalTotal = originalPrice * item.quantity;
+      const finalTotal = item.price * item.quantity;
+      printer.tableCustom([
+        { text: item.name, align: "LEFT", width: 0.42 },
+        { text: String(item.quantity), align: "CENTER", width: 0.1 },
+        { text: originalPrice.toFixed(2), align: "RIGHT", width: 0.22 },
+        { text: originalTotal.toFixed(2), align: "RIGHT", width: 0.26 }
+      ]);
+      if (hasDiscount && item.discountValue !== void 0) {
+        const discLabel = item.discountType === "PERCENTAGE" ? `${lbl.discount} ${item.discountValue}%` : lbl.fixedDiscount;
+        printer.tableCustom([
+          { text: discLabel, align: "LEFT", width: 0.6 },
+          { text: `-${itemDiscount.toFixed(2)} EGP`, align: "RIGHT", width: 0.4 }
+        ]);
+        printer.tableCustom([
+          { text: lbl.afterDiscount, align: "LEFT", width: 0.6 },
+          { text: `${finalTotal.toFixed(2)} EGP`, align: "RIGHT", width: 0.4 }
+        ]);
+      }
+    });
+    printer.drawLine();
+    printer.newLine();
+    printer.tableCustom([
+      { text: `${lbl.subtotal}:`, align: "LEFT", width: 0.55 },
+      { text: `${data.subtotal.toFixed(2)} EGP`, align: "RIGHT", width: 0.45 }
+    ]);
+    printer.tableCustom([
+      { text: vatLabel, align: "LEFT", width: 0.55 },
+      { text: `${data.tax.toFixed(2)} EGP`, align: "RIGHT", width: 0.45 }
+    ]);
+    printer.drawLine();
+    printer.bold(true);
+    printer.tableCustom([
+      { text: `${lbl.total}:`, align: "LEFT", width: 0.55, bold: true },
+      { text: `${data.total.toFixed(2)} EGP`, align: "RIGHT", width: 0.45, bold: true }
+    ]);
+    printer.bold(false);
+    printer.drawLine();
+    printer.newLine();
+    printer.alignCenter();
+    printer.println(`${lbl.payment}: ${data.paymentMethod}`);
+    if (data.installments && data.installments.length > 0) {
+      printer.newLine();
+      printer.drawLine();
+      printer.alignCenter();
+      printer.bold(true);
+      printer.println(lbl.installmentPlan);
+      printer.bold(false);
+      printer.drawLine();
+      printer.alignLeft();
+      if (data.depositAmount) {
+        printer.tableCustom([
+          { text: `${lbl.depositPaid}:`, align: "LEFT", width: 0.55 },
+          { text: `${data.depositAmount.toFixed(2)} EGP`, align: "RIGHT", width: 0.45 }
+        ]);
+        printer.newLine();
+      }
+      data.installments.forEach((inst, idx) => {
+        const status = inst.status === "paid" ? ` ${lbl.statusPaid}` : inst.status === "overdue" ? ` ${lbl.statusOverdue}` : "";
+        const dateStr = inst.dueDate.toLocaleDateString(locale, {
+          year: "2-digit",
+          month: "2-digit",
+          day: "2-digit"
+        });
+        printer.tableCustom([
+          { text: `#${idx + 1}  ${dateStr}`, align: "LEFT", width: 0.55 },
+          { text: `${inst.amount.toFixed(2)} EGP${status}`, align: "RIGHT", width: 0.45 }
+        ]);
+      });
+      const remaining = data.installments.filter((i) => i.status !== "paid").reduce((sum, i) => sum + i.amount, 0);
+      printer.drawLine();
+      printer.bold(true);
+      printer.tableCustom([
+        { text: `${lbl.remaining}:`, align: "LEFT", width: 0.55, bold: true },
+        { text: `${remaining.toFixed(2)} EGP`, align: "RIGHT", width: 0.45, bold: true }
+      ]);
+      printer.bold(false);
+    }
+    printer.newLine();
+    printer.alignCenter();
+    printer.println(lbl.thankYou);
+    printer.println(lbl.appreciate);
+    const blankLines = settings.receiptBottomSpacing ?? 4;
+    for (let i = 0; i < blankLines; i++)
+      printer.newLine();
+    if (settings.openCashDrawer)
+      printer.openCashDrawer();
+    printer.cut();
+    if (windowsPrinterName) {
+      await this.printRawToWindowsSpooler(windowsPrinterName, printer.getBuffer());
+    } else {
+      await printer.execute();
+    }
+  }
+  /**
+   * Print receipt
+   */
+  static async printReceipt(data, settings) {
+    try {
+      const isNamedPrinter = settings.printerType === "usb" && settings.printerName && !settings.printerName.startsWith("/") && !settings.printerName.startsWith("tcp://");
+      if (isNamedPrinter && process.platform !== "win32") {
+        const text = this.formatReceiptText(data, settings);
+        await this.printToCUPS(settings.printerName, text, settings);
+        return;
+      }
+      if (settings.printerType === "usb" && (!settings.printerName || settings.printerName === "/dev/usb/lp0")) {
+        const detected = await this.detectUSBPrinters();
+        if (detected.length > 0) {
+          settings.printerName = detected[0].path;
+        } else {
+          throw new Error("No thermal printers detected. Please connect your printer and configure it in Settings \u2192 Tax & Receipt Settings.");
+        }
+      }
+      const printer = this.createPrinter(settings);
+      const winPrinterName = process.platform === "win32" ? settings.printerName : void 0;
+      await this.formatAndPrintReceipt(printer, data, settings, winPrinterName);
+    } catch (error) {
+      log40.error("\u274C Print error:", error);
+      throw new Error(`Failed to print: ${error.message}`);
+    }
+  }
+  /**
+   * Test printer
+   */
+  static async testPrinter(settings) {
+    try {
+      const isNamedPrinter = settings.printerType === "usb" && settings.printerName && !settings.printerName.startsWith("/") && !settings.printerName.startsWith("tcp://");
+      if (isNamedPrinter && process.platform !== "win32") {
+        const testText = `
+PRINTER TEST
+================================
+
+Date: ${(/* @__PURE__ */ new Date()).toLocaleString()}
+Paper Width: ${settings.paperWidth}
+Printer: ${settings.printerName}
+
+================================
+
+Test Successful!
+
+
+
+
+`;
+        await this.printToCUPS(settings.printerName, testText, settings);
+        return { success: true, message: "Test print sent via CUPS." };
+      }
+      const printer = this.createPrinter(settings);
+      if (process.platform !== "win32") {
+        const isConnected = await printer.isPrinterConnected();
+        if (!isConnected) {
+          return { success: false, message: "Printer not connected. Check USB cable or IP address." };
+        }
+      }
+      printer.alignCenter();
+      printer.bold(true);
+      printer.setTextSize(1, 1);
+      printer.println("PRINTER TEST");
+      printer.bold(false);
+      printer.setTextNormal();
+      printer.newLine();
+      printer.drawLine();
+      printer.newLine();
+      printer.alignLeft();
+      printer.println(`Date: ${(/* @__PURE__ */ new Date()).toLocaleString()}`);
+      printer.println(`Paper Width: ${settings.paperWidth}`);
+      printer.println(`Printer Type: ${settings.printerType}`);
+      if (settings.printerIP) {
+        printer.println(`Printer IP: ${settings.printerIP}`);
+      }
+      if (settings.printerName) {
+        printer.println(`Printer: ${settings.printerName}`);
+      }
+      printer.newLine();
+      printer.drawLine();
+      printer.newLine();
+      printer.alignCenter();
+      printer.bold(true);
+      printer.println("Test Successful!");
+      printer.bold(false);
+      printer.println("Thermal Printer Ready");
+      printer.println("Receipt System Active");
+      printer.newLine();
+      printer.newLine();
+      printer.newLine();
+      printer.cut();
+      if (process.platform === "win32" && settings.printerName) {
+        await this.printRawToWindowsSpooler(settings.printerName, printer.getBuffer());
+      } else {
+        await printer.execute();
+      }
+      return {
+        success: true,
+        message: "Test print sent successfully. Check printer output."
+      };
+    } catch (error) {
+      log40.error("\u274C Test print failed:", error);
+      const errorMessage = error.message || error.toString();
+      log40.error("Full error:", errorMessage);
+      return {
+        success: false,
+        message: `Test failed: ${errorMessage}. Check printer path, permissions, and connection.`
+      };
+    }
+  }
+  /**
+   * Auto-detect thermal printers.
+   * Windows: PowerShell Get-Printer — no native addon required.
+   * Linux/macOS: CUPS lpstat -a.
+   */
+  static async detectUSBPrinters() {
+    try {
+      if (process.platform === "win32") {
+        const ps = `Get-Printer | Select-Object Name,DriverName | ConvertTo-Csv -NoTypeInformation`;
+        const { stdout } = await execAsync(
+          `powershell -NoProfile -NonInteractive -Command "${ps}"`,
+          { timeout: 1e4 }
+        );
+        const thermalKeywords = /xp|xprinter|thermal|receipt|pos|epson|star|bixolon|citizen|sewoo/i;
+        const all = [];
+        const lines = stdout.trim().split(/\r?\n/).slice(1);
+        for (const line of lines) {
+          const cols = line.replace(/^\s*"|"\s*$/g, "").split('","');
+          const name = (cols[0] || "").trim();
+          const driver = (cols[1] || "").trim();
+          if (name) {
+            all.push({ path: name, name: driver ? `${name} (${driver})` : name });
+          }
+        }
+        const thermal = all.filter((p) => thermalKeywords.test(p.path) || thermalKeywords.test(p.name));
+        return thermal.length > 0 ? thermal : all;
+      } else {
+        const printers = [];
+        try {
+          const { stdout } = await execAsync("lpstat -a 2>/dev/null || true");
+          for (const line of stdout.split("\n")) {
+            const match = line.match(/^(\S+)\s+/);
+            if (match)
+              printers.push({ path: match[1], name: `${match[1]} (CUPS)` });
+          }
+        } catch {
+        }
+        return printers;
+      }
+    } catch (error) {
+      log40.error("Error detecting printers:", error);
+      return [];
+    }
+  }
+  /**
+   * Get available printers (for compatibility)
+   */
+  static async getAvailablePrinters() {
+    const detectedPrinters = await this.detectUSBPrinters();
+    return detectedPrinters.map((p) => p.path);
+  }
+  /**
+   * Print barcode label
+   */
+  static async printBarcode(printerName, barcodeText, options = {}) {
+    const {
+      productName = "",
+      copies = 1,
+      width = 2,
+      height = 100
+    } = options;
+    const tempFile = path9.join(os3.tmpdir(), `barcode-${Date.now()}.bin`);
+    try {
+      const commands = [];
+      commands.push(Buffer.from([27, 64]));
+      commands.push(Buffer.from([27, 83]));
+      for (let copy = 0; copy < copies; copy++) {
+        commands.push(Buffer.from([27, 97, 1]));
+        if (productName) {
+          commands.push(Buffer.from([27, 69, 1]));
+          commands.push(Buffer.from(productName + "\n", "utf-8"));
+          commands.push(Buffer.from([27, 69, 0]));
+          commands.push(Buffer.from("\n"));
+        }
+        commands.push(Buffer.from("\n"));
+        commands.push(Buffer.from([29, 104, height]));
+        commands.push(Buffer.from([29, 119, width]));
+        commands.push(Buffer.from([29, 72, 2]));
+        commands.push(Buffer.from([29, 102, 0]));
+        const barcodeData = Buffer.from(barcodeText, "utf-8");
+        commands.push(Buffer.from([29, 107, 73]));
+        commands.push(barcodeData);
+        commands.push(Buffer.from([0]));
+        log40.info(`\u{1F4CB} Barcode print debug:`);
+        log40.info(`   - Text: ${barcodeText}`);
+        log40.info(`   - Length: ${barcodeData.length}`);
+        log40.info(`   - Height: ${height}, Width: ${width}`);
+        log40.info(`   - Command: GS k 73 (CODE128 Type B)`);
+        commands.push(Buffer.from("\n\n\n\n\n\n"));
+        commands.push(Buffer.from([29, 86, 0]));
+        if (copy < copies - 1) {
+          commands.push(Buffer.from([27, 100, 2]));
+        }
+      }
+      const finalBuffer = Buffer.concat(commands);
+      await import_fs3.promises.writeFile(tempFile, finalBuffer);
+      const safePrinterName = this.sanitizePrinterName(printerName);
+      if (!safePrinterName) {
+        throw new Error("Invalid printer name");
+      }
+      await execAsync(`lp -d "${safePrinterName}" -o raw "${tempFile}"`);
+      setTimeout(() => {
+        import_fs3.promises.unlink(tempFile).catch((err) => log40.error("Failed to delete temp file:", err));
+      }, 5e3);
+    } catch (error) {
+      try {
+        await import_fs3.promises.unlink(tempFile);
+      } catch {
+      }
+      throw error;
+    }
+  }
+  /**
+   * Test print - prints a test page
+   */
+  static async printTest(printerName) {
+    const tempFile = path9.join(os3.tmpdir(), `test-${Date.now()}.bin`);
+    try {
+      const commands = [];
+      commands.push(Buffer.from([27, 64]));
+      commands.push(Buffer.from([27, 97, 1]));
+      commands.push(Buffer.from([27, 69, 1]));
+      commands.push(Buffer.from("TEST PRINT\n", "utf-8"));
+      commands.push(Buffer.from([27, 69, 0]));
+      commands.push(Buffer.from("\n"));
+      commands.push(Buffer.from("If you can read this,\n", "utf-8"));
+      commands.push(Buffer.from("your printer is working!\n", "utf-8"));
+      commands.push(Buffer.from("\n"));
+      commands.push(Buffer.from((/* @__PURE__ */ new Date()).toLocaleString() + "\n", "utf-8"));
+      commands.push(Buffer.from("\n\n"));
+      commands.push(Buffer.from([29, 86, 0]));
+      const finalBuffer = Buffer.concat(commands);
+      await import_fs3.promises.writeFile(tempFile, finalBuffer);
+      const safePrinterName = this.sanitizePrinterName(printerName);
+      if (!safePrinterName) {
+        throw new Error("Invalid printer name");
+      }
+      await execAsync(`lp -d "${safePrinterName}" -o raw "${tempFile}"`);
+      setTimeout(() => {
+        import_fs3.promises.unlink(tempFile).catch((err) => log40.error("Failed to delete temp file:", err));
+      }, 5e3);
+    } catch (error) {
+      try {
+        await import_fs3.promises.unlink(tempFile);
+      } catch {
+      }
+      throw error;
+    }
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/receipt.handlers.ts
+var log41 = createLogger("Receipt");
+function registerReceiptHandlers2() {
+  ipcMain.handle("receipt:print", async (_event, data) => {
+    try {
+      const { receiptData, settings } = data;
+      if (settings.printerName && typeof settings.printerName !== "string") {
+        throw new Error("Invalid printer name type");
+      }
+      if (settings.printerIP && typeof settings.printerIP !== "string") {
+        throw new Error("Invalid printer IP type");
+      }
+      log41.info("\u{1F4C4} Receipt print requested:", {
+        type: settings.printerType,
+        name: settings.printerName,
+        items: receiptData.items?.length || 0
+      });
+      if (settings.printerType === "usb" && (!settings.printerName || settings.printerName === "/dev/usb/lp0")) {
+        log41.info("\u{1F50D} Auto-detecting USB printer...");
+        const printers = await ThermalPrinterService.detectUSBPrinters();
+        if (printers.length > 0) {
+          const detectedPrinter = printers[0];
+          log41.info("\u2705 Auto-detected:", detectedPrinter.name, "\u2192", detectedPrinter.path);
+          settings.printerName = detectedPrinter.path;
+          await ThermalPrinterService.printReceipt(receiptData, settings);
+          return {
+            success: true,
+            detectedPrinter: detectedPrinter.path,
+            message: `Printer auto-detected: ${detectedPrinter.name}`
+          };
+        } else {
+          return {
+            success: false,
+            error: "No USB thermal printers found. Please connect your printer and try again."
+          };
+        }
+      }
+      await ThermalPrinterService.printReceipt(receiptData, settings);
+      log41.info("\u2705 Receipt printed successfully");
+      return { success: true };
+    } catch (error) {
+      log41.error("\u274C Receipt print error:", error);
+      if (data.settings.printerType === "usb") {
+        log41.info("\u{1F504} Print failed, attempting auto-detection...");
+        try {
+          const printers = await ThermalPrinterService.detectUSBPrinters();
+          if (printers.length > 0) {
+            const detectedPrinter = printers[0];
+            log41.info("\u2705 Auto-detected:", detectedPrinter.name);
+            data.settings.printerName = detectedPrinter.path;
+            await ThermalPrinterService.printReceipt(data.receiptData, data.settings);
+            return {
+              success: true,
+              detectedPrinter: detectedPrinter.path,
+              message: `Printer auto-detected and recovered: ${detectedPrinter.name}`
+            };
+          }
+        } catch (retryError) {
+          log41.error("\u274C Auto-detection failed:", retryError);
+        }
+      }
+      return {
+        success: false,
+        error: error.message || "Failed to print receipt"
+      };
+    }
+  });
+  ipcMain.handle("receipt:detectPrinters", async () => {
+    try {
+      const printers = await ThermalPrinterService.detectUSBPrinters();
+      return { success: true, printers };
+    } catch (error) {
+      log41.error("Detect printers error:", error);
+      return {
+        success: false,
+        error: error.message,
+        printers: []
+      };
+    }
+  });
+  ipcMain.handle("receipt:testPrint", async (_event, settings) => {
+    try {
+      const result = await ThermalPrinterService.testPrinter(settings);
+      return result;
+    } catch (error) {
+      log41.error("Test print error:", error);
+      return {
+        success: false,
+        message: error.message || "Test print failed"
+      };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/barcode.handlers.ts
+init_electron_node();
+var log42 = createLogger("Barcode");
+function registerBarcodePrintHandlers() {
+  ipcMain.handle("barcode:detect-printers", async () => {
+    try {
+      const printers = await ThermalPrinterService.detectUSBPrinters();
+      return {
+        success: true,
+        printers: printers.map((p) => ({
+          name: p.name,
+          path: p.path
+        }))
+      };
+    } catch (error) {
+      log42.error("Error detecting printers:", error);
+      return {
+        success: false,
+        message: error.message || "Failed to detect printers"
+      };
+    }
+  });
+  ipcMain.handle("barcode:print", async (_, { printerName, barcodeText, options }) => {
+    try {
+      await ThermalPrinterService.printBarcode(printerName, barcodeText, options);
+      return {
+        success: true,
+        message: "Barcode printed successfully"
+      };
+    } catch (error) {
+      log42.error("Error printing barcode:", error);
+      let message = "Failed to print barcode";
+      if (error.message?.includes("not found") || error.message?.includes("ENOENT")) {
+        message = "Printer not found. Please check if the printer is connected and turned on.";
+      } else if (error.message?.includes("EACCES") || error.message?.includes("permission")) {
+        message = "Permission denied. You may need to add your user to the lp group:\nsudo usermod -a -G lp $USER";
+      } else if (error.message?.includes("EBUSY")) {
+        message = "Printer is busy. Please wait and try again.";
+      } else if (error.message) {
+        message = error.message;
+      }
+      return {
+        success: false,
+        message
+      };
+    }
+  });
+  ipcMain.handle("barcode:test-printer", async (_, { printerName }) => {
+    try {
+      await ThermalPrinterService.printTest(printerName);
+      return {
+        success: true,
+        message: "Test page sent to printer"
+      };
+    } catch (error) {
+      log42.error("Error testing printer:", error);
+      return {
+        success: false,
+        message: error.message || "Failed to send test page"
+      };
+    }
+  });
+  log42.info("\u2705 Barcode print handlers registered");
+}
+
+// apps/bizflow/src/main/ipc/handlers/stock-movements.handlers.ts
+init_electron_node();
+var log43 = createLogger("StockMovements");
+function registerStockMovementHandlers(prisma2) {
+  ipcMain.handle("stockMovements:record", async (_, data) => {
+    try {
+      const { variantId, mode, value, reason, notes, userId } = data;
+      if (!variantId || !mode || value <= 0) {
+        return {
+          success: false,
+          error: "Invalid input: variantId, mode, and positive value required"
+        };
+      }
+      const result = await prisma2.$transaction(async (tx) => {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: variantId },
+          include: {
+            product: {
+              select: { name: true, baseSKU: true }
+            }
+          }
+        });
+        if (!variant) {
+          throw new Error("Variant not found");
+        }
+        const previousStock = variant.stock;
+        let newStock;
+        let actualChange;
+        let movementType;
+        switch (mode) {
+          case "add":
+            newStock = previousStock + value;
+            actualChange = value;
+            movementType = reason === "customer_return" ? "RETURN" : "RESTOCK";
+            break;
+          case "set":
+            newStock = value;
+            actualChange = value - previousStock;
+            movementType = actualChange >= 0 ? "ADJUSTMENT" : "ADJUSTMENT";
+            break;
+          case "remove":
+            newStock = previousStock - value;
+            actualChange = -value;
+            movementType = reason === "damaged" || reason === "theft" ? "SHRINKAGE" : "ADJUSTMENT";
+            break;
+          default:
+            throw new Error("Invalid mode");
+        }
+        if (newStock < 0) {
+          throw new Error("Stock cannot be negative");
+        }
+        const updatedVariant = await tx.productVariant.update({
+          where: { id: variantId },
+          data: { stock: newStock }
+        });
+        const movement = await tx.stockMovement.create({
+          data: {
+            variantId,
+            type: movementType,
+            quantity: actualChange,
+            previousStock,
+            newStock,
+            reason,
+            notes: notes || null,
+            userId: userId || null
+          }
+        });
+        return {
+          variant: updatedVariant,
+          movement,
+          productName: variant.product.name
+        };
+      });
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      log43.error("Error recording stock movement:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+  ipcMain.handle("stockMovements:getHistory", async (_, data) => {
+    try {
+      const { variantId, limit = 50 } = data;
+      const movements = await prisma2.stockMovement.findMany({
+        where: { variantId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          variant: {
+            select: {
+              sku: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              },
+              product: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit
+      });
+      return {
+        success: true,
+        movements
+      };
+    } catch (error) {
+      log43.error("Error getting stock movement history:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+  ipcMain.handle("stockMovements:getProductHistory", async (_, data) => {
+    try {
+      const { productId, limit = 100 } = data;
+      const variants = await prisma2.productVariant.findMany({
+        where: { productId },
+        select: { id: true }
+      });
+      const variantIds = variants.map((v) => v.id);
+      const movements = await prisma2.stockMovement.findMany({
+        where: {
+          variantId: { in: variantIds }
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          variant: {
+            select: {
+              sku: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              },
+              product: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit
+      });
+      return {
+        success: true,
+        movements
+      };
+    } catch (error) {
+      log43.error("Error getting product stock movement history:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+  ipcMain.handle("stockMovements:getRecent", async (_, data) => {
+    try {
+      const { limit = 50, type } = data;
+      const where = type ? { type } : {};
+      const movements = await prisma2.stockMovement.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          variant: {
+            select: {
+              sku: true,
+              attributeValues: {
+                include: { attribute: { select: { name: true } } }
+              },
+              stock: true,
+              product: {
+                select: {
+                  name: true
+                }
+              }
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: limit
+      });
+      return {
+        success: true,
+        movements
+      };
+    } catch (error) {
+      log43.error("Error getting recent stock movements:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+  ipcMain.handle("stockMovements:bulkRecord", async (_, data) => {
+    try {
+      const { movements, userId } = data;
+      if (!movements || movements.length === 0) {
+        return {
+          success: false,
+          error: "No movements provided"
+        };
+      }
+      const results = await prisma2.$transaction(async (tx) => {
+        const updatedVariants = [];
+        const createdMovements = [];
+        for (const movement of movements) {
+          const { variantId, mode, value, reason, notes } = movement;
+          const variant = await tx.productVariant.findUnique({
+            where: { id: variantId }
+          });
+          if (!variant) {
+            throw new Error(`Variant ${variantId} not found`);
+          }
+          const previousStock = variant.stock;
+          let newStock;
+          let actualChange;
+          let movementType;
+          switch (mode) {
+            case "add":
+              newStock = previousStock + value;
+              actualChange = value;
+              movementType = "RESTOCK";
+              break;
+            case "set":
+              newStock = value;
+              actualChange = value - previousStock;
+              movementType = "ADJUSTMENT";
+              break;
+            case "remove":
+              newStock = previousStock - value;
+              actualChange = -value;
+              movementType = "SHRINKAGE";
+              break;
+            default:
+              throw new Error("Invalid mode");
+          }
+          if (newStock < 0) {
+            throw new Error(`Stock for variant ${variantId} cannot be negative`);
+          }
+          const updated = await tx.productVariant.update({
+            where: { id: variantId },
+            data: { stock: newStock }
+          });
+          updatedVariants.push(updated);
+          const stockMovement = await tx.stockMovement.create({
+            data: {
+              variantId,
+              type: movementType,
+              quantity: actualChange,
+              previousStock,
+              newStock,
+              reason,
+              notes: notes || null,
+              userId: userId || null
+            }
+          });
+          createdMovements.push(stockMovement);
+        }
+        return {
+          variants: updatedVariants,
+          movements: createdMovements
+        };
+      });
+      return {
+        success: true,
+        data: results
+      };
+    } catch (error) {
+      log43.error("Error recording bulk stock movements:", error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/delete.handlers.ts
+init_electron_node();
+
+// apps/bizflow/src/main/services/DeleteService.ts
+var log44 = createLogger("Delete");
+var DeleteService = class _DeleteService {
+  static prisma;
+  static initialize(prismaClient) {
+    _DeleteService.prisma = prismaClient;
+  }
+  /**
+   * Check if customer can be deleted
+   */
+  static async checkCustomerDelete(customerId) {
+    const customer = await _DeleteService.prisma.customer.findUnique({
+      where: { id: customerId },
+      include: {
+        saleTransactions: {
+          select: { id: true, total: true }
+        }
+      }
+    });
+    if (!customer) {
+      return {
+        canDelete: false,
+        message: "Customer not found.",
+        suggestedAction: "CANCEL"
+      };
+    }
+    const transactionCount = customer.saleTransactions.length;
+    const totalSpent = customer.saleTransactions.reduce((sum, t) => sum + Number(t.total), 0);
+    if (transactionCount > 0) {
+      return {
+        canDelete: false,
+        dependencies: { transactions: transactionCount },
+        message: `Customer has ${transactionCount} transaction(s) worth $${totalSpent.toFixed(2)}. Deleting would break financial records and audit trail.`,
+        suggestedAction: "ARCHIVE"
+      };
+    }
+    return {
+      canDelete: true,
+      message: "Customer has no transaction history and can be safely deleted.",
+      suggestedAction: "DELETE"
+    };
+  }
+  /**
+   * Check if product can be deleted
+   */
+  static async checkProductDelete(productId) {
+    const product = await _DeleteService.prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        variants: {
+          select: { id: true, stock: true }
+        },
+        saleItems: {
+          select: { id: true }
+        }
+      }
+    });
+    if (!product) {
+      return {
+        canDelete: false,
+        message: "Product not found.",
+        suggestedAction: "CANCEL"
+      };
+    }
+    const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+    const saleCount = product.saleItems.length;
+    const variantCount = product.variants.length;
+    if (saleCount > 0) {
+      return {
+        canDelete: false,
+        dependencies: {
+          sales: saleCount,
+          stock: totalStock,
+          variants: variantCount
+        },
+        message: `Product has ${saleCount} past sale(s). Deleting would break transaction history, reports, and refund records.`,
+        suggestedAction: "ARCHIVE"
+      };
+    }
+    if (totalStock > 0) {
+      return {
+        canDelete: false,
+        dependencies: {
+          stock: totalStock,
+          variants: variantCount
+        },
+        message: `Product has ${totalStock} items in stock across ${variantCount} variant(s). Archive instead to preserve inventory records.`,
+        suggestedAction: "ARCHIVE"
+      };
+    }
+    return {
+      canDelete: true,
+      message: "Product has no sales history or stock and can be safely deleted.",
+      suggestedAction: "DELETE"
+    };
+  }
+  /**
+   * Check if user can be deactivated
+   */
+  static async checkUserDeactivate(userId) {
+    const [transactions, discounts] = await Promise.all([
+      _DeleteService.prisma.saleTransaction.count({
+        where: { userId }
+      }),
+      _DeleteService.prisma.saleItem.count({
+        where: { discountAppliedBy: userId }
+      })
+    ]);
+    const totalActions = transactions + discounts;
+    if (totalActions > 0) {
+      return {
+        canDelete: false,
+        dependencies: {
+          transactions,
+          sales: discounts
+        },
+        message: `User has ${transactions} transaction(s) and ${discounts} discount(s). Deactivating preserves audit trail while preventing login.`,
+        suggestedAction: "ARCHIVE"
+      };
+    }
+    return {
+      canDelete: true,
+      message: "User has no transaction history and can be safely deleted.",
+      suggestedAction: "DELETE"
+    };
+  }
+  /**
+   * Archive customer (soft delete)
+   */
+  static async archiveCustomer(customerId, archivedBy, reason) {
+    return await _DeleteService.prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        isArchived: true,
+        archivedAt: /* @__PURE__ */ new Date(),
+        archivedBy,
+        archiveReason: reason,
+        deactivatedAt: /* @__PURE__ */ new Date(),
+        deactivatedBy: archivedBy
+      }
+    });
+  }
+  /**
+   * Archive product (soft delete)
+   */
+  static async archiveProduct(productId, archivedBy, reason) {
+    return await _DeleteService.prisma.product.update({
+      where: { id: productId },
+      data: {
+        isArchived: true,
+        archivedAt: /* @__PURE__ */ new Date(),
+        archivedBy,
+        archiveReason: reason,
+        deactivatedAt: /* @__PURE__ */ new Date(),
+        deactivatedBy: archivedBy
+      }
+    });
+  }
+  /**
+   * Deactivate user (soft delete)
+   */
+  static async deactivateUser(userId, deactivatedBy) {
+    return await _DeleteService.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isActive: false,
+        deactivatedAt: /* @__PURE__ */ new Date(),
+        deactivatedBy
+      }
+    });
+  }
+  /**
+   * Restore archived customer
+   */
+  static async restoreCustomer(customerId) {
+    return await _DeleteService.prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        isArchived: false,
+        archivedAt: null,
+        archivedBy: null,
+        archiveReason: null,
+        deactivatedAt: null,
+        deactivatedBy: null
+      }
+    });
+  }
+  /**
+   * Restore archived product
+   */
+  static async restoreProduct(productId) {
+    return await _DeleteService.prisma.product.update({
+      where: { id: productId },
+      data: {
+        isArchived: false,
+        archivedAt: null,
+        archivedBy: null,
+        archiveReason: null,
+        deactivatedAt: null,
+        deactivatedBy: null
+      }
+    });
+  }
+  /**
+   * Reactivate user
+   */
+  static async reactivateUser(userId) {
+    return await _DeleteService.prisma.user.update({
+      where: { id: userId },
+      data: {
+        isActive: true,
+        deactivatedAt: null,
+        deactivatedBy: null
+      }
+    });
+  }
+  /**
+   * Hard delete (only if allowed)
+   */
+  static async hardDeleteCustomer(customerId) {
+    const check = await this.checkCustomerDelete(customerId);
+    if (!check.canDelete) {
+      throw new Error(check.message);
+    }
+    return await _DeleteService.prisma.customer.delete({ where: { id: customerId } });
+  }
+  static async hardDeleteProduct(productId) {
+    const check = await this.checkProductDelete(productId);
+    if (!check.canDelete) {
+      throw new Error(check.message);
+    }
+    await _DeleteService.prisma.productVariant.deleteMany({ where: { productId } });
+    return await _DeleteService.prisma.product.delete({ where: { id: productId } });
+  }
+  static async hardDeleteUser(userId) {
+    const check = await this.checkUserDeactivate(userId);
+    if (!check.canDelete) {
+      throw new Error(check.message);
+    }
+    return await _DeleteService.prisma.user.delete({ where: { id: userId } });
+  }
+  /**
+   * Get archived items for management
+   */
+  static async getArchivedCustomers() {
+    const customers = await _DeleteService.prisma.customer.findMany({
+      where: { isArchived: true },
+      orderBy: { archivedAt: "desc" }
+    });
+    return await Promise.all(customers.map(async (customer) => {
+      let deactivatorName = "Unknown User";
+      if (customer.deactivatedBy) {
+        const deactivator = await _DeleteService.prisma.user.findUnique({
+          where: { id: customer.deactivatedBy },
+          select: { fullName: true, username: true }
+        });
+        deactivatorName = deactivator ? deactivator.fullName || deactivator.username : "Deleted User";
+      }
+      return {
+        ...customer,
+        deactivatorName
+      };
+    }));
+  }
+  static async getArchivedProducts() {
+    const products = await _DeleteService.prisma.product.findMany({
+      where: { isArchived: true },
+      include: {
+        category: true,
+        variants: true
+      },
+      orderBy: { archivedAt: "desc" }
+    });
+    return await Promise.all(products.map(async (product) => {
+      let deactivatorName = "Unknown User";
+      if (product.deactivatedBy) {
+        const deactivator = await _DeleteService.prisma.user.findUnique({
+          where: { id: product.deactivatedBy },
+          select: { fullName: true, username: true }
+        });
+        deactivatorName = deactivator ? deactivator.fullName || deactivator.username : "Deleted User";
+      }
+      return {
+        ...product,
+        deactivatorName
+      };
+    }));
+  }
+  static async getDeactivatedUsers() {
+    const users = await _DeleteService.prisma.user.findMany({
+      where: { isActive: false },
+      orderBy: { deactivatedAt: "desc" }
+    });
+    return await Promise.all(users.map(async (user) => {
+      let deactivatorName = "Unknown User";
+      if (user.deactivatedBy) {
+        const deactivator = await _DeleteService.prisma.user.findUnique({
+          where: { id: user.deactivatedBy },
+          select: { fullName: true, username: true }
+        });
+        deactivatorName = deactivator ? deactivator.fullName || deactivator.username : "Deleted User";
+      }
+      return {
+        ...user,
+        deactivatorName
+      };
+    }));
+  }
+  /**
+   * Delete unlinked deposits and installments for a customer
+   * Used when customer selection changes in POS to prevent showing old payment data
+   */
+  static async deleteUnlinkedDeposits(customerId) {
+    try {
+      const deposits = await _DeleteService.prisma.deposit.findMany({
+        where: {
+          customerId,
+          saleId: null
+        }
+      });
+      if (deposits.length > 0) {
+        const deletePromises = deposits.map(
+          (deposit) => _DeleteService.prisma.deposit.delete({
+            where: { id: deposit.id }
+          })
+        );
+        await Promise.all(deletePromises);
+        log44.info(`\u2705 Deleted ${deposits.length} unlinked deposits for customer ${customerId}`);
+        return deposits.length;
+      }
+      return 0;
+    } catch (error) {
+      log44.error("\u274C Error deleting unlinked deposits:", error);
+      throw error;
+    }
+  }
+  static async deleteUnlinkedInstallments(customerId) {
+    try {
+      const installments = await _DeleteService.prisma.installment.findMany({
+        where: {
+          customerId,
+          saleId: null
+        }
+      });
+      if (installments.length > 0) {
+        const deletePromises = installments.map(
+          (installment) => _DeleteService.prisma.installment.delete({
+            where: { id: installment.id }
+          })
+        );
+        await Promise.all(deletePromises);
+        log44.info(`\u2705 Deleted ${installments.length} unlinked installments for customer ${customerId}`);
+        return installments.length;
+      }
+      return 0;
+    } catch (error) {
+      log44.error("\u274C Error deleting unlinked installments:", error);
+      throw error;
+    }
+  }
+};
+
+// apps/bizflow/src/main/ipc/handlers/delete.handlers.ts
+var log45 = createLogger("Delete");
+function registerDeleteHandlers(prisma2) {
+  DeleteService.initialize(prisma2);
+  ipcMain.handle("delete:check-customer", async (_, data) => {
+    try {
+      const result = await DeleteService.checkCustomerDelete(data.customerId);
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error checking customer delete:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to check customer"
+      };
+    }
+  });
+  ipcMain.handle("delete:check-product", async (_, data) => {
+    try {
+      const result = await DeleteService.checkProductDelete(data.productId);
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error checking product delete:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to check product"
+      };
+    }
+  });
+  ipcMain.handle("delete:check-user", async (_, data) => {
+    try {
+      const result = await DeleteService.checkUserDeactivate(data.userId);
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error checking user deactivate:", error);
+      return {
+        success: false,
+        error: error.message || "Failed to check user"
+      };
+    }
+  });
+  ipcMain.handle("delete:archive-customer", async (_, data) => {
+    try {
+      const result = await DeleteService.archiveCustomer(
+        data.customerId,
+        data.archivedBy,
+        data.reason
+      );
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error archiving customer:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:archive-product", async (_, data) => {
+    try {
+      const result = await DeleteService.archiveProduct(
+        data.productId,
+        data.archivedBy,
+        data.reason
+      );
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error archiving product:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:deactivate-user", async (_, data) => {
+    try {
+      const result = await DeleteService.deactivateUser(
+        data.userId,
+        data.deactivatedBy
+      );
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error deactivating user:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:restore-customer", async (_, data) => {
+    try {
+      const result = await DeleteService.restoreCustomer(data.customerId);
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error restoring customer:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:restore-product", async (_, data) => {
+    try {
+      const result = await DeleteService.restoreProduct(data.productId);
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error restoring product:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:reactivate-user", async (_, data) => {
+    try {
+      const result = await DeleteService.reactivateUser(data.userId);
+      return { success: true, data: result };
+    } catch (error) {
+      log45.error("Error reactivating user:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:hard-delete-customer", async (_, data) => {
+    try {
+      await DeleteService.hardDeleteCustomer(data.customerId);
+      return { success: true };
+    } catch (error) {
+      log45.error("Error hard deleting customer:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:hard-delete-product", async (_, data) => {
+    try {
+      await DeleteService.hardDeleteProduct(data.productId);
+      return { success: true };
+    } catch (error) {
+      log45.error("Error hard deleting product:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:hard-delete-user", async (_, data) => {
+    try {
+      await DeleteService.hardDeleteUser(data.userId);
+      return { success: true };
+    } catch (error) {
+      log45.error("Error hard deleting user:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:get-archived-customers", async () => {
+    try {
+      const data = await DeleteService.getArchivedCustomers();
+      return { success: true, data };
+    } catch (error) {
+      log45.error("Error getting archived customers:", error);
+      return { success: false, error: error.message, data: [] };
+    }
+  });
+  ipcMain.handle("delete:get-archived-products", async () => {
+    try {
+      const data = await DeleteService.getArchivedProducts();
+      return { success: true, data };
+    } catch (error) {
+      log45.error("Error getting archived products:", error);
+      return { success: false, error: error.message, data: [] };
+    }
+  });
+  ipcMain.handle("delete:get-deactivated-users", async () => {
+    try {
+      const data = await DeleteService.getDeactivatedUsers();
+      return { success: true, data };
+    } catch (error) {
+      log45.error("Error getting deactivated users:", error);
+      return { success: false, error: error.message, data: [] };
+    }
+  });
+  ipcMain.handle("delete:cleanup-unlinked-deposits", async (_, customerId) => {
+    try {
+      const deletedCount = await DeleteService.deleteUnlinkedDeposits(customerId);
+      return { success: true, deletedCount };
+    } catch (error) {
+      log45.error("Error cleaning up unlinked deposits:", error);
+      return { success: false, error: error.message };
+    }
+  });
+  ipcMain.handle("delete:cleanup-unlinked-installments", async (_, customerId) => {
+    try {
+      const deletedCount = await DeleteService.deleteUnlinkedInstallments(customerId);
+      return { success: true, deletedCount };
+    } catch (error) {
+      log45.error("Error cleaning up unlinked installments:", error);
+      return { success: false, error: error.message };
+    }
+  });
+}
+
+// apps/bizflow/src/main/ipc/handlers/commerce-expenses.handlers.ts
+init_electron_node();
+var log46 = createLogger("Commerce:Expenses");
+function registerCommerceExpenseHandlers(prisma2) {
+  ipcMain.handle("commerceExpenses:getAll", async (_e, params = {}) => {
+    try {
+      const where = {};
+      if (params.startDate || params.endDate) {
+        where.date = {};
+        if (params.startDate)
+          where.date.gte = new Date(params.startDate);
+        if (params.endDate)
+          where.date.lte = new Date(params.endDate);
+      }
+      if (params.category && params.category !== "all")
+        where.category = params.category;
+      return await prisma2.commerceExpense.findMany({
+        where,
+        orderBy: { date: "desc" }
+      });
+    } catch (err) {
+      log46.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("commerceExpenses:create", async (_e, data) => {
+    try {
+      return await prisma2.commerceExpense.create({
+        data: {
+          amount: data.amount,
+          description: data.description,
+          category: data.category,
+          vendor: data.vendor ?? null,
+          paymentMethod: data.paymentMethod ?? "cash",
+          recurrence: data.recurrence ?? "one_time",
+          date: data.date ? new Date(data.date) : /* @__PURE__ */ new Date(),
+          notes: data.notes ?? null
+        }
+      });
+    } catch (err) {
+      log46.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("commerceExpenses:update", async (_e, { id, data }) => {
+    try {
+      const { date, ...rest } = data;
+      return await prisma2.commerceExpense.update({
+        where: { id },
+        data: { ...rest, ...date ? { date: new Date(date) } : {} }
+      });
+    } catch (err) {
+      log46.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("commerceExpenses:delete", async (_e, id) => {
+    try {
+      return await prisma2.commerceExpense.delete({ where: { id } });
+    } catch (err) {
+      log46.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/commerce/handlers/index.ts
+function registerCommerceHandlers(prisma2) {
+  registerProductsHandlers(prisma2);
+  registerCategoriesHandlers(prisma2);
+  registerInventoryHandlers(prisma2);
+  registerStockMovementHandlers(prisma2);
+  registerSalesHandlers(prisma2);
+  registerSaleTransactionHandlers(prisma2);
+  registerStoresHandlers(prisma2);
+  registerDepositsHandlers(prisma2);
+  registerInstallmentsHandlers(prisma2);
+  registerReceiptHandlers(prisma2);
+  setupReorderHandlers(prisma2);
+  registerSupplierHandlers(prisma2);
+  setupPurchaseOrderHandlers(prisma2);
+  registerReceiptHandlers2();
+  registerBarcodePrintHandlers();
+  registerDeleteHandlers(prisma2);
+  registerCommerceExpenseHandlers(prisma2);
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/recipes.ts
+init_electron_node();
+var log47 = createLogger("Bakery:Recipes");
+function registerRecipeHandlers(prisma2) {
+  ipcMain.handle("bakery:getRecipes", async () => {
+    try {
+      return await prisma2.recipe.findMany({
+        where: { isActive: true },
+        include: {
+          ingredients: {
+            include: { pantryIngredient: { select: { id: true, name: true, currentStock: true, unit: true } } },
+            orderBy: { createdAt: "asc" }
+          },
+          _count: { select: { productionBatches: true } }
+        },
+        orderBy: { name: "asc" }
+      });
+    } catch (err) {
+      log47.error("bakery:getRecipes error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:createRecipe", async (_e, data) => {
+    try {
+      return await prisma2.recipe.create({
+        data: {
+          name: data.name,
+          description: data.description,
+          yieldQty: Number(data.yieldQty),
+          yieldUnit: data.yieldUnit,
+          sellingPrice: data.sellingPrice != null ? Number(data.sellingPrice) : null,
+          expiryDays: data.expiryDays ? Number(data.expiryDays) : null,
+          notes: data.notes,
+          ingredients: {
+            create: data.ingredients.map((ing) => ({
+              name: ing.name,
+              quantity: Number(ing.quantity),
+              unit: ing.unit,
+              costPerUnit: Number(ing.costPerUnit),
+              supplierName: ing.supplierName || null,
+              pantryIngredientId: ing.pantryIngredientId || null
+            }))
+          }
+        },
+        include: { ingredients: true }
+      });
+    } catch (err) {
+      log47.error("bakery:createRecipe error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:updateRecipe", async (_e, data) => {
+    try {
+      const { id, ingredients, ...fields } = data;
+      const safeFields = { ...fields };
+      if (safeFields.yieldQty !== void 0)
+        safeFields.yieldQty = Number(safeFields.yieldQty);
+      if (safeFields.sellingPrice !== void 0 && safeFields.sellingPrice !== null)
+        safeFields.sellingPrice = Number(safeFields.sellingPrice);
+      if (safeFields.expiryDays !== void 0 && safeFields.expiryDays !== null)
+        safeFields.expiryDays = Number(safeFields.expiryDays);
+      return await prisma2.$transaction(async (tx) => {
+        if (ingredients !== void 0) {
+          await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
+        }
+        return tx.recipe.update({
+          where: { id },
+          data: {
+            ...safeFields,
+            ...ingredients !== void 0 && {
+              ingredients: {
+                create: ingredients.map((ing) => ({
+                  name: ing.name,
+                  quantity: Number(ing.quantity),
+                  unit: ing.unit,
+                  costPerUnit: Number(ing.costPerUnit),
+                  supplierName: ing.supplierName || null,
+                  pantryIngredientId: ing.pantryIngredientId || null
+                }))
+              }
+            }
+          },
+          include: { ingredients: true }
+        });
+      });
+    } catch (err) {
+      log47.error("bakery:updateRecipe error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:deleteRecipe", async (_e, id) => {
+    try {
+      return await prisma2.recipe.update({
+        where: { id },
+        data: { isActive: false }
+      });
+    } catch (err) {
+      log47.error("bakery:deleteRecipe error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/production.ts
+init_electron_node();
+
+// apps/bizflow/src/plugins/bakery/utils/unitConversion.ts
+var WEIGHT_TO_G = { g: 1, kg: 1e3, oz: 28.3495, lb: 453.592 };
+var VOLUME_TO_ML = { ml: 1, L: 1e3, tsp: 4.92892, tbsp: 14.7868, cup: 236.588 };
+function convertQuantity(quantity, fromUnit, toUnit) {
+  if (fromUnit === toUnit)
+    return quantity;
+  if (fromUnit in WEIGHT_TO_G && toUnit in WEIGHT_TO_G)
+    return quantity * WEIGHT_TO_G[fromUnit] / WEIGHT_TO_G[toUnit];
+  if (fromUnit in VOLUME_TO_ML && toUnit in VOLUME_TO_ML)
+    return quantity * VOLUME_TO_ML[fromUnit] / VOLUME_TO_ML[toUnit];
+  return null;
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/production.ts
+var log48 = createLogger("Bakery:Production");
+function registerProductionHandlers(prisma2) {
+  ipcMain.handle("bakery:getProductionBatches", async (_e, options = {}) => {
+    try {
+      const page = Math.max(1, options.page ?? 1);
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20));
+      const skip = (page - 1) * pageSize;
+      const where = {};
+      if (options.recipeId)
+        where.recipeId = options.recipeId;
+      if (options.startDate || options.endDate) {
+        where.batchDate = {};
+        if (options.startDate)
+          where.batchDate.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.batchDate.lte = new Date(options.endDate);
+      }
+      const [data, total] = await Promise.all([
+        prisma2.productionBatch.findMany({
+          where,
+          include: {
+            recipe: {
+              select: { id: true, name: true, yieldQty: true, yieldUnit: true, expiryDays: true, sellingPrice: true }
+            },
+            sales: { select: { id: true, quantity: true } },
+            wasteLogs: { select: { id: true, quantity: true, reason: true } }
+          },
+          orderBy: { batchDate: "desc" },
+          skip,
+          take: pageSize
+        }),
+        prisma2.productionBatch.count({ where })
+      ]);
+      const enriched = data.map((b) => {
+        const unitsSold = b.sales.reduce((s, sale) => s + sale.quantity, 0);
+        const unitsLost = b.wasteLogs.reduce((s, w) => s + w.quantity, 0);
+        return {
+          ...b,
+          unitsSold,
+          unitsLost,
+          unitsAvailable: Math.max(0, b.unitsProduced - unitsSold - unitsLost)
+        };
+      });
+      return { data: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    } catch (err) {
+      log48.error("bakery:getProductionBatches error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:createProductionBatch", async (_e, data) => {
+    try {
+      const recipe = await prisma2.recipe.findUnique({
+        where: { id: data.recipeId },
+        include: {
+          ingredients: {
+            include: { pantryIngredient: { select: { id: true, unit: true } } }
+          }
+        }
+      });
+      if (!recipe)
+        throw new Error("Recipe not found");
+      const ingredientCostPerBatch = recipe.ingredients.reduce(
+        (sum, ing) => sum + ing.quantity * ing.costPerUnit,
+        0
+      );
+      const unitsProduced = data.quantity * recipe.yieldQty;
+      const totalCost = ingredientCostPerBatch * data.quantity;
+      const batchDate = data.batchDate ? new Date(data.batchDate) : /* @__PURE__ */ new Date();
+      const expiresAt = recipe.expiryDays ? new Date(batchDate.getTime() + recipe.expiryDays * 864e5) : null;
+      return await prisma2.$transaction(async (tx) => {
+        if (data.deductFromPantry !== false) {
+          for (const ing of recipe.ingredients) {
+            if (ing.pantryIngredientId && ing.pantryIngredient) {
+              const pantryUnit = ing.pantryIngredient.unit;
+              const deductQty = convertQuantity(ing.quantity * data.quantity, ing.unit, pantryUnit) ?? ing.quantity * data.quantity;
+              await tx.pantryIngredient.update({
+                where: { id: ing.pantryIngredientId },
+                data: { currentStock: { decrement: deductQty } }
+              });
+            }
+          }
+        }
+        return tx.productionBatch.create({
+          data: {
+            recipeId: data.recipeId,
+            quantity: data.quantity,
+            unitsProduced,
+            totalCost,
+            batchDate,
+            expiresAt,
+            notes: data.notes
+          },
+          include: {
+            recipe: { select: { id: true, name: true, yieldUnit: true, expiryDays: true } }
+          }
+        });
+      });
+    } catch (err) {
+      log48.error("bakery:createProductionBatch error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:deleteProductionBatch", async (_e, id) => {
+    try {
+      return await prisma2.productionBatch.delete({ where: { id } });
+    } catch (err) {
+      log48.error("bakery:deleteProductionBatch error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getSellableBatches", async () => {
+    try {
+      const batches = await prisma2.productionBatch.findMany({
+        where: {
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: /* @__PURE__ */ new Date() } }
+          ]
+        },
+        include: {
+          recipe: {
+            select: { id: true, name: true, yieldQty: true, yieldUnit: true, sellingPrice: true, expiryDays: true }
+          },
+          sales: { select: { quantity: true } }
+        },
+        orderBy: [
+          { expiresAt: "asc" },
+          { batchDate: "asc" }
+        ],
+        take: 200
+      });
+      return batches.map((b) => ({
+        ...b,
+        unitsSold: b.sales.reduce((s, sale) => s + sale.quantity, 0),
+        unitsAvailable: Math.max(0, b.unitsProduced - b.sales.reduce((s, sale) => s + sale.quantity, 0))
+      })).filter((b) => b.unitsAvailable > 0);
+    } catch (err) {
+      log48.error("bakery:getSellableBatches error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getAvailableBatches", async () => {
+    try {
+      const recipes = await prisma2.recipe.findMany({
+        where: { isActive: true },
+        include: {
+          ingredients: {
+            include: {
+              pantryIngredient: {
+                select: { id: true, name: true, currentStock: true, unit: true }
+              }
+            }
+          }
+        },
+        orderBy: { name: "asc" }
+      });
+      return recipes.map((recipe) => {
+        let availableBatches = Infinity;
+        let limitedBy = null;
+        for (const ing of recipe.ingredients) {
+          if (!ing.pantryIngredient || ing.quantity <= 0)
+            continue;
+          const possible = Math.floor(ing.pantryIngredient.currentStock / ing.quantity);
+          if (possible < availableBatches) {
+            availableBatches = possible;
+            limitedBy = ing.pantryIngredient.name;
+          }
+        }
+        const hasLinked = recipe.ingredients.some((i) => i.pantryIngredient);
+        const finalBatches = hasLinked ? isFinite(availableBatches) ? availableBatches : 0 : null;
+        return {
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          yieldQty: recipe.yieldQty,
+          yieldUnit: recipe.yieldUnit,
+          availableBatches: finalBatches,
+          expectedUnits: finalBatches !== null ? finalBatches * recipe.yieldQty : null,
+          limitedBy,
+          ingredients: recipe.ingredients.map((ing) => ({
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            pantryStock: ing.pantryIngredient?.currentStock ?? null,
+            pantryUnit: ing.pantryIngredient?.unit ?? null,
+            maxBatches: ing.pantryIngredient && ing.quantity > 0 ? Math.floor(ing.pantryIngredient.currentStock / ing.quantity) : null
+          }))
+        };
+      });
+    } catch (err) {
+      log48.error("bakery:getAvailableBatches error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/pantry.ts
+init_electron_node();
+var log49 = createLogger("Bakery:Pantry");
+function registerPantryHandlers(prisma2) {
+  ipcMain.handle("bakery:getPantry", async () => {
+    try {
+      return await prisma2.pantryIngredient.findMany({
+        include: { _count: { select: { recipeIngredients: true } } },
+        orderBy: { name: "asc" }
+      });
+    } catch (err) {
+      log49.error("bakery:getPantry error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:upsertPantryIngredient", async (_e, data) => {
+    try {
+      const fields = {
+        name: data.name,
+        currentStock: data.currentStock,
+        unit: data.unit,
+        costPerUnit: data.costPerUnit ?? 0,
+        lowStockThreshold: data.lowStockThreshold ?? null,
+        reorderPoint: data.reorderPoint ?? null,
+        reorderQuantity: data.reorderQuantity ?? null,
+        supplierName: data.supplierName ?? null,
+        notes: data.notes ?? null
+      };
+      if (data.id) {
+        return await prisma2.pantryIngredient.update({ where: { id: data.id }, data: fields });
+      }
+      return await prisma2.pantryIngredient.create({ data: fields });
+    } catch (err) {
+      if (err?.code === "P2002")
+        throw new Error("DUPLICATE_NAME");
+      log49.error("bakery:upsertPantryIngredient error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:adjustPantryStock", async (_e, data) => {
+    try {
+      return await prisma2.pantryIngredient.update({
+        where: { id: data.id },
+        data: { currentStock: { increment: data.adjustment } }
+      });
+    } catch (err) {
+      log49.error("bakery:adjustPantryStock error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:deletePantryIngredient", async (_e, id) => {
+    try {
+      return await prisma2.pantryIngredient.delete({ where: { id } });
+    } catch (err) {
+      log49.error("bakery:deletePantryIngredient error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:markPantryReordered", async (_e, data) => {
+    try {
+      return await prisma2.pantryIngredient.update({
+        where: { id: data.id },
+        data: {
+          lastOrderedDate: /* @__PURE__ */ new Date(),
+          ...data.quantityReceived != null && {
+            currentStock: { increment: data.quantityReceived }
+          },
+          ...data.purchasePrice != null && data.purchasePrice > 0 && {
+            costPerUnit: data.purchasePrice
+          }
+        }
+      });
+    } catch (err) {
+      log49.error("bakery:markPantryReordered error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:bulkRestock", async (_e, items) => {
+    try {
+      const results = [];
+      for (const item of items) {
+        const result = await prisma2.pantryIngredient.update({
+          where: { id: item.id },
+          data: {
+            lastOrderedDate: /* @__PURE__ */ new Date(),
+            ...item.quantityReceived != null && {
+              currentStock: { increment: item.quantityReceived }
+            },
+            ...item.purchasePrice != null && item.purchasePrice > 0 && {
+              costPerUnit: item.purchasePrice
+            }
+          }
+        });
+        results.push(result);
+      }
+      return results;
+    } catch (err) {
+      log49.error("bakery:bulkRestock error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/waste.ts
+init_electron_node();
+var log50 = createLogger("Bakery:Waste");
+function registerWasteHandlers(prisma2) {
+  ipcMain.handle("bakery:getWasteLogs", async (_e, options = {}) => {
+    try {
+      const page = Math.max(1, options.page ?? 1);
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20));
+      const skip = (page - 1) * pageSize;
+      const where = {};
+      if (options.recipeId)
+        where.recipeId = options.recipeId;
+      if (options.wasteType)
+        where.wasteType = options.wasteType;
+      if (options.startDate || options.endDate) {
+        where.wasteDate = {};
+        if (options.startDate)
+          where.wasteDate.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.wasteDate.lte = new Date(options.endDate);
+      }
+      const [data, total] = await Promise.all([
+        prisma2.wasteLog.findMany({
+          where,
+          include: {
+            recipe: { select: { id: true, name: true } },
+            pantryIngredient: { select: { id: true, name: true, unit: true } }
+          },
+          orderBy: { wasteDate: "desc" },
+          skip,
+          take: pageSize
+        }),
+        prisma2.wasteLog.count({ where })
+      ]);
+      return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    } catch (err) {
+      log50.error("bakery:getWasteLogs error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:createWasteLog", async (_e, data) => {
+    try {
+      return await prisma2.$transaction(async (tx) => {
+        const wasteLog = await tx.wasteLog.create({
+          data: {
+            wasteType: data.wasteType ?? "other",
+            recipeId: data.recipeId ?? null,
+            pantryIngredientId: data.pantryIngredientId ?? null,
+            productionBatchId: data.productionBatchId ?? null,
+            itemName: data.itemName,
+            quantity: data.quantity,
+            unit: data.unit,
+            cost: data.cost,
+            reason: data.reason ?? null,
+            wasteDate: data.wasteDate ? new Date(data.wasteDate) : /* @__PURE__ */ new Date(),
+            notes: data.notes ?? null
+          },
+          include: {
+            recipe: { select: { id: true, name: true } },
+            pantryIngredient: { select: { id: true, name: true, unit: true } }
+          }
+        });
+        if (data.wasteType === "ingredient" && data.pantryIngredientId) {
+          const pantryItem = await tx.pantryIngredient.findUnique({
+            where: { id: data.pantryIngredientId },
+            select: { unit: true }
+          });
+          const pantryUnit = pantryItem?.unit ?? data.unit;
+          const deductQty = convertQuantity(data.quantity, data.unit, pantryUnit) ?? data.quantity;
+          await tx.pantryIngredient.update({
+            where: { id: data.pantryIngredientId },
+            data: { currentStock: { decrement: deductQty } }
+          });
+        }
+        return wasteLog;
+      });
+    } catch (err) {
+      log50.error("bakery:createWasteLog error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:deleteWasteLog", async (_e, id) => {
+    try {
+      return await prisma2.wasteLog.delete({ where: { id } });
+    } catch (err) {
+      log50.error("bakery:deleteWasteLog error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getWasteSummary", async (_e, options = {}) => {
+    try {
+      const where = {};
+      if (options.startDate || options.endDate) {
+        where.wasteDate = {};
+        if (options.startDate)
+          where.wasteDate.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.wasteDate.lte = new Date(options.endDate);
+      }
+      const [totalResult, byReason, byRecipe, byWasteType] = await Promise.all([
+        prisma2.wasteLog.aggregate({ where, _sum: { cost: true, quantity: true }, _count: true }),
+        prisma2.wasteLog.groupBy({ by: ["reason"], where, _sum: { cost: true, quantity: true }, _count: true, orderBy: { _sum: { cost: "desc" } } }),
+        prisma2.wasteLog.groupBy({ by: ["recipeId"], where, _sum: { cost: true }, _count: true }),
+        prisma2.wasteLog.groupBy({ by: ["wasteType"], where, _sum: { cost: true, quantity: true }, _count: true, orderBy: { _sum: { cost: "desc" } } })
+      ]);
+      return {
+        totalCost: totalResult._sum.cost ?? 0,
+        totalQuantity: totalResult._sum.quantity ?? 0,
+        totalEntries: totalResult._count,
+        byReason,
+        byRecipe,
+        byWasteType
+      };
+    } catch (err) {
+      log50.error("bakery:getWasteSummary error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/schedule.ts
+init_electron_node();
+var log51 = createLogger("Bakery:Schedule");
+function registerScheduleHandlers(prisma2) {
+  ipcMain.handle("bakery:getSchedule", async (_e, options = {}) => {
+    try {
+      const page = Math.max(1, options.page ?? 1);
+      const pageSize = Math.min(5e3, Math.max(1, options.pageSize ?? 20));
+      const skip = (page - 1) * pageSize;
+      const where = {};
+      if (options.recipeId)
+        where.recipeId = options.recipeId;
+      if (options.status)
+        where.status = options.status;
+      if (options.startDate || options.endDate) {
+        where.scheduledDate = {};
+        if (options.startDate)
+          where.scheduledDate.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.scheduledDate.lte = new Date(options.endDate);
+      }
+      const [data, total] = await Promise.all([
+        prisma2.productionSchedule.findMany({
+          where,
+          include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } },
+          // Newest first so recently added schedules are visible on first page.
+          orderBy: { scheduledDate: "desc" },
+          skip,
+          take: pageSize
+        }),
+        prisma2.productionSchedule.count({ where })
+      ]);
+      return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    } catch (err) {
+      log51.error("bakery:getSchedule error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:createScheduleItem", async (_e, data) => {
+    try {
+      return await prisma2.productionSchedule.create({
+        data: {
+          recipeId: data.recipeId,
+          scheduledDate: new Date(data.scheduledDate),
+          plannedQuantity: data.plannedQuantity,
+          notes: data.notes ?? null,
+          status: "planned"
+        },
+        include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } }
+      });
+    } catch (err) {
+      log51.error("bakery:createScheduleItem error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:updateScheduleItem", async (_e, data) => {
+    try {
+      const { id, scheduledDate, ...fields } = data;
+      return await prisma2.productionSchedule.update({
+        where: { id },
+        data: {
+          ...fields,
+          ...scheduledDate && { scheduledDate: new Date(scheduledDate) }
+        },
+        include: { recipe: { select: { id: true, name: true } } }
+      });
+    } catch (err) {
+      log51.error("bakery:updateScheduleItem error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:completeScheduleAndCreateBatch", async (_e, data) => {
+    try {
+      const qty = Number(data.actualQuantity);
+      if (!Number.isFinite(qty) || qty <= 0) {
+        throw new Error("actualQuantity must be greater than 0");
+      }
+      return await prisma2.$transaction(async (tx) => {
+        const schedule = await tx.productionSchedule.findUnique({
+          where: { id: data.id },
+          include: {
+            recipe: {
+              include: {
+                ingredients: {
+                  include: { pantryIngredient: { select: { id: true, unit: true } } }
+                }
+              }
+            }
+          }
+        });
+        if (!schedule)
+          throw new Error("Schedule item not found");
+        if (schedule.status === "cancelled")
+          throw new Error("Cannot complete a cancelled schedule item");
+        if (schedule.status === "completed")
+          throw new Error("Schedule item is already completed");
+        const recipe = schedule.recipe;
+        const ingredientCostPerBatch = recipe.ingredients.reduce(
+          (sum, ing) => sum + ing.quantity * ing.costPerUnit,
+          0
+        );
+        const unitsProduced = qty * recipe.yieldQty;
+        const totalCost = ingredientCostPerBatch * qty;
+        const batchDate = new Date(schedule.scheduledDate);
+        const expiresAt = recipe.expiryDays ? new Date(batchDate.getTime() + recipe.expiryDays * 864e5) : null;
+        for (const ing of recipe.ingredients) {
+          if (ing.pantryIngredientId && ing.pantryIngredient) {
+            const pantryUnit = ing.pantryIngredient.unit;
+            const deductQty = convertQuantity(ing.quantity * qty, ing.unit, pantryUnit) ?? ing.quantity * qty;
+            await tx.pantryIngredient.update({
+              where: { id: ing.pantryIngredientId },
+              data: { currentStock: { decrement: deductQty } }
+            });
+          }
+        }
+        const updatedSchedule = await tx.productionSchedule.update({
+          where: { id: data.id },
+          data: {
+            status: "completed",
+            actualQuantity: qty,
+            ...data.notes !== void 0 ? { notes: data.notes } : {}
+          },
+          include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } }
+        });
+        const batch = await tx.productionBatch.create({
+          data: {
+            recipeId: schedule.recipeId,
+            quantity: qty,
+            unitsProduced,
+            totalCost,
+            batchDate,
+            expiresAt,
+            notes: `From schedule ${schedule.id}${schedule.notes ? ` | ${schedule.notes}` : ""}`
+          },
+          include: {
+            recipe: { select: { id: true, name: true, yieldUnit: true, expiryDays: true } }
+          }
+        });
+        return { schedule: updatedSchedule, batch };
+      });
+    } catch (err) {
+      log51.error("bakery:completeScheduleAndCreateBatch error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:deleteScheduleItem", async (_e, id) => {
+    try {
+      return await prisma2.productionSchedule.delete({ where: { id } });
+    } catch (err) {
+      log51.error("bakery:deleteScheduleItem error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/analytics.ts
+init_electron_node();
+var log52 = createLogger("Bakery:Analytics");
+function registerAnalyticsHandlers2(prisma2) {
+  ipcMain.handle("bakery:getProfitLoss", async (_e, options = {}) => {
+    try {
+      const dateFilter = {};
+      if (options.startDate)
+        dateFilter.gte = new Date(options.startDate);
+      if (options.endDate)
+        dateFilter.lte = new Date(options.endDate);
+      const hasDates = options.startDate || options.endDate;
+      const recipes = await prisma2.recipe.findMany({
+        where: { isActive: true },
+        include: { ingredients: true }
+      });
+      const batchCostGrouped = await prisma2.productionBatch.groupBy({
+        by: ["recipeId"],
+        _sum: { totalCost: true, unitsProduced: true },
+        where: hasDates ? { batchDate: dateFilter } : {}
+      });
+      const batchCostMap = new Map(
+        batchCostGrouped.map((r) => [
+          r.recipeId,
+          { totalCost: r._sum.totalCost ?? 0, unitsProduced: r._sum.unitsProduced ?? 0 }
+        ])
+      );
+      const bakerySales = await prisma2.bakerySale.groupBy({
+        by: ["recipeId"],
+        _sum: { totalAmount: true, quantity: true },
+        where: hasDates ? { saleDate: dateFilter } : {}
+      });
+      const revenueMap = new Map(
+        bakerySales.map((s) => [
+          s.recipeId ?? "__none__",
+          { total: s._sum.totalAmount ?? 0, qty: s._sum.quantity ?? 0 }
+        ])
+      );
+      const wasteLogs = await prisma2.wasteLog.groupBy({
+        by: ["recipeId"],
+        _sum: { cost: true },
+        where: hasDates ? { wasteDate: dateFilter } : {}
+      });
+      const wasteMap = new Map(
+        wasteLogs.map((w) => [w.recipeId ?? "__none__", w._sum.cost ?? 0])
+      );
+      const totalWasteCost = wasteLogs.reduce((s, w) => s + (w._sum.cost ?? 0), 0);
+      const rows = recipes.map((recipe) => {
+        const costPerBatch = recipe.ingredients.reduce(
+          (s, ing) => s + ing.quantity * ing.costPerUnit,
+          0
+        );
+        const batches = batchCostMap.get(recipe.id) ?? { totalCost: 0, unitsProduced: 0 };
+        const rev = revenueMap.get(recipe.id) ?? { total: 0, qty: 0 };
+        const wasteCost = wasteMap.get(recipe.id) ?? 0;
+        const grossProfit = rev.total - batches.totalCost - wasteCost;
+        const margin = rev.total > 0 ? grossProfit / rev.total * 100 : 0;
+        return {
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          costPerBatch,
+          totalProductionCost: batches.totalCost,
+          unitsProduced: batches.unitsProduced,
+          totalRevenue: rev.total,
+          unitsSold: rev.qty,
+          wasteCost,
+          grossProfit,
+          marginPercent: Math.round(margin * 100) / 100
+        };
+      });
+      const totals = rows.reduce(
+        (acc, r) => ({
+          totalProductionCost: acc.totalProductionCost + r.totalProductionCost,
+          totalRevenue: acc.totalRevenue + r.totalRevenue,
+          wasteCost: acc.wasteCost + r.wasteCost,
+          grossProfit: acc.grossProfit + r.grossProfit
+        }),
+        { totalProductionCost: 0, totalRevenue: 0, wasteCost: 0, grossProfit: 0 }
+      );
+      return { rows, totals: { ...totals, totalWasteCost } };
+    } catch (err) {
+      log52.error("bakery:getProfitLoss error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getProfitLossTrend", async (_e, options = {}) => {
+    try {
+      const weeks = Math.min(options.weeks ?? 8, 24);
+      const cutoff = new Date(Date.now() - weeks * 7 * 864e5);
+      const batches = await prisma2.productionBatch.findMany({
+        where: { batchDate: { gte: cutoff } },
+        include: { recipe: { select: { id: true, name: true } } },
+        orderBy: { batchDate: "asc" }
+      });
+      const bakerySales = await prisma2.bakerySale.findMany({
+        where: { saleDate: { gte: cutoff } },
+        select: { recipeId: true, totalAmount: true, saleDate: true }
+      });
+      const getWeek = (d) => {
+        const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil(((date - yearStart) / 864e5 + 1) / 7);
+        return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+      };
+      const revMap = /* @__PURE__ */ new Map();
+      for (const si of bakerySales) {
+        const week = getWeek(new Date(si.saleDate));
+        const key = si.recipeId ?? "__none__";
+        if (!revMap.has(key))
+          revMap.set(key, /* @__PURE__ */ new Map());
+        const m = revMap.get(key);
+        m.set(week, (m.get(week) ?? 0) + si.totalAmount);
+      }
+      const costMap = /* @__PURE__ */ new Map();
+      for (const batch of batches) {
+        const week = getWeek(new Date(batch.batchDate));
+        if (!costMap.has(batch.recipeId))
+          costMap.set(batch.recipeId, /* @__PURE__ */ new Map());
+        const m = costMap.get(batch.recipeId);
+        m.set(week, (m.get(week) ?? 0) + batch.totalCost);
+      }
+      const allWeeks = Array.from(/* @__PURE__ */ new Set([
+        ...Array.from(revMap.values()).flatMap((m) => Array.from(m.keys())),
+        ...Array.from(costMap.values()).flatMap((m) => Array.from(m.keys()))
+      ])).sort();
+      const recipes = await prisma2.recipe.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true }
+      });
+      return {
+        weeks: allWeeks,
+        series: recipes.map((r) => {
+          const cMap = costMap.get(r.id) ?? /* @__PURE__ */ new Map();
+          const rMap = revMap.get(r.id) ?? /* @__PURE__ */ new Map();
+          return {
+            recipeId: r.id,
+            recipeName: r.name,
+            data: allWeeks.map((w) => {
+              const cost = cMap.get(w) ?? 0;
+              const rev = rMap.get(w) ?? 0;
+              return { week: w, cost, revenue: rev, profit: rev - cost };
+            })
+          };
+        }).filter((s) => s.data.some((d) => d.cost > 0 || d.revenue > 0))
+      };
+    } catch (err) {
+      log52.error("bakery:getProfitLossTrend error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getExpiringBatches", async (_e, daysAhead = 7) => {
+    try {
+      const cutoff = new Date(Date.now() + daysAhead * 864e5);
+      return await prisma2.productionBatch.findMany({
+        where: { expiresAt: { not: null, lte: cutoff } },
+        include: { recipe: { select: { id: true, name: true } } },
+        orderBy: { expiresAt: "asc" }
+      });
+    } catch (err) {
+      log52.error("bakery:getExpiringBatches error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getProductionRequirements", async (_e, data) => {
+    try {
+      const recipe = await prisma2.recipe.findUnique({
+        where: { id: data.recipeId },
+        include: {
+          ingredients: {
+            include: {
+              pantryIngredient: {
+                select: { id: true, name: true, currentStock: true, unit: true, lowStockThreshold: true }
+              }
+            }
+          }
+        }
+      });
+      if (!recipe)
+        throw new Error("Recipe not found");
+      const requirements = recipe.ingredients.map((ing) => {
+        const needed = ing.quantity * data.quantity;
+        const stock = ing.pantryIngredient?.currentStock ?? null;
+        const remaining = stock !== null ? stock - needed : null;
+        const status = !ing.pantryIngredient ? "unlinked" : remaining !== null && remaining < 0 ? "empty" : remaining !== null && ing.pantryIngredient.lowStockThreshold > 0 && remaining <= ing.pantryIngredient.lowStockThreshold ? "low" : "ok";
+        return {
+          ingredientId: ing.id,
+          name: ing.name,
+          needed,
+          unit: ing.unit,
+          currentStock: stock,
+          remaining,
+          status,
+          pantryLinked: !!ing.pantryIngredient
+        };
+      });
+      return { requirements, recipeName: recipe.name };
+    } catch (err) {
+      log52.error("bakery:getProductionRequirements error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getEndOfDaySuggestion", async () => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(todayStart.getTime() + 864e5 - 1);
+      const batches = await prisma2.productionBatch.findMany({
+        where: { batchDate: { gte: todayStart, lte: todayEnd } },
+        include: { recipe: { select: { id: true, name: true, yieldUnit: true } } },
+        orderBy: { batchDate: "desc" }
+      });
+      const todaySalesEod = await prisma2.bakerySale.groupBy({
+        by: ["recipeId"],
+        _sum: { quantity: true },
+        where: { saleDate: { gte: todayStart, lte: todayEnd } }
+      });
+      const soldMap = new Map(
+        todaySalesEod.map((s) => [s.recipeId ?? "__none__", s._sum.quantity ?? 0])
+      );
+      const recipeMap = /* @__PURE__ */ new Map();
+      for (const batch of batches) {
+        const key = batch.recipeId;
+        if (!recipeMap.has(key)) {
+          recipeMap.set(key, {
+            recipeId: batch.recipeId,
+            recipeName: batch.recipe.name,
+            yieldUnit: batch.recipe.yieldUnit,
+            unitsProduced: 0,
+            batches: []
+          });
+        }
+        const entry = recipeMap.get(key);
+        entry.unitsProduced += batch.unitsProduced;
+        entry.batches.push(batch.id);
+      }
+      return Array.from(recipeMap.values()).map((entry) => {
+        const unitsSold = soldMap.get(entry.recipeId) ?? 0;
+        const estimatedWaste = Math.max(0, entry.unitsProduced - unitsSold);
+        return { ...entry, unitsSold, estimatedWaste };
+      });
+    } catch (err) {
+      log52.error("bakery:getEndOfDaySuggestion error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getDailyOverview", async () => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(todayStart.getTime() + 864e5 - 1);
+      const twoDaysOut = new Date(todayStart.getTime() + 2 * 864e5);
+      const [scheduled, expiringBatches, lowStockItems] = await Promise.all([
+        prisma2.productionSchedule.findMany({
+          where: { scheduledDate: { gte: todayStart, lte: todayEnd } },
+          include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } },
+          orderBy: { scheduledDate: "asc" }
+        }),
+        prisma2.productionBatch.findMany({
+          where: { expiresAt: { gte: now, lte: twoDaysOut } },
+          include: { recipe: { select: { id: true, name: true } } },
+          orderBy: { expiresAt: "asc" }
+        }),
+        prisma2.pantryIngredient.findMany({
+          where: {
+            OR: [
+              { currentStock: { lte: prisma2.pantryIngredient.fields.lowStockThreshold } }
+            ]
+          }
+        }).catch(() => prisma2.pantryIngredient.findMany())
+      ]);
+      const lowStock = lowStockItems.filter(
+        (p) => p.lowStockThreshold > 0 && p.currentStock <= p.lowStockThreshold
+      );
+      const reorderNeeded = lowStockItems.filter(
+        (p) => p.reorderPoint != null && p.currentStock <= p.reorderPoint
+      );
+      const recipes = await prisma2.recipe.findMany({
+        where: { isActive: true },
+        include: {
+          ingredients: {
+            include: {
+              pantryIngredient: { select: { id: true, name: true, currentStock: true, unit: true } }
+            }
+          }
+        }
+      });
+      const todayBatches = await prisma2.productionBatch.findMany({
+        where: { batchDate: { gte: todayStart, lte: todayEnd } },
+        include: { recipe: { select: { name: true, yieldUnit: true } } }
+      });
+      const todaySales = await prisma2.bakerySale.aggregate({
+        where: { saleDate: { gte: todayStart, lte: todayEnd } },
+        _sum: { totalAmount: true, quantity: true }
+      }).catch(() => ({ _sum: { totalAmount: 0, quantity: 0 } }));
+      const todayRevenue = todaySales._sum?.totalAmount ?? 0;
+      const todayUnitsSold = todaySales._sum?.quantity ?? 0;
+      const capacity = recipes.map((recipe) => {
+        let availableBatches = Infinity;
+        let limitedBy = null;
+        const ingredientBreakdown = recipe.ingredients.map((ing) => {
+          const pi = ing.pantryIngredient;
+          const inStock = pi?.currentStock ?? null;
+          const needed = ing.quantity;
+          const inStockInRecipeUnit = pi && inStock !== null && pi.unit !== ing.unit ? convertQuantity(inStock, pi.unit, ing.unit) ?? inStock : inStock;
+          const canMake = pi && needed > 0 && inStockInRecipeUnit !== null ? Math.floor(inStockInRecipeUnit / needed) : null;
+          const shortfall = canMake !== null && canMake < 1 ? Math.max(0, needed - (inStockInRecipeUnit ?? 0)) : 0;
+          if (pi && needed > 0 && inStockInRecipeUnit !== null) {
+            if (canMake < availableBatches) {
+              availableBatches = canMake;
+              limitedBy = pi.name;
+            }
+          }
+          return {
+            name: pi?.name ?? ing.name ?? "Unknown",
+            unit: pi?.unit ?? "",
+            neededPerBatch: needed,
+            inStock,
+            canMakeBatches: canMake,
+            shortfall,
+            linked: !!pi
+          };
+        });
+        const hasLinked = recipe.ingredients.some((i) => i.pantryIngredient);
+        const finalBatches = hasLinked ? isFinite(availableBatches) ? availableBatches : 0 : null;
+        const expectedUnits = finalBatches !== null ? Math.round(finalBatches * (recipe.yieldQty ?? 1)) : null;
+        return {
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          yieldQty: recipe.yieldQty ?? 1,
+          yieldUnit: recipe.yieldUnit ?? "",
+          availableBatches: finalBatches,
+          expectedUnits,
+          limitedBy,
+          ingredientBreakdown
+        };
+      });
+      const todayProductionCost = todayBatches.reduce((s, b) => s + (b.totalCost ?? 0), 0);
+      return {
+        scheduled,
+        expiringBatches,
+        lowStock,
+        reorderNeeded,
+        capacity,
+        todayBatches: todayBatches.map((b) => ({
+          id: b.id,
+          recipeName: b.recipe.name,
+          yieldUnit: b.recipe.yieldUnit,
+          quantityProduced: b.unitsProduced,
+          totalCost: b.totalCost
+        })),
+        todayRevenue,
+        todayUnitsSold,
+        todayProductionCost
+      };
+    } catch (err) {
+      log52.error("bakery:getDailyOverview error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/sales.ts
+init_electron_node();
+var log53 = createLogger("Bakery:Sales");
+function registerSalesHandlers2(prisma2) {
+  ipcMain.handle("bakery:getSales", async (_e, options = {}) => {
+    try {
+      const page = Math.max(1, options.page ?? 1);
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 20));
+      const skip = (page - 1) * pageSize;
+      const where = {};
+      if (options.recipeId)
+        where.recipeId = options.recipeId;
+      if (options.startDate || options.endDate) {
+        where.saleDate = {};
+        if (options.startDate)
+          where.saleDate.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.saleDate.lte = new Date(options.endDate);
+      }
+      const [data, total] = await Promise.all([
+        prisma2.bakerySale.findMany({
+          where,
+          include: {
+            recipe: { select: { id: true, name: true, yieldUnit: true, sellingPrice: true } },
+            batch: { select: { id: true, batchDate: true, unitsProduced: true } }
+          },
+          orderBy: { saleDate: "desc" },
+          skip,
+          take: pageSize
+        }),
+        prisma2.bakerySale.count({ where })
+      ]);
+      return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    } catch (err) {
+      log53.error("bakery:getSales error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:createSale", async (_e, data) => {
+    try {
+      if (!data.itemName?.trim())
+        throw new Error("Item name is required");
+      if (!data.quantity || data.quantity <= 0)
+        throw new Error("Quantity must be greater than 0");
+      if (!data.unitPrice || data.unitPrice < 0)
+        throw new Error("Unit price must be >= 0");
+      const saleDate = data.saleDate ? new Date(data.saleDate) : /* @__PURE__ */ new Date();
+      const totalAmount = Math.round(data.quantity * data.unitPrice * 100) / 100;
+      const sale = await prisma2.bakerySale.create({
+        data: {
+          recipeId: data.recipeId ?? null,
+          batchId: data.batchId ?? null,
+          itemName: data.itemName.trim(),
+          quantity: data.quantity,
+          unitPrice: data.unitPrice,
+          totalAmount,
+          saleDate,
+          notes: data.notes ?? null
+        },
+        include: {
+          recipe: { select: { id: true, name: true, yieldUnit: true } },
+          batch: { select: { id: true, batchDate: true, unitsProduced: true } }
+        }
+      });
+      return sale;
+    } catch (err) {
+      log53.error("bakery:createSale error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:deleteSale", async (_e, id) => {
+    try {
+      return await prisma2.bakerySale.delete({ where: { id } });
+    } catch (err) {
+      log53.error("bakery:deleteSale error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getSalesSummary", async (_e, options = {}) => {
+    try {
+      const where = {};
+      if (options.startDate || options.endDate) {
+        where.saleDate = {};
+        if (options.startDate)
+          where.saleDate.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.saleDate.lte = new Date(options.endDate);
+      }
+      const [totals, byRecipe] = await Promise.all([
+        prisma2.bakerySale.aggregate({
+          where,
+          _sum: { totalAmount: true, quantity: true },
+          _count: { id: true }
+        }),
+        prisma2.bakerySale.groupBy({
+          by: ["recipeId"],
+          where,
+          _sum: { totalAmount: true, quantity: true },
+          _count: { id: true }
+        })
+      ]);
+      const recipeIds = byRecipe.map((r) => r.recipeId).filter(Boolean);
+      const recipes = recipeIds.length > 0 ? await prisma2.recipe.findMany({
+        where: { id: { in: recipeIds } },
+        select: { id: true, name: true, yieldUnit: true }
+      }) : [];
+      const recipeMap = new Map(recipes.map((r) => [r.id, r]));
+      const enrichedByRecipe = byRecipe.map((row) => ({
+        recipeId: row.recipeId,
+        recipe: row.recipeId ? recipeMap.get(row.recipeId) ?? null : null,
+        totalAmount: row._sum.totalAmount ?? 0,
+        quantity: row._sum.quantity ?? 0,
+        count: row._count.id
+      })).sort((a, b) => b.totalAmount - a.totalAmount);
+      return {
+        totalRevenue: totals._sum.totalAmount ?? 0,
+        totalUnitsSold: totals._sum.quantity ?? 0,
+        totalTransactions: totals._count.id ?? 0,
+        byRecipe: enrichedByRecipe
+      };
+    } catch (err) {
+      log53.error("bakery:getSalesSummary error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:getInventoryStatus", async (_e, options = {}) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const dateFilter = {};
+      if (options?.startDate)
+        dateFilter.gte = new Date(options.startDate);
+      if (options?.endDate)
+        dateFilter.lte = new Date(options.endDate);
+      const hasDates = options?.startDate || options?.endDate;
+      const [recipes, batchGroups, saleGroups, wasteGroups, expiredGroups] = await Promise.all([
+        prisma2.recipe.findMany({
+          where: { isActive: true },
+          select: { id: true, name: true, yieldUnit: true }
+        }),
+        prisma2.productionBatch.groupBy({
+          by: ["recipeId"],
+          where: hasDates ? { batchDate: dateFilter } : {},
+          _sum: { unitsProduced: true, totalCost: true }
+        }),
+        prisma2.bakerySale.groupBy({
+          by: ["recipeId"],
+          where: hasDates ? { saleDate: dateFilter } : {},
+          _sum: { quantity: true, totalAmount: true }
+        }),
+        // Waste of finished_product or production_batch type linked to a recipe
+        prisma2.wasteLog.groupBy({
+          by: ["recipeId"],
+          where: {
+            wasteType: { in: ["finished_product", "production_batch", "other"] },
+            ...hasDates ? { wasteDate: dateFilter } : {}
+          },
+          _sum: { quantity: true, cost: true }
+        }),
+        // Expired: batches where expiresAt < now and not fully sold
+        prisma2.productionBatch.groupBy({
+          by: ["recipeId"],
+          where: {
+            expiresAt: { lt: now },
+            ...hasDates ? { batchDate: dateFilter } : {}
+          },
+          _sum: { unitsProduced: true }
+        })
+      ]);
+      const batchMap = new Map(batchGroups.map((r) => [r.recipeId, r._sum]));
+      const saleMap = new Map(saleGroups.map((r) => [r.recipeId ?? "__none__", r._sum]));
+      const wasteMap = new Map(wasteGroups.map((r) => [r.recipeId ?? "__none__", r._sum]));
+      const expiredMap = new Map(expiredGroups.map((r) => [r.recipeId, r._sum]));
+      return recipes.map((recipe) => {
+        const produced = batchMap.get(recipe.id)?._sum?.unitsProduced ?? batchMap.get(recipe.id)?.unitsProduced ?? 0;
+        const cost = batchMap.get(recipe.id)?._sum?.totalCost ?? batchMap.get(recipe.id)?.totalCost ?? 0;
+        const sold = saleMap.get(recipe.id)?._sum?.quantity ?? saleMap.get(recipe.id)?.quantity ?? 0;
+        const revenue = saleMap.get(recipe.id)?._sum?.totalAmount ?? saleMap.get(recipe.id)?.totalAmount ?? 0;
+        const wasted = wasteMap.get(recipe.id)?._sum?.quantity ?? wasteMap.get(recipe.id)?.quantity ?? 0;
+        const wasteCost = wasteMap.get(recipe.id)?._sum?.cost ?? wasteMap.get(recipe.id)?.cost ?? 0;
+        const expired = expiredMap.get(recipe.id)?._sum?.unitsProduced ?? expiredMap.get(recipe.id)?.unitsProduced ?? 0;
+        const available = Math.max(0, produced - sold - wasted);
+        return {
+          recipeId: recipe.id,
+          recipeName: recipe.name,
+          yieldUnit: recipe.yieldUnit,
+          produced,
+          sold,
+          wasted,
+          wasteCost,
+          expired,
+          available,
+          revenue,
+          cost,
+          profit: revenue - cost - wasteCost
+        };
+      });
+    } catch (err) {
+      log53.error("bakery:getInventoryStatus error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/expenses.ts
+init_electron_node();
+var log54 = createLogger("Bakery:Expenses");
+function registerBakeryExpenseHandlers(prisma2) {
+  ipcMain.handle("bakery:expenses:getAll", async (_e, options = {}) => {
+    try {
+      const page = Math.max(1, options.page ?? 1);
+      const pageSize = Math.min(200, Math.max(1, options.pageSize ?? 50));
+      const skip = (page - 1) * pageSize;
+      const where = {};
+      if (options.category)
+        where.category = options.category;
+      if (options.startDate || options.endDate) {
+        where.date = {};
+        if (options.startDate)
+          where.date.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.date.lte = new Date(options.endDate);
+      }
+      const [data, total] = await Promise.all([
+        prisma2.bakeryExpense.findMany({ where, orderBy: { date: "desc" }, skip, take: pageSize }),
+        prisma2.bakeryExpense.count({ where })
+      ]);
+      return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    } catch (err) {
+      log54.error("bakery:expenses:getAll error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:expenses:create", async (_e, data) => {
+    try {
+      return await prisma2.bakeryExpense.create({
+        data: {
+          date: data.date ? new Date(data.date) : /* @__PURE__ */ new Date(),
+          category: data.category ?? "other",
+          description: data.description,
+          amount: Number(data.amount),
+          vendor: data.vendor ?? null,
+          paymentMethod: data.paymentMethod ?? "cash",
+          recurrence: data.recurrence ?? "one_time",
+          notes: data.notes ?? null
+        }
+      });
+    } catch (err) {
+      log54.error("bakery:expenses:create error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:expenses:update", async (_e, id, data) => {
+    try {
+      return await prisma2.bakeryExpense.update({
+        where: { id },
+        data: {
+          ...data.date && { date: new Date(data.date) },
+          ...data.category && { category: data.category },
+          ...data.description !== void 0 && { description: data.description },
+          ...data.amount !== void 0 && { amount: Number(data.amount) },
+          ...data.vendor !== void 0 && { vendor: data.vendor },
+          ...data.paymentMethod && { paymentMethod: data.paymentMethod },
+          ...data.recurrence && { recurrence: data.recurrence },
+          ...data.notes !== void 0 && { notes: data.notes }
+        }
+      });
+    } catch (err) {
+      log54.error("bakery:expenses:update error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:expenses:delete", async (_e, id) => {
+    try {
+      return await prisma2.bakeryExpense.delete({ where: { id } });
+    } catch (err) {
+      log54.error("bakery:expenses:delete error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("bakery:expenses:getSummary", async (_e, options = {}) => {
+    try {
+      const where = {};
+      if (options.startDate || options.endDate) {
+        where.date = {};
+        if (options.startDate)
+          where.date.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.date.lte = new Date(options.endDate);
+      }
+      const [agg, byCategory] = await Promise.all([
+        prisma2.bakeryExpense.aggregate({ where, _sum: { amount: true }, _count: true }),
+        prisma2.bakeryExpense.groupBy({
+          by: ["category"],
+          where,
+          _sum: { amount: true },
+          orderBy: { _sum: { amount: "desc" } }
+        })
+      ]);
+      return {
+        totalAmount: agg._sum.amount ?? 0,
+        totalCount: agg._count,
+        byCategory
+      };
+    } catch (err) {
+      log54.error("bakery:expenses:getSummary error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/bakery/handlers/index.ts
+function registerBakeryHandlers(prisma2) {
+  registerRecipeHandlers(prisma2);
+  registerProductionHandlers(prisma2);
+  registerPantryHandlers(prisma2);
+  registerWasteHandlers(prisma2);
+  registerScheduleHandlers(prisma2);
+  registerAnalyticsHandlers2(prisma2);
+  registerSalesHandlers2(prisma2);
+  registerBakeryExpenseHandlers(prisma2);
+}
+
+// apps/bizflow/src/plugins/restaurant/handlers/tables.ts
+init_electron_node();
+var log55 = createLogger("Restaurant:Tables");
+function registerTableHandlers(prisma2) {
+  ipcMain.handle("restaurant:getTables", async () => {
+    try {
+      return await prisma2.restaurantTable.findMany({
+        where: { isActive: true },
+        include: { _count: { select: { orders: true, reservations: true } } },
+        orderBy: { number: "asc" }
+      });
+    } catch (err) {
+      log55.error("getTables error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:createTable", async (_e, data) => {
+    try {
+      return await prisma2.restaurantTable.create({ data });
+    } catch (err) {
+      log55.error("createTable error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:updateTable", async (_e, data) => {
+    try {
+      const { id, ...rest } = data;
+      return await prisma2.restaurantTable.update({ where: { id }, data: rest });
+    } catch (err) {
+      log55.error("updateTable error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:deleteTable", async (_e, id) => {
+    try {
+      return await prisma2.restaurantTable.update({ where: { id }, data: { isActive: false } });
+    } catch (err) {
+      log55.error("deleteTable error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/restaurant/handlers/reservations.ts
+init_electron_node();
+var log56 = createLogger("Restaurant:Reservations");
+function registerReservationHandlers(prisma2) {
+  ipcMain.handle("restaurant:getReservations", async (_e, options) => {
+    try {
+      const where = {};
+      if (options?.tableId)
+        where.tableId = options.tableId;
+      if (options?.date) {
+        const d = new Date(options.date);
+        const from = new Date(d);
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(d);
+        to.setHours(23, 59, 59, 999);
+        where.date = { gte: from, lte: to };
+      }
+      return await prisma2.tableReservation.findMany({
+        where,
+        include: { table: { select: { id: true, number: true, capacity: true, section: true } } },
+        orderBy: { date: "asc" }
+      });
+    } catch (err) {
+      log56.error("getReservations error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:createReservation", async (_e, data) => {
+    try {
+      return await prisma2.tableReservation.create({
+        data: { ...data, date: new Date(data.date), status: "confirmed" },
+        include: { table: { select: { id: true, number: true } } }
+      });
+    } catch (err) {
+      log56.error("createReservation error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:updateReservation", async (_e, data) => {
+    try {
+      const { id, date, ...rest } = data;
+      return await prisma2.tableReservation.update({
+        where: { id },
+        data: { ...rest, ...date ? { date: new Date(date) } : {} }
+      });
+    } catch (err) {
+      log56.error("updateReservation error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:deleteReservation", async (_e, id) => {
+    try {
+      return await prisma2.tableReservation.delete({ where: { id } });
+    } catch (err) {
+      log56.error("deleteReservation error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/restaurant/handlers/menu.ts
+init_electron_node();
+var log57 = createLogger("Restaurant:Menu");
+function registerMenuHandlers(prisma2) {
+  ipcMain.handle("restaurant:getMenuItems", async () => {
+    try {
+      return await prisma2.menuItem.findMany({ orderBy: [{ category: "asc" }, { displayOrder: "asc" }, { name: "asc" }] });
+    } catch (err) {
+      log57.error("getMenuItems error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:createMenuItem", async (_e, data) => {
+    try {
+      return await prisma2.menuItem.create({ data: { ...data, price: Number(data.price), cost: Number(data.cost ?? 0) } });
+    } catch (err) {
+      log57.error("createMenuItem error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:updateMenuItem", async (_e, data) => {
+    try {
+      const { id, ...rest } = data;
+      if (rest.price !== void 0)
+        rest.price = Number(rest.price);
+      if (rest.cost !== void 0)
+        rest.cost = Number(rest.cost);
+      return await prisma2.menuItem.update({ where: { id }, data: rest });
+    } catch (err) {
+      log57.error("updateMenuItem error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:deleteMenuItem", async (_e, id) => {
+    try {
+      return await prisma2.menuItem.delete({ where: { id } });
+    } catch (err) {
+      log57.error("deleteMenuItem error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/restaurant/handlers/orders.ts
+init_electron_node();
+var log58 = createLogger("Restaurant:Orders");
+async function recalcOrderTotals(prisma2, orderId) {
+  const items = await prisma2.dineInOrderItem.findMany({ where: { orderId } });
+  const subtotal = items.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const tax = 0;
+  await prisma2.dineInOrder.update({ where: { id: orderId }, data: { subtotal, tax, total: subtotal + tax } });
+}
+function registerOrderHandlers(prisma2) {
+  ipcMain.handle("restaurant:getOrders", async (_e, options) => {
+    try {
+      const where = options?.status ? { status: options.status } : {};
+      if (options?.startDate || options?.endDate) {
+        where.closedAt = {};
+        if (options.startDate)
+          where.closedAt.gte = new Date(options.startDate);
+        if (options.endDate)
+          where.closedAt.lte = new Date(options.endDate);
+      }
+      return await prisma2.dineInOrder.findMany({
+        where,
+        include: {
+          table: { select: { id: true, number: true, section: true } },
+          items: { include: { menuItem: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" } }
+        },
+        orderBy: { openedAt: "desc" }
+      });
+    } catch (err) {
+      log58.error("getOrders error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:getOrder", async (_e, id) => {
+    try {
+      return await prisma2.dineInOrder.findUnique({
+        where: { id },
+        include: {
+          table: { select: { id: true, number: true, section: true } },
+          items: { include: { menuItem: true }, orderBy: { createdAt: "asc" } }
+        }
+      });
+    } catch (err) {
+      log58.error("getOrder error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:openOrder", async (_e, data) => {
+    try {
+      await prisma2.restaurantTable.update({ where: { id: data.tableId }, data: { status: "occupied" } });
+      return await prisma2.dineInOrder.create({
+        data: { tableId: data.tableId, serverName: data.serverName, notes: data.notes, status: "open" },
+        include: { table: { select: { id: true, number: true } }, items: true }
+      });
+    } catch (err) {
+      log58.error("openOrder error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:addOrderItem", async (_e, data) => {
+    try {
+      const item = await prisma2.dineInOrderItem.create({
+        data: { orderId: data.orderId, menuItemId: data.menuItemId || null, itemName: data.itemName, quantity: Number(data.quantity), unitPrice: Number(data.unitPrice), notes: data.notes }
+      });
+      await recalcOrderTotals(prisma2, data.orderId);
+      return item;
+    } catch (err) {
+      log58.error("addOrderItem error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:removeOrderItem", async (_e, itemId) => {
+    try {
+      const item = await prisma2.dineInOrderItem.delete({ where: { id: itemId } });
+      await recalcOrderTotals(prisma2, item.orderId);
+      return item;
+    } catch (err) {
+      log58.error("removeOrderItem error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:updateOrderItemStatus", async (_e, data) => {
+    try {
+      return await prisma2.dineInOrderItem.update({ where: { id: data.id }, data: { status: data.status } });
+    } catch (err) {
+      log58.error("updateOrderItemStatus error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("restaurant:closeOrder", async (_e, data) => {
+    try {
+      const order = await prisma2.dineInOrder.update({
+        where: { id: data.orderId },
+        data: { status: data.status, closedAt: /* @__PURE__ */ new Date() }
+      });
+      await prisma2.restaurantTable.update({ where: { id: order.tableId }, data: { status: "available" } });
+      return order;
+    } catch (err) {
+      log58.error("closeOrder error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/restaurant/handlers/overview.ts
+init_electron_node();
+var log59 = createLogger("Restaurant:Overview");
+function registerOverviewHandlers(prisma2) {
+  ipcMain.handle("restaurant:getOverview", async () => {
+    try {
+      const [tables, openOrders, todayReservations, menuItems] = await Promise.all([
+        prisma2.restaurantTable.findMany({ where: { isActive: true }, select: { status: true } }),
+        prisma2.dineInOrder.count({ where: { status: "open" } }),
+        prisma2.tableReservation.count({
+          where: {
+            date: { gte: new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0)), lte: new Date((/* @__PURE__ */ new Date()).setHours(23, 59, 59, 999)) },
+            status: { in: ["confirmed", "pending"] }
+          }
+        }),
+        prisma2.menuItem.count({ where: { isAvailable: true } })
+      ]);
+      const statusCounts = tables.reduce((acc, t) => {
+        acc[t.status] = (acc[t.status] || 0) + 1;
+        return acc;
+      }, {});
+      return {
+        totalTables: tables.length,
+        available: statusCounts["available"] || 0,
+        occupied: statusCounts["occupied"] || 0,
+        reserved: statusCounts["reserved"] || 0,
+        cleaning: statusCounts["cleaning"] || 0,
+        openOrders,
+        todayReservations,
+        availableMenuItems: menuItems
+      };
+    } catch (err) {
+      log59.error("getOverview error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/restaurant/handlers/index.ts
+function registerRestaurantHandlers(prisma2) {
+  registerTableHandlers(prisma2);
+  registerReservationHandlers(prisma2);
+  registerMenuHandlers(prisma2);
+  registerOrderHandlers(prisma2);
+  registerOverviewHandlers(prisma2);
+}
+
+// apps/bizflow/src/plugins/warehouse/handlers/locations.ts
+init_electron_node();
+var log60 = createLogger("Warehouse:Locations");
+function registerLocationHandlers(prisma2) {
+  ipcMain.handle("warehouse:getLocations", async () => {
+    try {
+      return await prisma2.warehouseLocation.findMany({
+        where: { isActive: true },
+        include: {
+          parent: { select: { id: true, name: true, code: true } },
+          _count: { select: { stockEntries: true, children: true } }
+        },
+        orderBy: [{ type: "asc" }, { name: "asc" }]
+      });
+    } catch (err) {
+      log60.error("getLocations error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:createLocation", async (_e, data) => {
+    try {
+      return await prisma2.warehouseLocation.create({ data: { ...data, parentId: data.parentId || null } });
+    } catch (err) {
+      log60.error("createLocation error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:updateLocation", async (_e, data) => {
+    try {
+      const { id, ...rest } = data;
+      return await prisma2.warehouseLocation.update({ where: { id }, data: rest });
+    } catch (err) {
+      log60.error("updateLocation error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:deleteLocation", async (_e, id) => {
+    try {
+      return await prisma2.warehouseLocation.update({ where: { id }, data: { isActive: false } });
+    } catch (err) {
+      log60.error("deleteLocation error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/warehouse/handlers/stock.ts
+init_electron_node();
+
+// apps/bizflow/src/plugins/warehouse/handlers/audit.ts
+async function writeWarehouseAudit(prisma2, data) {
+  try {
+    await prisma2.warehouseAuditLog.create({
+      data: {
+        entityType: data.entityType,
+        entityId: data.entityId,
+        action: data.action,
+        actor: data.actor ?? null,
+        details: data.details ?? null
+      }
+    });
+  } catch {
+  }
+}
+async function writeWarehouseMovement(prisma2, data) {
+  try {
+    await prisma2.warehouseStockMovement.create({
+      data: {
+        movementType: data.movementType,
+        stockId: data.stockId ?? null,
+        locationId: data.locationId ?? null,
+        productId: data.productId ?? null,
+        productName: data.productName,
+        sku: data.sku ?? null,
+        quantity: Number(data.quantity),
+        unit: data.unit ?? "pcs",
+        beforeQty: data.beforeQty ?? null,
+        afterQty: data.afterQty ?? null,
+        sourceType: data.sourceType ?? null,
+        sourceId: data.sourceId ?? null,
+        actedBy: data.actedBy ?? null,
+        notes: data.notes ?? null
+      }
+    });
+  } catch {
+  }
+}
+
+// apps/bizflow/src/plugins/warehouse/handlers/stock.ts
+var log61 = createLogger("Warehouse:Stock");
+function registerStockHandlers(prisma2) {
+  ipcMain.handle("warehouse:getStock", async (_e, options) => {
+    try {
+      const locationId = typeof options === "string" ? options : options?.locationId;
+      const search = typeof options === "string" ? "" : options?.search?.trim() || "";
+      const itemType = typeof options === "string" ? "" : options?.itemType || "";
+      const where = {};
+      if (locationId)
+        where.locationId = locationId;
+      if (itemType)
+        where.itemType = itemType;
+      if (search) {
+        where.OR = [
+          { productName: { contains: search } },
+          { sku: { contains: search } },
+          { lotNumber: { contains: search } },
+          { batchNumber: { contains: search } },
+          { serialNumber: { contains: search } }
+        ];
+      }
+      return await prisma2.warehouseStock.findMany({
+        where,
+        include: { location: { select: { id: true, name: true, code: true } } },
+        orderBy: [{ location: { name: "asc" } }, { productName: "asc" }]
+      });
+    } catch (err) {
+      log61.error("getStock error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:upsertStock", async (_e, data) => {
+    try {
+      const existing = await prisma2.warehouseStock.findUnique({
+        where: { locationId_productName: { locationId: data.locationId, productName: data.productName } }
+      });
+      const nextQty = Number(data.quantity);
+      const row = await prisma2.warehouseStock.upsert({
+        where: { locationId_productName: { locationId: data.locationId, productName: data.productName } },
+        create: {
+          ...data,
+          quantity: nextQty,
+          minQuantity: Number(data.minQuantity ?? 0),
+          expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+          itemType: data.itemType || "finished_goods"
+        },
+        update: {
+          quantity: nextQty,
+          unit: data.unit,
+          minQuantity: Number(data.minQuantity ?? 0),
+          notes: data.notes,
+          sku: data.sku,
+          itemType: data.itemType || "finished_goods",
+          barcode: data.barcode,
+          lotNumber: data.lotNumber,
+          batchNumber: data.batchNumber,
+          serialNumber: data.serialNumber,
+          expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+          dimensions: data.dimensions,
+          weight: data.weight == null ? void 0 : Number(data.weight),
+          volume: data.volume == null ? void 0 : Number(data.volume),
+          binCode: data.binCode,
+          aisleCode: data.aisleCode,
+          shelfCode: data.shelfCode,
+          palletCode: data.palletCode,
+          isQuarantine: !!data.isQuarantine,
+          isDamaged: !!data.isDamaged
+        }
+      });
+      await writeWarehouseMovement(prisma2, {
+        movementType: existing ? "adjust" : "in",
+        stockId: row.id,
+        locationId: row.locationId,
+        productId: row.productId,
+        productName: row.productName,
+        sku: row.sku,
+        quantity: existing ? nextQty - Number(existing.quantity) : nextQty,
+        unit: row.unit,
+        beforeQty: existing ? Number(existing.quantity) : 0,
+        afterQty: Number(row.quantity),
+        sourceType: "manual",
+        sourceId: row.id,
+        actedBy: data.actedBy,
+        notes: data.notes
+      });
+      await writeWarehouseAudit(prisma2, {
+        entityType: "stock",
+        entityId: row.id,
+        action: existing ? "stock.updated" : "stock.created",
+        actor: data.actedBy,
+        details: `${row.productName} @ ${row.locationId} => ${row.quantity} ${row.unit}`
+      });
+      return row;
+    } catch (err) {
+      log61.error("upsertStock error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:adjustStock", async (_e, data) => {
+    try {
+      const row = await prisma2.warehouseStock.findUnique({ where: { id: data.id } });
+      if (!row)
+        throw new Error("Stock entry not found");
+      const beforeQty = Number(row.quantity);
+      const hasAbsolute = data.quantity != null && !Number.isNaN(Number(data.quantity));
+      const afterQty = hasAbsolute ? Math.max(0, Number(data.quantity)) : Math.max(0, beforeQty + Number(data.delta ?? 0));
+      const updated = await prisma2.warehouseStock.update({
+        where: { id: data.id },
+        data: { quantity: afterQty }
+      });
+      await writeWarehouseMovement(prisma2, {
+        movementType: "adjust",
+        stockId: updated.id,
+        locationId: updated.locationId,
+        productId: updated.productId,
+        productName: updated.productName,
+        sku: updated.sku,
+        quantity: afterQty - beforeQty,
+        unit: updated.unit,
+        beforeQty,
+        afterQty,
+        sourceType: "manual",
+        sourceId: updated.id,
+        actedBy: data.actedBy,
+        notes: data.reason
+      });
+      await writeWarehouseAudit(prisma2, {
+        entityType: "stock",
+        entityId: updated.id,
+        action: "stock.adjusted",
+        actor: data.actedBy,
+        details: `${updated.productName}: ${beforeQty} -> ${afterQty}`
+      });
+      return updated;
+    } catch (err) {
+      log61.error("adjustStock error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:deleteStock", async (_e, id, actedBy) => {
+    try {
+      const deleted = await prisma2.warehouseStock.delete({ where: { id } });
+      await writeWarehouseAudit(prisma2, {
+        entityType: "stock",
+        entityId: deleted.id,
+        action: "stock.deleted",
+        actor: actedBy,
+        details: `${deleted.productName} @ ${deleted.locationId}`
+      });
+      return deleted;
+    } catch (err) {
+      log61.error("deleteStock error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:getLowStock", async () => {
+    try {
+      if (prisma2.warehouseStock?.fields?.minQuantity) {
+        return await prisma2.warehouseStock.findMany({
+          where: {
+            minQuantity: { gt: 0 },
+            quantity: { lte: prisma2.warehouseStock.fields.minQuantity }
+          },
+          include: { location: { select: { id: true, name: true, code: true } } }
+        });
+      }
+      const rows = await prisma2.warehouseStock.findMany({
+        where: { minQuantity: { gt: 0 } },
+        include: { location: { select: { id: true, name: true, code: true } } }
+      });
+      return rows.filter((r) => Number(r.quantity) <= Number(r.minQuantity));
+    } catch (err) {
+      log61.error("getLowStock error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:getMovements", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.locationId)
+        where.locationId = params.locationId;
+      if (params?.movementType)
+        where.movementType = params.movementType;
+      if (params?.actor)
+        where.actedBy = params.actor;
+      const skip = Number(params?.skip ?? 0);
+      const take = Number(params?.take ?? 100);
+      const [data, total] = await Promise.all([
+        prisma2.warehouseStockMovement.findMany({
+          where,
+          include: { location: { select: { id: true, name: true, code: true } } },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take
+        }),
+        prisma2.warehouseStockMovement.count({ where })
+      ]);
+      return { data, total, hasMore: skip + data.length < total };
+    } catch (err) {
+      log61.error("getMovements error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:getAuditLogs", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.entityType)
+        where.entityType = params.entityType;
+      if (params?.actor)
+        where.actor = params.actor;
+      if (params?.search) {
+        where.OR = [
+          { entityId: { contains: params.search.trim() } },
+          { action: { contains: params.search.trim() } },
+          { details: { contains: params.search.trim() } }
+        ];
+      }
+      const skip = Number(params?.skip ?? 0);
+      const take = Number(params?.take ?? 100);
+      const [data, total] = await Promise.all([
+        prisma2.warehouseAuditLog.findMany({ where, orderBy: { createdAt: "desc" }, skip, take }),
+        prisma2.warehouseAuditLog.count({ where })
+      ]);
+      return { data, total, hasMore: skip + data.length < total };
+    } catch (err) {
+      log61.error("getAuditLogs error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/warehouse/handlers/transfers.ts
+init_electron_node();
+var log62 = createLogger("Warehouse:Transfers");
+function registerTransferHandlers(prisma2) {
+  ipcMain.handle("warehouse:getTransfers", async (_e, options) => {
+    try {
+      const where = options?.status ? { status: options.status } : {};
+      return await prisma2.stockTransfer.findMany({
+        where,
+        include: {
+          fromLocation: { select: { id: true, name: true, code: true } },
+          toLocation: { select: { id: true, name: true, code: true } },
+          items: true,
+          _count: { select: { items: true } }
+        },
+        orderBy: { transferDate: "desc" }
+      });
+    } catch (err) {
+      log62.error("getTransfers error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:createTransfer", async (_e, data) => {
+    try {
+      const row = await prisma2.stockTransfer.create({
+        data: {
+          fromLocationId: data.fromLocationId,
+          toLocationId: data.toLocationId,
+          notes: data.notes,
+          createdBy: data.createdBy,
+          status: "draft",
+          items: { create: data.items.map((i) => ({ ...i, quantity: Number(i.quantity) })) }
+        },
+        include: { fromLocation: true, toLocation: true, items: true }
+      });
+      await writeWarehouseAudit(prisma2, {
+        entityType: "transfer",
+        entityId: row.id,
+        action: "transfer.created",
+        actor: data.createdBy,
+        details: `${row.fromLocationId} -> ${row.toLocationId} (${row.items.length} items)`
+      });
+      return row;
+    } catch (err) {
+      log62.error("createTransfer error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:updateTransferStatus", async (_e, data) => {
+    try {
+      return await prisma2.$transaction(async (tx) => {
+        const transfer = await tx.stockTransfer.findUnique({
+          where: { id: data.id },
+          include: { items: true, fromLocation: true, toLocation: true }
+        });
+        if (!transfer)
+          throw new Error("Transfer not found");
+        if (data.status === "completed") {
+          for (const item of transfer.items) {
+            const moveQty = Number(item.quantity);
+            const fromStock = await tx.warehouseStock.findUnique({
+              where: {
+                locationId_productName: {
+                  locationId: transfer.fromLocationId,
+                  productName: item.productName
+                }
+              }
+            });
+            if (!fromStock || Number(fromStock.quantity) < moveQty) {
+              throw new Error(`Insufficient stock for transfer item: ${item.productName}`);
+            }
+            const decrementResult = await tx.warehouseStock.updateMany({
+              where: {
+                id: fromStock.id,
+                quantity: { gte: moveQty }
+              },
+              data: { quantity: { decrement: moveQty } }
+            });
+            if (decrementResult.count !== 1) {
+              throw new Error(`Stock changed during transfer completion for: ${item.productName}`);
+            }
+            const toStockBefore = await tx.warehouseStock.findUnique({
+              where: {
+                locationId_productName: {
+                  locationId: transfer.toLocationId,
+                  productName: item.productName
+                }
+              }
+            });
+            const toStock = await tx.warehouseStock.upsert({
+              where: {
+                locationId_productName: {
+                  locationId: transfer.toLocationId,
+                  productName: item.productName
+                }
+              },
+              create: {
+                locationId: transfer.toLocationId,
+                productName: item.productName,
+                sku: item.sku,
+                quantity: moveQty,
+                unit: item.unit || "pcs"
+              },
+              update: { quantity: { increment: moveQty } }
+            });
+            await writeWarehouseMovement(tx, {
+              movementType: "transfer_out",
+              stockId: fromStock.id,
+              locationId: transfer.fromLocationId,
+              productName: item.productName,
+              sku: item.sku,
+              quantity: -moveQty,
+              unit: item.unit || "pcs",
+              beforeQty: Number(fromStock.quantity),
+              afterQty: Number(fromStock.quantity) - moveQty,
+              sourceType: "transfer",
+              sourceId: transfer.id,
+              actedBy: data.actedBy,
+              notes: transfer.notes
+            });
+            await writeWarehouseMovement(tx, {
+              movementType: "transfer_in",
+              stockId: toStock.id,
+              locationId: transfer.toLocationId,
+              productName: item.productName,
+              sku: item.sku,
+              quantity: moveQty,
+              unit: item.unit || "pcs",
+              beforeQty: toStockBefore ? Number(toStockBefore.quantity) : 0,
+              afterQty: Number(toStock.quantity),
+              sourceType: "transfer",
+              sourceId: transfer.id,
+              actedBy: data.actedBy,
+              notes: transfer.notes
+            });
+          }
+        }
+        const update = { status: data.status };
+        if (data.status === "completed") {
+          update.completedAt = /* @__PURE__ */ new Date();
+          update.completedBy = data.actedBy ?? null;
+        }
+        const updated = await tx.stockTransfer.update({ where: { id: data.id }, data: update });
+        await writeWarehouseAudit(tx, {
+          entityType: "transfer",
+          entityId: updated.id,
+          action: `transfer.status.${data.status}`,
+          actor: data.actedBy,
+          details: `${updated.fromLocationId} -> ${updated.toLocationId}`
+        });
+        return updated;
+      });
+    } catch (err) {
+      log62.error("updateTransferStatus error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:deleteTransfer", async (_e, id) => {
+    try {
+      return await prisma2.stockTransfer.delete({ where: { id } });
+    } catch (err) {
+      log62.error("deleteTransfer error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/warehouse/handlers/overview.ts
+init_electron_node();
+var log63 = createLogger("Warehouse:Overview");
+function registerWarehouseOverviewHandlers(prisma2) {
+  ipcMain.handle("warehouse:getOverview", async () => {
+    try {
+      const [totalLocations, totalSKUs, pendingTransfers, recentTransfers, activeOrders, inboundPending, outboundPending, recentMovements] = await Promise.all([
+        prisma2.warehouseLocation.count({ where: { isActive: true } }),
+        prisma2.warehouseStock.count(),
+        prisma2.stockTransfer.count({ where: { status: { in: ["draft", "in_transit"] } } }),
+        prisma2.stockTransfer.findMany({
+          take: 5,
+          orderBy: { transferDate: "desc" },
+          include: {
+            fromLocation: { select: { name: true, code: true } },
+            toLocation: { select: { name: true, code: true } },
+            _count: { select: { items: true } }
+          }
+        }),
+        prisma2.warehouseOrder.count({ where: { status: { in: ["pending", "processing"] } } }),
+        prisma2.warehouseOrder.count({ where: { status: { in: ["pending", "processing"] }, orderType: "inbound" } }),
+        prisma2.warehouseOrder.count({ where: { status: { in: ["pending", "processing"] }, orderType: "outbound" } }),
+        prisma2.warehouseStockMovement.findMany({
+          take: 8,
+          orderBy: { createdAt: "desc" },
+          include: { location: { select: { id: true, name: true, code: true } } }
+        })
+      ]);
+      const lowStockItems = await prisma2.$queryRaw`
+        SELECT COUNT(*) as count FROM WarehouseStock WHERE quantity <= minQuantity AND minQuantity > 0
+      `.catch(() => [{ count: 0 }]);
+      const lowStockCount = Number(lowStockItems[0]?.count ?? 0);
+      return {
+        totalLocations,
+        totalSKUs,
+        pendingTransfers,
+        lowStockCount,
+        activeOrders,
+        inboundPending,
+        outboundPending,
+        recentTransfers,
+        recentMovements
+      };
+    } catch (err) {
+      log63.error("getOverview error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/warehouse/handlers/operations.ts
+init_electron_node();
+var log64 = createLogger("Warehouse:Operations");
+function normalizeStage(orderType, stage) {
+  if (stage && ["created", "receiving", "qc", "putaway", "picking", "packing", "shipping", "done"].includes(stage)) {
+    return stage;
+  }
+  if (orderType === "inbound" || orderType === "return")
+    return "receiving";
+  if (orderType === "outbound")
+    return "picking";
+  return "created";
+}
+function stageDataPatch(stage, actor) {
+  const now = /* @__PURE__ */ new Date();
+  switch (stage) {
+    case "receiving":
+      return { workflowStage: stage, status: "processing", receivedAt: now, receivedBy: actor ?? null };
+    case "qc":
+      return { workflowStage: stage, status: "processing", qcCompletedAt: now, qcBy: actor ?? null };
+    case "putaway":
+      return { workflowStage: stage, status: "processing", putawayAt: now, putawayBy: actor ?? null };
+    case "picking":
+      return { workflowStage: stage, status: "processing", pickedAt: now, pickedBy: actor ?? null };
+    case "packing":
+      return { workflowStage: stage, status: "processing", packedAt: now, packedBy: actor ?? null };
+    case "shipping":
+      return { workflowStage: stage, status: "processing", shippedAt: now, shippedBy: actor ?? null };
+    case "done":
+      return { workflowStage: stage, status: "completed", processedDate: now, processedBy: actor ?? null };
+    default:
+      return { workflowStage: stage, status: "pending" };
+  }
+}
+function makeOrderNumber(orderType) {
+  const type = (orderType || "ORD").slice(0, 3).toUpperCase();
+  const now = /* @__PURE__ */ new Date();
+  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}${String(now.getMilliseconds()).padStart(3, "0")}`;
+  const rand = Math.floor(Math.random() * 1e3).toString().padStart(3, "0");
+  return `WH-${type}-${stamp}-${rand}`;
+}
+function registerWarehouseOperationsHandlers(prisma2) {
+  ipcMain.handle("warehouse:getOrders", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.orderType)
+        where.orderType = params.orderType;
+      if (params?.status)
+        where.status = params.status;
+      if (params?.workflowStage)
+        where.workflowStage = params.workflowStage;
+      if (params?.locationId)
+        where.locationId = params.locationId;
+      if (params?.search?.trim()) {
+        const q = params.search.trim();
+        where.OR = [
+          { orderNumber: { contains: q } },
+          { sourceRef: { contains: q } },
+          { partnerName: { contains: q } },
+          { notes: { contains: q } }
+        ];
+      }
+      const skip = Number(params?.skip ?? 0);
+      const take = Number(params?.take ?? 100);
+      const [data, total] = await Promise.all([
+        prisma2.warehouseOrder.findMany({
+          where,
+          include: {
+            location: { select: { id: true, name: true, code: true } },
+            lines: true,
+            _count: { select: { lines: true } }
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take
+        }),
+        prisma2.warehouseOrder.count({ where })
+      ]);
+      return { data, total, hasMore: skip + data.length < total };
+    } catch (err) {
+      log64.error("getOrders error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:getJourneyBoard", async (_e) => {
+    try {
+      const [activeOrders, receiving, qc, putaway, picking, packing, shipping] = await Promise.all([
+        prisma2.warehouseOrder.count({ where: { status: { in: ["pending", "processing"] } } }),
+        prisma2.warehouseOrder.count({ where: { workflowStage: "receiving", status: { in: ["pending", "processing"] } } }),
+        prisma2.warehouseOrder.count({ where: { workflowStage: "qc", status: { in: ["pending", "processing"] } } }),
+        prisma2.warehouseOrder.count({ where: { workflowStage: "putaway", status: { in: ["pending", "processing"] } } }),
+        prisma2.warehouseOrder.count({ where: { workflowStage: "picking", status: { in: ["pending", "processing"] } } }),
+        prisma2.warehouseOrder.count({ where: { workflowStage: "packing", status: { in: ["pending", "processing"] } } }),
+        prisma2.warehouseOrder.count({ where: { workflowStage: "shipping", status: { in: ["pending", "processing"] } } })
+      ]);
+      return { activeOrders, receiving, qc, putaway, picking, packing, shipping };
+    } catch (err) {
+      log64.error("getJourneyBoard error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:createOrder", async (_e, data) => {
+    try {
+      if (!Array.isArray(data.lines) || data.lines.length === 0) {
+        throw new Error("Order lines are required");
+      }
+      const row = await prisma2.warehouseOrder.create({
+        data: {
+          orderNumber: makeOrderNumber(data.orderType),
+          orderType: data.orderType,
+          status: "pending",
+          workflowStage: normalizeStage(data.orderType),
+          sourceRef: data.sourceRef || null,
+          partnerName: data.partnerName || null,
+          expectedDate: data.expectedDate ? new Date(data.expectedDate) : null,
+          locationId: data.locationId || null,
+          priority: data.priority || "normal",
+          notes: data.notes || null,
+          createdBy: data.createdBy || null,
+          lines: {
+            create: data.lines.map((line) => ({
+              productId: line.productId || null,
+              productName: line.productName,
+              sku: line.sku || null,
+              barcode: line.barcode || null,
+              requestedQty: Number(line.requestedQty),
+              unit: line.unit || "pcs",
+              lotNumber: line.lotNumber || null,
+              batchNumber: line.batchNumber || null,
+              serialNumber: line.serialNumber || null,
+              expiryDate: line.expiryDate ? new Date(line.expiryDate) : null,
+              notes: line.notes || null
+            }))
+          }
+        },
+        include: { lines: true, location: true }
+      });
+      await writeWarehouseAudit(prisma2, {
+        entityType: "order",
+        entityId: row.id,
+        action: "order.created",
+        actor: data.createdBy,
+        details: `${row.orderNumber} (${row.orderType}) with ${row.lines.length} line(s)`
+      });
+      return row;
+    } catch (err) {
+      log64.error("createOrder error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:updateOrderStatus", async (_e, data) => {
+    try {
+      const row = await prisma2.warehouseOrder.update({
+        where: { id: data.id },
+        data: {
+          status: data.status,
+          workflowStage: data.status === "completed" ? "done" : void 0,
+          notes: data.notes ?? void 0,
+          processedBy: data.status === "completed" ? data.actedBy || null : void 0,
+          processedDate: data.status === "completed" ? /* @__PURE__ */ new Date() : void 0
+        }
+      });
+      await writeWarehouseAudit(prisma2, {
+        entityType: "order",
+        entityId: row.id,
+        action: `order.status.${data.status}`,
+        actor: data.actedBy,
+        details: row.orderNumber
+      });
+      return row;
+    } catch (err) {
+      log64.error("updateOrderStatus error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:advanceOrderStage", async (_e, data) => {
+    try {
+      const order = await prisma2.warehouseOrder.findUnique({ where: { id: data.id } });
+      if (!order)
+        throw new Error("Order not found");
+      const patch = stageDataPatch(data.stage, data.actedBy ?? null);
+      const updated = await prisma2.warehouseOrder.update({
+        where: { id: data.id },
+        data: {
+          ...patch,
+          notes: data.notes ?? void 0
+        }
+      });
+      await writeWarehouseAudit(prisma2, {
+        entityType: "order",
+        entityId: updated.id,
+        action: `order.stage.${data.stage}`,
+        actor: data.actedBy,
+        details: `${updated.orderNumber} -> ${data.stage}`
+      });
+      return updated;
+    } catch (err) {
+      log64.error("advanceOrderStage error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("warehouse:processOrder", async (_e, data) => {
+    try {
+      return await prisma2.$transaction(async (tx) => {
+        const order = await tx.warehouseOrder.findUnique({
+          where: { id: data.orderId },
+          include: { lines: true }
+        });
+        if (!order)
+          throw new Error("Order not found");
+        if (!["pending", "processing"].includes(order.status))
+          throw new Error("Order is not processable");
+        const lineMap = /* @__PURE__ */ new Map();
+        if (Array.isArray(data.lines)) {
+          for (const line of data.lines)
+            lineMap.set(line.lineId, Number(line.processedQty));
+        }
+        for (const line of order.lines) {
+          const qty = lineMap.has(line.id) ? Number(lineMap.get(line.id)) : Number(line.requestedQty);
+          if (qty <= 0)
+            continue;
+          const existing = await tx.warehouseStock.findUnique({
+            where: { locationId_productName: { locationId: data.locationId, productName: line.productName } }
+          });
+          const beforeQty = Number(existing?.quantity ?? 0);
+          const isInbound = order.orderType === "inbound" || order.orderType === "return";
+          const delta = isInbound ? qty : -qty;
+          const nextQty = beforeQty + delta;
+          if (!isInbound && nextQty < 0) {
+            throw new Error(`Insufficient stock for ${line.productName}`);
+          }
+          const stock = await tx.warehouseStock.upsert({
+            where: { locationId_productName: { locationId: data.locationId, productName: line.productName } },
+            create: {
+              locationId: data.locationId,
+              productId: line.productId,
+              productName: line.productName,
+              sku: line.sku,
+              barcode: line.barcode,
+              quantity: isInbound ? qty : 0,
+              unit: line.unit || "pcs",
+              lotNumber: line.lotNumber,
+              batchNumber: line.batchNumber,
+              serialNumber: line.serialNumber,
+              expiryDate: line.expiryDate
+            },
+            update: {
+              quantity: { increment: delta },
+              sku: line.sku || void 0,
+              barcode: line.barcode || void 0,
+              lotNumber: line.lotNumber || void 0,
+              batchNumber: line.batchNumber || void 0,
+              serialNumber: line.serialNumber || void 0,
+              expiryDate: line.expiryDate || void 0
+            }
+          });
+          await tx.warehouseOrderLine.update({
+            where: { id: line.id },
+            data: { processedQty: Number(line.processedQty) + qty }
+          });
+          await writeWarehouseMovement(tx, {
+            movementType: isInbound ? "receive" : "ship",
+            stockId: stock.id,
+            locationId: data.locationId,
+            productId: line.productId,
+            productName: line.productName,
+            sku: line.sku,
+            quantity: delta,
+            unit: line.unit,
+            beforeQty,
+            afterQty: Number(stock.quantity),
+            sourceType: "order",
+            sourceId: order.id,
+            actedBy: data.actedBy,
+            notes: data.notes || order.notes
+          });
+        }
+        const updated = await tx.warehouseOrder.update({
+          where: { id: order.id },
+          data: {
+            status: "completed",
+            workflowStage: "done",
+            locationId: data.locationId,
+            processedBy: data.actedBy || null,
+            processedDate: /* @__PURE__ */ new Date(),
+            notes: data.notes ?? order.notes ?? null
+          },
+          include: { lines: true }
+        });
+        await writeWarehouseAudit(tx, {
+          entityType: "order",
+          entityId: updated.id,
+          action: "order.processed",
+          actor: data.actedBy,
+          details: `${updated.orderNumber} processed at ${data.locationId}`
+        });
+        return updated;
+      });
+    } catch (err) {
+      log64.error("processOrder error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/warehouse/handlers/index.ts
+function registerWarehouseHandlers(prisma2) {
+  registerLocationHandlers(prisma2);
+  registerStockHandlers(prisma2);
+  registerTransferHandlers(prisma2);
+  registerWarehouseOverviewHandlers(prisma2);
+  registerWarehouseOperationsHandlers(prisma2);
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/patients.ts
+init_electron_node();
+function registerPatientHandlers(prisma2) {
+  ipcMain.handle("clinic:patients:getAll", async (_e, params) => {
+    const where = params?.search ? {
+      OR: [
+        { name: { contains: params.search } },
+        { phone: { contains: params.search } },
+        { nationalId: { contains: params.search } },
+        { folderNumber: { contains: params.search } }
+      ]
+    } : void 0;
+    const skip = params?.skip ?? 0;
+    const take = params?.take ?? 40;
+    const total = await prisma2.clinicPatient.count({ where });
+    const patients = await prisma2.clinicPatient.findMany({
+      where,
+      include: {
+        _count: { select: { sessions: true } },
+        sessions: {
+          orderBy: { visitDate: "desc" },
+          take: 1,
+          select: { visitDate: true, paymentStatus: true, visitType: true }
+        }
+      },
+      orderBy: [
+        { createdAt: "desc" },
+        { name: "asc" }
+      ],
+      skip,
+      take
+    });
+    if (patients.length === 0) {
+      return { data: [], total, hasMore: false };
+    }
+    const patientIds = patients.map((p) => p.id);
+    const financeSummaries = await prisma2.$queryRawUnsafe(`
+      SELECT 
+        patientId,
+        COALESCE(SUM(amountCharged), 0) as totalCharged,
+        COALESCE(SUM(amountPaid), 0) as totalPaid
+      FROM ClinicSession
+      WHERE patientId IN (${patientIds.map(() => "?").join(",")})
+      GROUP BY patientId
+    `, ...patientIds);
+    const financeMap = {};
+    for (const f of financeSummaries) {
+      financeMap[f.patientId] = {
+        totalCharged: Number(f.totalCharged) || 0,
+        totalPaid: Number(f.totalPaid) || 0,
+        outstanding: (Number(f.totalCharged) || 0) - (Number(f.totalPaid) || 0)
+      };
+    }
+    const data = patients.map((p) => ({
+      ...p,
+      finance: financeMap[p.id] ?? { totalCharged: 0, totalPaid: 0, outstanding: 0 }
+    }));
+    return {
+      data,
+      total,
+      hasMore: skip + take < total
+    };
+  });
+  ipcMain.handle("clinic:patients:getDebtors", async (_e, params) => {
+    const skip = params?.skip ?? 0;
+    const take = params?.take ?? 200;
+    const search = (params?.search ?? "").trim();
+    const whereSql = search ? "WHERE (p.name LIKE ? OR p.phone LIKE ? OR p.nationalId LIKE ? OR p.folderNumber LIKE ?)" : "";
+    const searchArgs = search ? [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`] : [];
+    const countRows = await prisma2.$queryRawUnsafe(`
+      SELECT COUNT(*) AS total
+      FROM (
+        SELECT p.id
+        FROM ClinicPatient p
+        LEFT JOIN ClinicSession s ON s.patientId = p.id
+        ${whereSql}
+        GROUP BY p.id
+        HAVING (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) > 0
+      ) debtors
+    `, ...searchArgs);
+    const totalOutstandingRows = await prisma2.$queryRawUnsafe(`
+      SELECT COALESCE(SUM(outstanding), 0) AS totalOutstanding
+      FROM (
+        SELECT (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) AS outstanding
+        FROM ClinicPatient p
+        LEFT JOIN ClinicSession s ON s.patientId = p.id
+        ${whereSql}
+        GROUP BY p.id
+        HAVING (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) > 0
+      ) t
+    `, ...searchArgs);
+    const rows = await prisma2.$queryRawUnsafe(`
+      SELECT
+        p.id,
+        p.name,
+        p.phone,
+        COALESCE(SUM(s.amountCharged), 0) AS totalCharged,
+        COALESCE(SUM(s.amountPaid), 0) AS totalPaid,
+        (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) AS outstanding
+      FROM ClinicPatient p
+      LEFT JOIN ClinicSession s ON s.patientId = p.id
+      ${whereSql}
+      GROUP BY p.id
+      HAVING (COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0)) > 0
+      ORDER BY outstanding DESC, p.name ASC
+      LIMIT ? OFFSET ?
+    `, ...searchArgs, take, skip);
+    const data = rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      phone: r.phone ?? "",
+      finance: {
+        totalCharged: Number(r.totalCharged) || 0,
+        totalPaid: Number(r.totalPaid) || 0,
+        outstanding: Number(r.outstanding) || 0
+      }
+    }));
+    const total = Number(countRows?.[0]?.total ?? 0);
+    const totalOutstanding = Number(totalOutstandingRows?.[0]?.totalOutstanding ?? 0);
+    return {
+      data,
+      total,
+      totalOutstanding,
+      hasMore: skip + data.length < total
+    };
+  });
+  ipcMain.handle("clinic:patients:searchLite", async (_e, query) => {
+    const trimmed = (query ?? "").trim();
+    if (!trimmed)
+      return [];
+    return prisma2.clinicPatient.findMany({
+      where: {
+        OR: [
+          { name: { contains: trimmed } },
+          { phone: { contains: trimmed } },
+          { nationalId: { contains: trimmed } },
+          { folderNumber: { contains: trimmed } }
+        ]
+      },
+      select: { id: true, name: true, phone: true, dateOfBirth: true, folderNumber: true },
+      orderBy: { name: "asc" },
+      take: 10
+    });
+  });
+  ipcMain.handle("clinic:patients:getById", async (_e, id) => {
+    return prisma2.clinicPatient.findUnique({
+      where: { id },
+      include: {
+        sessions: {
+          orderBy: { visitDate: "desc" },
+          include: {
+            prescriptions: { orderBy: { createdAt: "asc" } }
+          }
+        }
+      }
+    });
+  });
+  ipcMain.handle("clinic:patients:create", async (_e, data) => {
+    if (data.phone) {
+      const existing = await prisma2.clinicPatient.findFirst({ where: { phone: data.phone } });
+      if (existing) {
+        throw new Error(`A patient with phone ${data.phone} already exists (${existing.name}).`);
+      }
+    }
+    return prisma2.clinicPatient.create({ data });
+  });
+  ipcMain.handle("clinic:patients:update", async (_e, { id, data }) => {
+    return prisma2.clinicPatient.update({ where: { id }, data });
+  });
+  ipcMain.handle("clinic:patients:delete", async (_e, id) => {
+    await prisma2.clinicPatient.delete({ where: { id } });
+    return { success: true };
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/sessions.ts
+init_electron_node();
+function registerSessionHandlers(prisma2) {
+  ipcMain.handle(
+    "clinic:sessions:getRecent",
+    async (_e, params) => {
+      const now = /* @__PURE__ */ new Date();
+      let dateFrom;
+      let dateTo;
+      if (params?.startDate) {
+        dateFrom = new Date(params.startDate);
+      } else if (params?.filter === "today") {
+        const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate();
+        dateFrom = new Date(y, mo, d, 0, 0, 0, 0);
+        dateTo = new Date(y, mo, d, 23, 59, 59, 999);
+      } else if (params?.filter === "week") {
+        dateFrom = new Date(now);
+        dateFrom.setDate(now.getDate() - 7);
+      } else if (params?.filter === "month") {
+        dateFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+      if (params?.endDate)
+        dateTo = new Date(params.endDate);
+      const where = {};
+      if (params?.patientId)
+        where.patientId = params.patientId;
+      if (dateFrom || dateTo) {
+        where.visitDate = {};
+        if (dateFrom)
+          where.visitDate.gte = dateFrom;
+        if (dateTo)
+          where.visitDate.lte = dateTo;
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.clinicSession.count({ where });
+      const data = await prisma2.clinicSession.findMany({
+        where,
+        include: {
+          patient: { select: { id: true, name: true, phone: true, bloodType: true } },
+          prescriptions: { orderBy: { createdAt: "asc" } },
+          sessionMaterials: { include: { material: true }, orderBy: { createdAt: "asc" } }
+        },
+        orderBy: { visitDate: "desc" },
+        skip,
+        take
+      });
+      return {
+        data,
+        total,
+        hasMore: skip + take < total
+      };
+    }
+  );
+  ipcMain.handle("clinic:sessions:create", async (_e, data) => {
+    const { prescriptions, ...sessionData } = data;
+    return prisma2.clinicSession.create({
+      data: {
+        ...sessionData,
+        prescriptions: prescriptions?.length ? { create: prescriptions } : void 0
+      },
+      include: {
+        prescriptions: true,
+        sessionMaterials: { include: { material: true }, orderBy: { createdAt: "asc" } },
+        patient: { select: { id: true, name: true } }
+      }
+    });
+  });
+  ipcMain.handle("clinic:sessions:update", async (_e, { id, data }) => {
+    const { prescriptions, ...sessionData } = data;
+    return prisma2.$transaction(async (tx) => {
+      await tx.clinicPrescription.deleteMany({ where: { sessionId: id } });
+      return tx.clinicSession.update({
+        where: { id },
+        data: {
+          ...sessionData,
+          prescriptions: prescriptions?.length ? { create: prescriptions } : void 0
+        },
+        include: {
+          prescriptions: true,
+          sessionMaterials: { include: { material: true }, orderBy: { createdAt: "asc" } },
+          patient: { select: { id: true, name: true } }
+        }
+      });
+    });
+  });
+  ipcMain.handle("clinic:sessions:delete", async (_e, id) => {
+    await prisma2.clinicSession.delete({ where: { id } });
+    return { success: true };
+  });
+  ipcMain.handle("clinic:prescriptions:update", async (_e, { id, data }) => {
+    return prisma2.clinicPrescription.update({
+      where: { id },
+      data
+    });
+  });
+  ipcMain.handle("clinic:prescriptions:setActive", async (_e, { id, isActive }) => {
+    return prisma2.clinicPrescription.update({
+      where: { id },
+      data: isActive ? { isActive: true, stoppedAt: null, stopReason: null } : { isActive: false, stoppedAt: /* @__PURE__ */ new Date(), stopReason: "other" }
+    });
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/stats.ts
+init_electron_node();
+function registerStatsHandlers(prisma2) {
+  ipcMain.handle("clinic:stats:overview", async () => {
+    const now = /* @__PURE__ */ new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+    const [totalPatients, sessionsThisMonth, newPatientsThisMonth, followUpsDue, todaySessions, financeSummary] = await Promise.all([
+      prisma2.clinicPatient.count(),
+      prisma2.clinicSession.count({ where: { visitDate: { gte: monthStart } } }),
+      prisma2.clinicPatient.count({ where: { createdAt: { gte: monthStart } } }),
+      prisma2.clinicSession.count({
+        where: {
+          followUpDate: { gte: todayStart, lt: todayEnd },
+          status: "completed"
+        }
+      }),
+      prisma2.clinicSession.count({ where: { visitDate: { gte: todayStart, lt: todayEnd } } }),
+      prisma2.clinicSession.aggregate({
+        _sum: { amountCharged: true, amountPaid: true },
+        where: { visitDate: { gte: monthStart } }
+      })
+    ]);
+    const revenueThisMonth = financeSummary._sum.amountPaid ?? 0;
+    const outstandingThisMonth = (financeSummary._sum.amountCharged ?? 0) - revenueThisMonth;
+    return { totalPatients, sessionsThisMonth, newPatientsThisMonth, followUpsDue, todaySessions, revenueThisMonth, outstandingThisMonth };
+  });
+  ipcMain.handle("clinic:stats:topDiagnoses", async (_e, limit = 10) => {
+    const groups = await prisma2.clinicSession.groupBy({
+      by: ["diagnosis"],
+      where: { diagnosis: { not: null } },
+      _count: { diagnosis: true },
+      orderBy: { _count: { diagnosis: "desc" } },
+      take: limit
+    });
+    return groups.map((g) => ({ diagnosis: g.diagnosis, count: g._count.diagnosis }));
+  });
+  ipcMain.handle("clinic:stats:visitTrend", async (_e, days = 30) => {
+    const from = /* @__PURE__ */ new Date();
+    from.setDate(from.getDate() - (days - 1));
+    from.setHours(0, 0, 0, 0);
+    const sessions2 = await prisma2.clinicSession.findMany({
+      where: { visitDate: { gte: from } },
+      select: { visitDate: true }
+    });
+    const map = {};
+    for (let i = 0; i < days; i++) {
+      const d = new Date(from);
+      d.setDate(from.getDate() + i);
+      map[d.toISOString().slice(0, 10)] = 0;
+    }
+    for (const s of sessions2) {
+      const key = new Date(s.visitDate).toISOString().slice(0, 10);
+      if (key in map)
+        map[key]++;
+    }
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([date, count]) => ({ date, count }));
+  });
+  ipcMain.handle("clinic:stats:patientStats", async (_e, patientId) => {
+    const sessions2 = await prisma2.clinicSession.findMany({
+      where: { patientId },
+      select: { visitDate: true, diagnosis: true, followUpDate: true, status: true, amountCharged: true, amountPaid: true, paymentStatus: true, visitType: true },
+      orderBy: { visitDate: "asc" }
+    });
+    if (sessions2.length === 0) {
+      return { totalSessions: 0, firstVisit: null, lastVisit: null, topDiagnosis: null, nextFollowUp: null, totalCharged: 0, totalPaid: 0, outstanding: 0 };
+    }
+    const counts = {};
+    for (const s of sessions2) {
+      if (s.diagnosis)
+        counts[s.diagnosis] = (counts[s.diagnosis] ?? 0) + 1;
+    }
+    const topDiagnosis = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+    const future = sessions2.filter((s) => s.followUpDate && new Date(s.followUpDate) >= /* @__PURE__ */ new Date()).sort((a, b) => new Date(a.followUpDate).getTime() - new Date(b.followUpDate).getTime());
+    const totalCharged = sessions2.reduce((sum, s) => sum + (s.amountCharged ?? 0), 0);
+    const totalPaid = sessions2.reduce((sum, s) => sum + (s.amountPaid ?? 0), 0);
+    return {
+      totalSessions: sessions2.length,
+      firstVisit: sessions2[0].visitDate,
+      lastVisit: sessions2[sessions2.length - 1].visitDate,
+      topDiagnosis,
+      nextFollowUp: future[0]?.followUpDate ?? null,
+      totalCharged,
+      totalPaid,
+      outstanding: totalCharged - totalPaid
+    };
+  });
+  ipcMain.handle("clinic:stats:fullTrend", async (_e, days = 30) => {
+    const from = /* @__PURE__ */ new Date();
+    from.setDate(from.getDate() - (days - 1));
+    from.setHours(0, 0, 0, 0);
+    const sessions2 = await prisma2.clinicSession.findMany({
+      where: { visitDate: { gte: from } },
+      select: { visitDate: true, amountCharged: true, amountPaid: true }
+    });
+    const map = {};
+    for (let i = 0; i < days; i++) {
+      const d = new Date(from);
+      d.setDate(from.getDate() + i);
+      map[d.toISOString().slice(0, 10)] = { sessions: 0, charged: 0, paid: 0 };
+    }
+    for (const s of sessions2) {
+      const key = new Date(s.visitDate).toISOString().slice(0, 10);
+      if (key in map) {
+        map[key].sessions++;
+        map[key].charged += s.amountCharged ?? 0;
+        map[key].paid += s.amountPaid ?? 0;
+      }
+    }
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([date, v]) => ({ date, ...v }));
+  });
+  ipcMain.handle("clinic:stats:monthlyTrend", async (_e, months = 6) => {
+    const now = /* @__PURE__ */ new Date();
+    const from = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+    const sessions2 = await prisma2.clinicSession.findMany({
+      where: { visitDate: { gte: from } },
+      select: { visitDate: true, amountPaid: true }
+    });
+    const map = {};
+    for (let i = 0; i < months; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - (months - 1) + i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      map[key] = { sessions: 0, revenue: 0 };
+    }
+    for (const s of sessions2) {
+      const d = new Date(s.visitDate);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      if (key in map) {
+        map[key].sessions++;
+        map[key].revenue += s.amountPaid ?? 0;
+      }
+    }
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({
+      month: monthNames[parseInt(month.split("-")[1]) - 1],
+      ...v
+    }));
+  });
+  ipcMain.handle("clinic:stats:breakdowns", async () => {
+    const [vtGroups, psGroups] = await Promise.all([
+      prisma2.clinicSession.groupBy({
+        by: ["visitType"],
+        _count: { visitType: true }
+      }),
+      prisma2.clinicSession.groupBy({
+        by: ["paymentStatus"],
+        _count: { paymentStatus: true }
+      })
+    ]);
+    return {
+      visitTypes: vtGroups.map((g) => ({ type: g.visitType, count: g._count.visitType })),
+      paymentStatuses: psGroups.map((g) => ({ status: g.paymentStatus, count: g._count.paymentStatus }))
+    };
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/checkResults.ts
+init_electron_node();
+var fs7 = __toESM(require("fs"));
+var path10 = __toESM(require("path"));
+var log65 = createLogger("ClinicCheckResults");
+function getCheckResultsDir() {
+  const isDev2 = process.env.NODE_ENV === "development";
+  const base = isDev2 ? path10.resolve(process.cwd(), "prisma", "clinic-results") : path10.join(app.getPath("userData"), "clinic-results");
+  if (!fs7.existsSync(base))
+    fs7.mkdirSync(base, { recursive: true });
+  return base;
+}
+function registerCheckResultHandlers(prisma2) {
+  ipcMain.handle("clinic:checkResults:getByPatient", async (_e, patientId) => {
+    return prisma2.clinicCheckResult.findMany({
+      where: { patientId },
+      orderBy: { resultDate: "desc" }
+    });
+  });
+  ipcMain.handle("clinic:checkResults:upload", async (_e, data) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: "Select Check Result (PDF)",
+      filters: [
+        { name: "PDF Documents", extensions: ["pdf"] },
+        { name: "All Files", extensions: ["*"] }
+      ],
+      properties: ["openFile"]
+    });
+    if (canceled || filePaths.length === 0)
+      return null;
+    const srcPath = filePaths[0];
+    const originalName = path10.basename(srcPath);
+    const ext = path10.extname(originalName);
+    const timestamp = Date.now();
+    const destName = `${data.patientId}_${timestamp}${ext}`;
+    const destDir = path10.join(getCheckResultsDir(), data.patientId);
+    if (!fs7.existsSync(destDir))
+      fs7.mkdirSync(destDir, { recursive: true });
+    const destPath = path10.join(destDir, destName);
+    try {
+      fs7.copyFileSync(srcPath, destPath);
+      const stats = fs7.statSync(destPath);
+      return prisma2.clinicCheckResult.create({
+        data: {
+          patientId: data.patientId,
+          title: data.title,
+          description: data.description ?? null,
+          fileName: originalName,
+          filePath: destPath,
+          fileSize: stats.size,
+          resultDate: data.resultDate ? new Date(data.resultDate) : /* @__PURE__ */ new Date()
+        }
+      });
+    } catch (err) {
+      log65.error("Failed to copy check result file:", err);
+      throw new Error("Failed to save file");
+    }
+  });
+  ipcMain.handle("clinic:checkResults:getBuffer", async (_e, filePath) => {
+    const baseDir = path10.resolve(getCheckResultsDir());
+    const resolved = path10.resolve(filePath);
+    const rel = path10.relative(baseDir, resolved);
+    if (rel.startsWith("..") || path10.isAbsolute(rel)) {
+      throw new Error("Access denied: file is outside results directory");
+    }
+    if (!fs7.existsSync(resolved))
+      return null;
+    return fs7.readFileSync(resolved).toString("base64");
+  });
+  ipcMain.handle("clinic:checkResults:open", async (_e, id) => {
+    const record = await prisma2.clinicCheckResult.findUnique({ where: { id } });
+    if (!record?.filePath)
+      throw new Error("Check result not found");
+    const baseDir = path10.resolve(getCheckResultsDir());
+    const resolved = path10.resolve(record.filePath);
+    const rel = path10.relative(baseDir, resolved);
+    if (rel.startsWith("..") || path10.isAbsolute(rel)) {
+      throw new Error("Access denied: file is outside results directory");
+    }
+    if (!fs7.existsSync(resolved))
+      throw new Error("File not found");
+    await shell.openPath(resolved);
+    return true;
+  });
+  ipcMain.handle("clinic:checkResults:delete", async (_e, id) => {
+    const result = await prisma2.clinicCheckResult.findUnique({ where: { id } });
+    if (!result)
+      return false;
+    try {
+      if (result.filePath && fs7.existsSync(result.filePath)) {
+        fs7.unlinkSync(result.filePath);
+      }
+    } catch (err) {
+      log65.warn("Could not delete file from disk:", err);
+    }
+    await prisma2.clinicCheckResult.delete({ where: { id } });
+    return true;
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/appointments.ts
+init_electron_node();
+var log66 = createLogger("Clinic:Appointments");
+function registerAppointmentHandlers(prisma2) {
+  ipcMain.handle("clinic:appointments:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.patientId)
+        where.patientId = params.patientId;
+      if (params?.status)
+        where.status = params.status;
+      if (params?.type)
+        where.type = params.type;
+      if (params?.date) {
+        const d = /* @__PURE__ */ new Date(params.date + "T00:00:00");
+        const end = /* @__PURE__ */ new Date(params.date + "T23:59:59.999");
+        where.appointmentDate = { gte: d, lte: end };
+      } else if (params?.from || params?.to) {
+        where.appointmentDate = {};
+        if (params.from)
+          where.appointmentDate.gte = new Date(params.from);
+        if (params.to)
+          where.appointmentDate.lte = new Date(params.to);
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.clinicAppointment.count({ where });
+      const data = await prisma2.clinicAppointment.findMany({
+        where,
+        include: { patient: { select: { id: true, name: true, phone: true, bloodType: true } } },
+        orderBy: { appointmentDate: "asc" },
+        skip,
+        take
+      });
+      return {
+        data,
+        total,
+        hasMore: skip + take < total
+      };
+    } catch (err) {
+      log66.error("getAll error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:appointments:getToday", async () => {
+    try {
+      const today = /* @__PURE__ */ new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      return await prisma2.clinicAppointment.findMany({
+        where: { appointmentDate: { gte: today, lt: tomorrow } },
+        include: { patient: { select: { id: true, name: true, phone: true } } },
+        orderBy: { appointmentDate: "asc" }
+      });
+    } catch (err) {
+      log66.error("getToday error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:appointments:getUpcoming", async (_e, days = 7) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const end = new Date(now);
+      end.setDate(now.getDate() + days);
+      return await prisma2.clinicAppointment.findMany({
+        where: { appointmentDate: { gte: now, lte: end }, status: { in: ["scheduled", "confirmed"] } },
+        include: { patient: { select: { id: true, name: true, phone: true } } },
+        orderBy: { appointmentDate: "asc" }
+      });
+    } catch (err) {
+      log66.error("getUpcoming error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:appointments:getFollowUpReminders", async () => {
+    try {
+      const today = /* @__PURE__ */ new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      const [todayFU, overdueFU] = await Promise.all([
+        prisma2.clinicSession.findMany({
+          where: { followUpDate: { gte: today, lt: tomorrow }, status: { not: "completed" } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "asc" }
+        }),
+        prisma2.clinicSession.findMany({
+          where: { followUpDate: { gte: weekAgo, lt: today }, status: { not: "completed" } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "desc" },
+          take: 15
+        })
+      ]);
+      return { today: todayFU, overdue: overdueFU };
+    } catch (err) {
+      log66.error("getFollowUpReminders error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:appointments:getAllFollowUps", async (_e, params) => {
+    try {
+      const today = /* @__PURE__ */ new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const base = { followUpDate: { not: null } };
+      if (params?.filter === "today") {
+        return await prisma2.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: today, lt: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "asc" }
+        });
+      }
+      if (params?.filter === "overdue") {
+        return await prisma2.clinicSession.findMany({
+          where: { ...base, followUpDate: { lt: today } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "asc" },
+          take: 500
+        });
+      }
+      if (params?.filter === "upcoming") {
+        return await prisma2.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "asc" },
+          take: 500
+        });
+      }
+      const [overdue, dueToday, upcoming] = await Promise.all([
+        prisma2.clinicSession.findMany({
+          where: { ...base, followUpDate: { lt: today } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "asc" },
+          take: 200
+        }),
+        prisma2.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: today, lt: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "asc" }
+        }),
+        prisma2.clinicSession.findMany({
+          where: { ...base, followUpDate: { gte: tomorrow } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { followUpDate: "asc" },
+          take: 300
+        })
+      ]);
+      return [...overdue, ...dueToday, ...upcoming];
+    } catch (err) {
+      log66.error("getAllFollowUps error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:sessions:clearFollowUp", async (_e, sessionId) => {
+    try {
+      return await prisma2.clinicSession.update({
+        where: { id: sessionId },
+        data: { followUpDate: null }
+      });
+    } catch (err) {
+      log66.error("clearFollowUp error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:appointments:create", async (_e, data) => {
+    try {
+      return await prisma2.clinicAppointment.create({
+        data: { ...data, appointmentDate: new Date(data.appointmentDate) },
+        include: { patient: { select: { id: true, name: true, phone: true } } }
+      });
+    } catch (err) {
+      log66.error("create error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:appointments:update", async (_e, { id, data }) => {
+    try {
+      const d = { ...data };
+      if (d.appointmentDate)
+        d.appointmentDate = new Date(d.appointmentDate);
+      return await prisma2.clinicAppointment.update({
+        where: { id },
+        data: d,
+        include: { patient: { select: { id: true, name: true, phone: true } } }
+      });
+    } catch (err) {
+      log66.error("update error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:appointments:delete", async (_e, id) => {
+    try {
+      await prisma2.clinicAppointment.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log66.error("delete error", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/pdf.ts
+init_electron_node();
+var path11 = __toESM(require("path"));
+var fs8 = __toESM(require("fs"));
+var os4 = __toESM(require("os"));
+var log67 = createLogger("Clinic:PDF");
+function esc(s) {
+  if (!s)
+    return "\u2013";
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+function fmtDate(date, opts) {
+  if (!date)
+    return "\u2013";
+  try {
+    return new Date(date).toLocaleDateString("en", opts ?? { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return "\u2013";
+  }
+}
+function buildHtml(data) {
+  const { patient, sessions: sessions2, stats, checkResults, exportDate } = data;
+  const formatVitals = (raw) => {
+    if (!raw)
+      return "";
+    try {
+      const v = JSON.parse(raw);
+      return Object.entries(v).filter(([, val]) => val).map(([k, val]) => `${k.toUpperCase()}: ${esc(String(val))}`).join(" &nbsp;\xB7&nbsp; ");
+    } catch {
+      return "";
+    }
+  };
+  const sessionsHtml = sessions2.map((s, i) => {
+    const vitalsStr = formatVitals(s.vitals);
+    const rxRows = (s.prescriptions ?? []).map((rx) => `
+      <tr>
+        <td>${esc(rx.medicineName)}</td>
+        <td>${esc(rx.dosage)}</td>
+        <td>${esc(rx.frequency)}</td>
+        <td>${esc(rx.duration)}</td>
+      </tr>`).join("");
+    return `
+    <div class="session">
+      <div class="session-header">
+        <span class="snum">#${i + 1}</span>
+        <span class="sdate">${fmtDate(s.visitDate)}</span>
+        <span class="badge vt-${esc(s.visitType)}">${esc(s.visitType).replace("_", " ")}</span>
+        ${s.doctorName ? `<span class="doctor">Dr. ${esc(s.doctorName)}</span>` : ""}
+        <span class="pay-badge pay-${esc(s.paymentStatus)}">${esc(s.paymentStatus)}</span>
+      </div>
+      <div class="session-body">
+        <p class="row"><strong>Chief Complaint:</strong> ${esc(s.chiefComplaint)}</p>
+        ${s.diagnosis ? `<p class="row"><strong>Diagnosis:</strong> ${esc(s.diagnosis)}</p>` : ""}
+        ${s.notes ? `<p class="row"><strong>Notes:</strong> ${esc(s.notes)}</p>` : ""}
+        ${vitalsStr ? `<p class="row"><strong>Vitals:</strong> ${vitalsStr}</p>` : ""}
+        ${s.followUpDate ? `<p class="row"><strong>Follow-up:</strong> ${fmtDate(s.followUpDate)}</p>` : ""}
+        ${s.amountCharged ? `<p class="row"><strong>Charged:</strong> ${Number(s.amountCharged).toFixed(2)} &nbsp;|&nbsp; <strong>Paid:</strong> ${Number(s.amountPaid ?? 0).toFixed(2)}</p>` : ""}
+        ${rxRows ? `
+          <div class="prescriptions">
+            <p class="rx-title">Prescriptions</p>
+            <table><thead><tr><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Duration</th></tr></thead>
+            <tbody>${rxRows}</tbody></table>
+          </div>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+  const checkResultsHtml = checkResults.length > 0 ? `
+    <div class="section">
+      <h2>Check Results (${checkResults.length})</h2>
+      <table><thead><tr><th>Title</th><th>Date</th><th>File</th><th>Notes</th></tr></thead>
+      <tbody>${checkResults.map((r) => `<tr>
+        <td>${esc(r.title)}</td>
+        <td>${fmtDate(r.resultDate, { year: "numeric", month: "short", day: "numeric" })}</td>
+        <td>${esc(r.fileName)}</td>
+        <td>${esc(r.description)}</td>
+      </tr>`).join("")}</tbody></table>
+    </div>` : "";
+  const age = patient.dateOfBirth ? `${Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1e3))} years` : "\u2013";
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:12px;color:#1e293b;line-height:1.5}
+.header{background:linear-gradient(135deg,#0d9488,#059669);color:white;padding:22px 30px}
+.header h1{font-size:21px;font-weight:700;margin-bottom:3px}
+.header .sub{font-size:11px;opacity:.85}
+.patient-info{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:16px 30px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.info-item label{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:700}
+.info-item p{font-size:12px;font-weight:500;color:#1e293b;margin-top:2px}
+.allergy p{color:#dc2626!important;font-weight:700!important}
+.stats-row{display:flex;gap:10px;padding:12px 30px;background:white;border-bottom:1px solid #e2e8f0}
+.stat{flex:1;text-align:center;padding:8px;border-radius:8px;background:#f1f5f9}
+.stat .val{font-size:18px;font-weight:700;color:#0d9488}
+.stat .lbl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.05em}
+.section{padding:16px 30px}
+.section h2{font-size:13px;font-weight:700;color:#334155;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #0d9488}
+.session{margin-bottom:12px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;page-break-inside:avoid}
+.session-header{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;flex-wrap:wrap}
+.snum{font-size:10px;font-weight:700;color:#94a3b8;min-width:18px}
+.sdate{font-weight:600;font-size:12px;color:#1e293b}
+.badge{font-size:9px;padding:2px 7px;border-radius:99px;font-weight:600;text-transform:capitalize}
+.vt-first_visit{background:#ede9fe;color:#7c3aed}
+.vt-follow_up{background:#e0f2fe;color:#0369a1}
+.vt-routine{background:#ccfbf1;color:#0f766e}
+.vt-emergency{background:#fee2e2;color:#dc2626}
+.doctor{font-size:10px;color:#64748b}
+.pay-badge{font-size:9px;padding:2px 7px;border-radius:99px;font-weight:600;margin-left:auto}
+.pay-paid{background:#dcfce7;color:#15803d}
+.pay-partial{background:#fef9c3;color:#a16207}
+.pay-unpaid{background:#fee2e2;color:#dc2626}
+.pay-waived{background:#f1f5f9;color:#64748b}
+.session-body{padding:9px 12px}
+.row{margin-bottom:4px;font-size:11px;color:#334155}
+.row strong{color:#1e293b}
+.prescriptions{margin-top:8px}
+.rx-title{font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
+table{width:100%;border-collapse:collapse;margin-top:6px;font-size:11px}
+th{background:#f1f5f9;text-align:left;padding:5px 9px;font-weight:700;color:#475569;border:1px solid #e2e8f0}
+td{padding:4px 9px;border:1px solid #e2e8f0;color:#334155}
+tr:nth-child(even) td{background:#f8fafc}
+.footer{padding:10px 30px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.session{page-break-inside:avoid}}
+</style>
+</head><body>
+<div class="header">
+  <h1>Medical Record \u2014 ${esc(patient.name)}</h1>
+  <p class="sub">Generated ${esc(exportDate)} &nbsp;\xB7&nbsp; BizFlow Clinic Management</p>
+</div>
+<div class="patient-info">
+  <div class="info-item"><label>Phone</label><p>${esc(patient.phone)}</p></div>
+  <div class="info-item"><label>Date of Birth</label><p>${fmtDate(patient.dateOfBirth)}</p></div>
+  <div class="info-item"><label>Age</label><p>${age}</p></div>
+  <div class="info-item"><label>Gender</label><p>${esc(patient.gender)}</p></div>
+  <div class="info-item"><label>Blood Type</label><p>${esc(patient.bloodType)}</p></div>
+  <div class="info-item"><label>National ID</label><p>${esc(patient.nationalId)}</p></div>
+  <div class="info-item"><label>Email</label><p>${esc(patient.email)}</p></div>
+  <div class="info-item" style="grid-column:1/-1"><label>Address</label><p>${esc(patient.address)}</p></div>
+  ${patient.allergies ? `<div class="info-item allergy" style="grid-column:1/-1"><label>\u26A0 Allergies / Alerts</label><p>${esc(patient.allergies)}</p></div>` : ""}
+  ${patient.medicalNotes ? `<div class="info-item" style="grid-column:1/-1"><label>Medical Notes</label><p>${esc(patient.medicalNotes)}</p></div>` : ""}
+</div>
+<div class="stats-row">
+  <div class="stat"><div class="val">${stats?.totalSessions ?? sessions2.length}</div><div class="lbl">Total Visits</div></div>
+  <div class="stat"><div class="val">${stats?.totalCharged != null ? Number(stats.totalCharged).toFixed(0) : "\u2013"}</div><div class="lbl">Total Charged</div></div>
+  <div class="stat"><div class="val">${stats?.totalPaid != null ? Number(stats.totalPaid).toFixed(0) : "\u2013"}</div><div class="lbl">Total Paid</div></div>
+  <div class="stat" style="${(stats?.outstanding ?? 0) > 0 ? "color:#dc2626" : ""}"><div class="val" style="${(stats?.outstanding ?? 0) > 0 ? "color:#dc2626" : ""}">${stats?.outstanding != null ? Number(stats.outstanding).toFixed(0) : "0"}</div><div class="lbl">Outstanding</div></div>
+  <div class="stat"><div class="val">${checkResults.length}</div><div class="lbl">Check Results</div></div>
+</div>
+${sessions2.length > 0 ? `<div class="section"><h2>Session History (${sessions2.length} visits)</h2>${sessionsHtml}</div>` : ""}
+${checkResultsHtml}
+<div class="footer">
+  <span>Patient ID: ${esc(patient.id)}</span>
+  <span>BizFlow Clinic &nbsp;\xB7&nbsp; ${esc(exportDate)}</span>
+</div>
+</body></html>`;
+}
+function registerClinicPdfHandlers() {
+  ipcMain.handle("clinic:patients:exportPdf", async (_e, data) => {
+    try {
+      const exportDate = (/* @__PURE__ */ new Date()).toLocaleDateString("en", { year: "numeric", month: "long", day: "numeric" });
+      const html = buildHtml({ ...data, exportDate });
+      const safeName = data.patient.name.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_").slice(0, 50);
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: "Export Patient Medical Record",
+        defaultPath: path11.join(app.getPath("documents"), `${safeName}_medical_record.pdf`),
+        filters: [{ name: "PDF Documents", extensions: ["pdf"] }]
+      });
+      if (canceled || !filePath)
+        return null;
+      const win = new BrowserWindow({
+        width: 900,
+        height: 1200,
+        show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, javascript: false }
+      });
+      const tmpFile = path11.join(os4.tmpdir(), `bizflow_report_${Date.now()}.html`);
+      fs8.writeFileSync(tmpFile, html, "utf-8");
+      await win.loadFile(tmpFile);
+      const pdfBuffer = await win.webContents.printToPDF({
+        landscape: false,
+        pageSize: "A4",
+        printBackground: true,
+        marginsType: 0
+      });
+      win.destroy();
+      try {
+        fs8.unlinkSync(tmpFile);
+      } catch {
+      }
+      fs8.writeFileSync(filePath, pdfBuffer);
+      shell.openPath(filePath);
+      return { filePath, success: true };
+    } catch (err) {
+      log67.error("exportPdf error:", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/expenses.ts
+init_electron_node();
+var log68 = createLogger("Clinic:Expenses");
+function getPeriodRange(period) {
+  const now = /* @__PURE__ */ new Date();
+  const start = new Date(now);
+  switch (period) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "week": {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      start.setDate(now.getDate() - dow);
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+    case "month":
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "year":
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    default:
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+  }
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return { start, end };
+}
+function buildBuckets(period, rangeStart) {
+  switch (period) {
+    case "today": {
+      const labels = Array.from({ length: 24 }, (_, h) => String(h).padStart(2, "0"));
+      return { labels, keyOf: (d) => String(d.getHours()).padStart(2, "0") };
+    }
+    case "week": {
+      const DAY_ABBR = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+      const labels = DAY_ABBR;
+      return {
+        labels,
+        keyOf: (d) => {
+          const diff = Math.floor((d.getTime() - rangeStart.getTime()) / 864e5);
+          return DAY_ABBR[Math.max(0, Math.min(6, diff))];
+        }
+      };
+    }
+    case "year": {
+      const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return { labels: MONTH_ABBR, keyOf: (d) => MONTH_ABBR[d.getMonth()] };
+    }
+    default: {
+      const daysInMonth = new Date(rangeStart.getFullYear(), rangeStart.getMonth() + 1, 0).getDate();
+      const labels = Array.from({ length: daysInMonth }, (_, i) => String(i + 1));
+      return { labels, keyOf: (d) => String(d.getDate()) };
+    }
+  }
+}
+function registerExpenseHandlers(prisma2) {
+  ipcMain.handle("clinic:expenses:getAll", async (_, params) => {
+    try {
+      if (!prisma2)
+        return [];
+      const where = {};
+      if (params?.period && params.period !== "all") {
+        const { start, end } = getPeriodRange(params.period);
+        where.date = { gte: start, lt: end };
+      }
+      if (params?.category && params.category !== "all") {
+        where.category = params.category;
+      }
+      return await prisma2.clinicExpense.findMany({ where, orderBy: { date: "desc" } });
+    } catch (error) {
+      log68.error("Error fetching expenses:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:expenses:summary", async (_, period = "month") => {
+    try {
+      if (!prisma2)
+        return { revenue: 0, totalExpenses: 0, netIncome: 0, outstanding: 0, byCategory: [] };
+      const { start, end } = getPeriodRange(period);
+      const [expenseRows, revAgg, salaryRows] = await Promise.all([
+        prisma2.clinicExpense.findMany({
+          where: { date: { gte: start, lt: end } },
+          select: { category: true, amount: true }
+        }),
+        prisma2.clinicSession.aggregate({
+          _sum: { amountCharged: true, amountPaid: true },
+          where: { visitDate: { gte: start, lt: end } }
+        }),
+        // Salary records don't have a date field — they use month+year integers.
+        // Map the requested period to the appropriate month/year filter so that
+        // paid/pending salary costs are included in the expense totals.
+        (() => {
+          const now = /* @__PURE__ */ new Date();
+          const salWhere = {};
+          if (period === "year") {
+            salWhere.year = now.getFullYear();
+          } else {
+            salWhere.month = now.getMonth() + 1;
+            salWhere.year = now.getFullYear();
+          }
+          return prisma2.clinicSalaryRecord.findMany({
+            where: salWhere,
+            select: { netPay: true }
+          });
+        })()
+      ]);
+      const expenseTotal = expenseRows.reduce((s, e) => s + e.amount, 0);
+      const totalSalaries = salaryRows.reduce((s, r) => s + (r.netPay ?? 0), 0);
+      const totalExpenses = expenseTotal + totalSalaries;
+      const categoryMap = {};
+      for (const e of expenseRows) {
+        categoryMap[e.category] = (categoryMap[e.category] ?? 0) + e.amount;
+      }
+      if (totalSalaries > 0) {
+        categoryMap["salaries_payroll"] = (categoryMap["salaries_payroll"] ?? 0) + totalSalaries;
+      }
+      const byCategory = Object.entries(categoryMap).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total);
+      const revenue = revAgg._sum.amountPaid ?? 0;
+      const outstanding = (revAgg._sum.amountCharged ?? 0) - revenue;
+      const netIncome = revenue - totalExpenses;
+      return { revenue, totalExpenses, totalSalaries, netIncome, outstanding, byCategory };
+    } catch (error) {
+      log68.error("Error building expense summary:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:expenses:breakdown", async (_, params) => {
+    try {
+      if (!prisma2)
+        return [];
+      const period = params?.period ?? "month";
+      const { start, end } = getPeriodRange(period);
+      const { labels, keyOf } = buildBuckets(period, start);
+      const where = { date: { gte: start, lt: end } };
+      if (params?.category && params.category !== "all") {
+        where.category = params.category;
+      }
+      const rows = await prisma2.clinicExpense.findMany({
+        where,
+        select: { date: true, amount: true }
+      });
+      const totals = {};
+      for (const row of rows) {
+        const key = keyOf(new Date(row.date));
+        totals[key] = (totals[key] ?? 0) + row.amount;
+      }
+      return labels.map((label) => ({ label, total: totals[label] ?? 0 }));
+    } catch (error) {
+      log68.error("Error building expense breakdown:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:expenses:create", async (_, data) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      return await prisma2.clinicExpense.create({ data });
+    } catch (error) {
+      log68.error("Error creating expense:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:expenses:update", async (_, { id, data }) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      return await prisma2.clinicExpense.update({ where: { id }, data });
+    } catch (error) {
+      log68.error("Error updating expense:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:expenses:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      await prisma2.clinicExpense.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log68.error("Error deleting expense:", error);
+      throw error;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/staff.ts
+init_electron_node();
+var log69 = createLogger("Clinic:Staff");
+function computeNetPay(staff, params) {
+  const {
+    regularHours = 0,
+    overtimeHours = 0,
+    overtimeMultiplier = staff.overtimeRate ?? 1.5,
+    doubleShiftCount = 0,
+    doubleShiftBonus = staff.doubleShiftRate ?? 0,
+    bonuses = 0,
+    deductions = 0
+  } = params;
+  let basePay = 0;
+  if (staff.salaryType === "monthly") {
+    basePay = staff.baseSalary ?? 0;
+  } else if (staff.salaryType === "hourly") {
+    basePay = regularHours * (staff.hourlyRate ?? 0);
+  } else if (staff.salaryType === "daily") {
+    basePay = regularHours * (staff.baseSalary ?? 0);
+  } else {
+    basePay = staff.baseSalary ?? 0;
+  }
+  const hourlyBase = staff.hourlyRate ?? staff.baseSalary / 160;
+  const overtimePay = overtimeHours * hourlyBase * overtimeMultiplier;
+  const doubleShiftPay = doubleShiftCount * doubleShiftBonus;
+  const grossPay = basePay + overtimePay + doubleShiftPay + bonuses;
+  const netPay = Math.max(0, grossPay - deductions);
+  return {
+    basePay: Math.round(basePay * 100) / 100,
+    overtimePay: Math.round(overtimePay * 100) / 100,
+    doubleShiftPay: Math.round(doubleShiftPay * 100) / 100,
+    bonuses: Math.round(bonuses * 100) / 100,
+    deductions: Math.round(deductions * 100) / 100,
+    grossPay: Math.round(grossPay * 100) / 100,
+    netPay: Math.round(netPay * 100) / 100
+  };
+}
+function registerClinicStaffHandlers(prisma2) {
+  ipcMain.handle("clinic:staff:getAll", async () => {
+    try {
+      if (!prisma2)
+        return [];
+      const staffList = await prisma2.clinicStaff.findMany({
+        orderBy: { createdAt: "desc" },
+        include: { _count: { select: { salaryRecords: true } } }
+      });
+      const linkedIds = staffList.map((s) => s.employeeId).filter(Boolean);
+      if (linkedIds.length > 0) {
+        const globalEmps = await prisma2.employee.findMany({
+          where: { id: { in: linkedIds } },
+          select: { id: true, name: true, department: true, role: true, status: true }
+        });
+        const empMap = {};
+        for (const e of globalEmps)
+          empMap[e.id] = e;
+        return staffList.map(
+          (s) => s.employeeId && empMap[s.employeeId] ? { ...s, linkedEmployee: empMap[s.employeeId] } : s
+        );
+      }
+      return staffList;
+    } catch (error) {
+      log69.error("Error fetching staff:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:create", async (_, data) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      return await prisma2.clinicStaff.create({ data });
+    } catch (error) {
+      log69.error("Error creating staff:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:update", async (_, { id, data }) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      return await prisma2.clinicStaff.update({ where: { id }, data });
+    } catch (error) {
+      log69.error("Error updating staff:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      await prisma2.clinicStaff.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log69.error("Error deleting staff:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:salary:getAll", async (_, params) => {
+    try {
+      if (!prisma2)
+        return [];
+      const where = {};
+      if (params?.staffId)
+        where.staffId = params.staffId;
+      if (params?.year)
+        where.year = params.year;
+      return await prisma2.clinicSalaryRecord.findMany({
+        where,
+        include: {
+          staff: { select: { id: true, name: true, role: true, employmentType: true, salaryType: true } }
+        },
+        orderBy: [{ year: "desc" }, { month: "desc" }]
+      });
+    } catch (error) {
+      log69.error("Error fetching salary records:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:salary:upsert", async (_, payload) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      const { staffId, month, year, ...rest } = payload;
+      if (rest.netPay === void 0 || rest.netPay === null) {
+        const staff = await prisma2.clinicStaff.findUnique({ where: { id: staffId } });
+        if (!staff)
+          throw new Error(`Staff ${staffId} not found`);
+        const breakdown = computeNetPay(staff, rest);
+        rest.netPay = breakdown.netPay;
+      }
+      return await prisma2.clinicSalaryRecord.upsert({
+        where: { staffId_month_year: { staffId, month, year } },
+        update: rest,
+        create: { staffId, month, year, ...rest }
+      });
+    } catch (error) {
+      log69.error("Error upserting salary record:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:salary:compute", async (_, { staffId, params }) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      const staff = await prisma2.clinicStaff.findUnique({ where: { id: staffId } });
+      if (!staff)
+        throw new Error(`Staff ${staffId} not found`);
+      return computeNetPay(staff, params);
+    } catch (error) {
+      log69.error("Error computing salary:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:salary:markPaid", async (_, id) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      return await prisma2.clinicSalaryRecord.update({
+        where: { id },
+        data: { status: "paid", paidDate: /* @__PURE__ */ new Date() }
+      });
+    } catch (error) {
+      log69.error("Error marking salary paid:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:salary:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      await prisma2.clinicSalaryRecord.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log69.error("Error deleting salary record:", error);
+      throw error;
+    }
+  });
+  ipcMain.handle("clinic:staff:salary:summary", async (_, year) => {
+    try {
+      if (!prisma2)
+        return [];
+      const targetYear = year ?? (/* @__PURE__ */ new Date()).getFullYear();
+      const records = await prisma2.clinicSalaryRecord.findMany({
+        where: { year: targetYear },
+        select: { month: true, netPay: true, status: true }
+      });
+      const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const buckets = MONTH_ABBR.map((label, i) => ({
+        month: i + 1,
+        label,
+        totalPaid: 0,
+        totalPending: 0,
+        headcount: 0
+      }));
+      for (const r of records) {
+        const b = buckets[r.month - 1];
+        if (!b)
+          continue;
+        b.headcount++;
+        if (r.status === "paid")
+          b.totalPaid += r.netPay;
+        else
+          b.totalPending += r.netPay;
+      }
+      return buckets.map((b) => ({
+        ...b,
+        totalPaid: Math.round(b.totalPaid * 100) / 100,
+        totalPending: Math.round(b.totalPending * 100) / 100
+      }));
+    } catch (error) {
+      log69.error("Error building salary summary:", error);
+      throw error;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/materials.ts
+init_electron_node();
+function matGetPeriodRange(period) {
+  const now = /* @__PURE__ */ new Date();
+  const start = new Date(now);
+  switch (period) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "week": {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      start.setDate(now.getDate() - dow);
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+    case "month":
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "year":
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    default:
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+  }
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return { start, end };
+}
+async function syncMaterialExpiry(tx, materialId) {
+  const batches = await tx.clinicMaterialBatch.findMany({
+    where: { materialId, isActive: true, expiryDate: { not: null } },
+    orderBy: { expiryDate: "asc" }
+  });
+  const nearestExpiry = batches[0]?.expiryDate ?? null;
+  await tx.clinicMaterial.update({
+    where: { id: materialId },
+    data: { expiryDate: nearestExpiry }
+  });
+}
+function registerMaterialHandlers(prisma2) {
+  ipcMain.handle("clinic:materialCategories:getAll", async () => {
+    return prisma2.clinicMaterialCategory.findMany({
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+    });
+  });
+  ipcMain.handle(
+    "clinic:materialCategories:create",
+    async (_e, data) => {
+      return prisma2.clinicMaterialCategory.create({ data });
+    }
+  );
+  ipcMain.handle(
+    "clinic:materialCategories:update",
+    async (_e, { id, data }) => {
+      return prisma2.clinicMaterialCategory.update({ where: { id }, data });
+    }
+  );
+  ipcMain.handle("clinic:materialCategories:delete", async (_e, id) => {
+    return prisma2.clinicMaterialCategory.delete({ where: { id } });
+  });
+  ipcMain.handle("clinic:materialBatches:getByMaterial", async (_e, materialId) => {
+    return prisma2.clinicMaterialBatch.findMany({
+      where: { materialId },
+      orderBy: [{ isActive: "desc" }, { receivedAt: "desc" }]
+    });
+  });
+  ipcMain.handle(
+    "clinic:materialBatches:create",
+    async (_e, { materialId, data }) => {
+      const { expiryDate, quantity = 0, ...rest } = data;
+      const batch = await prisma2.$transaction(async (tx) => {
+        const created = await tx.clinicMaterialBatch.create({
+          data: {
+            ...rest,
+            materialId,
+            quantity,
+            expiryDate: expiryDate ? new Date(expiryDate) : null
+          }
+        });
+        if (quantity > 0) {
+          await tx.clinicMaterial.update({
+            where: { id: materialId },
+            data: { quantity: { increment: quantity } }
+          });
+        }
+        await syncMaterialExpiry(tx, materialId);
+        return created;
+      });
+      return batch;
+    }
+  );
+  ipcMain.handle(
+    "clinic:materialBatches:update",
+    async (_e, { id, data }) => {
+      return prisma2.$transaction(async (tx) => {
+        const existing = await tx.clinicMaterialBatch.findUnique({ where: { id } });
+        if (!existing)
+          throw new Error("BATCH_NOT_FOUND");
+        const { expiryDate, quantity, ...rest } = data;
+        const updated = await tx.clinicMaterialBatch.update({
+          where: { id },
+          data: {
+            ...rest,
+            ...quantity !== void 0 ? { quantity } : {},
+            ...expiryDate !== void 0 ? { expiryDate: expiryDate ? new Date(expiryDate) : null } : {}
+          }
+        });
+        if (quantity !== void 0 && existing.isActive) {
+          const delta = quantity - existing.quantity;
+          if (delta !== 0) {
+            await tx.clinicMaterial.update({
+              where: { id: existing.materialId },
+              data: { quantity: { increment: delta } }
+            });
+          }
+        }
+        await syncMaterialExpiry(tx, existing.materialId);
+        return updated;
+      });
+    }
+  );
+  ipcMain.handle("clinic:materialBatches:delete", async (_e, id) => {
+    return prisma2.$transaction(async (tx) => {
+      const batch = await tx.clinicMaterialBatch.findUnique({ where: { id } });
+      if (!batch)
+        throw new Error("BATCH_NOT_FOUND");
+      const usageCount = await tx.clinicSessionMaterial.count({ where: { batchId: id } });
+      if (usageCount > 0)
+        throw new Error("BATCH_IN_USE");
+      if (batch.isActive && batch.quantity > 0) {
+        await tx.clinicMaterial.update({
+          where: { id: batch.materialId },
+          data: { quantity: { decrement: batch.quantity } }
+        });
+      }
+      await tx.clinicMaterialBatch.delete({ where: { id } });
+      await syncMaterialExpiry(tx, batch.materialId);
+    });
+  });
+  ipcMain.handle(
+    "clinic:materials:getAll",
+    async (_e, params) => {
+      const where = {};
+      if (params?.isActive !== void 0)
+        where.isActive = params.isActive;
+      if (params?.category)
+        where.category = params.category;
+      if (params?.search?.trim()) {
+        where.OR = [
+          { name: { contains: params.search.trim() } },
+          { description: { contains: params.search.trim() } },
+          { supplier: { contains: params.search.trim() } }
+        ];
+      }
+      const now = /* @__PURE__ */ new Date();
+      const soon = /* @__PURE__ */ new Date();
+      soon.setDate(now.getDate() + 30);
+      const expiryStatus = params?.expiryStatus ?? "all";
+      if (expiryStatus === "expired") {
+        where.AND = [...where.AND ?? [], { expiryDate: { not: null, lt: now } }];
+      } else if (expiryStatus === "expiring_soon") {
+        where.AND = [...where.AND ?? [], { expiryDate: { not: null, gte: now, lte: soon } }];
+      } else if (expiryStatus === "valid") {
+        where.AND = [...where.AND ?? [], { expiryDate: { not: null, gt: soon } }];
+      } else if (expiryStatus === "no_expiry") {
+        where.AND = [...where.AND ?? [], { expiryDate: null }];
+      }
+      const skip = params?.skip ?? 0;
+      const take = Math.max(1, Math.min(params?.take ?? 20, 100));
+      const sortBy = params?.sortBy ?? "name";
+      const sortDir = params?.sortDir ?? "asc";
+      const orderBy = [{ isActive: "desc" }];
+      if (sortBy === "name")
+        orderBy.push({ name: sortDir });
+      if (sortBy === "quantity")
+        orderBy.push({ quantity: sortDir }, { name: "asc" });
+      if (sortBy === "expiryDate")
+        orderBy.push({ expiryDate: sortDir }, { name: "asc" });
+      if (sortBy === "updatedAt")
+        orderBy.push({ updatedAt: sortDir }, { name: "asc" });
+      const stockStatus = params?.stockStatus ?? "all";
+      if (stockStatus === "low_stock") {
+        const allCandidates = await prisma2.clinicMaterial.findMany({ where, orderBy });
+        const filtered = allCandidates.filter((m) => m.minQuantity > 0 && m.quantity <= m.minQuantity);
+        const paged = filtered.slice(skip, skip + take);
+        return {
+          data: paged,
+          total: filtered.length,
+          hasMore: skip + take < filtered.length,
+          skip,
+          take
+        };
+      }
+      if (stockStatus === "in_stock") {
+        where.AND = [...where.AND ?? [], { quantity: { gt: 0 } }];
+      } else if (stockStatus === "out_of_stock") {
+        where.AND = [...where.AND ?? [], { quantity: { lte: 0 } }];
+      }
+      const [data, total] = await Promise.all([
+        prisma2.clinicMaterial.findMany({ where, orderBy, skip, take }),
+        prisma2.clinicMaterial.count({ where })
+      ]);
+      return {
+        data,
+        total,
+        hasMore: skip + take < total,
+        skip,
+        take
+      };
+    }
+  );
+  ipcMain.handle("clinic:materials:getById", async (_e, id) => {
+    return prisma2.clinicMaterial.findUnique({
+      where: { id },
+      include: { batches: { orderBy: [{ isActive: "desc" }, { receivedAt: "desc" }] } }
+    });
+  });
+  ipcMain.handle("clinic:materials:create", async (_e, data) => {
+    const {
+      expiryDate,
+      batchNumber,
+      quantity: initialQuantityRaw,
+      ...rest
+    } = data;
+    const initialQuantity = Math.max(0, Number(initialQuantityRaw) || 0);
+    return prisma2.$transaction(async (tx) => {
+      const material = await tx.clinicMaterial.create({
+        data: {
+          ...rest,
+          quantity: 0,
+          expiryDate: null
+        }
+      });
+      if (initialQuantity > 0) {
+        await tx.clinicMaterialBatch.create({
+          data: {
+            materialId: material.id,
+            batchNumber: typeof batchNumber === "string" ? batchNumber.trim() || null : null,
+            quantity: initialQuantity,
+            expiryDate: expiryDate ? new Date(expiryDate) : null,
+            costPerUnit: material.costPerUnit,
+            supplier: material.supplier,
+            isActive: true
+          }
+        });
+        await tx.clinicMaterial.update({
+          where: { id: material.id },
+          data: { quantity: { increment: initialQuantity } }
+        });
+        await syncMaterialExpiry(tx, material.id);
+      }
+      return material;
+    });
+  });
+  ipcMain.handle("clinic:materials:update", async (_e, { id, data }) => {
+    const { expiryDate: _expiry, batchNumber: _bn, quantity: _qty, ...rest } = data;
+    return prisma2.clinicMaterial.update({ where: { id }, data: rest });
+  });
+  ipcMain.handle("clinic:materials:delete", async (_e, id) => {
+    const usageCount = await prisma2.clinicSessionMaterial.count({ where: { materialId: id } });
+    if (usageCount > 0) {
+      throw new Error("MATERIAL_IN_USE");
+    }
+    return prisma2.clinicMaterial.delete({ where: { id } });
+  });
+  ipcMain.handle(
+    "clinic:materials:adjustStock",
+    async (_e, _payload) => {
+      throw new Error("UNSUPPORTED_STOCK_ADJUSTMENT_USE_BATCH_UPDATE");
+    }
+  );
+  ipcMain.handle("clinic:materials:getBySession", async (_e, sessionId) => {
+    return prisma2.clinicSessionMaterial.findMany({
+      where: { sessionId },
+      include: { material: true, batch: true },
+      orderBy: { createdAt: "asc" }
+    });
+  });
+  ipcMain.handle(
+    "clinic:materials:setSessionMaterials",
+    async (_e, { sessionId, items }) => {
+      return prisma2.$transaction(async (tx) => {
+        const previous = await tx.clinicSessionMaterial.findMany({ where: { sessionId } });
+        for (const prev of previous) {
+          if (prev.batchId) {
+            await tx.clinicMaterialBatch.update({
+              where: { id: prev.batchId },
+              data: { quantity: { increment: prev.quantityUsed } }
+            });
+          }
+          await tx.clinicMaterial.update({
+            where: { id: prev.materialId },
+            data: { quantity: { increment: prev.quantityUsed } }
+          });
+        }
+        await tx.clinicSessionMaterial.deleteMany({ where: { sessionId } });
+        const affectedMaterialIds = /* @__PURE__ */ new Set();
+        for (const item of items) {
+          if (item.quantityUsed <= 0)
+            continue;
+          const mat = await tx.clinicMaterial.findUnique({ where: { id: item.materialId } });
+          if (!mat)
+            throw new Error(`MATERIAL_NOT_FOUND:${item.materialId}`);
+          if (mat.quantity < item.quantityUsed)
+            throw new Error(`INSUFFICIENT_STOCK:${mat.name}`);
+          if (item.batchId) {
+            const batch = await tx.clinicMaterialBatch.findUnique({ where: { id: item.batchId } });
+            if (!batch)
+              throw new Error(`BATCH_NOT_FOUND:${item.batchId}`);
+            if (batch.quantity < item.quantityUsed)
+              throw new Error(`INSUFFICIENT_BATCH_STOCK:${mat.name}`);
+            await tx.clinicMaterialBatch.update({
+              where: { id: item.batchId },
+              data: { quantity: { decrement: item.quantityUsed } }
+            });
+          }
+          await tx.clinicMaterial.update({
+            where: { id: item.materialId },
+            data: { quantity: { decrement: item.quantityUsed } }
+          });
+          await tx.clinicSessionMaterial.create({
+            data: {
+              sessionId,
+              materialId: item.materialId,
+              batchId: item.batchId ?? null,
+              quantityUsed: item.quantityUsed,
+              notes: item.notes ?? null
+            }
+          });
+          affectedMaterialIds.add(item.materialId);
+        }
+        for (const mid of affectedMaterialIds) {
+          await syncMaterialExpiry(tx, mid);
+        }
+        return tx.clinicSessionMaterial.findMany({
+          where: { sessionId },
+          include: { material: true, batch: true },
+          orderBy: { createdAt: "asc" }
+        });
+      });
+    }
+  );
+  ipcMain.handle("clinic:materials:stats", async () => {
+    const now = /* @__PURE__ */ new Date();
+    const soon = /* @__PURE__ */ new Date();
+    soon.setDate(now.getDate() + 30);
+    const [total, lowStock, expired, expiringSoon] = await Promise.all([
+      prisma2.clinicMaterial.count({ where: { isActive: true } }),
+      prisma2.clinicMaterial.findMany({ where: { isActive: true, minQuantity: { gt: 0 } } }).then((mats) => mats.filter((m) => m.quantity <= m.minQuantity).length),
+      prisma2.clinicMaterial.count({ where: { isActive: true, expiryDate: { lt: now } } }),
+      prisma2.clinicMaterial.count({ where: { isActive: true, expiryDate: { gte: now, lte: soon } } })
+    ]);
+    return { total, lowStock, expired, expiringSoon };
+  });
+  ipcMain.handle("clinic:materials:financeSummary", async (_e, period = "month") => {
+    const now = /* @__PURE__ */ new Date();
+    const soon = /* @__PURE__ */ new Date();
+    soon.setDate(now.getDate() + 30);
+    const { start, end } = matGetPeriodRange(period);
+    const MATERIAL_EXPENSE_CATS = ["material_loss", "material_expiry", "medical_supplies", "medications"];
+    const [activeMaterials, expenseRows] = await Promise.all([
+      prisma2.clinicMaterial.findMany({
+        where: { isActive: true },
+        select: { name: true, quantity: true, costPerUnit: true, minQuantity: true, expiryDate: true, category: true, unit: true }
+      }),
+      prisma2.clinicExpense.findMany({
+        where: { date: { gte: start, lt: end }, category: { in: MATERIAL_EXPENSE_CATS } },
+        select: { category: true, amount: true }
+      })
+    ]);
+    const inventoryValue = activeMaterials.reduce((s, m) => s + m.costPerUnit * m.quantity, 0);
+    const totalMaterials = activeMaterials.length;
+    const lowStockCount = activeMaterials.filter((m) => m.minQuantity > 0 && m.quantity <= m.minQuantity).length;
+    const expiredCount = activeMaterials.filter((m) => m.expiryDate && new Date(m.expiryDate) < now).length;
+    const expiringSoonCount = activeMaterials.filter((m) => m.expiryDate && new Date(m.expiryDate) >= now && new Date(m.expiryDate) <= soon).length;
+    const topMaterials = activeMaterials.map((m) => ({ name: m.name, value: m.costPerUnit * m.quantity, quantity: m.quantity, unit: m.unit ?? "", category: m.category ?? "" })).sort((a, b) => b.value - a.value).slice(0, 8);
+    const lossAmount = expenseRows.filter((e) => e.category === "material_loss").reduce((s, e) => s + e.amount, 0);
+    const expiryAmount = expenseRows.filter((e) => e.category === "material_expiry").reduce((s, e) => s + e.amount, 0);
+    const suppliesSpend = expenseRows.filter((e) => e.category === "medical_supplies" || e.category === "medications").reduce((s, e) => s + e.amount, 0);
+    const totalMaterialExpenses = lossAmount + expiryAmount + suppliesSpend;
+    return {
+      inventoryValue,
+      totalMaterials,
+      lowStockCount,
+      expiredCount,
+      expiringSoonCount,
+      lossAmount,
+      expiryAmount,
+      suppliesSpend,
+      totalMaterialExpenses,
+      topMaterials
+    };
+  });
+  ipcMain.handle("clinic:batches:logLoss", async (_e, {
+    batchId,
+    materialId,
+    quantityLost,
+    reason = "other",
+    description = null,
+    recordedBy = null
+  }) => {
+    return prisma2.$transaction(async (tx) => {
+      const batch = await tx.clinicMaterialBatch.findUnique({ where: { id: batchId } });
+      if (!batch)
+        throw new Error("BATCH_NOT_FOUND");
+      if (batch.materialId !== materialId)
+        throw new Error("BATCH_MATERIAL_MISMATCH");
+      const requestedLoss = Math.max(0, Number(quantityLost) || 0);
+      if (requestedLoss <= 0)
+        throw new Error("INVALID_LOSS_QUANTITY");
+      const actualLoss = Math.min(requestedLoss, batch.quantity);
+      const newBatchQty = batch.quantity - actualLoss;
+      await tx.clinicMaterialBatch.update({
+        where: { id: batchId },
+        data: { quantity: newBatchQty }
+      });
+      const material = await tx.clinicMaterial.findUnique({ where: { id: materialId } });
+      if (!material)
+        throw new Error("MATERIAL_NOT_FOUND");
+      const newMaterialQty = Math.max(0, material.quantity - actualLoss);
+      await tx.clinicMaterial.update({
+        where: { id: materialId },
+        data: { quantity: newMaterialQty }
+      });
+      const loss = await tx.clinicMaterialLoss.create({
+        data: {
+          batchId,
+          materialId,
+          quantityLost: actualLoss,
+          reason,
+          description,
+          recordedBy
+        }
+      });
+      await syncMaterialExpiry(tx, materialId);
+      return loss;
+    });
+  });
+  ipcMain.handle("clinic:batches:logExpiry", async (_e, {
+    batchId,
+    materialId,
+    quantityExpired,
+    expiryDate,
+    disposalMethod = null,
+    recordedBy = null,
+    notes = null
+  }) => {
+    return prisma2.$transaction(async (tx) => {
+      const batch = await tx.clinicMaterialBatch.findUnique({ where: { id: batchId } });
+      if (!batch)
+        throw new Error("BATCH_NOT_FOUND");
+      if (batch.materialId !== materialId)
+        throw new Error("BATCH_MATERIAL_MISMATCH");
+      const requestedExpiry = Math.max(0, Number(quantityExpired) || 0);
+      if (requestedExpiry <= 0)
+        throw new Error("INVALID_EXPIRY_QUANTITY");
+      const actualExpired = Math.min(requestedExpiry, batch.quantity);
+      const newBatchQty = batch.quantity - actualExpired;
+      await tx.clinicMaterialBatch.update({
+        where: { id: batchId },
+        data: { quantity: newBatchQty }
+      });
+      const material = await tx.clinicMaterial.findUnique({ where: { id: materialId } });
+      if (!material)
+        throw new Error("MATERIAL_NOT_FOUND");
+      const newMaterialQty = Math.max(0, material.quantity - actualExpired);
+      await tx.clinicMaterial.update({
+        where: { id: materialId },
+        data: { quantity: newMaterialQty }
+      });
+      const expiry = await tx.clinicMaterialExpiry.create({
+        data: {
+          batchId,
+          materialId,
+          quantityExpired: actualExpired,
+          expiryDate: new Date(expiryDate),
+          disposalMethod,
+          recordedBy,
+          notes
+        }
+      });
+      await syncMaterialExpiry(tx, materialId);
+      return expiry;
+    });
+  });
+  ipcMain.handle("clinic:batches:logAdjustment", async (_e, {
+    batchId,
+    materialId,
+    quantityBefore,
+    quantityAfter,
+    reason = "recount",
+    description = null,
+    adjustedBy = null
+  }) => {
+    return prisma2.$transaction(async (tx) => {
+      const batch = await tx.clinicMaterialBatch.findUnique({ where: { id: batchId } });
+      if (!batch)
+        throw new Error("BATCH_NOT_FOUND");
+      if (batch.materialId !== materialId)
+        throw new Error("BATCH_MATERIAL_MISMATCH");
+      const targetQty = Math.max(0, Number(quantityAfter) || 0);
+      const actualBefore = batch.quantity;
+      const quantityAdjusted = targetQty - actualBefore;
+      const material = await tx.clinicMaterial.findUnique({ where: { id: materialId } });
+      if (!material)
+        throw new Error("MATERIAL_NOT_FOUND");
+      const newMaterialQty = Math.max(0, material.quantity + quantityAdjusted);
+      const adjustment = await tx.clinicMaterialAdjustment.create({
+        data: {
+          batchId,
+          materialId,
+          quantityBefore: actualBefore,
+          quantityAfter: targetQty,
+          quantityAdjusted,
+          reason,
+          description,
+          adjustedBy
+        }
+      });
+      await tx.clinicMaterialBatch.update({
+        where: { id: batchId },
+        data: { quantity: targetQty }
+      });
+      await tx.clinicMaterial.update({
+        where: { id: materialId },
+        data: { quantity: newMaterialQty }
+      });
+      await syncMaterialExpiry(tx, materialId);
+      return adjustment;
+    });
+  });
+}
+
+// apps/bizflow/src/plugins/clinic/handlers/index.ts
+function registerClinicHandlers(prisma2) {
+  registerPatientHandlers(prisma2);
+  registerSessionHandlers(prisma2);
+  registerStatsHandlers(prisma2);
+  registerCheckResultHandlers(prisma2);
+  registerAppointmentHandlers(prisma2);
+  registerClinicPdfHandlers();
+  registerExpenseHandlers(prisma2);
+  registerClinicStaffHandlers(prisma2);
+  registerMaterialHandlers(prisma2);
+}
+
+// apps/bizflow/src/plugins/vet/handlers/index.ts
+init_electron_node();
+
+// apps/bizflow/src/plugins/vet/handlers/owners.ts
+init_electron_node();
+var log70 = createLogger("Vet:Owners");
+function registerOwnerHandlers(prisma2) {
+  ipcMain.handle("vet:owners:getAll", async (_e, params) => {
+    try {
+      const where = params?.search ? {
+        OR: [
+          { name: { contains: params.search } },
+          { phone: { contains: params.search } },
+          { email: { contains: params.search } }
+        ]
+      } : void 0;
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 40;
+      const total = await prisma2.vetOwner.count({ where });
+      const data = await prisma2.vetOwner.findMany({
+        where,
+        include: {
+          patients: {
+            select: { id: true, name: true, species: true, breed: true },
+            orderBy: { createdAt: "asc" }
+          },
+          _count: { select: { patients: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take
+      });
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log70.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:owners:searchLite", async (_e, query) => {
+    if (!query?.trim())
+      return [];
+    return prisma2.vetOwner.findMany({
+      where: {
+        OR: [
+          { name: { contains: query } },
+          { phone: { contains: query } }
+        ]
+      },
+      select: { id: true, name: true, phone: true },
+      take: 20
+    });
+  });
+  ipcMain.handle("vet:owners:getById", async (_e, id) => {
+    try {
+      return await prisma2.vetOwner.findUnique({
+        where: { id },
+        include: {
+          patients: {
+            include: { _count: { select: { sessions: true } } },
+            orderBy: { createdAt: "desc" }
+          }
+        }
+      });
+    } catch (err) {
+      log70.error("getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:owners:create", async (_e, data) => {
+    try {
+      return await prisma2.vetOwner.create({ data });
+    } catch (err) {
+      log70.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:owners:update", async (_e, id, data) => {
+    try {
+      return await prisma2.vetOwner.update({ where: { id }, data });
+    } catch (err) {
+      log70.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:owners:delete", async (_e, id) => {
+    try {
+      return await prisma2.vetOwner.delete({ where: { id } });
+    } catch (err) {
+      log70.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:owners:getFinance", async (_e, ownerId) => {
+    try {
+      const patients = await prisma2.vetPatient.findMany({
+        where: { ownerId },
+        select: { id: true }
+      });
+      const patientIds = patients.map((p) => p.id);
+      if (!patientIds.length)
+        return { totalCharged: 0, totalPaid: 0, outstanding: 0 };
+      const sessions2 = await prisma2.vetSession.findMany({
+        where: { patientId: { in: patientIds } },
+        select: { amountCharged: true, amountPaid: true }
+      });
+      const totalCharged = sessions2.reduce((s, r) => s + (r.amountCharged ?? 0), 0);
+      const totalPaid = sessions2.reduce((s, r) => s + (r.amountPaid ?? 0), 0);
+      return { totalCharged, totalPaid, outstanding: totalCharged - totalPaid };
+    } catch (err) {
+      log70.error("getFinance", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/patients.ts
+init_electron_node();
+var log71 = createLogger("Vet:Patients");
+function registerVetPatientHandlers(prisma2) {
+  ipcMain.handle("vet:patients:getAll", async (_e, params) => {
+    try {
+      const conditions = [];
+      if (params?.search) {
+        conditions.push({
+          OR: [
+            { name: { contains: params.search } },
+            { microchipId: { contains: params.search } },
+            { owner: { name: { contains: params.search } } },
+            { owner: { phone: { contains: params.search } } }
+          ]
+        });
+      }
+      if (params?.species)
+        conditions.push({ species: params.species });
+      const where = conditions.length ? { AND: conditions } : void 0;
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 40;
+      const total = await prisma2.vetPatient.count({ where });
+      const patients = await prisma2.vetPatient.findMany({
+        where,
+        include: {
+          owner: { select: { id: true, name: true, phone: true } },
+          _count: { select: { sessions: true } },
+          sessions: {
+            orderBy: { visitDate: "desc" },
+            take: 1,
+            select: { visitDate: true, paymentStatus: true, visitType: true }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take
+      });
+      if (patients.length === 0)
+        return { data: [], total, hasMore: false };
+      const patientIds = patients.map((p) => p.id);
+      const financeSummaries = await prisma2.$queryRawUnsafe(`
+        SELECT
+          patientId,
+          COALESCE(SUM(amountCharged), 0) as totalCharged,
+          COALESCE(SUM(amountPaid),    0) as totalPaid
+        FROM VetSession
+        WHERE patientId IN (${patientIds.map(() => "?").join(",")})
+        GROUP BY patientId
+      `, ...patientIds);
+      const financeMap = {};
+      for (const f of financeSummaries) {
+        financeMap[f.patientId] = {
+          totalCharged: Number(f.totalCharged) || 0,
+          totalPaid: Number(f.totalPaid) || 0,
+          outstanding: (Number(f.totalCharged) || 0) - (Number(f.totalPaid) || 0)
+        };
+      }
+      const data = patients.map((p) => ({
+        ...p,
+        finance: financeMap[p.id] ?? { totalCharged: 0, totalPaid: 0, outstanding: 0 }
+      }));
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log71.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:patients:getDebtors", async (_e, params) => {
+    try {
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 40;
+      const rows = await prisma2.$queryRawUnsafe(`
+        SELECT
+          p.id, p.name, p.species, p.breed, p.microchipId,
+          o.name as ownerName, o.phone as ownerPhone,
+          COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0) as outstanding
+        FROM VetPatient p
+        JOIN VetOwner o ON o.id = p.ownerId
+        JOIN VetSession s ON s.patientId = p.id
+        GROUP BY p.id
+        HAVING outstanding > 0
+        ORDER BY outstanding DESC
+        LIMIT ? OFFSET ?
+      `, take, skip);
+      const countRows = await prisma2.$queryRawUnsafe(`
+        SELECT COUNT(*) as cnt FROM (
+          SELECT p.id
+          FROM VetPatient p
+          JOIN VetSession s ON s.patientId = p.id
+          GROUP BY p.id
+          HAVING COALESCE(SUM(s.amountCharged), 0) - COALESCE(SUM(s.amountPaid), 0) > 0
+        )
+      `);
+      const total = Number(countRows[0]?.cnt) || 0;
+      const data = rows.map((r) => ({
+        ...r,
+        outstanding: Number(r.outstanding) || 0
+      }));
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log71.error("getDebtors", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:patients:getById", async (_e, id) => {
+    try {
+      const patient = await prisma2.vetPatient.findUnique({
+        where: { id },
+        include: {
+          owner: true,
+          sessions: {
+            include: { prescriptions: true },
+            orderBy: { visitDate: "desc" }
+          },
+          appointments: { orderBy: { appointmentDate: "desc" }, take: 20 },
+          checkResults: { orderBy: { resultDate: "desc" } }
+        }
+      });
+      if (!patient)
+        return null;
+      const rows = await prisma2.$queryRawUnsafe(`
+        SELECT COALESCE(SUM(amountCharged),0) as tc, COALESCE(SUM(amountPaid),0) as tp
+        FROM VetSession WHERE patientId = ?
+      `, id);
+      const totalCharged = Number(rows[0]?.tc) || 0;
+      const totalPaid = Number(rows[0]?.tp) || 0;
+      return { ...patient, finance: { totalCharged, totalPaid, outstanding: totalCharged - totalPaid } };
+    } catch (err) {
+      log71.error("getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:patients:create", async (_e, data) => {
+    try {
+      return await prisma2.vetPatient.create({ data, include: { owner: { select: { id: true, name: true } } } });
+    } catch (err) {
+      log71.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:patients:update", async (_e, id, data) => {
+    try {
+      return await prisma2.vetPatient.update({ where: { id }, data, include: { owner: { select: { id: true, name: true } } } });
+    } catch (err) {
+      log71.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:patients:delete", async (_e, id) => {
+    try {
+      return await prisma2.vetPatient.delete({ where: { id } });
+    } catch (err) {
+      log71.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/sessions.ts
+init_electron_node();
+var log72 = createLogger("Vet:Sessions");
+function registerVetSessionHandlers(prisma2) {
+  ipcMain.handle("vet:sessions:getRecent", async (_e, params) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      let dateFrom;
+      let dateTo;
+      if (params?.startDate) {
+        dateFrom = new Date(params.startDate);
+      } else if (params?.filter === "today") {
+        const y = now.getFullYear(), mo = now.getMonth(), d = now.getDate();
+        dateFrom = new Date(y, mo, d, 0, 0, 0, 0);
+        dateTo = new Date(y, mo, d, 23, 59, 59, 999);
+      } else if (params?.filter === "week") {
+        dateFrom = new Date(now);
+        dateFrom.setDate(now.getDate() - 7);
+      } else if (params?.filter === "month") {
+        dateFrom = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+      if (params?.endDate)
+        dateTo = new Date(params.endDate);
+      const where = {};
+      if (params?.patientId)
+        where.patientId = params.patientId;
+      if (params?.vetName)
+        where.vetName = params.vetName;
+      if (dateFrom || dateTo) {
+        where.visitDate = {};
+        if (dateFrom)
+          where.visitDate.gte = dateFrom;
+        if (dateTo)
+          where.visitDate.lte = dateTo;
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.vetSession.count({ where });
+      const data = await prisma2.vetSession.findMany({
+        where,
+        include: {
+          patient: {
+            select: {
+              id: true,
+              name: true,
+              species: true,
+              owner: { select: { id: true, name: true, phone: true } }
+            }
+          },
+          prescriptions: { orderBy: { createdAt: "asc" } }
+        },
+        orderBy: { visitDate: "desc" },
+        skip,
+        take
+      });
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log72.error("getRecent", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:create", async (_e, data) => {
+    try {
+      const { prescriptions, ...sessionData } = data;
+      return await prisma2.vetSession.create({
+        data: {
+          ...sessionData,
+          prescriptions: prescriptions?.length ? { create: prescriptions } : void 0
+        },
+        include: {
+          prescriptions: true,
+          patient: { select: { id: true, name: true, species: true } }
+        }
+      });
+    } catch (err) {
+      log72.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:update", async (_e, id, data) => {
+    try {
+      const { prescriptions: _p, ...sessionData } = data;
+      return await prisma2.vetSession.update({
+        where: { id },
+        data: sessionData,
+        include: {
+          prescriptions: true,
+          patient: { select: { id: true, name: true, species: true } }
+        }
+      });
+    } catch (err) {
+      log72.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:delete", async (_e, id) => {
+    try {
+      return await prisma2.vetSession.delete({ where: { id } });
+    } catch (err) {
+      log72.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:addPrescription", async (_e, sessionId, data) => {
+    try {
+      return await prisma2.vetPrescription.create({ data: { ...data, sessionId } });
+    } catch (err) {
+      log72.error("addPrescription", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:updatePrescription", async (_e, id, data) => {
+    try {
+      return await prisma2.vetPrescription.update({ where: { id }, data });
+    } catch (err) {
+      log72.error("updatePrescription", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:stopPrescription", async (_e, id, reason) => {
+    try {
+      return await prisma2.vetPrescription.update({
+        where: { id },
+        data: { isActive: false, stoppedAt: /* @__PURE__ */ new Date(), stopReason: reason }
+      });
+    } catch (err) {
+      log72.error("stopPrescription", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:deletePrescription", async (_e, id) => {
+    try {
+      return await prisma2.vetPrescription.delete({ where: { id } });
+    } catch (err) {
+      log72.error("deletePrescription", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:sessions:getFollowUps", async (_e, params) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const from = params?.from ? new Date(params.from) : now;
+      const to = params?.to ? new Date(params.to) : new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+      const where = {
+        followUpDate: { gte: from, lte: to },
+        status: "completed"
+      };
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.vetSession.count({ where });
+      const data = await prisma2.vetSession.findMany({
+        where,
+        include: {
+          patient: {
+            select: {
+              id: true,
+              name: true,
+              species: true,
+              owner: { select: { name: true, phone: true } }
+            }
+          }
+        },
+        orderBy: { followUpDate: "asc" },
+        skip,
+        take
+      });
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log72.error("getFollowUps", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/appointments.ts
+init_electron_node();
+var log73 = createLogger("Vet:Appointments");
+function registerVetAppointmentHandlers(prisma2) {
+  ipcMain.handle("vet:appointments:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.patientId)
+        where.patientId = params.patientId;
+      if (params?.status)
+        where.status = params.status;
+      if (params?.type)
+        where.type = params.type;
+      if (params?.vetName)
+        where.vetName = params.vetName;
+      if (params?.date) {
+        const d = /* @__PURE__ */ new Date(params.date + "T00:00:00");
+        const end = /* @__PURE__ */ new Date(params.date + "T23:59:59.999");
+        where.appointmentDate = { gte: d, lte: end };
+      } else if (params?.from || params?.to) {
+        where.appointmentDate = {};
+        if (params.from)
+          where.appointmentDate.gte = new Date(params.from);
+        if (params.to)
+          where.appointmentDate.lte = new Date(params.to);
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.vetAppointment.count({ where });
+      const data = await prisma2.vetAppointment.findMany({
+        where,
+        include: {
+          patient: {
+            select: {
+              id: true,
+              name: true,
+              species: true,
+              owner: { select: { id: true, name: true, phone: true } }
+            }
+          }
+        },
+        orderBy: { appointmentDate: "asc" },
+        skip,
+        take
+      });
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log73.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:appointments:checkSlot", async (_e, params) => {
+    try {
+      const start = new Date(params.appointmentDate);
+      const duration = params.duration ?? 30;
+      const end = new Date(start.getTime() + duration * 6e4);
+      const conflicts = await prisma2.vetAppointment.findMany({
+        where: {
+          id: params.excludeId ? { not: params.excludeId } : void 0,
+          status: { notIn: ["cancelled", "no_show"] },
+          AND: [
+            { appointmentDate: { lt: end } },
+            {
+              appointmentDate: {
+                gt: new Date(start.getTime() - 30 * 6e4)
+              }
+            }
+          ]
+        },
+        select: { id: true, appointmentDate: true, duration: true, patient: { select: { name: true } } }
+      });
+      return { available: conflicts.length === 0, conflicts };
+    } catch (err) {
+      log73.error("checkSlot", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:appointments:create", async (_e, data) => {
+    try {
+      return await prisma2.vetAppointment.create({
+        data,
+        include: { patient: { select: { id: true, name: true, species: true } } }
+      });
+    } catch (err) {
+      log73.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:appointments:update", async (_e, id, data) => {
+    try {
+      return await prisma2.vetAppointment.update({
+        where: { id },
+        data,
+        include: { patient: { select: { id: true, name: true, species: true } } }
+      });
+    } catch (err) {
+      log73.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:appointments:delete", async (_e, id) => {
+    try {
+      return await prisma2.vetAppointment.delete({ where: { id } });
+    } catch (err) {
+      log73.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/checkResults.ts
+init_electron_node();
+init_electron_node();
+var import_node_path5 = __toESM(require("node:path"));
+var import_node_fs3 = __toESM(require("node:fs"));
+var log74 = createLogger("Vet:CheckResults");
+function getResultsDir() {
+  const dir = import_node_path5.default.join(app.getPath("userData"), "vet-results");
+  if (!import_node_fs3.default.existsSync(dir))
+    import_node_fs3.default.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+function registerVetCheckResultHandlers(prisma2) {
+  ipcMain.handle("vet:checkResults:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.patientId)
+        where.patientId = params.patientId;
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.vetCheckResult.count({ where });
+      const data = await prisma2.vetCheckResult.findMany({
+        where,
+        orderBy: { resultDate: "desc" },
+        skip,
+        take
+      });
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log74.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:checkResults:create", async (_e, params) => {
+    try {
+      const { patientId, title, description, resultDate, fileName, buffer } = params;
+      const dir = import_node_path5.default.join(getResultsDir(), patientId);
+      if (!import_node_fs3.default.existsSync(dir))
+        import_node_fs3.default.mkdirSync(dir, { recursive: true });
+      const safeName = import_node_path5.default.basename(fileName).replace(/[^a-zA-Z0-9._\-]/g, "_");
+      const destName = `${Date.now()}_${safeName}`;
+      const destPath = import_node_path5.default.join(dir, destName);
+      import_node_fs3.default.writeFileSync(destPath, Buffer.from(buffer));
+      return await prisma2.vetCheckResult.create({
+        data: {
+          patientId,
+          title,
+          description,
+          fileName: safeName,
+          filePath: destPath,
+          fileSize: buffer.length,
+          resultDate: resultDate ? new Date(resultDate) : /* @__PURE__ */ new Date()
+        }
+      });
+    } catch (err) {
+      log74.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:checkResults:delete", async (_e, id) => {
+    try {
+      const record = await prisma2.vetCheckResult.findUnique({ where: { id } });
+      if (!record)
+        throw new Error("Result not found");
+      if (record.filePath && import_node_fs3.default.existsSync(record.filePath)) {
+        import_node_fs3.default.unlinkSync(record.filePath);
+      }
+      return await prisma2.vetCheckResult.delete({ where: { id } });
+    } catch (err) {
+      log74.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:checkResults:openFile", async (_e, id) => {
+    try {
+      const record = await prisma2.vetCheckResult.findUnique({ where: { id }, select: { filePath: true } });
+      if (!record?.filePath)
+        throw new Error("File not found");
+      const { shell: shell2 } = await Promise.resolve().then(() => (init_electron_node(), electron_node_exports));
+      await shell2.openPath(record.filePath);
+      return true;
+    } catch (err) {
+      log74.error("openFile", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/expenses.ts
+init_electron_node();
+var log75 = createLogger("Vet:Expenses");
+function getPeriodRange2(period) {
+  const now = /* @__PURE__ */ new Date();
+  const start = new Date(now);
+  switch (period) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "week": {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      start.setDate(now.getDate() - dow);
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+    case "month":
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "year":
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    default:
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+  }
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return { start, end };
+}
+function registerVetExpenseHandlers(prisma2) {
+  ipcMain.handle("vet:expenses:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.category && params.category !== "all")
+        where.category = params.category;
+      if (params?.period) {
+        const { start, end } = getPeriodRange2(params.period);
+        where.date = { gte: start, lt: end };
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.vetExpense.count({ where });
+      const data = await prisma2.vetExpense.findMany({
+        where,
+        orderBy: { date: "desc" },
+        skip,
+        take
+      });
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log75.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:expenses:summary", async (_e, period) => {
+    try {
+      const { start, end } = getPeriodRange2(period ?? "month");
+      const [sessionRows, expenseRows, outstandingRows] = await Promise.all([
+        prisma2.$queryRawUnsafe(`
+          SELECT COALESCE(SUM(amountCharged),0) as revenue, COALESCE(SUM(amountPaid),0) as collected
+          FROM VetSession WHERE visitDate >= ? AND visitDate < ?
+        `, start, end),
+        prisma2.$queryRawUnsafe(`
+          SELECT category, COALESCE(SUM(amount),0) as total
+          FROM VetExpense WHERE date >= ? AND date < ?
+          GROUP BY category
+        `, start, end),
+        prisma2.$queryRawUnsafe(`
+          SELECT COALESCE(SUM(amountCharged),0) - COALESCE(SUM(amountPaid),0) as outstanding
+          FROM VetSession WHERE paymentStatus NOT IN ('paid','waived')
+        `)
+      ]);
+      const revenue = Number(sessionRows[0]?.revenue) || 0;
+      const collected = Number(sessionRows[0]?.collected) || 0;
+      const totalExpenses = expenseRows.reduce((s, r) => s + (Number(r.total) || 0), 0);
+      const byCategory = {};
+      for (const r of expenseRows)
+        byCategory[r.category] = Number(r.total) || 0;
+      return {
+        revenue,
+        collected,
+        totalExpenses,
+        netIncome: collected - totalExpenses,
+        outstanding: Number(outstandingRows[0]?.outstanding) || 0,
+        byCategory
+      };
+    } catch (err) {
+      log75.error("summary", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:expenses:create", async (_e, data) => {
+    try {
+      return await prisma2.vetExpense.create({ data });
+    } catch (err) {
+      log75.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:expenses:update", async (_e, id, data) => {
+    try {
+      return await prisma2.vetExpense.update({ where: { id }, data });
+    } catch (err) {
+      log75.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:expenses:delete", async (_e, id) => {
+    try {
+      return await prisma2.vetExpense.delete({ where: { id } });
+    } catch (err) {
+      log75.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/staff.ts
+init_electron_node();
+var log76 = createLogger("Vet:Staff");
+function registerVetStaffHandlers(prisma2) {
+  ipcMain.handle("vet:staff:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.status && params.status !== "all")
+        where.status = params.status;
+      if (params?.search) {
+        where.OR = [
+          { name: { contains: params.search } },
+          { phone: { contains: params.search } }
+        ];
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 40;
+      const total = await prisma2.vetStaff.count({ where });
+      const data = await prisma2.vetStaff.findMany({
+        where,
+        include: {
+          _count: { select: { salaryRecords: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take
+      });
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log76.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:staff:getById", async (_e, id) => {
+    try {
+      return await prisma2.vetStaff.findUnique({
+        where: { id },
+        include: { salaryRecords: { orderBy: [{ year: "desc" }, { month: "desc" }] } }
+      });
+    } catch (err) {
+      log76.error("getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:staff:create", async (_e, data) => {
+    try {
+      return await prisma2.vetStaff.create({ data });
+    } catch (err) {
+      log76.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:staff:update", async (_e, id, data) => {
+    try {
+      return await prisma2.vetStaff.update({ where: { id }, data });
+    } catch (err) {
+      log76.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:staff:delete", async (_e, id) => {
+    try {
+      return await prisma2.vetStaff.delete({ where: { id } });
+    } catch (err) {
+      log76.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:staff:salary:getRecords", async (_e, staffId) => {
+    try {
+      return await prisma2.vetSalaryRecord.findMany({
+        where: { staffId },
+        orderBy: [{ year: "desc" }, { month: "desc" }]
+      });
+    } catch (err) {
+      log76.error("salary:getRecords", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:staff:salary:upsert", async (_e, data) => {
+    try {
+      const { staffId, month, year, ...rest } = data;
+      const netPay = (rest.baseSalary ?? 0) + (rest.regularHours ?? 0) * 0 + (rest.overtimeHours ?? 0) * (rest.overtimeRate ?? 0) * (rest.overtimeMultiplier ?? 1.5) + (rest.doubleShiftCount ?? 0) * (rest.doubleShiftBonus ?? 0) + (rest.bonuses ?? 0) - (rest.deductions ?? 0);
+      return await prisma2.vetSalaryRecord.upsert({
+        where: { staffId_month_year: { staffId, month, year } },
+        update: { ...rest, netPay },
+        create: { staffId, month, year, ...rest, netPay }
+      });
+    } catch (err) {
+      log76.error("salary:upsert", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:staff:salary:delete", async (_e, id) => {
+    try {
+      return await prisma2.vetSalaryRecord.delete({ where: { id } });
+    } catch (err) {
+      log76.error("salary:delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/stats.ts
+init_electron_node();
+var log77 = createLogger("Vet:Stats");
+function registerVetStatsHandlers(prisma2) {
+  ipcMain.handle("vet:stats:overview", async (_e, period) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const start = new Date(now);
+      switch (period ?? "month") {
+        case "today":
+          start.setHours(0, 0, 0, 0);
+          break;
+        case "week":
+          start.setDate(now.getDate() - 7);
+          start.setHours(0, 0, 0, 0);
+          break;
+        case "month":
+          start.setDate(1);
+          start.setHours(0, 0, 0, 0);
+          break;
+        case "year":
+          start.setMonth(0, 1);
+          start.setHours(0, 0, 0, 0);
+          break;
+      }
+      const [totalPatients, newPatients, sessionRows, outstandingRows, upcomingAppts, medSaleRows] = await Promise.all([
+        prisma2.vetPatient.count(),
+        prisma2.vetPatient.count({ where: { createdAt: { gte: start } } }),
+        prisma2.$queryRawUnsafe(`
+          SELECT
+            COUNT(*) as sessionCount,
+            COALESCE(SUM(amountCharged),0) as revenue,
+            COALESCE(SUM(amountPaid),0) as collected
+          FROM VetSession
+          WHERE visitDate >= ?
+        `, start),
+        prisma2.$queryRawUnsafe(`
+          SELECT COALESCE(SUM(amountCharged),0) - COALESCE(SUM(amountPaid),0) as outstanding
+          FROM VetSession WHERE paymentStatus NOT IN ('paid','waived')
+        `),
+        prisma2.vetAppointment.count({
+          where: {
+            appointmentDate: { gte: now },
+            status: { in: ["scheduled", "confirmed"] }
+          }
+        }),
+        prisma2.$queryRawUnsafe(`
+          SELECT
+            COUNT(*)                                                  as saleCount,
+            COALESCE(SUM(s.totalPrice), 0)                           as medicineRevenue,
+            COALESCE(SUM(s.quantity * b.costPerUnit), 0)             as medicineCost
+          FROM VetMedicineSale s
+          JOIN VetMedicineBatch b ON s.batchId = b.id
+          WHERE s.saleDate >= ?
+        `, start)
+      ]);
+      const medicineRevenue = Number(medSaleRows[0]?.medicineRevenue) || 0;
+      const medicineCost = Number(medSaleRows[0]?.medicineCost) || 0;
+      return {
+        totalPatients,
+        newPatients,
+        sessionCount: Number(sessionRows[0]?.sessionCount) || 0,
+        revenue: Number(sessionRows[0]?.revenue) || 0,
+        collected: Number(sessionRows[0]?.collected) || 0,
+        outstanding: Number(outstandingRows[0]?.outstanding) || 0,
+        upcomingAppts,
+        medicineRevenue,
+        medicineCost,
+        medicineProfit: medicineRevenue - medicineCost,
+        medicineSales: Number(medSaleRows[0]?.saleCount) || 0
+      };
+    } catch (err) {
+      log77.error("overview", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:stats:topDiagnoses", async (_e, params) => {
+    try {
+      const limit = params?.limit ?? 10;
+      const from = params?.from ? new Date(params.from) : new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth() - 2, 1);
+      const rows = await prisma2.$queryRawUnsafe(`
+        SELECT diagnosis, COUNT(*) as cnt
+        FROM VetSession
+        WHERE diagnosis IS NOT NULL AND diagnosis != '' AND visitDate >= ?
+        GROUP BY diagnosis
+        ORDER BY cnt DESC
+        LIMIT ?
+      `, from, limit);
+      return rows.map((r) => ({ diagnosis: r.diagnosis, count: Number(r.cnt) }));
+    } catch (err) {
+      log77.error("topDiagnoses", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:stats:visitTrend", async (_e, params) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const from = params?.from ? new Date(params.from) : new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const to = params?.to ? new Date(params.to) : now;
+      const rows = await prisma2.$queryRawUnsafe(`
+        SELECT visitType, COUNT(*) as cnt
+        FROM VetSession WHERE visitDate >= ? AND visitDate <= ?
+        GROUP BY visitType
+        ORDER BY cnt DESC
+      `, from, to);
+      return rows.map((r) => ({ visitType: r.visitType, count: Number(r.cnt) }));
+    } catch (err) {
+      log77.error("visitTrend", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:stats:speciesBreakdown", async () => {
+    try {
+      const rows = await prisma2.$queryRawUnsafe(`
+        SELECT species, COUNT(*) as cnt FROM VetPatient GROUP BY species ORDER BY cnt DESC
+      `);
+      return rows.map((r) => ({ species: r.species, count: Number(r.cnt) }));
+    } catch (err) {
+      log77.error("speciesBreakdown", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:stats:monthlyTrend", async (_e, params) => {
+    try {
+      const months = params?.months ?? 6;
+      const rows = await prisma2.$queryRawUnsafe(`
+        SELECT
+          strftime('%Y-%m', visitDate) as ym,
+          COALESCE(SUM(amountCharged),0) as revenue,
+          COALESCE(SUM(amountPaid),0) as collected,
+          COUNT(*) as sessions
+        FROM VetSession
+        WHERE visitDate >= date('now', '-' || ? || ' months')
+        GROUP BY ym
+        ORDER BY ym ASC
+      `, months);
+      return rows.map((r) => ({
+        month: r.ym,
+        revenue: Number(r.revenue) || 0,
+        collected: Number(r.collected) || 0,
+        sessions: Number(r.sessions) || 0
+      }));
+    } catch (err) {
+      log77.error("monthlyTrend", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/medicines.ts
+init_electron_node();
+var log78 = createLogger("Vet:Medicines");
+function registerVetMedicineHandlers(prisma2) {
+  ipcMain.handle("vet:medicines:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.search) {
+        where.OR = [
+          { name: { contains: params.search } },
+          { description: { contains: params.search } }
+        ];
+      }
+      if (params?.category && params.category !== "all") {
+        where.category = params.category;
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.vetMedicine.count({ where });
+      const medicines = await prisma2.vetMedicine.findMany({
+        where,
+        include: {
+          batches: {
+            orderBy: { expiryDate: "asc" },
+            select: {
+              id: true,
+              batchNumber: true,
+              expiryDate: true,
+              quantity: true,
+              initialQty: true,
+              costPerUnit: true,
+              receivedDate: true,
+              supplier: true,
+              notes: true,
+              createdAt: true
+            }
+          },
+          _count: { select: { sales: true } }
+        },
+        orderBy: { name: "asc" },
+        skip,
+        take
+      });
+      const enriched = medicines.map((m) => {
+        const now = /* @__PURE__ */ new Date();
+        const activeBatches = m.batches.filter((b) => b.quantity > 0);
+        const totalStock = activeBatches.reduce((sum, b) => sum + b.quantity, 0);
+        const nearestExpiry = activeBatches.length > 0 ? activeBatches[0].expiryDate : null;
+        const hasExpired = m.batches.some(
+          (b) => new Date(b.expiryDate) < now && b.quantity > 0
+        );
+        const expiresWithin30Days = m.batches.some((b) => {
+          const exp = new Date(b.expiryDate);
+          const diff = (exp.getTime() - now.getTime()) / 864e5;
+          return diff >= 0 && diff <= 30 && b.quantity > 0;
+        });
+        return {
+          ...m,
+          totalStock,
+          nearestExpiry,
+          hasExpired,
+          expiresWithin30Days,
+          batchCount: m.batches.length,
+          activeBatchCount: activeBatches.length,
+          salesCount: m._count.sales,
+          isLowStock: totalStock <= m.minimumStock && m.minimumStock > 0
+        };
+      });
+      return { data: enriched, total, hasMore: skip + take < total };
+    } catch (err) {
+      log78.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:create", async (_e, data) => {
+    try {
+      return await prisma2.vetMedicine.create({ data });
+    } catch (err) {
+      log78.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:update", async (_e, id, data) => {
+    try {
+      return await prisma2.vetMedicine.update({ where: { id }, data });
+    } catch (err) {
+      log78.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:delete", async (_e, id) => {
+    try {
+      await prisma2.vetMedicine.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log78.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:getBatches", async (_e, medicineId) => {
+    try {
+      return await prisma2.vetMedicineBatch.findMany({
+        where: { medicineId },
+        orderBy: { expiryDate: "asc" }
+        // FEFO — First Expired, First Out
+      });
+    } catch (err) {
+      log78.error("getBatches", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:addBatch", async (_e, data) => {
+    try {
+      const { expiryDate, receivedDate, quantity, ...rest } = data;
+      return await prisma2.vetMedicineBatch.create({
+        data: {
+          ...rest,
+          quantity,
+          initialQty: quantity,
+          expiryDate: new Date(expiryDate),
+          receivedDate: receivedDate ? new Date(receivedDate) : /* @__PURE__ */ new Date()
+        }
+      });
+    } catch (err) {
+      log78.error("addBatch", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:updateBatch", async (_e, id, data) => {
+    try {
+      const { expiryDate, receivedDate, ...rest } = data;
+      return await prisma2.vetMedicineBatch.update({
+        where: { id },
+        data: {
+          ...rest,
+          ...expiryDate ? { expiryDate: new Date(expiryDate) } : {},
+          ...receivedDate ? { receivedDate: new Date(receivedDate) } : {}
+        }
+      });
+    } catch (err) {
+      log78.error("updateBatch", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:deleteBatch", async (_e, id) => {
+    try {
+      await prisma2.vetMedicineBatch.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log78.error("deleteBatch", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:disposeBatch", async (_e, batchId, data) => {
+    try {
+      const batch = await prisma2.vetMedicineBatch.findUnique({
+        where: { id: batchId },
+        include: { medicine: { select: { name: true, unit: true } } }
+      });
+      if (!batch)
+        throw new Error("Batch not found");
+      if (batch.status === "disposed")
+        throw new Error("Batch already disposed");
+      const writeOffQty = data?.disposedQty ?? batch.quantity;
+      if (!Number.isFinite(writeOffQty) || writeOffQty < 0 || writeOffQty > batch.quantity) {
+        throw new Error(`Invalid disposedQty: must be between 0 and ${batch.quantity}`);
+      }
+      const lossAmount = writeOffQty * (batch.costPerUnit ?? 0);
+      const lotLabel = batch.batchNumber ? ` LOT-${batch.batchNumber}` : "";
+      const description = `Medicine write-off: ${batch.medicine.name}${lotLabel} (expired stock)`;
+      const [updatedBatch, expense] = await prisma2.$transaction([
+        prisma2.vetMedicineBatch.update({
+          where: { id: batchId },
+          data: {
+            status: "disposed",
+            disposedAt: /* @__PURE__ */ new Date(),
+            disposedQty: writeOffQty,
+            disposalReason: data?.reason ?? "Expired batch disposal",
+            quantity: 0
+          }
+        }),
+        prisma2.vetExpense.create({
+          data: {
+            date: /* @__PURE__ */ new Date(),
+            category: "medications",
+            description,
+            amount: lossAmount,
+            vendor: batch.supplier ?? void 0,
+            paymentMethod: null,
+            recurrence: "one_time",
+            notes: data?.reason ?? "Expired stock written off"
+          }
+        })
+      ]);
+      return { batch: updatedBatch, expense, lossAmount };
+    } catch (err) {
+      log78.error("disposeBatch", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:sell", async (_e, data) => {
+    try {
+      const batch = await prisma2.vetMedicineBatch.findUnique({ where: { id: data.batchId } });
+      if (!batch)
+        throw new Error("Batch not found");
+      if (batch.status === "disposed")
+        throw new Error("This batch has been disposed and cannot be sold from");
+      if (new Date(batch.expiryDate) < /* @__PURE__ */ new Date()) {
+        throw new Error("Cannot sell from an expired batch \u2014 please write it off as a loss first");
+      }
+      if (!Number.isFinite(data.quantity) || data.quantity <= 0) {
+        throw new Error("Quantity must be a positive number");
+      }
+      if (!Number.isFinite(data.unitPrice) || data.unitPrice < 0) {
+        throw new Error("Unit price must be a non-negative number");
+      }
+      const discount = data.discount ?? 0;
+      if (!Number.isFinite(discount) || discount < 0) {
+        throw new Error("Discount must be a non-negative number");
+      }
+      if (batch.medicineId !== data.medicineId) {
+        throw new Error("Medicine ID does not match the selected batch");
+      }
+      if (batch.quantity < data.quantity) {
+        throw new Error(`Insufficient stock. Available: ${batch.quantity}`);
+      }
+      const totalPrice = data.quantity * data.unitPrice - discount;
+      const [sale] = await prisma2.$transaction([
+        prisma2.vetMedicineSale.create({
+          data: {
+            medicineId: data.medicineId,
+            batchId: data.batchId,
+            quantity: data.quantity,
+            unitPrice: data.unitPrice,
+            totalPrice,
+            discount,
+            patientId: data.patientId ?? null,
+            patientName: data.patientName ?? null,
+            paymentMethod: data.paymentMethod ?? null,
+            notes: data.notes ?? null,
+            saleDate: data.saleDate ? new Date(data.saleDate) : /* @__PURE__ */ new Date()
+          }
+        }),
+        prisma2.vetMedicineBatch.update({
+          where: { id: data.batchId },
+          data: { quantity: { decrement: data.quantity } }
+        })
+      ]);
+      return sale;
+    } catch (err) {
+      log78.error("sell", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:sellCombo", async (_e, data) => {
+    try {
+      if (!data.items || data.items.length === 0)
+        throw new Error("No items in cart");
+      const saleDate = data.saleDate ? new Date(data.saleDate) : /* @__PURE__ */ new Date();
+      const totalCart = data.items.reduce((s, it) => {
+        const disc = it.discount ?? 0;
+        return s + Math.max(0, it.quantity * it.unitPrice - disc);
+      }, 0);
+      let amountPaid = data.amountPaid != null ? data.amountPaid : totalCart;
+      if (isNaN(amountPaid) || amountPaid < 0)
+        amountPaid = 0;
+      if (amountPaid > totalCart)
+        amountPaid = totalCart;
+      const paymentStatus = amountPaid >= totalCart - 5e-3 ? "paid" : amountPaid > 0 ? "partial" : "unpaid";
+      for (const it of data.items) {
+        const batch = await prisma2.vetMedicineBatch.findUnique({ where: { id: it.batchId } });
+        if (!batch)
+          throw new Error(`Batch not found: ${it.batchId}`);
+        if (batch.status === "disposed")
+          throw new Error(`Batch ${it.batchId} has been disposed`);
+        if (new Date(batch.expiryDate) < /* @__PURE__ */ new Date())
+          throw new Error(`Batch ${batch.batchNumber ?? it.batchId} is expired \u2014 write it off first`);
+        if (batch.medicineId !== it.medicineId)
+          throw new Error("Medicine/batch mismatch");
+        const medicine = await prisma2.vetMedicine.findUnique({ where: { id: it.medicineId } });
+        const deductQty = it.saleUnit === "sub" && medicine?.subUnitsPerContainer ? it.quantity / medicine.subUnitsPerContainer : it.quantity;
+        if (batch.quantity < deductQty - 1e-4) {
+          throw new Error(`Insufficient stock for ${medicine?.name ?? it.medicineId}. Available: ${batch.quantity}`);
+        }
+      }
+      const sales = await prisma2.$transaction(async (tx) => {
+        const created = [];
+        for (const it of data.items) {
+          const medicine = await tx.vetMedicine.findUnique({ where: { id: it.medicineId } });
+          const deductQty = it.saleUnit === "sub" && medicine?.subUnitsPerContainer ? it.quantity / medicine.subUnitsPerContainer : it.quantity;
+          const disc = it.discount ?? 0;
+          const totalPrice = Math.max(0, it.quantity * it.unitPrice - disc);
+          const itemFraction = totalCart > 0 ? totalPrice / totalCart : 1;
+          const itemPaid = amountPaid * itemFraction;
+          const sale = await tx.vetMedicineSale.create({
+            data: {
+              medicineId: it.medicineId,
+              batchId: it.batchId,
+              quantity: it.quantity,
+              unitPrice: it.unitPrice,
+              totalPrice,
+              discount: disc,
+              saleUnit: it.saleUnit ?? "container",
+              ownerId: data.ownerId ?? null,
+              ownerName: data.ownerName ?? null,
+              paymentMethod: data.paymentMethod ?? null,
+              amountPaid: itemPaid,
+              paymentStatus,
+              notes: data.notes ?? null,
+              saleDate
+            }
+          });
+          const updated = await tx.vetMedicineBatch.updateMany({
+            where: { id: it.batchId, quantity: { gte: deductQty - 1e-4 } },
+            data: { quantity: { decrement: deductQty } }
+          });
+          if (updated.count !== 1)
+            throw new Error("Insufficient stock (batch quantity changed)");
+          created.push(sale);
+        }
+        return created;
+      });
+      return { count: sales.length, sales };
+    } catch (err) {
+      log78.error("sellCombo", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:updateSalePayment", async (_e, id, amountPaid) => {
+    try {
+      const sale = await prisma2.vetMedicineSale.findUnique({ where: { id } });
+      if (!sale)
+        throw new Error("Sale not found");
+      let validAmount = amountPaid;
+      if (isNaN(validAmount) || validAmount < 0)
+        validAmount = 0;
+      if (validAmount > sale.totalPrice)
+        validAmount = sale.totalPrice;
+      const status = validAmount >= sale.totalPrice - 5e-3 ? "paid" : validAmount > 0 ? "partial" : "unpaid";
+      return await prisma2.vetMedicineSale.update({
+        where: { id },
+        data: { amountPaid: validAmount, paymentStatus: status }
+      });
+    } catch (err) {
+      log78.error("updateSalePayment", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:getSales", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.medicineId)
+        where.medicineId = params.medicineId;
+      if (params?.patientId)
+        where.patientId = params.patientId;
+      if (params?.from || params?.to) {
+        where.saleDate = {};
+        if (params.from)
+          where.saleDate.gte = new Date(params.from);
+        if (params.to)
+          where.saleDate.lte = new Date(params.to);
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const total = await prisma2.vetMedicineSale.count({ where });
+      const data = await prisma2.vetMedicineSale.findMany({
+        where,
+        include: {
+          medicine: { select: { id: true, name: true, unit: true } },
+          batch: { select: { id: true, batchNumber: true, expiryDate: true, costPerUnit: true } }
+        },
+        orderBy: { saleDate: "desc" },
+        skip,
+        take
+      });
+      const enriched = data.map((s) => ({
+        ...s,
+        costPerUnit: s.batch?.costPerUnit ?? 0,
+        costTotal: s.quantity * (s.batch?.costPerUnit ?? 0),
+        grossProfit: s.totalPrice - s.quantity * (s.batch?.costPerUnit ?? 0)
+      }));
+      return { data: enriched, total, hasMore: skip + take < total };
+    } catch (err) {
+      log78.error("getSales", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("vet:medicines:getSummary", async (_e, params) => {
+    try {
+      const from = params?.from ? new Date(params.from) : new Date((/* @__PURE__ */ new Date()).getFullYear(), (/* @__PURE__ */ new Date()).getMonth(), 1);
+      const to = params?.to ? new Date(params.to) : /* @__PURE__ */ new Date();
+      const rows = await prisma2.$queryRawUnsafe(`
+        SELECT
+          COUNT(*)                                                  as saleCount,
+          COALESCE(SUM(s.totalPrice), 0)                           as revenue,
+          COALESCE(SUM(s.quantity * b.costPerUnit), 0)             as costOfGoods,
+          COALESCE(SUM(s.totalPrice - s.quantity * b.costPerUnit), 0) as grossProfit
+        FROM VetMedicineSale s
+        JOIN VetMedicineBatch b ON s.batchId = b.id
+        WHERE s.saleDate >= ? AND s.saleDate <= ?
+      `, from, to);
+      const topRows = await prisma2.$queryRawUnsafe(`
+        SELECT
+          m.id, m.name, m.unit,
+          COUNT(*)                             as saleCount,
+          COALESCE(SUM(s.totalPrice), 0)       as revenue,
+          COALESCE(SUM(s.quantity * b.costPerUnit), 0) as costOfGoods
+        FROM VetMedicineSale s
+        JOIN VetMedicine m ON s.medicineId = m.id
+        JOIN VetMedicineBatch b ON s.batchId = b.id
+        WHERE s.saleDate >= ? AND s.saleDate <= ?
+        GROUP BY m.id, m.name, m.unit
+        ORDER BY revenue DESC
+        LIMIT 10
+      `, from, to);
+      const r = rows[0] ?? {};
+      const revenue = Number(r.revenue) || 0;
+      const costOfGoods = Number(r.costOfGoods) || 0;
+      const grossProfit = Number(r.grossProfit) || 0;
+      const margin = revenue > 0 ? grossProfit / revenue * 100 : 0;
+      return {
+        saleCount: Number(r.saleCount) || 0,
+        revenue,
+        costOfGoods,
+        grossProfit,
+        margin,
+        topMedicines: topRows.map((t) => ({
+          id: t.id,
+          name: t.name,
+          unit: t.unit,
+          saleCount: Number(t.saleCount) || 0,
+          revenue: Number(t.revenue) || 0,
+          costOfGoods: Number(t.costOfGoods) || 0,
+          grossProfit: Number(t.revenue) - Number(t.costOfGoods)
+        }))
+      };
+    } catch (err) {
+      log78.error("getSummary", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/vet/handlers/index.ts
+function registerVetHandlers(prisma2) {
+  registerOwnerHandlers(prisma2);
+  registerVetPatientHandlers(prisma2);
+  registerVetSessionHandlers(prisma2);
+  registerVetAppointmentHandlers(prisma2);
+  registerVetCheckResultHandlers(prisma2);
+  registerVetExpenseHandlers(prisma2);
+  registerVetStaffHandlers(prisma2);
+  registerVetStatsHandlers(prisma2);
+  registerVetMedicineHandlers(prisma2);
+}
+
+// apps/bizflow/src/plugins/gym/handlers/coaches.ts
+init_electron_node();
+var log79 = createLogger("Gym:Coaches");
+function registerGymCoachHandlers(prisma2) {
+  ipcMain.handle("gym:coaches:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.search) {
+        where.OR = [
+          { name: { contains: params.search } },
+          { phone: { contains: params.search } },
+          { specialty: { contains: params.search } }
+        ];
+      }
+      if (params?.isActive !== void 0)
+        where.isActive = params.isActive;
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 100;
+      const [data, total] = await Promise.all([
+        prisma2.gymCoach.findMany({ where, orderBy: { name: "asc" }, skip, take }),
+        prisma2.gymCoach.count({ where })
+      ]);
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log79.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:coaches:getById", async (_e, id) => {
+    try {
+      return prisma2.gymCoach.findUnique({
+        where: { id },
+        include: {
+          subscriptions: {
+            include: { trainee: { select: { id: true, name: true, phone: true } }, plan: true },
+            orderBy: { createdAt: "desc" }
+          }
+        }
+      });
+    } catch (err) {
+      log79.error("getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:coaches:create", async (_e, data) => {
+    try {
+      if (data.hireDate)
+        data = { ...data, hireDate: new Date(data.hireDate) };
+      else {
+        const { hireDate: _h, ...rest } = data;
+        data = rest;
+      }
+      return prisma2.gymCoach.create({ data });
+    } catch (err) {
+      log79.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:coaches:update", async (_e, { id, data }) => {
+    try {
+      if (data.hireDate)
+        data = { ...data, hireDate: new Date(data.hireDate) };
+      return prisma2.gymCoach.update({ where: { id }, data });
+    } catch (err) {
+      log79.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:coaches:delete", async (_e, id) => {
+    try {
+      await prisma2.gymCoach.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log79.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:coaches:getStats", async (_e, coachId) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - dow);
+      weekStart.setHours(0, 0, 0, 0);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const sevenDays = new Date(now);
+      sevenDays.setDate(now.getDate() + 7);
+      const [sessionsToday, sessionsWeek, sessionsMonth, subscriptions] = await Promise.all([
+        prisma2.gymWalkSession.count({ where: { coachId, date: { gte: todayStart, lt: todayEnd } } }),
+        prisma2.gymWalkSession.count({ where: { coachId, date: { gte: weekStart, lt: todayEnd } } }),
+        prisma2.gymWalkSession.count({ where: { coachId, date: { gte: monthStart, lt: todayEnd } } }),
+        prisma2.gymSubscription.findMany({
+          where: { coachId },
+          include: {
+            trainee: { select: { id: true, name: true, phone: true } },
+            plan: { select: { id: true, name: true, durationDays: true } }
+          },
+          orderBy: { startDate: "desc" }
+        })
+      ]);
+      const activeTrainees = subscriptions.filter((s) => s.status === "active").length;
+      const uniqueTrainees = new Set(subscriptions.map((s) => s.traineeId)).size;
+      const totalRevenue = subscriptions.reduce((sum, s) => sum + (s.amountPaid ?? 0), 0);
+      const expiringSoon = subscriptions.filter(
+        (s) => s.status === "active" && new Date(s.endDate) <= sevenDays
+      ).length;
+      return { sessionsToday, sessionsWeek, sessionsMonth, activeTrainees, uniqueTrainees, totalRevenue, expiringSoon, subscriptions };
+    } catch (err) {
+      log79.error("getStats", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/trainees.ts
+init_electron_node();
+var log80 = createLogger("Gym:Trainees");
+function registerGymTraineeHandlers(prisma2) {
+  ipcMain.handle("gym:trainees:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.search) {
+        where.OR = [
+          { name: { contains: params.search } },
+          { phone: { contains: params.search } },
+          { email: { contains: params.search } }
+        ];
+      }
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const now = /* @__PURE__ */ new Date();
+      const [data, total] = await Promise.all([
+        prisma2.gymTrainee.findMany({
+          where,
+          orderBy: { name: "asc" },
+          skip,
+          take,
+          include: {
+            subscriptions: {
+              where: { status: "active", endDate: { gte: now } },
+              include: { plan: true },
+              orderBy: { endDate: "desc" },
+              take: 1
+            },
+            _count: { select: { sessions: true } }
+          }
+        }),
+        prisma2.gymTrainee.count({ where })
+      ]);
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log80.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:trainees:getById", async (_e, id) => {
+    try {
+      return prisma2.gymTrainee.findUnique({
+        where: { id },
+        include: {
+          subscriptions: {
+            include: { plan: true, coach: { select: { id: true, name: true } }, freezes: true },
+            orderBy: { createdAt: "desc" }
+          },
+          sessions: {
+            orderBy: { date: "desc" },
+            take: 50,
+            include: { coach: { select: { id: true, name: true } } }
+          }
+        }
+      });
+    } catch (err) {
+      log80.error("getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:trainees:searchLite", async (_e, query) => {
+    try {
+      return prisma2.gymTrainee.findMany({
+        where: {
+          OR: [
+            { name: { contains: query } },
+            { phone: { contains: query } }
+          ]
+        },
+        select: { id: true, name: true, phone: true },
+        orderBy: { name: "asc" },
+        take: 10
+      });
+    } catch (err) {
+      log80.error("searchLite", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:trainees:create", async (_e, data) => {
+    try {
+      return prisma2.gymTrainee.create({ data });
+    } catch (err) {
+      log80.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:trainees:update", async (_e, { id, data }) => {
+    try {
+      return prisma2.gymTrainee.update({ where: { id }, data });
+    } catch (err) {
+      log80.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:trainees:delete", async (_e, id) => {
+    try {
+      await prisma2.gymTrainee.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log80.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/plans.ts
+init_electron_node();
+var log81 = createLogger("Gym:Plans");
+function registerGymPlanHandlers(prisma2) {
+  ipcMain.handle("gym:plans:getAll", async () => {
+    try {
+      return prisma2.gymPlan.findMany({ orderBy: { price: "asc" } });
+    } catch (err) {
+      log81.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:plans:create", async (_e, data) => {
+    try {
+      return prisma2.gymPlan.create({ data });
+    } catch (err) {
+      log81.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:plans:update", async (_e, { id, data }) => {
+    try {
+      return prisma2.gymPlan.update({ where: { id }, data });
+    } catch (err) {
+      log81.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:plans:delete", async (_e, id) => {
+    try {
+      await prisma2.gymPlan.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log81.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/subscriptions.ts
+init_electron_node();
+var log82 = createLogger("Gym:Subscriptions");
+var INCLUDE = {
+  trainee: { select: { id: true, name: true, phone: true } },
+  plan: true,
+  coach: { select: { id: true, name: true } },
+  freezes: { orderBy: { createdAt: "asc" } }
+};
+function registerGymSubscriptionHandlers(prisma2) {
+  ipcMain.handle("gym:subscriptions:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.status && params.status !== "all")
+        where.status = params.status;
+      if (params?.traineeId)
+        where.traineeId = params.traineeId;
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const [data, total] = await Promise.all([
+        prisma2.gymSubscription.findMany({ where, include: INCLUDE, orderBy: { createdAt: "desc" }, skip, take }),
+        prisma2.gymSubscription.count({ where })
+      ]);
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log82.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:subscriptions:getById", async (_e, id) => {
+    try {
+      return prisma2.gymSubscription.findUnique({ where: { id }, include: INCLUDE });
+    } catch (err) {
+      log82.error("getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:subscriptions:create", async (_e, data) => {
+    try {
+      if (!data.endDate) {
+        const plan = await prisma2.gymPlan.findUnique({ where: { id: data.planId }, select: { durationDays: true } });
+        if (!plan)
+          throw new Error("Plan not found");
+        const start = new Date(data.startDate);
+        start.setDate(start.getDate() + plan.durationDays);
+        data = { ...data, endDate: start.toISOString() };
+      }
+      const startDate = new Date(data.startDate);
+      const endDate = new Date(data.endDate);
+      await prisma2.gymSubscription.updateMany({
+        where: { traineeId: data.traineeId, status: "active" },
+        data: { status: "expired" }
+      });
+      return prisma2.gymSubscription.create({
+        data: { ...data, startDate, endDate },
+        include: INCLUDE
+      });
+    } catch (err) {
+      log82.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:subscriptions:update", async (_e, { id, data }) => {
+    try {
+      if (data.startDate)
+        data = { ...data, startDate: new Date(data.startDate) };
+      if (data.endDate)
+        data = { ...data, endDate: new Date(data.endDate) };
+      return prisma2.gymSubscription.update({ where: { id }, data, include: INCLUDE });
+    } catch (err) {
+      log82.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:subscriptions:delete", async (_e, id) => {
+    try {
+      await prisma2.gymSubscription.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log82.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:subscriptions:freeze", async (_e, { id, data }) => {
+    try {
+      const sub = await prisma2.gymSubscription.findUnique({ where: { id } });
+      if (!sub)
+        throw new Error("Subscription not found");
+      const newEnd = new Date(sub.endDate);
+      newEnd.setDate(newEnd.getDate() + data.days);
+      return prisma2.$transaction([
+        prisma2.gymFreeze.create({
+          data: {
+            subscriptionId: id,
+            startDate: new Date(data.startDate),
+            endDate: new Date(data.endDate),
+            days: data.days,
+            reason: data.reason
+          }
+        }),
+        prisma2.gymSubscription.update({
+          where: { id },
+          data: {
+            status: "frozen",
+            endDate: newEnd,
+            freezeDaysUsed: sub.freezeDaysUsed + data.days
+          },
+          include: INCLUDE
+        })
+      ]);
+    } catch (err) {
+      log82.error("freeze", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:subscriptions:unfreeze", async (_e, id) => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const sub = await prisma2.gymSubscription.findUnique({ where: { id } });
+      if (!sub)
+        throw new Error("Subscription not found");
+      const status = now > new Date(sub.endDate) ? "expired" : "active";
+      return prisma2.gymSubscription.update({
+        where: { id },
+        data: { status },
+        include: INCLUDE
+      });
+    } catch (err) {
+      log82.error("unfreeze", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/sessions.ts
+init_electron_node();
+var log83 = createLogger("Gym:Sessions");
+function getPeriodRange3(period) {
+  const now = /* @__PURE__ */ new Date();
+  const start = new Date(now);
+  switch (period) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "week": {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      start.setDate(now.getDate() - dow);
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+    case "month":
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "year":
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    default:
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+  }
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return { start, end };
+}
+function registerGymSessionHandlers(prisma2) {
+  ipcMain.handle("gym:sessions:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.date) {
+        const d = /* @__PURE__ */ new Date(params.date + "T00:00:00");
+        const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+        where.date = { gte: dayStart, lt: dayEnd };
+      } else if (params?.period) {
+        const { start, end } = getPeriodRange3(params.period);
+        where.date = { gte: start, lt: end };
+      }
+      if (params?.type)
+        where.type = params.type;
+      if (params?.traineeId)
+        where.traineeId = params.traineeId;
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const [data, total] = await Promise.all([
+        prisma2.gymWalkSession.findMany({
+          where,
+          orderBy: { date: "desc" },
+          skip,
+          take,
+          include: {
+            trainee: { select: { id: true, name: true, phone: true } },
+            coach: { select: { id: true, name: true } }
+          }
+        }),
+        prisma2.gymWalkSession.count({ where })
+      ]);
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log83.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:sessions:create", async (_e, data) => {
+    try {
+      return prisma2.gymWalkSession.create({
+        data: { ...data, date: data.date ? new Date(data.date) : /* @__PURE__ */ new Date() },
+        include: {
+          trainee: { select: { id: true, name: true } },
+          coach: { select: { id: true, name: true } }
+        }
+      });
+    } catch (err) {
+      log83.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:sessions:delete", async (_e, id) => {
+    try {
+      await prisma2.gymWalkSession.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log83.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:sessions:getCalendar", async (_e, { year, month }) => {
+    try {
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 1);
+      const sessions2 = await prisma2.gymWalkSession.findMany({
+        where: { date: { gte: start, lt: end } },
+        select: { date: true, type: true, amount: true }
+      });
+      const byDay = {};
+      for (const s of sessions2) {
+        const day = new Date(s.date).toISOString().slice(0, 10);
+        if (!byDay[day])
+          byDay[day] = { total: 0, walkin: 0, sub: 0, revenue: 0 };
+        byDay[day].total++;
+        if (s.type === "walkin")
+          byDay[day].walkin++;
+        else
+          byDay[day].sub++;
+        byDay[day].revenue += s.amount ?? 0;
+      }
+      return byDay;
+    } catch (err) {
+      log83.error("getCalendar", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/expenses.ts
+init_electron_node();
+var log84 = createLogger("Gym:Expenses");
+function getPeriodRange4(period) {
+  const now = /* @__PURE__ */ new Date();
+  const start = new Date(now);
+  switch (period) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "week": {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      start.setDate(now.getDate() - dow);
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+    case "month":
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "year":
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    default:
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+  }
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return { start, end };
+}
+function registerGymExpenseHandlers(prisma2) {
+  ipcMain.handle("gym:expenses:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.period) {
+        const { start, end } = getPeriodRange4(params.period);
+        where.date = { gte: start, lt: end };
+      }
+      if (params?.category && params.category !== "all")
+        where.category = params.category;
+      const skip = params?.skip ?? 0;
+      const take = params?.take ?? 50;
+      const [data, total] = await Promise.all([
+        prisma2.gymExpense.findMany({ where, orderBy: { date: "desc" }, skip, take }),
+        prisma2.gymExpense.count({ where })
+      ]);
+      return { data, total, hasMore: skip + take < total };
+    } catch (err) {
+      log84.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:expenses:summary", async (_e, period = "month") => {
+    try {
+      const { start, end } = getPeriodRange4(period);
+      const rows = await prisma2.gymExpense.findMany({
+        where: { date: { gte: start, lt: end } },
+        select: { amount: true, category: true }
+      });
+      const totalExpenses = rows.reduce((s, e) => s + e.amount, 0);
+      const catMap = {};
+      for (const e of rows)
+        catMap[e.category] = (catMap[e.category] ?? 0) + e.amount;
+      const byCategory = Object.entries(catMap).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total);
+      return { totalExpenses, byCategory };
+    } catch (err) {
+      log84.error("summary", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:expenses:create", async (_e, data) => {
+    try {
+      return prisma2.gymExpense.create({ data: { ...data, date: new Date(data.date) } });
+    } catch (err) {
+      log84.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:expenses:update", async (_e, { id, data }) => {
+    try {
+      return prisma2.gymExpense.update({ where: { id }, data: { ...data, date: data.date ? new Date(data.date) : void 0 } });
+    } catch (err) {
+      log84.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:expenses:delete", async (_e, id) => {
+    try {
+      await prisma2.gymExpense.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log84.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/stats.ts
+init_electron_node();
+var log85 = createLogger("Gym:Stats");
+function getPeriodRange5(period) {
+  const now = /* @__PURE__ */ new Date();
+  const start = new Date(now);
+  switch (period) {
+    case "today":
+      start.setHours(0, 0, 0, 0);
+      break;
+    case "week": {
+      const dow = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      start.setDate(now.getDate() - dow);
+      start.setHours(0, 0, 0, 0);
+      break;
+    }
+    case "year":
+      start.setMonth(0, 1);
+      start.setHours(0, 0, 0, 0);
+      break;
+    default:
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+  }
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  return { start, end };
+}
+function registerGymStatsHandlers(prisma2) {
+  ipcMain.handle("gym:stats:overview", async (_e, period = "month") => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(now.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      const nextWeek = new Date(now);
+      nextWeek.setDate(now.getDate() + 7);
+      const { start, end } = getPeriodRange5(period);
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const [
+        activeMembers,
+        expiringSoon,
+        todayCheckIns,
+        subRevAgg,
+        walkRevAgg,
+        expensesAgg,
+        trendSessions,
+        newMembersThisMonth,
+        activePrograms,
+        occupiedLockers,
+        totalLockers,
+        totalTrainees,
+        anonymousWalkInsToday
+      ] = await Promise.all([
+        prisma2.gymSubscription.count({ where: { status: "active" } }),
+        prisma2.gymSubscription.count({ where: { status: "active", endDate: { gte: now, lte: nextWeek } } }),
+        prisma2.gymWalkSession.count({ where: { date: { gte: todayStart, lt: todayEnd } } }),
+        prisma2.gymSubscription.aggregate({
+          _sum: { amountPaid: true },
+          where: { createdAt: { gte: start, lt: end } }
+        }),
+        prisma2.gymWalkSession.aggregate({
+          _sum: { amount: true },
+          where: { date: { gte: start, lt: end } }
+        }),
+        prisma2.gymExpense.aggregate({
+          _sum: { amount: true },
+          where: { date: { gte: start, lt: end } }
+        }),
+        prisma2.gymWalkSession.findMany({
+          where: { date: { gte: sevenDaysAgo, lt: todayEnd } },
+          select: { date: true }
+        }),
+        prisma2.gymTrainee.count({ where: { createdAt: { gte: monthStart, lt: todayEnd } } }),
+        prisma2.gymProgram.count({ where: { isActive: true } }),
+        prisma2.gymLockerAssignment.count({ where: { isActive: true } }),
+        prisma2.gymLocker.count(),
+        prisma2.gymTrainee.count(),
+        prisma2.gymWalkSession.count({ where: { traineeId: null, date: { gte: todayStart, lt: todayEnd } } })
+      ]);
+      const trendMap = {};
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(sevenDaysAgo);
+        d.setDate(sevenDaysAgo.getDate() + i);
+        trendMap[d.toISOString().slice(0, 10)] = 0;
+      }
+      for (const s of trendSessions) {
+        const key = new Date(s.date).toISOString().slice(0, 10);
+        if (key in trendMap)
+          trendMap[key]++;
+      }
+      const visitTrend = Object.entries(trendMap).sort(([a], [b]) => a.localeCompare(b)).map(([date, count]) => ({ date, count }));
+      const subRevenue = subRevAgg._sum.amountPaid ?? 0;
+      const walkRevenue = walkRevAgg._sum.amount ?? 0;
+      const revenue = subRevenue + walkRevenue;
+      const totalExpenses = expensesAgg._sum.amount ?? 0;
+      return {
+        activeMembers,
+        expiringSoon,
+        todayCheckIns,
+        revenue,
+        subRevenue,
+        walkRevenue,
+        totalExpenses,
+        netIncome: revenue - totalExpenses,
+        visitTrend,
+        newMembersThisMonth,
+        activePrograms,
+        occupiedLockers,
+        totalLockers,
+        totalTrainees,
+        anonymousWalkInsToday
+      };
+    } catch (err) {
+      log85.error("overview", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/alerts.ts
+init_electron_node();
+var log86 = createLogger("Gym:Alerts");
+function registerGymAlertHandlers(prisma2) {
+  ipcMain.handle("gym:alerts:atRisk", async (_e, thresholdDays = 14) => {
+    try {
+      const cutoff = /* @__PURE__ */ new Date();
+      cutoff.setDate(cutoff.getDate() - thresholdDays);
+      const activeSubs = await prisma2.gymSubscription.findMany({
+        where: { status: "active" },
+        select: {
+          traineeId: true,
+          trainee: { select: { id: true, name: true, phone: true } },
+          endDate: true,
+          plan: { select: { name: true } }
+        }
+      });
+      const results = [];
+      for (const sub of activeSubs) {
+        const lastSession = await prisma2.gymWalkSession.findFirst({
+          where: { traineeId: sub.traineeId },
+          orderBy: { date: "desc" },
+          select: { date: true }
+        });
+        const lastVisit = lastSession?.date ?? null;
+        const daysSince = lastVisit ? Math.floor((Date.now() - new Date(lastVisit).getTime()) / 864e5) : 999;
+        if (daysSince >= thresholdDays) {
+          results.push({
+            traineeId: sub.traineeId,
+            name: sub.trainee.name,
+            phone: sub.trainee.phone,
+            planName: sub.plan.name,
+            endDate: sub.endDate,
+            lastVisit,
+            daysSince
+          });
+        }
+      }
+      results.sort((a, b) => b.daysSince - a.daysSince);
+      return results;
+    } catch (err) {
+      log86.error("atRisk", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/measurements.ts
+init_electron_node();
+var log87 = createLogger("Gym:Measurements");
+function registerGymMeasurementHandlers(prisma2) {
+  ipcMain.handle("gym:measurements:getAll", async (_e, traineeId) => {
+    try {
+      return prisma2.gymMeasurement.findMany({
+        where: { traineeId },
+        orderBy: { date: "desc" }
+      });
+    } catch (err) {
+      log87.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:measurements:create", async (_e, data) => {
+    try {
+      return prisma2.gymMeasurement.create({
+        data: { ...data, date: data.date ? new Date(data.date) : /* @__PURE__ */ new Date() }
+      });
+    } catch (err) {
+      log87.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:measurements:update", async (_e, { id, data }) => {
+    try {
+      if (data.date)
+        data = { ...data, date: new Date(data.date) };
+      return prisma2.gymMeasurement.update({ where: { id }, data });
+    } catch (err) {
+      log87.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:measurements:delete", async (_e, id) => {
+    try {
+      await prisma2.gymMeasurement.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log87.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/goals.ts
+init_electron_node();
+var log88 = createLogger("Gym:Goals");
+function registerGymGoalHandlers(prisma2) {
+  ipcMain.handle("gym:goals:getAll", async (_e, traineeId) => {
+    try {
+      return prisma2.gymGoal.findMany({
+        where: { traineeId },
+        orderBy: [{ status: "asc" }, { createdAt: "desc" }]
+      });
+    } catch (err) {
+      log88.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:goals:create", async (_e, data) => {
+    try {
+      if (data.deadline)
+        data = { ...data, deadline: new Date(data.deadline) };
+      return prisma2.gymGoal.create({ data });
+    } catch (err) {
+      log88.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:goals:update", async (_e, { id, data }) => {
+    try {
+      if (data.deadline)
+        data = { ...data, deadline: new Date(data.deadline) };
+      return prisma2.gymGoal.update({ where: { id }, data });
+    } catch (err) {
+      log88.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:goals:delete", async (_e, id) => {
+    try {
+      await prisma2.gymGoal.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log88.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:goals:markAchieved", async (_e, id) => {
+    try {
+      return prisma2.gymGoal.update({ where: { id }, data: { status: "achieved" } });
+    } catch (err) {
+      log88.error("markAchieved", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/shifts.ts
+init_electron_node();
+var log89 = createLogger("Gym:Shifts");
+function registerGymShiftHandlers(prisma2) {
+  ipcMain.handle("gym:shifts:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.coachId)
+        where.coachId = params.coachId;
+      if (params?.weekStart) {
+        const start = new Date(params.weekStart);
+        const end = new Date(start);
+        end.setDate(end.getDate() + 7);
+        where.date = { gte: start, lt: end };
+      }
+      return prisma2.gymShift.findMany({
+        where,
+        include: { coach: { select: { id: true, name: true } } },
+        orderBy: [{ date: "asc" }, { startTime: "asc" }]
+      });
+    } catch (err) {
+      log89.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:shifts:create", async (_e, data) => {
+    try {
+      return prisma2.gymShift.create({
+        data: { ...data, date: new Date(data.date) },
+        include: { coach: { select: { id: true, name: true } } }
+      });
+    } catch (err) {
+      log89.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:shifts:update", async (_e, { id, data }) => {
+    try {
+      if (data.date)
+        data = { ...data, date: new Date(data.date) };
+      return prisma2.gymShift.update({
+        where: { id },
+        data,
+        include: { coach: { select: { id: true, name: true } } }
+      });
+    } catch (err) {
+      log89.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:shifts:delete", async (_e, id) => {
+    try {
+      await prisma2.gymShift.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log89.error("delete", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/lockers.ts
+init_electron_node();
+var log90 = createLogger("Gym:Lockers");
+var INCLUDE2 = {
+  assignments: {
+    where: { isActive: true },
+    include: { trainee: { select: { id: true, name: true, phone: true } } }
+  }
+};
+function registerGymLockerHandlers(prisma2) {
+  ipcMain.handle("gym:lockers:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.zone)
+        where.zone = params.zone;
+      return prisma2.gymLocker.findMany({
+        where,
+        include: INCLUDE2,
+        orderBy: [{ zone: "asc" }, { number: "asc" }]
+      });
+    } catch (err) {
+      log90.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:lockers:create", async (_e, data) => {
+    try {
+      return prisma2.gymLocker.create({ data, include: INCLUDE2 });
+    } catch (err) {
+      log90.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:lockers:update", async (_e, { id, data }) => {
+    try {
+      return prisma2.gymLocker.update({ where: { id }, data, include: INCLUDE2 });
+    } catch (err) {
+      log90.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:lockers:delete", async (_e, id) => {
+    try {
+      await prisma2.gymLocker.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log90.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:lockers:assign", async (_e, { lockerId, traineeId, endDate, notes }) => {
+    try {
+      await prisma2.gymLockerAssignment.updateMany({
+        where: { lockerId, isActive: true },
+        data: { isActive: false }
+      });
+      const assignment = await prisma2.gymLockerAssignment.create({
+        data: {
+          lockerId,
+          traineeId,
+          endDate: endDate ? new Date(endDate) : void 0,
+          isActive: true,
+          notes
+        },
+        include: { trainee: { select: { id: true, name: true, phone: true } } }
+      });
+      return prisma2.gymLocker.findUnique({ where: { id: lockerId }, include: INCLUDE2 });
+    } catch (err) {
+      log90.error("assign", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:lockers:unassign", async (_e, lockerId) => {
+    try {
+      await prisma2.gymLockerAssignment.updateMany({
+        where: { lockerId, isActive: true },
+        data: { isActive: false, endDate: /* @__PURE__ */ new Date() }
+      });
+      return prisma2.gymLocker.findUnique({ where: { id: lockerId }, include: INCLUDE2 });
+    } catch (err) {
+      log90.error("unassign", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/programs.ts
+init_electron_node();
+var log91 = createLogger("Gym:Programs");
+var DAY_INCLUDE = { exercises: { orderBy: { order: "asc" } } };
+var FULL_INCLUDE = {
+  coach: { select: { id: true, name: true } },
+  days: { include: DAY_INCLUDE, orderBy: [{ weekNumber: "asc" }, { dayNumber: "asc" }] },
+  assignments: {
+    where: { isActive: true },
+    include: { trainee: { select: { id: true, name: true, phone: true } } }
+  }
+};
+function registerGymProgramHandlers(prisma2) {
+  ipcMain.handle("gym:programs:getAll", async (_e, params) => {
+    try {
+      const where = {};
+      if (params?.coachId)
+        where.coachId = params.coachId;
+      if (params?.isActive !== void 0)
+        where.isActive = params.isActive;
+      return prisma2.gymProgram.findMany({
+        where,
+        include: {
+          coach: { select: { id: true, name: true } },
+          _count: { select: { assignments: true, days: true } }
+        },
+        orderBy: { createdAt: "desc" }
+      });
+    } catch (err) {
+      log91.error("getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:getById", async (_e, id) => {
+    try {
+      return prisma2.gymProgram.findUnique({ where: { id }, include: FULL_INCLUDE });
+    } catch (err) {
+      log91.error("getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:create", async (_e, data) => {
+    try {
+      const { days: _d, assignments: _a, ...rest } = data;
+      return prisma2.gymProgram.create({ data: rest, include: FULL_INCLUDE });
+    } catch (err) {
+      log91.error("create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:update", async (_e, { id, data }) => {
+    try {
+      const { days: _d, assignments: _a, coach: _c, ...rest } = data;
+      return prisma2.gymProgram.update({ where: { id }, data: rest, include: FULL_INCLUDE });
+    } catch (err) {
+      log91.error("update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:delete", async (_e, id) => {
+    try {
+      await prisma2.gymProgram.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log91.error("delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:addDay", async (_e, { programId, data }) => {
+    try {
+      return prisma2.gymProgramDay.create({ data: { ...data, programId }, include: DAY_INCLUDE });
+    } catch (err) {
+      log91.error("addDay", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:updateDay", async (_e, { id, data }) => {
+    try {
+      const { exercises: _e2, ...rest } = data;
+      return prisma2.gymProgramDay.update({ where: { id }, data: rest, include: DAY_INCLUDE });
+    } catch (err) {
+      log91.error("updateDay", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:deleteDay", async (_e, id) => {
+    try {
+      await prisma2.gymProgramDay.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log91.error("deleteDay", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:addExercise", async (_e, { dayId, data }) => {
+    try {
+      return prisma2.gymProgramExercise.create({ data: { ...data, dayId } });
+    } catch (err) {
+      log91.error("addExercise", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:updateExercise", async (_e, { id, data }) => {
+    try {
+      return prisma2.gymProgramExercise.update({ where: { id }, data });
+    } catch (err) {
+      log91.error("updateExercise", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:deleteExercise", async (_e, id) => {
+    try {
+      await prisma2.gymProgramExercise.delete({ where: { id } });
+      return { success: true };
+    } catch (err) {
+      log91.error("deleteExercise", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:assign", async (_e, { programId, traineeId, startDate, notes }) => {
+    try {
+      await prisma2.gymProgramAssignment.updateMany({
+        where: { traineeId, programId, isActive: true },
+        data: { isActive: false }
+      });
+      return prisma2.gymProgramAssignment.create({
+        data: {
+          programId,
+          traineeId,
+          notes,
+          startDate: startDate ? new Date(startDate) : /* @__PURE__ */ new Date(),
+          isActive: true
+        },
+        include: { trainee: { select: { id: true, name: true } }, program: { select: { id: true, name: true } } }
+      });
+    } catch (err) {
+      log91.error("assign", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:unassign", async (_e, assignmentId) => {
+    try {
+      await prisma2.gymProgramAssignment.update({
+        where: { id: assignmentId },
+        data: { isActive: false }
+      });
+      return { success: true };
+    } catch (err) {
+      log91.error("unassign", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("gym:programs:getAssignments", async (_e, traineeId) => {
+    try {
+      return prisma2.gymProgramAssignment.findMany({
+        where: { traineeId },
+        include: { program: { select: { id: true, name: true, goal: true, weeksTotal: true, daysPerWeek: true } } },
+        orderBy: { createdAt: "desc" }
+      });
+    } catch (err) {
+      log91.error("getAssignments", err);
+      throw err;
+    }
+  });
+}
+
+// apps/bizflow/src/plugins/gym/handlers/index.ts
+function registerGymHandlers(prisma2) {
+  registerGymCoachHandlers(prisma2);
+  registerGymTraineeHandlers(prisma2);
+  registerGymPlanHandlers(prisma2);
+  registerGymSubscriptionHandlers(prisma2);
+  registerGymSessionHandlers(prisma2);
+  registerGymExpenseHandlers(prisma2);
+  registerGymStatsHandlers(prisma2);
+  registerGymAlertHandlers(prisma2);
+  registerGymMeasurementHandlers(prisma2);
+  registerGymGoalHandlers(prisma2);
+  registerGymShiftHandlers(prisma2);
+  registerGymLockerHandlers(prisma2);
+  registerGymProgramHandlers(prisma2);
+}
+
+// apps/bizflow/src/main/database/seed-production.ts
+var import_bcryptjs2 = __toESM(require_bcryptjs());
+var log92 = createLogger("DBSeed");
+async function seedProductionDatabase(prisma2) {
+  log92.info("[DB Seed] \u{1F331} Starting first-run database seeding (minimal)...");
+  try {
+    const userCount = await prisma2.user.count();
+    if (userCount > 0) {
+      log92.info("[DB Seed] \u2139\uFE0F Database already seeded, skipping...");
+      return;
+    }
+    log92.info("[DB Seed] Creating default setup admin user (minimal seed)...");
+    const adminUser = await prisma2.user.create({
+      data: {
+        username: "setup",
+        passwordHash: await import_bcryptjs2.default.hash("setup123", 10),
+        role: "admin",
+        fullName: "Setup Administrator",
+        email: "setup@bizflow.local",
+        isActive: true
+      }
+    });
+    log92.info("[DB Seed] \u2705 Created default setup admin user:", adminUser.username);
+    log92.info("[DB Seed] \u{1F389} Minimal first-run seeding completed!");
+    log92.info('[DB Seed] \u{1F4DD} Login with username: "setup", password: "setup123"');
+    log92.info("[DB Seed] \u26A0\uFE0F  IMPORTANT: Use this account ONLY to create your permanent admin, then delete it!");
+  } catch (error) {
+    log92.error("[DB Seed] \u274C Error seeding database:", error);
+    throw error;
+  }
+}
+
+// apps/bizflow/web/server.ts
+var PORT = Number(process.env.BRIDGE_PORT) || 8787;
+function safeJson(value) {
+  return JSON.stringify(
+    value,
+    (_k, v) => typeof v === "bigint" ? Number(v) : v
+  );
+}
+async function buildTemplate() {
+  const templateDbPath2 = import_node_path6.default.resolve(process.cwd(), "prisma", "dev.db");
+  const sessionsDir2 = import_node_path6.default.resolve(process.cwd(), "prisma", "sessions");
+  const prismaModulePath = import_node_path6.default.resolve(
+    process.cwd(),
+    "src",
+    "generated",
+    "prisma"
+  );
+  const { PrismaClient } = require(prismaModulePath);
+  const template = new PrismaClient({
+    datasources: { db: { url: `file:${templateDbPath2}?connection_limit=1` } },
+    log: ["error"]
+  });
+  for (const pragma of [
+    "PRAGMA busy_timeout = 10000;",
+    "PRAGMA journal_mode = DELETE;",
+    "PRAGMA foreign_keys = ON;"
+  ]) {
+    try {
+      await template.$queryRawUnsafe(pragma);
+    } catch {
+    }
+  }
+  try {
+    await seedProductionDatabase(template);
+  } catch (e) {
+    console.warn("[bridge] seed skipped/failed:", e.message);
+  }
+  await template.$disconnect();
+  return { PrismaClient, templateDbPath: templateDbPath2, sessionsDir: sessionsDir2 };
+}
+async function main() {
+  console.log("[bridge] building template database\u2026");
+  const { PrismaClient, templateDbPath: templateDbPath2, sessionsDir: sessionsDir2 } = await buildTemplate();
+  configureSessionDb({ PrismaClient, templateDbPath: templateDbPath2, sessionsDir: sessionsDir2 });
+  const prisma2 = createPrismaProxy();
+  console.log("[bridge] registering handlers\u2026");
+  registerAuthHandlers(prisma2);
+  registerDashboardHandlers(prisma2);
+  registerFinanceHandlers(prisma2);
+  registerEmployeesHandlers(prisma2);
+  registerCustomersHandlers(prisma2);
+  registerSearchHandlers(prisma2);
+  registerUserHandlers(prisma2);
+  registerReportsHandlers(prisma2);
+  registerAnalyticsHandlers();
+  registerModuleHandlers();
+  registerLogHandlers();
+  registerCommerceHandlers(prisma2);
+  registerBakeryHandlers(prisma2);
+  registerRestaurantHandlers(prisma2);
+  registerWarehouseHandlers(prisma2);
+  registerClinicHandlers(prisma2);
+  registerVetHandlers(prisma2);
+  registerGymHandlers(prisma2);
+  console.log(`[bridge] ${__handlers.size} channels registered`);
+  const ALL_MODULES = [
+    "commerce",
+    "bakery",
+    "restaurant",
+    "warehouse",
+    "clinic",
+    "vet",
+    "gym"
+  ];
+  const COMMERCE_DEPENDENTS = /* @__PURE__ */ new Set(["restaurant", "warehouse"]);
+  ipcMain.handle("module:getEnabled", (event = {}) => {
+    const only = event?.only;
+    if (!only)
+      return ALL_MODULES;
+    if (only === "commerce")
+      return ["commerce"];
+    return COMMERCE_DEPENDENTS.has(only) ? ["commerce", only] : [only];
+  });
+  const server = import_node_http.default.createServer((req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      return res.end();
+    }
+    if (req.method === "POST" && req.url === "/ipc") {
+      let body = "";
+      req.on("data", (c) => body += c);
+      req.on("end", async () => {
+        const json = (ok, payload) => {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(safeJson({ ok, ...payload }));
+        };
+        try {
+          const { channel, args = [], only, session: session2 } = JSON.parse(
+            body || "{}"
+          );
+          const handler = __handlers.get(channel);
+          if (!handler) {
+            return json(false, { error: `No handler for channel: ${channel}` });
+          }
+          const client = getSessionClient(
+            typeof session2 === "string" ? session2 : ""
+          );
+          await ensureReady(client);
+          const data = await runWithClient(
+            client,
+            () => handler({ only }, ...args)
+          );
+          json(true, { data });
+        } catch (e) {
+          json(false, { error: e?.message ?? String(e) });
+        }
+      });
+      return;
+    }
+    if (req.method === "GET" && req.url === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(
+        safeJson({
+          ok: true,
+          channels: __handlers.size,
+          sessions: sessionCount()
+        })
+      );
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  server.listen(PORT, () => {
+    console.log(`[bridge] BizFlow web bridge listening on http://localhost:${PORT}`);
+  });
+}
+main().catch((e) => {
+  console.error("[bridge] fatal:", e);
+  process.exit(1);
+});
+/*! Bundled license information:
+
+bcryptjs/dist/bcrypt.js:
+  (**
+   * @license bcrypt.js (c) 2013 Daniel Wirtz <dcode@dcode.io>
+   * Released under the Apache License, Version 2.0
+   * see: https://github.com/dcodeIO/bcrypt.js for details
+   *)
+*/
+//# sourceMappingURL=server.cjs.map

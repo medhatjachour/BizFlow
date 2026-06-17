@@ -211,39 +211,170 @@ const FUTURE_APPT_STATUSES = ['scheduled','scheduled','scheduled','confirmed'] a
 
 // ─── Medicine catalogue ─────────────────────────────────────────────────────
 
-const MEDICINE_CATALOGUE = [
-  // Antibiotics
-  { name: 'Amoxicillin 250mg',         category: 'antibiotic',    unit: 'tablet',  minimumStock: 100, description: 'Broad-spectrum penicillin antibiotic for bacterial infections', unitPrice: 0.45, costPerUnit: 0.20 },
-  { name: 'Enrofloxacin 68mg',          category: 'antibiotic',    unit: 'tablet',  minimumStock:  50, description: 'Fluoroquinolone antibiotic for gram-negative bacteria',            unitPrice: 2.50, costPerUnit: 1.10 },
-  { name: 'Metronidazole 250mg',        category: 'antibiotic',    unit: 'tablet',  minimumStock:  80, description: 'Antibiotic and antiprotozoal for GI infections',                   unitPrice: 0.60, costPerUnit: 0.25 },
-  { name: 'Clavamox 250mg',             category: 'antibiotic',    unit: 'tablet',  minimumStock:  60, description: 'Amoxicillin-clavulanate combination antibiotic',                  unitPrice: 3.20, costPerUnit: 1.40 },
-  { name: 'Doxycycline 100mg',          category: 'antibiotic',    unit: 'capsule', minimumStock:  60, description: 'Tetracycline antibiotic for tick-borne diseases',                 unitPrice: 1.80, costPerUnit: 0.75 },
-  // Antiparasitics
-  { name: 'Frontline Plus (S)',          category: 'antiparasitic', unit: 'vial',    minimumStock:  20, description: 'Flea & tick spot-on treatment for small dogs',                    unitPrice: 18.00, costPerUnit:  9.00 },
-  { name: 'Heartgard Plus 26-50kg',     category: 'antiparasitic', unit: 'tablet',  minimumStock:  24, description: 'Heartworm prevention chewable tablet',                           unitPrice: 12.50, costPerUnit:  5.50 },
-  { name: 'Revolution (cat)',           category: 'antiparasitic', unit: 'vial',    minimumStock:  18, description: 'Selamectin parasiticide for cats',                               unitPrice: 22.00, costPerUnit: 10.00 },
-  { name: 'Panacur 250mg/5mL',          category: 'antiparasitic', unit: 'ml',      minimumStock: 200, description: 'Fenbendazole dewormer suspension',                               unitPrice:  0.40, costPerUnit:  0.15 },
+// ── Medicine catalogue generator ──────────────────────────────────────────────
+// Produces a large, varied catalogue. A good share of medicines are liquids /
+// injectables that carry a sub-unit (e.g. a 100 ml bottle sold by the ml).
+
+type MedDef = {
+  name: string; category: string; unit: string; minimumStock: number
+  description: string; unitPrice: number; costPerUnit: number
+  subUnit: string | null; subUnitsPerContainer: number | null
+}
+
+// Solid oral drugs → tablet/capsule, multiple strengths
+const SOLID_DRUGS: Array<{ base: string; cat: string; unit: string; strengths: string[]; price: number; cost: number; desc: string }> = [
+  { base: 'Amoxicillin',     cat: 'antibiotic',    unit: 'tablet',  strengths: ['125mg','250mg','500mg'],        price: 0.45, cost: 0.20, desc: 'Broad-spectrum penicillin antibiotic' },
+  { base: 'Clavamox',        cat: 'antibiotic',    unit: 'tablet',  strengths: ['62.5mg','250mg','375mg'],       price: 3.20, cost: 1.40, desc: 'Amoxicillin-clavulanate antibiotic' },
+  { base: 'Cephalexin',      cat: 'antibiotic',    unit: 'capsule', strengths: ['250mg','500mg'],                price: 0.70, cost: 0.30, desc: 'First-generation cephalosporin antibiotic' },
+  { base: 'Doxycycline',     cat: 'antibiotic',    unit: 'capsule', strengths: ['50mg','100mg'],                 price: 1.80, cost: 0.75, desc: 'Tetracycline antibiotic for tick-borne disease' },
+  { base: 'Metronidazole',   cat: 'antibiotic',    unit: 'tablet',  strengths: ['250mg','500mg'],                price: 0.60, cost: 0.25, desc: 'Antibiotic / antiprotozoal for GI infections' },
+  { base: 'Enrofloxacin',    cat: 'antibiotic',    unit: 'tablet',  strengths: ['22.7mg','68mg','136mg'],        price: 2.50, cost: 1.10, desc: 'Fluoroquinolone antibiotic' },
+  { base: 'Cefpodoxime',     cat: 'antibiotic',    unit: 'tablet',  strengths: ['100mg','200mg'],                price: 2.10, cost: 0.95, desc: 'Third-generation cephalosporin antibiotic' },
+  { base: 'Clindamycin',     cat: 'antibiotic',    unit: 'capsule', strengths: ['25mg','75mg','150mg'],          price: 0.90, cost: 0.38, desc: 'Lincosamide antibiotic for soft-tissue / dental infections' },
+  { base: 'Heartgard Plus',  cat: 'antiparasitic', unit: 'tablet',  strengths: ['≤11kg','12-22kg','23-45kg'],    price: 12.5, cost: 5.50, desc: 'Ivermectin/pyrantel heartworm chewable' },
+  { base: 'Drontal Plus',    cat: 'antiparasitic', unit: 'tablet',  strengths: ['small','medium','large'],       price: 6.80, cost: 2.90, desc: 'Broad-spectrum dewormer tablet' },
+  { base: 'NexGard',         cat: 'antiparasitic', unit: 'tablet',  strengths: ['2-4kg','4-10kg','10-25kg'],     price: 14.0, cost: 6.20, desc: 'Afoxolaner flea & tick chewable' },
+  { base: 'Bravecto',        cat: 'antiparasitic', unit: 'tablet',  strengths: ['4.5-10kg','10-20kg','20-40kg'], price: 38.0, cost: 18.0, desc: '12-week flea & tick chewable' },
+  { base: 'Praziquantel',    cat: 'antiparasitic', unit: 'tablet',  strengths: ['23mg','34mg'],                  price: 1.20, cost: 0.50, desc: 'Tapeworm dewormer tablet' },
+  { base: 'Meloxicam',       cat: 'analgesic',     unit: 'tablet',  strengths: ['1mg','2.5mg'],                  price: 0.80, cost: 0.32, desc: 'NSAID for pain and inflammation' },
+  { base: 'Carprofen',       cat: 'analgesic',     unit: 'tablet',  strengths: ['25mg','75mg','100mg'],          price: 0.95, cost: 0.40, desc: 'NSAID for osteoarthritis pain' },
+  { base: 'Gabapentin',      cat: 'analgesic',     unit: 'capsule', strengths: ['100mg','300mg'],                price: 0.60, cost: 0.22, desc: 'Neuropathic pain and anxiety relief' },
+  { base: 'Tramadol',        cat: 'analgesic',     unit: 'tablet',  strengths: ['50mg'],                         price: 0.55, cost: 0.20, desc: 'Opioid-like analgesic' },
+  { base: 'Prednisolone',    cat: 'general',       unit: 'tablet',  strengths: ['5mg','20mg'],                   price: 0.50, cost: 0.18, desc: 'Corticosteroid for inflammation' },
+  { base: 'Apoquel',         cat: 'general',       unit: 'tablet',  strengths: ['3.6mg','5.4mg','16mg'],         price: 4.80, cost: 2.10, desc: 'Oclacitinib for allergic itch relief' },
+  { base: 'Cerenia',         cat: 'general',       unit: 'tablet',  strengths: ['16mg','24mg','60mg'],           price: 6.50, cost: 2.80, desc: 'Maropitant anti-emetic' },
+  { base: 'Famotidine',      cat: 'general',       unit: 'tablet',  strengths: ['10mg','20mg'],                  price: 0.55, cost: 0.20, desc: 'H2 blocker for gastric acid' },
+  { base: 'Omeprazole',      cat: 'general',       unit: 'capsule', strengths: ['10mg','20mg'],                  price: 0.65, cost: 0.24, desc: 'Proton-pump inhibitor for ulcers' },
+  { base: 'Furosemide',      cat: 'general',       unit: 'tablet',  strengths: ['12.5mg','40mg'],                price: 0.40, cost: 0.15, desc: 'Loop diuretic for cardiac oedema' },
+  { base: 'Levothyroxine',   cat: 'general',       unit: 'tablet',  strengths: ['0.3mg','0.5mg','0.8mg'],        price: 0.45, cost: 0.18, desc: 'Thyroid hormone replacement' },
+  { base: 'Cosequin DS',     cat: 'supplement',    unit: 'tablet',  strengths: ['chew'],                         price: 1.20, cost: 0.55, desc: 'Glucosamine-chondroitin joint chew' },
+  { base: 'Omega-3',         cat: 'supplement',    unit: 'capsule', strengths: ['500mg','1000mg'],               price: 0.75, cost: 0.30, desc: 'Fish-oil fatty-acid supplement' },
+  { base: 'Denamarin',       cat: 'supplement',    unit: 'tablet',  strengths: ['small','large'],                price: 2.10, cost: 0.95, desc: 'SAMe + silybin liver support' },
+  { base: 'Vitamin B Complex',cat: 'supplement',   unit: 'tablet',  strengths: ['std'],                          price: 0.40, cost: 0.15, desc: 'B-vitamin metabolic support' },
+]
+
+// Liquids → bottle sold by the ml (sub-unit)
+const LIQUID_DRUGS: Array<{ base: string; cat: string; sizesMl: number[]; pricePerMl: number; costPerMl: number; desc: string }> = [
+  { base: 'Amoxicillin Oral Suspension', cat: 'antibiotic',    sizesMl: [30, 60, 100],  pricePerMl: 0.30, costPerMl: 0.12, desc: 'Palatable oral antibiotic suspension' },
+  { base: 'Metronidazole Suspension',    cat: 'antibiotic',    sizesMl: [60, 100],      pricePerMl: 0.28, costPerMl: 0.11, desc: 'Oral antiprotozoal suspension' },
+  { base: 'Panacur Liquid',              cat: 'antiparasitic', sizesMl: [100, 240],     pricePerMl: 0.20, costPerMl: 0.08, desc: 'Fenbendazole dewormer suspension' },
+  { base: 'Pyrantel Pamoate',            cat: 'antiparasitic', sizesMl: [30, 60],       pricePerMl: 0.22, costPerMl: 0.09, desc: 'Roundworm / hookworm oral suspension' },
+  { base: 'Meloxicam Oral',              cat: 'analgesic',     sizesMl: [10, 15, 32],   pricePerMl: 0.85, costPerMl: 0.35, desc: 'NSAID oral suspension' },
+  { base: 'Tramadol Syrup',              cat: 'analgesic',     sizesMl: [60, 100],      pricePerMl: 0.35, costPerMl: 0.14, desc: 'Liquid analgesic syrup' },
+  { base: 'Lactulose Syrup',             cat: 'general',       sizesMl: [200, 500],     pricePerMl: 0.06, costPerMl: 0.02, desc: 'Osmotic laxative syrup' },
+  { base: 'Sucralfate Suspension',       cat: 'general',       sizesMl: [100, 420],     pricePerMl: 0.10, costPerMl: 0.04, desc: 'GI mucosal protectant' },
+  { base: 'Prednisolone Syrup',          cat: 'general',       sizesMl: [60, 120],      pricePerMl: 0.18, costPerMl: 0.07, desc: 'Liquid corticosteroid' },
+  { base: 'Vitamin B Complex Oral',      cat: 'supplement',    sizesMl: [100, 250],     pricePerMl: 0.07, costPerMl: 0.03, desc: 'Liquid B-vitamin supplement' },
+]
+
+// Injectables → vial sold by the ml (sub-unit)
+const INJ_DRUGS: Array<{ base: string; cat: string; sizesMl: number[]; pricePerMl: number; costPerMl: number; desc: string }> = [
+  { base: 'Enrofloxacin Injectable', cat: 'antibiotic',  sizesMl: [20, 50, 100], pricePerMl: 0.55, costPerMl: 0.24, desc: 'Injectable fluoroquinolone antibiotic' },
+  { base: 'Ceftriaxone Injectable',  cat: 'antibiotic',  sizesMl: [10, 20],      pricePerMl: 0.90, costPerMl: 0.40, desc: 'Injectable cephalosporin antibiotic' },
+  { base: 'Ivermectin Injectable',   cat: 'antiparasitic',sizesMl: [50, 100],    pricePerMl: 0.35, costPerMl: 0.15, desc: 'Injectable antiparasitic' },
+  { base: 'Meloxicam Injectable',    cat: 'analgesic',   sizesMl: [10, 20],      pricePerMl: 1.10, costPerMl: 0.48, desc: 'Injectable NSAID analgesic' },
+  { base: 'Buprenorphine',           cat: 'analgesic',   sizesMl: [10],          pricePerMl: 2.40, costPerMl: 1.05, desc: 'Injectable opioid analgesic' },
+  { base: 'Ketamine',                cat: 'anesthetic',  sizesMl: [10, 50],      pricePerMl: 2.00, costPerMl: 0.90, desc: 'Dissociative anesthetic' },
+  { base: 'Propofol',                cat: 'anesthetic',  sizesMl: [20, 50],      pricePerMl: 1.75, costPerMl: 0.80, desc: 'IV anesthetic induction agent' },
+  { base: 'Dexmedetomidine',         cat: 'anesthetic',  sizesMl: [10],          pricePerMl: 4.50, costPerMl: 2.00, desc: 'Sedative / analgesic' },
+  { base: 'Atropine',                cat: 'anesthetic',  sizesMl: [20],          pricePerMl: 0.60, costPerMl: 0.22, desc: 'Anticholinergic pre-medication' },
+  { base: 'Dexamethasone',           cat: 'general',     sizesMl: [50, 100],     pricePerMl: 0.30, costPerMl: 0.12, desc: 'Injectable corticosteroid' },
+  { base: 'Vitamin B12',             cat: 'supplement',  sizesMl: [50, 100],     pricePerMl: 0.20, costPerMl: 0.08, desc: 'Injectable cyanocobalamin' },
+]
+
+// Vials / vaccines and topicals / spot-ons
+const VACCINES = [
+  { base: 'Rabies Vaccine',     cat: 'vaccine', price: 25, cost: 12,   desc: '3-year rabies vaccine' },
+  { base: 'DHPP Combo Vaccine', cat: 'vaccine', price: 22, cost: 10.5, desc: 'Distemper/Hepatitis/Parvo/Parainfluenza combo' },
+  { base: 'FVRCP Vaccine',      cat: 'vaccine', price: 20, cost: 9.5,  desc: 'Feline respiratory & panleukopenia combo' },
+  { base: 'Bordetella Vaccine', cat: 'vaccine', price: 18, cost: 8,    desc: 'Kennel-cough intranasal vaccine' },
+  { base: 'Leptospirosis Vaccine', cat: 'vaccine', price: 19, cost: 8.5, desc: '4-serovar leptospirosis vaccine' },
+  { base: 'FeLV Vaccine',       cat: 'vaccine', price: 24, cost: 11,   desc: 'Feline leukemia vaccine' },
+]
+const SPOT_ONS = [
+  { base: 'Frontline Plus',  cat: 'antiparasitic', unit: 'vial',   weights: ['S','M','L','XL'], price: 18, cost: 9,  desc: 'Flea & tick spot-on' },
+  { base: 'Revolution',      cat: 'antiparasitic', unit: 'vial',   weights: ['cat','S','M','L'], price: 22, cost: 10, desc: 'Selamectin spot-on parasiticide' },
+  { base: 'Advantage II',    cat: 'antiparasitic', unit: 'vial',   weights: ['S','M','L'],       price: 16, cost: 7,  desc: 'Imidacloprid flea spot-on' },
+  { base: 'Advocate',        cat: 'antiparasitic', unit: 'vial',   weights: ['cat','S','M','L'], price: 20, cost: 9,  desc: 'Moxidectin/imidacloprid spot-on' },
+]
+const TOPICALS = [
+  { base: 'Silver Sulfadiazine Cream', cat: 'general', price: 9,  cost: 3.8, desc: 'Antibacterial burn / wound cream' },
+  { base: 'Otomax Ointment',           cat: 'general', price: 14, cost: 6,   desc: 'Otic anti-inflammatory / antibiotic' },
+  { base: 'Animax Ointment',           cat: 'general', price: 12, cost: 5,   desc: 'Topical antifungal / antibacterial' },
+  { base: 'Chlorhexidine Gel',         cat: 'general', price: 8,  cost: 3,   desc: 'Antiseptic skin gel' },
+  { base: 'Terramycin Eye Ointment',   cat: 'antibiotic', price: 11, cost: 4.5, desc: 'Ophthalmic antibiotic ointment' },
+]
+const FLUIDS = [
+  { base: 'Normal Saline 0.9%', cat: 'general', sizesMl: [500, 1000], pricePerMl: 0.016, costPerMl: 0.007, desc: 'Isotonic IV fluid' },
+  { base: 'Lactated Ringers',   cat: 'general', sizesMl: [500, 1000], pricePerMl: 0.018, costPerMl: 0.008, desc: 'Balanced electrolyte IV fluid' },
+  { base: 'Dextrose 5%',        cat: 'general', sizesMl: [500],       pricePerMl: 0.020, costPerMl: 0.009, desc: '5% dextrose IV fluid' },
+]
+
+function buildMedicineCatalogue(target: number): MedDef[] {
+  const out: MedDef[] = []
+  const minStock = (u: string) => u === 'tablet' || u === 'capsule' ? rand(40, 150)
+    : u === 'ml' ? rand(150, 400) : u === 'bottle' || u === 'vial' ? rand(8, 40) : rand(6, 25)
+
+  // Solids
+  for (const d of SOLID_DRUGS) for (const s of d.strengths) {
+    out.push({ name: `${d.base} ${s}`, category: d.cat, unit: d.unit, minimumStock: minStock(d.unit),
+      description: d.desc, unitPrice: round2(d.price * randFloat(0.9, 1.15)), costPerUnit: round2(d.cost * randFloat(0.9, 1.1)),
+      subUnit: null, subUnitsPerContainer: null })
+  }
+  // Liquids (bottle + ml sub-unit)
+  for (const d of LIQUID_DRUGS) for (const ml of d.sizesMl) {
+    const cpu = round2(d.costPerMl * ml)
+    out.push({ name: `${d.base} ${ml}mL`, category: d.cat, unit: 'bottle', minimumStock: rand(6, 24),
+      description: d.desc, unitPrice: round2(d.pricePerMl * ml * randFloat(1.0, 1.2)), costPerUnit: cpu,
+      subUnit: 'ml', subUnitsPerContainer: ml })
+  }
+  // Injectables (vial + ml sub-unit)
+  for (const d of INJ_DRUGS) for (const ml of d.sizesMl) {
+    out.push({ name: `${d.base} ${ml}mL`, category: d.cat, unit: 'vial', minimumStock: rand(4, 20),
+      description: d.desc, unitPrice: round2(d.pricePerMl * ml * randFloat(1.0, 1.2)), costPerUnit: round2(d.costPerMl * ml),
+      subUnit: 'ml', subUnitsPerContainer: ml })
+  }
+  // Fluids (bottle + ml sub-unit)
+  for (const d of FLUIDS) for (const ml of d.sizesMl) {
+    out.push({ name: `${d.base} ${ml}mL`, category: d.cat, unit: 'bottle', minimumStock: rand(5, 20),
+      description: d.desc, unitPrice: round2(d.pricePerMl * ml * randFloat(1.0, 1.25)), costPerUnit: round2(d.costPerMl * ml),
+      subUnit: 'ml', subUnitsPerContainer: ml })
+  }
   // Vaccines
-  { name: 'Rabies Vaccine 1mL',         category: 'vaccine',       unit: 'vial',    minimumStock:  30, description: '3-year rabies vaccine for dogs and cats',                        unitPrice: 25.00, costPerUnit: 12.00 },
-  { name: 'DHPP Combo Vaccine',         category: 'vaccine',       unit: 'vial',    minimumStock:  30, description: 'Distemper, Hepatitis, Parvovirus, Parainfluenza combo',           unitPrice: 22.00, costPerUnit: 10.50 },
-  { name: 'FVRCP Vaccine',              category: 'vaccine',       unit: 'vial',    minimumStock:  25, description: 'Feline respiratory and panleukopenia combination',               unitPrice: 20.00, costPerUnit:  9.50 },
-  { name: 'Bordetella Vaccine',         category: 'vaccine',       unit: 'vial',    minimumStock:  20, description: 'Kennel cough intranasal vaccine',                                unitPrice: 18.00, costPerUnit:  8.00 },
-  // Anesthetics / Analgesics
-  { name: 'Ketamine 10% 10mL',          category: 'anesthetic',    unit: 'vial',    minimumStock:   5, description: 'Dissociative anesthetic for short procedures',                   unitPrice: 45.00, costPerUnit: 20.00 },
-  { name: 'Propofol 1% 20mL',           category: 'anesthetic',    unit: 'vial',    minimumStock:   5, description: 'IV induction agent for general anesthesia',                     unitPrice: 35.00, costPerUnit: 16.00 },
-  { name: 'Meloxicam 1.5mg/mL',         category: 'anesthetic',    unit: 'ml',      minimumStock: 100, description: 'NSAID analgesic for pain and inflammation',                      unitPrice:  0.85, costPerUnit:  0.35 },
-  // Supplements
-  { name: 'Omega-3 Fish Oil 1000mg',    category: 'supplement',    unit: 'capsule', minimumStock:  60, description: 'Fatty acid supplement for skin and coat health',                 unitPrice:  0.75, costPerUnit:  0.30 },
-  { name: 'Probiotic Paste 30g',        category: 'supplement',    unit: 'tube',    minimumStock:  15, description: 'Probiotic paste for gastrointestinal support',                   unitPrice: 18.00, costPerUnit:  8.00 },
-  { name: 'Cosequin DS Chews',          category: 'supplement',    unit: 'tablet',  minimumStock:  60, description: 'Glucosamine-chondroitin joint supplement',                       unitPrice:  1.20, costPerUnit:  0.55 },
-  { name: 'Vitamin B Complex 10mL',     category: 'supplement',    unit: 'vial',    minimumStock:  12, description: 'B-vitamin complex for metabolic support',                        unitPrice: 14.00, costPerUnit:  6.00 },
-  // General
-  { name: 'Normal Saline 500mL',        category: 'general',       unit: 'bottle',  minimumStock:  10, description: '0.9% NaCl IV solution for fluid therapy',                       unitPrice:  8.00, costPerUnit:  3.50 },
-  { name: 'Cerenia 24mg',               category: 'general',       unit: 'tablet',  minimumStock:  30, description: 'Maropitant anti-emetic for nausea and vomiting',                 unitPrice:  6.50, costPerUnit:  2.80 },
-  { name: 'Famotidine 10mg',            category: 'general',       unit: 'tablet',  minimumStock:  80, description: 'H2 blocker for gastric acid reduction',                          unitPrice:  0.55, costPerUnit:  0.20 },
-  { name: 'Apoquel 16mg',              category: 'general',       unit: 'tablet',  minimumStock:  60, description: 'Oclacitinib for allergic itch relief',                           unitPrice:  4.80, costPerUnit:  2.10 },
-  { name: 'Prednisone 5mg',             category: 'general',       unit: 'tablet',  minimumStock: 100, description: 'Corticosteroid for inflammation and immune suppression',          unitPrice:  0.50, costPerUnit:  0.18 },
-] as const
+  for (const v of VACCINES) for (const n of [1, 10]) {
+    out.push({ name: n === 1 ? `${v.base} (single)` : `${v.base} (10-dose)`, category: v.cat, unit: 'vial', minimumStock: rand(10, 40),
+      description: v.desc, unitPrice: round2(v.price * (n === 10 ? 8 : 1)), costPerUnit: round2(v.cost * (n === 10 ? 8 : 1)),
+      subUnit: n === 10 ? 'dose' : null, subUnitsPerContainer: n === 10 ? 10 : null })
+  }
+  // Spot-ons
+  for (const sp of SPOT_ONS) for (const w of sp.weights) {
+    out.push({ name: `${sp.base} (${w})`, category: sp.cat, unit: sp.unit, minimumStock: rand(8, 30),
+      description: sp.desc, unitPrice: round2(sp.price * randFloat(0.95, 1.1)), costPerUnit: round2(sp.cost), subUnit: null, subUnitsPerContainer: null })
+  }
+  // Topicals
+  for (const tp of TOPICALS) for (const sz of ['15g', '30g']) {
+    out.push({ name: `${tp.base} ${sz}`, category: tp.cat, unit: 'tube', minimumStock: rand(6, 20),
+      description: tp.desc, unitPrice: round2(tp.price * (sz === '30g' ? 1.6 : 1)), costPerUnit: round2(tp.cost * (sz === '30g' ? 1.6 : 1)), subUnit: null, subUnitsPerContainer: null })
+  }
+
+  // Pad up to the target with branded generic variants of the solids
+  const brands = ['Vet', 'Pharma', 'Care', 'Plus', 'Forte', 'Max', 'Pro', 'Animal', 'Pet', 'Bio']
+  let bi = 0
+  while (out.length < target) {
+    const d = SOLID_DRUGS[bi % SOLID_DRUGS.length]
+    const s = d.strengths[bi % d.strengths.length]
+    const brand = brands[Math.floor(bi / SOLID_DRUGS.length) % brands.length]
+    out.push({ name: `${d.base}-${brand} ${s}`, category: d.cat, unit: d.unit, minimumStock: minStock(d.unit),
+      description: `${d.desc} (generic)`, unitPrice: round2(d.price * randFloat(0.8, 1.1)), costPerUnit: round2(d.cost * randFloat(0.85, 1.05)),
+      subUnit: null, subUnitsPerContainer: null })
+    bi++
+  }
+  return out.slice(0, target)
+}
+
+function round2(n: number) { return Math.round(n * 100) / 100 }
+
+const MEDICINE_CATALOGUE: MedDef[] = buildMedicineCatalogue(Number(process.env.VET_SEED_MEDICINES ?? 500))
 
 const MED_SUPPLIERS = ['VetSupply Co.','MedVet Pharma','AnimalHealth Plus','VetPharm Direct','BioVet Solutions','GlobalVet Imports','PharmaVet Arabia','MedAnimal Supply']
 
@@ -256,6 +387,7 @@ const UNIT_QTY: Record<string, [number, number]> = {
   tube:    [1,    4],
   bottle:  [1,    3],
   sachet:  [5,   30],
+  dose:    [1,   10],
   other:   [1,   20],
 }
 
@@ -366,19 +498,26 @@ type SeedSalaryRecord = {
 
 type SeedMedicine = {
   id: string; name: string; category: string; unit: string
+  subUnit: string | null; subUnitsPerContainer: number | null
   description: string | null; minimumStock: number; createdAt: Date; updatedAt: Date
 }
 
 type SeedMedicineBatch = {
   id: string; medicineId: string; batchNumber: string | null; supplier: string | null
   expiryDate: Date; quantity: number; initialQty: number; costPerUnit: number
+  sellingPrice: number | null
   receivedDate: Date; notes: string | null; createdAt: Date; updatedAt: Date
 }
 
 type SeedMedicineSale = {
   id: string; medicineId: string; batchId: string; quantity: number
   unitPrice: number; totalPrice: number; discount: number
+  saleGroupId: string | null; saleUnit: string | null
   patientId: string | null; patientName: string | null
+  ownerId: string | null; ownerName: string | null
+  amountPaid: number | null; paymentStatus: string | null
+  status: string | null; refundedQty: number | null; refundedAmount: number | null
+  refundedAt: Date | null; refundReason: string | null
   paymentMethod: string | null; notes: string | null; saleDate: Date; createdAt: Date
 }
 
@@ -388,6 +527,15 @@ type ResultTemplate = { fileName: string; filePath: string; fileSize: number }
 
 function uuid()                     { return crypto.randomUUID() }
 function pick<T>(items: readonly T[]): T { return items[Math.floor(Math.random() * items.length)] }
+function sampleDistinct<T>(items: readonly T[], n: number): T[] {
+  if (n >= items.length) return [...items]
+  const pool = [...items]
+  const out: T[] = []
+  for (let i = 0; i < n && pool.length; i++) {
+    out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0])
+  }
+  return out
+}
 function rand(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min }
 function randFloat(min: number, max: number) { return Math.round((Math.random() * (max - min) + min) * 100) / 100 }
 function chance(p: number)          { return Math.random() < p }
@@ -758,74 +906,63 @@ function buildMedicines(): { medicines: SeedMedicine[]; batches: SeedMedicineBat
     const createdAt = randDate(new Date(now.getTime() - 24 * 30 * 86_400_000), now)
     const medicine: SeedMedicine = {
       id: uuid(), name: med.name, category: med.category, unit: med.unit,
+      subUnit: med.subUnit, subUnitsPerContainer: med.subUnitsPerContainer,
       description: med.description, minimumStock: med.minimumStock,
       createdAt, updatedAt: createdAt,
     }
     medicines.push(medicine)
 
-    // Guaranteed batch scenarios for full UI coverage:
-    // slot 0 → expired  (tests the "expired" badge)
-    // slot 1 → near-expiry ≤30d  (tests the "expiring soon" badge)
-    // slot 2 → healthy stock
-    // slot 3+ (optional) → additional healthy or critically low
-    const extraBatches = rand(0, 2)
-    const batchCount   = 3 + extraBatches
+    // Healthy stock dominates. Only a small minority of medicines carry an
+    // expired or near-expiry batch so the catalogue isn't a wall of red.
+    const hasExpired   = chance(0.12)   // ~12% have one expired batch
+    const hasNearExp   = !hasExpired && chance(0.18) // ~18% expiring ≤30d
+    const isLowStock   = chance(0.10)   // ~10% are low on stock
+    const batchCount   = rand(2, 4)
 
     for (let b = 0; b < batchCount; b++) {
       let expiryDate:  Date
       let batchNotes:  string | null = null
       let soldFrac:    number
       let receivedDate: Date
+      const firstBatch = b === 0
 
-      if (b === 0) {
-        // Expired batch — received well in the past
-        expiryDate   = addDays(now, -rand(5, 180))
-        soldFrac     = randFloat(0.70, 0.99)   // mostly dispensed before expiry
-        receivedDate = randDate(
-          new Date(now.getTime() - 36 * 30 * 86_400_000),
-          new Date(now.getTime() -  8 * 30 * 86_400_000),
-        )
-        batchNotes = 'Expired – quarantined, do not dispense'
-      } else if (b === 1) {
-        // Near-expiry batch
-        expiryDate   = addDays(now, rand(1, 29))
-        soldFrac     = randFloat(0.40, 0.85)
-        receivedDate = randDate(
-          new Date(now.getTime() - 14 * 30 * 86_400_000),
-          new Date(now.getTime() -  2 * 30 * 86_400_000),
-        )
-        batchNotes = chance(0.6) ? 'Near expiry – use FEFO priority' : null
-      } else if (b === batchCount - 1 && chance(0.30)) {
-        // Critically low stock — triggers low-stock alert
-        expiryDate   = addDays(now, rand(90, 540))
-        soldFrac     = randFloat(0.85, 0.97)
-        receivedDate = randDate(new Date(now.getTime() - 12 * 30 * 86_400_000), now)
-        batchNotes   = chance(0.4) ? 'Reorder pending' : null
+      if (firstBatch && hasExpired) {
+        expiryDate   = addDays(now, -rand(5, 150))
+        soldFrac     = randFloat(0.75, 0.99)
+        receivedDate = randDate(new Date(now.getTime() - 30 * 30 * 86_400_000), new Date(now.getTime() - 8 * 30 * 86_400_000))
+        batchNotes   = 'Expired – quarantined, do not dispense'
+      } else if (firstBatch && hasNearExp) {
+        expiryDate   = addDays(now, rand(3, 29))
+        soldFrac     = randFloat(0.40, 0.80)
+        receivedDate = randDate(new Date(now.getTime() - 12 * 30 * 86_400_000), new Date(now.getTime() - 2 * 30 * 86_400_000))
+        batchNotes   = chance(0.5) ? 'Near expiry – use FEFO priority' : null
       } else {
-        // Healthy current stock
-        expiryDate   = addDays(now, rand(90, 730))
-        soldFrac     = chance(0.6) ? randFloat(0.05, 0.60) : 0
-        receivedDate = randDate(new Date(now.getTime() - 18 * 30 * 86_400_000), now)
-        batchNotes   = chance(0.12) ? pick([
-          'Refrigerate after opening',
-          'Store below 25 °C',
-          'Keep away from direct light',
-          'Cold chain maintained on delivery',
+        // Healthy current stock with comfortable expiry
+        expiryDate   = addDays(now, rand(180, 900))
+        soldFrac     = chance(0.6) ? randFloat(0.05, 0.55) : 0
+        receivedDate = randDate(new Date(now.getTime() - 15 * 30 * 86_400_000), now)
+        batchNotes   = chance(0.10) ? pick([
+          'Refrigerate after opening', 'Store below 25 °C',
+          'Keep away from direct light', 'Cold chain maintained on delivery',
         ]) : null
       }
 
-      const isCriticallyLow = b === batchCount - 1 && batchNotes === 'Reorder pending'
-      const initialQty = isCriticallyLow
+      const lowStockBatch = isLowStock && b === batchCount - 1
+      const initialQty = lowStockBatch
         ? rand(1, Math.max(2, Math.floor(med.minimumStock * 0.5)))
         : rand(med.minimumStock, med.minimumStock * 6)
+      if (lowStockBatch) { soldFrac = randFloat(0.85, 0.97); batchNotes = chance(0.4) ? 'Reorder pending' : batchNotes }
       const remaining = Math.max(0, Math.round(initialQty * (1 - soldFrac)))
+      // Selling price ~ catalogue unitPrice with a little batch variation
+      const sellingPrice = round2(med.unitPrice * randFloat(0.95, 1.15))
 
       batches.push({
         id: uuid(), medicineId: medicine.id,
-        batchNumber:  chance(0.88) ? `LOT-${rand(10_000, 99_999)}` : null,
+        batchNumber:  chance(0.9) ? `LOT-${rand(10_000, 99_999)}` : null,
         supplier:     chance(0.85) ? pick(MED_SUPPLIERS) : null,
         expiryDate, quantity: remaining, initialQty,
         costPerUnit: med.costPerUnit,
+        sellingPrice,
         receivedDate, notes: batchNotes,
         createdAt: receivedDate, updatedAt: now,
       })
@@ -838,14 +975,15 @@ function buildMedicines(): { medicines: SeedMedicine[]; batches: SeedMedicineBat
 function buildMedicineSales(
   medicines:  SeedMedicine[],
   batches:    SeedMedicineBatch[],
-  patientMap: Map<string, string>,  // patientId → patientName
+  patientMap: Map<string, string>,           // patientId → patientName
+  ownerList:  { id: string; name: string }[],
 ): SeedMedicineSale[] {
   const sales: SeedMedicineSale[] = []
   const SALE_MONTHS = 18
   const now = new Date()
   const patientIds = Array.from(patientMap.keys())
 
-  // Group batches by medicine (non-expired only for normal sales)
+  // Group batches by medicine
   const batchByMed = new Map<string, SeedMedicineBatch[]>()
   for (const b of batches) {
     const list = batchByMed.get(b.medicineId) ?? []
@@ -856,8 +994,9 @@ function buildMedicineSales(
   const priceMap = new Map<string, number>(
     MEDICINE_CATALOGUE.map(m => [m.name as string, m.unitPrice])
   )
+  const sellableMeds = medicines.filter(m => (batchByMed.get(m.id) ?? []).length > 0)
+  if (!sellableMeds.length) return sales
 
-  // Payment method weighted distribution: cash 40%, card 30%, insurance 20%, other 10%
   const PAYMENT_WEIGHTED = [
     ...Array(4).fill('cash'),
     ...Array(3).fill('card'),
@@ -865,81 +1004,137 @@ function buildMedicineSales(
     'other',
   ] as const
 
-  for (const medicine of medicines) {
+  // Pick who the transaction is for: owner (customer), real patient, walk-in name, or anonymous
+  function pickCustomer(): { ownerId: string | null; ownerName: string | null; patientId: string | null; patientName: string | null } {
+    const roll = Math.random()
+    if (roll < 0.45 && ownerList.length) {
+      const o = pick(ownerList); return { ownerId: o.id, ownerName: o.name, patientId: null, patientName: null }
+    }
+    if (roll < 0.75 && patientIds.length) {
+      const pid = pick(patientIds); return { ownerId: null, ownerName: null, patientId: pid, patientName: patientMap.get(pid) ?? null }
+    }
+    if (roll < 0.90) {
+      return { ownerId: null, ownerName: `${pick(OWNER_FIRST)} ${pick(OWNER_LAST)}`, patientId: null, patientName: null }
+    }
+    return { ownerId: null, ownerName: null, patientId: null, patientName: null }
+  }
+
+  type Line = {
+    medicineId: string; batchId: string; quantity: number; unitPrice: number
+    totalPrice: number; discount: number; note: string | null; saleUnit: string
+  }
+  function buildLine(medicine: SeedMedicine, saleDate: Date): Line | null {
     const medBatches = batchByMed.get(medicine.id) ?? []
-    if (!medBatches.length) continue
+    if (!medBatches.length) return null
+    const valid = medBatches
+      .filter(b => b.expiryDate > saleDate)
+      .sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime())
+    const batch = valid.length > 0 ? valid[0] : pick(medBatches)
+
     const baseUnitPrice = priceMap.get(medicine.name) ?? randFloat(1, 30)
     const [qtyMin, qtyMax] = UNIT_QTY[medicine.unit] ?? [1, 20]
 
-    for (let mo = SALE_MONTHS - 1; mo >= 0; mo--) {
-      const mStart = monthStart(mo)
-      const mEnd   = new Date(Math.min(now.getTime(), mStart.getTime() + 30 * 86_400_000))
-      // Higher volume in current + recent months, lower in older months
-      const baseCount = mo < 3 ? rand(5, 15) : mo < 9 ? rand(3, 10) : rand(2, 6)
+    // Medicines with a sub-unit are dispensed by the sub-unit ~45% of the time
+    // (e.g. selling 8 ml out of a 100 ml bottle).
+    const useSub = !!(medicine.subUnit && medicine.subUnitsPerContainer) && chance(0.45)
+    const saleUnit = useSub ? 'sub' : 'container'
 
-      for (let s = 0; s < baseCount; s++) {
-        const saleDate = randDate(mStart, mEnd)
-        if (saleDate > now) continue
+    const saleTypeRoll = Math.random()
+    const isBulk      = !useSub && saleTypeRoll > 0.88
+    const isEmergency = !useSub && saleTypeRoll > 0.92
 
-        // FEFO: prefer batch expiring soonest that has not expired at sale time
-        const valid = medBatches
-          .filter(b => b.expiryDate > saleDate)
-          .sort((a, b) => a.expiryDate.getTime() - b.expiryDate.getTime())
-        const batch = valid.length > 0 ? valid[0] : pick(medBatches)
+    let qty: number
+    let price: number
+    if (useSub) {
+      const subPer = medicine.subUnitsPerContainer!
+      qty   = rand(1, Math.max(2, Math.round(subPer * 0.35)))
+      price = round2(baseUnitPrice / subPer)
+      if (price <= 0) price = round2(randFloat(0.05, 0.5))
+      if (isEmergency) price = round2(price * EMERGENCY_MARKUP)
+    } else {
+      qty   = isBulk ? rand(qtyMin * 2, qtyMax * BULK_QTY_FACTOR) : rand(1, Math.ceil(qtyMax / 3))
+      price = baseUnitPrice
+      if (isEmergency)       price = round2(baseUnitPrice * EMERGENCY_MARKUP)
+      else if (chance(0.12)) price = round2(baseUnitPrice * LOYALTY_DISCOUNT)
+    }
 
-        // Sale type: 80% regular, 12% bulk, 8% emergency
-        const saleTypeRoll = Math.random()
-        const isBulk      = saleTypeRoll > 0.88
-        const isEmergency = saleTypeRoll > 0.92
+    const tier    = pick(DISCOUNT_TIERS)
+    const discAmt = tier.frac > 0 ? round2(qty * price * tier.frac) : 0
+    const total   = round2(Math.max(0, qty * price - discAmt))
 
-        const qty = isBulk
-          ? rand(qtyMin * 2, qtyMax * BULK_QTY_FACTOR)
-          : rand(1, Math.ceil(qtyMax / 3))
+    let note: string | null = null
+    if (isEmergency)       note = 'Emergency dispensing – after-hours'
+    else if (isBulk)       note = pick(['Bulk order for boarding patients', 'Owner requested extra supply for travel', 'Repeat prescription – 3-month supply'])
+    else if (tier.note)    note = tier.note
+    else if (chance(0.15)) note = pick(SALE_NOTES)
 
-        // Price: emergency markup, loyalty discount, or standard
-        let effectiveUnitPrice = baseUnitPrice
-        if (isEmergency)        effectiveUnitPrice = Math.round(baseUnitPrice * EMERGENCY_MARKUP * 100) / 100
-        else if (chance(0.12))  effectiveUnitPrice = Math.round(baseUnitPrice * LOYALTY_DISCOUNT * 100) / 100
+    return { medicineId: medicine.id, batchId: batch.id, quantity: qty, unitPrice: price, totalPrice: total, discount: discAmt, note, saleUnit }
+  }
 
-        // Discount tier
-        const tier    = pick(DISCOUNT_TIERS)
-        const discAmt = tier.frac > 0
-          ? Math.round(qty * effectiveUnitPrice * tier.frac * 100) / 100
-          : 0
-        const total   = Math.round(Math.max(0, qty * effectiveUnitPrice - discAmt) * 100) / 100
+  for (let mo = SALE_MONTHS - 1; mo >= 0; mo--) {
+    const mStart = monthStart(mo)
+    const mEnd   = new Date(Math.min(now.getTime(), mStart.getTime() + 30 * 86_400_000))
+    // Number of checkout transactions this month (higher for recent months)
+    const txCount = mo < 3 ? rand(30, 70) : mo < 9 ? rand(20, 45) : rand(10, 25)
 
-        // Patient link: 65% linked to a real patient, 20% walk-in with name, 15% anonymous
-        let patientId:   string | null = null
-        let patientName: string | null = null
-        const patientRoll = Math.random()
-        if (patientRoll < 0.65 && patientIds.length > 0) {
-          patientId   = pick(patientIds)
-          patientName = patientMap.get(patientId) ?? null
-        } else if (patientRoll < 0.85) {
-          patientName = `${pick(OWNER_FIRST)} ${pick(OWNER_LAST)}`
+    for (let t = 0; t < txCount; t++) {
+      const saleDate = randDate(mStart, mEnd)
+      if (saleDate > now) continue
+
+      const saleGroupId   = uuid()
+      const customer      = pickCustomer()
+      const paymentMethod = pick(PAYMENT_WEIGHTED)
+
+      // Item count: mostly 1–2, occasionally up to 4 → showcases combined sales
+      const r = Math.random()
+      const itemCount = r < 0.55 ? 1 : r < 0.82 ? 2 : r < 0.95 ? 3 : 4
+      const chosen = sampleDistinct(sellableMeds, itemCount)
+      const lines  = chosen.map(m => buildLine(m, saleDate)).filter((l): l is Line => l !== null)
+      if (!lines.length) continue
+
+      const cartTotal = lines.reduce((s, l) => s + l.totalPrice, 0)
+
+      // Payment status: paid 78% / partial 14% / unpaid 8%
+      const payRoll = Math.random()
+      let amountPaid: number, paymentStatus: string
+      if (payRoll < 0.78)      { amountPaid = cartTotal;                                  paymentStatus = 'paid' }
+      else if (payRoll < 0.92) { amountPaid = Math.round(cartTotal * randFloat(0.2, 0.7) * 100) / 100; paymentStatus = 'partial' }
+      else                     { amountPaid = 0;                                          paymentStatus = 'unpaid' }
+
+      // Refunds: ~6% of paid transactions fully refunded; a few multi-item ones partially refunded
+      const refundRoll      = Math.random()
+      const isFullRefund    = paymentStatus === 'paid' && refundRoll < 0.06
+      const isPartialRefund = !isFullRefund && paymentStatus === 'paid' && lines.length > 1 && refundRoll < 0.10
+      const refundedAt      = randDate(saleDate, now)
+
+      lines.forEach((l, idx) => {
+        const frac     = cartTotal > 0 ? l.totalPrice / cartTotal : 1 / lines.length
+        const itemPaid = Math.round(amountPaid * frac * 100) / 100
+
+        let status: string = 'completed'
+        let refundedQty: number | null = null
+        let refundedAmount: number | null = null
+        if (isFullRefund || (isPartialRefund && idx === 0)) {
+          status         = 'refunded'
+          refundedQty    = l.quantity
+          refundedAmount = l.totalPrice
         }
-        // else: anonymous (both null)
-
-        // Notes: emergency always gets a note; others 25% chance
-        let notes: string | null = null
-        if (isEmergency)      notes = 'Emergency dispensing – after-hours'
-        else if (isBulk)      notes = pick(['Bulk order for boarding patients', 'Owner requested extra supply for travel', 'Repeat prescription – 3-month supply'])
-        else if (tier.note)   notes = tier.note
-        else if (chance(0.20)) notes = pick(SALE_NOTES)
 
         sales.push({
-          id: uuid(), medicineId: medicine.id, batchId: batch.id,
-          quantity: qty,
-          unitPrice: effectiveUnitPrice,
-          totalPrice: total,
-          discount: discAmt,
-          patientId,
-          patientName,
-          paymentMethod: pick(PAYMENT_WEIGHTED),
-          notes,
+          id: uuid(), medicineId: l.medicineId, batchId: l.batchId,
+          quantity: l.quantity, unitPrice: l.unitPrice, totalPrice: l.totalPrice, discount: l.discount,
+          saleGroupId, saleUnit: l.saleUnit,
+          patientId: customer.patientId, patientName: customer.patientName,
+          ownerId: customer.ownerId, ownerName: customer.ownerName,
+          amountPaid: itemPaid, paymentStatus,
+          status,
+          refundedQty, refundedAmount,
+          refundedAt:   status === 'refunded' ? refundedAt : null,
+          refundReason: status === 'refunded' ? pick(['Customer returned item', 'Wrong medication dispensed', 'Pet refused medication', 'Duplicate purchase']) : null,
+          paymentMethod, notes: l.note,
           saleDate, createdAt: saleDate,
         })
-      }
+      })
     }
   }
 
@@ -965,6 +1160,26 @@ async function clearVetData() {
   console.log('✅  Vet tables cleared\n')
 }
 
+// Seed the user-managed taxonomy (categories + container units) so the
+// catalogue filters are populated out of the box.
+async function seedCatalogueSettings() {
+  const categories = [
+    { name: 'general',       color: '#64748b' },
+    { name: 'antibiotic',    color: '#8b5cf6' },
+    { name: 'antiparasitic', color: '#0ea5e9' },
+    { name: 'vaccine',       color: '#10b981' },
+    { name: 'anesthetic',    color: '#f59e0b' },
+    { name: 'analgesic',     color: '#ef4444' },
+    { name: 'supplement',    color: '#ec4899' },
+  ]
+  const units = ['tablet', 'capsule', 'ml', 'vial', 'tube', 'bottle', 'sachet', 'dose', 'other']
+  await prisma.vetMedicineCategory.deleteMany({})
+  await prisma.vetMedicineUnit.deleteMany({})
+  await prisma.vetMedicineCategory.createMany({ data: categories.map(c => ({ ...c, isDefault: true })) })
+  await prisma.vetMedicineUnit.createMany({ data: units.map(name => ({ name, isDefault: true })) })
+  console.log(`✅  Seeded ${categories.length} categories + ${units.length} units\n`)
+}
+
 async function main() {
   console.log('🐾  Vet Clinic Seed – starting...')
   console.log(`📊  Owners=${CONFIG.ownerCount.toLocaleString()}  Staff=${CONFIG.staffCount}  SalaryMonths=${CONFIG.salaryMonths}  ExpenseMonths=${CONFIG.expenseMonths}`)
@@ -978,6 +1193,7 @@ async function main() {
 
   const resultTemplates = prepareResultTemplates()
   await clearVetData()
+  await seedCatalogueSettings()
 
   // ── Staff + Salary + Expenses ─────────────────────────────────────────────
   console.log('👩‍⚕️  Creating staff, salary records, and expenses...')
@@ -1067,8 +1283,10 @@ async function main() {
   const patientMap  = new Map<string, string>(
     patientRows.map((r: { id: string; name: string }) => [r.id, r.name])
   )
+  // Collect owners so combined sales can be linked to real customers
+  const ownerRows = await prisma.vetOwner.findMany({ select: { id: true, name: true }, take: 1000 }) as { id: string; name: string }[]
 
-  const medSales = buildMedicineSales(medicines, medBatches, patientMap)
+  const medSales = buildMedicineSales(medicines, medBatches, patientMap, ownerRows)
 
   await prisma.$transaction(async (tx) => {
     await tx.vetMedicine.createMany({ data: medicines })

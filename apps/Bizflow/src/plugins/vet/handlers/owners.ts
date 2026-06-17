@@ -96,14 +96,41 @@ export function registerOwnerHandlers(prisma: any) {
         select: { id: true }
       })
       const patientIds = patients.map((p: any) => p.id)
-      if (!patientIds.length) return { totalCharged: 0, totalPaid: 0, outstanding: 0 }
-      const sessions = await prisma.vetSession.findMany({
-        where: { patientId: { in: patientIds } },
-        select: { amountCharged: true, amountPaid: true }
+
+      // ── Sessions (clinical visits) ──
+      let totalCharged = 0, totalPaid = 0
+      if (patientIds.length) {
+        const sessions = await prisma.vetSession.findMany({
+          where: { patientId: { in: patientIds } },
+          select: { amountCharged: true, amountPaid: true }
+        })
+        totalCharged = sessions.reduce((s: number, r: any) => s + (r.amountCharged ?? 0), 0)
+        totalPaid    = sessions.reduce((s: number, r: any) => s + (r.amountPaid    ?? 0), 0)
+      }
+
+      // ── Pharmacy / medicine sales (linked directly to the owner) ──
+      const sales = await prisma.vetMedicineSale.findMany({
+        where: { ownerId },
+        select: { totalPrice: true, amountPaid: true, refundedAmount: true }
       })
-      const totalCharged = sessions.reduce((s: number, r: any) => s + (r.amountCharged ?? 0), 0)
-      const totalPaid    = sessions.reduce((s: number, r: any) => s + (r.amountPaid    ?? 0), 0)
-      return { totalCharged, totalPaid, outstanding: totalCharged - totalPaid }
+      let salesCharged = 0, salesPaid = 0, salesOutstanding = 0
+      for (const s of sales as any[]) {
+        const refunded = s.refundedAmount ?? 0
+        const net  = Math.max(0, (s.totalPrice ?? 0) - refunded)   // owed after refunds
+        const paid = Math.min(s.amountPaid ?? s.totalPrice ?? 0, net)
+        salesCharged    += net
+        salesPaid       += paid
+        salesOutstanding += Math.max(0, net - paid)
+      }
+
+      const sessionsOutstanding = Math.max(0, totalCharged - totalPaid)
+      return {
+        // sessions (kept flat for backward compatibility)
+        totalCharged, totalPaid, outstanding: sessionsOutstanding,
+        sessions: { charged: totalCharged, paid: totalPaid, outstanding: sessionsOutstanding },
+        sales:    { charged: salesCharged, paid: salesPaid, outstanding: salesOutstanding },
+        totalOutstanding: sessionsOutstanding + salesOutstanding,
+      }
     } catch (err) { log.error('getFinance', err); throw err }
   })
 }

@@ -7,10 +7,11 @@ import { useState, useEffect } from 'react'
 import {
   PawPrint, Users, ClipboardList, CalendarClock,
   BarChart3, Activity, TrendingUp, AlertCircle, Loader2,
-  Download, Calendar, Sun
+  Download, Calendar, Sun, ShoppingBag, Pill, DollarSign
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import VetReportBuilder, { type ReportType } from './VetReportBuilder'
 
 interface Props { refreshSignal?: number }
 
@@ -42,7 +43,10 @@ const StatCard = ({
   </div>
 )
 
-type Mode = 'monthly' | 'daily'
+type Mode = 'monthly' | 'daily' | ReportType
+
+const BUILDER_TYPES: ReportType[] = ['sessions', 'sales', 'medicines', 'revenue']
+const isBuilder = (m: Mode): m is ReportType => (BUILDER_TYPES as string[]).includes(m)
 
 const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
   const toast = useToast()
@@ -116,6 +120,7 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
   }
 
   const load = async () => {
+    if (isBuilder(mode)) { setLoading(false); return }   // builder loads its own data
     setLoading(true)
     try {
       if (mode === 'monthly') await loadMonthly()
@@ -211,40 +216,49 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
               {t('vetClinic') || 'Vet Clinic'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {mode === 'monthly'
-                ? (t('monthlyOverview') || 'Monthly overview')
-                : (t('dailyReport') || 'Daily report')}
+              {mode === 'monthly'    ? (t('monthlyOverview') || 'Monthly overview')
+                : mode === 'daily'   ? (t('dailyReport')     || 'Daily report')
+                : mode === 'sessions'  ? (t('vetSessionsReport')  || 'Clinical sessions report')
+                : mode === 'sales'     ? (t('vetSalesReport')     || 'Pharmacy sales report')
+                : mode === 'medicines' ? (t('vetMedicinesReport') || 'Inventory & medicines report')
+                : (t('vetRevenueReport') || 'Revenue & profit / loss')}
             </p>
           </div>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-sm">
-            <button
-              onClick={() => setMode('monthly')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${mode === 'monthly'
-                ? 'bg-violet-600 text-white'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-              <Calendar size={13} /> {t('monthlyOverview') || 'Monthly'}
-            </button>
-            <button
-              onClick={() => setMode('daily')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${mode === 'daily'
-                ? 'bg-violet-600 text-white'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-              <Sun size={13} /> {t('dailyReport') || 'Daily'}
-            </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs flex-wrap">
+            {([
+              { key: 'monthly'   as Mode, label: t('monthlyOverview') || 'Summary', icon: Calendar },
+              { key: 'daily'     as Mode, label: t('dailyReport')     || 'Daily',   icon: Sun },
+              { key: 'sessions'  as Mode, label: t('vetSessions')     || 'Sessions', icon: ClipboardList },
+              { key: 'sales'     as Mode, label: t('vetSalesTab')      || 'Sales',    icon: ShoppingBag },
+              { key: 'medicines' as Mode, label: t('vetMedicines')    || 'Medicines', icon: Pill },
+              { key: 'revenue'   as Mode, label: t('vetRevenue')       || 'Revenue',  icon: DollarSign },
+            ]).map(({ key, label, icon: Icon }) => (
+              <button key={key}
+                onClick={() => setMode(key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${mode === key
+                  ? 'bg-violet-600 text-white'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                <Icon size={13} /> {label}
+              </button>
+            ))}
           </div>
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
-            <Download size={14} /> {t('exportCSV') || 'Export CSV'}
-          </button>
+          {!isBuilder(mode) && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+              <Download size={14} /> {t('exportCSV') || 'Export CSV'}
+            </button>
+          )}
         </div>
       </div>
 
-      {loading ? (
+      {isBuilder(mode) ? (
+        <VetReportBuilder type={mode} />
+      ) : loading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
         </div>

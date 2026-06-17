@@ -568,6 +568,8 @@ interface API {
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>
       getFollowUps: (params?: any) => Promise<any>
+      settlePayment: (id: string, data?: { amount?: number; payFull?: boolean }) => Promise<any>
+      settleOwner: (ownerId: string, data?: { amount?: number }) => Promise<{ applied: number; settledCount: number }>
     }
     prescriptions: {
       update: (id: string, data: any) => Promise<any>
@@ -589,8 +591,8 @@ interface API {
       delete: (id: string) => Promise<any>
     }
     expenses: {
-      getAll: (params?: { period?: string; category?: string; skip?: number; take?: number }) => Promise<{ data: any[]; total: number }>
-      summary: (period?: string) => Promise<any>
+      getAll: (params?: { period?: string; from?: string; to?: string; category?: string; skip?: number; take?: number }) => Promise<{ data: any[]; total: number }>
+      summary: (arg?: string | { period?: string; from?: string; to?: string }) => Promise<any>
       breakdown: (params?: { period?: string; category?: string }) => Promise<any[]>
       create: (data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
@@ -622,9 +624,27 @@ interface API {
       sell: (data: any) => Promise<any>
       sellCombo: (data: any) => Promise<any>
       getSales: (params?: any) => Promise<any>
+      getSaleGroups: (params?: any) => Promise<any>
+      getHistory: (medicineId: string, params?: { from?: string; to?: string }) => Promise<any>
       getSummary: (params?: any) => Promise<any>
       updateSalePayment: (id: string, amountPaid: number) => Promise<any>
+      updateSale: (id: string, data: any) => Promise<any>
+      refundSale: (id: string, data?: { quantity?: number; reason?: string }) => Promise<any>
+      refundSaleGroup: (groupKey: string, data?: { reason?: string }) => Promise<any>
+      settleOwnerSales: (ownerId: string, data?: { amount?: number }) => Promise<{ applied: number; settledCount: number }>
 
+    }
+    medicineCategories: {
+      getAll: () => Promise<Array<{ id: string; name: string; color: string; isDefault: boolean }>>
+      create: (data: { name: string; color?: string }) => Promise<any>
+      update: (id: string, data: { name?: string; color?: string }) => Promise<any>
+      delete: (id: string) => Promise<{ success: boolean; reassigned: number }>
+      getUsageCount: (name: string) => Promise<{ count: number }>
+    }
+    medicineUnits: {
+      getAll: () => Promise<Array<{ id: string; name: string; isDefault: boolean }>>
+      create: (data: { name: string }) => Promise<any>
+      delete: (id: string) => Promise<{ success: boolean }>
     }
     stats: {
       overview: (period?: string) => Promise<any>

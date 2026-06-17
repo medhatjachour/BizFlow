@@ -8,6 +8,7 @@ import { registerVetExpenseHandlers } from './expenses'
 import { registerVetStaffHandlers } from './staff'
 import { registerVetStatsHandlers } from './stats'
 import { registerVetMedicineHandlers } from './medicines'
+import { registerVetCatalogueHandlers } from './catalogue'
 
 export function registerVetHandlers(prisma: any): void {
   // The prisma arg is forwarded to each handler group so each can use
@@ -21,6 +22,7 @@ export function registerVetHandlers(prisma: any): void {
   registerVetStaffHandlers(prisma)
   registerVetStatsHandlers(prisma)
   registerVetMedicineHandlers(prisma)
+  registerVetCatalogueHandlers(prisma)
 }
 
 // Unused but re-exported so the preload knows IPC is wired

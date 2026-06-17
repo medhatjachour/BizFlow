@@ -277,6 +277,9 @@ model VetMedicineSale {
   unitPrice     Float
   totalPrice    Float
   discount      Float            @default(0)
+  // Groups all line items sold together in a single cart checkout (one receipt).
+  // NULL for legacy single-item sales recorded before combined-sale support.
+  saleGroupId   String?
   // Soft references — no FK so they work without strict FK constraints
   patientId     String?
   patientName   String?
@@ -286,6 +289,12 @@ model VetMedicineSale {
   saleUnit      String?          // 'container' | 'sub' — which unit was used when selling
   amountPaid    Float?           // how much has been collected (NULL = fully paid at sale time)
   paymentStatus String?          @default("paid") // 'paid' | 'partial' | 'unpaid'
+  // Refund / void tracking
+  status        String?          @default("completed") // 'completed' | 'refunded' | 'partially_refunded'
+  refundedQty   Float?           // units returned to stock on refund
+  refundedAmount Float?          // money returned to the customer
+  refundedAt    DateTime?
+  refundReason  String?
   notes         String?
   saleDate      DateTime         @default(now())
   createdAt     DateTime         @default(now())
@@ -295,4 +304,30 @@ model VetMedicineSale {
   @@index([saleDate])
   @@index([patientId])
   @@index([ownerId])
+  @@index([saleGroupId])
+}
+
+// ─── Medicine Category (user-managed catalogue taxonomy) ───────────────────────
+
+model VetMedicineCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String   @default("#8b5cf6")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+// ─── Medicine Unit (user-managed container units) ──────────────────────────────
+
+model VetMedicineUnit {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
 }

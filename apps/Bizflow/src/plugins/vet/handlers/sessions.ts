@@ -99,6 +99,69 @@ export function registerVetSessionHandlers(prisma: any) {
     } catch (err) { log.error('delete', err); throw err }
   })
 
+  // ─── Settle Payment for one session (full or partial) ─────────────────────
+  ipcMain.handle('vet:sessions:settlePayment', async (_e, id: string, data?: {
+    amount?: number; payFull?: boolean
+  }) => {
+    try {
+      const session = await prisma.vetSession.findUnique({ where: { id } })
+      if (!session) throw new Error('Session not found')
+      const charged     = session.amountCharged ?? 0
+      const currentPaid = session.amountPaid ?? 0
+      const outstanding = Math.max(0, charged - currentPaid)
+      if (outstanding <= 0.005) throw new Error('This session is already fully paid')
+
+      let pay = data?.payFull ? outstanding : (data?.amount ?? 0)
+      if (!Number.isFinite(pay) || pay <= 0) throw new Error('Enter a valid amount')
+      if (pay > outstanding) pay = outstanding
+
+      const newPaid = currentPaid + pay
+      const status  = newPaid >= charged - 0.005 ? 'paid' : newPaid > 0 ? 'partial' : 'unpaid'
+      return await prisma.vetSession.update({
+        where: { id },
+        data: { amountPaid: newPaid, paymentStatus: status }
+      })
+    } catch (err) { log.error('settlePayment', err); throw err }
+  })
+
+  // ─── Settle outstanding across all of an owner's sessions ─────────────────
+  // Applies a payment (or settles everything when no amount is given) to the
+  // owner's unpaid/partial sessions, oldest first.
+  ipcMain.handle('vet:sessions:settleOwner', async (_e, ownerId: string, data?: {
+    amount?: number
+  }) => {
+    try {
+      if (!ownerId) throw new Error('ownerId is required')
+      const sessions = await prisma.vetSession.findMany({
+        where: { patient: { ownerId }, paymentStatus: { in: ['unpaid', 'partial'] } },
+        orderBy: { visitDate: 'asc' }
+      })
+
+      let budget = (data?.amount != null && Number.isFinite(data.amount)) ? Math.max(0, data.amount) : Number.POSITIVE_INFINITY
+      let applied = 0
+      let settledCount = 0
+
+      await prisma.$transaction(async (tx: any) => {
+        for (const s of sessions) {
+          if (budget <= 0.005) break
+          const charged = s.amountCharged ?? 0
+          const paid    = s.amountPaid ?? 0
+          const outstanding = Math.max(0, charged - paid)
+          if (outstanding <= 0.005) continue
+          const pay     = Math.min(outstanding, budget)
+          const newPaid = paid + pay
+          const status  = newPaid >= charged - 0.005 ? 'paid' : 'partial'
+          await tx.vetSession.update({ where: { id: s.id }, data: { amountPaid: newPaid, paymentStatus: status } })
+          budget  -= pay
+          applied += pay
+          if (status === 'paid') settledCount++
+        }
+      })
+
+      return { applied: Math.round(applied * 100) / 100, settledCount }
+    } catch (err) { log.error('settleOwner', err); throw err }
+  })
+
   // ─── Prescription: Add ────────────────────────────────────────────────────
   ipcMain.handle('vet:sessions:addPrescription', async (_e, sessionId: string, data: any) => {
     try {

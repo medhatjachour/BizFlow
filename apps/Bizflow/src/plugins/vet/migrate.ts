@@ -22,7 +22,9 @@ const VET_TABLES = [
   'VetSalaryRecord',
   'VetMedicine',
   'VetMedicineBatch',
-  'VetMedicineSale'
+  'VetMedicineSale',
+  'VetMedicineCategory',
+  'VetMedicineUnit'
 ]
 
 export async function ensureVetSchema(
@@ -34,12 +36,70 @@ export async function ensureVetSchema(
 
   if (missing.length === 0) {
     log.info('✅ Vet tables already exist — no migration needed.')
+    // Tables exist, but newer columns might be missing on older databases.
+    await applyColumnMigrations(prisma)
     return
   }
 
   log.info(`🔧 Missing vet tables: [${missing.join(', ')}] — running db push…`)
   await runDbPush(dbUrl, cwd)
+  // db push already adds every column from the schema, but run the safety
+  // pass anyway so a partial/failed push still ends up consistent.
+  await applyColumnMigrations(prisma)
   log.info('✅ Vet schema applied successfully')
+}
+
+/**
+ * Safe column additions for existing databases (SQLite ALTER TABLE ADD COLUMN).
+ * Each entry is idempotent — a column that already exists is detected via
+ * PRAGMA table_info and skipped, so this is safe to run on every startup.
+ */
+async function applyColumnMigrations(prisma: any): Promise<void> {
+  const columnMigrations: Array<{ table: string; column: string; sql: string }> = [
+    {
+      table: 'VetMedicineSale',
+      column: 'saleGroupId',
+      sql: `ALTER TABLE "VetMedicineSale" ADD COLUMN "saleGroupId" TEXT`
+    },
+    {
+      table: 'VetMedicineSale',
+      column: 'status',
+      sql: `ALTER TABLE "VetMedicineSale" ADD COLUMN "status" TEXT DEFAULT 'completed'`
+    },
+    {
+      table: 'VetMedicineSale',
+      column: 'refundedQty',
+      sql: `ALTER TABLE "VetMedicineSale" ADD COLUMN "refundedQty" REAL`
+    },
+    {
+      table: 'VetMedicineSale',
+      column: 'refundedAmount',
+      sql: `ALTER TABLE "VetMedicineSale" ADD COLUMN "refundedAmount" REAL`
+    },
+    {
+      table: 'VetMedicineSale',
+      column: 'refundedAt',
+      sql: `ALTER TABLE "VetMedicineSale" ADD COLUMN "refundedAt" DATETIME`
+    },
+    {
+      table: 'VetMedicineSale',
+      column: 'refundReason',
+      sql: `ALTER TABLE "VetMedicineSale" ADD COLUMN "refundReason" TEXT`
+    }
+  ]
+
+  for (const m of columnMigrations) {
+    try {
+      const cols: any[] = await prisma.$queryRawUnsafe(`PRAGMA table_info("${m.table}")`)
+      const exists = cols.some((c: any) => c.name === m.column)
+      if (!exists) {
+        await prisma.$executeRawUnsafe(m.sql)
+        log.info(`✅ Column ${m.table}.${m.column} added`)
+      }
+    } catch (err) {
+      log.warn(`⚠️  Column migration ${m.table}.${m.column} skipped:`, err)
+    }
+  }
 }
 
 async function getMissingTables(prisma: any): Promise<string[]> {

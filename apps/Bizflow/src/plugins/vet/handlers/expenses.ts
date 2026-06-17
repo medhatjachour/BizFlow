@@ -50,12 +50,17 @@ function getPeriodRange(period: Period): { start: Date; end: Date } {
 export function registerVetExpenseHandlers(prisma: any) {
   // ─── Get All ──────────────────────────────────────────────────────────────
   ipcMain.handle('vet:expenses:getAll', async (_e, params?: {
-    period?: Period; category?: string; skip?: number; take?: number
+    period?: Period; from?: string; to?: string; category?: string; skip?: number; take?: number
   }) => {
     try {
       const where: any = {}
       if (params?.category && params.category !== 'all') where.category = params.category
-      if (params?.period) {
+      if (params?.from || params?.to) {
+        where.date = {}
+        if (params.from) where.date.gte = new Date(params.from)
+        // Inclusive end-of-day so expenses dated on `to` are included.
+        if (params.to)   where.date.lte = new Date(new Date(params.to).getTime() + 86_399_999)
+      } else if (params?.period) {
         const { start, end } = getPeriodRange(params.period)
         where.date = { gte: start, lt: end }
       }
@@ -74,9 +79,17 @@ export function registerVetExpenseHandlers(prisma: any) {
   })
 
   // ─── Summary ──────────────────────────────────────────────────────────────
-  ipcMain.handle('vet:expenses:summary', async (_e, period?: Period) => {
+  ipcMain.handle('vet:expenses:summary', async (_e, arg?: Period | { period?: Period; from?: string; to?: string }) => {
     try {
-      const { start, end } = getPeriodRange(period ?? 'month')
+      let start: Date, end: Date
+      if (arg && typeof arg === 'object') {
+        start = arg.from ? new Date(arg.from) : new Date(0)
+        // Exclusive upper bound = start of the day after `to` (or now for all-time).
+        end   = arg.to ? new Date(new Date(arg.to).getTime() + 86_400_000) : new Date()
+      } else {
+        const period = (typeof arg === 'string' ? arg : undefined) ?? 'month'
+        ;({ start, end } = getPeriodRange(period))
+      }
 
       const [sessionRows, expenseRows, outstandingRows] = await Promise.all([
         prisma.$queryRawUnsafe(`

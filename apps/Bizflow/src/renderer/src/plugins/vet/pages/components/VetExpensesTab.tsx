@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Plus, Loader2, Pencil, Trash2, DollarSign, TrendingUp, TrendingDown, Info } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import VetPeriodFilter, { rangeForPreset } from './VetPeriodFilter'
 
 function ExpensesHelp() {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -26,8 +27,6 @@ function ExpensesHelp() {
     </span>
   )
 }
-
-type Period = 'today' | 'week' | 'month' | 'year'
 
 const EXPENSE_CATEGORIES = [
   'rent', 'utilities', 'medical_supplies', 'medications', 'equipment',
@@ -57,7 +56,7 @@ const defaultForm = (): ExpenseForm => ({
 export default function VetExpensesTab() {
   const toast = useToast()
   const { t } = useLanguage()
-  const [period,   setPeriod]   = useState<Period>('month')
+  const [range,    setRange]    = useState<{ from?: string; to?: string }>(() => rangeForPreset('month'))
   const [expenses, setExpenses] = useState<any[]>([])
   const [summary,  setSummary]  = useState<any | null>(null)
   const [total,    setTotal]    = useState(0)
@@ -79,8 +78,8 @@ export default function VetExpensesTab() {
       const currentPage = reset ? 0 : (explicitPage ?? page)
       if (reset) setPage(0)
       const [expResult, sumResult] = await Promise.all([
-        window.api.vet?.expenses.getAll({ period, skip: currentPage * PAGE_SIZE, take: PAGE_SIZE }),
-        window.api.vet?.expenses.summary(period)
+        window.api.vet?.expenses.getAll({ from: range.from, to: range.to, skip: currentPage * PAGE_SIZE, take: PAGE_SIZE }),
+        window.api.vet?.expenses.summary({ from: range.from, to: range.to })
       ])
       if (expResult) {
         setExpenses(reset || currentPage === 0 ? expResult.data : prev => [...prev, ...expResult.data])
@@ -92,9 +91,9 @@ export default function VetExpensesTab() {
     } finally {
       setLoading(false)
     }
-  }, [period, page])
+  }, [range.from, range.to, page])
 
-  useEffect(() => { load(true) }, [period])
+  useEffect(() => { load(true) }, [range.from, range.to])
 
   const openEdit = (expense: any) => {
     setEditTarget(expense)
@@ -166,14 +165,8 @@ export default function VetExpensesTab() {
     <div className="p-6 space-y-5">
       {/* Period selector */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1">
-          {(['today', 'week', 'month', 'year'] as Period[]).map(p => (
-            <button key={p} onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-lg capitalize transition-colors ${period === p ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-              {p === 'today' ? (t('vetFilterToday')||'Today') : p === 'week' ? (t('vetFilterWeek')||'Week') : p === 'month' ? (t('vetFilterMonth')||'Month') : (t('vetFilterYear')||'Year')}
-            </button>
-          ))}
-        </div>
+        <VetPeriodFilter defaultPreset="month" presets={['today', 'week', 'month', 'year', 'custom']}
+          onChange={r => { setRange({ from: r.from, to: r.to }); setPage(0) }} />
         <div className="flex items-center gap-2">
           <button onClick={() => { setEditTarget(null); setForm(defaultForm()); setShowForm(true) }}
             className="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg">

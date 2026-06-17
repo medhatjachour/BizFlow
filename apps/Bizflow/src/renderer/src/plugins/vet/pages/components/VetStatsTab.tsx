@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Loader2, TrendingUp, Users, Activity, DollarSign, AlertCircle, PawPrint, Info, Pill, ShoppingBag, PackageX, AlertTriangle, TrendingDown } from 'lucide-react'
+import { Loader2, TrendingUp, Users, Activity, DollarSign, AlertCircle, PawPrint, Info, Pill, ShoppingBag, PackageX, AlertTriangle, TrendingDown, PackageMinus, CalendarClock, ChevronRight } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
@@ -37,7 +37,7 @@ const SPECIES_EMOJI: Record<string, string> = {
   guinea_pig: '🐹', reptile: '🦎', fish: '🐠', other: '🐾'
 }
 
-export default function VetStatsTab() {
+export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const toast = useToast()
   const { t } = useLanguage()
   const [period, setPeriod] = useState<Period>('month')
@@ -48,6 +48,7 @@ export default function VetStatsTab() {
   const [loading, setLoading] = useState(false)
   const [medSummary, setMedSummary] = useState<any | null>(null)
   const [allMedicines, setAllMedicines] = useState<any[]>([])
+  const [pharmacyOutstanding, setPharmacyOutstanding] = useState(0)
 
   useEffect(() => {
     load()
@@ -77,6 +78,7 @@ export default function VetStatsTab() {
       setSpecies(sp ?? [])
       setVisitTypes(vt ?? [])
       setMedSummary(ms ?? null)
+      setPharmacyOutstanding(Number(ms?.pharmacyOutstanding) || 0)
       setAllMedicines(meds?.data ?? [])
     } catch (err: any) {
       toast.error(err.message ?? 'Failed to load stats')
@@ -114,6 +116,72 @@ export default function VetStatsTab() {
              totalExpiryValue, topExpired }
   }, [allMedicines])
 
+  // ── Low / out-of-stock medicines (derived from allMedicines) ───────────────
+  const { lowStock, outOfStock } = useMemo(() => {
+    const low: any[] = []
+    const out: any[] = []
+    for (const m of allMedicines) {
+      const stock = Number(m.totalStock) || 0
+      if (stock <= 0) { out.push(m); continue }
+      if (m.isLowStock) low.push(m)
+    }
+    return { lowStock: low, outOfStock: out }
+  }, [allMedicines])
+
+  // ── Consolidated "needs attention" signals ────────────────────────────────
+  const sessionOutstanding = Number(overview?.outstanding) || 0
+  const upcomingAppts      = Number(overview?.upcomingAppts) || 0
+  const alerts = [
+    expiredBatches.length > 0 && {
+      key: 'expired', tab: 'medicines', icon: PackageX,
+      tone: 'red' as const,
+      title: `${expiredBatches.length} expired ${expiredBatches.length === 1 ? 'batch' : 'batches'}`,
+      sub: `$${expiredValue.toFixed(2)} ${t('vetAtRisk') || 'at risk'} · ${t('vetReviewDispose') || 'review & dispose'}`,
+    },
+    (outOfStock.length > 0 || lowStock.length > 0) && {
+      key: 'stock', tab: 'medicines', icon: PackageMinus,
+      tone: outOfStock.length > 0 ? ('red' as const) : ('amber' as const),
+      title: outOfStock.length > 0
+        ? `${outOfStock.length} ${t('vetOutOfStock') || 'out of stock'}${lowStock.length ? `, ${lowStock.length} ${t('vetLow') || 'low'}` : ''}`
+        : `${lowStock.length} ${t('vetLowStock') || 'low on stock'}`,
+      sub: t('vetReorderSoon') || 'Reorder to avoid stockouts',
+    },
+    expiring7Batches.length > 0 && {
+      key: 'expiring', tab: 'medicines', icon: AlertTriangle,
+      tone: 'amber' as const,
+      title: `${expiring7Batches.length} ${t('vetExpiringSoon') || 'expiring in 7 days'}`,
+      sub: `$${expiring7Value.toFixed(2)} · ${t('vetSellOrReturn') || 'prioritise or return'}`,
+    },
+    sessionOutstanding > 0.005 && {
+      key: 'sessionsDue', tab: 'sessions', icon: DollarSign,
+      tone: 'amber' as const,
+      title: `$${sessionOutstanding.toFixed(2)} ${t('vetSessionsUnpaid') || 'unpaid in sessions'}`,
+      sub: t('vetCollectPayments') || 'Collect outstanding balances',
+    },
+    pharmacyOutstanding > 0.005 && {
+      key: 'pharmacyDue', tab: 'sales', icon: ShoppingBag,
+      tone: 'amber' as const,
+      title: `$${pharmacyOutstanding.toFixed(2)} ${t('vetPharmacyUnpaid') || 'unpaid in pharmacy'}`,
+      sub: t('vetSettleFromOwner') || 'Settle from owner profiles',
+    },
+    upcomingAppts > 0 && {
+      key: 'appts', tab: 'appointments', icon: CalendarClock,
+      tone: 'sky' as const,
+      title: `${upcomingAppts} ${t('vetUpcomingAppointments') || 'upcoming appointments'}`,
+      sub: t('vetReviewSchedule') || 'Review the schedule',
+    },
+  ].filter(Boolean) as Array<{ key: string; tab: string; icon: any; tone: 'red' | 'amber' | 'sky'; title: string; sub: string }>
+
+  const TONE: Record<'red' | 'amber' | 'sky', string> = {
+    red:   'border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-900/15 hover:bg-red-100 dark:hover:bg-red-900/25',
+    amber: 'border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/15 hover:bg-amber-100 dark:hover:bg-amber-900/25',
+    sky:   'border-sky-200 dark:border-sky-800/60 bg-sky-50 dark:bg-sky-900/15 hover:bg-sky-100 dark:hover:bg-sky-900/25',
+  }
+  const TONE_ICON: Record<'red' | 'amber' | 'sky', string> = {
+    red: 'text-red-500', amber: 'text-amber-500', sky: 'text-sky-500',
+  }
+
+
   return (
     <div className="p-6 space-y-6">
       {/* Period selector */}
@@ -133,6 +201,37 @@ export default function VetStatsTab() {
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-violet-500" /></div>
       ) : !overview ? null : (
         <>
+          {/* ─── Needs Attention ─────────────────────────────────────────── */}
+          {alerts.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <AlertCircle size={13} className="text-amber-500" />
+                <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">{t('vetNeedsAttention') || 'Needs Attention'}</h2>
+                <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-full px-1.5 py-0.5">{alerts.length}</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {alerts.map(a => {
+                  const Icon = a.icon
+                  const clickable = !!onNavigate
+                  return (
+                    <button key={a.key} type="button" disabled={!clickable}
+                      onClick={() => onNavigate?.(a.tab)}
+                      className={`group flex items-center gap-3 text-left rounded-xl border px-3.5 py-3 transition-colors ${TONE[a.tone]} ${clickable ? 'cursor-pointer' : 'cursor-default'}`}>
+                      <div className="h-8 w-8 rounded-lg bg-white/70 dark:bg-slate-900/40 flex items-center justify-center shrink-0">
+                        <Icon size={16} className={TONE_ICON[a.tone]} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{a.title}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{a.sub}</p>
+                      </div>
+                      {clickable && <ChevronRight size={15} className="text-slate-400 group-hover:translate-x-0.5 transition-transform shrink-0" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* KPI cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {[
@@ -322,6 +421,48 @@ export default function VetStatsTab() {
                   </div>
                 </div>
               </div>
+
+              {/* ─── Low / Out-of-stock reorder list ───────────────────── */}
+              {(outOfStock.length > 0 || lowStock.length > 0) && (
+                <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <PackageMinus size={15} className="text-amber-500" /> {t('vetReorderList') || 'Reorder List'}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      {outOfStock.length > 0 && (
+                        <span className="text-[11px] font-semibold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">{outOfStock.length} {t('vetOutOfStock') || 'out'}</span>
+                      )}
+                      {lowStock.length > 0 && (
+                        <span className="text-[11px] font-semibold bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">{lowStock.length} {t('vetLow') || 'low'}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-1.5">
+                    {[...outOfStock, ...lowStock].slice(0, 18).map((m: any) => {
+                      const stock = Number(m.totalStock) || 0
+                      const min   = Number(m.minimumStock) || 0
+                      const out   = stock <= 0
+                      return (
+                        <button key={m.id} type="button" disabled={!onNavigate}
+                          onClick={() => onNavigate?.('medicines')}
+                          className={`flex items-center gap-2 text-xs py-1 rounded-lg text-left ${onNavigate ? 'hover:bg-slate-50 dark:hover:bg-slate-700/40 cursor-pointer px-1.5 -mx-1.5' : 'cursor-default'}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${out ? 'bg-red-500' : 'bg-amber-500'}`} />
+                          <span className="flex-1 text-slate-700 dark:text-slate-300 truncate font-medium">{m.name}</span>
+                          <span className={`shrink-0 font-semibold ${out ? 'text-red-500' : 'text-amber-600 dark:text-amber-400'}`}>
+                            {out ? (t('vetOut') || 'OUT') : `${stock}${min ? `/${min}` : ''} ${m.unit ?? ''}`}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {(outOfStock.length + lowStock.length) > 18 && (
+                    <p className="text-[11px] text-slate-400 text-center mt-3">
+                      +{outOfStock.length + lowStock.length - 18} {t('vetMore') || 'more'} — {t('vetOpenMedStore') || 'open Medicine Store'}
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           )}
         </>

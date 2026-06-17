@@ -465,6 +465,15 @@ export default function VetPage() {
   ]
 
   const [tab, setTab] = useState<Tab>('owners')
+  const [salesCartCount, setSalesCartCount] = useState(0)
+  const [pendingMainTab, setPendingMainTab] = useState<Tab | null>(null)
+
+  // Guard: leaving the Sales tab with a non-empty cart would discard it.
+  function requestMainTab(key: Tab) {
+    if (key === tab) return
+    if (tab === 'sales' && salesCartCount > 0) { setPendingMainTab(key); return }
+    setTab(key)
+  }
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -710,7 +719,7 @@ export default function VetPage() {
           {allTabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => requestMainTab(key)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium rounded-t-xl whitespace-nowrap transition-colors border-b-2 ${
                 tab === key
                   ? 'border-violet-500 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/20'
@@ -809,10 +818,10 @@ export default function VetPage() {
         {tab === 'sessions'     && <VetSessionsTab />}
         {tab === 'appointments' && <VetAppointmentsTab />}
         {tab === 'followups'    && <VetFollowUpsTab />}
-        {tab === 'stats'        && <VetStatsTab />}
+        {tab === 'stats'        && <VetStatsTab onNavigate={(t) => requestMainTab(t as Tab)} />}
         {tab === 'expenses'     && <VetExpensesTab />}
         {tab === 'medicines'    && <VetMedicinesTab />}
-        {tab === 'sales'        && <VetSalesTab />}
+        {tab === 'sales'        && <VetSalesTab onCartCountChange={setSalesCartCount} />}
 
         {/* Vets tab */}
         {tab === 'vets' && (
@@ -1009,6 +1018,34 @@ export default function VetPage() {
               >
                 {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave-Sales-with-cart confirmation */}
+      {pendingMainTab && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-4"
+          onClick={() => setPendingMainTab(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                <ShoppingCart className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="font-bold text-slate-900 dark:text-white">{t('vetLeaveCartTitle') || 'Discard cart?'}</h3>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
+              {(t('vetLeaveSalesBody') || 'You have {n} item(s) in the sales cart that have not been sold. Leaving the Sales tab will discard them.').replace('{n}', String(salesCartCount))}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setPendingMainTab(null)}
+                className="flex-1 px-4 py-2 text-sm font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg">
+                {t('vetStayKeepCart') || 'Stay'}
+              </button>
+              <button onClick={() => { const dest = pendingMainTab; setSalesCartCount(0); setPendingMainTab(null); setTab(dest) }}
+                className="flex-1 px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors">
+                {t('vetLeaveDiscard') || 'Discard & leave'}
               </button>
             </div>
           </div>
