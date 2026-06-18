@@ -114,6 +114,13 @@ export const vetPreload = {
     create: (data: any)    => ipcRenderer.invoke('vet:medicineUnits:create', data),
     delete: (id: string)   => ipcRenderer.invoke('vet:medicineUnits:delete', id)
   },
+  visitTypes: {
+    getAll:        ()                       => ipcRenderer.invoke('vet:visitTypes:getAll'),
+    create:        (data: any)              => ipcRenderer.invoke('vet:visitTypes:create', data),
+    update:        (id: string, data: any)  => ipcRenderer.invoke('vet:visitTypes:update', id, data),
+    delete:        (id: string)             => ipcRenderer.invoke('vet:visitTypes:delete', id),
+    getUsageCount: (name: string)           => ipcRenderer.invoke('vet:visitTypes:getUsageCount', name)
+  },
 
 
   // ── Stats ──────────────────────────────────────────────────────────────────
@@ -122,6 +129,8 @@ export const vetPreload = {
     topDiagnoses:    (params?: any)    => ipcRenderer.invoke('vet:stats:topDiagnoses', params),
     visitTrend:      (params?: any)    => ipcRenderer.invoke('vet:stats:visitTrend', params),
     speciesBreakdown: ()               => ipcRenderer.invoke('vet:stats:speciesBreakdown'),
-    monthlyTrend:    (params?: any)    => ipcRenderer.invoke('vet:stats:monthlyTrend', params)
+    monthlyTrend:    (params?: any)    => ipcRenderer.invoke('vet:stats:monthlyTrend', params),
+    profitAnalysis:  (params?: any)    => ipcRenderer.invoke('vet:stats:profitAnalysis', params),
+    salesBreakdown:  (params?: any)    => ipcRenderer.invoke('vet:stats:salesBreakdown', params)
   }
 }

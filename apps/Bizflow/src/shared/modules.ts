@@ -20,7 +20,8 @@ export const MODULE_IDS = {
   WAREHOUSE: 'warehouse',
   CLINIC: 'clinic',
   VET: 'vet',
-  GYM: 'gym'
+  GYM: 'gym',
+  PHARMACY: 'pharmacy'
 } as const
 
 export type ModuleId = (typeof MODULE_IDS)[keyof typeof MODULE_IDS]
@@ -173,6 +174,27 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     models: ['GymCoach', 'GymTrainee', 'GymPlan', 'GymSubscription', 'GymFreeze', 'GymWalkSession', 'GymExpense'],
     ipcPrefix: 'gym',
     routePrefix: '/gym'
+  },
+  [MODULE_IDS.PHARMACY]: {
+    id: MODULE_IDS.PHARMACY,
+    name: 'Pharmacy',
+    description: 'Retail pharmacy management — product catalogue, batch & expiry tracking, point-of-sale, suppliers and purchase orders.',
+    features: [
+      'Medicine/product catalogue with barcodes & pricing',
+      'Batch tracking with cost, quantity and expiry dates',
+      'FEFO (first-expired-first-out) stock deduction on sale',
+      'Point-of-sale checkout with discounts & partial payment',
+      'Refunds with automatic restock',
+      'Expiry & low-stock alerts dashboard',
+      'Suppliers & purchase orders that receive into stock',
+      'Sales, inventory & revenue reports with CSV export',
+    ],
+    icon: '💊',
+    color: 'emerald',
+    status: 'active',
+    models: ['PharmacyProduct', 'PharmacyBatch', 'PharmacySale', 'PharmacySaleItem', 'PharmacySupplier', 'PharmacyPurchaseOrder', 'PharmacyPurchaseOrderItem'],
+    ipcPrefix: 'pharmacy',
+    routePrefix: '/pharmacy'
   }
 }
 

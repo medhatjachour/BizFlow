@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Plus, Loader2, Pencil, Trash2, Eye, Info, Wallet, X } from 'lucide-react'
+import { Plus, Loader2, Pencil, Trash2, Eye, Info, Wallet, X, Tag } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@renderer/contexts/ToastContext'
 import VetSessionFormModal from './VetSessionFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import VetPeriodFilter, { rangeForPreset } from './VetPeriodFilter'
+import { VISIT_TYPE_COLORS, visitTypeLabel, useVisitTypes } from './visitTypes'
+import VetVisitTypesManager from './VetVisitTypesManager'
 
 function SessionHelp() {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -31,23 +33,6 @@ function SessionHelp() {
   )
 }
 
-const VISIT_TYPE_COLORS: Record<string, string> = {
-  wellness_exam: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
-  vaccination:   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  surgery:       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  emergency:     'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  follow_up:     'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  grooming:      'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
-}
-
-function visitTypeLabel(t: string): string {
-  const m: Record<string, string> = {
-    wellness_exam: 'Wellness Exam', vaccination: 'Vaccination',
-    surgery: 'Surgery', emergency: 'Emergency', follow_up: 'Follow-up', grooming: 'Grooming'
-  }
-  return m[t] ?? t
-}
-
 const SESSION_PAY_COLOR: Record<string, string> = {
   paid:    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
   partial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
@@ -56,9 +41,10 @@ const SESSION_PAY_COLOR: Record<string, string> = {
 }
 
 // ── Session row with payment status + inline settle ───────────────────────────
-function SessionRow({ s, onUpdated, onView, onEdit, onDelete }: {
+function SessionRow({ s, onUpdated, onView, onEdit, onDelete, typeHex }: {
   s: any; onUpdated: (u: any) => void
   onView: () => void; onEdit: () => void; onDelete: () => void
+  typeHex?: string
 }) {
   const { t } = useLanguage()
   const toast = useToast()
@@ -89,7 +75,8 @@ function SessionRow({ s, onUpdated, onView, onEdit, onDelete }: {
     <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${VISIT_TYPE_COLORS[s.visitType] ?? 'bg-slate-100 text-slate-600'}`}>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${typeHex ? '' : (VISIT_TYPE_COLORS[s.visitType] ?? 'bg-slate-100 text-slate-600')}`}
+            style={typeHex ? { backgroundColor: typeHex + '22', color: typeHex } : undefined}>
             {visitTypeLabel(s.visitType)}
           </span>
           <div className="min-w-0">
@@ -168,6 +155,8 @@ export default function VetSessionsTab() {
   const [editTarget, setEditTarget] = useState<any | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showTypeMgr, setShowTypeMgr] = useState(false)
+  const { hexColor, reload: reloadVisitTypes } = useVisitTypes()
 
   const PAGE_SIZE = 50
 
@@ -215,6 +204,10 @@ export default function VetSessionsTab() {
       <div className="flex items-center justify-between mb-4">
         <VetPeriodFilter defaultPreset="today" onChange={r => { setRange({ from: r.from, to: r.to }); setPage(0) }} />
         <div className="flex items-center gap-2">
+          <button onClick={() => setShowTypeMgr(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800">
+            <Tag className="h-4 w-4" /> {t('vetVisitTypes') || 'Visit Types'}
+          </button>
           <button onClick={() => { setEditTarget(null); setShowForm(true) }}
             className="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg">
             <Plus className="h-4 w-4" /> {t('vetNewSession')||'New Session'}
@@ -232,7 +225,7 @@ export default function VetSessionsTab() {
       ) : (
         <div className="space-y-2">
           {sessions.map(s => (
-            <SessionRow key={s.id} s={s}
+            <SessionRow key={s.id} s={s} typeHex={hexColor(s.visitType)}
               onUpdated={(u) => setSessions(prev => prev.map(x => x.id === u.id ? { ...x, ...u } : x))}
               onView={() => s.patient && navigate(`/vet/patients/${s.patient.id}`)}
               onEdit={() => { setEditTarget(s); setShowForm(true) }}
@@ -255,6 +248,10 @@ export default function VetSessionsTab() {
           onSave={() => { setShowForm(false); setEditTarget(null); load(true); toast.success('Session saved') }}
           onClose={() => { setShowForm(false); setEditTarget(null) }}
         />
+      )}
+
+      {showTypeMgr && (
+        <VetVisitTypesManager onClose={() => setShowTypeMgr(false)} onChanged={reloadVisitTypes} />
       )}
 
       {deleteTarget && (

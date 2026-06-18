@@ -1,0 +1,179 @@
+// Pharmacy Plugin – Prisma Schema
+// Merged into prisma/merged.prisma by scripts/merge-schemas.js
+// Do NOT add a datasource or generator block here.
+
+// ─── Product (medicine / item in the catalogue) ───────────────────────────────
+
+model PharmacyProduct {
+  id           String                       @id @default(uuid())
+  name         String
+  genericName  String?
+  category     String                       @default("general")
+  unit         String                       @default("unit")
+  subUnit      String?
+  subUnitsPerContainer Float?
+  barcode      String?
+  sellingPrice Float                        @default(0)
+  subUnitPrice Float?
+  minimumStock Float                        @default(0)
+  description  String?
+  isActive     Boolean                      @default(true)
+  batches      PharmacyBatch[]
+  saleItems    PharmacySaleItem[]
+  poItems      PharmacyPurchaseOrderItem[]
+  createdAt    DateTime                     @default(now())
+  updatedAt    DateTime                     @updatedAt
+
+  @@index([name])
+  @@index([category])
+  @@index([barcode])
+  @@index([isActive])
+}
+
+// ─── Batch (a received lot with its own cost + expiry) ────────────────────────
+
+model PharmacyBatch {
+  id           String             @id @default(uuid())
+  productId    String
+  product      PharmacyProduct    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  batchNumber  String?
+  quantity     Float              @default(0)
+  initialQty   Float              @default(0)
+  costPerUnit  Float              @default(0)
+  sellingPrice Float?
+  expiryDate   DateTime
+  receivedDate DateTime           @default(now())
+  supplierId   String?
+  supplier     PharmacySupplier?  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  status       String             @default("active")
+  disposedQty  Float?
+  disposedAt   DateTime?
+  disposeReason String?
+  saleItems    PharmacySaleItem[]
+  createdAt    DateTime           @default(now())
+
+  @@index([productId])
+  @@index([expiryDate])
+  @@index([status])
+}
+
+// ─── Sale (a POS transaction) + its line items ────────────────────────────────
+
+model PharmacySale {
+  id             String             @id @default(uuid())
+  saleNumber     Int?               @unique
+  customerId     String?
+  customer       PharmacyCustomer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName   String?
+  customerPhone  String?
+  subtotal       Float              @default(0)
+  discount       Float              @default(0)
+  total          Float              @default(0)
+  amountPaid     Float              @default(0)
+  paymentStatus  String             @default("paid")
+  paymentMethod  String             @default("cash")
+  status         String             @default("completed")
+  refundedAmount Float              @default(0)
+  notes          String?
+  items          PharmacySaleItem[]
+  saleDate       DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+
+  @@index([saleDate])
+  @@index([paymentStatus])
+  @@index([status])
+  @@index([customerId])
+}
+
+model PharmacySaleItem {
+  id          String           @id @default(uuid())
+  saleId      String
+  sale        PharmacySale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     PharmacyProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  batchId     String?
+  batch       PharmacyBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  productName String
+  quantity    Float            @default(0)
+  saleUnit    String           @default("base")
+  unitPrice   Float            @default(0)
+  costPerUnit Float            @default(0)
+  lineTotal   Float            @default(0)
+  refundedQty Float            @default(0)
+  createdAt   DateTime         @default(now())
+
+  @@index([saleId])
+  @@index([productId])
+  @@index([batchId])
+}
+
+// ─── Customer (with outstanding + default discount) ───────────────────────────
+
+model PharmacyCustomer {
+  id              String         @id @default(uuid())
+  name            String
+  phone           String?
+  email           String?
+  address         String?
+  notes           String?
+  defaultDiscount Float          @default(0)
+  sales           PharmacySale[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([name])
+  @@index([phone])
+}
+
+// ─── Supplier + Purchase Orders ───────────────────────────────────────────────
+
+model PharmacySupplier {
+  id        String                  @id @default(uuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  batches   PharmacyBatch[]
+  orders    PharmacyPurchaseOrder[]
+  createdAt DateTime                @default(now())
+  updatedAt DateTime                @updatedAt
+
+  @@index([name])
+}
+
+model PharmacyPurchaseOrder {
+  id           String                      @id @default(uuid())
+  orderNumber  Int?                        @unique
+  supplierId   String?
+  supplier     PharmacySupplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  status       String                      @default("draft")
+  total        Float                       @default(0)
+  notes        String?
+  orderDate    DateTime                    @default(now())
+  receivedDate DateTime?
+  items        PharmacyPurchaseOrderItem[]
+  createdAt    DateTime                    @default(now())
+
+  @@index([status])
+  @@index([orderDate])
+}
+
+model PharmacyPurchaseOrderItem {
+  id              String                @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PharmacyPurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId       String?
+  product         PharmacyProduct?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName     String
+  quantity        Float                 @default(0)
+  costPerUnit     Float                 @default(0)
+  sellingPrice    Float?
+  expiryDate      DateTime?
+  lineTotal       Float                 @default(0)
+  received        Boolean               @default(false)
+  createdAt       DateTime              @default(now())
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+}

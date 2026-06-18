@@ -10,6 +10,7 @@ import { useToast } from '@renderer/contexts/ToastContext'
 import VetSessionFormModal from './components/VetSessionFormModal'
 import VetPatientFormModal from './components/VetPatientFormModal'
 import VetAppointmentFormModal from './components/VetAppointmentFormModal'
+import { VISIT_TYPE_COLORS, visitTypeLabel } from './components/visitTypes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface VetPrescription {
@@ -51,24 +52,6 @@ interface VetCheckResult {
   fileName: string
   fileSize?: number | null
   resultDate: string
-}
-
-const VISIT_TYPE_COLORS: Record<string, string> = {
-  wellness_exam: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
-  vaccination:   'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  surgery:       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  emergency:     'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  follow_up:     'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-  grooming:      'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300'
-}
-
-function visitTypeLabel(t: string): string {
-  const m: Record<string, string> = {
-    wellness_exam: 'Wellness Exam', vaccination: 'Vaccination',
-    surgery: 'Surgery', emergency: 'Emergency',
-    follow_up: 'Follow-up', grooming: 'Grooming'
-  }
-  return m[t] ?? t
 }
 
 function PaymentBadge({ status }: { status: string }) {

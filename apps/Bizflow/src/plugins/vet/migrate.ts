@@ -24,7 +24,8 @@ const VET_TABLES = [
   'VetMedicineBatch',
   'VetMedicineSale',
   'VetMedicineCategory',
-  'VetMedicineUnit'
+  'VetMedicineUnit',
+  'VetVisitType'
 ]
 
 export async function ensureVetSchema(

@@ -28,7 +28,8 @@ import {
   Warehouse as WarehouseIcon,
   Stethoscope,
   PawPrint,
-  Dumbbell
+  Dumbbell,
+  Pill
 } from 'lucide-react'
 import LocalIcon from '../../assets/icon.png'
 
@@ -112,6 +113,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
   const vetEnabled = useModuleEnabled(MODULE_IDS.VET)
   const gymEnabled = useModuleEnabled(MODULE_IDS.GYM)
+  const pharmacyEnabled = useModuleEnabled(MODULE_IDS.PHARMACY)
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
   const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
 
@@ -172,6 +174,13 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       href: '/gym',
       icon: Dumbbell,
       roles: ['admin', 'manager']
+    }] : []),
+    ...(__PLUGIN_PHARMACY__ && pharmacyEnabled ? [{
+      name: 'Pharmacy',
+      translationKey: 'pharmacy',
+      href: '/pharmacy',
+      icon: Pill,
+      roles: ['admin', 'manager', 'sales', 'inventory']
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&

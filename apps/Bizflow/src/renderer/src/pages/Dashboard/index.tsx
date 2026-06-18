@@ -47,6 +47,10 @@ const GymDashboard = __PLUGIN_GYM__
   ? lazy(() => import('@renderer/plugins/gym/dashboard/GymDashboardSection'))
   : null
 
+const PharmacyDashboard = __PLUGIN_PHARMACY__
+  ? lazy(() => import('@renderer/plugins/pharmacy/dashboard/PharmacyDashboardSection'))
+  : null
+
 const Spinner = ({ h = 'h-48' }: { h?: string }) => (
   <div className={`bg-white dark:bg-slate-800 rounded-xl p-4 ${h} flex items-center justify-center`}>
     <div className="animate-spin w-6 h-6 border-4 border-primary border-t-transparent rounded-full" />
@@ -78,6 +82,7 @@ export default function Dashboard() {
   const clinicEnabled     = useModuleEnabled(MODULE_IDS.CLINIC)
   const vetEnabled        = useModuleEnabled(MODULE_IDS.VET)
   const gymEnabled        = useModuleEnabled(MODULE_IDS.GYM)
+  const pharmacyEnabled   = useModuleEnabled(MODULE_IDS.PHARMACY)
   const enabledIds        = useEnabledModules()
 
   // True when at least one plugin section will be rendered
@@ -88,7 +93,8 @@ export default function Dashboard() {
     (__PLUGIN_WAREHOUSE__  && warehouseEnabled)  ||
     (__PLUGIN_CLINIC__     && clinicEnabled)     ||
     (__PLUGIN_VET__        && vetEnabled)        ||
-    (__PLUGIN_GYM__        && gymEnabled)
+    (__PLUGIN_GYM__        && gymEnabled)        ||
+    (__PLUGIN_PHARMACY__   && pharmacyEnabled)
 
   const [refreshSignal, setRefreshSignal] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
@@ -196,6 +202,12 @@ export default function Dashboard() {
         {__PLUGIN_GYM__ && gymEnabled && GymDashboard && (
           <Suspense fallback={<PluginSkeleton />}>
             <GymDashboard refreshSignal={refreshSignal} />
+          </Suspense>
+        )}
+
+        {__PLUGIN_PHARMACY__ && pharmacyEnabled && PharmacyDashboard && (
+          <Suspense fallback={<PluginSkeleton />}>
+            <PharmacyDashboard refreshSignal={refreshSignal} />
           </Suspense>
         )}
 

@@ -203,7 +203,7 @@ const EXPENSE_CATEGORIES = [
 
 const PAYMENT_METHODS      = ['cash','card','insurance','other'] as const
 const EXPENSE_PAY_METHODS  = ['cash','card','bank_transfer','other'] as const
-const VISIT_TYPES          = ['wellness_exam','vaccination','surgery','emergency','follow_up','grooming'] as const
+const VISIT_TYPES          = ['wellness_exam','visit','consultation','vaccination','sonar','lab_test','dental','surgery','emergency','follow_up','deworming','grooming'] as const
 const SESSION_STATUSES     = ['completed','completed','completed','completed','active','cancelled'] as const
 const APPOINTMENT_TYPES    = ['consultation','follow_up','vaccination','surgery','grooming','checkup'] as const
 const PAST_APPT_STATUSES   = ['completed','completed','completed','cancelled','no_show'] as const

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Search, Loader2 } from 'lucide-react'
+import { X, Search, Loader2, Settings2, ChevronDown, ChevronUp } from 'lucide-react'
 import type { VetPatient } from '../index'
 import type { VetStaff } from './VetStaffFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useVisitTypes } from './visitTypes'
+import VetVisitTypesManager from './VetVisitTypesManager'
 
 interface Props {
   session?: any
@@ -10,15 +12,6 @@ interface Props {
   onSave: () => void
   onClose: () => void
 }
-
-const VISIT_TYPES = [
-  { value: 'wellness_exam', label: 'Wellness Exam' },
-  { value: 'vaccination',   label: 'Vaccination' },
-  { value: 'surgery',       label: 'Surgery' },
-  { value: 'emergency',     label: 'Emergency' },
-  { value: 'follow_up',     label: 'Follow-up' },
-  { value: 'grooming',      label: 'Grooming' }
-]
 
 const PAYMENT_METHODS = ['cash', 'card', 'insurance', 'other']
 
@@ -60,10 +53,13 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
   // Prescriptions
   const [prescriptions, setPrescriptions] = useState<any[]>([])
   const [attendingVets, setAttendingVets] = useState<VetStaff[]>([])
-  const [vetsLoading, setVetsLoading] = useState(false)
+  const [showVitals, setShowVitals] = useState(false)
 
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState('')
+
+  const { options: visitTypeOptions, reload: reloadVisitTypes } = useVisitTypes()
+  const [showTypeMgr, setShowTypeMgr] = useState(false)
 
   useEffect(() => {
     if (session) {
@@ -82,7 +78,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
         paymentMethod: session.paymentMethod ?? ''
       })
       try {
-        if (session.vetVitals) setVitals(JSON.parse(session.vetVitals))
+        if (session.vetVitals) { setVitals(JSON.parse(session.vetVitals)); setShowVitals(true) }
       } catch {}
       setPrescriptions(session.prescriptions?.map((r: any) => ({ ...r })) ?? [])
     }
@@ -90,7 +86,6 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
 
   useEffect(() => {
     const loadVets = async () => {
-      setVetsLoading(true)
       try {
         const raw: any = await window.api.vet?.staff.getAll({ status: 'active', take: 200 })
         const list: VetStaff[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
@@ -98,9 +93,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
           .filter((staff) => staff.status === 'active')
           .sort((a, b) => a.name.localeCompare(b.name))
         setAttendingVets(vets)
-      } finally {
-        setVetsLoading(false)
-      }
+      } catch { /* suggestions are optional */ }
     }
 
     void loadVets()
@@ -120,7 +113,6 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!patient) { setError('Please select a patient'); return }
-    if (!form.vetName.trim()) { setError('Please select an attending vet'); return }
     if (!form.chiefComplaint.trim()) { setError('Chief complaint is required'); return }
 
     setSaving(true)
@@ -166,6 +158,8 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
 
   const setV = (k: keyof typeof vitals) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setVitals(p => ({ ...p, [k]: e.target.value }))
+
+  const filledVitals = Object.values(vitals).filter(v => v.trim()).length
 
   const addRx = () => setPrescriptions(p => [...p, { medicineName: '', dosage: '', frequency: '', duration: '', quantity: '', instructions: '', isActive: true }])
   const removeRx = (i: number) => setPrescriptions(p => p.filter((_, idx) => idx !== i))
@@ -227,27 +221,29 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
               <input type="datetime-local" value={form.visitDate} onChange={setF('visitDate')} className={inputCls} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('visitType')||'Visit Type'}</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">{t('visitType')||'Visit Type'}</label>
+                <button type="button" onClick={() => setShowTypeMgr(true)}
+                  className="text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1">
+                  <Settings2 size={12} /> {t('vetManage') || 'Manage'}
+                </button>
+              </div>
               <select value={form.visitType} onChange={setF('visitType')} className={inputCls}>
-                {VISIT_TYPES.map(vt => <option key={vt.value} value={vt.value}>{t(vt.value as any)||vt.label}</option>)}
+                {form.visitType && !visitTypeOptions.some(o => o.value === form.visitType) && (
+                  <option value={form.visitType}>{t(form.visitType as any) || form.visitType}</option>
+                )}
+                {visitTypeOptions.map(o => <option key={o.value} value={o.value}>{t(o.value as any) || o.label}</option>)}
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetName')||'Attending Vet'} *</label>
-              <select value={form.vetName} onChange={setF('vetName')} className={inputCls}>
-                <option value="">{vetsLoading ? 'Loading vets...' : 'Select attending vet'}</option>
-                {form.vetName && !attendingVets.some(v => v.name === form.vetName) && (
-                  <option value={form.vetName}>{form.vetName}</option>
-                )}
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetName')||'Attending Vet'}</label>
+              <input value={form.vetName} onChange={setF('vetName')} list="vet-attending-list"
+                placeholder={t('vetAttendingPlaceholder') || 'Type a name (optional)'} className={inputCls} />
+              <datalist id="vet-attending-list">
                 {attendingVets.map((vet) => (
-                  <option key={vet.id} value={vet.name}>{vet.name}</option>
+                  <option key={vet.id} value={vet.name} />
                 ))}
-              </select>
-              {!vetsLoading && attendingVets.length === 0 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                  No active veterinarians found. Add one in the Vets tab first.
-                </p>
-              )}
+              </datalist>
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('chiefComplaint')||'Chief Complaint'} *</label>
@@ -255,17 +251,28 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
             </div>
           </div>
 
-          {/* Vitals */}
-          <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-4">
-            <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">{t('vetVitals')||'Vitals'}</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {([['weight_kg', 'petWeight', 'Weight (kg)'], ['temp_rectal_c', 'tempRectal', 'Temp rectal (°C)'], ['heart_rate', 'heartRate', 'Heart Rate (bpm)'], ['resp_rate', 'respRate', 'Resp Rate (brpm)'], ['crt', 'crt', 'CRT'], ['mucous_membranes', 'mucousMembranes', 'Mucous Membranes']] as const).map(([key, tKey, label]) => (
-                <div key={key}>
-                  <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t(tKey as any)||label}</label>
-                  <input value={vitals[key]} onChange={setV(key)} className={inputCls} placeholder="—" />
-                </div>
-              ))}
-            </div>
+          {/* Vitals — collapsed by default, expandable */}
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl">
+            <button type="button" onClick={() => setShowVitals(s => !s)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-xl transition-colors">
+              <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide flex items-center gap-2">
+                {t('vetVitals')||'Vitals'}
+                {filledVitals > 0 && (
+                  <span className="text-[10px] font-bold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 rounded-full px-1.5 py-0.5 normal-case">{filledVitals}</span>
+                )}
+              </h3>
+              {showVitals ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+            </button>
+            {showVitals && (
+              <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {([['weight_kg', 'petWeight', 'Weight (kg)'], ['temp_rectal_c', 'tempRectal', 'Temp rectal (°C)'], ['heart_rate', 'heartRate', 'Heart Rate (bpm)'], ['resp_rate', 'respRate', 'Resp Rate (brpm)'], ['crt', 'crt', 'CRT'], ['mucous_membranes', 'mucousMembranes', 'Mucous Membranes']] as const).map(([key, tKey, label]) => (
+                  <div key={key}>
+                    <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t(tKey as any)||label}</label>
+                    <input value={vitals[key]} onChange={setV(key)} className={inputCls} placeholder="—" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Diagnosis & notes */}
@@ -348,6 +355,9 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
           </div>
         </form>
       </div>
+      {showTypeMgr && (
+        <VetVisitTypesManager onClose={() => setShowTypeMgr(false)} onChanged={reloadVisitTypes} />
+      )}
     </div>
   )
 }

@@ -331,3 +331,18 @@ model VetMedicineUnit {
 
   @@index([name])
 }
+
+// ─── Visit Type (user-managed session types e.g. Sonar, Visit, Surgery) ────────
+
+model VetVisitType {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  color     String   @default("#6366f1")
+  isDefault Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sortOrder])
+  @@index([name])
+}

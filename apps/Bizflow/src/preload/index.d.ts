@@ -646,12 +646,21 @@ interface API {
       create: (data: { name: string }) => Promise<any>
       delete: (id: string) => Promise<{ success: boolean }>
     }
+    visitTypes: {
+      getAll: () => Promise<Array<{ id: string; name: string; color: string; isDefault: boolean; sortOrder: number }>>
+      create: (data: { name: string; color?: string }) => Promise<any>
+      update: (id: string, data: { name?: string; color?: string; sortOrder?: number }) => Promise<any>
+      delete: (id: string) => Promise<{ success: boolean; affectedSessions: number }>
+      getUsageCount: (name: string) => Promise<{ count: number }>
+    }
     stats: {
       overview: (period?: string) => Promise<any>
       topDiagnoses: (limit?: number | { limit?: number }) => Promise<any>
-      visitTrend: (days?: number | { days?: number }) => Promise<any>
+      visitTrend: (params?: { from?: string; to?: string } | number) => Promise<any>
       speciesBreakdown: () => Promise<any>
       monthlyTrend: (months?: number | { months?: number }) => Promise<any>
+      profitAnalysis: (params?: { from?: string; to?: string }) => Promise<any>
+      salesBreakdown: (params?: { from?: string; to?: string }) => Promise<any>
     }
   }
   gym?: {

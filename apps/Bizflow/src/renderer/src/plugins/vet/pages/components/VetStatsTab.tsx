@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { Loader2, TrendingUp, Users, Activity, DollarSign, AlertCircle, PawPrint, Info, Pill, ShoppingBag, PackageX, AlertTriangle, TrendingDown, PackageMinus, CalendarClock, ChevronRight } from 'lucide-react'
+import { Loader2, TrendingUp, Users, Activity, DollarSign, AlertCircle, PawPrint, Info, Pill, ShoppingBag, PackageX, AlertTriangle, TrendingDown, PackageMinus, CalendarClock, ChevronRight, Boxes, Percent, Tag } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { visitTypeLabel, VISIT_TYPE_BAR, useVisitTypes } from './visitTypes'
 
 function StatsHelp() {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -40,13 +41,17 @@ const SPECIES_EMOJI: Record<string, string> = {
 export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const toast = useToast()
   const { t } = useLanguage()
+  const { hexColor: visitTypeHex } = useVisitTypes()
   const [period, setPeriod] = useState<Period>('month')
   const [overview, setOverview] = useState<any | null>(null)
   const [diagnoses, setDiagnoses] = useState<any[]>([])
   const [species, setSpecies] = useState<any[]>([])
   const [visitTypes, setVisitTypes] = useState<any[]>([])
+  const [vtMetric, setVtMetric] = useState<'count' | 'revenue'>('count')
   const [loading, setLoading] = useState(false)
   const [medSummary, setMedSummary] = useState<any | null>(null)
+  const [profit, setProfit] = useState<any | null>(null)
+  const [breakdown, setBreakdown] = useState<any | null>(null)
   const [allMedicines, setAllMedicines] = useState<any[]>([])
   const [pharmacyOutstanding, setPharmacyOutstanding] = useState(0)
 
@@ -65,19 +70,23 @@ export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string)
       else if (period === 'year')  { from = new Date(now.getTime() - 365 * 86400000).toISOString() }
       else                         { from = new Date(now.getTime() - 30  * 86400000).toISOString() }
 
-      const [ov, dx, sp, vt, ms, meds] = await Promise.all([
+      const [ov, dx, sp, vt, ms, meds, pa, sb] = await Promise.all([
         window.api.vet?.stats.overview(period),
         window.api.vet?.stats.topDiagnoses({ limit: 8 }),
         window.api.vet?.stats.speciesBreakdown(),
-        window.api.vet?.stats.visitTrend(),
+        window.api.vet?.stats.visitTrend({ from, to }),
         window.api.vet?.medicines.getSummary({ from, to }),
-        window.api.vet?.medicines.getAll({ take: 200 })
+        window.api.vet?.medicines.getAll({ take: 200 }),
+        window.api.vet?.stats.profitAnalysis({ from, to }),
+        window.api.vet?.stats.salesBreakdown({ from, to })
       ])
       setOverview(ov)
       setDiagnoses(dx ?? [])
       setSpecies(sp ?? [])
       setVisitTypes(vt ?? [])
       setMedSummary(ms ?? null)
+      setProfit(pa ?? null)
+      setBreakdown(sb ?? null)
       setPharmacyOutstanding(Number(ms?.pharmacyOutstanding) || 0)
       setAllMedicines(meds?.data ?? [])
     } catch (err: any) {
@@ -276,25 +285,58 @@ export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string)
               </div>
             </div>
 
-            {/* Visit type breakdown */}
+            {/* Visit type comparison */}
             <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('visitTypes')||'Visit Types'}</h3>
-              <div className="space-y-2">
-                {visitTypes.map((v: any) => {
-                  const totalVt = visitTypes.reduce((sum: number, x: any) => sum + x.count, 0)
-                  const pct = totalVt > 0 ? Math.round((v.count / totalVt) * 100) : 0
-                  return (
-                    <div key={v.visitType}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-sm text-slate-700 dark:text-slate-300 capitalize">{v.visitType.replace('_', ' ')}</span>
-                        <span className="text-xs text-slate-400">{v.count} ({pct}%)</span>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('vetSessionTypeComparison') || 'Session Type Comparison'}</h3>
+                <div className="flex rounded-lg bg-slate-100 dark:bg-slate-700/50 p-0.5 text-[11px] font-medium">
+                  <button onClick={() => setVtMetric('count')}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${vtMetric === 'count' ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {t('vetByCount') || 'By count'}
+                  </button>
+                  <button onClick={() => setVtMetric('revenue')}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${vtMetric === 'revenue' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {t('vetByRevenue') || 'By revenue'}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2.5">
+                {(() => {
+                  const totalCount = visitTypes.reduce((s: number, x: any) => s + Number(x.count || 0), 0)
+                  const totalRev   = visitTypes.reduce((s: number, x: any) => s + Number(x.revenue || 0), 0)
+                  const sorted = [...visitTypes].sort((a, b) =>
+                    vtMetric === 'revenue' ? Number(b.revenue || 0) - Number(a.revenue || 0) : Number(b.count || 0) - Number(a.count || 0))
+                  const maxVal = Math.max(1, ...sorted.map((x: any) => vtMetric === 'revenue' ? Number(x.revenue || 0) : Number(x.count || 0)))
+                  return sorted.map((v: any) => {
+                    const val = vtMetric === 'revenue' ? Number(v.revenue || 0) : Number(v.count || 0)
+                    const pct = Math.round((val / maxVal) * 100)
+                    const share = vtMetric === 'revenue'
+                      ? (totalRev > 0 ? Math.round((Number(v.revenue || 0) / totalRev) * 100) : 0)
+                      : (totalCount > 0 ? Math.round((Number(v.count || 0) / totalCount) * 100) : 0)
+                    return (
+                      <div key={v.visitType}>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-sm text-slate-700 dark:text-slate-300">{visitTypeLabel(v.visitType)}</span>
+                          <span className="text-xs text-slate-400">
+                            {vtMetric === 'revenue' ? `$${Number(v.revenue || 0).toFixed(0)}` : v.count}
+                            <span className="text-slate-300 dark:text-slate-600"> · {share}%</span>
+                          </span>
+                        </div>
+                        <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${visitTypeHex(v.visitType) ? '' : (VISIT_TYPE_BAR[v.visitType] ?? 'bg-teal-500')}`}
+                            style={{ width: `${pct}%`, backgroundColor: visitTypeHex(v.visitType) || undefined }} />
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-400">
+                          <span>{v.count} {t('vetSessions') || 'sessions'}</span>
+                          <span>·</span>
+                          <span>${Number(v.revenue || 0).toFixed(0)} {t('vetRevenue') || 'revenue'}</span>
+                          <span>·</span>
+                          <span>${Number(v.avg || 0).toFixed(0)} {t('vetAvgPerSession') || 'avg'}</span>
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-teal-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                })()}
                 {visitTypes.length === 0 && <p className="text-xs text-slate-400 text-center py-4">{t('vetNoDataYet')||'No data yet'}</p>}
               </div>
             </div>
@@ -322,10 +364,12 @@ export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string)
                 <h2 className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
                   <Pill size={13} /> Medicine Sales
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                   {[
                     { label: 'Med Sales',    value: String(medSummary.saleCount),             icon: ShoppingBag,  color: 'text-violet-600 dark:text-violet-400' },
+                    { label: 'Units Sold',   value: (Number(medSummary.unitsSold) || 0).toLocaleString(undefined, { maximumFractionDigits: 1 }), icon: Boxes, color: 'text-sky-600 dark:text-sky-400' },
                     { label: 'Med Revenue',  value: `$${medSummary.revenue.toFixed(2)}`,      icon: TrendingUp,   color: 'text-emerald-600 dark:text-emerald-400' },
+                    { label: 'Avg Sale',     value: `$${(medSummary.saleCount > 0 ? medSummary.revenue / medSummary.saleCount : 0).toFixed(2)}`, icon: DollarSign, color: 'text-teal-600 dark:text-teal-400' },
                     { label: 'COGS',         value: `$${medSummary.costOfGoods.toFixed(2)}`,  icon: TrendingDown, color: 'text-orange-500 dark:text-orange-400' },
                     { label: 'Gross Profit', value: `$${medSummary.grossProfit.toFixed(2)}`,  icon: DollarSign,   color: medSummary.grossProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400' },
                     { label: 'Margin',       value: `${medSummary.margin.toFixed(1)}%`,       icon: Activity,     color: medSummary.margin >= 40 ? 'text-emerald-600 dark:text-emerald-400' : medSummary.margin >= 20 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400' },
@@ -338,6 +382,181 @@ export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string)
                   ))}
                 </div>
               </div>
+
+              {/* ─── Store Profit & Inventory (expected vs actual) ───────── */}
+              {profit && (
+                <div className="space-y-4">
+                  <h2 className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                    <DollarSign size={13} /> Profit &amp; Inventory
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Realized profit — expected vs actual on sold items */}
+                    <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <TrendingUp size={15} className="text-emerald-500" /> Sales Profit — Expected vs Actual
+                        </h3>
+                        <span className="text-[11px] font-semibold bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-2 py-0.5 rounded-full">
+                          {profit.sales.realizationRate.toFixed(0)}% realized
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700 p-3 text-center">
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400">Expected profit (at list price)</p>
+                          <p className="text-xl font-bold text-slate-700 dark:text-slate-200">${profit.sales.expectedProfit.toFixed(2)}</p>
+                          <p className="text-[10px] text-slate-400">{profit.sales.expectedMargin.toFixed(1)}% margin</p>
+                        </div>
+                        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 text-center">
+                          <p className="text-[11px] text-emerald-700 dark:text-emerald-400">Actual profit (after discounts)</p>
+                          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">${profit.sales.actualProfit.toFixed(2)}</p>
+                          <p className="text-[10px] text-emerald-500">{profit.sales.actualMargin.toFixed(1)}% margin</p>
+                        </div>
+                      </div>
+                      {/* realization bar */}
+                      <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden mb-3">
+                        <div className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: `${Math.min(100, Math.max(0, profit.sales.realizationRate))}%` }} />
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Expected revenue (list)</span><span className="font-semibold text-slate-700 dark:text-slate-200">${profit.sales.expectedRevenue.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Actual revenue (charged)</span><span className="font-semibold text-slate-700 dark:text-slate-200">${profit.sales.actualRevenue.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-amber-600 dark:text-amber-400 flex items-center gap-1"><Tag size={11} /> Discounts / price cuts given</span><span className="font-semibold text-amber-600 dark:text-amber-400">−${profit.sales.discountsGiven.toFixed(2)}</span></div>
+                        <div className="flex justify-between border-t border-slate-100 dark:border-slate-700 pt-1.5"><span className="text-slate-500 dark:text-slate-400">Cost of goods sold</span><span className="font-semibold text-orange-500">${profit.sales.cogs.toFixed(2)}</span></div>
+                      </div>
+                    </div>
+
+                    {/* Inventory potential — expected profit sitting in the store */}
+                    <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          <Boxes size={15} className="text-sky-500" /> Store Inventory Potential
+                        </h3>
+                        <span className="text-[11px] font-semibold bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-300 px-2 py-0.5 rounded-full">
+                          {profit.inventory.batchCount} batches
+                        </span>
+                      </div>
+                      <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 text-center mb-4">
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400">Expected profit if all current stock sells at list price</p>
+                        <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${profit.inventory.potentialProfit.toFixed(2)}</p>
+                        <p className="text-[10px] text-emerald-500">{profit.inventory.potentialMargin.toFixed(1)}% potential margin</p>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Inventory value at cost</span><span className="font-semibold text-slate-700 dark:text-slate-200">${profit.inventory.cost.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400">Retail value (at list price)</span><span className="font-semibold text-slate-700 dark:text-slate-200">${profit.inventory.retail.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span className="text-slate-500 dark:text-slate-400 flex items-center gap-1"><Boxes size={11} /> Units in stock</span><span className="font-semibold text-slate-700 dark:text-slate-200">{profit.inventory.inStockUnits.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span></div>
+                        {profit.inventory.expiredCost > 0.005 && (
+                          <div className="flex justify-between border-t border-slate-100 dark:border-slate-700 pt-1.5"><span className="text-red-500 flex items-center gap-1"><PackageX size={11} /> Locked in expired stock</span><span className="font-semibold text-red-500">${profit.inventory.expiredCost.toFixed(2)}</span></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Per-medicine expected vs actual profit */}
+                  {profit.topMedicines.length > 0 && (
+                    <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                      <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                        <Percent size={15} className="text-violet-500" /> Expected vs Actual Profit by Medicine
+                      </h3>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-left text-slate-400 border-b border-slate-100 dark:border-slate-700">
+                              <th className="py-1.5 pr-2 font-medium">Medicine</th>
+                              <th className="py-1.5 px-2 font-medium text-right">Units</th>
+                              <th className="py-1.5 px-2 font-medium text-right">Expected</th>
+                              <th className="py-1.5 px-2 font-medium text-right">Actual</th>
+                              <th className="py-1.5 pl-2 font-medium text-right">Discount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {profit.topMedicines.map((m: any) => (
+                              <tr key={m.id} className="border-b border-slate-50 dark:border-slate-800 last:border-0">
+                                <td className="py-1.5 pr-2 text-slate-700 dark:text-slate-300 font-medium truncate max-w-[160px]">{m.name}</td>
+                                <td className="py-1.5 px-2 text-right text-slate-500 dark:text-slate-400">{(m.unitsSold || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}</td>
+                                <td className="py-1.5 px-2 text-right text-slate-600 dark:text-slate-300">${m.expectedProfit.toFixed(2)}</td>
+                                <td className={`py-1.5 px-2 text-right font-semibold ${m.actualProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>${m.actualProfit.toFixed(2)}</td>
+                                <td className="py-1.5 pl-2 text-right text-amber-600 dark:text-amber-400">{m.discountsGiven > 0.005 ? `−$${m.discountsGiven.toFixed(2)}` : '—'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Sales Breakdown (category · payment · refunds) ──────── */}
+              {breakdown && (breakdown.byCategory.length > 0 || breakdown.byPayment.length > 0) && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Sales by category */}
+                  <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                      <Tag size={15} className="text-violet-500" /> Sales by Category
+                    </h3>
+                    <div className="space-y-2.5">
+                      {breakdown.byCategory.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No sales in this period</p>}
+                      {breakdown.byCategory.map((c: any) => {
+                        const maxRev = breakdown.byCategory[0]?.revenue || 1
+                        const pct = maxRev > 0 ? (c.revenue / maxRev) * 100 : 0
+                        return (
+                          <div key={c.category}>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-xs text-slate-700 dark:text-slate-300 capitalize flex items-center gap-1.5">
+                                {c.category} <span className="text-[10px] text-slate-400">{c.saleCount}×</span>
+                              </span>
+                              <span className="text-xs shrink-0">
+                                <span className="font-semibold text-emerald-600 dark:text-emerald-400">${c.revenue.toFixed(2)}</span>
+                                <span className="text-slate-400"> · </span>
+                                <span className={c.profit >= 0 ? 'text-slate-500 dark:text-slate-400' : 'text-red-500'}>${c.profit.toFixed(0)} {t('vetProfitShort') || 'profit'}</span>
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div className="h-full bg-violet-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Payment methods + refunds */}
+                  <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                      <DollarSign size={15} className="text-emerald-500" /> Payment Methods
+                    </h3>
+                    <div className="space-y-2.5">
+                      {breakdown.byPayment.length === 0 && <p className="text-xs text-slate-400 text-center py-4">No sales in this period</p>}
+                      {breakdown.byPayment.map((p: any) => {
+                        const maxRev = Math.max(...breakdown.byPayment.map((x: any) => x.revenue), 1)
+                        const pct = maxRev > 0 ? (p.revenue / maxRev) * 100 : 0
+                        const tone = p.method === 'cash' ? 'bg-emerald-500' : p.method === 'card' ? 'bg-blue-500' : p.method === 'insurance' ? 'bg-violet-500' : 'bg-slate-400'
+                        return (
+                          <div key={p.method}>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-xs text-slate-700 dark:text-slate-300 capitalize flex items-center gap-1.5">
+                                {p.method} <span className="text-[10px] text-slate-400">{p.saleCount}×</span>
+                              </span>
+                              <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 shrink-0">${p.revenue.toFixed(2)}</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all ${tone}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {breakdown.refunds.count > 0 && (
+                      <div className="mt-4 flex items-center justify-between rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2">
+                        <span className="text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                          <TrendingDown size={13} /> {breakdown.refunds.count} {t('vetRefunds') || 'refunds'}
+                        </span>
+                        <span className="text-xs font-bold text-red-600 dark:text-red-400">−${breakdown.refunds.amount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* ─── Expiry Alerts + Top Medicines ─────────────────────── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -70,6 +70,10 @@ const MODULE_REGISTRY = {
     file: 'schema.prisma',
     injectFields: {}
   },
+  pharmacy: {
+    file: 'schema.prisma',
+    injectFields: {}
+  },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

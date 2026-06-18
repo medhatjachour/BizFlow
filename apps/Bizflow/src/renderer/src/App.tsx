@@ -48,6 +48,7 @@ const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/cl
 const Vet          = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/index')) : null
 const VetPatientProfile = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/VetPatientProfile')) : null
 const Gym          = __PLUGIN_GYM__ ? lazy(() => import('./plugins/gym/pages/index')) : null
+const Pharmacy     = __PLUGIN_PHARMACY__ ? lazy(() => import('./plugins/pharmacy/pages/index')) : null
 
 // ------------------------------------------------------------------
 // Per-route error boundary — wraps each page in isolation so one
@@ -93,6 +94,7 @@ function AppContent() {
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
   const vetEnabled = useModuleEnabled(MODULE_IDS.VET)
   const gymEnabled = useModuleEnabled(MODULE_IDS.GYM)
+  const pharmacyEnabled = useModuleEnabled(MODULE_IDS.PHARMACY)
   const isClinicStaff = user?.role === 'clinic_staff'
 
   // Global keyboard shortcuts
@@ -371,6 +373,18 @@ function AppContent() {
                 <RequireAuth>
                   <RootLayoutWrapper>
                     <RouteErrorBoundary name="Gym"><Gym /></RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
+          {__PLUGIN_PHARMACY__ && pharmacyEnabled && Pharmacy && (
+            <Route
+              path="/pharmacy"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Pharmacy"><Pharmacy /></RouteErrorBoundary>
                   </RootLayoutWrapper>
                 </RequireAuth>
               }
