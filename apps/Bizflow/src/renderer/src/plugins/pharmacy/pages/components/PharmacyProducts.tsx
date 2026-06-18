@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  Loader2, Plus, Pencil, Trash2, Layers, X, PackageX, AlertTriangle, Boxes
+  Loader2, Plus, Pencil, Trash2, Layers, X, PackageX, AlertTriangle, Boxes, History
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { pharma, money, inputCls, expiryTone } from './_shared'
-import { Toolbar, SearchBox, Segmented, FilterSelect } from './ui'
+import { Toolbar, SearchBox, Segmented, FilterSelect, Button, IconButton, Pagination } from './ui'
+import ProductDetailModal from './ProductDetailModal'
 
 // Default selling units (user can still type a custom one)
 const DEFAULT_UNITS = ['box', 'bottle', 'strip', 'pack', 'tablet', 'capsule', 'vial', 'ampoule', 'sachet', 'tube', 'piece', 'unit', 'ml', 'g', 'mg', 'kg', 'L']
@@ -25,22 +26,26 @@ export default function PharmacyProducts() {
   const [showForm, setShowForm] = useState(false)
   const [batchTarget, setBatchTarget] = useState<any | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
+  const [detailTarget, setDetailTarget] = useState<any | null>(null)
+  const [page, setPage] = useState(0)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const PAGE_SIZE = 24
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await pharma()?.products.getAll({ search, category, stockFilter, status: 'all', take: 500, sortBy: 'name' })
+      const r = await pharma()?.products.getAll({ search, category, stockFilter, status: 'all', skip: page * PAGE_SIZE, take: PAGE_SIZE, sortBy: 'name' })
       setRows(r?.data ?? []); setTotal(r?.total ?? 0)
     } catch (e: any) { toast.error(e?.message ?? 'Failed to load products') }
     finally { setLoading(false) }
-  }, [search, category, stockFilter])
+  }, [search, category, stockFilter, page])
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(load, 250)
     return () => { if (timer.current) clearTimeout(timer.current) }
   }, [load])
+  useEffect(() => { setPage(0) }, [search, category, stockFilter])
 
   useEffect(() => { pharma()?.products.getCategories().then(setCategories).catch(() => {}) }, [])
 
@@ -56,10 +61,9 @@ export default function PharmacyProducts() {
   return (
     <div className="p-6 space-y-4">
       <Toolbar right={
-        <button onClick={() => { setEditTarget(null); setShowForm(true) }}
-          className="px-3.5 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 whitespace-nowrap">
-          <Plus size={15} /> {t('phAddProduct') || 'Add Product'}
-        </button>
+        <Button icon={Plus} onClick={() => { setEditTarget(null); setShowForm(true) }}>
+          {t('phAddProduct') || 'Add Product'}
+        </Button>
       }>
         <SearchBox value={search} onChange={setSearch} placeholder={t('phSearchProduct') || 'Search products…'} />
         <FilterSelect value={category} onChange={setCategory}>
@@ -124,12 +128,10 @@ export default function PharmacyProducts() {
                       <td className="px-4 py-2.5 text-right tabular-nums">${money(p.sellingPrice)}</td>
                       <td className="px-4 py-2.5 text-right tabular-nums text-slate-500">${money(p.stockValue)}</td>
                       <td className="px-4 py-2.5 text-right whitespace-nowrap">
-                        <button onClick={() => setBatchTarget(p)} title={t('phBatches') || 'Batches'}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"><Layers size={15} /></button>
-                        <button onClick={() => { setEditTarget(p); setShowForm(true) }} title={t('phEdit') || 'Edit'}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"><Pencil size={15} /></button>
-                        <button onClick={() => setDeleteTarget(p)} title={t('phDelete') || 'Delete'}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={15} /></button>
+                        <IconButton icon={History} tone="violet" onClick={() => setDetailTarget(p)} title={t('phHistory') || 'History & details'} />
+                        <IconButton icon={Layers} tone="emerald" onClick={() => setBatchTarget(p)} title={t('phBatches') || 'Batches'} />
+                        <IconButton icon={Pencil} tone="slate" onClick={() => { setEditTarget(p); setShowForm(true) }} title={t('phEdit') || 'Edit'} />
+                        <IconButton icon={Trash2} tone="red" onClick={() => setDeleteTarget(p)} title={t('phDelete') || 'Delete'} />
                       </td>
                     </tr>
                   )
@@ -139,8 +141,9 @@ export default function PharmacyProducts() {
           </div>
         )}
       </div>
-      {!loading && rows.length > 0 && <p className="text-xs text-slate-400">{total} {t('phProductsLc') || 'products'}</p>}
+      {!loading && rows.length > 0 && <Pagination page={page} pageCount={Math.max(1, Math.ceil(total / PAGE_SIZE))} total={total} onPage={setPage} label={t('phProductsLc') || 'products'} />}
 
+      {detailTarget && <ProductDetailModal product={detailTarget} onClose={() => setDetailTarget(null)} />}
       {showForm && <ProductModal initial={editTarget} categories={categories} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load() }} />}
       {batchTarget && <BatchModal product={batchTarget} onClose={() => { setBatchTarget(null); load() }} />}
       {deleteTarget && (
@@ -149,8 +152,8 @@ export default function PharmacyProducts() {
             <p className="font-semibold text-slate-900 dark:text-white mb-1">{t('phDeleteProduct') || 'Delete product'}?</p>
             <p className="text-sm text-slate-500 mb-5">{deleteTarget.name}. {deleteTarget.salesCount > 0 ? (t('phWillDisable') || 'It has sales history and will be disabled instead of deleted.') : (t('phCannotUndo') || 'This cannot be undone.')}</p>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg">{t('phCancel') || 'Cancel'}</button>
-              <button onClick={doDelete} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg">{t('phDelete') || 'Delete'}</button>
+              <Button variant="secondary" className="flex-1" onClick={() => setDeleteTarget(null)}>{t('phCancel') || 'Cancel'}</Button>
+              <Button variant="danger" className="flex-1" onClick={doDelete}>{t('phDelete') || 'Delete'}</Button>
             </div>
           </div>
         </div>
@@ -273,10 +276,8 @@ function ProductModal({ initial, categories, onClose, onSaved }: { initial: any 
             </label>
           )}
           <div className="flex gap-2 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg">{t('phCancel') || 'Cancel'}</button>
-            <button type="submit" disabled={busy} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">
-              {busy && <Loader2 size={14} className="animate-spin" />}{t('phSave') || 'Save'}
-            </button>
+            <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>{t('phCancel') || 'Cancel'}</Button>
+            <Button type="submit" className="flex-1" loading={busy}>{t('phSave') || 'Save'}</Button>
           </div>
         </form>
       </div>
@@ -397,3 +398,5 @@ function BatchModal({ product, onClose }: { product: any; onClose: () => void })
     </div>
   )
 }
+
+// ── Product history & details moved to ./ProductDetailModal ──────────────────

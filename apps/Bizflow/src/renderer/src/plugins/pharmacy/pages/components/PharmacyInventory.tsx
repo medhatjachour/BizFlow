@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Loader2, PackageX, AlertTriangle, CalendarClock } from 'lucide-react'
+import { Loader2, PackageX, AlertTriangle, CalendarClock, History } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { pharma, money, int, expiryTone } from './_shared'
+import { IconButton } from './ui'
+import ProductDetailModal from './ProductDetailModal'
 
 export default function PharmacyInventory() {
   const toast = useToast()
@@ -11,6 +13,7 @@ export default function PharmacyInventory() {
   const [rows, setRows] = useState<any[]>([])
   const [inv, setInv] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [detailTarget, setDetailTarget] = useState<any | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -86,7 +89,8 @@ export default function PharmacyInventory() {
                     <td className="px-5 py-2.5 text-right">{b.quantity} {b.product?.unit}</td>
                     <td className="px-5 py-2.5"><span className={`text-xs font-medium ${expiryTone(b.daysToExpiry)}`}>{new Date(b.expiryDate).toLocaleDateString()} · {b.isExpired ? (t('phExpired') || 'expired') : `${b.daysToExpiry}d`}</span></td>
                     <td className="px-5 py-2.5 text-right tabular-nums text-slate-500">${money(b.value)}</td>
-                    <td className="px-5 py-2.5 text-right">
+                    <td className="px-5 py-2.5 text-right whitespace-nowrap">
+                      {b.product?.id && <IconButton icon={History} tone="violet" onClick={() => setDetailTarget({ id: b.product.id, name: b.product.name, unit: b.product.unit })} title={t('phHistory') || 'History & details'} />}
                       <button onClick={() => dispose(b)} className="px-2.5 py-1 text-xs font-semibold rounded-lg text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 hover:bg-amber-200 transition-colors inline-flex items-center gap-1">
                         <PackageX size={13} /> {t('phDispose') || 'Dispose'}
                       </button>
@@ -98,6 +102,8 @@ export default function PharmacyInventory() {
           </div>
         )}
       </div>
+
+      {detailTarget && <ProductDetailModal product={detailTarget} onClose={() => setDetailTarget(null)} />}
     </div>
   )
 }

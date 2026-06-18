@@ -35,6 +35,15 @@ model User {
   @@index([deactivatedBy])
 }
 
+// Role-based permissions — capability overrides per role (JSON array of keys).
+// Absent row = use built-in defaults from src/shared/permissions.ts.
+model RolePermission {
+  role         String   @id           // 'admin' | 'manager' | 'sales' | 'cashier' | custom
+  capabilities String   @default("[]") // JSON-encoded Capability[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 // Financial Transaction (renamed from Transaction to avoid confusion)
 model FinancialTransaction {
   id          String   @id @default(uuid())

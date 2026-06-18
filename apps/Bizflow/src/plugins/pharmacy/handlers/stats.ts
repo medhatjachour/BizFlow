@@ -174,4 +174,72 @@ export function registerPharmacyStatsHandlers(prisma: any): void {
       }
     } catch (err) { log.error('stats:inventory', err); throw err }
   })
+
+  // ─── Owner cashflow snapshot ──────────────────────────────────────────────
+  // Cash collected today, receivables (customer credit), payables (open POs),
+  // and stock alerts (low / out / expiring / expired) — the at-a-glance numbers
+  // an owner checks daily.
+  ipcMain.handle('pharmacy:stats:cashflow', async () => {
+    try {
+      const startToday = new Date(); startToday.setHours(0, 0, 0, 0)
+      const now = new Date()
+      const in30 = new Date(now.getTime() + 30 * 86_400_000)
+
+      const cashRows = await prisma.$queryRawUnsafe(`
+        SELECT
+          CAST(COALESCE(SUM(amountPaid), 0) AS REAL)                                   as cashToday,
+          CAST(COALESCE(SUM(total - COALESCE(refundedAmount,0)), 0) AS REAL)           as salesToday,
+          COUNT(*)                                                                      as txToday
+        FROM PharmacySale
+        WHERE saleDate >= ? AND (status IS NULL OR status != 'refunded')
+      `, startToday) as any[]
+
+      const recvRows = await prisma.$queryRawUnsafe(`
+        SELECT CAST(COALESCE(SUM(MAX(0, (total - COALESCE(refundedAmount,0)) - COALESCE(amountPaid,0))), 0) AS REAL) as receivables
+        FROM PharmacySale
+        WHERE status IS NULL OR status != 'refunded'
+      `) as any[]
+
+      const payRows = await prisma.$queryRawUnsafe(`
+        SELECT CAST(COALESCE(SUM(total), 0) AS REAL) as payables, COUNT(*) as openOrders
+        FROM PharmacyPurchaseOrder
+        WHERE status IN ('draft', 'ordered')
+      `) as any[]
+
+      const batchRows = await prisma.$queryRawUnsafe(`
+        SELECT
+          SUM(CASE WHEN expiryDate < ?  AND quantity > 0 THEN 1 ELSE 0 END) as expired,
+          SUM(CASE WHEN expiryDate >= ? AND expiryDate <= ? AND quantity > 0 THEN 1 ELSE 0 END) as expiring
+        FROM PharmacyBatch WHERE status = 'active'
+      `, now, now, in30) as any[]
+
+      // low / out of stock per product (active products only)
+      const stockRows = await prisma.$queryRawUnsafe(`
+        SELECT p.minimumStock as minimumStock,
+          COALESCE((SELECT SUM(b.quantity) FROM PharmacyBatch b WHERE b.productId = p.id AND b.status = 'active'), 0) as stock
+        FROM PharmacyProduct p WHERE p.isActive = 1
+      `) as any[]
+      let lowStock = 0, outOfStock = 0
+      for (const r of stockRows) {
+        const stock = Number(r.stock) || 0
+        const min = Number(r.minimumStock) || 0
+        if (stock <= 0) outOfStock++
+        else if (stock <= min) lowStock++
+      }
+
+      const c = cashRows[0] ?? {}
+      return {
+        cashToday:    Number(c.cashToday)   || 0,
+        salesToday:   Number(c.salesToday)  || 0,
+        txToday:      Number(c.txToday)     || 0,
+        receivables:  Number(recvRows[0]?.receivables) || 0,
+        payables:     Number(payRows[0]?.payables)     || 0,
+        openOrders:   Number(payRows[0]?.openOrders)   || 0,
+        lowStock,
+        outOfStock,
+        expiring:     Number(batchRows[0]?.expiring) || 0,
+        expired:      Number(batchRows[0]?.expired)  || 0,
+      }
+    } catch (err) { log.error('stats:cashflow', err); throw err }
+  })
 }

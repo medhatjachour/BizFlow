@@ -21,7 +21,17 @@ const api = {
       ipcRenderer.invoke('auth:login', { username, password }),
     // create a new user account (username, password, role)
     create: (username: string, password: string, role: string = 'sales') =>
-      ipcRenderer.invoke('auth:create', { username, password, role })
+      ipcRenderer.invoke('auth:create', { username, password, role }),
+    logout: () => ipcRenderer.invoke('auth:logout'),
+    // bind the acting user in the main process and return resolved capabilities
+    bindSession: (user: { id: string; username: string; role: string } | null) =>
+      ipcRenderer.invoke('permissions:bindSession', user)
+  },
+  permissions: {
+    getRoles: () => ipcRenderer.invoke('permissions:getRoles'),
+    setRole: (role: string, caps: string[]) => ipcRenderer.invoke('permissions:setRole', role, caps),
+    bindSession: (user: { id: string; username: string; role: string } | null) =>
+      ipcRenderer.invoke('permissions:bindSession', user)
   },
   dashboard: {
     getMetrics: () => ipcRenderer.invoke('dashboard:getMetrics'),

@@ -3,6 +3,7 @@ import { Search, Loader2, Plus, Pencil, Trash2, X, Truck, Phone, Mail } from 'lu
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { pharma, inputCls } from './_shared'
+import { Button, Pagination } from './ui'
 
 export default function PharmacySuppliers() {
   const toast = useToast()
@@ -13,6 +14,8 @@ export default function PharmacySuppliers() {
   const [edit, setEdit] = useState<any | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [del, setDel] = useState<any | null>(null)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 12
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -21,6 +24,9 @@ export default function PharmacySuppliers() {
     finally { setLoading(false) }
   }, [search])
   useEffect(() => { const id = setTimeout(load, 200); return () => clearTimeout(id) }, [load])
+  useEffect(() => { setPage(0) }, [search])
+
+  const paged = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   async function doDelete() {
     if (!del) return
@@ -35,14 +41,14 @@ export default function PharmacySuppliers() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('phSearchSuppliers') || 'Search suppliers…'} className={inputCls + ' pl-9'} />
         </div>
-        <button onClick={() => { setEdit(null); setShowForm(true) }} className="px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 whitespace-nowrap"><Plus size={15} /> {t('phAddSupplier') || 'Add Supplier'}</button>
+        <Button icon={Plus} onClick={() => { setEdit(null); setShowForm(true) }}>{t('phAddSupplier') || 'Add Supplier'}</Button>
       </div>
 
       {loading ? <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-emerald-500" /></div>
       : rows.length === 0 ? <p className="text-sm text-slate-400 text-center py-16">{t('phNoSuppliers') || 'No suppliers yet.'}</p>
       : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {rows.map(s => (
+          {paged.map(s => (
             <div key={s.id} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 group">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2 min-w-0">
@@ -65,6 +71,8 @@ export default function PharmacySuppliers() {
         </div>
       )}
 
+      {!loading && rows.length > 0 && <Pagination page={page} pageCount={Math.max(1, Math.ceil(rows.length / PAGE_SIZE))} total={rows.length} onPage={setPage} label={t('phSuppliers') || 'suppliers'} />}
+
       {showForm && <SupplierModal initial={edit} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load() }} />}
       {del && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setDel(null)}>
@@ -72,8 +80,8 @@ export default function PharmacySuppliers() {
             <p className="font-semibold text-slate-900 dark:text-white mb-1">{t('phDeleteSupplier') || 'Delete supplier'}?</p>
             <p className="text-sm text-slate-500 mb-5">{del.name}</p>
             <div className="flex gap-2">
-              <button onClick={() => setDel(null)} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 rounded-lg">{t('phCancel') || 'Cancel'}</button>
-              <button onClick={doDelete} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg">{t('phDelete') || 'Delete'}</button>
+              <Button variant="secondary" className="flex-1" onClick={() => setDel(null)}>{t('phCancel') || 'Cancel'}</Button>
+              <Button variant="danger" className="flex-1" onClick={doDelete}>{t('phDelete') || 'Delete'}</Button>
             </div>
           </div>
         </div>
@@ -115,8 +123,8 @@ function SupplierModal({ initial, onClose, onSaved }: { initial: any | null; onC
           <input value={form.address} onChange={set('address')} placeholder={t('phAddress') || 'Address'} className={inputCls} />
           <textarea value={form.notes} onChange={set('notes')} rows={2} placeholder={t('phNotes') || 'Notes'} className={inputCls} />
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 rounded-lg">{t('phCancel') || 'Cancel'}</button>
-            <button type="submit" disabled={busy} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">{busy && <Loader2 size={14} className="animate-spin" />}{t('phSave') || 'Save'}</button>
+            <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>{t('phCancel') || 'Cancel'}</Button>
+            <Button type="submit" className="flex-1" loading={busy}>{t('phSave') || 'Save'}</Button>
           </div>
         </form>
       </div>

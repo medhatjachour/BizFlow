@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { SQL_SOLD_QTY, SQL_COGS, SQL_NET_REVENUE } from './saleMath'
 
 const log = createLogger('Vet:Stats')
 
@@ -51,10 +52,11 @@ export function registerVetStatsHandlers(prisma: any) {
         prisma.$queryRawUnsafe(`
           SELECT
             COUNT(*)                                                  as saleCount,
-            COALESCE(SUM(s.totalPrice), 0)                           as medicineRevenue,
-            COALESCE(SUM(s.quantity * b.costPerUnit), 0)             as medicineCost
+            COALESCE(SUM(${SQL_NET_REVENUE}), 0)                      as medicineRevenue,
+            COALESCE(SUM(${SQL_COGS}), 0)                             as medicineCost
           FROM VetMedicineSale s
           JOIN VetMedicineBatch b ON s.batchId = b.id
+          JOIN VetMedicine m      ON s.medicineId = m.id
           WHERE s.saleDate >= ?
         `, start) as Promise<any[]>,
       ])
@@ -176,14 +178,12 @@ export function registerVetStatsHandlers(prisma: any) {
       const from = params?.from ? new Date(params.from) : new Date(now.getFullYear(), now.getMonth(), 1)
       const to   = params?.to   ? new Date(params.to)   : now
 
-      // Reusable per-line expressions
-      const EQTY = `(CASE WHEN s.saleUnit='sub' AND m.subUnitsPerContainer>0
-                         THEN (s.quantity-COALESCE(s.refundedQty,0))/m.subUnitsPerContainer
-                         ELSE (s.quantity-COALESCE(s.refundedQty,0)) END)`
+      // Reusable per-line expressions (shared with finance/reports via saleMath)
+      const EQTY = SQL_SOLD_QTY
       const LISTED = `COALESCE(b.sellingPrice,
                        CASE WHEN s.saleUnit='sub' AND m.subUnitsPerContainer>0
                             THEN s.unitPrice*m.subUnitsPerContainer ELSE s.unitPrice END)`
-      const ACTUAL = `(s.totalPrice-COALESCE(s.refundedAmount,0))`
+      const ACTUAL = SQL_NET_REVENUE
 
       const soldRows = await prisma.$queryRawUnsafe(`
         SELECT
@@ -291,10 +291,8 @@ export function registerVetStatsHandlers(prisma: any) {
       const from = params?.from ? new Date(params.from) : new Date(now.getFullYear(), now.getMonth(), 1)
       const to   = params?.to   ? new Date(params.to)   : now
 
-      const EQTY = `(CASE WHEN s.saleUnit='sub' AND m.subUnitsPerContainer>0
-                         THEN (s.quantity-COALESCE(s.refundedQty,0))/m.subUnitsPerContainer
-                         ELSE (s.quantity-COALESCE(s.refundedQty,0)) END)`
-      const ACTUAL = `(s.totalPrice-COALESCE(s.refundedAmount,0))`
+      const EQTY = SQL_SOLD_QTY
+      const ACTUAL = SQL_NET_REVENUE
       const ACTIVE = `(s.status IS NULL OR s.status != 'refunded')`
 
       const byCategory = await prisma.$queryRawUnsafe(`

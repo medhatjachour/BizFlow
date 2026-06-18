@@ -19,6 +19,8 @@ import './backup.handlers' // Import backup handlers (self-contained, no registr
 import { registerLogHandlers } from './log.handlers'
 import { registerFinanceHandlers } from './finance.handlers'
 import { registerModuleHandlers } from './module.handlers'
+import { registerPermissionsHandlers } from './permissions.handlers'
+import { installPermissionGuard } from './permissionsGuard'
 import type { IPlugin } from '../../../shared/interfaces/IPlugin'
 import CommercePlugin from '../../../plugins/commerce/index'
 import BakeryPlugin from '../../../plugins/bakery/index'
@@ -110,7 +112,7 @@ export async function initializePrisma(): Promise<void> {
       // ── Orphan table cleanup ──────────────────────────────────────────────
       try {
         const EXPECTED = new Set<string>([
-          'User', 'FinancialTransaction',
+          'User', 'FinancialTransaction', 'RolePermission',
           'Employee', 'EmployeeAttendance', 'EmployeeDocument',
           'EmployeeActivityLog', 'EmployeePayroll', 'EmployeeShift', 'EmployeeOvertime',
           'EmailReport',
@@ -174,7 +176,9 @@ export async function initializePrisma(): Promise<void> {
  * Call this function once during Electron app initialization
  */
 export function registerAllHandlers() {
-
+  // Install the universal permission guard before ANY handler is registered so
+  // sensitive channels (refunds/voids) are enforced across all plugins.
+  installPermissionGuard()
   // ── Kernel handlers (always registered) ─────────────────────────────────
   registerAuthHandlers(prisma)
   registerDashboardHandlers(prisma)
@@ -188,6 +192,7 @@ export function registerAllHandlers() {
   registerEmailHandlers(prisma)
   registerLogHandlers()
   registerModuleHandlers()
+  registerPermissionsHandlers(prisma)
 
   // ── Plugin Handlers ──────────────────────────────────────────────────────
   // Only plugins compiled into this build (via ENABLED_MODULES) are in

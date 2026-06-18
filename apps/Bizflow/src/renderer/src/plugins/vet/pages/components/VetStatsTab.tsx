@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Loader2, TrendingUp, Users, Activity, DollarSign, AlertCircle, PawPrint, Info, Pill, ShoppingBag, PackageX, AlertTriangle, TrendingDown, PackageMinus, CalendarClock, ChevronRight, Boxes, Percent, Tag } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useAuth } from '@renderer/contexts/AuthContext'
 import { visitTypeLabel, VISIT_TYPE_BAR, useVisitTypes } from './visitTypes'
 
 function StatsHelp() {
@@ -41,6 +42,8 @@ const SPECIES_EMOJI: Record<string, string> = {
 export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const toast = useToast()
   const { t } = useLanguage()
+  const { can } = useAuth()
+  const showProfit = can('view_profit')
   const { hexColor: visitTypeHex } = useVisitTypes()
   const [period, setPeriod] = useState<Period>('month')
   const [overview, setOverview] = useState<any | null>(null)
@@ -373,7 +376,7 @@ export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string)
                     { label: 'COGS',         value: `$${medSummary.costOfGoods.toFixed(2)}`,  icon: TrendingDown, color: 'text-orange-500 dark:text-orange-400' },
                     { label: 'Gross Profit', value: `$${medSummary.grossProfit.toFixed(2)}`,  icon: DollarSign,   color: medSummary.grossProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400' },
                     { label: 'Margin',       value: `${medSummary.margin.toFixed(1)}%`,       icon: Activity,     color: medSummary.margin >= 40 ? 'text-emerald-600 dark:text-emerald-400' : medSummary.margin >= 20 ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400' },
-                  ].map(({ label, value, icon: Icon, color }) => (
+                  ].filter(c => showProfit || !['COGS', 'Gross Profit', 'Margin'].includes(c.label)).map(({ label, value, icon: Icon, color }) => (
                     <div key={label} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center">
                       <Icon className={`h-5 w-5 mx-auto mb-1.5 ${color}`} />
                       <p className={`text-xl font-bold ${color}`}>{value}</p>
@@ -384,7 +387,7 @@ export default function VetStatsTab({ onNavigate }: { onNavigate?: (tab: string)
               </div>
 
               {/* ─── Store Profit & Inventory (expected vs actual) ───────── */}
-              {profit && (
+              {showProfit && profit && (
                 <div className="space-y-4">
                   <h2 className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 uppercase tracking-widest">
                     <DollarSign size={13} /> Profit &amp; Inventory

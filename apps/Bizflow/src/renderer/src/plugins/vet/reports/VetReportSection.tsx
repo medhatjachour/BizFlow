@@ -110,7 +110,7 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
     const rev = sessions.reduce((s: number, x: any) => s + (Number(x.amountCharged) || 0), 0)
     const col = sessions.reduce((s: number, x: any) => s + (Number(x.amountPaid) || 0), 0)
     const exp = exps.reduce((s: number, x: any) => s + (Number(x.amount) || 0), 0)
-    const medRev  = medSales.reduce((s: number, x: any) => s + (Number(x.totalPrice) || 0), 0)
+    const medRev  = medSales.reduce((s: number, x: any) => s + (Number(x.netRevenue ?? x.totalPrice) || 0), 0)
     const medCost = medSales.reduce((s: number, x: any) => {
       const ct = Number(x.costTotal)
       const fallback = Number(x.quantity) * Number(x.batch?.costPerUnit ?? 0)

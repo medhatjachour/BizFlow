@@ -165,21 +165,44 @@ export function registerPharmacyProductHandlers(prisma: any): void {
   })
 
   // ─── Per-product timeline (batches received / sales / disposals) ──────────
-  ipcMain.handle('pharmacy:products:getHistory', async (_e, id: string, params?: { from?: string; to?: string }) => {
+  ipcMain.handle('pharmacy:products:getHistory', async (_e, id: string, params?: { from?: string; to?: string; take?: number }) => {
     try {
       const from = params?.from ? new Date(params.from) : undefined
       const to = params?.to ? new Date(new Date(params.to).getTime() + 86_399_999) : undefined
       const dateFilter = (d: Date) => (!from || d >= from) && (!to || d <= to)
+      const take = Math.min(Math.max(params?.take ?? 100, 20), 500)
 
-      const [batches, saleItems] = await Promise.all([
+      const [product, batches, recentItems, aggRows] = await Promise.all([
+        prisma.pharmacyProduct.findUnique({ where: { id } }),
         prisma.pharmacyBatch.findMany({ where: { productId: id }, orderBy: { receivedDate: 'desc' } }),
         prisma.pharmacySaleItem.findMany({
           where: { productId: id },
           include: { sale: { select: { saleDate: true, saleNumber: true, customerName: true } } },
           orderBy: { createdAt: 'desc' },
+          take,
         }),
+        prisma.$queryRawUnsafe(`
+          SELECT
+            CAST(COALESCE(SUM(quantity), 0) AS REAL)               as soldUnits,
+            CAST(COALESCE(SUM(lineTotal), 0) AS REAL)              as revenue,
+            CAST(COALESCE(SUM(quantity * costPerUnit), 0) AS REAL) as cogs,
+            COUNT(DISTINCT saleId)                                 as saleCount
+          FROM PharmacySaleItem WHERE productId = ?
+        `, id) as any[],
       ])
+      if (!product) throw new Error('Product not found')
 
+      // Current stock + value from active batches
+      const active = batches.filter((b: any) => b.status === 'active')
+      const currentStock = active.reduce((s: number, b: any) => s + (b.quantity || 0), 0)
+      const stockValue = active.reduce((s: number, b: any) => s + (b.quantity || 0) * (b.costPerUnit || 0), 0)
+      const retailValue = active.reduce((s: number, b: any) => s + (b.quantity || 0) * ((b.sellingPrice ?? product.sellingPrice) || 0), 0)
+
+      const a = aggRows[0] ?? {}
+      const revenue = Number(a.revenue) || 0
+      const cogs = Number(a.cogs) || 0
+
+      // Build the movement timeline (received / sold / disposed)
       const events: any[] = []
       for (const b of batches) {
         if (dateFilter(new Date(b.receivedDate))) {
@@ -189,20 +212,48 @@ export function registerPharmacyProductHandlers(prisma: any): void {
           events.push({ type: 'disposed', date: b.disposedAt, qty: b.disposedQty ?? 0, batchNumber: b.batchNumber, reason: b.disposeReason })
         }
       }
-      for (const s of saleItems) {
+      for (const s of recentItems) {
         if (dateFilter(new Date(s.sale.saleDate))) {
-          events.push({ type: 'sold', date: s.sale.saleDate, qty: s.quantity, unitPrice: s.unitPrice, value: s.lineTotal, saleNumber: s.sale.saleNumber, customer: s.sale.customerName })
+          events.push({ type: 'sold', date: s.sale.saleDate, qty: s.quantity, saleUnit: s.saleUnit, unitPrice: s.unitPrice, value: s.lineTotal, refundedQty: s.refundedQty, saleNumber: s.sale.saleNumber, customer: s.sale.customerName })
         }
       }
       events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-      const summary = {
-        received: events.filter(e => e.type === 'received').reduce((s, e) => s + e.qty, 0),
-        sold: events.filter(e => e.type === 'sold').reduce((s, e) => s + e.qty, 0),
-        disposed: events.filter(e => e.type === 'disposed').reduce((s, e) => s + e.qty, 0),
-        revenue: events.filter(e => e.type === 'sold').reduce((s, e) => s + (e.value ?? 0), 0),
+      return {
+        product: {
+          id: product.id, name: product.name, genericName: product.genericName, category: product.category,
+          unit: product.unit, subUnit: product.subUnit, subUnitsPerContainer: product.subUnitsPerContainer,
+          barcode: product.barcode, sellingPrice: product.sellingPrice, minimumStock: product.minimumStock, isActive: product.isActive,
+        },
+        stats: {
+          currentStock,
+          stockValue: Math.round(stockValue * 100) / 100,
+          retailValue: Math.round(retailValue * 100) / 100,
+          soldUnits: Number(a.soldUnits) || 0,
+          saleCount: Number(a.saleCount) || 0,
+          revenue: Math.round(revenue * 100) / 100,
+          cogs: Math.round(cogs * 100) / 100,
+          profit: Math.round((revenue - cogs) * 100) / 100,
+          margin: revenue > 0 ? Math.round(((revenue - cogs) / revenue) * 1000) / 10 : 0,
+          batchCount: batches.length,
+          activeBatches: active.length,
+          lastSold: recentItems[0]?.sale?.saleDate ?? null,
+          lastReceived: batches[0]?.receivedDate ?? null,
+        },
+        batches: batches.map((b: any) => ({
+          id: b.id, batchNumber: b.batchNumber, quantity: b.quantity, initialQty: b.initialQty,
+          costPerUnit: b.costPerUnit, sellingPrice: b.sellingPrice, expiryDate: b.expiryDate,
+          receivedDate: b.receivedDate, status: b.status, value: (b.quantity || 0) * (b.costPerUnit || 0),
+        })),
+        events,
+        // legacy shape kept for any existing callers
+        summary: {
+          received: events.filter(e => e.type === 'received').reduce((s, e) => s + e.qty, 0),
+          sold: Number(a.soldUnits) || 0,
+          disposed: events.filter(e => e.type === 'disposed').reduce((s, e) => s + e.qty, 0),
+          revenue: Math.round(revenue * 100) / 100,
+        },
       }
-      return { events, summary }
     } catch (err) { log.error('products:getHistory', err); throw err }
   })
 }

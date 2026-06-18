@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, DollarSign, TrendingUp, ShoppingBag, Package, AlertTriangle,
-  PackageX, PackageMinus, Wallet, ChevronRight, Pill, Activity
+  PackageX, PackageMinus, Wallet, ChevronRight, Pill, Activity, ArrowDownCircle, ArrowUpCircle
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useAuth } from '@renderer/contexts/AuthContext'
 import { pharma, money, int } from './_shared'
 
 const PERIODS = ['today', 'week', 'month', 'year'] as const
@@ -12,15 +13,22 @@ const PERIODS = ['today', 'week', 'month', 'year'] as const
 export default function PharmacyDashboard({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const toast = useToast()
   const { t } = useLanguage()
+  const { can } = useAuth()
+  const showProfit = can('view_profit')
   const [period, setPeriod] = useState<typeof PERIODS[number]>('month')
   const [ov, setOv] = useState<any>(null)
+  const [cf, setCf] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await pharma()?.stats.overview(period)
+      const [r, c] = await Promise.all([
+        pharma()?.stats.overview(period),
+        pharma()?.stats.cashflow(),
+      ])
       setOv(r)
+      setCf(c)
     } catch (e: any) { toast.error(e?.message ?? 'Failed to load dashboard') }
     finally { setLoading(false) }
   }, [period])
@@ -40,7 +48,7 @@ export default function PharmacyDashboard({ onNavigate }: { onNavigate?: (tab: s
     { label: t('phStockValue') || 'Stock Value', value: `$${money(ov.stockValue)}`, sub: `${int(ov.activeProducts)} ${t('phProductsLc') || 'products'}`, icon: Package, color: 'text-teal-600 dark:text-teal-400' },
     { label: t('phMargin') || 'Margin', value: `${(s.margin || 0).toFixed(1)}%`, sub: `${t('phCogs') || 'COGS'} $${money(s.cogs)}`, icon: Activity, color: (s.margin || 0) >= 25 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400' },
     { label: t('phReceivables') || 'Receivables', value: `$${money(ov.outstanding)}`, sub: t('phUnpaidSales') || 'unpaid sales', icon: Wallet, color: ov.outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
-  ]
+  ].filter(k => showProfit || k.label !== (t('phMargin') || 'Margin'))
 
   const alerts = [
     ov.expiredBatches > 0 && { key: 'expired', tone: 'red', icon: PackageX, title: `${ov.expiredBatches} ${t('phExpiredBatches') || 'expired batches'}`, sub: `$${money(ov.expiredValue)} ${t('phAtRisk') || 'at risk'}`, tab: 'inventory' },
@@ -58,6 +66,29 @@ export default function PharmacyDashboard({ onNavigate }: { onNavigate?: (tab: s
 
   return (
     <div className="p-6 space-y-6">
+      {/* Owner cashflow snapshot */}
+      {cf && (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {[
+            { key: 'cash', label: t('phCashToday') || 'Cash in today', value: `$${money(cf.cashToday)}`, sub: `${int(cf.txToday)} ${t('phSalesLc') || 'sales'}`, icon: ArrowDownCircle, ring: 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-900/15', ic: 'text-emerald-500', tab: 'sales' },
+            { key: 'recv', label: t('phReceivables') || 'Receivables', value: `$${money(cf.receivables)}`, sub: t('phToCollect') || 'to collect', icon: Wallet, ring: 'border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/15', ic: 'text-amber-500', tab: 'customers' },
+            { key: 'pay', label: t('phPayables') || 'Payables', value: `$${money(cf.payables)}`, sub: `${int(cf.openOrders)} ${t('phOpenOrders') || 'open orders'}`, icon: ArrowUpCircle, ring: 'border-orange-200 dark:border-orange-800/60 bg-orange-50 dark:bg-orange-900/15', ic: 'text-orange-500', tab: 'orders' },
+            { key: 'stock', label: t('phStockAlerts') || 'Stock alerts', value: `${int(cf.outOfStock + cf.lowStock)}`, sub: `${int(cf.outOfStock)} ${t('phOut') || 'out'} · ${int(cf.lowStock)} ${t('phLow') || 'low'}`, icon: PackageMinus, ring: 'border-rose-200 dark:border-rose-800/60 bg-rose-50 dark:bg-rose-900/15', ic: 'text-rose-500', tab: 'products' },
+            { key: 'exp', label: t('phExpiring') || 'Expiring', value: `${int(cf.expiring + cf.expired)}`, sub: `${int(cf.expired)} ${t('phExpired') || 'expired'} · ${int(cf.expiring)} ≤30d`, icon: AlertTriangle, ring: 'border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-900/15', ic: 'text-red-500', tab: 'inventory' },
+          ].map(c => (
+            <button key={c.key} type="button" disabled={!onNavigate} onClick={() => onNavigate?.(c.tab)}
+              className={`text-left rounded-xl border px-4 py-3 transition-colors ${c.ring} ${onNavigate ? 'cursor-pointer hover:brightness-[0.98]' : 'cursor-default'}`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <c.icon className={`h-4 w-4 ${c.ic}`} />
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide truncate">{c.label}</span>
+              </div>
+              <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{c.value}</p>
+              <p className="text-[11px] text-slate-400 truncate">{c.sub}</p>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Period selector */}
       <div className="flex gap-1">
         {PERIODS.map(p => (

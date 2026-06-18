@@ -6,6 +6,7 @@
 import { ipcMain } from 'electron'
 import bcrypt from 'bcryptjs'
 import { createLogger } from '../../utils/logger'
+import { bindUser, setCurrentUser } from './session'
 
 const log = createLogger('Auth')
 
@@ -38,7 +39,9 @@ export function registerAuthHandlers(prisma: any) {
         })
 
         log.info(`✅ Login successful: ${user.username} (${user.role}) - ID: ${user.id}`)
-        return { success: true, user: { id: user.id, username: user.username, role: user.role } }
+        // Bind the acting user so sensitive handlers can enforce permissions.
+        const capabilities = await bindUser(prisma, { id: user.id, username: user.username, role: user.role })
+        return { success: true, user: { id: user.id, username: user.username, role: user.role }, capabilities }
       }
 
       // Mock fallback
@@ -72,5 +75,11 @@ export function registerAuthHandlers(prisma: any) {
       log.error('❌ Create user error:', error)
       return { success: false, message: 'Failed to create user' }
     }
+  })
+
+  // Clear the bound session on logout.
+  ipcMain.handle('auth:logout', async () => {
+    setCurrentUser(null)
+    return { success: true }
   })
 }

@@ -27,6 +27,7 @@ import GeneralSettings from './GeneralSettings'
 import DisplaySettings from './DisplaySettings'
 import CategorySettings from './CategorySettings'
 import UserManagementSettings from './UserManagementSettings'
+import RolePermissionsSettings from './RolePermissionsSettings'
 import PaymentMethodsSettings from './PaymentMethodsSettings'
 import TaxReceiptSettings from './TaxReceiptSettings'
 import NotificationsSettings from './NotificationsSettings'
@@ -178,7 +179,12 @@ export default function Settings() {
 
           {activeTab === 'categories' && <CategorySettings />}
 
-          {activeTab === 'users' && <UserManagementSettings />}
+          {activeTab === 'users' && (
+            <div className="space-y-8">
+              <UserManagementSettings />
+              <RolePermissionsSettings />
+            </div>
+          )}
 
           {activeTab === 'payments' && (
             <PaymentMethodsSettings settings={paymentMethods} onChange={setPaymentMethods} />

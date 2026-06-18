@@ -16,6 +16,8 @@
 
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { SQL_SOLD_QTY, SQL_COGS, SQL_NET_REVENUE, saleCostTotal, saleNetRevenue } from './saleMath'
+import { requireCap } from '../../../main/ipc/handlers/session'
 
 const log = createLogger('Vet:Medicines')
 
@@ -247,6 +249,7 @@ export function registerVetMedicineHandlers(prisma: any) {
         throw new Error('Unit price must be a non-negative number')
       }
       const discount = data.discount ?? 0
+      if (discount > 0) requireCap('give_discount')
       if (!Number.isFinite(discount) || discount < 0) {
         throw new Error('Discount must be a non-negative number')
       }
@@ -296,6 +299,7 @@ export function registerVetMedicineHandlers(prisma: any) {
   }) => {
     try {
       if (!data.items || data.items.length === 0) throw new Error('No items in cart')
+      if ((Number(data.cartDiscount) || 0) > 0 || data.items.some(it => (Number(it.discount) || 0) > 0)) requireCap('give_discount')
 
       // One receipt id ties every line item of this checkout together so the
       // sales history can show them grouped as a single transaction.
@@ -508,6 +512,7 @@ export function registerVetMedicineHandlers(prisma: any) {
     quantity?: number; reason?: string
   }) => {
     try {
+      requireCap('issue_refund')
       const sale = await prisma.vetMedicineSale.findUnique({ where: { id } })
       if (!sale) throw new Error('Sale not found')
       const alreadyRefunded = sale.refundedQty ?? 0
@@ -555,6 +560,7 @@ export function registerVetMedicineHandlers(prisma: any) {
     reason?: string
   }) => {
     try {
+      requireCap('issue_refund')
       if (!groupKey) throw new Error('groupKey is required')
       const lines = await prisma.vetMedicineSale.findMany({
         where: { OR: [{ saleGroupId: groupKey }, { id: groupKey }] }
@@ -636,13 +642,18 @@ export function registerVetMedicineHandlers(prisma: any) {
         take
       })
 
-      // Enrich each sale with costTotal and grossProfit
-      const enriched = data.map((s: any) => ({
-        ...s,
-        costPerUnit: s.batch?.costPerUnit ?? 0,
-        costTotal:   s.quantity * (s.batch?.costPerUnit ?? 0),
-        grossProfit: s.totalPrice - s.quantity * (s.batch?.costPerUnit ?? 0)
-      }))
+      // Enrich each sale with sub-unit-aware COGS and profit (net of refunds).
+      const enriched = data.map((s: any) => {
+        const costTotal  = saleCostTotal(s)
+        const netRevenue = saleNetRevenue(s)
+        return {
+          ...s,
+          costPerUnit: s.batch?.costPerUnit ?? 0,
+          costTotal,
+          netRevenue,
+          grossProfit: netRevenue - costTotal,
+        }
+      })
 
       return { data: enriched, total, hasMore: skip + take < total }
     } catch (err) { log.error('getSales', err); throw err }
@@ -699,11 +710,12 @@ export function registerVetMedicineHandlers(prisma: any) {
           CAST(COALESCE(SUM(s.totalPrice), 0) AS REAL)             as total,
           CAST(COALESCE(SUM(s.discount), 0) AS REAL)               as discount,
           CAST(COALESCE(SUM(COALESCE(s.amountPaid, s.totalPrice)), 0) AS REAL) as paid,
-          CAST(COALESCE(SUM(s.quantity * b.costPerUnit), 0) AS REAL) as cost,
+          CAST(COALESCE(SUM(${SQL_COGS}), 0) AS REAL) as cost,
           CAST(COALESCE(SUM(COALESCE(s.refundedAmount, 0)), 0) AS REAL) as refunded,
           CAST(SUM(CASE WHEN s.status = 'refunded' THEN 1 ELSE 0 END) AS INTEGER) as refundedCount
         FROM VetMedicineSale s
         JOIN VetMedicineBatch b ON s.batchId = b.id
+        LEFT JOIN VetMedicine m ON s.medicineId = m.id
         WHERE COALESCE(s.saleGroupId, s.id) IN (SELECT gk FROM matched)
         GROUP BY groupKey
         ORDER BY saleDate DESC
@@ -725,11 +737,12 @@ export function registerVetMedicineHandlers(prisma: any) {
       const itemsByKey = new Map<string, any[]>()
       for (const it of items as any[]) {
         const key = it.saleGroupId ?? it.id
+        const costTotal = saleCostTotal(it)
         const enriched = {
           ...it,
           costPerUnit: it.batch?.costPerUnit ?? 0,
-          costTotal:   it.quantity * (it.batch?.costPerUnit ?? 0),
-          grossProfit: it.totalPrice - it.quantity * (it.batch?.costPerUnit ?? 0)
+          costTotal,
+          grossProfit: saleNetRevenue(it) - costTotal,
         }
         if (!itemsByKey.has(key)) itemsByKey.set(key, [])
         itemsByKey.get(key)!.push(enriched)
@@ -898,12 +911,13 @@ export function registerVetMedicineHandlers(prisma: any) {
       const rows = await prisma.$queryRawUnsafe(`
         SELECT
           COUNT(*)                                                  as saleCount,
-          CAST(COALESCE(SUM(s.quantity), 0) AS REAL)                            as unitsSold,
-          CAST(COALESCE(SUM(s.totalPrice), 0) AS REAL)                           as revenue,
-          CAST(COALESCE(SUM(s.quantity * b.costPerUnit), 0) AS REAL)             as costOfGoods,
-          CAST(COALESCE(SUM(s.totalPrice - s.quantity * b.costPerUnit), 0) AS REAL) as grossProfit
+          CAST(COALESCE(SUM(${SQL_SOLD_QTY}), 0) AS REAL)           as unitsSold,
+          CAST(COALESCE(SUM(${SQL_NET_REVENUE}), 0) AS REAL)        as revenue,
+          CAST(COALESCE(SUM(${SQL_COGS}), 0) AS REAL)               as costOfGoods,
+          CAST(COALESCE(SUM(${SQL_NET_REVENUE} - ${SQL_COGS}), 0) AS REAL) as grossProfit
         FROM VetMedicineSale s
         JOIN VetMedicineBatch b ON s.batchId = b.id
+        JOIN VetMedicine m      ON s.medicineId = m.id
         WHERE s.saleDate >= ? AND s.saleDate <= ?
       `, from, to) as any[]
 
@@ -911,8 +925,8 @@ export function registerVetMedicineHandlers(prisma: any) {
         SELECT
           m.id, m.name, m.unit,
           COUNT(*)                             as saleCount,
-          CAST(COALESCE(SUM(s.totalPrice), 0) AS REAL)       as revenue,
-          CAST(COALESCE(SUM(s.quantity * b.costPerUnit), 0) AS REAL) as costOfGoods
+          CAST(COALESCE(SUM(${SQL_NET_REVENUE}), 0) AS REAL)       as revenue,
+          CAST(COALESCE(SUM(${SQL_COGS}), 0) AS REAL) as costOfGoods
         FROM VetMedicineSale s
         JOIN VetMedicine m ON s.medicineId = m.id
         JOIN VetMedicineBatch b ON s.batchId = b.id

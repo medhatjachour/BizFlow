@@ -5,7 +5,7 @@ import {
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { pharma, money, int, PAY_BADGE } from './_shared'
-import { Toolbar, SearchBox, inputCls } from './ui'
+import { Toolbar, SearchBox, inputCls, Button, Pagination } from './ui'
 
 export default function PharmacyCustomers() {
   const toast = useToast()
@@ -17,7 +17,9 @@ export default function PharmacyCustomers() {
   const [showForm, setShowForm] = useState(false)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [del, setDel] = useState<any | null>(null)
+  const [page, setPage] = useState(0)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const PAGE_SIZE = 12
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -26,8 +28,10 @@ export default function PharmacyCustomers() {
     finally { setLoading(false) }
   }, [search])
   useEffect(() => { if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(load, 220); return () => { if (timer.current) clearTimeout(timer.current) } }, [load])
+  useEffect(() => { setPage(0) }, [search])
 
   const totalOutstanding = rows.reduce((s, c) => s + (c.outstanding || 0), 0)
+  const paged = rows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
   async function doDelete() {
     if (!del) return
@@ -38,7 +42,7 @@ export default function PharmacyCustomers() {
   return (
     <div className="p-6 space-y-4">
       <Toolbar right={
-        <button onClick={() => { setEdit(null); setShowForm(true) }} className="px-3.5 py-2 rounded-xl text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 flex items-center gap-1.5 whitespace-nowrap"><Plus size={15} /> {t('phAddCustomer') || 'Add Customer'}</button>
+        <Button icon={Plus} onClick={() => { setEdit(null); setShowForm(true) }}>{t('phAddCustomer') || 'Add Customer'}</Button>
       }>
         <SearchBox value={search} onChange={setSearch} placeholder={t('phSearchCustomers') || 'Search customers by name or phone…'} />
         {totalOutstanding > 0.005 && (
@@ -51,7 +55,7 @@ export default function PharmacyCustomers() {
         <div className="flex flex-col items-center justify-center py-16 text-slate-400"><Users size={36} className="mb-2 opacity-30" /><p className="text-sm font-medium">{t('phNoCustomers') || 'No customers yet'}</p><p className="text-xs mt-1">{t('phAddCustomerHint') || 'Add a customer to track their purchases and balance.'}</p></div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {rows.map(c => (
+          {paged.map(c => (
             <div key={c.id} onClick={() => setProfileId(c.id)} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 group cursor-pointer hover:border-emerald-300 dark:hover:border-emerald-700 transition-colors">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -77,6 +81,8 @@ export default function PharmacyCustomers() {
         </div>
       )}
 
+      {!loading && rows.length > 0 && <Pagination page={page} pageCount={Math.max(1, Math.ceil(rows.length / PAGE_SIZE))} total={rows.length} onPage={setPage} label={t('phCustomers') || 'customers'} />}
+
       {showForm && <CustomerModal initial={edit} onClose={() => setShowForm(false)} onSaved={() => { setShowForm(false); load() }} />}
       {profileId && <CustomerProfile id={profileId} onClose={() => setProfileId(null)} onChanged={load} />}
       {del && (
@@ -85,8 +91,8 @@ export default function PharmacyCustomers() {
             <p className="font-semibold text-slate-900 dark:text-white mb-1">{t('phDeleteCustomer') || 'Delete customer'}?</p>
             <p className="text-sm text-slate-500 mb-5">{del.name}. {t('phSalesKept') || 'Their sales history is kept but unlinked.'}</p>
             <div className="flex gap-2">
-              <button onClick={() => setDel(null)} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 rounded-lg">{t('phCancel') || 'Cancel'}</button>
-              <button onClick={doDelete} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg">{t('phDelete') || 'Delete'}</button>
+              <Button variant="secondary" className="flex-1" onClick={() => setDel(null)}>{t('phCancel') || 'Cancel'}</Button>
+              <Button variant="danger" className="flex-1" onClick={doDelete}>{t('phDelete') || 'Delete'}</Button>
             </div>
           </div>
         </div>
@@ -121,7 +127,7 @@ function CustomerModal({ initial, onClose, onSaved }: { initial: any | null; onC
             <input value={form.defaultDiscount} onChange={set('defaultDiscount')} type="number" min="0" max="100" step="0.1" placeholder="0" className={inputCls} />
           </div>
           <textarea value={form.notes} onChange={set('notes')} rows={2} placeholder={t('phNotes') || 'Notes'} className={inputCls} />
-          <div className="flex gap-2 pt-1"><button type="button" onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 rounded-lg">{t('phCancel') || 'Cancel'}</button><button type="submit" disabled={busy} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2">{busy && <Loader2 size={14} className="animate-spin" />}{t('phSave') || 'Save'}</button></div>
+          <div className="flex gap-2 pt-1"><Button type="button" variant="secondary" className="flex-1" onClick={onClose}>{t('phCancel') || 'Cancel'}</Button><Button type="submit" className="flex-1" loading={busy}>{t('phSave') || 'Save'}</Button></div>
         </form>
       </div>
     </div>

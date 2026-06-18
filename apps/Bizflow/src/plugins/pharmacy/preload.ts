@@ -49,6 +49,7 @@ export const pharmacyPreload = {
     overview: (period?: string) => ipcRenderer.invoke('pharmacy:stats:overview', period),
     salesSummary: (params?: { from?: string; to?: string }) => ipcRenderer.invoke('pharmacy:stats:salesSummary', params),
     inventory: () => ipcRenderer.invoke('pharmacy:stats:inventory'),
+    cashflow: () => ipcRenderer.invoke('pharmacy:stats:cashflow'),
   },
   customers: {
     getAll: (params?: { search?: string }) => ipcRenderer.invoke('pharmacy:customers:getAll', params),
