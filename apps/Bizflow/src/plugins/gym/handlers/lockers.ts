@@ -49,7 +49,7 @@ export function registerGymLockerHandlers(prisma: any) {
         where: { lockerId, isActive: true },
         data: { isActive: false }
       })
-      const assignment = await prisma.gymLockerAssignment.create({
+      await prisma.gymLockerAssignment.create({
         data: {
           lockerId,
           traineeId,

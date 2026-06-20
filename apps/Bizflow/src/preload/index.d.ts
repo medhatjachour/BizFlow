@@ -19,6 +19,12 @@ interface API {
   customers: {
     getAll: () => Promise<any>
   }
+  expenses: {
+    getAll: (params?: { startDate?: string; endDate?: string; category?: string }) => Promise<any>
+    create: (data: any) => Promise<any>
+    update: (id: string, data: any) => Promise<any>
+    delete: (id: string) => Promise<any>
+  }
   saleTransactions: {
     create: (data: any) => Promise<any>
     getAll: () => Promise<any>
@@ -519,6 +525,9 @@ interface API {
       create: (materialId: string, data: any) => Promise<any>
       update: (id: string, data: any) => Promise<any>
       delete: (id: string) => Promise<any>
+      logLoss: (data: any) => Promise<any>
+      logExpiry: (data: any) => Promise<any>
+      logAdjustment: (data: any) => Promise<any>
     }
     materials: {
       getAll: (params?: {

@@ -5,7 +5,10 @@
  * Abstracts Prisma implementation details
  */
 
-import type { PrismaClient } from '@prisma/client'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import type { IRepository, FindOptions, PaginatedResult } from '../../shared/interfaces/IRepository'
 import { EntityNotFoundError, DuplicateEntityError } from '../../shared/interfaces/IRepository'
 import type { SupplierWithRelations, SupplierProductWithRelations, CreateSupplierData } from '../../shared/mappers/SupplierMapper'
@@ -106,7 +109,7 @@ export class SupplierRepository implements IRepository<SupplierWithRelations> {
       skip,
       take,
       select
-    }) as Promise<SupplierWithRelations[]>
+    } as any) as Promise<SupplierWithRelations[]>
   }
 
   /**

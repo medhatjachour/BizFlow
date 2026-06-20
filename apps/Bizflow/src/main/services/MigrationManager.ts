@@ -10,7 +10,10 @@
  */
 
 import { app, dialog, BrowserWindow } from 'electron'
-import { PrismaClient } from '@prisma/client'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
@@ -18,10 +21,24 @@ import { createLogger } from '../utils/logger'
 
 const log = createLogger('Migration')
 
+/**
+ * Load the generated PrismaClient at runtime via require to avoid Rollup's
+ * static CJS named-export analysis failing on the generated client.
+ */
+function loadPrismaClient(): any {
+  const isDev = process.env.NODE_ENV === 'development'
+  if (isDev) {
+    return require(path.join(process.cwd(), 'src', 'generated', 'prisma')).PrismaClient
+  }
+  const prodPath = path.resolve(__dirname, '..', '..', '..', 'app.asar.unpacked', 'src', 'generated', 'prisma')
+  return require(prodPath).PrismaClient
+}
+
 export class MigrationManager {
   private prisma: PrismaClient
 
   constructor() {
+    const PrismaClient = loadPrismaClient()
     this.prisma = new PrismaClient()
   }
 

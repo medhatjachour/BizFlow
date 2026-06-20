@@ -106,7 +106,7 @@ export function registerPantryHandlers(prisma: any) {
     purchasePrice?: number
   }>) => {
     try {
-      const results = []
+      const results: any[] = []
       for (const item of items) {
         const result = await prisma.pantryIngredient.update({
           where: { id: item.id },

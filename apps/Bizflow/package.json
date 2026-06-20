@@ -6,7 +6,7 @@
   "author": "BizFlow Team",
   "homepage": "https://github.com/medhatjachour/electron-app",
   "scripts": {
-    "web:setup": "node scripts/merge-schemas.js && npx prisma db push --schema=prisma/merged.prisma --accept-data-loss --skip-generate",
+    "web:setup": "node scripts/merge-schemas.js --all && prisma generate --schema=prisma/merged.prisma && npx prisma db push --schema=prisma/merged.prisma --accept-data-loss --skip-generate",
     "web:server": "node web/build-server.mjs",
     "web:client": "vite --config web/vite.web.config.ts",
     "dev": "node scripts/merge-schemas.js && npx prisma generate --schema=prisma/merged.prisma && npx prisma db push --schema=prisma/merged.prisma --accept-data-loss && node scripts/copy-prisma-binaries.js && electron-vite dev",

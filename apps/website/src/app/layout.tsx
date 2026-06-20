@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { siteConfig, siteUrl } from "@/lib/site";
+import Analytics from "@/components/Analytics";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,22 +15,57 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BizFlow — Run your whole business in one beautiful app",
-  description:
-    "BizFlow is a modern business management system: POS, inventory, finance, and modules for bakeries, restaurants, clinics, vets and gyms. Try any module in your browser, then download the desktop build.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: siteConfig.title,
+    template: "%s — BizFlow",
+  },
+  description: siteConfig.description,
+  applicationName: "BizFlow",
   keywords: [
     "BizFlow",
     "POS",
-    "business management",
-    "inventory",
+    "point of sale",
+    "business management software",
+    "inventory management",
+    "bakery software",
+    "restaurant POS",
+    "clinic management",
+    "veterinary software",
+    "gym management",
     "try in browser",
-    "desktop app",
-    "bakery app",
-    "clinic app",
-    "vet app",
-    "dentist app",
+    "offline desktop app",
   ],
-  icons: { icon: "/brand/bizflow-icon.png" },
+  authors: [{ name: "BizFlow" }],
+  creator: "BizFlow",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: siteUrl,
+    siteName: "BizFlow",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
+  icons: {
+    icon: "/brand/bizflow-icon.png",
+    apple: "/brand/bizflow-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#060d1a",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -42,7 +79,10 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }

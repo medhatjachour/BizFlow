@@ -506,3 +506,81 @@ showToast(t('errorSavingRecord'), 'error')
 | `async/await` without try/catch in useEffect | Always wrap async calls in try/catch/finally |
 | `onClick` without `disabled` during async operations | Add `disabled={loading}` to prevent double-submit |
 | Using BrowserRouter instead of HashRouter | Electron requires HashRouter for file:// protocol |
+| Importing `PrismaClient` from `@prisma/client` | Import from `src/generated/prisma` (custom output; the package stub has no models) |
+
+---
+
+## 13. File Size & Decomposition (Maintainability)
+
+> Goal: any engineer can open a file, understand it in minutes, and change it
+> safely. Big files hide bugs and make review/merges painful.
+
+### 13.1 Soft size budgets
+| File kind | Target | Hard ceiling — split before exceeding |
+|---|---|---|
+| React component file | ≤ 250 lines | 400 |
+| Custom hook (`use*.ts`) | ≤ 200 lines | 350 |
+| IPC handler file | ≤ 300 lines | 500 |
+| Types / constants module | no logic limit | — |
+
+A file over budget is a **review signal**, not an auto-fail. Split when a file
+holds *multiple responsibilities*, not just because it is long.
+
+### 13.2 Target structure for a complex feature
+Follow the gold standard already in the codebase:
+`src/renderer/src/plugins/commerce/pages/POS/` —
+
+```
+POS/
+  index.tsx            # thin orchestrator: layout + wiring only
+  types.ts             # shared interfaces for the feature
+  usePOS.ts            # ONE custom hook: all state, effects, handlers
+  ProductSearch.tsx    # presentational sub-component (props in, callbacks out)
+  ShoppingCart.tsx
+  CustomerSelect.tsx
+  SuccessModal.tsx
+  __tests__/
+```
+
+Rules:
+- The page/tab `index.tsx` (or `<Feature>.tsx`) only composes children + wires the hook.
+- All stateful logic lives in a `use<Feature>.ts` hook returning `{ state, actions }`.
+- Sub-components are **prop-driven**: they take data + callbacks, own no business logic.
+- Shared interfaces → `<feature>.types.ts`; shared constants/pure helpers → `<feature>.shared.ts`.
+
+### 13.3 Safe decomposition playbook (in order, typecheck after each step)
+Extract from lowest-risk to highest. Run `npm run typecheck` after **every** step.
+
+1. **Types** → `<feature>.types.ts` (zero runtime risk).
+2. **Constants + pure helpers** (no closures) → `<feature>.shared.ts`.
+3. **Prop-driven sub-components** (a `function X(props)` that does NOT read the
+   parent's state/handlers directly) → one file each. These are safe to move
+   verbatim; just give the new file the imports the component actually uses.
+4. **Stateful logic** → a `use<Feature>.ts` hook. Move `useState`/`useEffect`/
+   handlers/memos into the hook; return what the JSX needs. Do this last and in
+   small increments — handlers that close over component state must move
+   *together* with that state.
+
+> A reference extraction of steps 1–2 lives next to
+> `vet/pages/components/VetSalesTab.tsx` as `vetSales.types.ts` /
+> `vetSales.shared.ts`. Continue that file with steps 3–4.
+
+### 13.4 What is NOT safe to "just move"
+- A sub-component that reads the parent's `useState` values or handlers directly
+  (closure) — first lift it to props, *then* move it.
+- Duplicate type definitions in sibling files may be intentionally narrower —
+  confirm before merging them.
+- `import type { X }` used only transitively → causes `TS6133`; import only types
+  you reference directly.
+
+### 13.5 Priority targets (largest first — split incrementally, never big-bang)
+`i18n/{en,ar}.ts` (split per-domain, re-export to keep the public shape),
+`vet/.../VetSalesTab.tsx`, `clinic/.../PatientProfile.tsx`,
+`commerce/pages/Sales.tsx`, `clinic/.../MaterialsTab.tsx`,
+`commerce/pages/POS/QuickSale.tsx`, `vet/.../VetMedicinesTab.tsx`,
+`main/ipc/handlers/{search,products,analytics}.handlers.ts`.
+
+Handler files split by **resource group** (e.g. `products.read.ts`,
+`products.write.ts`, `products.import.ts`) re-exported from a barrel
+`products.handlers.ts` so the `register*Handlers()` entry point is unchanged.
+

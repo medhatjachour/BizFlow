@@ -43,6 +43,8 @@ export interface ModuleMeta {
   ipcPrefix: string
   /** React-Router path prefix for this module's pages. */
   routePrefix: string
+  /** One-time license price in USD. Mirrored on the marketing site (nebula/src/lib/plugins.ts). */
+  price: number
 }
 
 export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
@@ -64,7 +66,8 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['Product', 'ProductVariant', 'Category', 'SaleTransaction', 'SaleItem', 'Store', 'Supplier', 'PurchaseOrder', 'InstallmentPlan', 'Installment'],
     ipcPrefix: 'commerce',
-    routePrefix: '/products'
+    routePrefix: '/products',
+    price: 299
   },
   [MODULE_IDS.BAKERY]: {
     id: MODULE_IDS.BAKERY,
@@ -82,7 +85,8 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['Recipe', 'RecipeIngredient', 'ProductionBatch', 'PantryIngredient', 'WasteLog', 'ProductionSchedule'],
     ipcPrefix: 'bakery',
-    routePrefix: '/bakery'
+    routePrefix: '/bakery',
+    price: 199
   },
   [MODULE_IDS.RESTAURANT]: {
     id: MODULE_IDS.RESTAURANT,
@@ -100,7 +104,8 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['RestaurantTable', 'TableReservation', 'MenuItem', 'DineInOrder', 'DineInOrderItem'],
     ipcPrefix: 'restaurant',
-    routePrefix: '/restaurant'
+    routePrefix: '/restaurant',
+    price: 249
   },
   [MODULE_IDS.WAREHOUSE]: {
     id: MODULE_IDS.WAREHOUSE,
@@ -118,7 +123,8 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['WarehouseLocation', 'WarehouseStock', 'StockTransfer', 'StockTransferItem'],
     ipcPrefix: 'warehouse',
-    routePrefix: '/warehouse'
+    routePrefix: '/warehouse',
+    price: 199
   },
   [MODULE_IDS.CLINIC]: {
     id: MODULE_IDS.CLINIC,
@@ -136,7 +142,8 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['ClinicPatient', 'ClinicSession', 'ClinicPrescription', 'ClinicCheckResult'],
     ipcPrefix: 'clinic',
-    routePrefix: '/clinic'
+    routePrefix: '/clinic',
+    price: 279
   },
   [MODULE_IDS.VET]: {
     id: MODULE_IDS.VET,
@@ -155,7 +162,8 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['VetOwner', 'VetPatient', 'VetSession', 'VetPrescription', 'VetAppointment', 'VetCheckResult', 'VetExpense', 'VetStaff', 'VetSalaryRecord'],
     ipcPrefix: 'vet',
-    routePrefix: '/vet'
+    routePrefix: '/vet',
+    price: 279
   },
   [MODULE_IDS.GYM]: {
     id: MODULE_IDS.GYM,
@@ -173,7 +181,8 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['GymCoach', 'GymTrainee', 'GymPlan', 'GymSubscription', 'GymFreeze', 'GymWalkSession', 'GymExpense'],
     ipcPrefix: 'gym',
-    routePrefix: '/gym'
+    routePrefix: '/gym',
+    price: 199
   },
   [MODULE_IDS.PHARMACY]: {
     id: MODULE_IDS.PHARMACY,
@@ -194,9 +203,21 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     status: 'active',
     models: ['PharmacyProduct', 'PharmacyBatch', 'PharmacySale', 'PharmacySaleItem', 'PharmacySupplier', 'PharmacyPurchaseOrder', 'PharmacyPurchaseOrderItem'],
     ipcPrefix: 'pharmacy',
-    routePrefix: '/pharmacy'
+    routePrefix: '/pharmacy',
+    price: 279
   }
 }
+
+// ─── Pricing ─────────────────────────────────────────────────────────────────
+
+/** Sum of every module's one-time license price (USD). */
+export const SUITE_LIST_PRICE = Object.values(MODULE_REGISTRY).reduce((sum, m) => sum + m.price, 0)
+
+/** Full-suite price with a 40% bundle discount, rounded to the nearest $10. */
+export const SUITE_PRICE = Math.round((SUITE_LIST_PRICE * 0.6) / 10) * 10
+
+/** Format a USD license price, e.g. 299 → "$299". */
+export const formatLicensePrice = (n: number): string => `$${n.toLocaleString('en-US')}`
 
 // ─── Settings key ────────────────────────────────────────────────────────────
 

@@ -80,6 +80,15 @@ const MODULE_REGISTRY = {
 
 /** Resolve which modules to merge (CLI > env > .env.build > all-in-dir). */
 function resolveModules() {
+  // --all forces every plugin (used by the web port, which ships all modules).
+  if (process.argv.includes('--all')) {
+    if (!fs.existsSync(PLUGINS_DIR)) return []
+    return fs
+      .readdirSync(PLUGINS_DIR)
+      .filter((name) =>
+        fs.existsSync(path.join(PLUGINS_DIR, name, 'schema.prisma'))
+      )
+  }
   // --modules bakery,restaurant
   const cliIdx = process.argv.indexOf('--modules')
   if (cliIdx !== -1 && process.argv[cliIdx + 1]) {

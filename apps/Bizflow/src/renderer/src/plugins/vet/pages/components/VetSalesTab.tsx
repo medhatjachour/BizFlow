@@ -11,186 +11,26 @@ import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import VetOwnerFormModal from './VetOwnerFormModal'
+import type {
+  MedicineLite, BatchLite, Sale, CustomerLite, SaleGroup, CartItem,
+} from './vetSales.types'
+import {
+  inputCls, PAYMENT_METHODS, PAY_COLOR, GROUP_STATUS, PAGE_SIZE, daysUntil,
+} from './vetSales.shared'
+import BatchPickerModal from './VetSaleBatchPicker'
 
 const api       = (window as any).api?.vet?.medicines
 const ownersApi = (window as any).api?.vet?.owners
-const inputCls =
-  'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface MedicineLite {
-  id: string; name: string; unit: string; category: string
-  subUnit?: string | null; subUnitsPerContainer?: number | null
-  totalStock: number; minimumStock: number
-  isLowStock: boolean; hasExpired: boolean
-  batches: BatchLite[]
-}
-interface BatchLite {
-  id: string; batchNumber?: string | null; expiryDate: string
-  quantity: number; costPerUnit: number; sellingPrice?: number | null
-  supplier?: string | null
-}
-interface Sale {
-  id: string; quantity: number; unitPrice: number; totalPrice: number
-  discount: number; patientName?: string | null; ownerName?: string | null; ownerId?: string | null
-  paymentMethod?: string | null; amountPaid?: number | null; paymentStatus?: string | null
-  notes?: string | null; saleDate: string; saleUnit?: 'container' | 'sub'
-  saleGroupId?: string | null
-  status?: string | null; refundedQty?: number | null; refundedAmount?: number | null
-  medicine: { id: string; name: string; unit: string; subUnit?: string | null; subUnitsPerContainer?: number | null; category?: string }
-  batch: { id: string; batchNumber?: string | null; expiryDate: string; costPerUnit?: number }
-  costPerUnit?: number; costTotal?: number; grossProfit?: number
-}
-interface CustomerLite { id: string; name: string; phone: string }
 
-// A grouped transaction (combined receipt) — every line item shares a saleGroupId.
-interface SaleGroup {
-  groupKey: string
-  saleGroupId: string | null
-  saleDate: string
-  itemCount: number
-  total: number
-  discount: number
-  cost: number
-  grossProfit: number
-  paid: number
-  remaining: number
-  refunded?: number
-  refundedCount?: number
-  txStatus?: string
-  paymentStatus: string
-  ownerId?: string | null
-  ownerName?: string | null
-  paymentMethod?: string | null
-  notes?: string | null
-  items: Sale[]
-}
-
-const PAYMENT_METHODS = ['cash', 'card', 'insurance', 'other']
-const PAY_COLOR: Record<string, string> = {
-  cash:      'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  card:      'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  insurance: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-  other:     'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-}
-
-function daysUntil(d: string) {
-  return Math.floor((new Date(d).getTime() - Date.now()) / 86_400_000)
-}
 
 // ── Batch Picker Modal ────────────────────────────────────────────────────────
 
-function BatchPickerModal({
-  medicine, selectedBatchId, onSelect, onClose,
-}: {
-  medicine: MedicineLite; selectedBatchId: string
-  onSelect: (b: BatchLite) => void; onClose: () => void
-}) {
-  const { t } = useLanguage()
-  const sorted = [...medicine.batches].sort(
-    (a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
-  )
-  const fefoId = sorted.find(b => b.quantity > 0 && daysUntil(b.expiryDate) >= 0)?.id
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <div>
-            <h2 className="font-bold text-slate-900 dark:text-white">{t('vetSelectBatch')||'Select Batch'}</h2>
-            <p className="text-xs text-slate-400 mt-0.5">{medicine.name} · {t('vetFefoHint')||'sorted earliest expiry first (FEFO)'}</p>
-          </div>
-          <button onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="overflow-y-auto flex-1 p-4 space-y-2.5">
-          {sorted.length === 0 ? (
-            <div className="text-center py-10 text-slate-400">
-              <Package className="h-8 w-8 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">{t('vetNoBatchesAvailable')||'No batches available'}</p>
-            </div>
-          ) : sorted.map(b => {
-            const days     = daysUntil(b.expiryDate)
-            const expired  = days < 0
-            const warnSoon = !expired && days <= 7
-            const warnMid  = !expired && !warnSoon && days <= 30
-            const isEmpty  = b.quantity <= 0
-            const isBlocked = expired || isEmpty  // expired batches must be written off, not sold
-            const isSel    = b.id === selectedBatchId
-
-            return (
-              <button key={b.id} type="button" disabled={isBlocked}
-                onClick={() => { onSelect(b); onClose() }}
-                className={[
-                  'w-full text-left rounded-xl border p-4 transition-all relative',
-                  isBlocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-                  isSel
-                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20 ring-2 ring-violet-500/30'
-                    : expired
-                    ? 'border-red-300 dark:border-red-700 bg-red-50/70 dark:bg-red-900/20'
-                    : warnSoon || warnMid
-                    ? 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 hover:border-amber-400'
-                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-violet-400 dark:hover:border-violet-600',
-                ].join(' ')}>
-
-                {isSel && <CheckCircle2 className="absolute top-3.5 right-3.5 h-4 w-4 text-violet-500" />}
-
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
-                        {b.batchNumber ?? 'No lot #'}
-                      </span>
-                      {b.id === fefoId && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 font-bold">
-                          FEFO
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {b.quantity} <span className="text-xs font-normal text-slate-400">{medicine.unit} {t('remaining')||'remaining'}</span>
-                    </p>
-                    {b.supplier && <p className="text-xs text-slate-400 truncate">{b.supplier}</p>}
-                  </div>
-
-                  <div className="text-right shrink-0 space-y-1">
-                    {expired
-                      ? <>
-                          <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">{t('vetExpiredBadge')||'Expired'}</span>
-                          <p className="text-[10px] text-red-500 dark:text-red-400 font-semibold">{t('vetWriteOffFirst')||'Write off first'}</p>
-                        </>
-                    : warnSoon ? <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">{days}d</span>
-                    : warnMid  ? <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">{days}d</span>
-                    :            <span className="inline-block text-[11px] text-slate-400">{t('vetExpPrefix')||'Exp:'} {new Date(b.expiryDate).toLocaleDateString()}</span>}
-                    {b.costPerUnit > 0 && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">${b.costPerUnit.toFixed(2)}/unit</p>
-                    )}
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
+// BatchPickerModal extracted to ./VetSaleBatchPicker
 
 // ── Sale Operation ────────────────────────────────────────────────────────────
-
-interface CartItem {
-  id: string
-  medicine: MedicineLite
-  batch: BatchLite
-  quantity: string
-  unitPrice: string
-  discount: string
-  saleUnit: 'container' | 'sub'
-}
 
 function SaleOperation({ onSaleRecorded, onCartCountChange }: {
   onSaleRecorded: () => void
@@ -334,15 +174,25 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
   }
 
   function pickUnit(unit: 'container' | 'sub') {
+    if (unit === itemForm.saleUnit) return
     const batch = selectedMed?.batches.find(b => b.id === itemForm.batchId) ?? null
-    const basePrice = (batch ? (batch.sellingPrice ?? batch.costPerUnit) : parseFloat(itemForm.unitPrice)) || 0
+    const ratio = selectedMed?.subUnitsPerContainer || 0
+    // Resolve a single canonical CONTAINER price to convert from, so toggling
+    // units any number of times always lands on the same values (no drift /
+    // runaway amounts). Prefer the batch's price; otherwise read the shown
+    // price and interpret it according to the unit currently in effect.
+    let containerPrice = 0
+    if (batch) {
+      containerPrice = (batch.sellingPrice ?? batch.costPerUnit) || 0
+    } else {
+      const shown = parseFloat(itemForm.unitPrice) || 0
+      containerPrice = itemForm.saleUnit === 'sub' && ratio > 0 ? shown * ratio : shown
+    }
     let newPrice: string = itemForm.unitPrice
-    if (unit === 'sub' && selectedMed?.subUnitsPerContainer && basePrice > 0) {
-      newPrice = (basePrice / selectedMed.subUnitsPerContainer).toFixed(4)
-    } else if (unit === 'container' && selectedMed?.subUnitsPerContainer && basePrice > 0) {
-      newPrice = (basePrice * selectedMed.subUnitsPerContainer).toFixed(2)
-    } else if (unit === 'container' && basePrice > 0) {
-      newPrice = String(basePrice)
+    if (containerPrice > 0) {
+      newPrice = unit === 'sub' && ratio > 0
+        ? (containerPrice / ratio).toFixed(4)
+        : String(Math.round(containerPrice * 100) / 100)
     }
     setItemForm(f => ({ ...f, saleUnit: unit, quantity: '', unitPrice: newPrice }))
   }
@@ -1513,12 +1363,6 @@ function RefundModal({ target, onClose, onDone }: {
 
 // ── Grouped Transaction Row (combined receipt) ────────────────────────────────
 
-const GROUP_STATUS: Record<string, string> = {
-  paid:    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-  partial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-  unpaid:  'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300',
-}
-
 function GroupLineItem({ item, onPaid, onEdit, onRefund }: {
   item: Sale; onPaid: () => void; onEdit: () => void; onRefund: () => void
 }) {
@@ -1694,8 +1538,6 @@ function SaleGroupRow({ group, onPaid, onEdit, onRefundItem, onRefundGroup }: {
 }
 
 // ── Sales History ─────────────────────────────────────────────────────────────
-
-const PAGE_SIZE = 15
 
 function SalesHistory() {
   const toast = useToast()

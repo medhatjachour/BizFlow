@@ -16,7 +16,6 @@ import {
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell,
 } from 'recharts'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { StockValueResult } from '@renderer/hooks/useDashboardWorker'
@@ -52,7 +51,6 @@ const StatCard = ({ icon: Icon, label, value, sub, color }: { icon: any; label: 
 )
 
 const WarehouseReportSection: React.FC<Props> = ({ refreshSignal }) => {
-  const { t } = useLanguage()
   const { error: toastError, success } = useToast()
   const { compute } = useDashboardWorker()
 
@@ -149,7 +147,6 @@ const WarehouseReportSection: React.FC<Props> = ({ refreshSignal }) => {
 
   // Top locations by stock value
   const topLocations = (stockValue?.topLocations ?? []).slice(0, 8)
-  const maxLocValue = Math.max(...topLocations.map(l => l.value), 1)
 
   return (
     <div className="space-y-6">

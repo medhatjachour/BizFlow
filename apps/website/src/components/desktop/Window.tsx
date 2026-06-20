@@ -91,30 +91,29 @@ export default function Window({
         <div className="flex items-center gap-1.5">
           <button
             onClick={onClose}
-            className="group grid cursor-pointer h-3.5 w-3.5 place-items-center rounded-full bg-rose-500"
+            className="group grid h-3.5 w-3.5 place-items-center rounded-full bg-rose-500"
             aria-label="Close"
           >
             <span className="text-[8px] leading-none text-black/0 group-hover:text-black/70">
               ×
             </span>
           </button>
-
-          <button
-            onClick={onToggleMaximize}
-            className="group grid cursor-pointer h-3.5 w-3.5 place-items-center rounded-full bg-emerald-400"
-            aria-label="Maximize"
-          >
-            <span className="text-[8px] leading-none text-black/0 group-hover:text-black/70">
-              +
-            </span>
-          </button>
           <button
             onClick={onMinimize}
-            className="group grid cursor-pointer h-3.5 w-3.5 place-items-center rounded-full bg-yellow-400"
+            className="group grid h-3.5 w-3.5 place-items-center rounded-full bg-yellow-400"
             aria-label="Minimize"
           >
             <span className="text-[8px] leading-none text-black/0 group-hover:text-black/70">
               −
+            </span>
+          </button>
+          <button
+            onClick={onToggleMaximize}
+            className="group grid h-3.5 w-3.5 place-items-center rounded-full bg-emerald-400"
+            aria-label="Maximize"
+          >
+            <span className="text-[8px] leading-none text-black/0 group-hover:text-black/70">
+              +
             </span>
           </button>
         </div>

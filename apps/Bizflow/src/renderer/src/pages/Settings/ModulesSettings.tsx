@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { MODULE_REGISTRY } from '@/shared/modules'
+import { MODULE_REGISTRY, formatLicensePrice } from '@/shared/modules'
 import { useEnabledModules, useRefreshModules } from '../../hooks/useModuleEnabled'
 import { Check, RefreshCw, Power, PowerOff, ChevronDown, ChevronUp, Database } from 'lucide-react'
 
@@ -194,6 +194,13 @@ export default function ModulesSettings() {
                         Active
                       </span>
                     )}
+                    <span
+                      title="One-time license price"
+                      className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                    >
+                      {formatLicensePrice(mod.price)}{' '}
+                      <span className="opacity-60">one-time</span>
+                    </span>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">
                     {mod.description}

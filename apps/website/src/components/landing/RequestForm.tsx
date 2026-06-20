@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PLUGINS } from "@/lib/plugins";
 import {
@@ -29,7 +29,7 @@ const TYPE_OPTIONS: { id: RequestType; label: string; desc: string }[] = [
   {
     id: "bundle",
     label: "Full suite",
-    desc: "All 7 modules at a bundle price",
+    desc: `All ${PLUGINS.length} modules at a bundle price`,
   },
 ];
 
@@ -38,6 +38,24 @@ const COMPLEXITY_OPTIONS: { id: Complexity; label: string }[] = [
   { id: "medium", label: "Medium" },
   { id: "large", label: "Large" },
 ];
+
+const INDUSTRIES = [
+  "Retail / shop", "Pharmacy", "Clinic / medical", "Veterinary", "Restaurant / café",
+  "Gym / fitness", "Services", "Wholesale / distribution", "Manufacturing", "Other",
+];
+
+const CAPABILITY_GROUPS: { group: string; items: string[] }[] = [
+  { group: "Sales & POS", items: ["Point of sale", "Barcode scanning", "Discounts & promotions", "Invoicing & receipts", "Returns & refunds", "Installments / deposits"] },
+  { group: "Inventory", items: ["Stock tracking", "Batches & expiry", "Multi-location stock", "Purchase orders", "Low-stock alerts"] },
+  { group: "Customers", items: ["Customer profiles", "Credit & balances", "Loyalty / points", "Appointments / booking"] },
+  { group: "Finance", items: ["Expenses", "Reports & dashboards", "Profit & margins", "Payroll / salaries", "Tax / VAT"] },
+  { group: "Team & access", items: ["Multiple users", "Roles & permissions", "Activity / audit log"] },
+  { group: "Integrations", items: ["WhatsApp / SMS", "Email reports", "Online payments", "Accounting export", "Printer / scanner"] },
+];
+
+const PLATFORMS = ["Windows", "macOS", "Linux"];
+const SEAT_OPTIONS = ["Just me", "2–5", "6–20", "20+"];
+const LOCATION_OPTIONS = ["1", "2–3", "4+"];
 
 export default function RequestForm() {
   const [type, setType] = useState<RequestType>("new-plugin");
@@ -48,6 +66,24 @@ export default function RequestForm() {
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [details, setDetails] = useState("");
+  // Richer brief
+  const [industry, setIndustry] = useState("");
+  const [caps, setCaps] = useState<string[]>([]);
+  const [seats, setSeats] = useState("");
+  const [locations, setLocations] = useState("");
+  const [platforms, setPlatforms] = useState<string[]>(["Windows"]);
+  const [complexityTouched, setComplexityTouched] = useState(false);
+
+  const toggle = (arr: string[], set: (v: string[]) => void, v: string) =>
+    set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
+
+  // Auto-size the request from the number of capabilities chosen (until the
+  // user overrides it manually) so the estimate reflects what they actually need.
+  useEffect(() => {
+    if (complexityTouched || type === "bundle") return;
+    const n = caps.length;
+    setComplexity(n >= 8 ? "large" : n >= 4 ? "medium" : "small");
+  }, [caps, complexityTouched, type]);
 
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">(
     "idle"
@@ -66,6 +102,15 @@ export default function RequestForm() {
     e.preventDefault();
     setStatus("sending");
     setError("");
+    // Fold the structured brief into the details so nothing is lost server-side.
+    const brief = [
+      type === "new-plugin" && industry ? `Industry: ${industry}` : null,
+      caps.length ? `Capabilities needed: ${caps.join(", ")}` : null,
+      seats ? `Users/seats: ${seats}` : null,
+      locations ? `Locations/branches: ${locations}` : null,
+      platforms.length ? `Platforms: ${platforms.join(", ")}` : null,
+    ].filter(Boolean).join("\n");
+    const compiledDetails = [brief, details.trim()].filter(Boolean).join("\n\n");
     try {
       const res = await fetch("/api/requests", {
         method: "POST",
@@ -78,7 +123,7 @@ export default function RequestForm() {
           support,
           email,
           company,
-          details,
+          details: compiledDetails,
         }),
       });
       const data = await res.json();
@@ -140,11 +185,11 @@ export default function RequestForm() {
         className="mx-auto max-w-2xl text-center"
       >
         <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
-          Need something <span className="text-gradient">custom</span>?
+          Build exactly what your <span className="text-gradient">business needs</span>
         </h2>
         <p className="mt-4 text-lg text-foreground/70">
-          Tell us what your business needs — an update to a module or a whole new
-          one — and get an instant ballpark price.
+          Pick the capabilities, your industry and your scale — and get an instant,
+          itemised estimate. No sales calls, no waiting.
         </p>
       </motion.div>
 
@@ -209,7 +254,7 @@ export default function RequestForm() {
                   <button
                     type="button"
                     key={o.id}
-                    onClick={() => setComplexity(o.id)}
+                    onClick={() => { setComplexity(o.id); setComplexityTouched(true); }}
                     className={`rounded-xl border py-2.5 text-sm font-medium transition ${
                       complexity === o.id
                         ? "border-biz-400 bg-biz-500/15"
@@ -219,6 +264,116 @@ export default function RequestForm() {
                     {o.label}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Industry (new module only) */}
+          {type === "new-plugin" && (
+            <div>
+              <label className="mb-2 block text-sm font-medium">Your industry</label>
+              <select
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-biz-400"
+              >
+                <option value="" className="bg-slate-900">Select your business type…</option>
+                {INDUSTRIES.map((i) => (
+                  <option key={i} value={i} className="bg-slate-900">{i}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Capabilities */}
+          {type !== "bundle" && (
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-sm font-medium">What should it do?</label>
+                <span className="text-xs text-foreground/50">{caps.length} selected</span>
+              </div>
+              <div className="space-y-3">
+                {CAPABILITY_GROUPS.map((g) => (
+                  <div key={g.group}>
+                    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-foreground/40">{g.group}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.items.map((item) => {
+                        const on = caps.includes(item);
+                        return (
+                          <button
+                            type="button"
+                            key={item}
+                            onClick={() => toggle(caps, setCaps, item)}
+                            className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${
+                              on
+                                ? "border-biz-400 bg-biz-500/15 text-foreground"
+                                : "border-white/10 bg-white/5 text-foreground/60 hover:border-white/25"
+                            }`}
+                          >
+                            {on ? "✓ " : ""}{item}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-foreground/40">
+                Pick the building blocks you need — the estimate adjusts automatically.
+              </p>
+            </div>
+          )}
+
+          {/* Scale */}
+          {type !== "bundle" && (
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-sm font-medium">Users</label>
+                <select
+                  value={seats}
+                  onChange={(e) => setSeats(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-biz-400"
+                >
+                  <option value="" className="bg-slate-900">Any</option>
+                  {SEAT_OPTIONS.map((s) => (
+                    <option key={s} value={s} className="bg-slate-900">{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">Locations</label>
+                <select
+                  value={locations}
+                  onChange={(e) => setLocations(e.target.value)}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm outline-none focus:border-biz-400"
+                >
+                  <option value="" className="bg-slate-900">Any</option>
+                  {LOCATION_OPTIONS.map((l) => (
+                    <option key={l} value={l} className="bg-slate-900">{l}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium">Platforms</label>
+                <div className="flex gap-1.5">
+                  {PLATFORMS.map((p) => {
+                    const on = platforms.includes(p);
+                    return (
+                      <button
+                        type="button"
+                        key={p}
+                        onClick={() => toggle(platforms, setPlatforms, p)}
+                        className={`flex-1 rounded-lg border py-2 text-xs transition ${
+                          on
+                            ? "border-biz-400 bg-biz-500/15"
+                            : "border-white/10 bg-white/5 text-foreground/60 hover:border-white/25"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

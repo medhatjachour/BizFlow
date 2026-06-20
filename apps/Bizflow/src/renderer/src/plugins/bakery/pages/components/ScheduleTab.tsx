@@ -8,120 +8,18 @@ import {
   Calendar, Plus, CheckCircle, PlayCircle, XCircle, Trash2,
   Clock, ChefHat, Hash, FileText, AlertTriangle, Search,
   Loader2, SlidersHorizontal, X, RefreshCw, TrendingUp,
-  CheckCircle2, Circle, Ban, AlertCircle
+  CheckCircle2, AlertCircle
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import Pagination from './Pagination'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface Recipe { id: string; name: string; yieldQty?: number; yieldUnit?: string }
-interface ScheduleItem {
-  id: string
-  scheduledDate: string
-  plannedQuantity: number
-  actualQuantity: number | null
-  status: 'planned' | 'in-progress' | 'completed' | 'cancelled'
-  notes: string | null
-  recipe: { id: string; name: string; yieldQty: number; yieldUnit: string }
-}
-
-type Status = 'planned' | 'in-progress' | 'completed' | 'cancelled'
-type DateRange = 'all' | 'today' | 'week' | 'next7' | 'past' | 'overdue'
-
-/** True when a run is past its scheduled date and still needs action */
-function isOverdue(item: { scheduledDate: string; status: string }, todayStr: string): boolean {
-  return item.scheduledDate < todayStr && (item.status === 'planned' || item.status === 'in-progress')
-}
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const STATUS_META: Record<Status, {
-  chip: string; dot: string; icon: React.FC<{ className?: string }>; label: string
-}> = {
-  planned:       { chip: 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800',   dot: 'bg-blue-500',  icon: Circle,       label: 'Planned' },
-  'in-progress': { chip: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800', dot: 'bg-amber-500', icon: PlayCircle,   label: 'In Progress' },
-  completed:     { chip: 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800', dot: 'bg-green-500', icon: CheckCircle2, label: 'Completed' },
-  cancelled:     { chip: 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600',  dot: 'bg-slate-400', icon: Ban,          label: 'Cancelled' }
-}
-
-const FIELD_CLS   = 'w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 transition-colors'
-const LABEL_CLS   = 'block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wide'
-const PAGE_SIZES  = [10, 20, 50]
-
-function dateOffset(days: number) {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  d.setDate(d.getDate() + days)
-  return formatLocalDate(d)
-}
-
-/** Safely converts a Date object or ISO string to 'YYYY-MM-DD' */
-function toDateStr(v: Date | string | null | undefined): string {
-  if (!v) return ''
-  if (v instanceof Date) return formatLocalDate(v)
-
-  const s = String(v)
-  // If we already have a date-only string, keep it as-is to avoid TZ shifts.
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
-
-  const parsed = new Date(s)
-  if (!Number.isNaN(parsed.getTime())) return formatLocalDate(parsed)
-
-  return s.split('T')[0]
-}
-
-function formatLocalDate(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-/** Compute today as 'YYYY-MM-DD' in local timezone — call every time to stay current */
-function getTodayStr(): string {
-  return formatLocalDate(new Date())
-}
-
-/**
- * Format a 'YYYY-MM-DD' string as a long date label WITHOUT any UTC shift.
- * new Date('2026-06-01') parses as UTC midnight and can render as May 31 in
- * negative-offset timezones. Using (y, m-1, d) creates a local-midnight Date.
- */
-function formatDateKey(dateStr: string): string {
-  const parts = dateStr.split('-').map(Number)
-  if (parts.length !== 3 || parts.some(Number.isNaN)) return dateStr
-  const local = new Date(parts[0], parts[1] - 1, parts[2])
-  return local.toLocaleDateString(undefined, {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  })
-}
-
-function normalizeStatus(status: string): Status {
-  if (status === 'in_progress') return 'in-progress'
-  if (status === 'in-progress' || status === 'planned' || status === 'completed' || status === 'cancelled') return status
-  return 'planned'
-}
-
-function normalizeScheduleItem(i: ScheduleItem): ScheduleItem {
-  return {
-    ...i,
-    status: normalizeStatus(String(i.status)),
-    scheduledDate: toDateStr(i.scheduledDate),
-    recipe: {
-      ...i.recipe,
-      yieldQty: Number(i.recipe?.yieldQty ?? 0),
-      yieldUnit: i.recipe?.yieldUnit ?? 'pcs'
-    }
-  }
-}
-
-const QTY_PRESETS = [1, 2, 5, 10, 25, 50]
-
-/** Always reads the current date so the form default is never stale */
-function makeEmptyForm() {
-  return { recipeId: '', scheduledDate: getTodayStr(), plannedQuantity: 1, notes: '' }
-}
+import type { Recipe, ScheduleItem, Status, DateRange } from './scheduleTab.types'
+import {
+  isOverdue, STATUS_META, FIELD_CLS, LABEL_CLS, PAGE_SIZES,
+  dateOffset, toDateStr, getTodayStr, formatDateKey,
+  normalizeScheduleItem, QTY_PRESETS, makeEmptyForm
+} from './scheduleTab.shared'
+import CompleteModal from './CompleteModal'
 
 // ─── Skeleton row ─────────────────────────────────────────────────────────────
 
@@ -140,100 +38,10 @@ function SkeletonRow() {
   )
 }
 
-// ─── Completion modal ─────────────────────────────────────────────────────────
-
-interface CompleteModalProps {
-  item: ScheduleItem
-  onConfirm: (qty: number) => void
-  onCancel: () => void
-}
-function CompleteModal({ item, onConfirm, onCancel }: CompleteModalProps) {
-  const [qty, setQty] = useState(Math.max(1, item.plannedQuantity))
-
-  // Dismiss on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancel() }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [onCancel])
-
-  const isInvalid = !Number.isFinite(qty) || qty < 1
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-white">Mark Completed</h3>
-              <p className="text-xs text-slate-400 mt-0.5">{item.recipe.name}</p>
-            </div>
-          </div>
-          <button onClick={onCancel} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 rounded-xl px-4 py-3">
-            <span>Planned batches</span>
-            <span className="font-semibold text-slate-700 dark:text-slate-200">{item.plannedQuantity}</span>
-          </div>
-          <div>
-            <label className={LABEL_CLS}>Actual quantity produced</label>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setQty(q => Math.max(1, q - 1))}
-                className="p-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-bold text-lg leading-none"
-              >−</button>
-              <input
-                type="number" min="1"
-                value={qty}
-                onChange={e => setQty(Math.max(1, Number(e.target.value)))}
-                className={`${FIELD_CLS} text-center font-semibold`}
-              />
-              <button
-                onClick={() => setQty(q => q + 1)}
-                className="p-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-bold text-lg leading-none"
-              >+</button>
-            </div>
-            {isInvalid && (
-              <p className="text-xs mt-1.5 text-red-600 dark:text-red-400">Quantity must be at least 1</p>
-            )}
-            {!isInvalid && qty !== item.plannedQuantity && (
-              <p className={`text-xs mt-1.5 ${qty < item.plannedQuantity ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
-                {qty < item.plannedQuantity
-                  ? `${item.plannedQuantity - qty} short of plan`
-                  : `${qty - item.plannedQuantity} over plan`}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex gap-2 px-6 pb-5">
-          <button onClick={onCancel} className="flex-1 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-            Cancel
-          </button>
-          <button
-            onClick={() => !isInvalid && onConfirm(qty)}
-            disabled={isInvalid}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 text-sm rounded-xl bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold transition-colors shadow-sm"
-          >
-            <CheckCircle2 className="h-4 w-4" /> Confirm Complete
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ScheduleTab() {
   const { t } = useLanguage()
-
-  // Always-fresh 'today' string — computed on each render, never stale
-  const today = useMemo(() => getTodayStr(), [])
 
   // DATE_CHIPS use the same live today so they're never stale
   const DATE_CHIPS = useMemo(() => [

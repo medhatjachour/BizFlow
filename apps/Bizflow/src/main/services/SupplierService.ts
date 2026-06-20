@@ -5,7 +5,10 @@
  * Orchestrates repositories, applies business rules, emits events
  */
 
-import type { PrismaClient } from '@prisma/client'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import { SupplierRepository } from '../repositories/SupplierRepository'
 import { SupplierMapper } from '../../shared/mappers/SupplierMapper'
 import type {

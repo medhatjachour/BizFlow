@@ -51,7 +51,7 @@ const WarehouseFinanceSection: React.FC = () => {
   const [stockItems, setStockItems] = useState<any[]>([])
   const [overviewData, setOverviewData] = useState<any>(null)
   const [criticalItems, setCriticalItems] = useState<any[]>([])
-  const [transfers, setTransfers] = useState<any[]>([])
+  const [, setTransfers] = useState<any[]>([])
 
   useEffect(() => { loadData() }, [])
 
@@ -82,7 +82,6 @@ const WarehouseFinanceSection: React.FC = () => {
   const totalCritical  = overviewData?.lowStockCount ?? criticalItems.length
   const totalLocations = overviewData?.totalLocations ?? 0
   const pendingTransfers = overviewData?.pendingTransfers ?? 0
-  const totalTransfers = transfers.length
   const totalStockQty  = stockItems.reduce((s, i) => s + Number(i.quantity || 0), 0)
 
   // Qty by location (stockItems.location.name)

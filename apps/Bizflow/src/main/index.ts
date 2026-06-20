@@ -79,8 +79,14 @@ console.debug = (...args) => log.debug(...args)
 let migrationManager: MigrationManager | null = null
 let mainWindow: BrowserWindow | null = null
 
-const DEMO_EXPIRES_AT_ISO = '2026-06-19T23:59:59.999Z'
+const DEMO_EXPIRES_AT_ISO = '2045-06-19T23:59:59.999Z'
 const DEFAULT_LINKEDIN_URL = 'https://www.linkedin.com/in/medhatjachour/'
+// Hidden "cheat code": type this into the demo-expired window's input to bypass
+// the gate and launch the app. Override via BIZFLOW_DEMO_UNLOCK_CODE.
+const DEMO_UNLOCK_CODE = process.env.BIZFLOW_DEMO_UNLOCK_CODE || 'mga+'
+// The expired page has no preload/IPC, so it hands the typed code to the main
+// process by writing it into document.title behind this sentinel prefix.
+const DEMO_UNLOCK_TITLE_SENTINEL = '__bizflow_unlock__:'
 
 function getDemoExpiryDate(): Date {
   const configuredExpiry = process.env.BIZFLOW_DEMO_EXPIRES_AT || DEMO_EXPIRES_AT_ISO
@@ -172,6 +178,46 @@ function createDemoExpiredWindow(linkedInUrl: string, expiryDate: Date): Browser
         font-size: 12px;
         color: #64748b;
       }
+      .unlock {
+        margin-top: 22px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+      }
+      .unlock input {
+        flex: 1 1 180px;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 14px;
+        outline: none;
+      }
+      .unlock input:focus {
+        border-color: #0a66c2;
+        box-shadow: 0 0 0 3px rgba(10, 102, 194, 0.15);
+      }
+      .unlock button {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 10px;
+        background: #0f172a;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .err {
+        margin: 8px 0 0;
+        color: #dc2626;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .ok {
+        margin: 8px 0 0;
+        color: #16a34a;
+        font-size: 13px;
+        font-weight: 600;
+      }
     </style>
   </head>
   <body>
@@ -180,8 +226,47 @@ function createDemoExpiredWindow(linkedInUrl: string, expiryDate: Date): Browser
       <p>This demo version ended on <strong>${expiryDateText}</strong>.</p>
       <p>To continue, please connect with me on LinkedIn for full access.</p>
       <a class="cta" href="${linkedInUrl}" target="_blank" rel="noreferrer">Connect on LinkedIn</a>
+
+      <div class="unlock">
+        <input id="code" type="password" placeholder="Enter access code" autocomplete="off" spellcheck="false" />
+        <button id="go" type="button">Unlock</button>
+      </div>
+      <p id="err" class="err" hidden>Invalid code \u2014 try again.</p>
+      <p id="ok" class="ok" hidden>Code accepted \u2014 starting BizFlow\u2026</p>
+
       <p class="footer">Close this window to exit the application.</p>
     </main>
+    <script>
+      (function () {
+        var SENTINEL = '${DEMO_UNLOCK_TITLE_SENTINEL}';
+        var input = document.getElementById('code');
+        var err = document.getElementById('err');
+        var ok = document.getElementById('ok');
+        function submit() {
+          var v = (input.value || '').trim();
+          if (!v) return;
+          err.hidden = true;
+          // Hand the typed code to the main process via the window title.
+          document.title = SENTINEL + v;
+        }
+        document.getElementById('go').addEventListener('click', submit);
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') submit();
+        });
+        // Invoked by the main process (executeJavaScript) when the code is wrong.
+        window.__demoInvalid = function () {
+          err.hidden = false;
+          input.value = '';
+          input.focus();
+        };
+        // Invoked by the main process right before the app launches.
+        window.__demoAccepted = function () {
+          err.hidden = true;
+          ok.hidden = false;
+        };
+        input.focus();
+      })();
+    </script>
   </body>
 </html>`
 
@@ -295,6 +380,45 @@ function createWindow(): BrowserWindow {
   return mainWindow
 }
 
+/**
+ * Bridges the demo-expired window's typed access code to the main process.
+ * The page writes the sentinel-prefixed code into document.title; we read it
+ * here and resolve only when the correct code is entered. Wrong codes flash an
+ * inline error and keep waiting. If the user never enters the code, this never
+ * resolves and closing the window quits the app.
+ */
+function waitForDemoUnlock(expiredWindow: BrowserWindow): Promise<void> {
+  return new Promise((resolve) => {
+    expiredWindow.webContents.on('page-title-updated', (event, title) => {
+      if (!title.startsWith(DEMO_UNLOCK_TITLE_SENTINEL)) return
+      event.preventDefault()
+      const code = title.slice(DEMO_UNLOCK_TITLE_SENTINEL.length)
+      // Restore the visible title so the typed code never lingers there.
+      try { expiredWindow.setTitle('BizFlow Demo Expired') } catch { /* ignore */ }
+
+      if (code === DEMO_UNLOCK_CODE) {
+        mainLog.warn('Demo unlock code accepted \u2014 launching application.')
+        expiredWindow.webContents
+          .executeJavaScript('window.__demoAccepted && window.__demoAccepted();')
+          .catch(() => {})
+        // Brief pause so the "accepted" message is visible, then continue
+        // startup. We HIDE (not close) the window: with no main window yet,
+        // closing it would fire window-all-closed and quit the app. The
+        // whenReady startup destroys it once the main window is created.
+        setTimeout(() => {
+          if (!expiredWindow.isDestroyed()) expiredWindow.hide()
+          resolve()
+        }, 400)
+      } else {
+        mainLog.warn('Invalid demo unlock code entered.')
+        expiredWindow.webContents
+          .executeJavaScript('window.__demoInvalid && window.__demoInvalid();')
+          .catch(() => {})
+      }
+    })
+  })
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -308,13 +432,20 @@ app.whenReady().then(async () => {
   mainLog.info('User data path:', app.getPath('userData'))
   mainLog.info('Log file:', log.transports.file.getFile().path)
 
+  // The demo-expired window (if shown). Kept alive but hidden after a
+  // successful unlock so closing it doesn't trigger window-all-closed -> quit
+  // before the main window exists. Destroyed once the main window is created.
+  let demoExpiredWindow: BrowserWindow | null = null
   try {
     const demoStatus = isDemoExpired()
     if (demoStatus.expired) {
       const linkedInUrl = process.env.BIZFLOW_LINKEDIN_URL || DEFAULT_LINKEDIN_URL
-      mainLog.warn('Demo access expired. Showing LinkedIn contact window.')
-      createDemoExpiredWindow(linkedInUrl, demoStatus.expiryDate)
-      return
+      mainLog.warn('Demo access expired. Showing unlock / LinkedIn window.')
+      demoExpiredWindow = createDemoExpiredWindow(linkedInUrl, demoStatus.expiryDate)
+      // Block startup until the correct unlock code is typed. If it is never
+      // entered, the user closes the window and the app quits.
+      await waitForDemoUnlock(demoExpiredWindow)
+      mainLog.warn('Demo unlocked via access code \u2014 continuing startup.')
     }
   } catch (error) {
     mainLog.error('Failed to validate demo period. Continuing startup:', error)
@@ -338,6 +469,13 @@ app.whenReady().then(async () => {
     // Create window (hidden initially)
     mainWindow = createWindow()
 
+    // The main window now exists, so the (hidden) demo-unlock window can be
+    // disposed without window-all-closed firing and quitting the app.
+    if (demoExpiredWindow && !demoExpiredWindow.isDestroyed()) {
+      demoExpiredWindow.destroy()
+    }
+    demoExpiredWindow = null
+
     // Run database migrations if needed
     mainLog.info('Checking for database migrations...')
     migrationManager = new MigrationManager()
@@ -353,9 +491,9 @@ app.whenReady().then(async () => {
 
     // Seed default installment plans (only if none exist — table may not exist in all module configs)
     try {
-      const tableRows = await prisma.$queryRawUnsafe<{ cnt: number }[]>(
+      const tableRows = await prisma.$queryRawUnsafe(
         `SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name='InstallmentPlan'`
-      )
+      ) as { cnt: number }[]
       if (Number(tableRows[0]?.cnt) > 0) {
         const p = prisma as any
         const planCount = await p.installmentPlan.count()
@@ -382,6 +520,11 @@ app.whenReady().then(async () => {
     mainWindow.show()
   } catch (error) {
     mainLog.error('Setup failed:', error)
+    // Don't leave a hidden demo window keeping the app alive after a failure.
+    if (demoExpiredWindow && !demoExpiredWindow.isDestroyed()) {
+      demoExpiredWindow.destroy()
+    }
+    demoExpiredWindow = null
   }
 
   // Default open or close DevTools by F12 in development

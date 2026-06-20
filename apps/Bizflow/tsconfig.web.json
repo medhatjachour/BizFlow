@@ -12,6 +12,7 @@
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",
+    "moduleResolution": "bundler",
     "paths": {
       "@renderer/*": [
         "./src/renderer/src/*"

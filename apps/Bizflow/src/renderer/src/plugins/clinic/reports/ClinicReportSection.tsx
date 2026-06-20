@@ -49,12 +49,6 @@ const toAge = (dateOfBirth?: string | null): string => {
 
 const EMPTY: ClinicData = { patientCount: 0, todaySessions: [], followUps: [], todayPrescriptions: [], patients: [] }
 
-const reportOptions = [
-  { id: 'sessions'      as ReportType, label: 'Sessions Report',      icon: ClipboardList, color: 'text-teal-600',   desc: 'Appointments by date range' },
-  { id: 'patients'      as ReportType, label: 'Patients Report',      icon: Users,          color: 'text-indigo-600', desc: 'Demographics & history' },
-  { id: 'prescriptions' as ReportType, label: 'Prescriptions Report', icon: Heart,          color: 'text-pink-600',   desc: 'Medications prescribed' },
-]
-
 function getReportOptions(t: (k: string) => string) {
   return [
     { id: 'sessions'      as ReportType, label: t('sessionsReport'),      icon: ClipboardList, color: 'text-teal-600',   desc: t('sessionsReportDesc') },

@@ -38,7 +38,7 @@ export function getPurchasable(itemId: string): PurchasableItem | null {
     return {
       id: "suite",
       label: "BizFlow — Full Suite",
-      description: "Lifetime license for all 7 BizFlow modules.",
+      description: `Lifetime license for all ${PLUGINS.length} BizFlow modules.`,
       amountCents: SUITE_PRICE * 100,
       stripePriceId: process.env.STRIPE_PRICE_SUITE,
     };

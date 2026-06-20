@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { PLUGINS, downloadUrlFor } from "@/lib/plugins";
 import BuyButton from "@/components/BuyButton";
+import { usePrices } from "@/components/usePrices";
 
 /**
  * The module picker — the core of the experience. Each BizFlow module can be
@@ -12,6 +13,7 @@ import BuyButton from "@/components/BuyButton";
  * designed to move a visitor from "try" to "buy".
  */
 export default function Plugins() {
+  const prices = usePrices();
   return (
     <section id="plugins" className="relative mx-auto max-w-6xl px-4 py-28">
       <motion.div
@@ -22,7 +24,7 @@ export default function Plugins() {
         className="mx-auto max-w-2xl text-center"
       >
         <span className="glass mb-4 inline-block rounded-full px-4 py-1.5 text-xs font-medium text-foreground/80">
-          7 modules · try free · one-time price
+          {PLUGINS.length} modules · try free · one-time price
         </span>
         <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
           Pick a module.
@@ -117,7 +119,7 @@ export default function Plugins() {
             {/* Price + CTAs */}
             <div className="mt-5 border-t border-white/10 pt-5">
               <div className="mb-3 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black">${p.price}</span>
+                <span className="text-2xl font-black">${prices.modules[p.id] ?? p.price}</span>
                 <span className="text-xs text-foreground/50">
                   one-time · lifetime
                 </span>
@@ -152,7 +154,7 @@ export default function Plugins() {
         <p className="text-sm text-foreground/70">
           Need several modules? The{" "}
           <span className="font-semibold text-foreground">full suite</span> bundles
-          all 7 at a big discount — or request a custom module for your business.
+          all {PLUGINS.length} at a big discount — or request a custom module for your business.
         </p>
         <div className="flex shrink-0 gap-3">
           <a

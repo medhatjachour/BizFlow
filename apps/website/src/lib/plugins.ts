@@ -217,6 +217,37 @@ export const PLUGINS: BizPlugin[] = [
     downloadEnv: "NEXT_PUBLIC_DL_VET",
   },
   {
+    id: "pharmacy",
+    name: "Pharmacy",
+    tagline: "Dispensing & Retail",
+    description:
+      "Pharmacy retail with batch & expiry tracking, barcode dispensing, sub-unit selling, customer credit and supplier purchasing.",
+    longDescription:
+      "Run the counter with confidence: dispense by scanning, never sell expired stock thanks to expiry-first (FEFO) batches, break boxes down to the strip or bottle to the millilitre, extend credit to regulars, and see real profit after every discount and refund.",
+    icon: "💊",
+    accent: "from-emerald-400 to-teal-600",
+    route: "/pharmacy",
+    popular: true,
+    bestFor: "Pharmacies, drugstores & medical retailers",
+    price: 279,
+    highlights: [
+      { value: "FEFO", label: "expiry-safe stock" },
+      { value: "scan", label: "sell & receive" },
+      { value: "per-strip", label: "sub-unit selling" },
+    ],
+    features: [
+      "Barcode-first POS — scan to sell, scan to receive",
+      "Batch & expiry tracking with FEFO dispensing",
+      "Sell by sub-unit (box→strip, bottle→ml)",
+      "Customer accounts with credit & outstanding balances",
+      "Suppliers & purchase orders with scan-to-verify receiving",
+      "Expected vs. actual profit, COGS & margins (net of refunds)",
+      "Owner cashflow: cash today, receivables, payables, expiring",
+      "Role-based permissions for discounts, refunds & profit visibility",
+    ],
+    downloadEnv: "NEXT_PUBLIC_DL_PHARMACY",
+  },
+  {
     id: "gym",
     name: "Gym",
     tagline: "Members & Plans",

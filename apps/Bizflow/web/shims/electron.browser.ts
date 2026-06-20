@@ -51,6 +51,11 @@ function sessionId(): string {
 }
 
 async function httpInvoke(channel: string, ...args: unknown[]): Promise<unknown> {
+  // JSON.stringify turns a trailing `undefined` argument into `null`, which
+  // defeats handlers that rely on default parameters (e.g. `(_, opts = {}) =>`)
+  // — `null` does not trigger a default, so they crash reading `opts.x`. Drop
+  // trailing `undefined` args so bridge handlers behave exactly like Electron.
+  while (args.length && args[args.length - 1] === undefined) args.pop();
   const res = await fetch("/ipc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

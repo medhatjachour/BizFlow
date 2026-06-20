@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PawPrint, CalendarClock, BellRing, CheckCircle2, ArrowRight, Clock3, DollarSign } from 'lucide-react'
+import { PawPrint, CalendarClock, BellRing, CheckCircle2, ArrowRight, Clock3, DollarSign, Pill, Package, TrendingUp, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
@@ -11,12 +11,16 @@ interface VetDashboardData {
   todayAppointments: any[]
   todayFollowUps: any[]
   todaySessions: any[]
+  medSummary: any
+  medicines: any[]
 }
 
 const EMPTY: VetDashboardData = {
   todayAppointments: [],
   todayFollowUps: [],
-  todaySessions: []
+  todaySessions: [],
+  medSummary: null,
+  medicines: []
 }
 
 const toArray = <T = any,>(value: unknown): T[] => {
@@ -79,20 +83,26 @@ export default function VetDashboardSection({ refreshSignal }: Props) {
       const dayEnd = new Date(now)
       dayEnd.setHours(23, 59, 59, 999)
 
-      const [appointmentsRes, followUpsRes, sessionsRes] = await Promise.allSettled([
+      const [appointmentsRes, followUpsRes, sessionsRes, medSummaryRes, medicinesRes] = await Promise.allSettled([
         api.appointments?.getAll?.({ date: toYmd(now), take: 100 }),
         api.sessions?.getFollowUps?.({ from: dayStart.toISOString(), to: dayEnd.toISOString(), take: 100 }),
-        api.sessions?.getRecent?.({ filter: 'today', take: 100 })
+        api.sessions?.getRecent?.({ filter: 'today', take: 100 }),
+        api.medicines?.getSummary?.({ from: dayStart.toISOString(), to: dayEnd.toISOString() }),
+        api.medicines?.getAll?.({ take: 1000 })
       ])
 
       const appointments = appointmentsRes.status === 'fulfilled' ? toArray(appointmentsRes.value) : []
       const followUps = followUpsRes.status === 'fulfilled' ? toArray(followUpsRes.value) : []
       const sessions = sessionsRes.status === 'fulfilled' ? toArray(sessionsRes.value) : []
+      const medSummary = medSummaryRes.status === 'fulfilled' ? (medSummaryRes.value ?? null) : null
+      const medicines = medicinesRes.status === 'fulfilled' ? toArray(medicinesRes.value) : []
 
       setRaw({
         todayAppointments: appointments,
         todayFollowUps: followUps,
-        todaySessions: sessions
+        todaySessions: sessions,
+        medSummary,
+        medicines
       })
     } finally {
       setLoading(false)
@@ -139,6 +149,31 @@ export default function VetDashboardSection({ refreshSignal }: Props) {
   }, [raw.todaySessions])
 
   const fmtMoney = (n: number) => n.toFixed(2)
+
+  const medStats = useMemo(() => {
+    const s = raw.medSummary || {}
+    const unitsSold = Number(s.unitsSold) || 0
+    return {
+      revenue: Number(s.revenue) || 0,
+      unitsSold,
+      unitsSoldLabel: Number.isInteger(unitsSold) ? String(unitsSold) : unitsSold.toFixed(2),
+      grossProfit: Number(s.grossProfit) || 0,
+      saleCount: Number(s.saleCount) || 0,
+      outstanding: Number(s.pharmacyOutstanding) || 0,
+      topMedicines: Array.isArray(s.topMedicines) ? s.topMedicines : []
+    }
+  }, [raw.medSummary])
+
+  const inventoryStats = useMemo(() => {
+    const meds = raw.medicines
+    return {
+      total: meds.length,
+      lowStock: meds.filter((m) => m.isLowStock),
+      expired: meds.filter((m) => m.hasExpired),
+      expiringSoon: meds.filter((m) => m.expiresWithin30Days && !m.hasExpired),
+      outOfStock: meds.filter((m) => Number(m.totalStock ?? 0) <= 0)
+    }
+  }, [raw.medicines])
 
   if (loading) {
     return (
@@ -236,6 +271,70 @@ export default function VetDashboardSection({ refreshSignal }: Props) {
             tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
           />
         </div>
+
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Medicine Sales · Today</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <StatCard
+            label="Medicine Revenue"
+            value={fmtMoney(medStats.revenue)}
+            sub={`${medStats.saleCount} sale${medStats.saleCount === 1 ? '' : 's'} today`}
+            icon={DollarSign}
+            tone="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
+          />
+          <StatCard
+            label="Units Sold"
+            value={medStats.unitsSoldLabel}
+            sub="medicine units today"
+            icon={Pill}
+            tone="bg-violet-100 dark:bg-violet-900/30 text-violet-600"
+          />
+          <StatCard
+            label="Gross Profit"
+            value={fmtMoney(medStats.grossProfit)}
+            sub="revenue minus cost"
+            icon={TrendingUp}
+            tone="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+          />
+          <StatCard
+            label="Sales Outstanding"
+            value={fmtMoney(medStats.outstanding)}
+            sub="unpaid medicine sales"
+            icon={DollarSign}
+            tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+          />
+        </div>
+
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Inventory Health</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+          <StatCard
+            label="Medicines"
+            value={inventoryStats.total}
+            sub={`${inventoryStats.outOfStock.length} out of stock`}
+            icon={Package}
+            tone="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+          />
+          <StatCard
+            label="Low Stock"
+            value={inventoryStats.lowStock.length}
+            sub="at or below minimum"
+            icon={AlertTriangle}
+            tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+          />
+          <StatCard
+            label="Expiring Soon"
+            value={inventoryStats.expiringSoon.length}
+            sub="within 30 days"
+            icon={Clock3}
+            tone="bg-orange-100 dark:bg-orange-900/30 text-orange-600"
+          />
+          <StatCard
+            label="Expired"
+            value={inventoryStats.expired.length}
+            sub="needs write-off"
+            icon={AlertTriangle}
+            tone="bg-red-100 dark:bg-red-900/30 text-red-600"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -282,6 +381,64 @@ export default function VetDashboardSection({ refreshSignal }: Props) {
                   </div>
                   <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 ml-3 shrink-0">
                     {new Date(fu.followUpDate || 0).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Top Selling Medicines · Today</h3>
+            <TrendingUp size={15} className="text-emerald-500" />
+          </div>
+          {medStats.topMedicines.length === 0 ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400">No medicine sales recorded today.</p>
+          ) : (
+            <div className="space-y-2">
+              {medStats.topMedicines.slice(0, 6).map((m: any) => (
+                <button
+                  key={m.id}
+                  onClick={() => navigate('/vet?tab=sales')}
+                  className="w-full text-left flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-violet-300 dark:hover:border-violet-700 hover:bg-violet-50/60 dark:hover:bg-violet-900/20 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{m.name || 'Medicine'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{Number(m.saleCount) || 0} sale{(Number(m.saleCount) || 0) === 1 ? '' : 's'}</p>
+                  </div>
+                  <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 ml-3 shrink-0 tabular-nums">
+                    {fmtMoney(Number(m.revenue) || 0)}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-900 dark:text-white text-sm">Low Stock Alerts</h3>
+            <AlertTriangle size={15} className="text-amber-500" />
+          </div>
+          {inventoryStats.lowStock.length === 0 ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400">All medicines are sufficiently stocked.</p>
+          ) : (
+            <div className="space-y-2">
+              {inventoryStats.lowStock.slice(0, 6).map((m: any) => (
+                <button
+                  key={m.id}
+                  onClick={() => navigate('/vet?tab=medicines')}
+                  className="w-full text-left flex items-center justify-between p-2.5 rounded-lg bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-amber-300 dark:hover:border-amber-700 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{m.name || 'Medicine'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{m.category || 'Uncategorised'}</p>
+                  </div>
+                  <p className="text-xs font-semibold ml-3 shrink-0 tabular-nums text-amber-600 dark:text-amber-400">
+                    {Number(m.totalStock ?? 0)} / {Number(m.minimumStock ?? 0)} {m.unit || ''}
                   </p>
                 </button>
               ))}

@@ -15,7 +15,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Plus, CheckCircle, ChevronLeft, ChevronRight, DollarSign,
-  Clock, AlertCircle, Zap, CalendarDays, RefreshCw, X,
+  Clock, AlertCircle, Zap, CalendarDays, RefreshCw,
   TrendingUp, TrendingDown,
 } from 'lucide-react'
 import { ipc } from '../../../utils/ipc'

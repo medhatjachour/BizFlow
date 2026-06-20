@@ -1,4 +1,7 @@
-import { PrismaClient } from '../../generated/prisma'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import type {
   PurchaseOrderResponseDTO,
   CreatePurchaseOrderDTO,

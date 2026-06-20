@@ -3,6 +3,7 @@ import Nav from "@/components/landing/Nav";
 import Hero from "@/components/landing/Hero";
 import Plugins from "@/components/landing/Plugins";
 import Features from "@/components/landing/Features";
+import WhatsNew from "@/components/landing/WhatsNew";
 import Showcase from "@/components/landing/Showcase";
 import Pricing from "@/components/landing/Pricing";
 import RequestForm from "@/components/landing/RequestForm";
@@ -17,6 +18,7 @@ export default function Home() {
         <Hero />
         <Plugins />
         <Features />
+        <WhatsNew />
         <Showcase />
         <Pricing />
         <RequestForm />

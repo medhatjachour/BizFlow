@@ -25,6 +25,7 @@ export default defineConfig({
     __PLUGIN_CLINIC__: "true",
     __PLUGIN_VET__: "true",
     __PLUGIN_GYM__: "true",
+    __PLUGIN_PHARMACY__: "true",
     "process.env.NODE_ENV": '"production"',
   },
   resolve: {

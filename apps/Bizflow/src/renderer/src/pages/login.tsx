@@ -3,7 +3,7 @@
  * Beautiful UI/UX with excellent light/dark theme support
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useLanguage } from '../contexts/LanguageContext'
@@ -68,6 +68,13 @@ export default function Login() {
     if (role === 'vet_staff') return '/vet'
     return '/dashboard'
   }
+
+  // Once authenticated (incl. the embedded demo's auto sign-in), leave the
+  // login screen for the landing route instead of staying stuck here.
+  useEffect(() => {
+    if (auth.user) navigate(getLandingRoute(auth.user.role), { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.user])
 
   if (isExpired) return <ExpiredScreen />
 

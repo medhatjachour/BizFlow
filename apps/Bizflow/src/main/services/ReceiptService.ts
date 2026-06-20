@@ -2,7 +2,10 @@
  * Receipt Service
  * Handles receipt generation for deposits and installments
  */
-import type { PrismaClient } from '@prisma/client'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import { createLogger } from '../utils/logger'
 
 const log = createLogger('Receipt')
@@ -24,8 +27,7 @@ export class ReceiptService {
           include: {
             items: {
               include: {
-                product: true,
-                variant: true
+                product: true
               }
             }
           }
@@ -75,8 +77,7 @@ export class ReceiptService {
           include: {
             items: {
               include: {
-                product: true,
-                variant: true
+                product: true
               }
             }
           }
@@ -105,7 +106,7 @@ export class ReceiptService {
       sale: installment.sale ? {
         id: installment.sale.id,
         total: installment.sale.total,
-        items: installment.sale.saleItems.map(item => ({
+        items: installment.sale.items.map(item => ({
           productName: item.product.name,
           quantity: item.quantity,
           price: item.price,

@@ -159,7 +159,7 @@ export function registerSupplierHandlers(prisma: any) {
   /**
    * Add product to supplier (alias for compatibility)
    */
-  ipcMain.handle('suppliers:addSupplierProduct', async (_, supplierId: string, supplierProductData) => {
+  ipcMain.handle('suppliers:addSupplierProduct', async (_, _supplierId: string, supplierProductData) => {
     try {
       if (!supplierService) {
         return { success: false, message: 'Supplier service not available' }

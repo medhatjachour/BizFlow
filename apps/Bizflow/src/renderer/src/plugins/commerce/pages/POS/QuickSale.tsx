@@ -349,10 +349,11 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
         
         // Increment quantity if already in cart
         const updated = [...prev]
+        const priceToUse = updated[existingIndex].finalPrice || updated[existingIndex].price
         updated[existingIndex] = {
           ...updated[existingIndex],
           quantity: updated[existingIndex].quantity + 1,
-          subtotal: updated[existingIndex].price * (updated[existingIndex].quantity + 1)
+          subtotal: priceToUse * (updated[existingIndex].quantity + 1)
         }
         return updated
       } else {
@@ -569,10 +570,11 @@ export default function QuickSale({ onCompleteSale: _onCompleteSale }: QuickSale
   }
 
   const calculateFinalPrice = (price: number, discountType: string, discountValue: number): number => {
+    const value = Math.max(0, discountValue || 0)
     if (discountType === 'PERCENTAGE') {
-      return price - (price * discountValue / 100)
+      return Math.max(0, price - (price * Math.min(value, 100) / 100))
     } else if (discountType === 'FIXED_AMOUNT') {
-      return Math.max(0, price - discountValue)
+      return Math.max(0, price - value)
     }
     return price
   }

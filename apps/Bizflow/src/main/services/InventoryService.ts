@@ -17,7 +17,10 @@
  * - Indexed queries on frequently filtered fields
  */
 
-import type { PrismaClient } from '@prisma/client'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import type {
   Product,
   ProductVariant,
@@ -255,26 +258,26 @@ export class InventoryService {
     // Get stock movements from StockMovement table (includes sales, restocks, adjustments)
     const movements = await this.prisma.stockMovement.findMany({
       where: { 
-        product: {
-          id: productId
+        variant: {
+          productId
         }
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
       include: {
         user: { select: { username: true } },
-        productVariant: true
+        variant: true
       }
     })
 
     return movements.map(movement => ({
       id: movement.id,
-      productId: movement.productVariant?.productId || productId,
+      productId: movement.variant?.productId || productId,
       variantId: movement.variantId || undefined,
       quantity: movement.quantity,
-      type: movement.type,
+      type: movement.type as StockMovement['type'],
       timestamp: movement.createdAt,
-      userId: movement.userId,
+      userId: movement.userId ?? undefined,
       notes: movement.notes || `${movement.type} by ${movement.user?.username || 'system'}`
     }))
   }
@@ -290,7 +293,7 @@ export class InventoryService {
         OR: [
           { name: { contains: lowerQuery } },
           { baseSKU: { contains: lowerQuery } },
-          { category: { contains: lowerQuery } },
+          { category: { name: { contains: lowerQuery } } },
           { description: { contains: lowerQuery } }
         ]
       },
@@ -334,10 +337,10 @@ export class InventoryService {
    * PERFORMANCE: Optional image inclusion to reduce payload size
    */
   private enrichInventoryItem(
-    product: Product & { 
-      variants: ProductVariant[], 
-      images?: ProductImage[] 
-    },
+    product: Product & {
+      variants: ProductVariant[],
+      images?: ProductImage[]
+    } | any,
     includeImages: boolean = false
   ): InventoryItem {
     // Calculate total stock across variants (always sum variants, regardless of hasVariants flag)

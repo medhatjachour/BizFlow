@@ -54,6 +54,15 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 STRIPE_SECRET_KEY=sk_test_xxx
 # Webhook secret — from step 2.3
 STRIPE_WEBHOOK_SECRET=whsec_xxx
+
+# License key signing secret (any long random string). The webhook and the
+# success page both derive the same key from this, so keep it stable in prod.
+LICENSE_SECRET=change-me-to-a-long-random-string
+
+# Direct-download base for installers published by the release pipeline, e.g.
+# a GitHub "releases/latest/download" URL. When unset, download links fall back
+# to the releases page so they never 404.
+NEXT_PUBLIC_DOWNLOAD_BASE=https://github.com/<owner>/<repo>/releases/latest/download
 ```
 
 ### 2.3 Forward webhooks locally
@@ -147,3 +156,41 @@ Change a price in `src/lib/plugins.ts` (per module) or the discount in
   reads the raw request body (required for verification).
 - Never commit `.env.local` (already git-ignored). `.data/` (orders/requests) is
   git-ignored too.
+
+---
+
+## 6. License keys & downloads
+
+After a successful payment the customer lands on `/checkout/success`, which:
+
+1. Retrieves the Stripe session and confirms `payment_status === "paid"`.
+2. Derives a **license key** with `licenseKeyFor()` (`src/lib/license.ts`) — an
+   HMAC of `sessionId | itemId | email` signed with `LICENSE_SECRET`, formatted
+   as `BIZ-XXXXX-XXXXX-XXXXX-XXXXX`.
+3. Shows the key (copy button) and **OS-aware download buttons** for every
+   module the customer bought (the suite shows all modules).
+
+The key is **deterministic**, so the webhook (`src/app/api/webhooks/stripe/route.ts`)
+computes the *same* value during fulfillment and records it in `.data/orders.json`
+— no database needed. Use `verifyLicenseKey()` to validate a key offline inside
+the desktop app (Settings → License).
+
+> ⚠️ Keep `LICENSE_SECRET` stable and identical wherever you verify keys. If it
+> changes, previously issued keys stop verifying.
+
+### 6.1 Per-OS release pipeline
+
+`apps/bizflow/.github/workflows/release-all-os.yml` builds BizFlow for Windows,
+macOS and Linux on a `v*.*.*` tag and publishes installers to a GitHub Release
+named to match `installerFor` in `src/lib/downloads.ts`
+(`BizFlow-<Slug>-<os>.<ext>`). Point the site at it:
+
+```bash
+NEXT_PUBLIC_DOWNLOAD_BASE=https://github.com/<owner>/<repo>/releases/latest/download
+```
+
+Today one binary contains every module (isolation is via `?only=<id>`), so the
+workflow builds once per OS and publishes that installer under the `Suite` name
+and a copy per module so every website link resolves. When real per-module
+installers exist, replace the copy loop with per-module build targets.
+

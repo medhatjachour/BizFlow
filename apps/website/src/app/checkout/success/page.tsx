@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import AuroraBackground from "@/components/AuroraBackground";
 import { getStripe } from "@/lib/stripe";
 import { getPurchasable } from "@/lib/payments";
+import { licenseKeyFor } from "@/lib/license";
+import { PLUGINS } from "@/lib/plugins";
+import LicensePanel from "./LicensePanel";
 
 export const metadata: Metadata = {
   title: "Thank you — BizFlow",
@@ -23,14 +26,30 @@ export default async function CheckoutSuccessPage({
 
   let itemLabel: string | null = null;
   let email: string | null = null;
+  let licenseKey: string | null = null;
+  let modules: { id: string; name: string }[] = [];
 
   const stripe = getStripe();
   if (stripe && session_id) {
     try {
       const session = await stripe.checkout.sessions.retrieve(session_id);
-      const item = getPurchasable(session.metadata?.itemId ?? "");
+      const itemId = session.metadata?.itemId ?? "";
+      const item = getPurchasable(itemId);
       itemLabel = item?.label ?? null;
       email = session.customer_details?.email ?? null;
+
+      if (item && session.payment_status === "paid") {
+        licenseKey = licenseKeyFor({ sessionId: session.id, itemId, email });
+        modules =
+          itemId === "suite"
+            ? PLUGINS.map((p) => ({ id: p.id, name: p.name }))
+            : itemId.startsWith("module:")
+              ? PLUGINS.filter((p) => p.id === itemId.slice(7)).map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                }))
+              : [];
+      }
     } catch {
       // Ignore — show the generic message.
     }
@@ -59,6 +78,10 @@ export default async function CheckoutSuccessPage({
             <p className="mt-2 text-sm text-foreground/50">
               A receipt and your download details will be sent to {email}.
             </p>
+          )}
+
+          {licenseKey && modules.length > 0 && (
+            <LicensePanel licenseKey={licenseKey} modules={modules} />
           )}
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

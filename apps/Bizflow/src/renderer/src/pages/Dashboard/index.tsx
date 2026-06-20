@@ -11,7 +11,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { Activity, Zap, RefreshCw, Layers, Settings } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { useModuleEnabled, useEnabledModules } from '../../hooks/useModuleEnabled'
+import { useModuleEnabled } from '../../hooks/useModuleEnabled'
 import { MODULE_IDS, MODULE_REGISTRY } from '@/shared/modules'
 import RecentActivity from './components/RecentActivity'
 import QuickActions from './components/QuickActions'
@@ -83,7 +83,6 @@ export default function Dashboard() {
   const vetEnabled        = useModuleEnabled(MODULE_IDS.VET)
   const gymEnabled        = useModuleEnabled(MODULE_IDS.GYM)
   const pharmacyEnabled   = useModuleEnabled(MODULE_IDS.PHARMACY)
-  const enabledIds        = useEnabledModules()
 
   // True when at least one plugin section will be rendered
   const hasActivePlugin =

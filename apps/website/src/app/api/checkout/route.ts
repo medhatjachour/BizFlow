@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe, isStripeConfigured, siteUrl } from "@/lib/stripe";
 import { getPurchasable, CURRENCY } from "@/lib/payments";
+import { priceForItem } from "@/lib/prices";
 
 /**
  * Creates a Stripe Checkout session for a module or the full suite and returns
@@ -43,6 +44,10 @@ export async function POST(request: Request) {
   const stripe = getStripe()!;
   const origin = siteUrl();
 
+  // Honour admin price overrides for dynamically-priced items.
+  const effective = await priceForItem(itemId);
+  const unitAmount = effective != null ? Math.round(effective * 100) : item.amountCents;
+
   // Use a pre-created Price ID if provided, otherwise build a one-off price.
   const lineItem = item.stripePriceId
     ? { price: item.stripePriceId, quantity: 1 }
@@ -50,7 +55,7 @@ export async function POST(request: Request) {
         quantity: 1,
         price_data: {
           currency: CURRENCY,
-          unit_amount: item.amountCents,
+          unit_amount: unitAmount,
           product_data: { name: item.label, description: item.description },
         },
       };

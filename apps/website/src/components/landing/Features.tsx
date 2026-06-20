@@ -4,10 +4,10 @@ import { motion } from "framer-motion";
 
 const features = [
   {
-    title: "Try before you install",
-    desc: "Every BizFlow module runs live in the browser tab — explore the full app with real data before downloading a thing.",
+    title: "Up and running in minutes",
+    desc: "Download, open, and you're selling. No servers to configure, no IT team, no monthly bill — just a desktop app that works out of the box.",
     icon: (
-      <path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+      <path d="M13 2L3 14h7l-1 8 10-12h-7z" />
     ),
   },
   {
@@ -22,7 +22,7 @@ const features = [
   },
   {
     title: "Modular plugins",
-    desc: "Enable only what you need: bakery, restaurant, warehouse, clinic, vet or gym — each is fully self-contained.",
+    desc: "Enable only what you need — each module is fully self-contained, so you never pay for features you won't use and can add more as you grow.",
     icon: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />,
   },
   {

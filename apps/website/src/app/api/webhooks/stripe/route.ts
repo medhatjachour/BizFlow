@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
+import { licenseKeyFor } from "@/lib/license";
 
 /**
  * Stripe webhook receiver.
@@ -43,8 +44,11 @@ async function fulfill(session: Stripe.Checkout.Session): Promise<void> {
   const email = session.customer_details?.email ?? session.customer_email ?? null;
   const amount = session.amount_total ?? 0;
 
+  // Deterministic key — the success page derives the same value for display.
+  const licenseKey = licenseKeyFor({ sessionId: session.id, itemId, email });
+
   console.log(
-    `[webhook] ✅ Payment for "${itemId}" by ${email} (${amount / 100} ${session.currency})`
+    `[webhook] ✅ Payment for "${itemId}" by ${email} (${amount / 100} ${session.currency}) → ${licenseKey}`
   );
 
   await recordOrder({
@@ -52,12 +56,13 @@ async function fulfill(session: Stripe.Checkout.Session): Promise<void> {
     sessionId: session.id,
     itemId,
     email,
+    licenseKey,
     amountTotal: amount,
     currency: session.currency,
     paymentStatus: session.payment_status,
   });
 
-  // TODO: issue license / send email / provision account here.
+  // TODO: email the license key + download link to {email} (see docs/STRIPE-SETUP.md).
 }
 
 export async function POST(request: Request) {

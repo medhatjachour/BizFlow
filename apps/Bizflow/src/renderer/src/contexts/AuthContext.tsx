@@ -60,9 +60,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Re-bind on mount (e.g. after a window reload that restored user from storage)
+  // Re-bind on mount (e.g. after a window reload that restored user from storage).
+  // Also: in the website's embedded "try it live" demo the URL carries
+  // ?only=<module>; there we auto-sign-in with the seeded setup account so
+  // prospects can run a module instantly instead of hitting the login wall.
   useEffect(() => {
-    if (user) void bindSession(user)
+    if (user) {
+      void bindSession(user)
+      return
+    }
+    let isDemo = false
+    try {
+      isDemo = new URLSearchParams(window.location.search).has('only')
+    } catch {
+      isDemo = false
+    }
+    if (isDemo) {
+      void login('setup', 'setup123').catch(() => {
+        /* fall back to the normal login screen */
+      })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

@@ -214,10 +214,10 @@ export function registerSalesHandlers(prisma: any) {
         })
       ])
 
-      const batchMap   = new Map(batchGroups.map((r: any)   => [r.recipeId, r._sum]))
-      const saleMap    = new Map(saleGroups.map((r: any)    => [r.recipeId ?? '__none__', r._sum]))
-      const wasteMap   = new Map(wasteGroups.map((r: any)   => [r.recipeId ?? '__none__', r._sum]))
-      const expiredMap = new Map(expiredGroups.map((r: any) => [r.recipeId, r._sum]))
+      const batchMap   = new Map<string, any>(batchGroups.map((r: any)   => [r.recipeId, r._sum]))
+      const saleMap    = new Map<string, any>(saleGroups.map((r: any)    => [r.recipeId ?? '__none__', r._sum]))
+      const wasteMap   = new Map<string, any>(wasteGroups.map((r: any)   => [r.recipeId ?? '__none__', r._sum]))
+      const expiredMap = new Map<string, any>(expiredGroups.map((r: any) => [r.recipeId, r._sum]))
 
       return recipes.map((recipe: any) => {
         const produced  = (batchMap.get(recipe.id)?._sum?.unitsProduced  ?? batchMap.get(recipe.id)?.unitsProduced)  ?? 0

@@ -41,6 +41,7 @@ const buildOptions = {
     __PLUGIN_CLINIC__: "true",
     __PLUGIN_VET__: "true",
     __PLUGIN_GYM__: "true",
+    __PLUGIN_PHARMACY__: "true",
   },
   // Loaded at runtime from node_modules (native or heavy, not needed to bundle).
   external: [

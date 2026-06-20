@@ -4,7 +4,7 @@
  * Query batching, connection pooling, and optimization utilities
  */
 
-import type { PrismaClient } from '@prisma/client'
+import type { PrismaClient } from '../../generated/prisma'
 import { createLogger } from '../utils/logger'
 const log = createLogger('DBOptimize')
 

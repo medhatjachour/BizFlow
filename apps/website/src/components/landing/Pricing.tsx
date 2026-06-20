@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { PLUGINS, DEFAULT_DOWNLOAD_URL } from "@/lib/plugins";
-import { SUITE_PRICE, SUITE_LIST_PRICE } from "@/lib/pricing";
 import BuyButton from "@/components/BuyButton";
+import { usePrices } from "@/components/usePrices";
 
 /**
  * Transparent pricing: every module is a one-time purchase, or take the whole
  * suite at a discount. Designed to make the buy decision easy.
  */
 export default function Pricing() {
-  const saving = SUITE_LIST_PRICE - SUITE_PRICE;
+  const prices = usePrices();
+  const suitePrice = prices.suite;
+  const suiteListPrice = prices.suiteList;
+  const saving = suiteListPrice - suitePrice;
+  const minModule = Math.min(...Object.values(prices.modules));
 
   return (
     <section id="pricing" className="relative mx-auto max-w-6xl px-4 py-28">
@@ -45,11 +49,12 @@ export default function Pricing() {
             Perfect if you need one thing done well.
           </p>
           <div className="mt-6 flex items-baseline gap-1.5">
-            <span className="text-4xl font-black">$199</span>
-            <span className="text-sm text-foreground/50">+ · one-time</span>
+            <span className="text-sm text-foreground/50">from</span>
+            <span className="text-4xl font-black">${minModule}</span>
+            <span className="text-sm text-foreground/50">one-time</span>
           </div>
           <ul className="mt-6 space-y-2 text-sm text-foreground/65">
-            <Li>Any one module (from $199)</Li>
+            <Li>Any one module (from ${minModule})</Li>
             <Li>Try free in the browser first</Li>
             <Li>Runs offline, data stays local</Li>
             <Li>Free updates for 1 year</Li>
@@ -75,22 +80,21 @@ export default function Pricing() {
           </span>
           <h3 className="text-lg font-semibold">Full suite</h3>
           <p className="mt-2 text-sm text-foreground/60">
-            All 7 modules. The whole business, covered.
+            All {PLUGINS.length} modules. The whole business, covered.
           </p>
           <div className="mt-6 flex items-baseline gap-2">
-            <span className="text-4xl font-black">${SUITE_PRICE}</span>
+            <span className="text-4xl font-black">${suitePrice}</span>
             <span className="text-sm text-foreground/40 line-through">
-              ${SUITE_LIST_PRICE}
+              ${suiteListPrice}
             </span>
           </div>
           <p className="mt-1 text-xs font-semibold text-emerald-400">
             Save ${saving} — pay once
           </p>
           <ul className="mt-6 space-y-2 text-sm text-foreground/75">
-            <Li>All current & future modules</Li>
-            <Li>Commerce, Bakery, Restaurant, Warehouse</Li>
-            <Li>Clinic, Vet & Gym</Li>
-            <Li>Priority support & updates included</Li>
+            <Li>All current &amp; future modules</Li>
+            <Li>{PLUGINS.map((p) => p.name).join(", ")}</Li>
+            <Li>Priority support &amp; updates included</Li>
           </ul>
           <BuyButton
             item="suite"
@@ -140,7 +144,7 @@ export default function Pricing() {
           >
             <span>{p.icon}</span>
             <span className="font-medium">{p.name}</span>
-            <span className="text-foreground/50">${p.price}</span>
+            <span className="text-foreground/50">${prices.modules[p.id] ?? p.price}</span>
           </a>
         ))}
       </div>

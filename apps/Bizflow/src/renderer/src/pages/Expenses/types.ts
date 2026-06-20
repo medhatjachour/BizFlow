@@ -22,6 +22,7 @@ export interface Expense {
   recurrence: string
   notes?: string
   createdAt: string
+  user?: { username: string }
 }
 
 export interface ExpenseFormData {

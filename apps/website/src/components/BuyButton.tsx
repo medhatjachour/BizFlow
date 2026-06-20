@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics";
 
 interface BuyButtonProps {
   /** Catalog item id: "suite" or "module:<pluginId>". */
@@ -32,6 +33,7 @@ export default function BuyButton({
   const onClick = async () => {
     setLoading(true);
     setError(null);
+    track("checkout_start", { item });
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -42,6 +44,7 @@ export default function BuyButton({
       if (res.status === 503) {
         // Payments not enabled yet — fall back to download if we have one.
         if (fallbackUrl) {
+          track("checkout_fallback", { item });
           window.open(fallbackUrl, "_blank", "noopener,noreferrer");
           return;
         }
@@ -53,6 +56,7 @@ export default function BuyButton({
       if (!res.ok || !data.url) {
         throw new Error(data.error || "Could not start checkout");
       }
+      track("checkout_redirect", { item });
       window.location.href = data.url as string;
     } catch (e) {
       setError((e as Error).message);

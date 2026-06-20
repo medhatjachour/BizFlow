@@ -5,7 +5,10 @@
  * Abstracts Prisma implementation details
  */
 
-import type { PrismaClient } from '@prisma/client'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import type { IRepository, FindOptions, PaginatedResult } from '../../shared/interfaces/IRepository'
 import { EntityNotFoundError, DuplicateEntityError } from '../../shared/interfaces/IRepository'
 
@@ -84,7 +87,7 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
       skip,
       take,
       select
-    }) as Promise<ProductWithRelations[]>
+    } as any) as Promise<ProductWithRelations[]>
   }
 
   /**
@@ -174,7 +177,7 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
         images: images ? {
           create: images
         } : undefined
-      },
+      } as any,
       include: {
         variants: true,
         images: true
@@ -204,7 +207,7 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
 
     return this.prisma.product.update({
       where: { id },
-      data: productData,
+      data: productData as any,
       include: {
         variants: true,
         images: true
@@ -296,7 +299,7 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
     return this.prisma.productImage.create({
       data: {
         productId,
-        imageData,
+        filename: imageData,
         order
       }
     })
@@ -318,11 +321,11 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
    * Get product categories
    */
   async getCategories(): Promise<string[]> {
-    const products = await this.prisma.product.findMany({
-      select: { category: true },
-      distinct: ['category']
+    const categories = await this.prisma.category.findMany({
+      select: { name: true },
+      orderBy: { name: 'asc' }
     })
-    
-    return products.map(p => p.category).sort()
+
+    return categories.map(c => c.name)
   }
 }

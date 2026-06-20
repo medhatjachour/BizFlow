@@ -30,6 +30,7 @@ import { registerEmployeesHandlers } from "../src/main/ipc/handlers/employees.ha
 import { registerCustomersHandlers } from "../src/main/ipc/handlers/customers.handlers";
 import { registerSearchHandlers } from "../src/main/ipc/handlers/search.handlers";
 import { registerUserHandlers } from "../src/main/ipc/handlers/user.handlers";
+import { registerPermissionsHandlers } from "../src/main/ipc/handlers/permissions.handlers";
 import { registerReportsHandlers } from "../src/main/ipc/handlers/reports.handlers";
 import { registerAnalyticsHandlers } from "../src/main/ipc/handlers/analytics.handlers";
 import { registerModuleHandlers } from "../src/main/ipc/handlers/module.handlers";
@@ -43,6 +44,7 @@ import { registerWarehouseHandlers } from "../src/plugins/warehouse/handlers/ind
 import { registerClinicHandlers } from "../src/plugins/clinic/handlers/index";
 import { registerVetHandlers } from "../src/plugins/vet/handlers/index";
 import { registerGymHandlers } from "../src/plugins/gym/handlers/index";
+import { registerPharmacyHandlers } from "../src/plugins/pharmacy/handlers/index";
 import { seedProductionDatabase } from "../src/main/database/seed-production";
 
 const PORT = Number(process.env.BRIDGE_PORT) || 8787;
@@ -121,6 +123,7 @@ async function main() {
   registerCustomersHandlers(prisma);
   registerSearchHandlers(prisma);
   registerUserHandlers(prisma);
+  registerPermissionsHandlers(prisma);
   registerReportsHandlers(prisma);
   registerAnalyticsHandlers();
   registerModuleHandlers();
@@ -133,12 +136,15 @@ async function main() {
   registerClinicHandlers(prisma);
   registerVetHandlers(prisma);
   registerGymHandlers(prisma);
+  registerPharmacyHandlers(prisma);
   console.log(`[bridge] ${__handlers.size} channels registered`);
 
   // ── Single-module isolation ──────────────────────────────────────────────
-  // Override module:getEnabled so a demo embedded with ?only=<id> shows just
-  // that module's nav (plus commerce for modules that depend on it). Without
-  // `only`, every module is enabled (full app).
+  // Override module:getEnabled so a demo embedded with ?only=<id> shows ONLY
+  // that module's nav — never another plugin alongside it. All IPC handlers
+  // stay registered, so any cross-module data a page reads still works; we only
+  // gate which modules appear in the UI. Without `only`, every module is
+  // enabled (the full app).
   const ALL_MODULES = [
     "commerce",
     "bakery",
@@ -147,13 +153,12 @@ async function main() {
     "clinic",
     "vet",
     "gym",
+    "pharmacy",
   ];
-  const COMMERCE_DEPENDENTS = new Set(["restaurant", "warehouse"]);
   ipcMain.handle("module:getEnabled", (event: { only?: string } = {}) => {
     const only = event?.only;
     if (!only) return ALL_MODULES;
-    if (only === "commerce") return ["commerce"];
-    return COMMERCE_DEPENDENTS.has(only) ? ["commerce", only] : [only];
+    return ALL_MODULES.includes(only) ? [only] : ALL_MODULES;
   });
 
   const server = http.createServer((req, res) => {

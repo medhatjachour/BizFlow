@@ -264,7 +264,10 @@ ipcMain.handle('backup:select-directory', async () => {
  */
 ipcMain.handle('backup:clean', async (_event, options: { keepCount: number, customPath?: string }) => {
   try {
-    const backupDir = await getBackupDirectory(options.customPath)
+    const backupDir = options.customPath
+    if (!backupDir) {
+      return { success: false, error: 'No backup folder provided' }
+    }
     const files = await fs.readdir(backupDir)
     
     // Filter backup files

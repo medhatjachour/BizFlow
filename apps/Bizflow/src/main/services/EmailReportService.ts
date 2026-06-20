@@ -5,7 +5,10 @@
  * Handles email configuration, report generation, and sending
  */
 
-import type { PrismaClient } from '@prisma/client'
+// The generated Prisma client is module-specific, so commerce models may be
+// absent in single-module builds (e.g. vet). Typing it as `any` keeps this
+// cross-module code compiling everywhere (matches the plugin-handler convention).
+type PrismaClient = any
 import nodemailer from 'nodemailer'
 import type { Transporter } from 'nodemailer'
 import { createLogger } from '../utils/logger'
@@ -85,23 +88,30 @@ export class EmailReportService {
     try {
       log.info('Configuring email report', { userId: config.userId, email: config.email })
 
-      await this.prisma.emailReport.upsert({
-        where: {
-          userId: config.userId
-        },
-        update: {
-          email: config.email,
-          frequency: config.frequency,
-          enabled: config.enabled,
-          updatedAt: new Date()
-        },
-        create: {
-          userId: config.userId,
-          email: config.email,
-          frequency: config.frequency,
-          enabled: config.enabled
-        }
+      const existing = await this.prisma.emailReport.findFirst({
+        where: { userId: config.userId }
       })
+
+      if (existing) {
+        await this.prisma.emailReport.update({
+          where: { id: existing.id },
+          data: {
+            email: config.email,
+            frequency: config.frequency,
+            enabled: config.enabled,
+            updatedAt: new Date()
+          }
+        })
+      } else {
+        await this.prisma.emailReport.create({
+          data: {
+            userId: config.userId,
+            email: config.email,
+            frequency: config.frequency,
+            enabled: config.enabled
+          }
+        })
+      }
 
       log.info('Email report configured successfully', { userId: config.userId })
     } catch (error) {
@@ -214,7 +224,7 @@ export class EmailReportService {
         product.variants
           .filter(variant => variant.stock <= 5)
           .map(variant => ({
-            name: `${product.name}${variant.name ? ` (${variant.name})` : ''}`,
+            name: `${product.name}${variant.sku ? ` (${variant.sku})` : ''}`,
             currentStock: variant.stock,
             minStock: 5
           }))
@@ -272,7 +282,7 @@ export class EmailReportService {
       await this.transporter.sendMail(mailOptions)
 
       // Update last sent timestamp
-      await this.prisma.emailReport.update({
+      await this.prisma.emailReport.updateMany({
         where: { userId },
         data: { lastSent: new Date() }
       })

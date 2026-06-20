@@ -2,125 +2,16 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { X, Plus, Trash2, Loader2, Search, UserCircle, Stethoscope, ChevronDown, Settings2, Printer, Package } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
-import type { Patient } from '../index'
 import DentalChart, { type DentalChartData } from '../../components/DentalChart'
 import SuggestInput from '../../components/SuggestInput'
 import ManageSuggestionsModal from '../../components/ManageSuggestionsModal'
 import PrescriptionPrintModal from '../../components/PrescriptionPrintModal'
 import { CHIEF_COMPLAINTS, MEDICINE_SUGGESTIONS, LAB_CHECKS } from '../../data/clinic-suggestions'
 import { useCustomSuggestions } from '../../hooks/useCustomSuggestions'
-
-interface LabCheckRow {
-  testName: string
-  notes: string
-}
-
-interface SessionMaterialRow {
-  materialId: string
-  materialName: string
-  unit: string
-  quantityUsed: string
-  notes: string
-  batchId?: string
-  batches?: Array<{ id: string; batchNumber?: string | null; quantity: number; expiryDate?: string | null }>
-}
-
-interface PrescriptionRow {
-  medicineName: string
-  dosage: string
-  frequency: string
-  duration: string
-  quantity: string
-  instructions: string
-  isActive: boolean
-  stoppedAt: string
-  stopReason: string
-}
-
-interface ExistingSession {
-  id: string
-  patientId: string
-  visitDate: string
-  visitType: string
-  doctorName?: string | null
-  chiefComplaint: string
-  vitals?: string | null
-  diagnosis?: string | null
-  notes?: string | null
-  followUpDate?: string | null
-  status: string
-  amountCharged?: number | null
-  amountPaid?: number | null
-  paymentStatus: string
-  paymentMethod?: string | null
-  dentalChart?: string | null
-  labOrders?: string | null
-  prescriptions: Array<{
-    id: string
-    medicineName: string
-    dosage?: string | null
-    frequency?: string | null
-    duration?: string | null
-    quantity?: number | null
-    instructions?: string | null
-    isActive?: boolean
-    startDate?: string | null
-    stoppedAt?: string | null
-    stopReason?: string | null
-  }>
-  sessionMaterials?: Array<{
-    id: string
-    materialId: string
-    batchId?: string | null
-    quantityUsed: number
-    notes?: string | null
-    material: { id: string; name: string; unit: string }
-    batch?: { id: string; batchNumber?: string | null } | null
-  }>
-  patient: { id: string; name: string }
-}
-
-interface DefaultAppointment {
-  id: string
-  appointmentDate: string
-  type: string
-  doctorName?: string | null
-  notes?: string | null
-  amountCharged?: number | null
-  amountPaid?: number | null
-  paymentMethod?: string | null
-  patient: { id: string; name: string; phone: string }
-}
-
-const APPT_TO_VISIT_TYPE: Record<string, string> = {
-  consultation: 'first_visit',
-  follow_up: 'follow_up',
-  procedure: 'routine',
-  checkup: 'routine',
-}
-
-interface Props {
-  existingSession?: ExistingSession | null
-  defaultPatient?: Patient | null
-  defaultAppointment?: DefaultAppointment | null
-  onClose: () => void
-  onSaved: () => void
-}
-
-function toDatetimeLocal(iso?: string | null): string {
-  if (!iso) return ''
-  try {
-    const d = new Date(iso)
-    // format: YYYY-MM-DDTHH:MM
-    return d.toISOString().slice(0, 16)
-  } catch {
-    return ''
-  }
-}
-
-function emptyRx(): PrescriptionRow {
-  return { medicineName: '', dosage: '', frequency: '', duration: '', quantity: '', instructions: '', isActive: true, stoppedAt: '', stopReason: '' }
-}
+import type {
+  LabCheckRow, SessionMaterialRow, PrescriptionRow, Props
+} from './sessionForm.types'
+import { APPT_TO_VISIT_TYPE, toDatetimeLocal, emptyRx, parseVitals, computePaymentStatus } from './sessionForm.shared'
 
 export default function SessionFormModal({ existingSession, defaultPatient, defaultAppointment, onClose, onSaved }: Props) {
   const { t } = useLanguage()
@@ -229,12 +120,6 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const parseVitals = (raw?: string | null) => {
-    if (!raw) return { bp: '', temp: '', weight: '', height: '', pulse: '', o2sat: '' }
-    try { return { bp: '', temp: '', weight: '', height: '', pulse: '', o2sat: '', ...JSON.parse(raw) } }
-    catch { return { bp: '', temp: '', weight: '', height: '', pulse: '', o2sat: '' } }
-  }
-
   const [visitDate, setVisitDate] = useState(
     toDatetimeLocal(existingSession?.visitDate)
     || (defaultAppointment ? toDatetimeLocal(defaultAppointment.appointmentDate) : '')
@@ -281,14 +166,6 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
   })
 
   // Auto-compute payment status
-  function computePaymentStatus(charged: string, paid: string): string {
-    const c = parseFloat(charged) || 0
-    const p = parseFloat(paid) || 0
-    if (c === 0) return 'unpaid'
-    if (p >= c) return 'paid'
-    if (p > 0) return 'partial'
-    return 'unpaid'
-  }
   const [labOrders, setLabOrders] = useState<LabCheckRow[]>(() => {
     if (!existingSession?.labOrders) return []
     try { return JSON.parse(existingSession.labOrders) } catch { return [] }
