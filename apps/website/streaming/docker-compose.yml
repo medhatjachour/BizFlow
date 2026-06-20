@@ -1,0 +1,29 @@
+# Lightweight path: installs the BizFlow Electron app under Wine and streams it
+# to the browser via noVNC on http://localhost:6080
+#
+# NOTE: BizFlow is an Electron + Prisma app. Wine support for Electron is
+# best-effort — if it misbehaves, use docker-compose.windows.yml (real Windows).
+#
+# Usage:
+#   1. Ensure ./app/bizflow-1.0.0-commerce.exe exists (already copied here).
+#   2. docker compose up --build
+#   3. Open http://localhost:6080/vnc.html  (or use it inside Nebula's "Live App")
+services:
+  app-stream:
+    build: .
+    container_name: nebula-app-stream
+    ports:
+      - "6080:6080"
+    environment:
+      # Path to the BizFlow installer INSIDE the container (./app -> /app):
+      INSTALLER_PATH: /app/bizflow-1.0.0-commerce.exe
+      # Display resolution WxHxDepth:
+      GEOMETRY: 1280x800x24
+      # Electron-under-Wine flags (sandbox must be off):
+      EXTRA_ARGS: "--no-sandbox --disable-gpu"
+      # Strongly recommended before exposing beyond localhost:
+      # VNC_PASSWORD: change-me
+    volumes:
+      - ./app:/app:ro
+    shm_size: "1gb"
+    restart: unless-stopped

@@ -1,0 +1,33 @@
+# Full-compatibility path: runs a REAL Windows VM in Docker (via KVM) with a
+# built-in browser viewer. Use this if your .exe does not work under Wine.
+#
+# Requirements: a Linux host with KVM/virtualization enabled (/dev/kvm).
+# Docs: https://github.com/dockur/windows
+#
+# Usage:
+#   1. docker compose -f docker-compose.windows.yml up
+#   2. Open http://localhost:8006  -> Windows installs automatically
+#   3. Inside Windows, install/run your .exe (put installers in ./shared)
+#   4. Point Nebula's NEXT_PUBLIC_STREAM_URL at http://localhost:8006
+services:
+  windows:
+    image: dockurr/windows
+    container_name: nebula-windows
+    environment:
+      VERSION: "11"          # 10, 11, etc.
+      RAM_SIZE: "4G"
+      CPU_CORES: "2"
+    devices:
+      - /dev/kvm
+      - /dev/net/tun
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "8006:8006"          # browser viewer (noVNC)
+      - "3389:3389/tcp"      # RDP (optional, for a nicer client)
+      - "3389:3389/udp"
+    volumes:
+      - ./windows-storage:/storage
+      - ./shared:/data       # put your installer/.exe here; shows up in Windows
+    stop_grace_period: 2m
+    restart: unless-stopped

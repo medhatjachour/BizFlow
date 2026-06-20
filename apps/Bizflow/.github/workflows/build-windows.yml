@@ -1,0 +1,254 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (optional)'
+        required: false
+        type: string
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      
+      - name: Debug Prisma generation
+        run: |
+          Write-Host "=== Debugging Prisma Client Generation ==="
+          Write-Host "`nChecking if src/generated/prisma exists:"
+          Test-Path "src/generated/prisma"
+          
+          Write-Host "`nListing ALL files in src/generated/prisma:"
+          if (Test-Path "src/generated/prisma") {
+            Get-ChildItem -Path "src/generated/prisma" -Recurse -File | ForEach-Object {
+              Write-Host "  $($_.FullName) - $([math]::Round($_.Length/1KB, 2)) KB"
+            }
+          } else {
+            Write-Host "Directory does not exist!"
+          }
+          
+          Write-Host "`nLooking for .node files specifically:"
+          if (Test-Path "src/generated/prisma") {
+            $nodeFiles = Get-ChildItem -Path "src/generated/prisma" -Filter "*.node" -Recurse
+            Write-Host "Found $($nodeFiles.Count) .node files"
+            $nodeFiles | ForEach-Object { Write-Host "  - $($_.Name)" }
+          }
+          
+          Write-Host "`nChecking node_modules/.prisma:"
+          if (Test-Path "node_modules/.prisma/client") {
+            Get-ChildItem -Path "node_modules/.prisma/client" -Filter "*.node" | ForEach-Object {
+              Write-Host "  - $($_.Name)"
+            }
+          }
+        shell: pwsh
+      
+      - name: Copy Prisma binaries
+        run: |
+          Write-Host "Copying Prisma binaries..."
+          node scripts/copy-prisma-binaries.js
+        shell: pwsh
+      
+      - name: Prepare template database
+        run: |
+          Write-Host "Creating fresh template database..."
+          if (Test-Path "prisma/template.db") {
+            Remove-Item "prisma/template.db" -Force
+            Write-Host "Removed existing template database"
+          }
+          
+          # Set DATABASE_URL to create template in prisma folder
+          # Use absolute path to avoid double prisma folder issue
+          $dbPath = Join-Path $PWD "prisma" "template.db"
+          $env:DATABASE_URL = "file:$dbPath"
+          
+          Write-Host "Applying Prisma schema..."
+          npx prisma db push --accept-data-loss --skip-generate
+          
+          Write-Host "Seeding database..."
+          npx prisma db seed
+          
+          # Verify template database was created - check multiple locations
+          Write-Host "Verifying template database creation..."
+          Write-Host "Current directory contents:"
+          Get-ChildItem -Filter "*.db" | ForEach-Object { Write-Host "  - $($_.FullName)" }
+          Write-Host "Prisma directory contents:"
+          Get-ChildItem "prisma" -Filter "*.db" | ForEach-Object { Write-Host "  - $($_.FullName)" }
+          
+          if (Test-Path "prisma/template.db") {
+            $size = (Get-Item "prisma/template.db").Length / 1KB
+            Write-Host "✓ Template database found in prisma folder: $([math]::Round($size, 2)) KB"
+          } elseif (Test-Path "template.db") {
+            Write-Host "Found template.db in root directory, moving to prisma folder..."
+            Move-Item "template.db" "prisma/template.db" -Force
+            $size = (Get-Item "prisma/template.db").Length / 1KB
+            Write-Host "✓ Template database moved successfully: $([math]::Round($size, 2)) KB"
+          } elseif (Test-Path "prisma/dev.db") {
+            Write-Host "Found dev.db, copying to template.db..."
+            Copy-Item "prisma/dev.db" "prisma/template.db" -Force
+            $size = (Get-Item "prisma/template.db").Length / 1KB
+            Write-Host "✓ Template database created from dev.db: $([math]::Round($size, 2)) KB"
+          } else {
+            Write-Host "❌ No database file found!"
+            Write-Host "Full directory listing:"
+            Get-ChildItem -Recurse -Filter "*.db" | ForEach-Object { Write-Host "  - $($_.FullName)" }
+            Write-Error "Failed to create or locate template database!"
+            exit 1
+          }
+        shell: pwsh
+      
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+      
+      - name: Package Windows installer
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Get version from package.json
+        id: package-version
+        run: |
+          $version = node -p "require('./package.json').version"
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+      
+      - name: List build artifacts
+        run: |
+          Write-Host "Build artifacts in dist folder:"
+          Get-ChildItem -Path dist -Recurse -File | Select-Object Name, Length, LastWriteTime
+        shell: pwsh
+      
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: BizFlow-Windows-Setup-${{ steps.package-version.outputs.version }}
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+          retention-days: 30
+          if-no-files-found: error
+      
+      - name: Upload Windows portable
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BizFlow-Windows-Portable-${{ steps.package-version.outputs.version }}
+          path: dist/*.zip
+          retention-days: 30
+          if-no-files-found: warn
+      
+      - name: Create Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/*.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Optional: Build for multiple architectures
+  build-windows-multi-arch:
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    strategy:
+      matrix:
+        arch: [x64, ia32, arm64]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      
+      - name: Verify Prisma binaries
+        run: |
+          Write-Host "Verifying Windows Prisma binary..."
+          if (Test-Path "src/generated/prisma/query_engine-windows.dll.node") {
+            Write-Host "✓ Windows Prisma binary found"
+            node scripts/copy-prisma-binaries.js
+          } else {
+            Write-Error "Windows Prisma binary not found!"
+            exit 1
+          }
+        shell: pwsh
+      
+      - name: Verify deployment configuration
+        run: |
+          Write-Host "Running deployment verification..."
+          node scripts/verify-deployment.js
+          
+          Write-Host "`nVerifying template database content..."
+          node scripts/verify-template-db.js
+        shell: pwsh
+      
+      - name: Prepare template database
+        run: |
+          if (!(Test-Path "prisma/template.db")) {
+            $env:DATABASE_URL = "file:./prisma/template.db"
+            npx prisma db push --accept-data-loss --skip-generate
+            npx prisma db seed
+          }
+        shell: pwsh
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Package Windows installer (${{ matrix.arch }})
+        run: npm run build:win -- --${{ matrix.arch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload artifacts (${{ matrix.arch }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: BizFlow-Windows-${{ matrix.arch }}
+          path: dist/*.exe
+          retention-days: 30
