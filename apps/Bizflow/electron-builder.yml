@@ -47,7 +47,9 @@ win:
   # Ensure native modules work properly
   requestedExecutionLevel: asInvoker
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  # The plugin/variant is supplied via ENABLED_MODULES by the build:*:win scripts,
+  # producing e.g. bizflow-1.0.0-vet.exe (full builds use ENABLED_MODULES=all).
+  artifactName: ${name}-${version}-${env.ENABLED_MODULES}.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   include: build/installer.nsh

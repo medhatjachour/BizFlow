@@ -10,6 +10,7 @@ import { useToast } from '@renderer/contexts/ToastContext'
 import VetSessionFormModal from './components/VetSessionFormModal'
 import VetPatientFormModal from './components/VetPatientFormModal'
 import VetAppointmentFormModal from './components/VetAppointmentFormModal'
+import { speciesEmoji } from './components/species'
 import { VISIT_TYPE_COLORS, visitTypeLabel } from './components/visitTypes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -202,7 +203,7 @@ export default function VetPatientProfile() {
         <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-6">
           <div className="flex items-start gap-4">
             <div className="h-16 w-16 rounded-2xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center text-3xl">
-              {patient.species === 'dog' ? '🐕' : patient.species === 'cat' ? '🐈' : patient.species === 'bird' ? '🦜' : patient.species === 'rabbit' ? '🐇' : patient.species === 'guinea_pig' ? '🐹' : patient.species === 'reptile' ? '🦎' : patient.species === 'fish' ? '🐠' : '🐾'}
+              {speciesEmoji(patient.species)}
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{patient.name}</h1>

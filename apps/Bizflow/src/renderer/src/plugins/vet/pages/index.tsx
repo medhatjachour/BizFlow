@@ -23,6 +23,7 @@ import VetFollowUpsTab  from './components/VetFollowUpsTab'
 import VetExpensesTab   from './components/VetExpensesTab'
 import VetMedicinesTab  from './components/VetMedicinesTab'
 import VetSalesTab      from './components/VetSalesTab'
+import { speciesEmoji, speciesLabel } from './components/species'
 
 type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales'
 
@@ -59,19 +60,6 @@ export interface VetPatient {
 export interface VetOwnerWithPets extends VetOwner {
   patients: Array<{ id: string; name: string; species: string; breed?: string | null }>
   _count: { patients: number }
-}
-
-const SPECIES_EMOJI: Record<string, string> = {
-  dog: '🐕', cat: '🐈', bird: '🦜', rabbit: '🐇',
-  reptile: '🦎', fish: '🐠', other: '🐾'
-}
-
-function speciesLabel(s: string): string {
-  const map: Record<string, string> = {
-    dog: 'Dog', cat: 'Cat', bird: 'Bird', rabbit: 'Rabbit',
-    reptile: 'Reptile', fish: 'Fish', other: 'Other'
-  }
-  return map[s] ?? s
 }
 
 function ownerInitials(name: string): string {
@@ -318,7 +306,7 @@ function OwnerCard({ owner, onEdit, onDelete, onAddPet, onViewProfile, onWalkIn,
               className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700"
             >
               <div className="flex items-center gap-2.5">
-                <span className="text-xl">{SPECIES_EMOJI[pet.species] ?? '🐾'}</span>
+                <span className="text-xl">{speciesEmoji(pet.species)}</span>
                 <div>
                   <p className="text-sm font-medium text-slate-900 dark:text-white">{pet.name}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">

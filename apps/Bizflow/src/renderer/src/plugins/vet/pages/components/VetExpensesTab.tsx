@@ -180,7 +180,10 @@ export default function VetExpensesTab() {
       {summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
+                        { label: t('vetRevenue')||'Revenue',    value: summary.revenue,       icon: TrendingUp,   color: 'text-emerald-600 dark:text-emerald-400' },
             { label: t('vetExpenses')||'Expenses',   value: summary.totalExpenses, icon: TrendingDown, color: 'text-red-600 dark:text-red-400' },
+            { label: t('vetNetIncome')||'Net Income', value: summary.netIncome,     icon: DollarSign,   color: summary.netIncome >= 0 ? 'text-teal-600 dark:text-teal-400' : 'text-red-600 dark:text-red-400' },
+            { label: t('vetOutstanding')||'Outstanding',value: summary.outstanding, icon: DollarSign,   color: summary.outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' }
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center">
               <Icon className={`h-5 w-5 mx-auto mb-1 ${color}`} />

@@ -5,6 +5,7 @@ import type { VetStaff } from './VetStaffFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useVisitTypes } from './visitTypes'
 import VetVisitTypesManager from './VetVisitTypesManager'
+import { speciesEmoji } from './species'
 
 interface Props {
   session?: any
@@ -15,6 +16,26 @@ interface Props {
 
 const PAYMENT_METHODS = ['cash', 'card', 'insurance', 'other']
 
+// Placeholder pet used to record an owner-level session when the owner has no
+// specific pet (schema requires a patientId — no migration). Reused per owner
+// via find-or-create on this exact name.
+const GENERAL_PET_NAME = 'General Visit'
+
+const STATUS_BADGE: Record<string, string> = {
+  paid:    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  partial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  unpaid:  'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300',
+  waived:  'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+}
+
+/** Derive payment status from charged/paid amounts (or 'waived' override). */
+function computePaymentStatus(charged: number, paid: number, waived: boolean): string {
+  if (waived) return 'waived'
+  if (charged > 0 && paid >= charged) return 'paid'
+  if (paid > 0) return 'partial'
+  return 'unpaid'
+}
+
 export default function VetSessionFormModal({ session, preselectedPatient, onSave, onClose }: Props) {
   const isEdit = !!session
   const { t } = useLanguage()
@@ -24,6 +45,20 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
   const [ptResults,  setPtResults]  = useState<any[]>([])
   const [ptSearching, setPtSearching] = useState(false)
   const ptSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Selection mode: link the session by pet directly, or pick the owner first
+  // then one of their pets. (Sessions always store a patientId — no schema change.)
+  const [selectMode, setSelectMode] = useState<'pet' | 'owner'>('pet')
+  const [ownerSearch, setOwnerSearch] = useState('')
+  const [ownerResults, setOwnerResults] = useState<any[]>([])
+  const [ownerSearching, setOwnerSearching] = useState(false)
+  const [selectedOwner, setSelectedOwner] = useState<any | null>(null)
+  const [ownerPets, setOwnerPets] = useState<any[]>([])
+  const [ownerPetsLoading, setOwnerPetsLoading] = useState(false)
+  const ownerSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Payment status is auto-derived from charged/paid; `waived` is the override.
+  const [waived, setWaived] = useState(false)
 
   const [form, setForm] = useState({
     visitDate:     new Date().toISOString().slice(0, 16),
@@ -81,6 +116,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
         if (session.vetVitals) { setVitals(JSON.parse(session.vetVitals)); setShowVitals(true) }
       } catch {}
       setPrescriptions(session.prescriptions?.map((r: any) => ({ ...r })) ?? [])
+      setWaived(session.paymentStatus === 'waived')
     }
   }, [session])
 
@@ -110,6 +146,50 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
     }
   }
 
+  const searchOwners = async (q: string) => {
+    if (!q.trim()) { setOwnerResults([]); return }
+    setOwnerSearching(true)
+    try {
+      const res = await window.api.vet?.owners.searchLite(q)
+      setOwnerResults(res ?? [])
+    } finally {
+      setOwnerSearching(false)
+    }
+  }
+
+  const selectOwner = async (o: any) => {
+    setSelectedOwner(o)
+    setOwnerResults([])
+    setOwnerSearch('')
+    setOwnerPetsLoading(true)
+    try {
+      // patients.getAll matches owner name/phone too; filter to exactly this owner.
+      const res = await window.api.vet?.patients.getAll({ search: o.phone || o.name, take: 50 })
+      const list = (res?.data ?? []).filter((p: any) => p.owner?.id === o.id)
+      setOwnerPets(list)
+    } finally {
+      setOwnerPetsLoading(false)
+    }
+  }
+
+  // Start a session for the owner without a specific pet: find-or-create a
+  // single reusable placeholder pet under that owner (schema needs a patientId).
+  const useGeneralVisit = async () => {
+    if (!selectedOwner) return
+    const existing = ownerPets.find((p: any) => p.species === 'other' && p.name === GENERAL_PET_NAME)
+    if (existing) { setPatient({ ...existing, owner: existing.owner ?? selectedOwner }); return }
+    setOwnerPetsLoading(true)
+    setError('')
+    try {
+      const created = await window.api.vet?.patients.create({ name: GENERAL_PET_NAME, species: 'other', ownerId: selectedOwner.id })
+      setPatient({ ...created, owner: selectedOwner })
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to start owner session')
+    } finally {
+      setOwnerPetsLoading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!patient) { setError('Please select a patient'); return }
@@ -135,7 +215,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
         status:        form.status,
         amountCharged: form.amountCharged ? parseFloat(form.amountCharged) : undefined,
         amountPaid:    form.amountPaid ? parseFloat(form.amountPaid) : undefined,
-        paymentStatus: form.paymentStatus,
+        paymentStatus: computePaymentStatus(parseFloat(form.amountCharged) || 0, parseFloat(form.amountPaid) || 0, waived),
         paymentMethod: form.paymentMethod || undefined,
         prescriptions: prescriptions.map(({ id: _id, sessionId: _sid, createdAt: _ca, ...rest }) => rest)
       }
@@ -161,6 +241,12 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
 
   const filledVitals = Object.values(vitals).filter(v => v.trim()).length
 
+  const payInfo = (() => {
+    const charged = parseFloat(form.amountCharged) || 0
+    const paid = parseFloat(form.amountPaid) || 0
+    return { charged, paid, balance: charged - paid, status: computePaymentStatus(charged, paid, waived) }
+  })()
+
   const addRx = () => setPrescriptions(p => [...p, { medicineName: '', dosage: '', frequency: '', duration: '', quantity: '', instructions: '', isActive: true }])
   const removeRx = (i: number) => setPrescriptions(p => p.filter((_, idx) => idx !== i))
   const setRx = (i: number, k: string, v: string) => setPrescriptions(p => p.map((rx, idx) => idx === i ? { ...rx, [k]: v } : rx))
@@ -174,17 +260,38 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
-          {/* Patient selector */}
+          {/* Patient / Owner selector */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetPatientLabel')||'Patient'} *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400">{t('vetPatientLabel')||'Patient'} *</label>
+              {!patient && !preselectedPatient && (
+                <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-0.5 text-[11px] font-medium">
+                  <button type="button" onClick={() => setSelectMode('pet')}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${selectMode === 'pet' ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {t('vetByPet') || 'By Pet'}
+                  </button>
+                  <button type="button" onClick={() => setSelectMode('owner')}
+                    className={`px-2.5 py-1 rounded-md transition-colors ${selectMode === 'owner' ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-300 shadow-sm' : 'text-slate-500 dark:text-slate-400'}`}>
+                    {t('vetByOwner') || 'By Owner'}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {patient ? (
               <div className="flex items-center justify-between p-3 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700 rounded-lg">
-                <span className="text-sm font-medium text-slate-900 dark:text-white">{patient.name} <span className="text-slate-400 text-xs capitalize">({patient.species})</span></span>
+                <div className="min-w-0 flex items-center gap-2">
+                  <span className="text-lg leading-none">{speciesEmoji(patient.species)}</span>
+                  <div className="min-w-0">
+                    <span className="text-sm font-medium text-slate-900 dark:text-white">{patient.name} <span className="text-slate-400 text-xs capitalize">({patient.species})</span></span>
+                    {patient.owner && <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{(t('vetOwnerLabel')||'Owner')}: {patient.owner.name}{patient.owner.phone ? ` · ${patient.owner.phone}` : ''}</p>}
+                  </div>
+                </div>
                 {!preselectedPatient && (
-                  <button type="button" onClick={() => setPatient(null)} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => { setPatient(null); setSelectedOwner(null); setOwnerPets([]) }} className="text-slate-400 hover:text-slate-600 shrink-0"><X className="h-4 w-4" /></button>
                 )}
               </div>
-            ) : (
+            ) : selectMode === 'pet' ? (
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
@@ -195,7 +302,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
                     ptSearchTimer.current = setTimeout(() => searchPatients(e.target.value), 300)
                   }}
                   className={`${inputCls} pl-9`}
-                  placeholder={t('vetSearchPatient')||'Search patient…'}
+                  placeholder={t('vetSearchPatient')||'Search patient by name or owner…'}
                 />
                 {ptSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />}
                 {ptResults.length > 0 && (
@@ -208,6 +315,69 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
                         {p.owner && <span className="text-slate-400 ml-2">· {p.owner.name}</span>}
                       </button>
                     ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {!selectedOwner ? (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      value={ownerSearch}
+                      onChange={e => {
+                        setOwnerSearch(e.target.value)
+                        if (ownerSearchTimer.current) clearTimeout(ownerSearchTimer.current)
+                        ownerSearchTimer.current = setTimeout(() => searchOwners(e.target.value), 300)
+                      }}
+                      className={`${inputCls} pl-9`}
+                      placeholder={t('vetSearchOwner')||'Search owner by name or phone…'}
+                    />
+                    {ownerSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />}
+                    {ownerResults.length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                        {ownerResults.map((o: any) => (
+                          <button key={o.id} type="button" onClick={() => selectOwner(o)}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
+                            <span className="font-medium text-slate-900 dark:text-white">{o.name}</span>
+                            <span className="text-slate-400 ml-2">{o.phone}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2.5 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700 rounded-lg">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{selectedOwner.name}</p>
+                        <p className="text-xs text-slate-500">{selectedOwner.phone}</p>
+                      </div>
+                      <button type="button" onClick={() => { setSelectedOwner(null); setOwnerPets([]) }} className="text-slate-400 hover:text-slate-600 shrink-0"><X className="h-4 w-4" /></button>
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{t('vetChoosePet')||'Choose a pet'}</p>
+                    {ownerPetsLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-slate-400 py-2"><Loader2 className="h-4 w-4 animate-spin" /> {t('loading')||'Loading…'}</div>
+                    ) : ownerPets.length === 0 ? (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 py-1">{t('vetOwnerNoPets')||'This owner has no pets yet — add a pet first, or switch to “By Pet”.'}</p>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {ownerPets.map((p: any) => (
+                          <button key={p.id} type="button" onClick={() => setPatient({ ...p, owner: p.owner ?? selectedOwner })}
+                            className="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-violet-300 dark:hover:border-violet-700 text-left transition-colors">
+                            <span className="text-lg leading-none">{speciesEmoji(p.species)}</span>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{p.name}</p>
+                              <p className="text-xs text-slate-400 capitalize truncate">{p.species}{p.breed ? ` · ${p.breed}` : ''}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button type="button" onClick={useGeneralVisit}
+                      className="w-full mt-1 py-2 text-xs font-medium text-violet-600 dark:text-violet-300 border border-dashed border-violet-300 dark:border-violet-700 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+                      {t('vetSessionNoPet')||'Session without a specific pet'}
+                    </button>
                   </div>
                 )}
               </div>
@@ -318,30 +488,43 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
           </div>
 
           {/* Payment */}
-          <div className="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('amountCharged')||'Amount Charged'}</label>
-              <input type="number" step="0.01" min="0" value={form.amountCharged} onChange={setF('amountCharged')} className={inputCls} />
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('amountCharged')||'Amount Charged'}</label>
+                <input type="number" step="0.01" min="0" value={form.amountCharged} onChange={setF('amountCharged')} className={inputCls} placeholder="0.00" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('amountPaid')||'Amount Paid'}</label>
+                <input type="number" step="0.01" min="0" value={form.amountPaid} onChange={setF('amountPaid')} className={inputCls} placeholder="0.00" />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('amountPaid')||'Amount Paid'}</label>
-              <input type="number" step="0.01" min="0" value={form.amountPaid} onChange={setF('amountPaid')} className={inputCls} />
+
+            {/* Auto-detected payment status */}
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400">{t('vetPaymentStatus')||'Payment Status'}</span>
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${STATUS_BADGE[payInfo.status]}`}>
+                  {t((`vetPayment${payInfo.status.charAt(0).toUpperCase() + payInfo.status.slice(1)}`) as any) || payInfo.status}
+                </span>
+              </div>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {t('vetBalance')||'Balance'}: <span className={`font-semibold tabular-nums ${payInfo.balance > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>{payInfo.balance.toFixed(2)}</span>
+              </span>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetPaymentStatus')||'Payment Status'}</label>
-              <select value={form.paymentStatus} onChange={setF('paymentStatus')} className={inputCls}>
-                <option value="unpaid">{t('vetPaymentUnpaid')||'Unpaid'}</option>
-                <option value="partial">{t('vetPaymentPartial')||'Partial'}</option>
-                <option value="paid">{t('vetPaymentPaid')||'Paid'}</option>
-                <option value="waived">{t('vetPaymentWaived')||'Waived'}</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetPaymentMethod')||'Payment Method'}</label>
-              <select value={form.paymentMethod} onChange={setF('paymentMethod')} className={inputCls}>
-                <option value="">—</option>
-                {PAYMENT_METHODS.map(m => <option key={m} value={m}>{t(`vetPayment_${m}` as any)||m}</option>)}
-              </select>
+
+            <div className="grid grid-cols-2 gap-4 items-center">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('vetPaymentMethod')||'Payment Method'}</label>
+                <select value={form.paymentMethod} onChange={setF('paymentMethod')} className={inputCls}>
+                  <option value="">—</option>
+                  {PAYMENT_METHODS.map(m => <option key={m} value={m}>{t(`vetPayment_${m}` as any)||m}</option>)}
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 mt-5 cursor-pointer select-none">
+                <input type="checkbox" checked={waived} onChange={e => setWaived(e.target.checked)} className="rounded border-slate-300 text-violet-600 focus:ring-violet-500" />
+                {t('vetWaivePayment')||'Waive payment'}
+              </label>
             </div>
           </div>
 

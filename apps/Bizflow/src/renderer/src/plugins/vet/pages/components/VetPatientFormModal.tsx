@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import type { VetPatient } from '../index'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { SPECIES_OPTIONS, KNOWN_SPECIES, translatedSpeciesLabel } from './species'
 
 interface Props {
   patient?: VetPatient | null
@@ -9,8 +10,6 @@ interface Props {
   onSave: () => void
   onClose: () => void
 }
-
-const KNOWN_SPECIES = ['dog', 'cat', 'bird', 'rabbit', 'reptile', 'fish', 'other']
 
 function computeAge(dob: string): { years: string; months: string } {
   if (!dob) return { years: '', months: '' }
@@ -163,14 +162,14 @@ export default function VetPatientFormModal({ patient, preselectedOwner, onSave,
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 py-6 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <h2 className="font-bold text-slate-900 dark:text-white">{isEdit ? (t('vetEditPet')||'Edit Pet') : (t('vetNewPet')||'New Pet')}</h2>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400"><X className="h-5 w-5" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-6 space-y-5">
           {/* Pet fields */}
           <div className="grid grid-cols-2 gap-4">
             {/* Pet name */}
@@ -179,20 +178,37 @@ export default function VetPatientFormModal({ patient, preselectedOwner, onSave,
               <input value={form.name} onChange={set('name')} required className={inputCls} placeholder="e.g. Buddy" />
             </div>
 
-            {/* Species */}
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('species')||'Species'} *</label>
-              <select value={form.species} onChange={set('species')} className={inputCls}>
-                {KNOWN_SPECIES.map(s => (
-                  <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                ))}
-              </select>
+            {/* Species — emoji chip picker */}
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">{t('species')||'Species'} *</label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {SPECIES_OPTIONS.map(s => {
+                  const active = form.species === s.value
+                  return (
+                    <button
+                      key={s.value}
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, species: s.value }))}
+                      className={[
+                        'flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl border text-xs font-medium transition-all',
+                        active
+                          ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 ring-2 ring-violet-500/30'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-violet-300 dark:hover:border-violet-700'
+                      ].join(' ')}
+                    >
+                      <span className="text-xl leading-none">{s.emoji}</span>
+                      <span>{translatedSpeciesLabel(s.value, t)}</span>
+                    </button>
+                  )
+                })}
+              </div>
               {form.species === 'other' && (
                 <input
                   value={customSpecies}
                   onChange={e => setCustomSpecies(e.target.value)}
-                  className={`${inputCls} mt-1.5`}
-                  placeholder={`${t('vetSpecifySpecies')||'Specify species'} (e.g. Hamster, Turtle...)`}
+                  className={`${inputCls} mt-2`}
+                  placeholder={`${t('vetSpecifySpecies')||'Specify species'} (e.g. Camel, Hamster, Turtle...)`}
+                  autoFocus
                 />
               )}
             </div>

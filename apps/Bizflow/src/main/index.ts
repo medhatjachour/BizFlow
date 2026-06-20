@@ -79,7 +79,7 @@ console.debug = (...args) => log.debug(...args)
 let migrationManager: MigrationManager | null = null
 let mainWindow: BrowserWindow | null = null
 
-const DEMO_EXPIRES_AT_ISO = '2045-06-19T23:59:59.999Z'
+const DEMO_EXPIRES_AT_ISO = '2040-06-19T23:59:59.999Z'
 const DEFAULT_LINKEDIN_URL = 'https://www.linkedin.com/in/medhatjachour/'
 // Hidden "cheat code": type this into the demo-expired window's input to bypass
 // the gate and launch the app. Override via BIZFLOW_DEMO_UNLOCK_CODE.
