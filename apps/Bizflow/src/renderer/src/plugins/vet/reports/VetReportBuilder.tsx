@@ -8,11 +8,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Loader2, Download, ClipboardList, ShoppingBag, Pill, DollarSign,
   TrendingUp, TrendingDown, AlertCircle, PackageMinus, PackageX,
-  Activity, Banknote, Receipt, Layers, ChevronLeft, ChevronRight
+  Activity, Banknote, Receipt, Layers, ChevronLeft, ChevronRight,
+  FileText, FileSpreadsheet
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import VetPeriodFilter, { rangeForPreset } from '../pages/components/VetPeriodFilter'
+import { bi, exportReport, type ReportPayload } from './reportExport'
 
 export type ReportType = 'sessions' | 'sales' | 'medicines' | 'revenue'
 
@@ -90,7 +92,7 @@ const TITLES: Record<ReportType, { label: string; icon: any; tint: string }> = {
 
 export default function VetReportBuilder({ type }: { type: ReportType }) {
   const toast = useToast()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [range, setRange] = useState<{ from?: string; to?: string }>(() => rangeForPreset('month'))
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<any>(null)
@@ -358,6 +360,159 @@ export default function VetReportBuilder({ type }: { type: ReportType }) {
     }
   }
 
+  // ── PDF / Excel export ──────────────────────────────────────────────────────
+  const [exportingDoc, setExportingDoc] = useState<'pdf' | 'excel' | null>(null)
+
+  const buildPayload = useCallback(async (): Promise<ReportPayload> => {
+    const L = bi(language)
+    const meta = [{ label: L('Period', 'الفترة'), value: rangeLabel }]
+    const kpiPairs = kpis.map(k => ({ label: k.label, value: k.value }))
+    const titleByType: Record<ReportType, string> = {
+      sessions:  L('Sessions Report', 'تقرير الجلسات'),
+      sales:     L('Sales Report', 'تقرير المبيعات'),
+      medicines: L('Medicines / Inventory Report', 'تقرير الأدوية / المخزون'),
+      revenue:   L('Revenue / Profit & Loss', 'الإيرادات / الأرباح والخسائر'),
+    }
+    const base: ReportPayload = {
+      title: titleByType[type],
+      subtitle: rangeLabel,
+      lang: language === 'ar' ? 'ar' : 'en',
+      currency: '$',
+      meta, kpis: kpiPairs, sections: [],
+      fileBase: `vet-${type}-${fileStamp}`,
+    }
+
+    if (type === 'sessions' && sessionsVm) {
+      base.sections = [{
+        heading: L('Sessions', 'الجلسات'),
+        columns: [
+          { key: 'date', label: L('Date', 'التاريخ') },
+          { key: 'patient', label: L('Patient', 'الحيوان') },
+          { key: 'species', label: L('Species', 'النوع') },
+          { key: 'visitType', label: L('Visit Type', 'نوع الزيارة') },
+          { key: 'vet', label: L('Vet', 'الطبيب') },
+          { key: 'diagnosis', label: L('Diagnosis', 'التشخيص') },
+          { key: 'charged', label: L('Charged', 'المطلوب'), isMoney: true },
+          { key: 'paid', label: L('Paid', 'المدفوع'), isMoney: true },
+          { key: 'status', label: L('Status', 'الحالة') },
+        ],
+        rows: sessionsVm.rows.map((s: any) => ({
+          date: new Date(s.visitDate).toLocaleDateString(),
+          patient: s.patient?.name ?? '', species: s.patient?.species ?? '',
+          visitType: s.visitType ?? '', vet: s.vetName ?? '', diagnosis: s.diagnosis ?? '',
+          charged: Number(s.amountCharged) || 0, paid: Number(s.amountPaid) || 0, status: s.paymentStatus ?? '',
+        })),
+        totals: { charged: sessionsVm.charged, paid: sessionsVm.collected },
+      }]
+    } else if (type === 'sales') {
+      const s = data?.summary
+      const allRes = await window.api.vet?.medicines.getSales({ from: toStart(range.from), to: toEnd(range.to), skip: 0, take: 100000 }).catch(() => ({ data: [] }))
+      const allRows = (allRes as any)?.data ?? []
+      base.sections = [
+        {
+          heading: L('Sales', 'المبيعات'),
+          columns: [
+            { key: 'date', label: L('Date', 'التاريخ') },
+            { key: 'medicine', label: L('Medicine', 'الدواء') },
+            { key: 'qty', label: L('Qty', 'الكمية'), align: 'right' },
+            { key: 'unitPrice', label: L('Unit Price', 'سعر الوحدة'), isMoney: true },
+            { key: 'total', label: L('Total', 'الإجمالي'), isMoney: true },
+            { key: 'customer', label: L('Patient / Owner', 'الحيوان / المالك') },
+            { key: 'payment', label: L('Payment', 'الدفع') },
+          ],
+          rows: allRows.map((r: any) => ({
+            date: new Date(r.saleDate).toLocaleDateString(), medicine: r.medicine?.name ?? '',
+            qty: r.quantity ?? 0, unitPrice: Number(r.unitPrice) || 0, total: Number(r.totalPrice) || 0,
+            customer: r.ownerName ?? r.patientName ?? '', payment: r.paymentStatus ?? '',
+          })),
+          totals: { total: Number(s?.revenue) || 0 },
+        },
+        {
+          heading: L('Top Medicines', 'أكثر الأدوية مبيعاً'),
+          columns: [
+            { key: 'name', label: L('Medicine', 'الدواء') },
+            { key: 'saleCount', label: L('Sales', 'المبيعات'), align: 'right' },
+            { key: 'revenue', label: L('Revenue', 'الإيراد'), isMoney: true },
+            { key: 'grossProfit', label: L('Gross Profit', 'إجمالي الربح'), isMoney: true },
+          ],
+          rows: (s?.topMedicines ?? []).map((m: any) => ({
+            name: m.name, saleCount: m.saleCount, revenue: Number(m.revenue) || 0, grossProfit: Number(m.grossProfit) || 0,
+          })),
+        },
+      ]
+    } else if (type === 'medicines' && medsVm) {
+      base.sections = [{
+        heading: L('Inventory', 'المخزون'),
+        columns: [
+          { key: 'name', label: L('Medicine', 'الدواء') },
+          { key: 'category', label: L('Category', 'الفئة') },
+          { key: 'stock', label: L('Stock', 'المخزون'), align: 'right' },
+          { key: 'unit', label: L('Unit', 'الوحدة') },
+          { key: 'min', label: L('Min', 'الحد الأدنى'), align: 'right' },
+          { key: 'value', label: L('Stock Value', 'قيمة المخزون'), isMoney: true },
+          { key: 'retail', label: L('Retail Value', 'قيمة البيع'), isMoney: true },
+          { key: 'status', label: L('Status', 'الحالة') },
+          { key: 'expiry', label: L('Nearest Expiry', 'أقرب انتهاء') },
+        ],
+        rows: medsVm.rows.map((m: any) => ({
+          name: m.name, category: m.category, stock: m.stock, unit: m.unit, min: m.minimumStock,
+          value: Number(m.value) || 0, retail: Number(m.retail) || 0, status: m.status,
+          expiry: m.nearestExpiry ? new Date(m.nearestExpiry).toLocaleDateString() : '',
+        })),
+        totals: { value: medsVm.stockValue, retail: medsVm.retailValue },
+      }]
+    } else if (type === 'revenue' && data) {
+      const sessions = data.sessions ?? []
+      const clinical = sessions.reduce((a: number, x: any) => a + (Number(x.amountCharged) || 0), 0)
+      const collected = sessions.reduce((a: number, x: any) => a + (Number(x.amountPaid) || 0), 0)
+      const medRev = data.medSummary?.revenue ?? 0
+      const cogs = data.medSummary?.costOfGoods ?? 0
+      const exp = data.expSummary?.totalExpenses ?? 0
+      const byCat = normalizeByCategory(data.expSummary?.byCategory)
+      base.sections = [
+        {
+          heading: L('Profit & Loss', 'الأرباح والخسائر'),
+          columns: [
+            { key: 'line', label: L('Line', 'البند') },
+            { key: 'amount', label: L('Amount', 'المبلغ'), isMoney: true },
+          ],
+          rows: [
+            { line: L('Clinical revenue', 'إيراد العيادة'), amount: clinical },
+            { line: L('Medicine revenue', 'إيراد الأدوية'), amount: medRev },
+            { line: L('Medicine COGS', 'تكلفة الأدوية'), amount: -cogs },
+            { line: L('Gross profit', 'إجمالي الربح'), amount: clinical + (medRev - cogs) },
+            { line: L('Total expenses', 'إجمالي المصاريف'), amount: -exp },
+            { line: L('Net income', 'صافي الدخل'), amount: clinical + (medRev - cogs) - exp },
+            { line: L('Collected (clinical)', 'المُحصّل (العيادة)'), amount: collected },
+          ],
+        },
+        {
+          heading: L('Expense Breakdown', 'تفصيل المصاريف'),
+          columns: [
+            { key: 'category', label: L('Category', 'الفئة') },
+            { key: 'amount', label: L('Amount', 'المبلغ'), isMoney: true },
+          ],
+          rows: byCat.map(c => ({ category: c.category, amount: c.total })),
+          totals: { amount: byCat.reduce((a, c) => a + c.total, 0) },
+        },
+      ]
+    }
+    return base
+  }, [type, language, rangeLabel, kpis, sessionsVm, medsVm, data, range.from, range.to, fileStamp])
+
+  async function handleExportDoc(format: 'pdf' | 'excel') {
+    setExportingDoc(format)
+    try {
+      const payload = await buildPayload()
+      const res = await exportReport(format, payload)
+      if (res?.success) toast.success(format === 'pdf' ? (t('vetReportPdfSaved') || 'PDF saved') : (t('vetReportExcelSaved') || 'Excel saved'))
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Export failed')
+    } finally {
+      setExportingDoc(null)
+    }
+  }
+
   const Title = TITLES[type]
 
   return (
@@ -379,6 +534,14 @@ export default function VetReportBuilder({ type }: { type: ReportType }) {
           <button onClick={handleExport} disabled={loading || exporting}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50">
             {exporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {t('exportCSV') || 'Export CSV'}
+          </button>
+          <button onClick={() => handleExportDoc('pdf')} disabled={loading || exportingDoc !== null}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors disabled:opacity-50">
+            {exportingDoc === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} {t('vetExportPdf') || 'PDF'}
+          </button>
+          <button onClick={() => handleExportDoc('excel')} disabled={loading || exportingDoc !== null}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg transition-colors disabled:opacity-50">
+            {exportingDoc === 'excel' ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />} {t('vetExportExcel') || 'Excel'}
           </button>
         </div>
       </div>

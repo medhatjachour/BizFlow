@@ -343,12 +343,12 @@ async function main() {
   const adminHash    = await bcrypt.hash("setup123", 10)
 
   const users = await Promise.all([
-    prisma.user.create({ data: { username: "setup",   passwordHash: adminHash,    role: "admin",   fullName: "Setup Admin",       isActive: true } }),
-    prisma.user.create({ data: { username: "manager", passwordHash: passwordHash, role: "admin",   fullName: "Bakery Manager",    isActive: true } }),
-    prisma.user.create({ data: { username: "baker1",  passwordHash: passwordHash, role: "cashier", fullName: "Head Baker",        isActive: true } }),
-    prisma.user.create({ data: { username: "baker2",  passwordHash: passwordHash, role: "cashier", fullName: "Pastry Chef",       isActive: true } }),
-    prisma.user.create({ data: { username: "sales1",  passwordHash: passwordHash, role: "cashier", fullName: "Sales Associate 1", isActive: true } }),
-    prisma.user.create({ data: { username: "sales2",  passwordHash: passwordHash, role: "cashier", fullName: "Sales Associate 2", isActive: true } }),
+    prisma.user.upsert({ where: { username: "setup" },   update: {}, create: { username: "setup",   passwordHash: adminHash,    role: "admin",   fullName: "Setup Admin",       isActive: true } }),
+    prisma.user.upsert({ where: { username: "manager" }, update: {}, create: { username: "manager", passwordHash: passwordHash, role: "admin",   fullName: "Bakery Manager",    isActive: true } }),
+    prisma.user.upsert({ where: { username: "baker1" },  update: {}, create: { username: "baker1",  passwordHash: passwordHash, role: "cashier", fullName: "Head Baker",        isActive: true } }),
+    prisma.user.upsert({ where: { username: "baker2" },  update: {}, create: { username: "baker2",  passwordHash: passwordHash, role: "cashier", fullName: "Pastry Chef",       isActive: true } }),
+    prisma.user.upsert({ where: { username: "sales1" },  update: {}, create: { username: "sales1",  passwordHash: passwordHash, role: "cashier", fullName: "Sales Associate 1", isActive: true } }),
+    prisma.user.upsert({ where: { username: "sales2" },  update: {}, create: { username: "sales2",  passwordHash: passwordHash, role: "cashier", fullName: "Sales Associate 2", isActive: true } }),
   ])
   console.log(`${users.length} users\n`)
 

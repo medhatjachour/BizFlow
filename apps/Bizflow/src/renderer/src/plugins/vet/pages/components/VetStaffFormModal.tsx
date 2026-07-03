@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Loader2, User, Phone, Mail, Stethoscope, Briefcase } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import DateField from '@renderer/components/DateField'
 
 export interface VetStaff {
   id:             string
@@ -276,10 +277,9 @@ export default function VetStaffFormModal({ staff, onSave, onClose }: Props) {
                 <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                   {t('hireDate')||'Hire Date'}
                 </label>
-                <input
-                  type="date"
+                <DateField
                   value={form.hireDate}
-                  onChange={set('hireDate')}
+                  onChange={v => set('hireDate')({ target: { value: v } } as any)}
                   className={inputCls}
                 />
               </div>

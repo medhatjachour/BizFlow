@@ -11,9 +11,11 @@
 import { registerVetStatsOverviewHandlers } from './stats.overview'
 import { registerVetStatsClinicalHandlers } from './stats.clinical'
 import { registerVetStatsSalesHandlers } from './stats.sales'
+import { registerVetStatsInventoryHandlers } from './stats.inventory'
 
 export function registerVetStatsHandlers(prisma: any) {
   registerVetStatsOverviewHandlers(prisma)
   registerVetStatsClinicalHandlers(prisma)
   registerVetStatsSalesHandlers(prisma)
+  registerVetStatsInventoryHandlers(prisma)
 }

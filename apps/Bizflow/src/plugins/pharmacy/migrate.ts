@@ -18,7 +18,8 @@ export const PHARMACY_TABLES = [
   'PharmacySupplier',
   'PharmacyPurchaseOrder',
   'PharmacyPurchaseOrderItem',
-  'PharmacyCustomer'
+  'PharmacyCustomer',
+  'PharmacyStockAudit'
 ]
 
 export async function ensurePharmacySchema(
@@ -26,18 +27,57 @@ export async function ensurePharmacySchema(
   dbUrl: string,
   cwd: string
 ): Promise<void> {
-  const missing = await getMissingTables(prisma)
+  // 1) CLI-free creation of tables added in newer versions (works in packaged
+  //    installs where `prisma db push` is unavailable; never loses data).
+  await ensureNewTables(prisma)
 
-  if (missing.length === 0) {
-    log.info('✅ Pharmacy tables already exist — no migration needed.')
-    await applyColumnMigrations(prisma)
-    return
+  // 2) Best-effort schema push for any other missing tables (dev only).
+  const missing = await getMissingTables(prisma)
+  if (missing.length > 0) {
+    log.info(`🔧 Missing pharmacy tables: [${missing.join(', ')}] — attempting db push…`)
+    try {
+      await runDbPush(dbUrl, cwd)
+    } catch (err) {
+      log.warn('⚠️  db push unavailable (packaged install?) — relying on runtime table/column creation:', err)
+    }
+  } else {
+    log.info('✅ Pharmacy tables already exist.')
   }
 
-  log.info(`🔧 Missing pharmacy tables: [${missing.join(', ')}] — running db push…`)
-  await runDbPush(dbUrl, cwd)
+  // 3) Idempotent column additions (always run, even if a push above failed).
   await applyColumnMigrations(prisma)
-  log.info('✅ Pharmacy schema applied successfully')
+  log.info('✅ Pharmacy schema ensured')
+}
+
+/**
+ * Create tables introduced in newer versions, idempotently, via raw SQL. The
+ * production-safe equivalent of `prisma db push` for additive table changes.
+ * DDL mirrors src/plugins/pharmacy/schema.prisma.
+ */
+async function ensureNewTables(prisma: any): Promise<void> {
+  const statements: string[] = [
+    `CREATE TABLE IF NOT EXISTS "PharmacyStockAudit" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "productId" TEXT NOT NULL,
+      "batchId" TEXT,
+      "batchNumber" TEXT,
+      "action" TEXT NOT NULL DEFAULT 'edit_batch',
+      "changes" TEXT,
+      "note" TEXT,
+      "userId" TEXT,
+      "userName" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE INDEX IF NOT EXISTS "PharmacyStockAudit_productId_idx" ON "PharmacyStockAudit"("productId")`,
+    `CREATE INDEX IF NOT EXISTS "PharmacyStockAudit_batchId_idx" ON "PharmacyStockAudit"("batchId")`,
+  ]
+  for (const sql of statements) {
+    try {
+      await prisma.$executeRawUnsafe(sql)
+    } catch (err) {
+      log.warn('⚠️  ensureNewTables statement skipped:', err)
+    }
+  }
 }
 
 /**

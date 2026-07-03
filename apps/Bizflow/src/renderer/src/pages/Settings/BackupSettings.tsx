@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Database, Download, HardDrive, Trash2, RefreshCw, RotateCcw, Clock, MapPin, AlertTriangle } from 'lucide-react'
+import { Database, Download, HardDrive, Trash2, RefreshCw, RotateCcw, Clock, MapPin, AlertTriangle, Power, FolderOpen } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useToast } from '../../contexts/ToastContext'
 import type { BackupSettings } from './types'
@@ -31,8 +31,58 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
   const [restoringPath, setRestoringPath] = useState<string | null>(null)
   const [deletingPath, setDeletingPath] = useState<string | null>(null)
 
+  // Backup-on-close preferences (stored in the main process, not localStorage)
+  const [promptOnClose, setPromptOnClose] = useState(true)
+  const [closeBackupDir, setCloseBackupDir] = useState<string | null>(null)
+
   const handleChange = (field: keyof BackupSettings, value: boolean | string | number) => {
     onChange({ ...settings, [field]: value })
+  }
+
+  // Load backup-on-close prefs once on mount
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const result = await window.electron.ipcRenderer.invoke('backup:get-close-prefs')
+        if (result?.success) {
+          setPromptOnClose(result.data.promptOnClose !== false)
+          setCloseBackupDir(result.data.backupDir ?? null)
+        }
+      } catch (error) {
+        logger.error('Failed to load close-backup prefs:', error)
+      }
+    })()
+  }, [])
+
+  const saveClosePrefs = async (next: { promptOnClose?: boolean; backupDir?: string | null }) => {
+    try {
+      const result = await window.electron.ipcRenderer.invoke('backup:set-close-prefs', next)
+      if (!result?.success) {
+        toast.error(result?.error || 'Failed to save preference')
+      }
+    } catch (error) {
+      logger.error('Failed to save close-backup prefs:', error)
+      toast.error('Failed to save preference')
+    }
+  }
+
+  const handleTogglePromptOnClose = async () => {
+    const next = !promptOnClose
+    setPromptOnClose(next)
+    await saveClosePrefs({ promptOnClose: next })
+  }
+
+  const handleChooseCloseDir = async () => {
+    try {
+      const dirResult = await window.electron.ipcRenderer.invoke('backup:select-directory')
+      if (!dirResult.success) return // user cancelled
+      setCloseBackupDir(dirResult.data.path)
+      await saveClosePrefs({ backupDir: dirResult.data.path })
+      toast.success('Backup folder updated')
+    } catch (error) {
+      logger.error('Failed to choose folder:', error)
+      toast.error('Failed to choose folder')
+    }
   }
 
   // Load all backups from the registry (cross-location)
@@ -108,11 +158,22 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
     }
   }
 
+  // Restore from a .db file chosen anywhere on the PC (not just the registry list)
+  const handleRestoreFromFile = async () => {
+    try {
+      const fileResult = await window.electron.ipcRenderer.invoke('backup:select-file')
+      if (!fileResult.success) return // user cancelled
+      await handleRestore(fileResult.data.path)
+    } catch (error) {
+      logger.error('Failed to pick backup file:', error)
+      toast.error('Failed to select file')
+    }
+  }
+
   const handleDeleteBackup = async (backupPath: string) => {
     if (!confirm('Are you sure you want to delete this backup? This cannot be undone.')) {
       return
     }
-
     try {
       setDeletingPath(backupPath)
       const result = await window.electron.ipcRenderer.invoke('backup:delete', backupPath)
@@ -250,6 +311,65 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
         )}
       </div>
 
+      {/* Backup when closing the app */}
+      <div className="glass-card p-6 space-y-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center">
+              <Power size={20} />
+            </div>
+            <div>
+              <h4 className="font-semibold text-slate-900 dark:text-white">
+                {t('backupOnClose') || 'Back up when closing the app'}
+              </h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                {t('backupOnCloseDesc') ||
+                  'Ask to save a backup every time you close BizFlow.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleTogglePromptOnClose}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              promptOnClose ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                promptOnClose ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
+        {promptOnClose && (
+          <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              {t('backupFolder') || 'Backup folder'}
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0 flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 bg-white dark:bg-slate-800">
+                <MapPin size={15} className="text-slate-400 shrink-0" />
+                <span className="text-sm text-slate-600 dark:text-slate-300 truncate">
+                  {closeBackupDir || (t('defaultDocumentsFolder') || 'Default (Documents/BizFlow Backups)')}
+                </span>
+              </div>
+              <button
+                onClick={handleChooseCloseDir}
+                className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm shrink-0"
+              >
+                <FolderOpen size={15} />
+                {t('change') || 'Change'}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              {t('backupOnCloseHint') ||
+                'When you close the app you can choose to save a backup here, quit without one, or cancel.'}
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* All Backups (registry) */}
       <div className="glass-card p-6 space-y-4">
         <div className="flex items-center justify-between">
@@ -261,14 +381,24 @@ export default function BackupSettingsPanel({ settings, onChange }: Props) {
               Every backup ever created by this app, across all locations
             </p>
           </div>
-          <button
-            onClick={loadBackups}
-            disabled={loading}
-            className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm"
-          >
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleRestoreFromFile}
+              className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm"
+              title="Restore from a backup file saved anywhere on this PC"
+            >
+              <RotateCcw size={15} />
+              {t('restoreFromFile') || 'Restore from file…'}
+            </button>
+            <button
+              onClick={loadBackups}
+              disabled={loading}
+              className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm"
+            >
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {loading ? (

@@ -192,6 +192,11 @@ export function registerPharmacyProductHandlers(prisma: any): void {
       ])
       if (!product) throw new Error('Product not found')
 
+      // Manual edit audit trail (who/when/what); tolerate missing table.
+      const audits = await prisma.pharmacyStockAudit
+        .findMany({ where: { productId: id }, orderBy: { createdAt: 'desc' } })
+        .catch(() => [])
+
       // Current stock + value from active batches
       const active = batches.filter((b: any) => b.status === 'active')
       const currentStock = active.reduce((s: number, b: any) => s + (b.quantity || 0), 0)
@@ -215,6 +220,13 @@ export function registerPharmacyProductHandlers(prisma: any): void {
       for (const s of recentItems) {
         if (dateFilter(new Date(s.sale.saleDate))) {
           events.push({ type: 'sold', date: s.sale.saleDate, qty: s.quantity, saleUnit: s.saleUnit, unitPrice: s.unitPrice, value: s.lineTotal, refundedQty: s.refundedQty, saleNumber: s.sale.saleNumber, customer: s.sale.customerName })
+        }
+      }
+      for (const au of audits as any[]) {
+        if (dateFilter(new Date(au.createdAt))) {
+          let changes: any[] = []
+          try { changes = au.changes ? JSON.parse(au.changes) : [] } catch { changes = [] }
+          events.push({ type: 'edited', date: au.createdAt, batchNumber: au.batchNumber ?? null, action: au.action ?? 'edit_batch', changes, userName: au.userName ?? null, note: au.note ?? null })
         }
       }
       events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())

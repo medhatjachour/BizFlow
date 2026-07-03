@@ -54,6 +54,9 @@ const OWNER_FIRST = [
   'David','Daniel','Joseph','Michael','James','Robert','John',
   'Carlos','Maria','Diego','Sofia','Luis','Emma','William','Isabella',
   'Benjamin','Sophia','Lucas','Mia','Henry','Charlotte','Alexander',
+  // Arabic (bilingual dataset)
+  'أحمد','محمد','علي','عمر','حسن','إبراهيم','خالد','يوسف','سعيد','ماجد',
+  'سارة','لينا','نور','رانيا','دينا','مايا','ليلى','ياسمين','فاطمة','مريم','هبة','زينب',
 ]
 
 const OWNER_LAST = [
@@ -63,6 +66,9 @@ const OWNER_LAST = [
   'Akl','Chaaban','Daher','Fawaz','Ghanem','Hamdan','Jamal',
   'Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis',
   'Martinez','Anderson','Taylor','Thomas','Hernandez','Moore','Jackson',
+  // Arabic (bilingual dataset)
+  'الحسن','العمر','المنصور','الخطيب','النجار','الحدّاد','السيد','عبدالله',
+  'الشامي','القاضي','الزعبي','الراشد','العتيبي','الدوسري','القحطاني','الغامدي',
 ]
 
 const PET_NAMES = [
@@ -72,6 +78,9 @@ const PET_NAMES = [
   'Simba','Luna','Oscar','Nala','Tiger','Missy','Sammy','Gracie','Thor','Abby',
   'Koda','Zoe','Buster','Ruby','Ace','Lady','Rex','Piper','Shadow','Chloe',
   'Gizmo','Honey','Harley','Dixie','Dexter','Lulu','Scout','Sasha','Bruno','Lexi',
+  // Arabic (bilingual dataset)
+  'لولو','بسبس','نمر','مشمش','قطقوط','زعتر','سكر','عسل','فلة','ريمي',
+  'سيمو','جوجو','كوكو','توتو','ميمي','بوبي','سنفور','فستق','بطوط','خوخة',
 ]
 
 const DOG_BREEDS  = ['Labrador Retriever','German Shepherd','Golden Retriever','Bulldog','Poodle',
@@ -85,7 +94,8 @@ const PET_COLORS  = ['Black','White','Brown','Golden','Gray','Cream','Orange','S
   'Tricolor','Tabby','Calico','Brindle','Merle','Buff','Blue-Gray',]
 
 const AREAS = ['Riyadh North','Riyadh South','Jeddah','Dammam','Khobar','Dubai','Abu Dhabi',
-  'Sharjah','Cairo','Alexandria','Hamra','Achrafieh','Verdun','Jounieh','Zalka',]
+  'Sharjah','Cairo','Alexandria','Hamra','Achrafieh','Verdun','Jounieh','Zalka',
+  'الرياض','جدة','الدمام','مكة','المدينة','حي النخيل','حي الورود','حي الياسمين',]
 
 // ─── clinical data pools ──────────────────────────────────────────────────────
 
@@ -115,6 +125,17 @@ const VET_COMPLAINTS = [
   'Nail trimming and ear cleaning',
   'Limping – rear leg after play',
   'Swollen lymph nodes',
+  // Arabic (bilingual dataset)
+  'فحص دوري سنوي',
+  'فقدان الشهية لمدة 3 أيام',
+  'خمول وضعف عام',
+  'حكة وتهيج جلدي',
+  'عرج في القائمة الأمامية',
+  'قيء بعد الأكل',
+  'إسهال منذ يومين',
+  'إفرازات من العين',
+  'رجّة الأذن ورائحة كريهة',
+  'ألم في الأسنان وسيلان لعاب',
 ]
 
 const VET_DIAGNOSES = [
@@ -142,6 +163,17 @@ const VET_DIAGNOSES = [
   'Parvovirus – supportive care initiated',
   'Luxating patella – Grade II',
   'Corneal ulcer – antibiotic eye drops',
+  // Arabic (bilingual dataset)
+  'سليم — لا توجد ملاحظات',
+  'التهاب الأذن الخارجية — بكتيري',
+  'أمراض الأسنان — تراكم الجير',
+  'التهاب معدة وأمعاء حاد',
+  'التهاب جلدي تحسسي',
+  'سمنة — بدء نظام غذائي',
+  'عدوى المسالك البولية',
+  'عدوى تنفسية علوية',
+  'التهاب جلدي قيحي',
+  'ديدان داخلية — علاج بدأ',
 ]
 
 const VET_MEDICATIONS = [
@@ -374,9 +406,37 @@ function buildMedicineCatalogue(target: number): MedDef[] {
 
 function round2(n: number) { return Math.round(n * 100) / 100 }
 
-const MEDICINE_CATALOGUE: MedDef[] = buildMedicineCatalogue(Number(process.env.VET_SEED_MEDICINES ?? 500))
+// Arabic-named medicines so store / sales / inventory reports show Arabic data.
+const ARABIC_DRUGS: MedDef[] = [
+  { name: 'أموكسيسيلين 500 مجم', category: 'antibiotic', unit: 'علبة', minimumStock: 80, description: 'مضاد حيوي واسع الطيف', unitPrice: 0.55, costPerUnit: 0.24, subUnit: 'قرص', subUnitsPerContainer: 20 },
+  { name: 'ميترونيدازول 250 مجم', category: 'antibiotic', unit: 'علبة', minimumStock: 70, description: 'مضاد حيوي للالتهابات المعوية', unitPrice: 0.60, costPerUnit: 0.26, subUnit: 'قرص', subUnitsPerContainer: 20 },
+  { name: 'سيفالكسين 500 مجم', category: 'antibiotic', unit: 'علبة', minimumStock: 60, description: 'مضاد حيوي سيفالوسبورين', unitPrice: 0.80, costPerUnit: 0.34, subUnit: 'كبسولة', subUnitsPerContainer: 16 },
+  { name: 'دوكسيسيكلين 100 مجم', category: 'antibiotic', unit: 'علبة', minimumStock: 50, description: 'مضاد حيوي تتراسيكلين', unitPrice: 1.80, costPerUnit: 0.78, subUnit: 'كبسولة', subUnitsPerContainer: 10 },
+  { name: 'إنروفلوكساسين 68 مجم', category: 'antibiotic', unit: 'علبة', minimumStock: 55, description: 'مضاد حيوي فلوروكينولون', unitPrice: 2.50, costPerUnit: 1.10, subUnit: 'قرص', subUnitsPerContainer: 10 },
+  { name: 'ميلوكسيكام شراب 15 مل', category: 'analgesic', unit: 'زجاجة', minimumStock: 18, description: 'مسكن ومضاد التهاب (شراب)', unitPrice: 12, costPerUnit: 5.20, subUnit: 'مل', subUnitsPerContainer: 15 },
+  { name: 'كاربروفين 75 مجم', category: 'analgesic', unit: 'علبة', minimumStock: 40, description: 'مسكن لالتهاب المفاصل', unitPrice: 0.95, costPerUnit: 0.40, subUnit: 'قرص', subUnitsPerContainer: 14 },
+  { name: 'جابابنتين 100 مجم', category: 'analgesic', unit: 'علبة', minimumStock: 45, description: 'لتسكين الألم العصبي', unitPrice: 0.60, costPerUnit: 0.22, subUnit: 'كبسولة', subUnitsPerContainer: 30 },
+  { name: 'بريدنيزولون 5 مجم', category: 'general', unit: 'علبة', minimumStock: 60, description: 'كورتيكوستيرويد مضاد للالتهاب', unitPrice: 0.50, costPerUnit: 0.18, subUnit: 'قرص', subUnitsPerContainer: 30 },
+  { name: 'أوميبرازول 20 مجم', category: 'general', unit: 'علبة', minimumStock: 50, description: 'مثبط مضخة البروتون للقرحة', unitPrice: 0.65, costPerUnit: 0.24, subUnit: 'كبسولة', subUnitsPerContainer: 14 },
+  { name: 'فاموتيدين 20 مجم', category: 'general', unit: 'علبة', minimumStock: 55, description: 'حاصرات H2 لحموضة المعدة', unitPrice: 0.55, costPerUnit: 0.20, subUnit: 'قرص', subUnitsPerContainer: 20 },
+  { name: 'فوروسيميد 40 مجم', category: 'general', unit: 'علبة', minimumStock: 50, description: 'مدر للبول لوذمة القلب', unitPrice: 0.40, costPerUnit: 0.15, subUnit: 'قرص', subUnitsPerContainer: 20 },
+  { name: 'شراب أموكسيسيلين 60 مل', category: 'antibiotic', unit: 'زجاجة', minimumStock: 16, description: 'مضاد حيوي شراب للفم', unitPrice: 18, costPerUnit: 7.20, subUnit: 'مل', subUnitsPerContainer: 60 },
+  { name: 'محلول ملحي 0.9% 500 مل', category: 'general', unit: 'كيس', minimumStock: 20, description: 'محلول وريدي متساوي التوتر', unitPrice: 9, costPerUnit: 3.50, subUnit: 'مل', subUnitsPerContainer: 500 },
+  { name: 'ديكساميثازون حقن 50 مل', category: 'general', unit: 'أمبولة', minimumStock: 14, description: 'كورتيكوستيرويد حقن', unitPrice: 15, costPerUnit: 6, subUnit: 'مل', subUnitsPerContainer: 50 },
+  { name: 'فيتامين ب12 حقن 100 مل', category: 'supplement', unit: 'أمبولة', minimumStock: 18, description: 'مكمل سيانوكوبالامين حقن', unitPrice: 20, costPerUnit: 8, subUnit: 'مل', subUnitsPerContainer: 100 },
+  { name: 'لقاح السعار', category: 'vaccine', unit: 'أمبولة', minimumStock: 30, description: 'لقاح داء الكَلَب لمدة 3 سنوات', unitPrice: 25, costPerUnit: 12, subUnit: null, subUnitsPerContainer: null },
+  { name: 'لقاح رباعي DHPP', category: 'vaccine', unit: 'أمبولة', minimumStock: 28, description: 'لقاح مركّب رباعي للكلاب', unitPrice: 22, costPerUnit: 10.5, subUnit: null, subUnitsPerContainer: null },
+  { name: 'مرهم العين تيراميسين', category: 'antibiotic', unit: 'أنبوب', minimumStock: 20, description: 'مرهم عيني مضاد حيوي', unitPrice: 11, costPerUnit: 4.50, subUnit: null, subUnitsPerContainer: null },
+  { name: 'كريم سلفاديازين الفضة', category: 'general', unit: 'أنبوب', minimumStock: 18, description: 'كريم مضاد للبكتيريا للحروق والجروح', unitPrice: 9, costPerUnit: 3.80, subUnit: null, subUnitsPerContainer: null },
+]
 
-const MED_SUPPLIERS = ['VetSupply Co.','MedVet Pharma','AnimalHealth Plus','VetPharm Direct','BioVet Solutions','GlobalVet Imports','PharmaVet Arabia','MedAnimal Supply']
+const MED_TARGET = Number(process.env.VET_SEED_MEDICINES ?? 500)
+const MEDICINE_CATALOGUE: MedDef[] = [
+  ...ARABIC_DRUGS,
+  ...buildMedicineCatalogue(Math.max(0, MED_TARGET - ARABIC_DRUGS.length)),
+]
+
+const MED_SUPPLIERS = ['VetSupply Co.','MedVet Pharma','AnimalHealth Plus','VetPharm Direct','BioVet Solutions','GlobalVet Imports','PharmaVet Arabia','MedAnimal Supply','شركة الرعاية البيطرية','مؤسسة الدواء البيطري','مستلزمات الحيوان العربية','فارما فيت العربية']
 
 // Unit-appropriate quantity ranges for realistic dispensing amounts
 const UNIT_QTY: Record<string, [number, number]> = {
@@ -523,7 +583,11 @@ type SeedMedicineSale = {
 
 type ResultTemplate = { fileName: string; filePath: string; fileSize: number }
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+type SeedMedicineAudit = {
+  id: string; medicineId: string; batchId: string | null; batchNumber: string | null
+  action: string; changes: string | null; note: string | null
+  userId: string | null; userName: string | null; createdAt: Date
+}// ─── helpers ──────────────────────────────────────────────────────────────────
 
 function uuid()                     { return crypto.randomUUID() }
 function pick<T>(items: readonly T[]): T { return items[Math.floor(Math.random() * items.length)] }
@@ -917,7 +981,11 @@ function buildMedicines(): { medicines: SeedMedicine[]; batches: SeedMedicineBat
     const hasExpired   = chance(0.12)   // ~12% have one expired batch
     const hasNearExp   = !hasExpired && chance(0.18) // ~18% expiring ≤30d
     const isLowStock   = chance(0.10)   // ~10% are low on stock
+    // Some sub-unit medicines are left with a partially-used container only
+    // (e.g. 0.3 bottle = 30 ml) so the POS can show the leftover in sub-units.
+    const subAlmostOut = !!(med.subUnit && med.subUnitsPerContainer) && !hasExpired && chance(0.25)
     const batchCount   = rand(2, 4)
+    const medBatchList: SeedMedicineBatch[] = []
 
     for (let b = 0; b < batchCount; b++) {
       let expiryDate:  Date
@@ -956,7 +1024,7 @@ function buildMedicines(): { medicines: SeedMedicine[]; batches: SeedMedicineBat
       // Selling price ~ catalogue unitPrice with a little batch variation
       const sellingPrice = round2(med.unitPrice * randFloat(0.95, 1.15))
 
-      batches.push({
+      medBatchList.push({
         id: uuid(), medicineId: medicine.id,
         batchNumber:  chance(0.9) ? `LOT-${rand(10_000, 99_999)}` : null,
         supplier:     chance(0.85) ? pick(MED_SUPPLIERS) : null,
@@ -966,6 +1034,18 @@ function buildMedicines(): { medicines: SeedMedicine[]; batches: SeedMedicineBat
         receivedDate, notes: batchNotes,
         createdAt: receivedDate, updatedAt: now,
       })
+    }
+
+    if (subAlmostOut && medBatchList.length) {
+      // Keep just one almost-empty container (0.15–0.85 of a container) so the
+      // medicine's total stock is below 1 and the leftover shows in sub-units.
+      const keep = medBatchList[0]
+      keep.quantity   = Math.round(randFloat(0.15, 0.85) * 100) / 100
+      keep.expiryDate = addDays(now, rand(60, 400))
+      keep.notes      = 'Last container — partial stock'
+      batches.push(keep)
+    } else {
+      batches.push(...medBatchList)
     }
   }
 
@@ -1141,10 +1221,48 @@ function buildMedicineSales(
   return sales
 }
 
+function buildMedicineAudits(
+  medicines: SeedMedicine[],
+  batches:   SeedMedicineBatch[],
+  editorNames: string[],
+): SeedMedicineAudit[] {
+  const audits: SeedMedicineAudit[] = []
+  const now = new Date()
+  const editors = editorNames.length ? editorNames : ['setup']
+
+  // Record a manual edit on ~15% of batches so the medicine history shows
+  // "Edited" events (who / when / what).
+  for (const b of batches) {
+    if (!chance(0.15)) continue
+    const createdAt = randDate(b.receivedDate, now)
+    const editor    = pick(editors)
+    const field     = pick(['quantity', 'sellingPrice', 'costPerUnit'] as const)
+
+    let changes: Array<{ field: string; label: string; from: number; to: number }>
+    if (field === 'quantity') {
+      const from = Math.round((b.quantity + rand(1, 8)) * 100) / 100
+      changes = [{ field: 'quantity', label: 'Quantity', from, to: b.quantity }]
+    } else if (field === 'sellingPrice') {
+      const to = b.sellingPrice ?? 0
+      changes = [{ field: 'sellingPrice', label: 'Selling price', from: round2(to * randFloat(0.8, 0.95)), to }]
+    } else {
+      changes = [{ field: 'costPerUnit', label: 'Cost/unit', from: round2(b.costPerUnit * randFloat(0.85, 0.98)), to: b.costPerUnit }]
+    }
+
+    audits.push({
+      id: uuid(), medicineId: b.medicineId, batchId: b.id, batchNumber: b.batchNumber,
+      action: 'edit_batch', changes: JSON.stringify(changes), note: null,
+      userId: null, userName: editor, createdAt,
+    })
+  }
+  return audits
+}
+
 // ─── clear + main ─────────────────────────────────────────────────────────────
 
 async function clearVetData() {
   console.log('🗑   Clearing existing vet data...')
+  try { await prisma.vetMedicineAudit.deleteMany({}) } catch { /* table may not exist yet */ }
   await prisma.vetMedicineSale.deleteMany({})
   await prisma.vetMedicineBatch.deleteMany({})
   await prisma.vetMedicine.deleteMany({})
@@ -1287,13 +1405,25 @@ async function main() {
   const ownerRows = await prisma.vetOwner.findMany({ select: { id: true, name: true }, take: 1000 }) as { id: string; name: string }[]
 
   const medSales = buildMedicineSales(medicines, medBatches, patientMap, ownerRows)
+  const medAudits = buildMedicineAudits(medicines, medBatches, staff.map(s => s.name))
 
   await prisma.$transaction(async (tx) => {
     await tx.vetMedicine.createMany({ data: medicines })
     if (medBatches.length) await tx.vetMedicineBatch.createMany({ data: medBatches })
     if (medSales.length)   await tx.vetMedicineSale.createMany({ data: medSales })
   }, { timeout: 120_000 })
-  console.log(`✅  Medicines=${medicines.length}  Batches=${medBatches.length}  Sales=${medSales.length}\n`)
+  // Audit rows live outside the main transaction so a missing table (older DB
+  // before the audit model) can never roll back the core medicine data.
+  let auditsWritten = 0
+  if (medAudits.length) {
+    try {
+      await prisma.vetMedicineAudit.createMany({ data: medAudits })
+      auditsWritten = medAudits.length
+    } catch (e) {
+      console.warn('   ⚠️  Skipped medicine audit seed (regenerate the Prisma client):', (e as Error).message)
+    }
+  }
+  console.log(`✅  Medicines=${medicines.length}  Batches=${medBatches.length}  Sales=${medSales.length}  Audits=${auditsWritten}\n`)
 
   const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1)
   console.log('\n\n✅  Vet clinic seed complete\n')
@@ -1309,6 +1439,7 @@ async function main() {
   console.log(`  Medicines      : ${medicines.length}`)
   console.log(`  Med Batches    : ${medBatches.length}`)
   console.log(`  Med Sales      : ${medSales.length}`)
+  console.log(`  Med Audits     : ${auditsWritten}`)
   console.log(`  Result files   : ${resultTemplates.length} generated PDFs`)
   console.log(`  Elapsed        : ${elapsed}s\n`)
 }

@@ -60,6 +60,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showSetup, setShowSetup] = useState(false)
   const auth = useAuth()
   const navigate = useNavigate()
 
@@ -75,6 +76,15 @@ export default function Login() {
     if (auth.user) navigate(getLandingRoute(auth.user.role), { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.user])
+
+  // Only show the "Use Setup Account" shortcut while the default setup user exists.
+  useEffect(() => {
+    let active = true
+    ;(window as any).api?.auth?.setupExists?.()
+      .then((v: boolean) => { if (active) setShowSetup(!!v) })
+      .catch(() => { if (active) setShowSetup(false) })
+    return () => { active = false }
+  }, [])
 
   if (isExpired) return <ExpiredScreen />
 
@@ -326,6 +336,8 @@ export default function Login() {
             </button>
           </form>
 
+          {showSetup && (
+          <>
           {/* Setup Account Info */}
           <div className="mt-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30">
             <div className="flex items-start gap-3">
@@ -370,6 +382,8 @@ export default function Login() {
               {t('useSetupAccount')}
             </span>
           </button>
+          </>
+          )}
 
           {/* Footer */}
           <div className="mt-8 text-center">

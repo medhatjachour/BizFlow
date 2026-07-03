@@ -79,18 +79,22 @@ export default function VetFinanceSection() {
   const [summary,   setSummary]   = useState<FinanceSummary | null>(null)
   const [debtors,   setDebtors]   = useState<Debtor[]>([])
   const [expenses,  setExpenses]  = useState<any[]>([])
+  const [salesBreak, setSalesBreak] = useState<any>(null)
+  const [turnover,  setTurnover]  = useState<any>(null)
   const [loading,   setLoading]   = useState(false)
-  const [tab,       setTab]       = useState<'overview' | 'debtors' | 'expenses'>('overview')
+  const [tab,       setTab]       = useState<'overview' | 'medicines' | 'inventory' | 'debtors' | 'expenses'>('overview')
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const { from, to } = range
-      const [expSum, medSum, debtorRes, expList] = await Promise.all([
+      const [expSum, medSum, debtorRes, expList, salesBd, turn] = await Promise.all([
         window.api.vet?.expenses?.summary({ from, to }).catch(() => null),
         window.api.vet?.medicines.getSummary({ from: toStart(from), to: toEnd(to) }).catch(() => null),
         window.api.vet?.patients?.getDebtors({ skip: 0, take: 500 }).catch(() => ({ data: [] })),
         window.api.vet?.expenses?.getAll({ from, to, skip: 0, take: 500 }).catch(() => ({ data: [] })),
+        window.api.vet?.stats.salesBreakdown({ from: toStart(from), to: toEnd(to) }).catch(() => null),
+        window.api.vet?.stats.inventoryTurnover({ from: toStart(from), to: toEnd(to) }).catch(() => null),
       ])
 
       const clinicalRevenue   = Number(expSum?.revenue)   || 0
@@ -122,6 +126,8 @@ export default function VetFinanceSection() {
           .sort((a: Debtor, b: Debtor) => b.outstanding - a.outstanding)
       )
       setExpenses((expList as any)?.data ?? [])
+      setSalesBreak(salesBd ?? null)
+      setTurnover(turn ?? null)
     } catch (err: any) {
       toast.error(err.message ?? 'Failed to load finance data')
     } finally {
@@ -133,6 +139,8 @@ export default function VetFinanceSection() {
 
   const TABS = [
     { key: 'overview' as const, label: t('overview')  || 'Overview',  icon: BarChart3 },
+    { key: 'medicines' as const, label: t('vetStoreSales') || 'Store & Medicines', icon: Pill },
+    { key: 'inventory' as const, label: t('vetTurnover') || 'Inventory & Turnover', icon: Activity },
     { key: 'debtors'  as const, label: t('vetDebtors') || 'Debtors',   icon: Users },
     { key: 'expenses' as const, label: t('vetExpenses') || 'Expenses', icon: Receipt },
   ]
@@ -326,6 +334,148 @@ export default function VetFinanceSection() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Store & Medicines tab */}
+          {tab === 'medicines' && summary && (
+            <div className="space-y-5">
+              {/* Medicine KPIs */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {[
+                  { label: t('vetMedicineRevenue') || 'Medicine revenue', value: fmt(summary.medicineRevenue), color: 'text-emerald-600 dark:text-emerald-400' },
+                  { label: t('vetMedicineCogs') || 'COGS', value: fmt(summary.medicineCost), color: 'text-orange-500 dark:text-orange-400' },
+                  { label: t('vetGrossProfit') || 'Gross profit', value: fmt(summary.medicineProfit), color: summary.medicineProfit >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-500' },
+                  { label: t('vetMargin') || 'Margin', value: `${summary.medicineRevenue > 0 ? ((summary.medicineProfit / summary.medicineRevenue) * 100).toFixed(1) : '0'}%`, color: 'text-violet-600 dark:text-violet-400' },
+                  { label: t('vetSalesTab') || 'Sales', value: String(summary.medicineSales), color: 'text-slate-600 dark:text-slate-300' },
+                ].map(c => (
+                  <div key={c.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{c.label}</span>
+                    <p className={`text-xl font-bold mt-1 ${c.color}`}>{c.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Top medicines */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                    <Pill size={14} className="text-violet-500" /> {t('vetTopMedicines') || 'Top medicines by revenue'}
+                  </h3>
+                  {summary.topMedicines.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-8">{t('vetNoSales') || 'No sales this period'}</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {summary.topMedicines.slice(0, 8).map((m: any) => {
+                        const max = Math.max(...summary.topMedicines.map((x: any) => Number(x.revenue) || 0))
+                        const pct = max > 0 ? ((Number(m.revenue) || 0) / max) * 100 : 0
+                        return (
+                          <div key={m.id}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-slate-600 dark:text-slate-300 truncate">{m.name} <span className="text-slate-400">· {m.saleCount}</span></span>
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmt(m.revenue)}</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div className="h-full bg-violet-500 rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sales by category */}
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                    <BarChart3 size={14} className="text-emerald-500" /> {t('vetSalesByCategory') || 'Sales by category'}
+                  </h3>
+                  {!Array.isArray(salesBreak?.byCategory) || salesBreak.byCategory.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-8">{t('vetNoSales') || 'No sales this period'}</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {salesBreak.byCategory.slice(0, 8).map((c: any) => {
+                        const max = Math.max(...salesBreak.byCategory.map((x: any) => Number(x.revenue) || 0))
+                        const pct = max > 0 ? ((Number(c.revenue) || 0) / max) * 100 : 0
+                        return (
+                          <div key={c.category}>
+                            <div className="flex justify-between text-xs mb-1">
+                              <span className="text-slate-600 dark:text-slate-300 capitalize">{c.category}</span>
+                              <span className="font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{fmt(c.revenue)}
+                                <span className="ml-1 text-[10px] text-blue-500">+{fmt(c.profit)} {t('vetProfit') || 'profit'}</span>
+                              </span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Inventory & Turnover tab */}
+          {tab === 'inventory' && (
+            <div className="space-y-5">
+              {!turnover ? (
+                <p className="text-xs text-slate-400 text-center py-8">{t('vetNoData') || 'No inventory data'}</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    {[
+                      { label: t('vetStockValue') || 'Stock value', value: fmt(turnover.overall.stockValue), sub: '', color: 'text-emerald-600 dark:text-emerald-400' },
+                      { label: t('vetTurnoverRatio') || 'Turnover / yr', value: `${(Number(turnover.overall.turnover) || 0).toFixed(1)}×`, sub: '', color: 'text-violet-600 dark:text-violet-400' },
+                      { label: t('vetDaysOnHand') || 'Days on hand', value: turnover.overall.daysOnHand != null ? Math.round(turnover.overall.daysOnHand).toString() : '∞', sub: '', color: 'text-blue-600 dark:text-blue-400' },
+                      { label: t('vetDeadStock') || 'Dead stock', value: fmt(turnover.overall.deadStockValue), sub: `${turnover.overall.deadStockCount} ${t('vetItems') || 'items'}`, color: turnover.overall.deadStockValue > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
+                      { label: t('vetExpiringValue') || 'Expiring (30d)', value: fmt(turnover.overall.expiringValue), sub: '', color: turnover.overall.expiringValue > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
+                      { label: t('vetExpiredValue') || 'Expired', value: fmt(turnover.overall.expiredValue), sub: '', color: turnover.overall.expiredValue > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400' },
+                    ].map(c => (
+                      <div key={c.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{c.label}</span>
+                        <p className={`text-lg font-bold mt-1 ${c.color}`}>{c.value}</p>
+                        {c.sub && <p className="text-[10px] text-slate-400">{c.sub}</p>}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-700">
+                      <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('vetTurnoverByMedicine') || 'Turnover by medicine'}</span>
+                      <span className="text-[11px] text-slate-400 ml-2">{t('vetTurnoverHint') || 'fastest movers first · dead stock last'}</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-700/40 text-slate-500 dark:text-slate-400">
+                            {[t('vetMedicine') || 'Medicine', t('vetStockValue') || 'Stock value', 'COGS', t('vetUnitsSold') || 'Units sold', t('vetTurnoverRatio') || 'Turnover', t('vetDaysOnHand') || 'Days', ''].map((h, i) => (
+                              <th key={i} className={`px-4 py-2 font-medium whitespace-nowrap ${i === 0 ? 'text-left' : 'text-right'}`}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                          {turnover.items.slice(0, 60).map((m: any) => (
+                            <tr key={m.id} className={`hover:bg-slate-50/60 dark:hover:bg-slate-700/20 ${m.dead ? 'bg-amber-50/40 dark:bg-amber-900/10' : ''}`}>
+                              <td className="px-4 py-2 text-slate-800 dark:text-slate-200">{m.name}</td>
+                              <td className="px-4 py-2 text-right tabular-nums text-slate-600 dark:text-slate-300">{fmt(m.stockValue)}</td>
+                              <td className="px-4 py-2 text-right tabular-nums text-orange-500">{fmt(m.cogs)}</td>
+                              <td className="px-4 py-2 text-right tabular-nums text-slate-500">{(Number(m.unitsSold) || 0).toFixed(1)}</td>
+                              <td className="px-4 py-2 text-right tabular-nums font-semibold text-violet-600 dark:text-violet-400">{(Number(m.turnover) || 0).toFixed(1)}×</td>
+                              <td className="px-4 py-2 text-right tabular-nums text-blue-600 dark:text-blue-400">{m.daysOnHand != null ? Math.round(m.daysOnHand) : '∞'}</td>
+                              <td className="px-4 py-2 text-right">
+                                {m.dead && m.stockValue > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{t('vetDead') || 'dead'}</span>}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 

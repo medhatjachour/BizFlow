@@ -111,7 +111,7 @@ export default function VetMedicinesTab() {
   }, [])
   const [showCatManager, setShowCatManager] = useState(false)
   const [medModal, setMedModal]     = useState<{ open: boolean; item: Medicine | null }>({ open: false, item: null })
-  const [batchModal, setBatchModal] = useState<{ open: boolean; medId: string; unit: string; item: Batch | null }>({ open: false, medId: '', unit: '', item: null })
+  const [batchModal, setBatchModal] = useState<{ open: boolean; medId: string; unit: string; subUnit?: string | null; ratio?: number | null; item: Batch | null }>({ open: false, medId: '', unit: '', item: null })
   const [delTarget, setDelTarget]   = useState<{ type: 'medicine' | 'batch'; id: string; label: string } | null>(null)
   const [deleting, setDeleting]     = useState(false)
   const [showLowStock, setShowLowStock] = useState(false)
@@ -378,7 +378,7 @@ export default function VetMedicinesTab() {
                     className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-slate-400 hover:text-blue-500 transition-colors">
                     <History size={15} />
                   </button>
-                  <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, item: null })} title="Receive batch"
+                  <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, subUnit: med.subUnit, ratio: med.subUnitsPerContainer, item: null })} title="Receive batch"
                     className="p-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-500 transition-colors">
                     <PackagePlus size={15} />
                   </button>
@@ -399,7 +399,7 @@ export default function VetMedicinesTab() {
                   {med.batches.length === 0 ? (
                     <div className="flex items-center justify-center gap-2 py-5 text-slate-400 text-sm">
                       <PackagePlus size={15} /> {t('vetNoBatches')||'No batches yet'} —
-                      <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, item: null })}
+                      <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, subUnit: med.subUnit, ratio: med.subUnitsPerContainer, item: null })}
                         className="text-violet-600 dark:text-violet-400 hover:underline">{t('vetReceiveFirstBatch')||'receive the first batch'}</button>
                     </div>
                   ) : (
@@ -436,7 +436,7 @@ export default function VetMedicinesTab() {
                                   <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{b.supplier ?? '—'}</td>
                                   <td className="px-4 py-2.5">
                                     <div className="flex items-center gap-1">
-                                      <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, item: b })}
+                                      <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, subUnit: med.subUnit, ratio: med.subUnitsPerContainer, item: b })}
                                         className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                                         <Pencil size={13} />
                                       </button>
@@ -460,7 +460,7 @@ export default function VetMedicinesTab() {
                         </table>
                       </div>
                       <div className="px-4 py-2 flex justify-end border-t border-slate-100 dark:border-slate-700">
-                        <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, item: null })}
+                        <button onClick={() => setBatchModal({ open: true, medId: med.id, unit: med.unit, subUnit: med.subUnit, ratio: med.subUnitsPerContainer, item: null })}
                           className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400 hover:underline">
                           <Plus size={11} /> {t('vetReceiveNewBatch')||'Receive new batch'}
                         </button>
@@ -508,7 +508,7 @@ export default function VetMedicinesTab() {
           onClose={() => setMedModal({ open: false, item: null })} />
       )}
       {batchModal.open && (
-        <BatchModal medicineId={batchModal.medId} unit={batchModal.unit} initial={batchModal.item}
+        <BatchModal medicineId={batchModal.medId} unit={batchModal.unit} subUnit={batchModal.subUnit} subUnitsPerContainer={batchModal.ratio} initial={batchModal.item}
           onSave={() => { setBatchModal({ open: false, medId: '', unit: '', item: null }); load() }}
           onClose={() => setBatchModal({ open: false, medId: '', unit: '', item: null })} />
       )}

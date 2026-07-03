@@ -3,6 +3,7 @@ import { X, Search, Loader2, Calendar, Clock, AlertTriangle } from 'lucide-react
 import type { VetPatient } from '../index'
 import type { VetStaff } from './VetStaffFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import DateField from '@renderer/components/DateField'
 
 interface Props {
   appointment?: any
@@ -295,11 +296,10 @@ export default function VetAppointmentFormModal({ appointment, preselectedPatien
             {/* Date */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">{t('appointmentDate')||'Date'} *</label>
-              <input
-                type="date"
+              <DateField
                 className={inputCls}
                 value={selectedDay}
-                onChange={e => setForm(f => ({ ...f, appointmentDate: e.target.value + 'T' + (selectedTime || '09:00') }))}
+                onChange={v => setForm(f => ({ ...f, appointmentDate: v + 'T' + (selectedTime || '09:00') }))}
               />
             </div>
 

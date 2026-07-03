@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -10,6 +10,11 @@ import icon from '../../resources/icon.png?asset'
 
 // Import IPC handlers registration function
 import { registerAllHandlers, prisma, initializePrisma } from './ipc/handlers/index'
+import {
+  performBackup,
+  getCloseBackupPrefs,
+  defaultBackupDir
+} from './ipc/handlers/backup.handlers'
 import { initializeDatabase } from './database/init'
 import { MigrationManager } from './services/MigrationManager'
 // Static imports — fixes "dynamically and statically imported" Vite warnings
@@ -78,6 +83,8 @@ console.debug = (...args) => log.debug(...args)
 
 let migrationManager: MigrationManager | null = null
 let mainWindow: BrowserWindow | null = null
+// Guard so the backup-on-close prompt only runs once per quit.
+let backupQuitConfirmed = false
 
 const DEMO_EXPIRES_AT_ISO = '2040-06-19T23:59:59.999Z'
 const DEFAULT_LINKEDIN_URL = 'https://www.linkedin.com/in/medhatjachour/'
@@ -303,6 +310,62 @@ function createWindow(): BrowserWindow {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+  })
+
+  // Offer to back up the database when the user closes the app.
+  mainWindow.on('close', (e) => {
+    if (backupQuitConfirmed) return
+    const prefs = getCloseBackupPrefs()
+    if (!prefs.promptOnClose) return
+    const win = mainWindow
+    if (!win) return
+
+    const choice = dialog.showMessageBoxSync(win, {
+      type: 'question',
+      buttons: ['Back up & Quit', 'Quit without backup', 'Cancel'],
+      defaultId: 0,
+      cancelId: 2,
+      noLink: true,
+      title: 'Back up before closing?',
+      message: 'Do you want to back up your data before closing BizFlow?',
+      detail: 'A copy of your database will be saved so you can restore it later.'
+    })
+
+    if (choice === 2) {
+      // Cancel — keep the app open.
+      e.preventDefault()
+      return
+    }
+    if (choice === 1) {
+      // Quit without backing up.
+      backupQuitConfirmed = true
+      return
+    }
+
+    // Back up, then quit once the copy is written.
+    e.preventDefault()
+    const destDir = prefs.backupDir || defaultBackupDir()
+    performBackup(destDir)
+      .then((res) => {
+        backupQuitConfirmed = true
+        if (!res.success) {
+          dialog.showMessageBoxSync(win, {
+            type: 'error',
+            title: 'Backup failed',
+            noLink: true,
+            message: 'Could not create a backup.',
+            detail: res.error + '\n\nThe app will now close.'
+          })
+        } else {
+          mainLog.info('Backup-on-close saved to ' + res.data.path)
+        }
+        app.quit()
+      })
+      .catch((err) => {
+        backupQuitConfirmed = true
+        mainLog.error('Backup-on-close failed:', err)
+        app.quit()
+      })
   })
 
   // Set a clear, branded window title

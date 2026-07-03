@@ -1,7 +1,36 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { getCurrentUser, requireCap } from '../../../main/ipc/handlers/session'
 
 const log = createLogger('Pharmacy:Batches')
+
+// Fields whose edits are recorded in the product history.
+const AUDIT_FIELDS: Array<{ key: string; label: string; type?: 'date' | 'num' }> = [
+  { key: 'quantity', label: 'Quantity', type: 'num' },
+  { key: 'costPerUnit', label: 'Cost/unit', type: 'num' },
+  { key: 'sellingPrice', label: 'Selling price', type: 'num' },
+  { key: 'batchNumber', label: 'Lot #' },
+  { key: 'expiryDate', label: 'Expiry', type: 'date' },
+  { key: 'receivedDate', label: 'Received', type: 'date' }
+]
+
+function diffFields(before: any, after: any): Array<{ field: string; label: string; from: any; to: any }> {
+  const changes: Array<{ field: string; label: string; from: any; to: any }> = []
+  for (const f of AUDIT_FIELDS) {
+    let b = before?.[f.key]
+    let a = after?.[f.key]
+    if (f.type === 'date') {
+      b = b ? new Date(b).toISOString() : null
+      a = a ? new Date(a).toISOString() : null
+    }
+    const from = b ?? null
+    const to = a ?? null
+    const same =
+      f.type === 'num' ? Number(from || 0) === Number(to || 0) : String(from) === String(to)
+    if (!same) changes.push({ field: f.key, label: f.label, from, to })
+  }
+  return changes
+}
 
 export function registerPharmacyBatchHandlers(prisma: any): void {
   ipcMain.handle('pharmacy:batches:getByProduct', async (_e, productId: string) => {
@@ -42,15 +71,40 @@ export function registerPharmacyBatchHandlers(prisma: any): void {
 
   ipcMain.handle('pharmacy:batches:update', async (_e, id: string, data: any) => {
     try {
+      const before = await prisma.pharmacyBatch.findUnique({ where: { id } })
       const patch: any = {}
       if (data.batchNumber !== undefined) patch.batchNumber = data.batchNumber?.trim() || null
-      if (data.quantity !== undefined) patch.quantity = Number(data.quantity) || 0
+      // Stock quantity is intentionally NOT editable here — use
+      // pharmacy:batches:adjust so every stock change is a reasoned, audited movement.
       if (data.costPerUnit !== undefined) patch.costPerUnit = Number(data.costPerUnit) || 0
       if (data.sellingPrice !== undefined) patch.sellingPrice = data.sellingPrice != null ? Number(data.sellingPrice) : null
       if (data.expiryDate !== undefined) patch.expiryDate = new Date(data.expiryDate)
       if (data.receivedDate !== undefined) patch.receivedDate = new Date(data.receivedDate)
       if (data.supplierId !== undefined) patch.supplierId = data.supplierId || null
-      return await prisma.pharmacyBatch.update({ where: { id }, data: patch })
+      const updated = await prisma.pharmacyBatch.update({ where: { id }, data: patch })
+
+      // Record an audit entry for the fields that changed (who + when + what).
+      try {
+        const changes = diffFields(before, updated)
+        if (changes.length > 0) {
+          const u = getCurrentUser()
+          await prisma.pharmacyStockAudit.create({
+            data: {
+              productId: updated.productId,
+              batchId: updated.id,
+              batchNumber: updated.batchNumber ?? null,
+              action: 'edit_batch',
+              changes: JSON.stringify(changes),
+              userId: u?.id ?? null,
+              userName: u?.username ?? null
+            }
+          })
+        }
+      } catch (auditErr) {
+        log.warn('batches:update audit skipped', auditErr)
+      }
+
+      return updated
     } catch (err) { log.error('batches:update', err); throw err }
   })
 
@@ -61,6 +115,73 @@ export function registerPharmacyBatchHandlers(prisma: any): void {
       await prisma.pharmacyBatch.delete({ where: { id } })
       return { success: true }
     } catch (err) { log.error('batches:delete', err); throw err }
+  })
+
+  // Adjust stock (add / remove / set) — the only sanctioned way to change a
+  // batch's remaining quantity. Records a PharmacyStockAudit movement
+  // (who / when / how much / why). Amount may be given in base units or sub-units.
+  ipcMain.handle('pharmacy:batches:adjust', async (_e, id: string, data: {
+    mode: 'add' | 'remove' | 'set'; amount: number; unit?: 'base' | 'sub'; reason?: string
+  }) => {
+    try {
+      requireCap('manage_inventory')
+      const batch = await prisma.pharmacyBatch.findUnique({ where: { id } })
+      if (!batch) throw new Error('Batch not found')
+
+      const mode = data?.mode
+      if (!['add', 'remove', 'set'].includes(mode)) throw new Error('Invalid adjustment mode')
+      const amount = Number(data?.amount)
+      if (!Number.isFinite(amount) || amount < 0) throw new Error('Amount must be a positive number')
+      if ((mode === 'add' || mode === 'remove') && amount <= 0) throw new Error('Amount must be greater than 0')
+
+      const product = await prisma.pharmacyProduct.findUnique({
+        where: { id: batch.productId },
+        select: { unit: true, subUnit: true, subUnitsPerContainer: true }
+      })
+      const useSub    = data?.unit === 'sub' && !!product?.subUnitsPerContainer
+      const ratio     = useSub ? Number(product!.subUnitsPerContainer) : 1
+      const inBase    = amount / ratio
+      const unitLabel = useSub ? (product?.subUnit ?? 'sub') : (product?.unit ?? 'unit')
+
+      const current = batch.quantity
+      let next: number
+      if (mode === 'add') next = current + inBase
+      else if (mode === 'remove') {
+        if (inBase > current + 0.0001) {
+          throw new Error(`Cannot remove ${amount} ${unitLabel} — only ${Math.round(current * ratio * 10000) / 10000} ${unitLabel} on hand`)
+        }
+        next = current - inBase
+      } else next = inBase
+      next = Math.max(0, Math.round(next * 10000) / 10000)
+
+      const updated = await prisma.pharmacyBatch.update({
+        where: { id },
+        data: { quantity: next, status: next > 0 ? 'active' : batch.status }
+      })
+
+      try {
+        const verb = mode === 'add' ? 'Added' : mode === 'remove' ? 'Removed' : 'Set stock to'
+        const desc = `${verb} ${amount} ${unitLabel}`
+        const note = data?.reason ? `${desc} — ${data.reason}` : desc
+        const u = getCurrentUser()
+        await prisma.pharmacyStockAudit.create({
+          data: {
+            productId:   batch.productId,
+            batchId:     batch.id,
+            batchNumber: batch.batchNumber ?? null,
+            action:      'adjust_stock',
+            changes:     JSON.stringify([{ field: 'quantity', label: 'Quantity', from: current, to: next }]),
+            note,
+            userId:      u?.id ?? null,
+            userName:    u?.username ?? null
+          }
+        })
+      } catch (auditErr) {
+        log.warn('batches:adjust audit skipped', auditErr)
+      }
+
+      return { batch: updated, from: current, to: next }
+    } catch (err) { log.error('batches:adjust', err); throw err }
   })
 
   // Write off (dispose) remaining stock — e.g. expired/damaged.

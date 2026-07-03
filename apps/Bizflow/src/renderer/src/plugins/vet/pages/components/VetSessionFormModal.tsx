@@ -6,6 +6,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useVisitTypes } from './visitTypes'
 import VetVisitTypesManager from './VetVisitTypesManager'
 import { speciesEmoji } from './species'
+import DateField from '@renderer/components/DateField'
 
 interface Props {
   session?: any
@@ -460,7 +461,7 @@ export default function VetSessionFormModal({ session, preselectedPatient, onSav
           {/* Follow-up */}
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('followUpDate')||'Follow-up Date'}</label>
-            <input type="date" value={form.followUpDate} onChange={setF('followUpDate')} className={inputCls} />
+            <DateField value={form.followUpDate} onChange={v => setF('followUpDate')({ target: { value: v } } as any)} className={inputCls} />
           </div>
 
           {/* Prescriptions */}

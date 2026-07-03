@@ -4,7 +4,7 @@ import {
   PawPrint, Users, ClipboardList, BarChart3, CalendarClock, Bell,
   Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar,
   Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight,
-  ChevronDown, ChevronUp, Mail, MapPin, Stethoscope, BadgeCheck, ShoppingCart
+  ChevronDown, ChevronUp, Mail, MapPin, Stethoscope, BadgeCheck, ShoppingCart, Receipt
 } from 'lucide-react'
 import { useLanguage }  from '@renderer/contexts/LanguageContext'
 import { useToast }     from '@renderer/contexts/ToastContext'
@@ -22,10 +22,10 @@ import VetAppointmentsTab from './components/VetAppointmentsTab'
 import VetFollowUpsTab  from './components/VetFollowUpsTab'
 import VetExpensesTab   from './components/VetExpensesTab'
 import VetMedicinesTab  from './components/VetMedicinesTab'
-import VetSalesTab      from './components/VetSalesTab'
+import VetSalesTab, { SalesHistory } from './components/VetSalesTab'
 import { speciesEmoji, speciesLabel } from './components/species'
 
-type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales'
+type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales' | 'salesHistory'
 
 export interface VetOwner {
   id: string
@@ -444,6 +444,7 @@ export default function VetPage() {
     { key: 'followups',    label: t('vetFollowUps')    || 'Follow-ups',   icon: Bell },
     { key: 'medicines' as Tab, label: t('vetMedStore')||'Medicine Store', icon: Activity },
     { key: 'sales'     as Tab, label: t('vetSalesTab')||'Sales',           icon: ShoppingCart },
+    { key: 'salesHistory' as Tab, label: t('vetSalesHistory')||'Sales History', icon: Receipt },
     ...(!isVetStaff
       ? [
           { key: 'stats'    as Tab, label: t('vetStats')    || 'Statistics', icon: BarChart3 },
@@ -810,6 +811,9 @@ export default function VetPage() {
         {tab === 'expenses'     && <VetExpensesTab />}
         {tab === 'medicines'    && <VetMedicinesTab />}
         {tab === 'sales'        && <VetSalesTab onCartCountChange={setSalesCartCount} />}
+        {tab === 'salesHistory' && (
+          <div className="flex flex-col h-full min-h-0"><SalesHistory /></div>
+        )}
 
         {/* Vets tab */}
         {tab === 'vets' && (

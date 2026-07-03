@@ -53,6 +53,19 @@ export function registerAuthHandlers(prisma: any) {
     }
   })
 
+  // Whether the default 'setup' bootstrap account still exists and is active.
+  // The login screen uses this to show/hide the "Use Setup Account" shortcut.
+  ipcMain.handle('auth:setupExists', async () => {
+    try {
+      if (!prisma) return false
+      const u = await prisma.user.findUnique({ where: { username: 'setup' }, select: { id: true, isActive: true } })
+      return !!(u && u.isActive)
+    } catch (error) {
+      log.error('setupExists error:', error)
+      return false
+    }
+  })
+
   // Create user (admin-only from UI) - exposed so production users can add accounts
   ipcMain.handle('auth:create', async (_, { username, password, role = 'sales' }) => {
     try {

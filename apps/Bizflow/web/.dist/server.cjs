@@ -2367,6 +2367,17 @@ function registerAuthHandlers(prisma2) {
       return { success: false, message: "An error occurred during login" };
     }
   });
+  ipcMain.handle("auth:setupExists", async () => {
+    try {
+      if (!prisma2)
+        return false;
+      const u = await prisma2.user.findUnique({ where: { username: "setup" }, select: { id: true, isActive: true } });
+      return !!(u && u.isActive);
+    } catch (error) {
+      log2.error("setupExists error:", error);
+      return false;
+    }
+  });
   ipcMain.handle("auth:create", async (_, { username, password, role = "sales" }) => {
     try {
       if (!prisma2) {
@@ -2404,9 +2415,11 @@ function registerDashboardHandlers(prisma2) {
           _count: true
         });
         const profitData = await prisma2.$queryRaw`
-          SELECT SUM((si.price - si.cost) * si.quantity) as profit
+          SELECT SUM((si.finalPrice - COALESCE(pv.cost, p.baseCost, 0)) * si.quantity) as profit
           FROM SaleItem si
           JOIN SaleTransaction st ON si.transactionId = st.id
+          JOIN Product p ON si.productId = p.id
+          LEFT JOIN ProductVariant pv ON si.variantId = pv.id
           WHERE st.status = 'completed'
         `;
         const profit = profitData[0]?.profit || 0;
@@ -7381,10 +7394,12 @@ function registerSalesHandlers(prisma2) {
       throw error;
     }
   });
-  ipcMain.handle("sales:getAll", async () => {
+  ipcMain.handle("sales:getAll", async (_, options = {}) => {
     try {
       log20.warn("sales:getAll is deprecated - use sale-transactions:getAll instead");
       if (prisma2) {
+        const take = Math.min(Number(options?.take) || 100, 1e3);
+        const skip = Math.max(Number(options?.skip) || 0, 0);
         const transactions = await prisma2.saleTransaction.findMany({
           include: {
             items: {
@@ -7403,7 +7418,9 @@ function registerSalesHandlers(prisma2) {
               }
             }
           },
-          orderBy: { createdAt: "desc" }
+          orderBy: { createdAt: "desc" },
+          take,
+          skip
         });
         return transactions;
       }
@@ -20994,6 +21011,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
               quantity: true,
               initialQty: true,
               costPerUnit: true,
+              sellingPrice: true,
               receivedDate: true,
               supplier: true,
               notes: true,
@@ -21204,7 +21222,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       if (batch.quantity < data.quantity) {
         throw new Error(`Insufficient stock. Available: ${batch.quantity}`);
       }
-      const totalPrice = data.quantity * data.unitPrice - discount;
+      const totalPrice = Math.max(0, data.quantity * data.unitPrice - discount);
       const [sale] = await prisma2.$transaction([
         prisma2.vetMedicineSale.create({
           data: {

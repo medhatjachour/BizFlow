@@ -307,6 +307,24 @@ model VetMedicineSale {
   @@index([saleGroupId])
 }
 
+// ─── Medicine Stock Audit (manual edit trail — who changed what & when) ────────
+
+model VetMedicineAudit {
+  id          String   @id @default(uuid())
+  medicineId  String
+  batchId     String?
+  batchNumber String?
+  action      String   @default("edit_batch") // 'edit_batch' | 'edit_medicine'
+  changes     String?  // JSON array of { field, label, from, to }
+  note        String?
+  userId      String?
+  userName    String?
+  createdAt   DateTime @default(now())
+
+  @@index([medicineId])
+  @@index([batchId])
+}
+
 // ─── Medicine Category (user-managed catalogue taxonomy) ───────────────────────
 
 model VetMedicineCategory {

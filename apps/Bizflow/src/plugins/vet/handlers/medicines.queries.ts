@@ -229,6 +229,11 @@ export function registerVetMedicineQueryHandlers(prisma: any) {
         include: { batch: { select: { batchNumber: true, costPerUnit: true } } },
         orderBy: { saleDate: 'desc' }
       })
+      // Manual edit audit trail (who/when/what). Tolerate a missing table on
+      // databases generated before this model existed.
+      const audits = await prisma.vetMedicineAudit
+        .findMany({ where: { medicineId }, orderBy: { createdAt: 'desc' } })
+        .catch(() => [])
 
       const events: any[] = []
 
@@ -285,6 +290,22 @@ export function registerVetMedicineQueryHandlers(prisma: any) {
           grossProfit: s.totalPrice - s.quantity * (s.batch?.costPerUnit ?? 0),
           ownerName: s.ownerName ?? s.patientName ?? null,
           paymentStatus: s.paymentStatus ?? 'paid'
+        })
+      }
+
+      for (const a of audits as any[]) {
+        let changes: any[] = []
+        try { changes = a.changes ? JSON.parse(a.changes) : [] } catch { changes = [] }
+        events.push({
+          id:          `edit_${a.id}`,
+          type:        'edited',
+          date:        a.createdAt,
+          batchId:     a.batchId ?? null,
+          batchNumber: a.batchNumber ?? null,
+          action:      a.action ?? 'edit_batch',
+          changes,
+          userName:    a.userName ?? null,
+          note:        a.note ?? null
         })
       }
 

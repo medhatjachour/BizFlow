@@ -4,6 +4,7 @@ import { Plus, Loader2, Pencil, Trash2, DollarSign, TrendingUp, TrendingDown, In
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import VetPeriodFilter, { rangeForPreset } from './VetPeriodFilter'
+import DateField from '@renderer/components/DateField'
 
 function ExpensesHelp() {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
@@ -245,7 +246,7 @@ export default function VetExpensesTab() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('date')||'Date'} *</label>
-                  <input type="date" value={form.date} onChange={setF('date')} className={inputCls} />
+                  <DateField value={form.date} onChange={v => setF('date')({ target: { value: v } } as any)} className={inputCls} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('category')||'Category'}</label>

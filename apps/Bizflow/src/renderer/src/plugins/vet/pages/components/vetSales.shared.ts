@@ -27,3 +27,33 @@ export const PAGE_SIZE = 15
 export function daysUntil(d: string): number {
   return Math.floor((new Date(d).getTime() - Date.now()) / 86_400_000)
 }
+
+/** Trim a quantity to at most 4 decimals, dropping trailing zeros. */
+function trimQty(n: number): string {
+  return String(Math.round(n * 10000) / 10000)
+}
+
+/**
+ * How a remaining stock quantity should be displayed.
+ * When less than one whole container is left AND the medicine can be sold by a
+ * sub-unit, the remainder is expressed in sub-units (e.g. "3 ml" instead of the
+ * confusing "0.3 bottle"), with the container fraction kept as a secondary hint.
+ */
+export function remainingDisplay(
+  qty: number,
+  unit: string,
+  subUnit?: string | null,
+  subUnitsPerContainer?: number | null
+): { value: string; unit: string; secondary: string | null; isSub: boolean } {
+  const canSub = !!(subUnit && subUnitsPerContainer && subUnitsPerContainer > 0)
+  if (canSub && qty > 0 && qty < 1) {
+    return {
+      value: trimQty(qty * (subUnitsPerContainer as number)),
+      unit: subUnit as string,
+      secondary: `${trimQty(qty)} ${unit}`,
+      isSub: true
+    }
+  }
+  return { value: trimQty(qty), unit, secondary: null, isSub: false }
+}
+

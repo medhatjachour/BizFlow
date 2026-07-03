@@ -19,10 +19,12 @@ export interface Batch {
 }
 
 export interface HistoryEvent {
-  id: string; type: 'received' | 'sold' | 'disposed'; date: string
+  id: string; type: 'received' | 'sold' | 'disposed' | 'edited'; date: string
   batchNumber?: string | null; quantity: number; unit: string; subUnit?: string | null
   saleUnit?: string; costPerUnit?: number; totalCost?: number; totalPrice?: number
   unitPrice?: number; discount?: number; grossProfit?: number; lossAmount?: number
   supplier?: string | null; expiryDate?: string; reason?: string | null
   ownerName?: string | null; paymentStatus?: string; notes?: string | null
+  action?: string; userName?: string | null; note?: string | null
+  changes?: Array<{ field: string; label: string; from: any; to: any }>
 }

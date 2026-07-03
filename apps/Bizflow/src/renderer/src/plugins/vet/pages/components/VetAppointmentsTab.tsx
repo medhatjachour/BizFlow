@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight, PlayCircle, LayoutGrid, List, Info
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import DateField from '@renderer/components/DateField'
 import VetAppointmentFormModal from './VetAppointmentFormModal'
 import VetSessionFormModal from './VetSessionFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -267,8 +268,9 @@ export default function VetAppointmentsTab() {
             className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <input type="date" value={selectedDate}
-            onChange={e => setSelectedDate(e.target.value)}
+          <DateField value={selectedDate}
+            onChange={setSelectedDate}
+            wrapperClassName="w-44"
             className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
           <button onClick={() => setSelectedDate(shiftDay(selectedDate, viewMode === 'week' ? 7 : 1))}
             className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">

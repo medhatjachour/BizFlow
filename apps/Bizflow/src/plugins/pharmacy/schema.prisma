@@ -107,6 +107,24 @@ model PharmacySaleItem {
   @@index([batchId])
 }
 
+// ─── Stock Audit (manual edit trail — who changed what & when) ─────────────────
+
+model PharmacyStockAudit {
+  id          String   @id @default(uuid())
+  productId   String
+  batchId     String?
+  batchNumber String?
+  action      String   @default("edit_batch") // 'edit_batch' | 'edit_product'
+  changes     String?  // JSON array of { field, label, from, to }
+  note        String?
+  userId      String?
+  userName    String?
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+  @@index([batchId])
+}
+
 // ─── Customer (with outstanding + default discount) ───────────────────────────
 
 model PharmacyCustomer {

@@ -4,18 +4,19 @@ import {
   Package, CheckCircle2, ChevronLeft, ChevronRight, TrendingUp,
   Pill, Plus, DollarSign, BarChart2, Pencil, AlertCircle,
   UserCheck, UserPlus, PanelRightClose, PanelRightOpen, ExternalLink,
-  Maximize2, Layers, List, ChevronDown, Trash2, AlertTriangle, Hash, Minus, RotateCcw,
+  Maximize2, Minimize2, Layers, List, ChevronDown, Trash2, AlertTriangle, Hash, Minus, RotateCcw,
   SlidersHorizontal
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useNavigate } from 'react-router-dom'
 import VetOwnerFormModal from './VetOwnerFormModal'
+import DateField from '@renderer/components/DateField'
 import type {
   MedicineLite, BatchLite, Sale, CustomerLite, SaleGroup, CartItem,
 } from './vetSales.types'
 import {
-  inputCls, PAYMENT_METHODS, PAY_COLOR, GROUP_STATUS, PAGE_SIZE, daysUntil,
+  inputCls, PAYMENT_METHODS, PAY_COLOR, GROUP_STATUS, PAGE_SIZE, daysUntil, remainingDisplay,
 } from './vetSales.shared'
 import BatchPickerModal from './VetSaleBatchPicker'
 
@@ -45,6 +46,9 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
   const [loadingMeds, setLoadingMeds] = useState(true)
   const [medSearch, setMedSearch] = useState('')
   const [medCat, setMedCat] = useState('all')
+  // Pop the item configurator (middle panel) into a centred modal — handy on
+  // short (≤720px) screens where the inline panel needs a lot of scrolling.
+  const [configModalOpen, setConfigModalOpen] = useState(false)
 
   // ── Medicine Categories (DB-loaded) ─────────────────────────────────────
   const [categories, setCategories] = useState<string[]>(['all'])
@@ -561,12 +565,9 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
           </div>
 
           <div className={variant === 'modal' ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-2 gap-2'}>
-            <div className="relative">
-              <Calendar size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input type="date" value={shared.saleDate}
-                onChange={e => setShared(s => ({ ...s, saleDate: e.target.value }))}
-                className={inputCls + ' pl-7 text-xs'} />
-            </div>
+            <DateField value={shared.saleDate}
+              onChange={v => setShared(s => ({ ...s, saleDate: v }))}
+              className={inputCls + ' text-xs'} />
             <input placeholder={t('vetNotesOptional') || 'Notes (optional)'}
               value={shared.notes} onChange={e => setShared(s => ({ ...s, notes: e.target.value }))}
               className={inputCls + ' text-xs'} />
@@ -681,16 +682,14 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
               </button>
             )}
           </div>
-          <div className="flex flex-wrap gap-1">
+          <select value={medCat} onChange={e => setMedCat(e.target.value)}
+            className="w-full px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 capitalize focus:outline-none focus:ring-2 focus:ring-violet-500">
             {categories.map(c => (
-              <button key={c} onClick={() => setMedCat(c)}
-                className={`px-2 py-0.5 text-[10px] font-semibold rounded-md capitalize transition-colors
-                  ${medCat === c ? 'bg-violet-600 text-white'
-                    : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-violet-400 dark:hover:border-violet-600'}`}>
-                {c === 'all' ? t('vetFilterAll') || 'All' : c}
-              </button>
+              <option key={c} value={c} className="capitalize">
+                {c === 'all' ? t('vetFilterAll') || 'All categories' : c}
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -723,8 +722,16 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
                     <p className="text-[10px] text-slate-400 capitalize mt-0.5">{med.category}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={`text-sm font-bold ${med.isLowStock ? 'text-orange-500' : 'text-slate-900 dark:text-white'}`}>{med.totalStock}</p>
-                    <p className="text-[10px] text-slate-400">{med.unit}</p>
+                    {(() => {
+                      const s = remainingDisplay(med.totalStock, med.unit, med.subUnit, med.subUnitsPerContainer)
+                      return (
+                        <>
+                          <p className={`text-sm font-bold ${med.isLowStock ? 'text-orange-500' : 'text-slate-900 dark:text-white'}`}>{s.value}</p>
+                          <p className="text-[10px] text-slate-400">{s.unit}</p>
+                          {s.secondary && <p className="text-[9px] text-slate-300 dark:text-slate-500 mt-0.5">{s.secondary}</p>}
+                        </>
+                      )
+                    })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 mt-1.5 flex-wrap">
@@ -744,8 +751,13 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
         </div>
       </div>
 
-      {/* ── Panel 2: Item Configurator ──────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
+      {/* ── Panel 2: Item Configurator (inline column, or pop-out modal on short screens) ── */}
+      {configModalOpen && selectedMed && (
+        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setConfigModalOpen(false)} />
+      )}
+      <div className={configModalOpen && selectedMed
+        ? 'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,40rem)] max-h-[92vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-slate-900 overflow-hidden'
+        : 'flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700'}>
         {selectedMed ? (
           <div className="flex-1 overflow-y-auto">
             <div className="p-5 space-y-5">
@@ -766,13 +778,23 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{selectedMed.totalStock} {selectedMed.unit} in stock</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{(() => {
+                    const s = remainingDisplay(selectedMed.totalStock, selectedMed.unit, selectedMed.subUnit, selectedMed.subUnitsPerContainer)
+                    return <>{s.value} {s.unit} in stock{s.secondary && <span className="text-slate-300 dark:text-slate-500"> ({s.secondary})</span>}</>
+                  })()}</p>
                   </div>
                 </div>
-                <button type="button" onClick={clearItem}
-                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0">
-                  <X size={16} />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button type="button" onClick={() => setConfigModalOpen(o => !o)}
+                    title={configModalOpen ? (t('vetDockInline') || 'Dock back inline') : (t('vetOpenInWindow') || 'Open in a window')}
+                    className="p-2 rounded-xl text-slate-400 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+                    {configModalOpen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </button>
+                  <button type="button" onClick={clearItem}
+                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
 
               {/* Batch selector */}
@@ -790,7 +812,10 @@ function SaleOperation({ onSaleRecorded, onCartCountChange }: {
                         <div>
                           <p className="text-[11px] font-mono text-slate-500">{selectedBatch.batchNumber ?? 'No lot #'}</p>
                           <p className="text-sm font-semibold text-slate-900 dark:text-white mt-0.5">
-                            {selectedBatch.quantity} <span className="text-xs font-normal text-slate-400">{selectedMed.unit} remaining</span>
+                            {(() => {
+                              const s = remainingDisplay(selectedBatch.quantity, selectedMed.unit, selectedMed.subUnit, selectedMed.subUnitsPerContainer)
+                              return <>{s.value} <span className="text-xs font-normal text-slate-400">{s.unit} remaining</span>{s.secondary && <span className="text-xs font-normal text-slate-300 dark:text-slate-500"> ({s.secondary})</span>}</>
+                            })()}
                           </p>
                           {selectedBatch.supplier && <p className="text-xs text-slate-400 mt-0.5">{selectedBatch.supplier}</p>}
                         </div>
@@ -1308,19 +1333,33 @@ function RefundModal({ target, onClose, onDone }: {
   const [busy, setBusy] = useState(false)
 
   const isGroup = target.kind === 'group'
-  const amount = isGroup
-    ? Math.max(0, target.group.total - (target.group.refunded ?? 0))
-    : Math.max(0, target.sale.totalPrice - (target.sale.refundedAmount ?? 0))
   const itemCount = isGroup ? target.group.itemCount : 1
 
+  // Single-item refunds can be partial: refund N of the still-refundable units.
+  const sale = !isGroup ? target.sale : null
+  const refundableQty = sale ? Math.max(0, sale.quantity - (sale.refundedQty ?? 0)) : 0
+  const unitLabel = sale
+    ? (sale.saleUnit === 'sub' && sale.medicine.subUnit ? sale.medicine.subUnit : sale.medicine.unit)
+    : ''
+  const [qtyStr, setQtyStr] = useState(() => String(refundableQty))
+  const qty = Math.max(0, parseFloat(qtyStr) || 0)
+  const qtyValid = !sale || (qty > 0 && qty <= refundableQty + 0.0001)
+
+  const amount = isGroup
+    ? Math.max(0, target.group.total - (target.group.refunded ?? 0))
+    : sale && sale.quantity > 0
+      ? Math.round((qty / sale.quantity) * sale.totalPrice * 100) / 100
+      : 0
+
   async function confirm() {
+    if (!qtyValid) return
     setBusy(true)
     try {
       if (isGroup) {
         const res = await window.api.vet?.medicines.refundSaleGroup(target.group.groupKey, { reason: reason || undefined })
         toast.success(`${t('vetRefunded') || 'Refunded'} $${(res?.totalRefund ?? amount).toFixed(2)}`)
       } else {
-        const res = await window.api.vet?.medicines.refundSale(target.sale.id, { reason: reason || undefined })
+        const res = await window.api.vet?.medicines.refundSale(target.sale.id, { quantity: qty, reason: reason || undefined })
         toast.success(`${t('vetRefunded') || 'Refunded'} $${(res?.refundAmount ?? amount).toFixed(2)}`)
       }
       onDone(); onClose()
@@ -1338,6 +1377,28 @@ function RefundModal({ target, onClose, onDone }: {
             <p className="text-xs text-slate-400">{isGroup ? `${itemCount} ${itemCount === 1 ? (t('vetItemLabel') || 'item') : (t('vetItemsLabel') || 'items')}` : (target as any).sale.medicine.name}</p>
           </div>
         </div>
+
+        {/* Quantity to refund — partial refunds for single items */}
+        {sale && (
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+              {t('vetRefundQty') || 'Quantity to refund'}
+              <span className="text-slate-400 font-normal"> · {t('vetRefundableOf') || 'of'} {refundableQty} {unitLabel}</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setQtyStr(String(Math.max(0, Math.round((qty - 1) * 100) / 100)))}
+                className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center"><Minus className="h-4 w-4" /></button>
+              <input type="number" min="0" step="any" value={qtyStr} onChange={e => setQtyStr(e.target.value)}
+                className={`flex-1 px-3 py-2 text-sm text-center border rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 ${qtyValid ? 'border-slate-200 dark:border-slate-700' : 'border-red-400 ring-1 ring-red-400/40'}`} />
+              <button type="button" onClick={() => setQtyStr(String(Math.min(refundableQty, Math.round((qty + 1) * 100) / 100)))}
+                className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center"><Plus className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setQtyStr(String(refundableQty))}
+                className="px-2.5 h-9 shrink-0 rounded-lg text-xs font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20">{t('vetRefundAll') || 'All'}</button>
+            </div>
+            {!qtyValid && <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">{(t('vetRefundMax') || 'Max {n}').replace('{n}', `${refundableQty} ${unitLabel}`)}</p>}
+          </div>
+        )}
+
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 p-3 mb-4 space-y-1">
           <div className="flex justify-between text-sm">
             <span className="text-slate-600 dark:text-slate-300">{t('vetRefundAmount') || 'Amount to refund'}</span>
@@ -1352,7 +1413,7 @@ function RefundModal({ target, onClose, onDone }: {
         </div>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg">{t('vetMedCancel') || 'Cancel'}</button>
-          <button onClick={confirm} disabled={busy} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5">
+          <button onClick={confirm} disabled={busy || !qtyValid} className="flex-1 px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50 flex items-center justify-center gap-1.5">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RotateCcw className="h-3.5 w-3.5" /> {t('vetRefund') || 'Refund'}</>}
           </button>
         </div>
@@ -1539,7 +1600,7 @@ function SaleGroupRow({ group, onPaid, onEdit, onRefundItem, onRefundGroup }: {
 
 // ── Sales History ─────────────────────────────────────────────────────────────
 
-function SalesHistory() {
+export function SalesHistory() {
   const toast = useToast()
   const { t } = useLanguage()
   const [viewMode, setViewMode] = useState<'grouped' | 'individual'>('grouped')
@@ -1729,10 +1790,10 @@ function SalesHistory() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
-              <input type="date" value={dateFrom} onChange={e => handleDateFrom(e.target.value)}
+              <DateField value={dateFrom} onChange={handleDateFrom} wrapperClassName="w-40"
                 className="px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
               <span className="text-slate-400">–</span>
-              <input type="date" value={dateTo} onChange={e => handleDateTo(e.target.value)}
+              <DateField value={dateTo} onChange={handleDateTo} wrapperClassName="w-40"
                 className="px-2.5 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
             </div>
             {/* presets again here for small screens where they're hidden above */}
@@ -1891,84 +1952,16 @@ function SalesHistory() {
 // ── Main Tab ──────────────────────────────────────────────────────────────────
 
 export default function VetSalesTab({ onCartCountChange }: { onCartCountChange?: (n: number) => void } = {}) {
-  const { t } = useLanguage()
-  const [subTab, setSubTab] = useState<'operation' | 'history'>('operation')
-  const [historyKey, setHistoryKey] = useState(0)
   const [cartCount, setCartCount] = useState(0)
-  const [pendingTab, setPendingTab] = useState<'operation' | 'history' | null>(null)
 
   // Bubble the cart size to the parent vet page so it can guard main-tab navigation.
   useEffect(() => { onCartCountChange?.(cartCount) }, [cartCount, onCartCountChange])
 
-  // Guard: leaving the New Sale tab with a non-empty cart discards it — confirm first.
-  function requestTab(key: 'operation' | 'history') {
-    if (key === subTab) return
-    if (subTab === 'operation' && key !== 'operation' && cartCount > 0) {
-      setPendingTab(key)
-    } else {
-      setSubTab(key)
-    }
-  }
-
+  // Sales History now lives in its own top-level vet tab, so this tab is just
+  // the point-of-sale operation.
   return (
     <div className="flex flex-col h-full min-h-0">
-
-      {/* Tab bar */}
-      <div className="flex items-center gap-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 shrink-0">
-        {([
-          { key: 'operation', label: t('vetNewSale')||'New Sale',      icon: ShoppingCart },
-          { key: 'history',   label: t('vetSalesHistory')||'Sales History', icon: Receipt },
-        ] as const).map(tab => (
-          <button key={tab.key} onClick={() => requestTab(tab.key)}
-            className={[
-              'flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors relative',
-              subTab === tab.key
-                ? 'border-violet-500 text-violet-700 dark:text-violet-300'
-                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
-            ].join(' ')}>
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-            {tab.key === 'operation' && cartCount > 0 && (
-              <span className="px-1.5 py-0.5 min-w-[18px] text-center text-[10px] font-black rounded-full bg-violet-600 text-white">{cartCount}</span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {subTab === 'operation' && (
-        <SaleOperation onSaleRecorded={() => setHistoryKey(k => k + 1)} onCartCountChange={setCartCount} />
-      )}
-      {subTab === 'history' && (
-        <SalesHistory key={historyKey} />
-      )}
-
-      {/* Leave-with-items confirmation */}
-      {pendingTab && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4"
-          onClick={() => setPendingTab(null)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <h3 className="font-bold text-slate-900 dark:text-white">{t('vetLeaveCartTitle') || 'Discard cart?'}</h3>
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-5">
-              {(t('vetLeaveCartBody') || 'You have {n} item(s) in your cart that have not been sold yet. Leaving this tab will discard them.').replace('{n}', String(cartCount))}
-            </p>
-            <div className="flex gap-3">
-              <button onClick={() => setPendingTab(null)}
-                className="flex-1 px-4 py-2 text-sm font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg">
-                {t('vetStayKeepCart') || 'Stay'}
-              </button>
-              <button onClick={() => { const dest = pendingTab; setCartCount(0); setPendingTab(null); setSubTab(dest) }}
-                className="flex-1 px-4 py-2 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors">
-                {t('vetLeaveDiscard') || 'Discard & leave'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <SaleOperation onSaleRecorded={() => {}} onCartCountChange={setCartCount} />
     </div>
   )
 }

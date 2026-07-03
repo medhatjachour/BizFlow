@@ -19,6 +19,7 @@ export const pharmacyPreload = {
     add: (data: any) => ipcRenderer.invoke('pharmacy:batches:add', data),
     update: (id: string, data: any) => ipcRenderer.invoke('pharmacy:batches:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('pharmacy:batches:delete', id),
+    adjust: (id: string, data: { mode: 'add' | 'remove' | 'set'; amount: number; unit?: 'base' | 'sub'; reason?: string }) => ipcRenderer.invoke('pharmacy:batches:adjust', id, data),
     dispose: (id: string, data?: { quantity?: number; reason?: string }) => ipcRenderer.invoke('pharmacy:batches:dispose', id, data),
     getExpiring: (params?: { days?: number; includeExpired?: boolean }) => ipcRenderer.invoke('pharmacy:batches:getExpiring', params),
   },

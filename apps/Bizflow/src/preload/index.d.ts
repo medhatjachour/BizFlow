@@ -3,6 +3,7 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 interface API {
   auth: {
     login: (username: string, password: string) => Promise<any>
+    setupExists: () => Promise<boolean>
   }
   dashboard: {
     getMetrics: () => Promise<any>
@@ -630,6 +631,7 @@ interface API {
       updateBatch: (id: string, data: any) => Promise<any>
       deleteBatch: (id: string) => Promise<any>
       disposeBatch: (id: string, data?: any) => Promise<any>
+      adjustBatchStock: (id: string, data: { mode: 'add' | 'remove' | 'set'; amount: number; unit?: 'container' | 'sub'; reason?: string }) => Promise<any>
       sell: (data: any) => Promise<any>
       sellCombo: (data: any) => Promise<any>
       getSales: (params?: any) => Promise<any>
@@ -670,6 +672,11 @@ interface API {
       monthlyTrend: (months?: number | { months?: number }) => Promise<any>
       profitAnalysis: (params?: { from?: string; to?: string }) => Promise<any>
       salesBreakdown: (params?: { from?: string; to?: string }) => Promise<any>
+      inventoryTurnover: (params?: { from?: string; to?: string }) => Promise<any>
+    }
+    reports: {
+      exportPdf: (payload: any) => Promise<{ success: boolean; filePath: string } | null>
+      exportExcel: (payload: any) => Promise<{ success: boolean; filePath: string } | null>
     }
   }
   gym?: {

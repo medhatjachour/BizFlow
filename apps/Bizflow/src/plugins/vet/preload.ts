@@ -88,6 +88,7 @@ export const vetPreload = {
     updateBatch:  (id: string, data: any)              => ipcRenderer.invoke('vet:medicines:updateBatch', id, data),
     deleteBatch:  (id: string)                         => ipcRenderer.invoke('vet:medicines:deleteBatch', id),
     disposeBatch: (id: string, data?: any)             => ipcRenderer.invoke('vet:medicines:disposeBatch', id, data),
+    adjustBatchStock: (id: string, data: any)          => ipcRenderer.invoke('vet:medicines:adjustBatchStock', id, data),
     sell:         (data: any)                          => ipcRenderer.invoke('vet:medicines:sell', data),
     sellCombo:          (data: any)                          => ipcRenderer.invoke('vet:medicines:sellCombo', data),
     getSales:           (params?: any)                       => ipcRenderer.invoke('vet:medicines:getSales', params),
@@ -131,6 +132,11 @@ export const vetPreload = {
     speciesBreakdown: ()               => ipcRenderer.invoke('vet:stats:speciesBreakdown'),
     monthlyTrend:    (params?: any)    => ipcRenderer.invoke('vet:stats:monthlyTrend', params),
     profitAnalysis:  (params?: any)    => ipcRenderer.invoke('vet:stats:profitAnalysis', params),
-    salesBreakdown:  (params?: any)    => ipcRenderer.invoke('vet:stats:salesBreakdown', params)
+    salesBreakdown:  (params?: any)    => ipcRenderer.invoke('vet:stats:salesBreakdown', params),
+    inventoryTurnover: (params?: any)  => ipcRenderer.invoke('vet:stats:inventoryTurnover', params)
+  },
+  reports: {
+    exportPdf:   (payload: any) => ipcRenderer.invoke('vet:reports:exportPdf', payload),
+    exportExcel: (payload: any) => ipcRenderer.invoke('vet:reports:exportExcel', payload)
   }
 }

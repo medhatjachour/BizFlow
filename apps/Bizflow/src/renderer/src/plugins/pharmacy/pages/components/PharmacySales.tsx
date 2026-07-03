@@ -116,6 +116,8 @@ function SaleDetailModal({ sale: initial, onClose, onChanged }: { sale: any; onC
   const [busy, setBusy] = useState(false)
   const [payAmt, setPayAmt] = useState('')
   const [paying, setPaying] = useState(false)
+  const [refundItemId, setRefundItemId] = useState<string | null>(null)
+  const [refundQty, setRefundQty] = useState('')
 
   useEffect(() => { pharma()?.sales.getById(initial.id).then((s: any) => s && setSale(s)).catch(() => {}) }, [initial.id])
 
@@ -129,9 +131,14 @@ function SaleDetailModal({ sale: initial, onClose, onChanged }: { sale: any; onC
     catch (e: any) { toast.error(e?.message ?? 'Refund failed') }
     finally { setBusy(false) }
   }
-  async function refundItem(item: any) {
+  async function refundItem(item: any, qty?: number) {
     setBusy(true)
-    try { await pharma()?.sales.refundItem(item.id); toast.success(t('phItemRefunded') || 'Item refunded'); const s = await pharma()?.sales.getById(sale.id); if (s) setSale(s) }
+    try {
+      await pharma()?.sales.refundItem(item.id, qty != null ? { quantity: qty } : undefined)
+      toast.success(t('phItemRefunded') || 'Item refunded')
+      const s = await pharma()?.sales.getById(sale.id); if (s) setSale(s)
+      setRefundItemId(null)
+    }
     catch (e: any) { toast.error(e?.message ?? 'Refund failed') }
     finally { setBusy(false) }
   }
@@ -161,16 +168,33 @@ function SaleDetailModal({ sale: initial, onClose, onChanged }: { sale: any; onC
           <div className="space-y-1.5">
             {sale.items?.map((it: any) => {
               const refundable = it.quantity - (it.refundedQty ?? 0)
+              const editing = refundItemId === it.id
+              const rq = Math.max(0, parseFloat(refundQty) || 0)
+              const rqValid = rq > 0 && rq <= refundable + 0.0001
               return (
-                <div key={it.id} className="flex items-center gap-2 text-sm py-1.5 border-b border-slate-50 dark:border-slate-800 last:border-0">
-                  <div className="flex-1">
-                    <span className="font-medium text-slate-800 dark:text-slate-200">{it.productName}</span>
-                    <span className="text-slate-400 text-xs"> · {it.quantity} × ${money(it.unitPrice)}</span>
-                    {(it.refundedQty ?? 0) > 0 && <span className="text-[10px] text-amber-500 ml-1">({it.refundedQty} {t('phRefundedLc') || 'refunded'})</span>}
+                <div key={it.id} className="py-1.5 border-b border-slate-50 dark:border-slate-800 last:border-0">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="flex-1">
+                      <span className="font-medium text-slate-800 dark:text-slate-200">{it.productName}</span>
+                      <span className="text-slate-400 text-xs"> · {it.quantity} × ${money(it.unitPrice)}</span>
+                      {(it.refundedQty ?? 0) > 0 && <span className="text-[10px] text-amber-500 ml-1">({it.refundedQty} {t('phRefundedLc') || 'refunded'})</span>}
+                    </div>
+                    <span className="font-semibold text-slate-700 dark:text-slate-200">${money(it.lineTotal)}</span>
+                    {sale.status !== 'refunded' && refundable > 0.0001 && !editing && (
+                      <button onClick={() => { setRefundItemId(it.id); setRefundQty(String(refundable)) }} disabled={busy} title={t('phRefundItem') || 'Refund item'} className="p-1 rounded text-slate-300 hover:text-amber-600"><RotateCcw size={13} /></button>
+                    )}
                   </div>
-                  <span className="font-semibold text-slate-700 dark:text-slate-200">${money(it.lineTotal)}</span>
-                  {sale.status !== 'refunded' && refundable > 0.0001 && (
-                    <button onClick={() => refundItem(it)} disabled={busy} title={t('phRefundItem') || 'Refund item'} className="p-1 rounded text-slate-300 hover:text-amber-600"><RotateCcw size={13} /></button>
+                  {editing && (
+                    <div className="mt-1.5 flex items-center gap-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-800 px-2 py-1.5">
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">{t('phRefundQty') || 'Refund qty'}:</span>
+                      <input type="number" min="0" step="any" value={refundQty} onChange={e => setRefundQty(e.target.value)} autoFocus
+                        className={`w-20 px-2 py-1 text-xs text-center border rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 ${rqValid ? 'border-slate-200 dark:border-slate-700' : 'border-red-400'}`} />
+                      <span className="text-[11px] text-slate-400 shrink-0">/ {refundable}</span>
+                      <button onClick={() => setRefundQty(String(refundable))} className="px-2 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded shrink-0">{t('phAll') || 'All'}</button>
+                      <div className="flex-1" />
+                      <button onClick={() => refundItem(it, rq)} disabled={busy || !rqValid} className="px-2.5 py-1 text-[11px] font-bold text-white bg-amber-600 hover:bg-amber-700 rounded disabled:opacity-50 shrink-0">{t('phRefund') || 'Refund'}</button>
+                      <button onClick={() => setRefundItemId(null)} className="text-slate-400 hover:text-slate-600 shrink-0"><X size={14} /></button>
+                    </div>
                   )}
                 </div>
               )

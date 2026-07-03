@@ -18,11 +18,15 @@ export function registerDashboardHandlers(prisma: any) {
           _count: true
         })
         
-        // Calculate profit from items
-        const profitData = await prisma.$queryRaw`
-          SELECT SUM((si.price - si.cost) * si.quantity) as profit
+        // Gross profit = (unit final price − unit cost) × qty.
+        // SaleItem has no cost column; cost lives on the variant (preferred) or
+        // the product's baseCost. LEFT JOIN variant so simple products still work.
+        const profitData: Array<{ profit: number | null }> = await prisma.$queryRaw`
+          SELECT SUM((si.finalPrice - COALESCE(pv.cost, p.baseCost, 0)) * si.quantity) as profit
           FROM SaleItem si
           JOIN SaleTransaction st ON si.transactionId = st.id
+          JOIN Product p ON si.productId = p.id
+          LEFT JOIN ProductVariant pv ON si.variantId = pv.id
           WHERE st.status = 'completed'
         `
         const profit = profitData[0]?.profit || 0

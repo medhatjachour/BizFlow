@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-  Loader2, Plus, Pencil, Trash2, Layers, X, PackageX, AlertTriangle, Boxes, History
+  Loader2, Plus, Minus, Pencil, Trash2, Layers, X, PackageX, AlertTriangle, Boxes, History, Settings2, Check
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -297,6 +297,42 @@ function BatchModal({ product, onClose }: { product: any; onClose: () => void })
   const [form, setForm] = useState(blank)
   const set = (k: string) => (e: any) => setForm(f => ({ ...f, [k]: e.target.value }))
 
+  // Per-batch inline editor: details (price/expiry) + stock adjustment.
+  const hasSub = !!(product.subUnit && product.subUnitsPerContainer)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ costPerUnit: '', sellingPrice: '', expiryDate: '' })
+  const [editBusy, setEditBusy] = useState(false)
+  const [adj, setAdj] = useState<{ mode: 'add' | 'remove' | 'set'; amount: string; unit: 'base' | 'sub'; reason: string }>({ mode: 'add', amount: '', unit: 'base', reason: '' })
+  const [adjBusy, setAdjBusy] = useState(false)
+
+  function openEdit(b: any) {
+    setEditId(b.id)
+    setEditForm({ costPerUnit: String(b.costPerUnit ?? ''), sellingPrice: b.sellingPrice != null ? String(b.sellingPrice) : '', expiryDate: new Date(b.expiryDate).toISOString().slice(0, 10) })
+    setAdj({ mode: 'add', amount: '', unit: 'base', reason: '' })
+  }
+  async function saveEdit(b: any) {
+    setEditBusy(true)
+    try {
+      await pharma()?.batches.update(b.id, {
+        costPerUnit: parseFloat(editForm.costPerUnit) || 0,
+        sellingPrice: editForm.sellingPrice ? parseFloat(editForm.sellingPrice) : null,
+        expiryDate: editForm.expiryDate,
+      })
+      toast.success(t('phBatchUpdated') || 'Batch updated'); setEditId(null); load()
+    } catch (e: any) { toast.error(e?.message ?? 'Failed') }
+    finally { setEditBusy(false) }
+  }
+  async function applyAdjust(b: any) {
+    const amount = parseFloat(adj.amount)
+    if (!Number.isFinite(amount) || amount < 0 || (adj.mode !== 'set' && amount <= 0)) { toast.error(t('phEnterAmount') || 'Enter a valid amount'); return }
+    setAdjBusy(true)
+    try {
+      await pharma()?.batches.adjust(b.id, { mode: adj.mode, amount, unit: adj.unit, reason: adj.reason || undefined })
+      toast.success(t('phStockAdjusted') || 'Stock adjusted'); setEditId(null); load()
+    } catch (e: any) { toast.error(e?.message ?? 'Failed') }
+    finally { setAdjBusy(false) }
+  }
+
   const load = useCallback(async () => {
     setLoading(true)
     try { setBatches(await pharma()?.batches.getByProduct(product.id) ?? []) }
@@ -371,23 +407,63 @@ function BatchModal({ product, onClose }: { product: any; onClose: () => void })
               {batches.map(b => {
                 const days = Math.floor((new Date(b.expiryDate).getTime() - Date.now()) / 86_400_000)
                 const depleted = b.quantity <= 0
+                const isEditing = editId === b.id
                 return (
-                  <div key={b.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border ${depleted ? 'border-slate-200 dark:border-slate-700 opacity-60' : days < 0 ? 'border-red-200 dark:border-red-800/60 bg-red-50/50 dark:bg-red-900/10' : 'border-slate-200 dark:border-slate-700'}`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{b.quantity} {product.unit}</span>
-                        {b.batchNumber && <span className="text-[11px] text-slate-400">#{b.batchNumber}</span>}
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${b.status === 'active' && !depleted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700'}`}>{depleted ? (t('phDepleted') || 'depleted') : b.status}</span>
+                  <div key={b.id} className={`rounded-xl border ${depleted ? 'border-slate-200 dark:border-slate-700 opacity-60' : days < 0 ? 'border-red-200 dark:border-red-800/60 bg-red-50/50 dark:bg-red-900/10' : 'border-slate-200 dark:border-slate-700'}`}>
+                    <div className="flex items-center gap-3 px-3 py-2.5">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{b.quantity} {product.unit}</span>
+                          {b.batchNumber && <span className="text-[11px] text-slate-400">#{b.batchNumber}</span>}
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${b.status === 'active' && !depleted ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-slate-100 text-slate-500 dark:bg-slate-700'}`}>{depleted ? (t('phDepleted') || 'depleted') : b.status}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          {t('phCost') || 'Cost'} ${money(b.costPerUnit)} · {t('phSell') || 'Sell'} ${money(b.sellingPrice ?? product.sellingPrice)} · <span className={expiryTone(days)}>{t('phExp') || 'Exp'} {new Date(b.expiryDate).toLocaleDateString()} {days < 0 ? `(${t('phExpired') || 'expired'})` : `(${days}d)`}</span>
+                          {b.supplier && ` · ${b.supplier.name}`}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-400 mt-0.5">
-                        {t('phCost') || 'Cost'} ${money(b.costPerUnit)} · {t('phSell') || 'Sell'} ${money(b.sellingPrice ?? product.sellingPrice)} · <span className={expiryTone(days)}>{t('phExp') || 'Exp'} {new Date(b.expiryDate).toLocaleDateString()} {days < 0 ? `(${t('phExpired') || 'expired'})` : `(${days}d)`}</span>
-                        {b.supplier && ` · ${b.supplier.name}`}
-                      </div>
+                      <button onClick={() => isEditing ? setEditId(null) : openEdit(b)} title={t('phEdit') || 'Edit'} className={`p-1.5 rounded-lg ${isEditing ? 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'}`}><Pencil size={15} /></button>
+                      {!depleted && (
+                        <button onClick={() => dispose(b)} title={t('phDispose') || 'Dispose / write-off'} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"><PackageX size={15} /></button>
+                      )}
+                      <button onClick={() => del(b)} title={t('phDelete') || 'Delete'} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={15} /></button>
                     </div>
-                    {!depleted && (
-                      <button onClick={() => dispose(b)} title={t('phDispose') || 'Dispose / write-off'} className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20"><PackageX size={15} /></button>
+
+                    {isEditing && (
+                      <div className="px-3 pb-3 pt-1 space-y-3 border-t border-slate-100 dark:border-slate-800">
+                        {/* Edit details */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div><label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">{t('phCost') || 'Cost'}</label><input value={editForm.costPerUnit} onChange={e => setEditForm(f => ({ ...f, costPerUnit: e.target.value }))} type="number" min="0" step="0.01" className={inputCls + ' py-1.5 text-xs'} /></div>
+                          <div><label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">{t('phSell') || 'Sell'}</label><input value={editForm.sellingPrice} onChange={e => setEditForm(f => ({ ...f, sellingPrice: e.target.value }))} type="number" min="0" step="0.01" className={inputCls + ' py-1.5 text-xs'} /></div>
+                          <div><label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">{t('phExpiry') || 'Expiry'}</label><input value={editForm.expiryDate} onChange={e => setEditForm(f => ({ ...f, expiryDate: e.target.value }))} type="date" className={inputCls + ' py-1.5 text-xs'} /></div>
+                        </div>
+                        <div className="flex justify-end">
+                          <button onClick={() => saveEdit(b)} disabled={editBusy} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1">{editBusy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} {t('phSaveDetails') || 'Save details'}</button>
+                        </div>
+                        {/* Adjust stock */}
+                        <div className="rounded-lg border border-amber-200 dark:border-amber-800/60 bg-amber-50/40 dark:bg-amber-950/20 p-2.5 space-y-2">
+                          <div className="flex items-center gap-1.5"><Settings2 size={12} className="text-amber-600 dark:text-amber-400" /><span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">{t('phAdjustStock') || 'Adjust stock'}</span></div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1 p-0.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                              {([['add', t('phAdjAdd') || 'Add', Plus], ['remove', t('phAdjRemove') || 'Remove', Minus], ['set', t('phAdjSet') || 'Set to', Settings2]] as const).map(([m, label, Icon]) => (
+                                <button key={m} type="button" onClick={() => setAdj(a => ({ ...a, mode: m }))} className={`flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded ${adj.mode === m ? 'bg-amber-600 text-white' : 'text-slate-500 dark:text-slate-400'}`}><Icon size={11} /> {label}</button>
+                              ))}
+                            </div>
+                            <input value={adj.amount} onChange={e => setAdj(a => ({ ...a, amount: e.target.value }))} type="number" min="0" step="any" placeholder="0" className={inputCls + ' py-1 text-xs w-24'} />
+                            {hasSub && (
+                              <div className="flex items-center gap-1 p-0.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <button type="button" onClick={() => setAdj(a => ({ ...a, unit: 'base' }))} className={`px-2 py-1 text-[11px] font-semibold rounded ${adj.unit === 'base' ? 'bg-amber-600 text-white' : 'text-slate-500 dark:text-slate-400'}`}>{product.unit}</button>
+                                <button type="button" onClick={() => setAdj(a => ({ ...a, unit: 'sub' }))} className={`px-2 py-1 text-[11px] font-semibold rounded ${adj.unit === 'sub' ? 'bg-amber-600 text-white' : 'text-slate-500 dark:text-slate-400'}`}>{product.subUnit}</button>
+                              </div>
+                            )}
+                          </div>
+                          <input value={adj.reason} onChange={e => setAdj(a => ({ ...a, reason: e.target.value }))} placeholder={t('phAdjReason') || 'Reason (optional)'} className={inputCls + ' py-1 text-xs'} />
+                          <div className="flex justify-end">
+                            <button onClick={() => applyAdjust(b)} disabled={adjBusy} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1">{adjBusy ? <Loader2 size={13} className="animate-spin" /> : null} {t('phApplyAdjustment') || 'Apply'}</button>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                    <button onClick={() => del(b)} title={t('phDelete') || 'Delete'} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 size={15} /></button>
                   </div>
                 )
               })}

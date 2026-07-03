@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Calendar, X } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import DateField from '@renderer/components/DateField'
 
 export type PeriodPreset = 'all' | 'today' | 'week' | 'month' | 'year' | 'custom'
 export interface PeriodRange { from?: string; to?: string }
@@ -92,10 +93,10 @@ export default function VetPeriodFilter({
       {(preset === 'custom' || list.length === 1) && (
         <div className="flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-          <input type="date" value={from} onChange={e => changeFrom(e.target.value)}
+          <DateField value={from} onChange={changeFrom} wrapperClassName="w-36"
             className="px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
           <span className="text-slate-400 text-xs">–</span>
-          <input type="date" value={to} onChange={e => changeTo(e.target.value)}
+          <DateField value={to} onChange={changeTo} wrapperClassName="w-36"
             className="px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
           {(from || to) && (
             <button type="button" onClick={() => { setFrom(''); setTo(''); pick('all') }}

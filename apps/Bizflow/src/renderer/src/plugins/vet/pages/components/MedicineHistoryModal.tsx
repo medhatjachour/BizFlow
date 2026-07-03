@@ -1,12 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   Loader2, X, History, Calendar, ShoppingCart,
-  ArrowDownToLine, TrendingUp, DollarSign, XCircle
+  ArrowDownToLine, TrendingUp, DollarSign, XCircle, Pencil
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import VetPeriodFilter from './VetPeriodFilter'
 import type { HistoryEvent } from './vetMedicines.types'
 import { api } from './vetMedicines.shared'
+
+/** Display an audit before/after value: dates as locale dates, blanks as a dash. */
+function formatChange(v: any): string {
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString()
+  return String(v)
+}
 
 export default function MedicineHistoryModal({ medicineId, medicineName, onClose }: {
   medicineId: string; medicineName: string; onClose: () => void
@@ -17,7 +24,7 @@ export default function MedicineHistoryModal({ medicineId, medicineName, onClose
   const [summary, setSummary] = useState<any | null>(null)
   const [medUnit, setMedUnit] = useState('')
   const [range, setRange] = useState<{ from?: string; to?: string }>({})
-  const [typeFilter, setTypeFilter] = useState<'all' | 'received' | 'sold' | 'disposed'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | 'received' | 'sold' | 'disposed' | 'edited'>('all')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -38,6 +45,7 @@ export default function MedicineHistoryModal({ medicineId, medicineName, onClose
     received: { icon: ArrowDownToLine, color: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-100 dark:bg-blue-900/30',     label: t('vetHistReceived') || 'Stock received' },
     sold:     { icon: ShoppingCart,    color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/30', label: t('vetHistSold') || 'Sold' },
     disposed: { icon: XCircle,         color: 'text-red-600 dark:text-red-400',       bg: 'bg-red-100 dark:bg-red-900/30',       label: t('vetHistDisposed') || 'Written off' },
+    edited:   { icon: Pencil,          color: 'text-amber-600 dark:text-amber-400',   bg: 'bg-amber-100 dark:bg-amber-900/30',   label: t('vetHistEdited') || 'Edited' },
   }
 
   return (
@@ -65,7 +73,7 @@ export default function MedicineHistoryModal({ medicineId, medicineName, onClose
           <VetPeriodFilter onChange={r => setRange({ from: r.from, to: r.to })} defaultPreset="all" />
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">{t('vetHistType') || 'Type'}:</span>
-            {(['all', 'received', 'sold', 'disposed'] as const).map(ty => (
+            {(['all', 'received', 'sold', 'disposed', 'edited'] as const).map(ty => (
               <button key={ty} onClick={() => setTypeFilter(ty)}
                 className={`px-2 py-0.5 text-[10px] font-semibold rounded-md capitalize transition-colors
                   ${typeFilter === ty ? 'bg-violet-600 text-white'
@@ -125,7 +133,7 @@ export default function MedicineHistoryModal({ medicineId, medicineName, onClose
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-3 flex-wrap">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-slate-900 dark:text-white">{meta.label}</span>
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white">{e.type === 'edited' && e.action === 'adjust_stock' ? (t('vetHistAdjusted') || 'Stock adjusted') : meta.label}</span>
                           {e.batchNumber && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">LOT {e.batchNumber}</span>}
                           {e.type === 'sold' && e.paymentStatus && e.paymentStatus !== 'paid' && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 capitalize">{e.paymentStatus}</span>
@@ -159,6 +167,21 @@ export default function MedicineHistoryModal({ medicineId, medicineName, onClose
                             {` · −$${(e.lossAmount ?? 0).toFixed(2)} ${t('vetHistLoss') || 'loss'}`}
                             {e.reason ? ` · ${e.reason}` : ''}
                           </>
+                        )}
+                        {e.type === 'edited' && (
+                          <span className="flex flex-col gap-0.5">
+                            <span className="text-amber-600 dark:text-amber-400 font-medium">
+                              {e.userName
+                                ? `${e.action === 'adjust_stock' ? (t('vetHistAdjustedBy') || 'Adjusted by') : (t('vetHistEditedBy') || 'Edited by')} ${e.userName}`
+                                : (e.action === 'adjust_stock' ? (t('vetHistAdjusted') || 'Stock adjusted') : (t('vetHistEdited') || 'Edited'))}
+                            </span>
+                            {(e.changes ?? []).map((c, ci) => (
+                              <span key={ci} className="text-slate-500 dark:text-slate-400">
+                                {c.label}: <span className="line-through text-slate-400">{formatChange(c.from)}</span>{' → '}<span className="font-semibold text-slate-700 dark:text-slate-200">{formatChange(c.to)}</span>
+                              </span>
+                            ))}
+                            {e.note && <span className="text-slate-500 dark:text-slate-400">{e.note}</span>}
+                          </span>
                         )}
                       </p>
                     </div>

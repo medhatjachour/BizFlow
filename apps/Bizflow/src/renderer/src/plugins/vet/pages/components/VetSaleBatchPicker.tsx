@@ -6,7 +6,7 @@
  */
 import { X, Package, CheckCircle2 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import { daysUntil } from './vetSales.shared'
+import { daysUntil, remainingDisplay } from './vetSales.shared'
 import type { MedicineLite, BatchLite } from './vetSales.types'
 
 export default function BatchPickerModal({
@@ -80,7 +80,10 @@ export default function BatchPickerModal({
                       )}
                     </div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                      {b.quantity} <span className="text-xs font-normal text-slate-400">{medicine.unit} {t('remaining')||'remaining'}</span>
+                      {(() => {
+                        const s = remainingDisplay(b.quantity, medicine.unit, medicine.subUnit, medicine.subUnitsPerContainer)
+                        return <>{s.value} <span className="text-xs font-normal text-slate-400">{s.unit} {t('remaining')||'remaining'}</span>{s.secondary && <span className="text-xs font-normal text-slate-300 dark:text-slate-500"> ({s.secondary})</span>}</>
+                      })()}
                     </p>
                     {b.supplier && <p className="text-xs text-slate-400 truncate">{b.supplier}</p>}
                   </div>

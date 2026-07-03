@@ -71,10 +71,13 @@ export function registerSalesHandlers(prisma: any) {
     }
   })
 
-  ipcMain.handle('sales:getAll', async () => {
+  ipcMain.handle('sales:getAll', async (_, options: { take?: number; skip?: number } = {}) => {
     try {
       log.warn('sales:getAll is deprecated - use sale-transactions:getAll instead')
       if (prisma) {
+        // Bounded: never load the whole table (was unpaginated → ~17s on 60k rows).
+        const take = Math.min(Number(options?.take) || 100, 1000)
+        const skip = Math.max(Number(options?.skip) || 0, 0)
         const transactions = await prisma.saleTransaction.findMany({
           include: {
             items: {
@@ -93,7 +96,9 @@ export function registerSalesHandlers(prisma: any) {
               }
             }
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: 'desc' },
+          take,
+          skip
         })
         return transactions
       }

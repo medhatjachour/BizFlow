@@ -34,6 +34,13 @@ export default function ProductDetailModal({ product, onClose }: { product: any;
     received: { color: 'text-emerald-600 dark:text-emerald-400', sign: '+', label: t('phReceived') || 'Received' },
     sold:     { color: 'text-blue-600 dark:text-blue-400', sign: '−', label: t('phSold') || 'Sold' },
     disposed: { color: 'text-red-500', sign: '−', label: t('phDisposed') || 'Disposed' },
+    edited:   { color: 'text-amber-600 dark:text-amber-400', sign: '', label: t('phEdited') || 'Edited' },
+  }
+
+  const fmtChange = (v: any): string => {
+    if (v === null || v === undefined || v === '') return '—'
+    if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(v)) return new Date(v).toLocaleDateString()
+    return String(v)
   }
 
   return (
@@ -70,6 +77,29 @@ export default function ProductDetailModal({ product, onClose }: { product: any;
               {data.events.length === 0 && <p className="text-sm text-slate-400 text-center py-8">{t('phNoMovements') || 'No movements yet'}</p>}
               {data.events.map((e: any, i: number) => {
                 const m = EVENT_META[e.type] ?? EVENT_META.sold
+                if (e.type === 'edited') {
+                  const isAdjust = e.action === 'adjust_stock'
+                  return (
+                    <div key={i} className="flex items-start gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                      <span className={`text-xs font-bold w-16 shrink-0 ${m.color}`}>{isAdjust ? (t('phAdjusted') || 'Adjusted') : m.label}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          {e.userName
+                            ? `${isAdjust ? (t('phAdjustedBy') || 'Adjusted by') : (t('phEditedBy') || 'Edited by')} ${e.userName}`
+                            : (isAdjust ? (t('phAdjusted') || 'Adjusted') : (t('phEdited') || 'Edited'))}
+                          {e.batchNumber ? ` · ${t('phBatch') || 'Batch'} ${e.batchNumber}` : ''}
+                        </p>
+                        {(e.changes ?? []).map((c: any, ci: number) => (
+                          <p key={ci} className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {c.label}: <span className="line-through text-slate-400">{fmtChange(c.from)}</span>{' → '}<span className="font-semibold text-slate-700 dark:text-slate-200">{fmtChange(c.to)}</span>
+                          </p>
+                        ))}
+                        {e.note && <p className="text-[11px] text-slate-500 dark:text-slate-400">{e.note}</p>}
+                        <p className="text-[10px] text-slate-400">{new Date(e.date).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  )
+                }
                 return (
                   <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
                     <span className={`text-xs font-bold w-16 shrink-0 ${m.color}`}>{m.label}</span>
