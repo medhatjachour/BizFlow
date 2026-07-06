@@ -4,7 +4,7 @@ import {
   Package, CheckCircle2,
   Pill, Plus, Pencil, AlertCircle,
   UserCheck, UserPlus, PanelRightClose, PanelRightOpen, ExternalLink,
-  Maximize2, Trash2, AlertTriangle, Minus,
+  Maximize2, Trash2, AlertTriangle, Minus, SlidersHorizontal, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -55,6 +55,8 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
   const [cartVisible, setCartVisible] = useState(true)
   const [cartModalOpen, setCartModalOpen] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  // Collapsible checkout options (defaults: cash · full payment · no discount).
+  const [showCheckoutDetails, setShowCheckoutDetails] = useState(false)
 
   // ── Current item being configured ─────────────────────────────────────────
   const [selectedMed, setSelectedMed] = useState<MedicineLite | null>(null)
@@ -133,16 +135,54 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
   const catalogHidden = catalogList.length - catalogVisible.length
 
   // ── Medicine/batch selection helpers ──────────────────────────────────────
+  // Add one whole unit of a (sub-unit-less) medicine straight to the cart.
+  function quickAddContainer(med: MedicineLite, batch: BatchLite) {
+    const committed = cart
+      .filter(ci => ci.batch.id === batch.id)
+      .reduce((s, ci) => {
+        const q = parseFloat(ci.quantity) || 0
+        const ratio = ci.medicine.subUnitsPerContainer ?? 1
+        return s + (ci.saleUnit === 'sub' ? q / ratio : q)
+      }, 0)
+    if (batch.quantity - committed < 1 - 1e-9) {
+      toast.error(`${med.name}: ${t('vetNoStockLeft') || 'no stock left'}`)
+      return
+    }
+    const price = String((batch.sellingPrice ?? batch.costPerUnit) || 0)
+    const existing = cart.find(ci => ci.batch.id === batch.id && ci.saleUnit === 'container')
+    if (existing) {
+      setCart(prev => prev.map(ci => ci.id === existing.id
+        ? { ...ci, quantity: String((parseFloat(ci.quantity) || 0) + 1) }
+        : ci))
+    } else {
+      const newItem: CartItem = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+        medicine: med, batch,
+        quantity: '1', unitPrice: price, discount: '0', saleUnit: 'container',
+      }
+      setCart(prev => [...prev, newItem])
+    }
+    toast.success(`${med.name} ${t('vetAddedToCart') || 'added to cart'}`)
+  }
+
   function pickMed(med: MedicineLite) {
-    setSelectedMed(med)
     setSaleError(null)
-    setEditingId(null)
     const fefo = [...med.batches]
       .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime())
       .find(b => b.quantity > 0 && daysUntil(b.expiryDate) >= 0)
     const batch = fefo ?? null
+    const hasSubUnit = !!(med.subUnit && med.subUnitsPerContainer)
+
+    // No sub-unit + a sellable batch → quick-add 1 unit, skip the modal entirely.
+    if (!hasSubUnit && batch) {
+      quickAddContainer(med, batch)
+      return
+    }
+
+    // Sub-unit meds (or no sellable batch) open the item configurator.
+    setSelectedMed(med)
+    setEditingId(null)
     const unitPrice = batch ? String(batch.sellingPrice ?? batch.costPerUnit ?? '') : ''
-    // If the FEFO batch is a partial container (<1) and subUnit is available, default to sub-unit mode
     const isPartial = batch !== null && batch.quantity < 1
     const defaultUnit: 'container' | 'sub' = (isPartial && med.subUnit && med.subUnitsPerContainer) ? 'sub' : 'container'
     let resolvedPrice = unitPrice
@@ -150,7 +190,7 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
       const base = (batch.sellingPrice ?? batch.costPerUnit) || 0
       resolvedPrice = base > 0 ? (base / med.subUnitsPerContainer).toFixed(4) : ''
     }
-    setItemForm({ batchId: batch?.id ?? '', quantity: '', unitPrice: resolvedPrice, discount: '0', saleUnit: defaultUnit })
+    setItemForm({ batchId: batch?.id ?? '', quantity: batch ? '1' : '', unitPrice: resolvedPrice, discount: '0', saleUnit: defaultUnit })
   }
 
   function pickBatch(b: BatchLite) {
@@ -404,47 +444,48 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
                   ? 'border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/10 ring-1 ring-amber-400/30'
                   : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-violet-300 dark:hover:border-violet-700 hover:shadow-sm',
               ].join(' ')}>
+              {/* Header: icon + prominent medicine name + actions */}
               <div className="flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0 mt-0.5">
-                  <Pill className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                <div className="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+                  <Pill className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <span className={`font-semibold text-slate-900 dark:text-white leading-tight ${variant === 'modal' ? 'text-sm' : 'text-xs'}`}>{ci.medicine.name}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start gap-1.5 flex-wrap">
+                    <span className="font-semibold text-sm text-slate-900 dark:text-white leading-snug break-words">{ci.medicine.name}</span>
                     {isEditing && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 font-bold">{t('vetEditing') || 'EDITING'}</span>
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 font-bold shrink-0 mt-0.5">{t('vetEditing') || 'EDITING'}</span>
                     )}
                   </div>
                   <p className="text-[10px] text-slate-400 mt-0.5">{t('vetLotPrefix') || 'Lot:'} {ci.batch.batchNumber ?? '—'} · {t('vetExpPrefix') || 'Exp:'} {new Date(ci.batch.expiryDate).toLocaleDateString()}</p>
-                  <div className="flex items-center justify-between mt-2 gap-2">
-                    {/* Quantity stepper */}
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                        <button type="button" onClick={() => changeCartQty(ci, -1)}
-                          className="px-1.5 py-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Decrease">
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="px-2 text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums min-w-[2.5rem] text-center">{qty}</span>
-                        <button type="button" onClick={() => changeCartQty(ci, +1)}
-                          className="px-1.5 py-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Increase">
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <span className="text-[10px] text-slate-400">{unitLabel} × ${price.toFixed(2)}{disc > 0 && <span className="text-emerald-600 dark:text-emerald-400"> −${disc.toFixed(2)}</span>}</span>
-                    </div>
-                    <span className={`font-bold text-violet-700 dark:text-violet-300 ${variant === 'modal' ? 'text-sm' : 'text-xs'}`}>${lineTotal.toFixed(2)}</span>
-                  </div>
                 </div>
-                <div className="flex flex-col items-center gap-1 shrink-0">
+                <div className="flex items-center gap-0.5 shrink-0">
                   <button type="button" onClick={() => editCartItem(ci)}
-                    className="p-1 rounded-lg text-slate-300 dark:text-slate-600 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors" title={t('vetEditItem') || 'Edit item'}>
+                    className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors" title={t('vetEditItem') || 'Edit item'}>
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button type="button" onClick={() => removeCartItem(ci.id)}
-                    className="p-1 rounded-lg text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title={t('vetRemoveItem') || 'Remove item'}>
+                    className="p-1.5 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title={t('vetRemoveItem') || 'Remove item'}>
                     <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
+              </div>
+              {/* Footer: qty stepper + unit×price + line total */}
+              <div className="flex items-center justify-between gap-2 mt-2.5 pl-10">
+                <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                  <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0">
+                    <button type="button" onClick={() => changeCartQty(ci, -1)}
+                      className="px-1.5 py-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Decrease">
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="px-2 text-[11px] font-bold text-slate-700 dark:text-slate-200 tabular-nums min-w-[2.5rem] text-center">{qty}</span>
+                    <button type="button" onClick={() => changeCartQty(ci, +1)}
+                      className="px-1.5 py-1 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="Increase">
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">{unitLabel} × ${price.toFixed(2)}{disc > 0 && <span className="text-emerald-600 dark:text-emerald-400"> −${disc.toFixed(2)}</span>}</span>
+                </div>
+                <span className="font-bold text-violet-700 dark:text-violet-300 text-sm shrink-0">${lineTotal.toFixed(2)}</span>
               </div>
             </div>
           )
@@ -493,6 +534,17 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
 
         {/* Checkout form */}
         <form onSubmit={submit} className="px-4 py-3 space-y-3">
+          {/* Show / hide the payment & options section (Submit always stays visible). */}
+          <button type="button" onClick={() => setShowCheckoutDetails(v => !v)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:border-violet-400 transition-colors">
+            <span className="flex items-center gap-1.5"><SlidersHorizontal className="h-3.5 w-3.5" /> Payment & options</span>
+            {showCheckoutDetails
+              ? <ChevronUp className="h-4 w-4 text-slate-400" />
+              : <span className="flex items-center gap-1 text-[10px] font-normal text-slate-400">Cash · Full · No discount <ChevronDown className="h-4 w-4" /></span>}
+          </button>
+
+          {showCheckoutDetails && (
+          <>
           {/* Customer search / link */}
           <div className="space-y-1">
             {selectedCustomer ? (
@@ -634,6 +686,8 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
               </div>
             )}
           </div>
+          </>
+          )}
 
           {saleError && (
             <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
@@ -741,12 +795,12 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
 
       {/* ── Item Configurator (modal — opens when a medicine is picked) ── */}
       {selectedMed && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={clearItem} />
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm" onClick={clearItem} />
       )}
       {selectedMed && (
-        <div className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[min(95vw,40rem)] max-h-[92vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-slate-900 overflow-hidden">
+        <div className="fixed left-1/2 top-1/2 z-[70] -translate-x-1/2 -translate-y-1/2 w-[min(94vw,34rem)] max-h-[88vh] flex flex-col rounded-2xl shadow-2xl bg-white dark:bg-slate-900 overflow-hidden">
           <div className="flex-1 overflow-y-auto">
-            <div className="p-5 space-y-5">
+            <div className="p-6 space-y-5">
 
               {/* Header */}
               <div className="flex items-start justify-between gap-4">

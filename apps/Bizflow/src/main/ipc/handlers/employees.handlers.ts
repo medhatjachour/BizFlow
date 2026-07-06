@@ -3,10 +3,19 @@
  * Full employee lifecycle: profile, attendance, documents, activity log, payroll
  */
 
-import { ipcMain } from 'electron'
+import { ipcMain, dialog, app, shell } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Employees')
+
+// Directory where uploaded employee documents are stored
+function employeeDocsDir(): string {
+  const dir = path.join(app.getPath('userData'), 'employee-documents')
+  fs.mkdirSync(dir, { recursive: true })
+  return dir
+}
 
 // Shared include for full employee profile
 const EMPLOYEE_INCLUDE = {
@@ -15,7 +24,8 @@ const EMPLOYEE_INCLUDE = {
   activityLogs: { orderBy: { createdAt: 'desc' as const }, take: 50 },
   payrollRecords: { orderBy: [{ year: 'desc' as const }, { month: 'desc' as const }], take: 24 },
   shifts: { orderBy: { date: 'desc' as const }, take: 60 },
-  overtimeRecords: { orderBy: { date: 'desc' as const }, take: 60 }
+  overtimeRecords: { orderBy: { date: 'desc' as const }, take: 60 },
+  leaveRecords: { orderBy: { startDate: 'desc' as const }, take: 60 }
 }
 
 // Compute attendance summary from attendance records
@@ -29,16 +39,35 @@ function computeAttendanceSummary(attendance: any[]) {
   return { total, present, absent, late, onLeave, rate }
 }
 
+// Compute the annual paid-leave balance for the current year
+function computeLeaveBalance(emp: any) {
+  const allowance = emp.annualLeaveDays ?? 21
+  const year = new Date().getFullYear()
+  const annual = (emp.leaveRecords ?? []).filter(
+    (l: any) => l.type === 'annual' && new Date(l.startDate).getFullYear() === year
+  )
+  const taken = annual.filter((l: any) => l.status === 'approved').reduce((s: number, l: any) => s + (l.days ?? 0), 0)
+  const pending = annual.filter((l: any) => l.status === 'pending').reduce((s: number, l: any) => s + (l.days ?? 0), 0)
+  return { allowance, taken, pending, remaining: Math.max(0, allowance - taken) }
+}
+
 export function registerEmployeesHandlers(prisma: any) {
   // ─── LIST ─────────────────────────────────────────────────────────────────
   ipcMain.handle('employees:getAll', async () => {
     try {
       if (!prisma) return []
-      return await prisma.employee.findMany({
+      const today = new Date(); today.setUTCHours(0, 0, 0, 0)
+      const emps = await prisma.employee.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
-          _count: { select: { attendance: true, activityLogs: true } }
+          _count: { select: { attendance: true, activityLogs: true } },
+          attendance: { where: { date: today }, take: 1, select: { checkIn: true, checkOut: true, status: true } }
         }
+      })
+      // Flatten today's attendance onto each employee for quick card display
+      return emps.map((e: any) => {
+        const { attendance, ...rest } = e
+        return { ...rest, todayAttendance: attendance?.[0] ?? null }
       })
     } catch (error) {
       log.error('Error fetching employees:', error)
@@ -57,7 +86,8 @@ export function registerEmployeesHandlers(prisma: any) {
       if (!emp) return null
       return {
         ...emp,
-        attendanceSummary: computeAttendanceSummary(emp.attendance)
+        attendanceSummary: computeAttendanceSummary(emp.attendance),
+        leaveBalance: computeLeaveBalance(emp)
       }
     } catch (error) {
       log.error('Error fetching employee:', error)
@@ -69,13 +99,14 @@ export function registerEmployeesHandlers(prisma: any) {
   ipcMain.handle('employees:create', async (_, employeeData: any) => {
     try {
       if (!prisma) return { success: false, message: 'Database not available' }
-      const employee = await prisma.employee.create({ data: employeeData })
+      const { createdBy, performedBy, ...data } = employeeData
+      const employee = await prisma.employee.create({ data })
       await prisma.employeeActivityLog.create({
         data: {
           employeeId: employee.id,
           action: 'employee_created',
           details: `Employee profile created`,
-          performedBy: employeeData.createdBy ?? null
+          performedBy: createdBy ?? performedBy ?? null
         }
       })
       return { success: true, employee }
@@ -119,7 +150,7 @@ export function registerEmployeesHandlers(prisma: any) {
   })
 
   // ─── ATTENDANCE ───────────────────────────────────────────────────────────
-  ipcMain.handle('employees:attendance:upsert', async (_, { employeeId, date, status, checkIn, checkOut, notes }: any) => {
+  ipcMain.handle('employees:attendance:upsert', async (_, { employeeId, date, status, checkIn, checkOut, notes, performedBy }: any) => {
     try {
       if (!prisma) return { success: false }
       const dayStart = new Date(date)
@@ -134,7 +165,7 @@ export function registerEmployeesHandlers(prisma: any) {
           employeeId,
           action: 'attendance_recorded',
           details: `${status} on ${dayStart.toLocaleDateString()}`,
-          performedBy: null
+          performedBy: performedBy ?? null
         }
       })
       return { success: true, record }
@@ -180,13 +211,27 @@ export function registerEmployeesHandlers(prisma: any) {
         }
       }
 
+      // Late detection: compare against today's scheduled shift start (5-min grace)
+      const nextDay = new Date(dayStart); nextDay.setUTCDate(nextDay.getUTCDate() + 1)
+      const shift = await prisma.employeeShift.findFirst({
+        where: { employeeId, date: { gte: dayStart, lt: nextDay } }
+      })
+      let status = 'present'
+      if (shift?.startTime) {
+        const [h, m] = String(shift.startTime).split(':').map(Number)
+        if (!isNaN(h)) {
+          const shiftStart = new Date(now); shiftStart.setHours(h, m || 0, 0, 0)
+          if (now.getTime() > shiftStart.getTime() + 5 * 60 * 1000) status = 'late'
+        }
+      }
+
       const record = await prisma.employeeAttendance.upsert({
         where: { employeeId_date: { employeeId, date: dayStart } },
-        create: { employeeId, date: dayStart, status: 'present', checkIn: now },
-        update: { checkIn: now, status: 'present' }
+        create: { employeeId, date: dayStart, status, checkIn: now },
+        update: { checkIn: now, status }
       })
       await prisma.employeeActivityLog.create({
-        data: { employeeId, action: 'checked_in', details: `Checked in at ${now.toLocaleTimeString()}` }
+        data: { employeeId, action: 'checked_in', details: `Checked in at ${now.toLocaleTimeString()}${status === 'late' ? ' (late)' : ''}` }
       })
       return { success: true, record }
     } catch (error: any) {
@@ -240,7 +285,7 @@ export function registerEmployeesHandlers(prisma: any) {
     const monthStart = new Date(year, month - 1, 1)
     const monthEnd   = new Date(year, month,     1)
     const records = await prisma.employeeOvertime.findMany({
-      where: { employeeId, date: { gte: monthStart, lt: monthEnd } }
+      where: { employeeId, approved: true, date: { gte: monthStart, lt: monthEnd } }
     })
     const overtimeHours: number = records.reduce((s: number, r: any) => s + (r.hours ?? 0), 0)
     // Derive hourly rate: monthly salary / 160 standard hours
@@ -660,5 +705,155 @@ export function registerEmployeesHandlers(prisma: any) {
       return { success: false, message: error.message }
     }
   })
+
+  // ─── LEAVE / PTO ──────────────────────────────────────────────────────────
+  ipcMain.handle('employees:leave:add', async (_, { employeeId, type, startDate, endDate, days, reason, performedBy }: any) => {
+    try {
+      if (!prisma) return { success: false }
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      if (end < start) return { success: false, message: 'End date cannot be before start date' }
+      const record = await prisma.employeeLeave.create({
+        data: {
+          employeeId,
+          type: type || 'annual',
+          startDate: start,
+          endDate: end,
+          days: Number(days) || 0,
+          reason: reason || null,
+          status: 'pending',
+        },
+      })
+      await prisma.employeeActivityLog.create({
+        data: { employeeId, action: 'leave_requested', details: `${type || 'annual'} leave · ${Number(days) || 0} day(s)`, performedBy: performedBy ?? null },
+      })
+      return { success: true, leave: record }
+    } catch (error: any) {
+      log.error('Error adding leave:', error)
+      return { success: false, message: error.message }
+    }
+  })
+
+  ipcMain.handle('employees:leave:setStatus', async (_, { id, status, approvedBy }: any) => {
+    try {
+      if (!prisma) return { success: false }
+      if (!['approved', 'rejected', 'pending'].includes(status)) return { success: false, message: 'Invalid status' }
+      const leave = await prisma.employeeLeave.update({
+        where: { id },
+        data: { status, approvedBy: approvedBy ?? null, reviewedAt: new Date() },
+      })
+      // On approval, mark each calendar day of the leave as 'leave' attendance
+      if (status === 'approved') {
+        const cur = new Date(leave.startDate); cur.setUTCHours(0, 0, 0, 0)
+        const end = new Date(leave.endDate); end.setUTCHours(0, 0, 0, 0)
+        let guard = 0
+        while (cur.getTime() <= end.getTime() && guard < 400) {
+          const day = new Date(cur)
+          await prisma.employeeAttendance.upsert({
+            where: { employeeId_date: { employeeId: leave.employeeId, date: day } },
+            create: { employeeId: leave.employeeId, date: day, status: 'leave', notes: `${leave.type} leave` },
+            update: { status: 'leave' },
+          })
+          cur.setUTCDate(cur.getUTCDate() + 1)
+          guard++
+        }
+      }
+      await prisma.employeeActivityLog.create({
+        data: { employeeId: leave.employeeId, action: `leave_${status}`, details: `${leave.type} leave ${status} (${leave.days} day(s))`, performedBy: approvedBy ?? null },
+      })
+      return { success: true, leave }
+    } catch (error: any) {
+      log.error('Error updating leave status:', error)
+      return { success: false, message: error.message }
+    }
+  })
+
+  ipcMain.handle('employees:leave:delete', async (_, id: string) => {
+    try {
+      if (!prisma) return { success: false }
+      await prisma.employeeLeave.delete({ where: { id } })
+      return { success: true }
+    } catch (error: any) {
+      log.error('Error deleting leave:', error)
+      return { success: false, message: error.message }
+    }
+  })
+
+  // ─── DOCUMENTS ────────────────────────────────────────────────────────────
+  // Prompts the user for a file, copies it into userData/employee-documents and
+  // records the metadata. { employeeId, title, type, performedBy }
+  ipcMain.handle('employees:documents:add', async (_, { employeeId, title, type, performedBy }: any) => {
+    try {
+      if (!prisma) return { success: false }
+
+      const picked = await dialog.showOpenDialog({
+        title: 'Select document to attach',
+        properties: ['openFile'],
+        filters: [
+          { name: 'Documents', extensions: ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'txt', 'xlsx'] },
+          { name: 'All Files', extensions: ['*'] },
+        ],
+      })
+      if (picked.canceled || !picked.filePaths[0]) {
+        return { success: false, message: 'No file selected', canceled: true }
+      }
+
+      const src = picked.filePaths[0]
+      const ext = path.extname(src)
+      const empDir = path.join(employeeDocsDir(), employeeId)
+      fs.mkdirSync(empDir, { recursive: true })
+      const storedName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`
+      const dest = path.join(empDir, storedName)
+      fs.copyFileSync(src, dest)
+
+      const record = await prisma.employeeDocument.create({
+        data: {
+          employeeId,
+          title: (title && String(title).trim()) || path.basename(src),
+          type: type || 'other',
+          filename: path.join(employeeId, storedName),
+        },
+      })
+      await prisma.employeeActivityLog.create({
+        data: { employeeId, action: 'document_added', details: `Document "${record.title}" (${record.type})`, performedBy: performedBy ?? null },
+      })
+      return { success: true, document: record }
+    } catch (error: any) {
+      log.error('Error adding document:', error)
+      return { success: false, message: error.message }
+    }
+  })
+
+  ipcMain.handle('employees:documents:open', async (_, id: string) => {
+    try {
+      if (!prisma) return { success: false }
+      const doc = await prisma.employeeDocument.findUnique({ where: { id } })
+      if (!doc) return { success: false, message: 'Document not found' }
+      const full = path.join(employeeDocsDir(), doc.filename)
+      if (!fs.existsSync(full)) return { success: false, message: 'File is missing on disk' }
+      const err = await shell.openPath(full)
+      if (err) return { success: false, message: err }
+      return { success: true }
+    } catch (error: any) {
+      log.error('Error opening document:', error)
+      return { success: false, message: error.message }
+    }
+  })
+
+  ipcMain.handle('employees:documents:delete', async (_, id: string) => {
+    try {
+      if (!prisma) return { success: false }
+      const doc = await prisma.employeeDocument.findUnique({ where: { id } })
+      if (!doc) return { success: false, message: 'Document not found' }
+      const full = path.join(employeeDocsDir(), doc.filename)
+      try { if (fs.existsSync(full)) fs.unlinkSync(full) } catch { /* ignore missing file */ }
+      await prisma.employeeDocument.delete({ where: { id } })
+      return { success: true }
+    } catch (error: any) {
+      log.error('Error deleting document:', error)
+      return { success: false, message: error.message }
+    }
+  })
 }
+
 

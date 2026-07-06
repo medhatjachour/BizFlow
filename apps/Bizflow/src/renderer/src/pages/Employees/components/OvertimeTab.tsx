@@ -1,4 +1,4 @@
-import { Plus, Trash2, CheckCircle, AlarmClock } from 'lucide-react'
+import { Plus, Trash2, CheckCircle, AlarmClock, CheckCheck } from 'lucide-react'
 import type { EmployeeOvertime } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
@@ -6,14 +6,16 @@ interface Props {
   overtimeRecords: EmployeeOvertime[]
   onAdd: () => void
   onApprove: (id: string) => void
+  onApproveAll?: () => void
   onDelete: (id: string) => void
   disabled?: boolean
 }
 
-export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onDelete, disabled }: Props) {
+export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onApproveAll, onDelete, disabled }: Props) {
   const { t } = useLanguage()
   const totalHours = overtimeRecords.reduce((sum, o) => sum + o.hours, 0)
   const approvedHours = overtimeRecords.filter(o => o.approved).reduce((sum, o) => sum + o.hours, 0)
+  const pendingCount = overtimeRecords.filter(o => !o.approved).length
 
   return (
     <div className="space-y-4">
@@ -22,9 +24,16 @@ export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onDelet
           <AlarmClock size={16} /> {t('empOvertimeRecords')}
         </h3>
         {!disabled && (
-          <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-            <Plus size={14} /> {t('empLogOvertime')}
-          </button>
+          <div className="flex items-center gap-2">
+            {pendingCount > 0 && onApproveAll && (
+              <button onClick={onApproveAll} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+                <CheckCheck size={14} /> {t('empApproveAll') ?? 'Approve all'} ({pendingCount})
+              </button>
+            )}
+            <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
+              <Plus size={14} /> {t('empLogOvertime')}
+            </button>
+          </div>
         )}
       </div>
 

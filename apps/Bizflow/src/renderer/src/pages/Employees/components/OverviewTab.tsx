@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Calendar, User, Clock, FileText, X, Pencil, Plus } from 'lucide-react'
 import type { EmployeeProfile, EmployeeAttendance, AttendanceStatus } from '../types'
+import { describePayrollPeriod } from '../payrollPeriod'
+import { expiryState, daysUntil } from '../expiry'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
 const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
@@ -10,18 +12,28 @@ const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
   'half-day': 'bg-yellow-300',
   leave:      'bg-blue-400'
 }
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+// Render a stored check-in/out timestamp as local HH:MM (handles ISO strings and Date objects)
+function fmtTime(value: string | Date | null | undefined): string {
+  if (!value) return '—'
+  const d = value instanceof Date ? value : new Date(value)
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
 
 interface Props {
   emp: EmployeeProfile
   calendar: { date: string; att: EmployeeAttendance | null }[]
   onLogDate: (date: string, att: EmployeeAttendance | null) => void
+  onSetPerformance?: (score: number) => void
+  savingPerf?: boolean
   disabled?: boolean
 }
 
-export default function OverviewTab({ emp, calendar, onLogDate, disabled }: Props) {
+export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance, savingPerf, disabled }: Props) {
   const { t } = useLanguage()
   const [selectedDay, setSelectedDay] = useState<{ date: string; att: EmployeeAttendance | null } | null>(null)
+  const [pendingScore, setPendingScore] = useState<number>(emp.performanceScore ?? 0)
 
   const attLabels: Record<AttendanceStatus, string> = {
     present: t('empStatusPresent'),
@@ -109,13 +121,13 @@ export default function OverviewTab({ emp, calendar, onLogDate, disabled }: Prop
                     <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
                       <Clock size={13} className="text-slate-400" />
                       <span className="text-xs text-slate-400">{t('empCheckInCol')}:</span>
-                      <span>{selectedDay.att.checkIn ? String(selectedDay.att.checkIn) : '—'}</span>
+                      <span>{fmtTime(selectedDay.att.checkIn)}</span>
                     </div>
                     {/* Check-out */}
                     <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
                       <Clock size={13} className="text-slate-400" />
                       <span className="text-xs text-slate-400">{t('empCheckOutCol')}:</span>
-                      <span>{selectedDay.att.checkOut ? String(selectedDay.att.checkOut) : '—'}</span>
+                      <span>{fmtTime(selectedDay.att.checkOut)}</span>
                     </div>
                   </div>
                   {selectedDay.att.notes && (
@@ -160,12 +172,36 @@ export default function OverviewTab({ emp, calendar, onLogDate, disabled }: Prop
             { label: t('empAddress'), value: emp.address },
             { label: t('empEmergencyContact'), value: emp.emergencyName },
             { label: t('empEmergencyPhone'), value: emp.emergencyPhone },
+            { label: t('empTaxId'), value: emp.taxId },
+            { label: t('empSocialInsurance'), value: emp.socialInsuranceNo },
+            { label: t('empBankName'), value: emp.bankName },
+            { label: t('empIban'), value: emp.iban },
           ].filter(f => f.value).map(f => (
             <div key={f.label}>
               <dt className="text-xs text-slate-500 dark:text-slate-400">{f.label}</dt>
               <dd className="text-sm font-medium text-slate-900 dark:text-white mt-0.5">{f.value}</dd>
             </div>
           ))}
+          {([
+            { label: t('empContractEnd'), value: emp.contractEndDate },
+            { label: t('empIdExpiry'), value: emp.idExpiryDate },
+          ] as const).filter(f => f.value).map(f => {
+            const st = expiryState(f.value)
+            const n = daysUntil(f.value)
+            const cls = st === 'expired' ? 'text-red-600 dark:text-red-400'
+              : st === 'soon' ? 'text-amber-600 dark:text-amber-400'
+              : 'text-slate-900 dark:text-white'
+            return (
+              <div key={f.label}>
+                <dt className="text-xs text-slate-500 dark:text-slate-400">{f.label}</dt>
+                <dd className={`text-sm font-medium mt-0.5 flex items-center gap-2 ${cls}`}>
+                  {new Date(f.value as string).toLocaleDateString()}
+                  {st === 'expired' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">{t('empExpired') ?? 'Expired'}</span>}
+                  {st === 'soon' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">{n}{t('empDaysLeftSuffix') ?? 'd left'}</span>}
+                </dd>
+              </div>
+            )
+          })}
           {emp.notes && (
             <div>
               <dt className="text-xs text-slate-500 dark:text-slate-400">{t('notes')}</dt>
@@ -174,12 +210,37 @@ export default function OverviewTab({ emp, calendar, onLogDate, disabled }: Prop
           )}
         </dl>
 
+        {/* Performance rating */}
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('empPerformance') ?? 'Performance'}</h4>
+            <span className={`text-lg font-bold ${pendingScore >= 80 ? 'text-green-600 dark:text-green-400' : pendingScore >= 60 ? 'text-amber-600 dark:text-amber-400' : pendingScore > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400'}`}>
+              {pendingScore > 0 ? `${pendingScore}%` : (t('empUnrated') ?? 'Unrated')}
+            </span>
+          </div>
+          <input
+            type="range" min={0} max={100} step={5} value={pendingScore}
+            onChange={e => setPendingScore(Number(e.target.value))}
+            disabled={disabled}
+            className="w-full accent-primary disabled:opacity-50 cursor-pointer"
+          />
+          {!disabled && onSetPerformance && pendingScore !== (emp.performanceScore ?? 0) && (
+            <button
+              onClick={() => onSetPerformance(pendingScore)}
+              disabled={savingPerf}
+              className="mt-2 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {savingPerf ? (t('empSaving') ?? 'Saving…') : (t('save') ?? 'Save')}
+            </button>
+          )}
+        </div>
+
         {emp.payrollRecords.length > 0 && (
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('empLatestPayroll')}</h4>
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">
               <div className="flex justify-between text-sm">
-                <span className="text-slate-600 dark:text-slate-400">{MONTHS[emp.payrollRecords[0].month - 1]} {emp.payrollRecords[0].year}</span>
+                <span className="text-slate-600 dark:text-slate-400">{describePayrollPeriod(emp.payrollRecords[0].month, emp.payrollRecords[0].year)}</span>
                 <span className={`font-medium ${emp.payrollRecords[0].status === 'paid' ? 'text-green-600' : 'text-amber-600'}`}>
                   {emp.payrollRecords[0].status === 'paid' ? t('empPaid') : t('empStatusPending')}
                 </span>

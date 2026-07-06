@@ -1,16 +1,19 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import EmployeeHero from './components/EmployeeHero'
 import TabBar from './components/TabBar'
 import OverviewTab from './components/OverviewTab'
 import AttendanceTab from './components/AttendanceTab'
 import ShiftsTab from './components/ShiftsTab'
 import OvertimeTab from './components/OvertimeTab'
+import LeaveTab from './components/LeaveTab'
 import PayrollTab from './components/PayrollTab'
 import ActivityTab from './components/ActivityTab'
 import DocumentsTab from './components/DocumentsTab'
 import { useEmployeeProfile } from './hooks/useEmployeeProfile'
+import { expiryState, daysUntil } from './expiry'
 import { useLanguage } from '../../contexts/LanguageContext'
 import type { AttendanceStatus } from './types'
 
@@ -30,7 +33,7 @@ export default function EmployeeProfilePage() {
   const calendar = s.buildCalendar()
 
   return (
-    <div className="p-6 mx-auto space-y-6">
+    <div className="p-6 mx-auto max-w-[1200px] space-y-6">
       <button onClick={() => navigate('/employees')} className="flex items-center gap-2 text-sm text-slate-500 hover:text-primary transition-colors">
         <ArrowLeft size={16} /> {t('empBackToEmployees')}
       </button>
@@ -48,12 +51,37 @@ export default function EmployeeProfilePage() {
         onReactivate={s.reactivate}
       />
 
+      {/* Contract / ID expiry alerts */}
+      {([
+        { label: t('empContractEnd') ?? 'Contract', value: s.emp.contractEndDate },
+        { label: t('empIdExpiry') ?? 'ID / visa', value: s.emp.idExpiryDate },
+      ] as const).filter(x => ['expired', 'soon'].includes(expiryState(x.value))).map(x => {
+        const st = expiryState(x.value)
+        const n = daysUntil(x.value) ?? 0
+        return (
+          <div key={x.label} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border ${
+            st === 'expired'
+              ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+              : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
+          }`}>
+            <span className="leading-none">⚠</span>
+            <span>
+              <strong>{x.label}</strong>{' '}
+              {st === 'expired'
+                ? `${t('empExpiredOn') ?? 'expired on'} ${new Date(x.value as string).toLocaleDateString()}`
+                : `${t('empExpiresIn') ?? 'expires in'} ${n} ${t('empDays') ?? 'days'} (${new Date(x.value as string).toLocaleDateString()})`}
+            </span>
+          </div>
+        )
+      })}
+
       {/* Tabs panel */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <TabBar tab={s.tab} onChange={s.setTab} counts={{
           attendance: s.emp.attendance.length,
           shifts: s.emp.shifts.length,
           overtime: s.emp.overtimeRecords.length,
+          leave: s.emp.leaveRecords.length,
           payroll: s.emp.payrollRecords.length,
           activity: s.emp.activityLogs.length,
           documents: s.emp.documents.length,
@@ -73,13 +101,14 @@ export default function EmployeeProfilePage() {
               </div>
             </div>
           )}
-          {s.tab === 'overview'   && <OverviewTab emp={s.emp} calendar={calendar} onLogDate={(date, att) => s.openAttendanceFor(date, att)} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'overview'   && <OverviewTab emp={s.emp} calendar={calendar} onLogDate={(date, att) => s.openAttendanceFor(date, att)} onSetPerformance={s.savePerformance} savingPerf={s.savingPerf} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'attendance' && <AttendanceTab attendance={s.emp.attendance} onLog={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], null)} onEdit={a => s.openAttendanceFor(new Date(a.date).toISOString().split('T')[0], a)} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'shifts'     && <ShiftsTab shifts={s.emp.shifts} onAdd={() => s.setShowShiftModal(true)} onDelete={s.deleteShift} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onDelete={s.deleteOvertime} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'payroll'    && <PayrollTab payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} onMarkPaid={s.markPayrollPaid} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onApproveAll={s.approveAllOvertime} onDelete={s.deleteOvertime} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'leave'      && <LeaveTab leaveRecords={s.emp.leaveRecords} balance={s.emp.leaveBalance} onAdd={() => s.setShowLeaveModal(true)} onApprove={id => s.setLeaveStatus(id, 'approved')} onReject={id => s.setLeaveStatus(id, 'rejected')} onApproveAll={s.approveAllLeave} onDelete={s.deleteLeave} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'payroll'    && <PayrollTab emp={s.emp} payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} onMarkPaid={s.markPayrollPaid} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'activity'   && <ActivityTab activityLogs={s.emp.activityLogs} onAddNote={() => s.setShowNoteModal(true)} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'documents'  && <DocumentsTab documents={s.emp.documents} />}
+          {s.tab === 'documents'  && <DocumentsTab documents={s.emp.documents} onAdd={() => s.setShowDocModal(true)} onOpen={s.openDocument} onDelete={s.deleteDocument} disabled={s.emp.status === 'terminated'} />}
         </div>
       </div>
 
@@ -305,16 +334,95 @@ export default function EmployeeProfilePage() {
           </div>
         </div>
       </Modal>
-      {/* ── Confirm Dialog ───────────────────────────────────────────────── */}
-      <Modal isOpen={!!s.confirm} onClose={() => s.setConfirm(null)} title={t('empConfirmAction')} size="sm">
+      {/* ── Leave Request Modal ──────────────────────────────────────────── */}
+      <Modal isOpen={s.showLeaveModal} onClose={() => s.setShowLeaveModal(false)} title={t('empRequestLeave') ?? 'Request leave'} size="sm">
         <div className="space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">{s.confirm?.message}</p>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveType') ?? 'Type'}</label>
+            <select
+              value={s.leaveForm.type}
+              onChange={e => s.setLeaveForm(p => ({ ...p, type: e.target.value as typeof p.type }))}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white"
+            >
+              <option value="annual">{t('empLeaveAnnual') ?? 'Annual'}</option>
+              <option value="sick">{t('empLeaveSick') ?? 'Sick'}</option>
+              <option value="unpaid">{t('empLeaveUnpaid') ?? 'Unpaid'}</option>
+              <option value="other">{t('empLeaveOther') ?? 'Other'}</option>
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveStart') ?? 'Start date'}</label>
+              <input type="date" value={s.leaveForm.startDate}
+                onChange={e => s.setLeaveForm(p => ({ ...p, startDate: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveEnd') ?? 'End date'}</label>
+              <input type="date" value={s.leaveForm.endDate}
+                onChange={e => s.setLeaveForm(p => ({ ...p, endDate: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveDays') ?? 'Days'}</label>
+            <input type="number" min={0} step={0.5} value={s.leaveForm.days}
+              onChange={e => s.setLeaveForm(p => ({ ...p, days: Number(e.target.value) }))}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('reason')}</label>
+            <textarea value={s.leaveForm.reason} rows={2}
+              onChange={e => s.setLeaveForm(p => ({ ...p, reason: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white resize-none" />
+          </div>
           <div className="flex justify-end gap-3">
-            <button onClick={() => s.setConfirm(null)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.confirm?.onConfirm} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors">{t('delete')}</button>
+            <button onClick={() => s.setShowLeaveModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
+            <button onClick={s.saveLeave} disabled={s.savingLeave} className="btn-primary">{s.savingLeave ? t('empSaving') : (t('empRequestLeave') ?? 'Request leave')}</button>
           </div>
         </div>
       </Modal>
+
+      {/* ── Document Upload Modal ────────────────────────────────────────── */}
+      <Modal isOpen={s.showDocModal} onClose={() => s.setShowDocModal(false)} title={t('empUploadDocument') ?? 'Upload document'} size="sm">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empDocumentTitle') ?? 'Title'}</label>
+            <input
+              value={s.docForm.title}
+              onChange={e => s.setDocForm(p => ({ ...p, title: e.target.value }))}
+              placeholder={t('empDocumentTitlePlaceholder') ?? 'e.g. Employment contract'}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:ring-2 focus:ring-primary text-slate-900 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empDocumentType') ?? 'Type'}</label>
+            <select
+              value={s.docForm.type}
+              onChange={e => s.setDocForm(p => ({ ...p, type: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white"
+            >
+              <option value="contract">{t('empDocContract') ?? 'Contract'}</option>
+              <option value="id_copy">{t('empDocIdCopy') ?? 'ID copy'}</option>
+              <option value="certificate">{t('empDocCertificate') ?? 'Certificate'}</option>
+              <option value="other">{t('empDocOther') ?? 'Other'}</option>
+            </select>
+          </div>
+          <p className="text-xs text-slate-400">{t('empDocumentPickHint') ?? 'You will be asked to choose a file after clicking Choose file.'}</p>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => s.setShowDocModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
+            <button onClick={s.saveDocument} disabled={s.savingDoc} className="btn-primary">{s.savingDoc ? t('empSaving') : (t('empChooseFile') ?? 'Choose file & attach')}</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Confirm Dialog ───────────────────────────────────────────────── */}
+      <ConfirmDialog
+        isOpen={!!s.confirm}
+        message={s.confirm?.message ?? ''}
+        onConfirm={() => s.confirm?.onConfirm()}
+        onCancel={() => s.setConfirm(null)}
+      />
 
       {/* ── End Contract Modal ───────────────────────────────────────────── */}
       <Modal isOpen={s.showTerminateModal} onClose={() => s.setShowTerminateModal(false)} title="End Contract" size="sm">

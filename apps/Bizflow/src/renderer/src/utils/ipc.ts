@@ -142,6 +142,11 @@ const mockIPC = {
     activity: {
       add: async (_data: any) => ({ success: true })
     },
+    documents: {
+      add: async (_data: any) => ({ success: false, message: 'Document upload is only available in the desktop app' }),
+      open: async (_id: string) => ({ success: false, message: 'Not available in browser' }),
+      delete: async (_id: string) => ({ success: true })
+    },
     shifts: {
       add: async (_data: any) => ({ success: true }),
       getAll: async (_id: string) => [],
@@ -150,6 +155,11 @@ const mockIPC = {
     overtime: {
       add: async (_data: any) => ({ success: true }),
       approve: async (_id: string, _by?: string) => ({ success: true }),
+      delete: async (_id: string) => ({ success: true })
+    },
+    leave: {
+      add: async (_data: any) => ({ success: true }),
+      setStatus: async (_id: string, _status: string, _by?: string) => ({ success: true }),
       delete: async (_id: string) => ({ success: true })
     }
   },
@@ -536,6 +546,11 @@ export const ipc = isElectron ? {
     activity: {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:activity:add', data)
     },
+    documents: {
+      add: (data: any) => window.electron.ipcRenderer.invoke('employees:documents:add', data),
+      open: (id: string) => window.electron.ipcRenderer.invoke('employees:documents:open', id),
+      delete: (id: string) => window.electron.ipcRenderer.invoke('employees:documents:delete', id)
+    },
     shifts: {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:shifts:add', data),
       getAll: (employeeId: string) => window.electron.ipcRenderer.invoke('employees:shifts:getAll', { employeeId }),
@@ -545,6 +560,11 @@ export const ipc = isElectron ? {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:overtime:add', data),
       approve: (id: string, approvedBy?: string) => window.electron.ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy }),
       delete: (id: string) => window.electron.ipcRenderer.invoke('employees:overtime:delete', id)
+    },
+    leave: {
+      add: (data: any) => window.electron.ipcRenderer.invoke('employees:leave:add', data),
+      setStatus: (id: string, status: string, approvedBy?: string) => window.electron.ipcRenderer.invoke('employees:leave:setStatus', { id, status, approvedBy }),
+      delete: (id: string) => window.electron.ipcRenderer.invoke('employees:leave:delete', id)
     }
   },
   

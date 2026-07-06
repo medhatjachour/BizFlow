@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Edit2, Trash2, LogIn, LogOut, ChevronRight, Mail, Phone, Briefcase, Star } from 'lucide-react'
+import { Edit2, Trash2, LogIn, LogOut, ChevronRight, Mail, Phone, Briefcase, Star, CheckCircle2 } from 'lucide-react'
 import type { Employee } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
@@ -26,9 +26,12 @@ interface Props {
   onCheckIn: (emp: Employee) => void
   onCheckOut: (emp: Employee) => void
   checkingIn: string | null
+  selectMode?: boolean
+  selected?: boolean
+  onToggleSelect?: (emp: Employee) => void
 }
 
-export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheckOut, checkingIn }: Props) {
+export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheckOut, checkingIn, selectMode, selected, onToggleSelect }: Props) {
   const navigate = useNavigate()
   const { t } = useLanguage()
 
@@ -38,10 +41,25 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
     terminated: t('empStatusTerminated'),
   }
 
+  const att = emp.todayAttendance
+  const fmtTime = (v?: string | null) => (v ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+  const checkedIn = !!att?.checkIn
+  const checkedOut = !!att?.checkOut
+  const busy = checkingIn === emp.id
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all">
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border shadow-sm hover:shadow-md transition-all ${selected ? 'border-primary ring-2 ring-primary/30' : checkedIn && !checkedOut ? 'border-green-300 dark:border-green-800 ring-1 ring-green-400/40' : 'border-slate-200 dark:border-slate-700'}`}>
       <div className="p-5">
         <div className="flex items-start gap-4">
+          {selectMode && (
+            <input
+              type="checkbox"
+              checked={!!selected}
+              onChange={() => onToggleSelect?.(emp)}
+              className="mt-1 w-4 h-4 accent-primary cursor-pointer shrink-0"
+              aria-label={`Select ${emp.name}`}
+            />
+          )}
           <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${avatarColor(emp.name)} flex items-center justify-center text-white font-bold text-lg shrink-0`}>
             {getInitials(emp.name)}
           </div>
@@ -53,12 +71,20 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
               </span>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">{emp.role}{emp.department ? ` · ${emp.department}` : ''}</p>
-            {emp.performanceScore != null && emp.performanceScore > 0 && (
-              <div className="flex items-center gap-1 mt-0.5">
-                <Star size={12} className="text-amber-400 fill-amber-400" />
-                <span className="text-xs text-amber-600 dark:text-amber-400">{emp.performanceScore}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {emp.performanceScore != null && emp.performanceScore > 0 && (
+                <div className="flex items-center gap-1">
+                  <Star size={12} className="text-amber-400 fill-amber-400" />
+                  <span className="text-xs text-amber-600 dark:text-amber-400">{emp.performanceScore}</span>
+                </div>
+              )}
+              {checkedIn && (
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${checkedOut ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'}`}>
+                  <CheckCircle2 size={10} />
+                  {checkedOut ? `${fmtTime(att?.checkIn)}–${fmtTime(att?.checkOut)}` : `${t('empCheckedInAt') ?? 'In'} ${fmtTime(att?.checkIn)}`}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -93,20 +119,37 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
         <div className="px-4 pb-3 flex items-center gap-1.5">
           {emp.status === 'active' && (
             <>
-              <button
-                onClick={() => onCheckIn(emp)}
-                disabled={checkingIn === emp.id}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium transition-colors disabled:opacity-50"
-              >
-                <LogIn size={11} /> {t('empCheckIn')}
-              </button>
-              <button
-                onClick={() => onCheckOut(emp)}
-                disabled={checkingIn === emp.id}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium transition-colors disabled:opacity-50"
-              >
-                <LogOut size={11} /> {t('empCheckOut')}
-              </button>
+              {!checkedIn && (
+                <button
+                  onClick={() => onCheckIn(emp)}
+                  disabled={busy}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-xs font-medium transition-colors disabled:opacity-50"
+                >
+                  <LogIn size={11} /> {t('empCheckIn')}
+                </button>
+              )}
+              {checkedIn && !checkedOut && (
+                <>
+                  <span
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400/80 text-xs font-medium cursor-default"
+                    title={`${t('empCheckedInAt') ?? 'Checked in at'} ${fmtTime(att?.checkIn)}`}
+                  >
+                    <CheckCircle2 size={11} /> {fmtTime(att?.checkIn)}
+                  </span>
+                  <button
+                    onClick={() => onCheckOut(emp)}
+                    disabled={busy}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-medium transition-colors disabled:opacity-50"
+                  >
+                    <LogOut size={11} /> {t('empCheckOut')}
+                  </button>
+                </>
+              )}
+              {checkedIn && checkedOut && (
+                <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 text-xs font-medium cursor-default">
+                  <CheckCircle2 size={11} /> {t('empShiftComplete') ?? 'Shift complete'}
+                </span>
+              )}
             </>
           )}
           <div className="ml-auto flex gap-1">

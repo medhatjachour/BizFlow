@@ -296,6 +296,18 @@ export default function EmployeeForm({ formData, onChange }: Props) {
         />
       </Field>
 
+      <Field label={t('empAnnualLeaveDays') ?? 'Annual leave days'} half>
+        <input
+          type="number"
+          min={0}
+          max={365}
+          value={formData.annualLeaveDays ?? ''}
+          onChange={e => onChange({ annualLeaveDays: Number(e.target.value) })}
+          placeholder="21"
+          className={INP}
+        />
+      </Field>
+
       {/* Contact */}
       <SectionHeader title="Contact" />
 
@@ -374,6 +386,64 @@ export default function EmployeeForm({ formData, onChange }: Props) {
             />
           </Field>
 
+          <SectionHeader title="Payroll & compliance" />
+
+          <Field label={t('empTaxId') ?? 'Tax ID'} half>
+            <input
+              value={formData.taxId}
+              onChange={e => onChange({ taxId: e.target.value })}
+              placeholder="TIN / tax file no."
+              className={INP}
+            />
+          </Field>
+
+          <Field label={t('empSocialInsurance') ?? 'Social insurance no.'} half>
+            <input
+              value={formData.socialInsuranceNo}
+              onChange={e => onChange({ socialInsuranceNo: e.target.value })}
+              placeholder="SSN / social insurance"
+              className={INP}
+            />
+          </Field>
+
+          <Field label={t('empBankName') ?? 'Bank name'} half>
+            <input
+              value={formData.bankName}
+              onChange={e => onChange({ bankName: e.target.value })}
+              placeholder="Bank"
+              className={INP}
+            />
+          </Field>
+
+          <Field label={t('empIban') ?? 'Account / IBAN'} half>
+            <input
+              value={formData.iban}
+              onChange={e => onChange({ iban: e.target.value })}
+              placeholder="Account number / IBAN"
+              className={INP}
+            />
+          </Field>
+
+          <SectionHeader title="Contract & expiry" />
+
+          <Field label={t('empContractEnd') ?? 'Contract end date'} half>
+            <input
+              type="date"
+              value={formData.contractEndDate}
+              onChange={e => onChange({ contractEndDate: e.target.value })}
+              className={INP}
+            />
+          </Field>
+
+          <Field label={t('empIdExpiry') ?? 'ID / visa expiry'} half>
+            <input
+              type="date"
+              value={formData.idExpiryDate}
+              onChange={e => onChange({ idExpiryDate: e.target.value })}
+              className={INP}
+            />
+          </Field>
+
           <SectionHeader title="Notes" />
 
           <Field label={t('notes')}>
@@ -386,7 +456,6 @@ export default function EmployeeForm({ formData, onChange }: Props) {
             />
           </Field>
         </>
-      )}
-    </div>
+      )}    </div>
   )
 }

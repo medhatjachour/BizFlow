@@ -2123,7 +2123,7 @@ var init_session = __esm({
 
 // web/server.ts
 var import_node_http = __toESM(require("node:http"));
-var import_node_path6 = __toESM(require("node:path"));
+var import_node_path7 = __toESM(require("node:path"));
 init_electron_node();
 
 // web/session-db.ts
@@ -2800,14 +2800,22 @@ function registerFinanceHandlers(prisma2) {
 
 // src/main/ipc/handlers/employees.handlers.ts
 init_electron_node();
+var import_node_fs3 = __toESM(require("node:fs"));
+var import_node_path4 = __toESM(require("node:path"));
 var log6 = createLogger("Employees");
+function employeeDocsDir() {
+  const dir = import_node_path4.default.join(app.getPath("userData"), "employee-documents");
+  import_node_fs3.default.mkdirSync(dir, { recursive: true });
+  return dir;
+}
 var EMPLOYEE_INCLUDE = {
   attendance: { orderBy: { date: "desc" }, take: 90 },
   documents: { orderBy: { uploadedAt: "desc" } },
   activityLogs: { orderBy: { createdAt: "desc" }, take: 50 },
   payrollRecords: { orderBy: [{ year: "desc" }, { month: "desc" }], take: 24 },
   shifts: { orderBy: { date: "desc" }, take: 60 },
-  overtimeRecords: { orderBy: { date: "desc" }, take: 60 }
+  overtimeRecords: { orderBy: { date: "desc" }, take: 60 },
+  leaveRecords: { orderBy: { startDate: "desc" }, take: 60 }
 };
 function computeAttendanceSummary(attendance) {
   const total = attendance.length;
@@ -2818,16 +2826,33 @@ function computeAttendanceSummary(attendance) {
   const rate = total > 0 ? Math.round(present / total * 100) : 0;
   return { total, present, absent, late, onLeave, rate };
 }
+function computeLeaveBalance(emp) {
+  const allowance = emp.annualLeaveDays ?? 21;
+  const year = (/* @__PURE__ */ new Date()).getFullYear();
+  const annual = (emp.leaveRecords ?? []).filter(
+    (l) => l.type === "annual" && new Date(l.startDate).getFullYear() === year
+  );
+  const taken = annual.filter((l) => l.status === "approved").reduce((s, l) => s + (l.days ?? 0), 0);
+  const pending = annual.filter((l) => l.status === "pending").reduce((s, l) => s + (l.days ?? 0), 0);
+  return { allowance, taken, pending, remaining: Math.max(0, allowance - taken) };
+}
 function registerEmployeesHandlers(prisma2) {
   ipcMain.handle("employees:getAll", async () => {
     try {
       if (!prisma2)
         return [];
-      return await prisma2.employee.findMany({
+      const today = /* @__PURE__ */ new Date();
+      today.setUTCHours(0, 0, 0, 0);
+      const emps = await prisma2.employee.findMany({
         orderBy: { createdAt: "desc" },
         include: {
-          _count: { select: { attendance: true, activityLogs: true } }
+          _count: { select: { attendance: true, activityLogs: true } },
+          attendance: { where: { date: today }, take: 1, select: { checkIn: true, checkOut: true, status: true } }
         }
+      });
+      return emps.map((e) => {
+        const { attendance, ...rest } = e;
+        return { ...rest, todayAttendance: attendance?.[0] ?? null };
       });
     } catch (error) {
       log6.error("Error fetching employees:", error);
@@ -2846,7 +2871,8 @@ function registerEmployeesHandlers(prisma2) {
         return null;
       return {
         ...emp,
-        attendanceSummary: computeAttendanceSummary(emp.attendance)
+        attendanceSummary: computeAttendanceSummary(emp.attendance),
+        leaveBalance: computeLeaveBalance(emp)
       };
     } catch (error) {
       log6.error("Error fetching employee:", error);
@@ -2857,13 +2883,14 @@ function registerEmployeesHandlers(prisma2) {
     try {
       if (!prisma2)
         return { success: false, message: "Database not available" };
-      const employee = await prisma2.employee.create({ data: employeeData });
+      const { createdBy, performedBy, ...data } = employeeData;
+      const employee = await prisma2.employee.create({ data });
       await prisma2.employeeActivityLog.create({
         data: {
           employeeId: employee.id,
           action: "employee_created",
           details: `Employee profile created`,
-          performedBy: employeeData.createdBy ?? null
+          performedBy: createdBy ?? performedBy ?? null
         }
       });
       return { success: true, employee };
@@ -2903,7 +2930,7 @@ function registerEmployeesHandlers(prisma2) {
       return { success: false, message: error.message };
     }
   });
-  ipcMain.handle("employees:attendance:upsert", async (_, { employeeId, date, status, checkIn, checkOut, notes }) => {
+  ipcMain.handle("employees:attendance:upsert", async (_, { employeeId, date, status, checkIn, checkOut, notes, performedBy }) => {
     try {
       if (!prisma2)
         return { success: false };
@@ -2919,7 +2946,7 @@ function registerEmployeesHandlers(prisma2) {
           employeeId,
           action: "attendance_recorded",
           details: `${status} on ${dayStart.toLocaleDateString()}`,
-          performedBy: null
+          performedBy: performedBy ?? null
         }
       });
       return { success: true, record };
@@ -2961,13 +2988,28 @@ function registerEmployeesHandlers(prisma2) {
           message: `Already checked in today at ${new Date(existing.checkIn).toLocaleTimeString()}`
         };
       }
+      const nextDay = new Date(dayStart);
+      nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+      const shift = await prisma2.employeeShift.findFirst({
+        where: { employeeId, date: { gte: dayStart, lt: nextDay } }
+      });
+      let status = "present";
+      if (shift?.startTime) {
+        const [h, m] = String(shift.startTime).split(":").map(Number);
+        if (!isNaN(h)) {
+          const shiftStart = new Date(now);
+          shiftStart.setHours(h, m || 0, 0, 0);
+          if (now.getTime() > shiftStart.getTime() + 5 * 60 * 1e3)
+            status = "late";
+        }
+      }
       const record = await prisma2.employeeAttendance.upsert({
         where: { employeeId_date: { employeeId, date: dayStart } },
-        create: { employeeId, date: dayStart, status: "present", checkIn: now },
-        update: { checkIn: now, status: "present" }
+        create: { employeeId, date: dayStart, status, checkIn: now },
+        update: { checkIn: now, status }
       });
       await prisma2.employeeActivityLog.create({
-        data: { employeeId, action: "checked_in", details: `Checked in at ${now.toLocaleTimeString()}` }
+        data: { employeeId, action: "checked_in", details: `Checked in at ${now.toLocaleTimeString()}${status === "late" ? " (late)" : ""}` }
       });
       return { success: true, record };
     } catch (error) {
@@ -3014,7 +3056,7 @@ function registerEmployeesHandlers(prisma2) {
     const monthStart = new Date(year, month - 1, 1);
     const monthEnd = new Date(year, month, 1);
     const records = await prisma2.employeeOvertime.findMany({
-      where: { employeeId, date: { gte: monthStart, lt: monthEnd } }
+      where: { employeeId, approved: true, date: { gte: monthStart, lt: monthEnd } }
     });
     const overtimeHours = records.reduce((s, r) => s + (r.hours ?? 0), 0);
     const hourlyRate = baseSalary > 0 ? baseSalary / 160 : 0;
@@ -3426,6 +3468,159 @@ function registerEmployeesHandlers(prisma2) {
       return { success: true };
     } catch (error) {
       log6.error("Error deleting overtime:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:leave:add", async (_, { employeeId, type, startDate, endDate, days, reason, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (end < start)
+        return { success: false, message: "End date cannot be before start date" };
+      const record = await prisma2.employeeLeave.create({
+        data: {
+          employeeId,
+          type: type || "annual",
+          startDate: start,
+          endDate: end,
+          days: Number(days) || 0,
+          reason: reason || null,
+          status: "pending"
+        }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId, action: "leave_requested", details: `${type || "annual"} leave \xB7 ${Number(days) || 0} day(s)`, performedBy: performedBy ?? null }
+      });
+      return { success: true, leave: record };
+    } catch (error) {
+      log6.error("Error adding leave:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:leave:setStatus", async (_, { id, status, approvedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      if (!["approved", "rejected", "pending"].includes(status))
+        return { success: false, message: "Invalid status" };
+      const leave = await prisma2.employeeLeave.update({
+        where: { id },
+        data: { status, approvedBy: approvedBy ?? null, reviewedAt: /* @__PURE__ */ new Date() }
+      });
+      if (status === "approved") {
+        const cur = new Date(leave.startDate);
+        cur.setUTCHours(0, 0, 0, 0);
+        const end = new Date(leave.endDate);
+        end.setUTCHours(0, 0, 0, 0);
+        let guard = 0;
+        while (cur.getTime() <= end.getTime() && guard < 400) {
+          const day = new Date(cur);
+          await prisma2.employeeAttendance.upsert({
+            where: { employeeId_date: { employeeId: leave.employeeId, date: day } },
+            create: { employeeId: leave.employeeId, date: day, status: "leave", notes: `${leave.type} leave` },
+            update: { status: "leave" }
+          });
+          cur.setUTCDate(cur.getUTCDate() + 1);
+          guard++;
+        }
+      }
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId: leave.employeeId, action: `leave_${status}`, details: `${leave.type} leave ${status} (${leave.days} day(s))`, performedBy: approvedBy ?? null }
+      });
+      return { success: true, leave };
+    } catch (error) {
+      log6.error("Error updating leave status:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:leave:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      await prisma2.employeeLeave.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log6.error("Error deleting leave:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:documents:add", async (_, { employeeId, title, type, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const picked = await dialog.showOpenDialog({
+        title: "Select document to attach",
+        properties: ["openFile"],
+        filters: [
+          { name: "Documents", extensions: ["pdf", "doc", "docx", "png", "jpg", "jpeg", "txt", "xlsx"] },
+          { name: "All Files", extensions: ["*"] }
+        ]
+      });
+      if (picked.canceled || !picked.filePaths[0]) {
+        return { success: false, message: "No file selected", canceled: true };
+      }
+      const src = picked.filePaths[0];
+      const ext = import_node_path4.default.extname(src);
+      const empDir = import_node_path4.default.join(employeeDocsDir(), employeeId);
+      import_node_fs3.default.mkdirSync(empDir, { recursive: true });
+      const storedName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+      const dest = import_node_path4.default.join(empDir, storedName);
+      import_node_fs3.default.copyFileSync(src, dest);
+      const record = await prisma2.employeeDocument.create({
+        data: {
+          employeeId,
+          title: title && String(title).trim() || import_node_path4.default.basename(src),
+          type: type || "other",
+          filename: import_node_path4.default.join(employeeId, storedName)
+        }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: { employeeId, action: "document_added", details: `Document "${record.title}" (${record.type})`, performedBy: performedBy ?? null }
+      });
+      return { success: true, document: record };
+    } catch (error) {
+      log6.error("Error adding document:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:documents:open", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const doc = await prisma2.employeeDocument.findUnique({ where: { id } });
+      if (!doc)
+        return { success: false, message: "Document not found" };
+      const full = import_node_path4.default.join(employeeDocsDir(), doc.filename);
+      if (!import_node_fs3.default.existsSync(full))
+        return { success: false, message: "File is missing on disk" };
+      const err = await shell.openPath(full);
+      if (err)
+        return { success: false, message: err };
+      return { success: true };
+    } catch (error) {
+      log6.error("Error opening document:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:documents:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const doc = await prisma2.employeeDocument.findUnique({ where: { id } });
+      if (!doc)
+        return { success: false, message: "Document not found" };
+      const full = import_node_path4.default.join(employeeDocsDir(), doc.filename);
+      try {
+        if (import_node_fs3.default.existsSync(full))
+          import_node_fs3.default.unlinkSync(full);
+      } catch {
+      }
+      await prisma2.employeeDocument.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log6.error("Error deleting document:", error);
       return { success: false, message: error.message };
     }
   });
@@ -4807,8 +5002,8 @@ var PredictionService = class {
 };
 
 // src/main/services/ImageService.ts
-var fs4 = __toESM(require("fs"));
-var path5 = __toESM(require("path"));
+var fs5 = __toESM(require("fs"));
+var path6 = __toESM(require("path"));
 var crypto = __toESM(require("crypto"));
 init_electron_node();
 var log10 = createLogger("Image");
@@ -4817,13 +5012,13 @@ var ImageService = class {
   constructor() {
     const isDev2 = process.env.NODE_ENV === "development";
     if (isDev2) {
-      this.imagesDir = path5.resolve(process.cwd(), "prisma", "images");
+      this.imagesDir = path6.resolve(process.cwd(), "prisma", "images");
     } else {
-      const dbDir = path5.dirname(path5.join(app.getPath("userData"), "database.db"));
-      this.imagesDir = path5.join(dbDir, "images");
+      const dbDir = path6.dirname(path6.join(app.getPath("userData"), "database.db"));
+      this.imagesDir = path6.join(dbDir, "images");
     }
-    if (!fs4.existsSync(this.imagesDir)) {
-      fs4.mkdirSync(this.imagesDir, { recursive: true });
+    if (!fs5.existsSync(this.imagesDir)) {
+      fs5.mkdirSync(this.imagesDir, { recursive: true });
     }
   }
   /**
@@ -4850,12 +5045,12 @@ var ImageService = class {
       const extension = this.getExtensionFromMime(mimeType);
       const hash2 = crypto.createHash("md5").update(base64Content).digest("hex");
       const filename = `${hash2}${extension}`;
-      const filePath = path5.join(this.imagesDir, filename);
-      if (fs4.existsSync(filePath)) {
+      const filePath = path6.join(this.imagesDir, filename);
+      if (fs5.existsSync(filePath)) {
         return filename;
       }
       const buffer = Buffer.from(base64Content, "base64");
-      fs4.writeFileSync(filePath, buffer);
+      fs5.writeFileSync(filePath, buffer);
       return filename;
     } catch (error) {
       log10.error("[ImageService] Failed to save image:", error);
@@ -4869,14 +5064,14 @@ var ImageService = class {
    */
   async getImageDataUrl(filename) {
     try {
-      const filePath = path5.join(this.imagesDir, filename);
-      if (!fs4.existsSync(filePath)) {
+      const filePath = path6.join(this.imagesDir, filename);
+      if (!fs5.existsSync(filePath)) {
         log10.warn(`[ImageService] Image not found: ${filename}`);
         return null;
       }
-      const buffer = fs4.readFileSync(filePath);
+      const buffer = fs5.readFileSync(filePath);
       const base64 = buffer.toString("base64");
-      const ext = path5.extname(filename).toLowerCase();
+      const ext = path6.extname(filename).toLowerCase();
       const mimeType = this.getMimeTypeFromExtension(ext);
       return `data:${mimeType};base64,${base64}`;
     } catch (error) {
@@ -4890,8 +5085,8 @@ var ImageService = class {
    * @returns True if exists
    */
   imageExists(filename) {
-    const filePath = path5.join(this.imagesDir, filename);
-    return fs4.existsSync(filePath);
+    const filePath = path6.join(this.imagesDir, filename);
+    return fs5.existsSync(filePath);
   }
   /**
    * Delete image file
@@ -4899,9 +5094,9 @@ var ImageService = class {
    */
   async deleteImage(filename) {
     try {
-      const filePath = path5.join(this.imagesDir, filename);
-      if (fs4.existsSync(filePath)) {
-        fs4.unlinkSync(filePath);
+      const filePath = path6.join(this.imagesDir, filename);
+      if (fs5.existsSync(filePath)) {
+        fs5.unlinkSync(filePath);
       }
     } catch (error) {
       log10.error(`[ImageService] Failed to delete image ${filename}:`, error);
@@ -4915,13 +5110,13 @@ var ImageService = class {
    */
   async cleanupOrphanedImages(referencedFilenames) {
     try {
-      const files = fs4.readdirSync(this.imagesDir);
+      const files = fs5.readdirSync(this.imagesDir);
       const referencedSet = new Set(referencedFilenames);
       let deletedCount = 0;
       for (const file of files) {
         if (!referencedSet.has(file)) {
-          const filePath = path5.join(this.imagesDir, file);
-          fs4.unlinkSync(filePath);
+          const filePath = path6.join(this.imagesDir, file);
+          fs5.unlinkSync(filePath);
           deletedCount++;
         }
       }
@@ -4937,11 +5132,11 @@ var ImageService = class {
    */
   getImagesDiskUsage() {
     try {
-      const files = fs4.readdirSync(this.imagesDir);
+      const files = fs5.readdirSync(this.imagesDir);
       let totalSize = 0;
       for (const file of files) {
-        const filePath = path5.join(this.imagesDir, file);
-        const stats = fs4.statSync(filePath);
+        const filePath = path6.join(this.imagesDir, file);
+        const stats = fs5.statSync(filePath);
         totalSize += stats.size;
       }
       return totalSize;
@@ -4960,7 +5155,7 @@ var ImageService = class {
   getMimeTypeFromName(filename) {
     if (!filename)
       return null;
-    const ext = path5.extname(filename).toLowerCase();
+    const ext = path6.extname(filename).toLowerCase();
     return this.getMimeTypeFromExtension(ext);
   }
   getMimeTypeFromExtension(ext) {
@@ -6569,15 +6764,15 @@ function registerReportsHandlers(prisma2) {
 
 // src/main/ipc/handlers/analytics.handlers.ts
 init_electron_node();
-var import_node_path4 = __toESM(require("node:path"));
+var import_node_path5 = __toESM(require("node:path"));
 
 // src/main/database/init.ts
-var path6 = __toESM(require("node:path"));
+var path7 = __toESM(require("node:path"));
 init_electron_node();
 var log15 = createLogger("DBInit");
 function getDatabasePath() {
   const isDev2 = process.env.NODE_ENV === "development";
-  return isDev2 ? path6.resolve(process.cwd(), "prisma", "dev.db") : path6.join(app.getPath("userData"), "database.db");
+  return isDev2 ? path7.resolve(process.cwd(), "prisma", "dev.db") : path7.join(app.getPath("userData"), "database.db");
 }
 
 // src/main/database/optimization.ts
@@ -6846,10 +7041,10 @@ function initializePrisma() {
     const isDev2 = process.env.NODE_ENV === "development";
     let PrismaClient;
     if (isDev2) {
-      const prismaPath = import_node_path4.default.resolve(process.cwd(), "src", "generated", "prisma");
+      const prismaPath = import_node_path5.default.resolve(process.cwd(), "src", "generated", "prisma");
       PrismaClient = require(prismaPath).PrismaClient;
     } else {
-      const prismaPath = import_node_path4.default.resolve(__dirname, "..", "..", "..", "app.asar.unpacked", "src", "generated", "prisma");
+      const prismaPath = import_node_path5.default.resolve(__dirname, "..", "..", "..", "app.asar.unpacked", "src", "generated", "prisma");
       PrismaClient = require(prismaPath).PrismaClient;
     }
     if (PrismaClient) {
@@ -13304,7 +13499,7 @@ var import_node_thermal_printer = require("node-thermal-printer");
 var import_child_process = require("child_process");
 var import_util = require("util");
 var import_fs3 = require("fs");
-var path9 = __toESM(require("path"));
+var path10 = __toESM(require("path"));
 var os3 = __toESM(require("os"));
 var log41 = createLogger("ThermalPrinter");
 var execAsync = (0, import_util.promisify)(import_child_process.exec);
@@ -13333,7 +13528,7 @@ var ThermalPrinterService = class {
     if (!safePrinterName || safePrinterName.length === 0) {
       throw new Error("Invalid printer name");
     }
-    const tempFile = path9.join(os3.tmpdir(), `receipt-${Date.now()}.bin`);
+    const tempFile = path10.join(os3.tmpdir(), `receipt-${Date.now()}.bin`);
     const initCommand = Buffer.from([27, 64]);
     const leftMargin = Buffer.from([29, 76, 0, 0]);
     let printWidth;
@@ -13540,7 +13735,7 @@ var ThermalPrinterService = class {
   static createPrinter(settings) {
     let printerInterface;
     if (process.platform === "win32") {
-      printerInterface = path9.join(os3.tmpdir(), `escpos-buf-${process.pid}`);
+      printerInterface = path10.join(os3.tmpdir(), `escpos-buf-${process.pid}`);
     } else if (settings.printerType === "network" && settings.printerIP) {
       const safeIP = this.sanitizeIP(settings.printerIP);
       printerInterface = `tcp://${safeIP}:9100`;
@@ -13570,8 +13765,8 @@ var ThermalPrinterService = class {
    */
   static async printRawToWindowsSpooler(printerName, buffer) {
     const ts = Date.now();
-    const dataFile = path9.join(os3.tmpdir(), `escpos-${ts}.bin`);
-    const scriptFile = path9.join(os3.tmpdir(), `winspool-${ts}.ps1`);
+    const dataFile = path10.join(os3.tmpdir(), `escpos-${ts}.bin`);
+    const scriptFile = path10.join(os3.tmpdir(), `winspool-${ts}.ps1`);
     const safeName = printerName.replace(/'/g, "''");
     const safeData = dataFile;
     const psLines = [
@@ -13984,7 +14179,7 @@ Test Successful!
       width = 2,
       height = 100
     } = options;
-    const tempFile = path9.join(os3.tmpdir(), `barcode-${Date.now()}.bin`);
+    const tempFile = path10.join(os3.tmpdir(), `barcode-${Date.now()}.bin`);
     try {
       const commands = [];
       commands.push(Buffer.from([27, 64]));
@@ -14039,7 +14234,7 @@ Test Successful!
    * Test print - prints a test page
    */
   static async printTest(printerName) {
-    const tempFile = path9.join(os3.tmpdir(), `test-${Date.now()}.bin`);
+    const tempFile = path10.join(os3.tmpdir(), `test-${Date.now()}.bin`);
     try {
       const commands = [];
       commands.push(Buffer.from([27, 64]));
@@ -18193,14 +18388,14 @@ function registerStatsHandlers(prisma2) {
 
 // src/plugins/clinic/handlers/checkResults.ts
 init_electron_node();
-var fs7 = __toESM(require("fs"));
-var path10 = __toESM(require("path"));
+var fs8 = __toESM(require("fs"));
+var path11 = __toESM(require("path"));
 var log69 = createLogger("ClinicCheckResults");
 function getCheckResultsDir() {
   const isDev2 = process.env.NODE_ENV === "development";
-  const base = isDev2 ? path10.resolve(process.cwd(), "prisma", "clinic-results") : path10.join(app.getPath("userData"), "clinic-results");
-  if (!fs7.existsSync(base))
-    fs7.mkdirSync(base, { recursive: true });
+  const base = isDev2 ? path11.resolve(process.cwd(), "prisma", "clinic-results") : path11.join(app.getPath("userData"), "clinic-results");
+  if (!fs8.existsSync(base))
+    fs8.mkdirSync(base, { recursive: true });
   return base;
 }
 function registerCheckResultHandlers(prisma2) {
@@ -18222,17 +18417,17 @@ function registerCheckResultHandlers(prisma2) {
     if (canceled || filePaths.length === 0)
       return null;
     const srcPath = filePaths[0];
-    const originalName = path10.basename(srcPath);
-    const ext = path10.extname(originalName);
+    const originalName = path11.basename(srcPath);
+    const ext = path11.extname(originalName);
     const timestamp = Date.now();
     const destName = `${data.patientId}_${timestamp}${ext}`;
-    const destDir = path10.join(getCheckResultsDir(), data.patientId);
-    if (!fs7.existsSync(destDir))
-      fs7.mkdirSync(destDir, { recursive: true });
-    const destPath = path10.join(destDir, destName);
+    const destDir = path11.join(getCheckResultsDir(), data.patientId);
+    if (!fs8.existsSync(destDir))
+      fs8.mkdirSync(destDir, { recursive: true });
+    const destPath = path11.join(destDir, destName);
     try {
-      fs7.copyFileSync(srcPath, destPath);
-      const stats = fs7.statSync(destPath);
+      fs8.copyFileSync(srcPath, destPath);
+      const stats = fs8.statSync(destPath);
       return prisma2.clinicCheckResult.create({
         data: {
           patientId: data.patientId,
@@ -18250,27 +18445,27 @@ function registerCheckResultHandlers(prisma2) {
     }
   });
   ipcMain.handle("clinic:checkResults:getBuffer", async (_e, filePath) => {
-    const baseDir = path10.resolve(getCheckResultsDir());
-    const resolved = path10.resolve(filePath);
-    const rel = path10.relative(baseDir, resolved);
-    if (rel.startsWith("..") || path10.isAbsolute(rel)) {
+    const baseDir = path11.resolve(getCheckResultsDir());
+    const resolved = path11.resolve(filePath);
+    const rel = path11.relative(baseDir, resolved);
+    if (rel.startsWith("..") || path11.isAbsolute(rel)) {
       throw new Error("Access denied: file is outside results directory");
     }
-    if (!fs7.existsSync(resolved))
+    if (!fs8.existsSync(resolved))
       return null;
-    return fs7.readFileSync(resolved).toString("base64");
+    return fs8.readFileSync(resolved).toString("base64");
   });
   ipcMain.handle("clinic:checkResults:open", async (_e, id) => {
     const record = await prisma2.clinicCheckResult.findUnique({ where: { id } });
     if (!record?.filePath)
       throw new Error("Check result not found");
-    const baseDir = path10.resolve(getCheckResultsDir());
-    const resolved = path10.resolve(record.filePath);
-    const rel = path10.relative(baseDir, resolved);
-    if (rel.startsWith("..") || path10.isAbsolute(rel)) {
+    const baseDir = path11.resolve(getCheckResultsDir());
+    const resolved = path11.resolve(record.filePath);
+    const rel = path11.relative(baseDir, resolved);
+    if (rel.startsWith("..") || path11.isAbsolute(rel)) {
       throw new Error("Access denied: file is outside results directory");
     }
-    if (!fs7.existsSync(resolved))
+    if (!fs8.existsSync(resolved))
       throw new Error("File not found");
     await shell.openPath(resolved);
     return true;
@@ -18280,8 +18475,8 @@ function registerCheckResultHandlers(prisma2) {
     if (!result)
       return false;
     try {
-      if (result.filePath && fs7.existsSync(result.filePath)) {
-        fs7.unlinkSync(result.filePath);
+      if (result.filePath && fs8.existsSync(result.filePath)) {
+        fs8.unlinkSync(result.filePath);
       }
     } catch (err) {
       log69.warn("Could not delete file from disk:", err);
@@ -18518,8 +18713,8 @@ function registerAppointmentHandlers(prisma2) {
 
 // src/plugins/clinic/handlers/pdf.ts
 init_electron_node();
-var path11 = __toESM(require("path"));
-var fs8 = __toESM(require("fs"));
+var path12 = __toESM(require("path"));
+var fs9 = __toESM(require("fs"));
 var os4 = __toESM(require("os"));
 var log71 = createLogger("Clinic:PDF");
 function esc(s) {
@@ -18679,7 +18874,7 @@ function registerClinicPdfHandlers() {
       const safeName = data.patient.name.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_").slice(0, 50);
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: "Export Patient Medical Record",
-        defaultPath: path11.join(app.getPath("documents"), `${safeName}_medical_record.pdf`),
+        defaultPath: path12.join(app.getPath("documents"), `${safeName}_medical_record.pdf`),
         filters: [{ name: "PDF Documents", extensions: ["pdf"] }]
       });
       if (canceled || !filePath)
@@ -18690,8 +18885,8 @@ function registerClinicPdfHandlers() {
         show: false,
         webPreferences: { nodeIntegration: false, contextIsolation: true, javascript: false }
       });
-      const tmpFile = path11.join(os4.tmpdir(), `bizflow_report_${Date.now()}.html`);
-      fs8.writeFileSync(tmpFile, html, "utf-8");
+      const tmpFile = path12.join(os4.tmpdir(), `bizflow_report_${Date.now()}.html`);
+      fs9.writeFileSync(tmpFile, html, "utf-8");
       await win.loadFile(tmpFile);
       const pdfBuffer = await win.webContents.printToPDF({
         landscape: false,
@@ -18701,10 +18896,10 @@ function registerClinicPdfHandlers() {
       });
       win.destroy();
       try {
-        fs8.unlinkSync(tmpFile);
+        fs9.unlinkSync(tmpFile);
       } catch {
       }
-      fs8.writeFileSync(filePath, pdfBuffer);
+      fs9.writeFileSync(filePath, pdfBuffer);
       shell.openPath(filePath);
       return { filePath, success: true };
     } catch (err) {
@@ -20339,13 +20534,13 @@ function registerVetAppointmentHandlers(prisma2) {
 // src/plugins/vet/handlers/checkResults.ts
 init_electron_node();
 init_electron_node();
-var import_node_path5 = __toESM(require("node:path"));
-var import_node_fs3 = __toESM(require("node:fs"));
+var import_node_path6 = __toESM(require("node:path"));
+var import_node_fs4 = __toESM(require("node:fs"));
 var log78 = createLogger("Vet:CheckResults");
 function getResultsDir() {
-  const dir = import_node_path5.default.join(app.getPath("userData"), "vet-results");
-  if (!import_node_fs3.default.existsSync(dir))
-    import_node_fs3.default.mkdirSync(dir, { recursive: true });
+  const dir = import_node_path6.default.join(app.getPath("userData"), "vet-results");
+  if (!import_node_fs4.default.existsSync(dir))
+    import_node_fs4.default.mkdirSync(dir, { recursive: true });
   return dir;
 }
 function registerVetCheckResultHandlers(prisma2) {
@@ -20372,13 +20567,13 @@ function registerVetCheckResultHandlers(prisma2) {
   ipcMain.handle("vet:checkResults:create", async (_e, params) => {
     try {
       const { patientId, title, description, resultDate, fileName, buffer } = params;
-      const dir = import_node_path5.default.join(getResultsDir(), patientId);
-      if (!import_node_fs3.default.existsSync(dir))
-        import_node_fs3.default.mkdirSync(dir, { recursive: true });
-      const safeName = import_node_path5.default.basename(fileName).replace(/[^a-zA-Z0-9._\-]/g, "_");
+      const dir = import_node_path6.default.join(getResultsDir(), patientId);
+      if (!import_node_fs4.default.existsSync(dir))
+        import_node_fs4.default.mkdirSync(dir, { recursive: true });
+      const safeName = import_node_path6.default.basename(fileName).replace(/[^a-zA-Z0-9._\-]/g, "_");
       const destName = `${Date.now()}_${safeName}`;
-      const destPath = import_node_path5.default.join(dir, destName);
-      import_node_fs3.default.writeFileSync(destPath, Buffer.from(buffer));
+      const destPath = import_node_path6.default.join(dir, destName);
+      import_node_fs4.default.writeFileSync(destPath, Buffer.from(buffer));
       return await prisma2.vetCheckResult.create({
         data: {
           patientId,
@@ -20400,8 +20595,8 @@ function registerVetCheckResultHandlers(prisma2) {
       const record = await prisma2.vetCheckResult.findUnique({ where: { id } });
       if (!record)
         throw new Error("Result not found");
-      if (record.filePath && import_node_fs3.default.existsSync(record.filePath)) {
-        import_node_fs3.default.unlinkSync(record.filePath);
+      if (record.filePath && import_node_fs4.default.existsSync(record.filePath)) {
+        import_node_fs4.default.unlinkSync(record.filePath);
       }
       return await prisma2.vetCheckResult.delete({ where: { id } });
     } catch (err) {
@@ -22465,8 +22660,8 @@ function registerVetVisitTypeHandlers(prisma2) {
 
 // src/plugins/vet/handlers/reports.export.ts
 init_electron_node();
-var path13 = __toESM(require("path"));
-var fs10 = __toESM(require("fs"));
+var path14 = __toESM(require("path"));
+var fs11 = __toESM(require("fs"));
 var os5 = __toESM(require("os"));
 var XLSX2 = __toESM(require("xlsx"));
 var log91 = createLogger("Vet:Reports");
@@ -22542,7 +22737,7 @@ function registerVetReportExportHandlers() {
       const html = buildHtml2(payload);
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: "Export Report (PDF)",
-        defaultPath: path13.join(app.getPath("documents"), `${safeBase(payload.fileBase || payload.title)}.pdf`),
+        defaultPath: path14.join(app.getPath("documents"), `${safeBase(payload.fileBase || payload.title)}.pdf`),
         filters: [{ name: "PDF Documents", extensions: ["pdf"] }]
       });
       if (canceled || !filePath)
@@ -22553,8 +22748,8 @@ function registerVetReportExportHandlers() {
         show: false,
         webPreferences: { nodeIntegration: false, contextIsolation: true, javascript: false }
       });
-      const tmp = path13.join(os5.tmpdir(), `bizflow_vet_report_${Date.now()}.html`);
-      fs10.writeFileSync(tmp, html, "utf-8");
+      const tmp = path14.join(os5.tmpdir(), `bizflow_vet_report_${Date.now()}.html`);
+      fs11.writeFileSync(tmp, html, "utf-8");
       await win.loadFile(tmp);
       const pdf = await win.webContents.printToPDF({
         landscape: false,
@@ -22564,10 +22759,10 @@ function registerVetReportExportHandlers() {
       });
       win.destroy();
       try {
-        fs10.unlinkSync(tmp);
+        fs11.unlinkSync(tmp);
       } catch {
       }
-      fs10.writeFileSync(filePath, pdf);
+      fs11.writeFileSync(filePath, pdf);
       shell.openPath(filePath);
       return { success: true, filePath };
     } catch (err) {
@@ -22622,13 +22817,13 @@ function registerVetReportExportHandlers() {
       });
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: "Export Report (Excel)",
-        defaultPath: path13.join(app.getPath("documents"), `${safeBase(payload.fileBase || payload.title)}.xlsx`),
+        defaultPath: path14.join(app.getPath("documents"), `${safeBase(payload.fileBase || payload.title)}.xlsx`),
         filters: [{ name: "Excel Workbook", extensions: ["xlsx"] }]
       });
       if (canceled || !filePath)
         return null;
       const buf = XLSX2.write(wb, { type: "buffer", bookType: "xlsx" });
-      fs10.writeFileSync(filePath, buf);
+      fs11.writeFileSync(filePath, buf);
       shell.openPath(filePath);
       return { success: true, filePath };
     } catch (err) {
@@ -25455,9 +25650,9 @@ function safeJson(value) {
   );
 }
 async function buildTemplate() {
-  const templateDbPath2 = import_node_path6.default.resolve(process.cwd(), "prisma", "dev.db");
-  const sessionsDir2 = import_node_path6.default.resolve(process.cwd(), "prisma", "sessions");
-  const prismaModulePath = import_node_path6.default.resolve(
+  const templateDbPath2 = import_node_path7.default.resolve(process.cwd(), "prisma", "dev.db");
+  const sessionsDir2 = import_node_path7.default.resolve(process.cwd(), "prisma", "sessions");
+  const prismaModulePath = import_node_path7.default.resolve(
     process.cwd(),
     "src",
     "generated",

@@ -87,6 +87,16 @@ model Employee {
   notes           String?
   // Performance
   performanceScore Float?              // 0–100 performance score
+  // Leave
+  annualLeaveDays Int                 @default(21) // yearly paid-leave allowance
+  // Payout & compliance
+  taxId             String?           // tax file / TIN
+  socialInsuranceNo String?           // social insurance / social security number
+  bankName          String?
+  iban              String?           // bank account / IBAN for salary transfer
+  // Contract & documents lifecycle
+  contractEndDate   DateTime?         // fixed-term contract end / renewal date
+  idExpiryDate      DateTime?         // national ID / visa / work-permit expiry
   // Relations
   attendance      EmployeeAttendance[]
   documents       EmployeeDocument[]
@@ -94,6 +104,7 @@ model Employee {
   payrollRecords  EmployeePayroll[]
   shifts          EmployeeShift[]
   overtimeRecords EmployeeOvertime[]
+  leaveRecords    EmployeeLeave[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
@@ -214,6 +225,26 @@ model EmployeeOvertime {
 
   @@index([employeeId])
   @@index([date])
+}
+
+// Leave / PTO requests — annual, sick, unpaid, etc.
+model EmployeeLeave {
+  id          String   @id @default(uuid())
+  employeeId  String
+  type        String   @default("annual")   // annual, sick, unpaid, other
+  startDate   DateTime
+  endDate     DateTime
+  days        Float                          // number of leave days (supports half-days)
+  reason      String?
+  status      String   @default("pending")  // pending, approved, rejected
+  approvedBy  String?
+  reviewedAt  DateTime?
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([employeeId])
+  @@index([status])
+  @@index([startDate])
 }
 
 model EmailReport {

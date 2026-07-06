@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { Plus, Search, Users, Filter, DollarSign, X } from 'lucide-react'
+import { Plus, Search, Users, Filter, DollarSign, X, BarChart3, Download } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import Modal from '../../components/ui/Modal'
-import StatsBar from './components/StatsBar'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import EmployeeAnalytics from './components/EmployeeAnalytics'
 import EmployeeCard from './components/EmployeeCard'
 import EmployeeForm from './components/EmployeeForm'
 import PayrollOverview from './components/PayrollOverview'
 import { useEmployees } from './hooks/useEmployees'
 import { usePluginRoles } from './hooks/usePluginRoles'
 
-type TabView = 'team' | 'payroll'
+type TabView = 'team' | 'analytics' | 'payroll'
 
 export default function Employees() {
   const { t } = useLanguage()
@@ -35,11 +36,19 @@ export default function Employees() {
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{t('empTrackTeam')}</p>
         </div>
-        {view === 'team' && (
+        <div className="flex items-center gap-2">
+          {view === 'team' && (
+            <button
+              onClick={state.toggleSelectMode}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${state.selectMode ? 'bg-primary text-white border-primary' : 'border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+            >
+              {state.selectMode ? (t('cancel') ?? 'Cancel') : (t('empSelect') ?? 'Select')}
+            </button>
+          )}
           <button onClick={state.openAdd} className="btn-primary flex items-center gap-2">
             <Plus size={18} /> {t('addEmployee')}
           </button>
-        )}
+        </div>
       </div>
 
       {/* Tab bar */}
@@ -53,6 +62,16 @@ export default function Employees() {
           }`}
         >
           <Users size={15} /> {t('empTeam') ?? 'Team'}
+        </button>
+        <button
+          onClick={() => setView('analytics')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            view === 'analytics'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          <BarChart3 size={15} /> {t('empAnalytics') ?? 'Analytics'}
         </button>
         <button
           onClick={() => setView('payroll')}
@@ -70,10 +89,11 @@ export default function Employees() {
       {/* ── Payroll tab ─────────────────────────────────────────────── */}
       {view === 'payroll' && <PayrollOverview />}
 
+      {/* ── Analytics tab ───────────────────────────────────────────── */}
+      {view === 'analytics' && <EmployeeAnalytics employees={state.employees} stats={state.stats} />}
+
       {/* ── Team tab ────────────────────────────────────────────────── */}
       {view === 'team' && (<>
-      {/* Stats */}
-      {state.stats && <StatsBar stats={state.stats} />}
 
       {/* Search + Filters */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm space-y-3">
@@ -95,7 +115,31 @@ export default function Employees() {
           >
             <Filter size={16} /> {t('empFilters')} {hasActiveFilters ? '●' : ''}
           </button>
+          <select
+            value={state.sortBy}
+            onChange={e => state.setSortBy(e.target.value as typeof state.sortBy)}
+            className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-700 dark:text-slate-300 cursor-pointer focus:ring-2 focus:ring-primary"
+            title={t('empSortBy') ?? 'Sort by'}
+          >
+            <option value="name">{t('empSortName') ?? 'Name'}</option>
+            <option value="hire">{t('empSortHire') ?? 'Recently hired'}</option>
+            <option value="performance">{t('empSortPerformance') ?? 'Performance'}</option>
+            <option value="department">{t('empSortDept') ?? 'Department'}</option>
+          </select>
+          <button
+            onClick={state.exportCsv}
+            disabled={state.filtered.length === 0}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+            title={t('empExportCsv') ?? 'Export CSV'}
+          >
+            <Download size={16} /> {t('empExport') ?? 'Export'}
+          </button>
         </div>
+
+        {/* Result count */}
+        <p className="text-xs text-slate-400">
+          {t('empShowing') ?? 'Showing'} {state.filtered.length} {t('empOf') ?? 'of'} {state.totalCount}
+        </p>
 
         {/* Row 2: quick status pills */}
         <div className="flex gap-2 flex-wrap">
@@ -178,6 +222,25 @@ export default function Employees() {
         )}
       </div>
 
+      {/* Bulk action bar */}
+      {state.selectMode && (
+        <div className="flex items-center gap-3 flex-wrap px-4 py-3 rounded-xl bg-primary/10 border border-primary/20">
+          <label className="flex items-center gap-2 text-sm font-medium text-primary cursor-pointer select-none">
+            <input type="checkbox" checked={state.allSelected} onChange={state.selectAllFiltered} className="w-4 h-4 accent-primary" />
+            {state.allSelected ? (t('empDeselectAll') ?? 'Deselect all') : (t('empSelectAll') ?? 'Select all')} ({state.filtered.length})
+          </label>
+          {state.selectedIds.size > 0 && (
+            <div className="flex items-center gap-2 ml-auto flex-wrap">
+              <span className="text-sm text-primary">{state.selectedIds.size} {t('empSelected') ?? 'selected'}</span>
+              <button disabled={state.bulkBusy} onClick={() => state.bulkSetStatus('active')} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors">{t('empStatusActive')}</button>
+              <button disabled={state.bulkBusy} onClick={() => state.bulkSetStatus('on-leave')} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition-colors">{t('empStatusOnLeave')}</button>
+              <button disabled={state.bulkBusy} onClick={() => state.bulkSetStatus('terminated')} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">{t('empStatusTerminated')}</button>
+              <button onClick={state.clearSelected} className="px-3 py-1.5 rounded-lg text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">{t('empClearSelection') ?? 'Clear'}</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Employee grid */}
       {state.loading ? (
         <div className="flex items-center justify-center py-24">
@@ -186,10 +249,24 @@ export default function Employees() {
       ) : state.filtered.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-16 text-center">
           <Users size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-          <p className="text-slate-500 dark:text-slate-400">{t('empNoEmployeesFound')}</p>
-          <button onClick={state.openAdd} className="btn-primary mt-4">
-            <Plus size={16} className="inline mr-1" /> {t('addEmployee')}
-          </button>
+          {state.totalCount === 0 ? (
+            <>
+              <p className="text-slate-500 dark:text-slate-400">{t('empNoEmployeesFound')}</p>
+              <button onClick={state.openAdd} className="btn-primary mt-4">
+                <Plus size={16} className="inline mr-1" /> {t('addEmployee')}
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-500 dark:text-slate-400">{t('empNoMatches') ?? 'No employees match your filters'}</p>
+              <button
+                onClick={() => { state.setSearchQuery(''); state.setFilterStatus(''); state.setFilterDepartment(''); state.setFilterRole('') }}
+                className="mt-4 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                {t('empClearFilters') ?? 'Clear filters'}
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -202,6 +279,9 @@ export default function Employees() {
               onCheckIn={state.handleCheckIn}
               onCheckOut={state.handleCheckOut}
               checkingIn={state.checkingIn}
+              selectMode={state.selectMode}
+              selected={state.selectedIds.has(emp.id)}
+              onToggleSelect={state.toggleSelected}
             />
           ))}
         </div>
@@ -237,6 +317,17 @@ export default function Employees() {
           </div>
         </div>
       </Modal>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        isOpen={!!state.deleteTarget}
+        title={t('empConfirmDeleteTitle') ?? 'Delete employee'}
+        message={state.deleteTarget ? t('empConfirmDelete', { name: state.deleteTarget.name }) : ''}
+        confirmLabel={t('delete') ?? 'Delete'}
+        busy={state.deleting}
+        onConfirm={state.confirmDelete}
+        onCancel={state.cancelDelete}
+      />
     </div>
   )
 }

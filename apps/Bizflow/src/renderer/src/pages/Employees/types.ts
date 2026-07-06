@@ -2,6 +2,8 @@ export type EmployeeStatus = 'active' | 'on-leave' | 'terminated'
 export type EmploymentType = 'full-time' | 'part-time' | 'contract'
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'half-day' | 'leave'
 export type PayrollStatus = 'pending' | 'paid'
+export type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other'
+export type LeaveStatus = 'pending' | 'approved' | 'rejected'
 
 export interface Employee {
   id: string
@@ -26,6 +28,14 @@ export interface Employee {
   performanceScore?: number | null
   createdAt: string
   updatedAt: string
+  annualLeaveDays?: number
+  taxId?: string
+  socialInsuranceNo?: string
+  bankName?: string
+  iban?: string
+  contractEndDate?: string | null
+  idExpiryDate?: string | null
+  todayAttendance?: { checkIn?: string | null; checkOut?: string | null; status?: string } | null
   _count?: { attendance: number; activityLogs: number }
 }
 
@@ -72,8 +82,14 @@ export interface EmployeePayroll {
   month: number
   year: number
   baseSalary: number
+  regularHours?: number
+  overtimeHours?: number
+  overtimePay?: number
+  extraShifts?: number
+  extraShiftPay?: number
   bonuses: number
   deductions: number
+  grossPay?: number
   netPay: number
   status: PayrollStatus
   paidDate?: string
@@ -105,6 +121,27 @@ export interface EmployeeOvertime {
   createdAt: string
 }
 
+export interface EmployeeLeave {
+  id: string
+  employeeId: string
+  type: LeaveType
+  startDate: string
+  endDate: string
+  days: number
+  reason?: string
+  status: LeaveStatus
+  approvedBy?: string
+  reviewedAt?: string
+  createdAt: string
+}
+
+export interface LeaveBalance {
+  allowance: number   // annual paid-leave allowance
+  taken: number       // approved annual-leave days used this year
+  pending: number     // pending annual-leave days awaiting approval
+  remaining: number   // allowance − taken
+}
+
 export interface EmployeeProfile extends Employee {
   attendance: EmployeeAttendance[]
   documents: EmployeeDocument[]
@@ -112,7 +149,9 @@ export interface EmployeeProfile extends Employee {
   payrollRecords: EmployeePayroll[]
   shifts: EmployeeShift[]
   overtimeRecords: EmployeeOvertime[]
+  leaveRecords: EmployeeLeave[]
   attendanceSummary: AttendanceSummary
+  leaveBalance: LeaveBalance
 }
 
 export interface EmployeeStats {

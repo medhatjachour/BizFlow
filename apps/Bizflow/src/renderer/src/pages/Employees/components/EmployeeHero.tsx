@@ -1,4 +1,4 @@
-import { LogIn, LogOut, Edit2, Plus, UserX, UserCheck } from 'lucide-react'
+import { LogIn, LogOut, Edit2, Plus, UserX, UserCheck, Clock } from 'lucide-react'
 import type { EmployeeProfile, EmployeeAttendance } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
@@ -51,19 +51,31 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
     leave: t('empStatusLeave'),
   }
 
+  const attColor = (status: string) => {
+    switch (status) {
+      case 'present': return { chip: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', icon: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' }
+      case 'absent':  return { chip: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', icon: 'bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400' }
+      case 'late':    return { chip: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', icon: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' }
+      case 'leave':   return { chip: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' }
+      default:        return { chip: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400', icon: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' }
+    }
+  }
+  const att = todayAtt ? attColor(todayAtt.status) : null
+  const fmtT = (v: string) => new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div className="h-24 bg-gradient-to-r from-primary/80 to-secondary/80" />
       <div className="px-6 pb-6">
-        <div className="flex items-end gap-5 -mt-10 mb-4">
-          <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${avatarColor(emp.name)} flex items-center justify-center text-white font-bold text-2xl border-4 border-white dark:border-slate-800 shadow-lg`}>
+        <div className="flex items-start gap-5 -mt-10 mb-5">
+          <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${avatarColor(emp.name)} flex items-center justify-center text-white font-bold text-2xl border-4 border-white dark:border-slate-800 shadow-lg shrink-0`}>
             {getInitials(emp.name)}
           </div>
-          <div className="pb-1 flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
+          <div className="pt-11 flex-1 min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{emp.name}</h1>
               <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[emp.status]}`}>{statusLabel[emp.status] ?? emp.status}</span>
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">{emp.employmentType}</span>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 capitalize">{emp.employmentType}</span>
               {emp.performanceScore != null && (() => {
                 const score = emp.performanceScore as number
                 const color = score >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -77,6 +89,24 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
               })()}
             </div>
             <p className="text-slate-500 dark:text-slate-400 mt-0.5">{emp.role}{emp.department ? ` · ${emp.department}` : ''}</p>
+          </div>
+          {/* Lifecycle action — subtle, top-right */}
+          <div className="pt-11 shrink-0">
+            {emp.status === 'terminated' ? (
+              <button
+                onClick={onReactivate}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+              >
+                <UserCheck size={14} /> {t('empReactivate') ?? 'Reactivate'}
+              </button>
+            ) : (
+              <button
+                onClick={onEndContract}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <UserX size={14} /> {t('empEndContract') ?? 'End contract'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -101,90 +131,75 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
         </div>
 
         {emp.status === 'terminated' && emp.terminationDate && (
-          <div className="flex items-center gap-2 mt-3 text-sm text-red-600 dark:text-red-400">
+          <div className="flex items-center gap-2 mt-4 text-sm text-red-600 dark:text-red-400">
             <Ban size={14} className="shrink-0" />
             <span>Terminated {new Date(emp.terminationDate).toLocaleDateString()}</span>
             {emp.terminationNote && <span className="text-xs text-red-400/80 truncate">· {emp.terminationNote}</span>}
           </div>
         )}
 
-        {emp.status === 'terminated' && (
-          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
-            <button
-              onClick={onReactivate}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/40 text-sm font-medium transition-colors border border-green-200 dark:border-green-800"
-            >
-              <UserCheck size={14} /> Reactivate Employee
-            </button>
-          </div>
-        )}
-
+        {/* Today's attendance + quick actions */}
         {emp.status === 'active' && (
-          <div className="flex items-center gap-2 mt-4 flex-wrap">
-            {/* Today's status pill */}
-            {todayAtt && (
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${
-                todayAtt.status === 'present' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                : todayAtt.status === 'absent'  ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                : todayAtt.status === 'late'    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                : todayAtt.status === 'leave'   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-              }`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                {t('empToday')}: {attStatusLabel[todayAtt.status] ?? todayAtt.status}
-                {todayAtt.checkIn && (
-                  <span className="opacity-70 ml-1">
-                    · In {new Date(todayAtt.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                )}
-                {todayAtt.checkOut && (
-                  <span className="opacity-70">
-                    {' '}· Out {new Date(todayAtt.checkOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                )}
+          <div className="mt-5 flex flex-col lg:flex-row lg:items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-3.5">
+            {/* Attendance summary */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${att ? att.icon : 'bg-slate-200 dark:bg-slate-700 text-slate-400'}`}>
+                <Clock size={18} />
               </div>
-            )}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-white">{t('empToday')}</span>
+                  {todayAtt ? (
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${att!.chip}`}>{attStatusLabel[todayAtt.status] ?? todayAtt.status}</span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">{t('empNoRecord')}</span>
+                  )}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-3">
+                  {todayAtt?.checkIn ? (
+                    <span className="inline-flex items-center gap-1"><LogIn size={11} className="text-green-500" /> {fmtT(todayAtt.checkIn as string)}</span>
+                  ) : (
+                    <span>{t('empNotCheckedIn')}</span>
+                  )}
+                  {todayAtt?.checkOut && (
+                    <span className="inline-flex items-center gap-1"><LogOut size={11} className="text-amber-500" /> {fmtT(todayAtt.checkOut as string)}</span>
+                  )}
+                </div>
+              </div>
+            </div>
 
-            {/* Check In — hide if already checked in */}
-            {!alreadyIn && (
-              <button
-                onClick={onCheckIn}
-                disabled={checkingIn}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <LogIn size={15} /> {checkingIn ? t('empCheckingIn') : t('empCheckIn')}
+            {/* Actions */}
+            <div className="flex items-center gap-2 flex-wrap lg:justify-end">
+              {!alreadyIn && (
+                <button
+                  onClick={onCheckIn}
+                  disabled={checkingIn}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  <LogIn size={15} /> {checkingIn ? t('empCheckingIn') : t('empCheckIn')}
+                </button>
+              )}
+              {alreadyIn && !alreadyOut && (
+                <button
+                  onClick={onCheckOut}
+                  disabled={checkingOut}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  <LogOut size={15} /> {checkingOut ? t('empCheckingOut') : t('empCheckOut')}
+                </button>
+              )}
+              {alreadyIn && alreadyOut && (
+                <span className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20">
+                  <LogOut size={14} /> {t('empShiftComplete') ?? 'Shift complete'}
+                </span>
+              )}
+              <button onClick={onLogAttendance} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                <Edit2 size={14} /> {todayAtt ? t('empEditToday') : t('empLogAttendance')}
               </button>
-            )}
-
-            {/* Check Out — only show if checked in but not yet out */}
-            {alreadyIn && !alreadyOut && (
-              <button
-                onClick={onCheckOut}
-                disabled={checkingOut}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <LogOut size={15} /> {checkingOut ? t('empCheckingOut') : t('empCheckOut')}
+              <button onClick={onAddNote} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-white dark:hover:bg-slate-700 transition-colors">
+                <Plus size={14} /> {t('empAddNote')}
               </button>
-            )}
-
-            <button onClick={onLogAttendance} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 text-sm font-medium transition-colors">
-              <Edit2 size={14} /> {todayAtt ? t('empEditToday') : t('empLogAttendance')}
-            </button>
-            <button onClick={onAddNote} className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">
-              <Plus size={14} /> {t('empAddNote')}
-            </button>
-          </div>
-        )}
-
-        {/* End Contract — always available for non-terminated employees */}
-        {emp.status !== 'terminated' && (
-          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/60">
-            <button
-              onClick={onEndContract}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 text-sm font-medium transition-colors border border-red-200 dark:border-red-800"
-            >
-              <UserX size={14} /> End Contract
-            </button>
+            </div>
           </div>
         )}
       </div>

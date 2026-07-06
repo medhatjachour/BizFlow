@@ -1,20 +1,22 @@
 import { useState } from 'react'
-import { Plus, CheckCircle } from 'lucide-react'
-import type { EmployeePayroll } from '../types'
+import { Plus, CheckCircle, FileText } from 'lucide-react'
+import type { Employee, EmployeePayroll } from '../types'
+import { describePayrollPeriod } from '../payrollPeriod'
+import PayslipModal from './PayslipModal'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
 interface Props {
+  emp: Employee
   payrollRecords: EmployeePayroll[]
   onAdd: () => void
   onMarkPaid: (id: string) => void
   disabled?: boolean
 }
 
-export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid, disabled }: Props) {
+export default function PayrollTab({ emp, payrollRecords, onAdd, onMarkPaid, disabled }: Props) {
   const { t } = useLanguage()
   const [markingId, setMarkingId] = useState<string | null>(null)
+  const [payslip, setPayslip] = useState<EmployeePayroll | null>(null)
 
   const handleMarkPaid = async (id: string) => {
     setMarkingId(id)
@@ -46,7 +48,7 @@ export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid, disabled
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {payrollRecords.map(p => (
                 <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{MONTHS[p.month - 1]} {p.year}</td>
+                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{describePayrollPeriod(p.month, p.year)}</td>
                   <td className="px-4 py-3 text-slate-700 dark:text-slate-300">${p.baseSalary.toFixed(2)}</td>
                   <td className="px-4 py-3 text-green-600">+${p.bonuses.toFixed(2)}</td>
                   <td className="px-4 py-3 text-red-500">-${p.deductions.toFixed(2)}</td>
@@ -58,23 +60,35 @@ export default function PayrollTab({ payrollRecords, onAdd, onMarkPaid, disabled
                   </td>
                   <td className="px-4 py-3 text-slate-500">{p.paidDate ? new Date(p.paidDate).toLocaleDateString() : '—'}</td>
                   <td className="px-4 py-3">
-                    {!disabled && p.status === 'pending' && (
+                    <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => handleMarkPaid(p.id)}
-                        disabled={markingId === p.id}
-                        title="Mark as Paid"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setPayslip(p)}
+                        title={t('empPayslip') ?? 'Payslip'}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
-                        <CheckCircle size={13} />
-                        {markingId === p.id ? 'Saving…' : 'Mark Paid'}
+                        <FileText size={13} /> {t('empPayslip') ?? 'Payslip'}
                       </button>
-                    )}
+                      {!disabled && p.status === 'pending' && (
+                        <button
+                          onClick={() => handleMarkPaid(p.id)}
+                          disabled={markingId === p.id}
+                          title="Mark as Paid"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <CheckCircle size={13} />
+                          {markingId === p.id ? 'Saving…' : 'Mark Paid'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+      {payslip && (
+        <PayslipModal emp={emp} record={payslip} allRecords={payrollRecords} onClose={() => setPayslip(null)} />
       )}
     </div>
   )

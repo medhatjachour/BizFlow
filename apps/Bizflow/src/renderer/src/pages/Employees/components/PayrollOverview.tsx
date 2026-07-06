@@ -21,6 +21,7 @@ import {
 import { ipc } from '../../../utils/ipc'
 import { useToast } from '../../../contexts/ToastContext'
 import type { Employee, EmployeePayroll } from '../types'
+import { encodePayrollPeriodKey } from '../payrollPeriod'
 import Modal from '../../../components/ui/Modal'
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -122,10 +123,8 @@ export default function PayrollOverview() {
   })
   const [saving, setSaving] = useState(false)
 
-  // ── Period key used for storing records (month field = month|week|day) ───────
-  // We store monthly in month 1–12, weekly in month 1–52 (year still scopes it),
-  // daily in month 1–31 (year+month context stored in notes as "YYYY-MM-DD").
-  const periodKey = periodType === 'monthly' ? month : periodType === 'weekly' ? week : day
+  // ── Period key used for storing records (encoded so monthly/weekly/daily never collide) ──
+  const periodKey = encodePayrollPeriodKey(periodType, month, week, day)
 
   // ── Load ──────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {

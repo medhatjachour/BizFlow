@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { ipc } from '../../../utils/ipc'
 import { useToast } from '../../../contexts/ToastContext'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useAuth } from '../../../contexts/AuthContext'
 import logger from '../../../../../shared/utils/logger'
 import type { Employee, EmployeeStats } from '../types'
 
@@ -21,7 +22,10 @@ export const EMPTY_FORM = {
   status: 'active' as const, salary: 0, salaryType: 'monthly',
   emergencyName: '', emergencyPhone: '', notes: '',
   hireDate: new Date().toISOString().split('T')[0],
-  performanceScore: 0
+  performanceScore: 0,
+  annualLeaveDays: 21,
+  taxId: '', socialInsuranceNo: '', bankName: '', iban: '',
+  contractEndDate: '', idExpiryDate: ''
 }
 
 export type EmployeeFormData = typeof EMPTY_FORM
@@ -29,6 +33,8 @@ export type EmployeeFormData = typeof EMPTY_FORM
 export function useEmployees() {
   const toast = useToast()
   const { t } = useLanguage()
+  const { user } = useAuth()
+  const actor = user?.username ?? user?.id ?? undefined
 
   const [employees, setEmployees] = useState<Employee[]>([])
   const [stats, setStats] = useState<EmployeeStats | null>(null)
@@ -44,6 +50,12 @@ export function useEmployees() {
   const [formData, setFormData] = useState<EmployeeFormData>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [checkingIn, setCheckingIn] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [sortBy, setSortBy] = useState<'name' | 'hire' | 'performance' | 'department'>('name')
 
   const load = useCallback(async () => {
     try {
@@ -73,6 +85,46 @@ export function useEmployees() {
     return matchQ && matchS && matchD && matchR
   })
 
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case 'hire': return new Date(b.hireDate).getTime() - new Date(a.hireDate).getTime()
+      case 'performance': return (b.performanceScore ?? 0) - (a.performanceScore ?? 0)
+      case 'department': return (a.department || '').localeCompare(b.department || '') || a.name.localeCompare(b.name)
+      default: return a.name.localeCompare(b.name)
+    }
+  })
+
+  const allSelected = sorted.length > 0 && sorted.every(e => selectedIds.has(e.id))
+  const selectAllFiltered = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(sorted.map(e => e.id)))
+  }
+
+  const exportCsv = () => {
+    const cols: [string, (e: Employee) => string][] = [
+      ['Name', e => e.name],
+      ['Role', e => e.role],
+      ['Department', e => e.department ?? ''],
+      ['Status', e => e.status],
+      ['Employment', e => e.employmentType],
+      ['Email', e => e.email ?? ''],
+      ['Phone', e => e.phone],
+      ['Salary', e => String(e.salary ?? 0)],
+      ['Salary type', e => e.salaryType],
+      ['Hire date', e => e.hireDate ? new Date(e.hireDate).toISOString().split('T')[0] : ''],
+      ['Performance', e => e.performanceScore != null ? String(e.performanceScore) : ''],
+    ]
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
+    const rows = [cols.map(c => c[0]).join(',')]
+    for (const e of sorted) rows.push(cols.map(c => esc(c[1](e))).join(','))
+    const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const validateForm = () => {
     if (!formData.name.trim()) { toast.error?.(t('empToastNameRequired')); return false }
     if (!formData.role.trim()) { toast.error?.(t('empToastRoleRequired')); return false }
@@ -89,7 +141,11 @@ export function useEmployees() {
         salary: Number(formData.salary),
         hireDate: formData.hireDate ? new Date(formData.hireDate).toISOString() : new Date().toISOString(),
         email: formData.email.trim() || null,
-        performanceScore: formData.performanceScore > 0 ? formData.performanceScore : null
+        performanceScore: formData.performanceScore > 0 ? formData.performanceScore : null,
+        annualLeaveDays: Number(formData.annualLeaveDays) || 0,
+        contractEndDate: formData.contractEndDate ? new Date(formData.contractEndDate).toISOString() : null,
+        idExpiryDate: formData.idExpiryDate ? new Date(formData.idExpiryDate).toISOString() : null,
+        createdBy: actor
       })
       if (res?.success) {
         toast.success?.(t('empToastAdded'))
@@ -115,7 +171,11 @@ export function useEmployees() {
         salary: Number(formData.salary),
         hireDate: formData.hireDate ? new Date(formData.hireDate).toISOString() : undefined,
         email: formData.email.trim() || null,
-        performanceScore: formData.performanceScore > 0 ? formData.performanceScore : null
+        performanceScore: formData.performanceScore > 0 ? formData.performanceScore : null,
+        annualLeaveDays: Number(formData.annualLeaveDays) || 0,
+        contractEndDate: formData.contractEndDate ? new Date(formData.contractEndDate).toISOString() : null,
+        idExpiryDate: formData.idExpiryDate ? new Date(formData.idExpiryDate).toISOString() : null,
+        performedBy: actor
       })
       if (res?.success) {
         toast.success?.(t('empToastUpdated'))
@@ -133,13 +193,48 @@ export function useEmployees() {
     }
   }
 
-  const handleDelete = async (emp: Employee) => {
-    if (!window.confirm(t('empConfirmDelete', { name: emp.name }))) return
+  const handleDelete = (emp: Employee) => {
+    setDeleteTarget(emp)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleting) return
+    setDeleting(true)
     try {
-      const res = await ipc.employees.delete(emp.id)
-      if (res?.success) { toast.success?.(t('empToastDeleted')); load() }
+      const res = await ipc.employees.delete(deleteTarget.id)
+      if (res?.success) { toast.success?.(t('empToastDeleted')); setDeleteTarget(null); load() }
       else toast.error?.(res?.message || t('empToastDeleteFailed'))
     } catch (err: any) { toast.error?.(err.message) }
+    finally { setDeleting(false) }
+  }
+
+  const toggleSelected = (emp: Employee) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(emp.id)) next.delete(emp.id); else next.add(emp.id)
+      return next
+    })
+  }
+  const clearSelected = () => setSelectedIds(new Set())
+  const toggleSelectMode = () => { setSelectMode(v => !v); setSelectedIds(new Set()) }
+
+  const bulkSetStatus = async (status: 'active' | 'on-leave' | 'terminated') => {
+    if (selectedIds.size === 0 || bulkBusy) return
+    setBulkBusy(true)
+    const ids = Array.from(selectedIds)
+    let ok = 0
+    for (const id of ids) {
+      try {
+        const extra = status === 'terminated' ? { terminationDate: new Date().toISOString() } : { terminationDate: null, terminationNote: null }
+        const res = await ipc.employees.update(id, { status, ...extra, performedBy: actor })
+        if (res?.success) ok++
+      } catch { /* skip */ }
+    }
+    toast.success?.(`Updated ${ok} employee${ok !== 1 ? 's' : ''}`)
+    setSelectedIds(new Set())
+    setSelectMode(false)
+    setBulkBusy(false)
+    load()
   }
 
   const openEdit = (emp: Employee) => {
@@ -151,7 +246,12 @@ export function useEmployees() {
       status: emp.status as EmployeeFormData['status'], salary: emp.salary, salaryType: emp.salaryType,
       emergencyName: emp.emergencyName || '', emergencyPhone: emp.emergencyPhone || '',
       notes: emp.notes || '', hireDate: emp.hireDate ? new Date(emp.hireDate).toISOString().split('T')[0] : '',
-      performanceScore: emp.performanceScore || 0
+      performanceScore: emp.performanceScore || 0,
+      annualLeaveDays: emp.annualLeaveDays ?? 21,
+      taxId: emp.taxId || '', socialInsuranceNo: emp.socialInsuranceNo || '',
+      bankName: emp.bankName || '', iban: emp.iban || '',
+      contractEndDate: emp.contractEndDate ? new Date(emp.contractEndDate).toISOString().split('T')[0] : '',
+      idExpiryDate: emp.idExpiryDate ? new Date(emp.idExpiryDate).toISOString().split('T')[0] : ''
     })
     setShowEditModal(true)
   }
@@ -177,17 +277,21 @@ export function useEmployees() {
   }
 
   return {
-    employees, stats, loading, filtered,
+    employees, stats, loading, filtered: sorted, totalCount: employees.length,
     searchQuery, setSearchQuery,
     filterStatus, setFilterStatus,
     filterDepartment, setFilterDepartment,
     filterRole, setFilterRole,
+    sortBy, setSortBy,
     showFilters, setShowFilters,
     showAddModal, setShowAddModal,
     showEditModal, setShowEditModal,
     selected, formData, setFormData,
     saving, checkingIn,
     handleAdd, handleEdit, handleDelete,
+    deleteTarget, deleting, confirmDelete, cancelDelete: () => setDeleteTarget(null),
+    selectMode, selectedIds, toggleSelected, clearSelected, toggleSelectMode, bulkSetStatus, bulkBusy,
+    allSelected, selectAllFiltered, exportCsv,
     openEdit, handleCheckIn, handleCheckOut,
     openAdd: () => { setFormData(EMPTY_FORM); setShowAddModal(true) }
   }

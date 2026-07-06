@@ -156,7 +156,7 @@ export default function AttendanceTab({ attendance, onLog, onEdit, disabled }: P
                     {!disabled && (
                       <button
                         onClick={() => onEdit(a)}
-                        title={t('editEmployee')}
+                        title={t('edit')}
                         className="p-1.5 rounded text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
                       >
                         <Pencil size={13} />

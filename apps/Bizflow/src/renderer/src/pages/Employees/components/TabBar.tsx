@@ -1,6 +1,6 @@
 import React from 'react'
 import type { ProfileTab } from '../hooks/useEmployeeProfile'
-import { User, Calendar, Clock, DollarSign, Activity, FileText, AlarmClock } from 'lucide-react'
+import { User, Calendar, Clock, DollarSign, Activity, FileText, AlarmClock, Plane } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface Props {
@@ -17,6 +17,7 @@ export default function TabBar({ tab, onChange, counts = {} }: Props) {
     { key: 'attendance', label: t('tabAttendance'),  icon: <Calendar size={16} /> },
     { key: 'shifts',     label: t('tabShifts'),      icon: <Clock size={16} /> },
     { key: 'overtime',   label: t('tabOvertime'),    icon: <AlarmClock size={16} /> },
+    { key: 'leave',      label: t('tabLeave') ?? 'Leave', icon: <Plane size={16} /> },
     { key: 'payroll',    label: t('tabPayroll'),     icon: <DollarSign size={16} /> },
     { key: 'activity',   label: t('tabActivity'),    icon: <Activity size={16} /> },
     { key: 'documents',  label: t('tabDocuments'),   icon: <FileText size={16} /> },
