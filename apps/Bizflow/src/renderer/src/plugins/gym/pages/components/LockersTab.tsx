@@ -14,7 +14,7 @@ const zoneBadge: Record<string, string> = {
 }
 
 const labelCls = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1'
-const inputCls = 'w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500'
+const inputCls = 'w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]'
 
 /* ─── Add / Edit Locker Modal ─── */
 function LockerFormModal({ initial, onClose, onSaved }: { initial?: any; onClose: () => void; onSaved: () => void }) {
@@ -73,7 +73,7 @@ function LockerFormModal({ initial, onClose, onSaved }: { initial?: any; onClose
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
               {saving ? t('gymLoggingIn') : initial ? t('gymSave') : t('gymAddLocker')}
             </button>
           </div>
@@ -169,7 +169,7 @@ function AssignModal({ locker, onClose, onSaved }: { locker: any; onClose: () =>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
-            <button type="submit" disabled={saving || !selected} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving || !selected} className="flex-1 py-2.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
               {saving ? t('gymLoggingIn') : t('gymAssign')}
             </button>
           </div>
@@ -245,11 +245,11 @@ export default function LockersTab() {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[180px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+          <input className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]"
             placeholder="Search locker or member name…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <button onClick={() => setAddOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
+          className="flex items-center gap-1.5 px-4 py-2 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
           <Plus size={14} /> {t('gymAddLocker')}
         </button>
       </div>

@@ -66,7 +66,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
                 ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50 dark:bg-red-900/10'
                 : isValid && showValidIcon
                 ? 'border-green-500 focus:ring-green-500 focus:border-green-500'
-                : 'border-slate-300 dark:border-slate-600 focus:ring-primary focus:border-primary'
+                : 'border-slate-300 dark:border-slate-600 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]'
               }
               bg-white dark:bg-slate-700
               text-slate-900 dark:text-white

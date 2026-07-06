@@ -129,6 +129,7 @@ export const arPart7 = {
     gymEndDate: 'تاريخ الانتهاء (اختياري)',
     // Attendance
     gymQuickCheckIn: 'تسجيل حضور سريع',
+    gymDailyCheckIns: 'حضور اليوم',
     gymSearchMember: 'ابحث عن عضو بالاسم أو الهاتف…',
     gymCheckIn: 'تسجيل الحضور',
     gymLogAnon: 'تسجيل زيارة مجهولة (غير مسجّل كعضو)',

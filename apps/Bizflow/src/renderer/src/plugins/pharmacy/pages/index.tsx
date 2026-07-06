@@ -8,15 +8,15 @@ import {
   Receipt, Truck, ClipboardList, BarChart3, Users
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import PharmacyDashboard from './components/PharmacyDashboard'
-import PharmacyPOS from './components/PharmacyPOS'
-import PharmacyProducts from './components/PharmacyProducts'
-import PharmacyInventory from './components/PharmacyInventory'
-import PharmacySales from './components/PharmacySales'
+import PharmacyDashboard from './components/analytics/PharmacyDashboard'
+import PharmacyPOS from './components/sales/PharmacyPOS'
+import PharmacyProducts from './components/products/PharmacyProducts'
+import PharmacyInventory from './components/products/PharmacyInventory'
+import PharmacySales from './components/sales/PharmacySales'
 import PharmacyCustomers from './components/PharmacyCustomers'
-import PharmacySuppliers from './components/PharmacySuppliers'
-import PharmacyPurchaseOrders from './components/PharmacyPurchaseOrders'
-import PharmacyReports from './components/PharmacyReports'
+import PharmacySuppliers from './components/purchasing/PharmacySuppliers'
+import PharmacyPurchaseOrders from './components/purchasing/PharmacyPurchaseOrders'
+import PharmacyReports from './components/analytics/PharmacyReports'
 
 type Tab = 'dashboard' | 'pos' | 'products' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'orders' | 'reports'
 

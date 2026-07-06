@@ -44,6 +44,9 @@ export function registerOrderHandlers(prisma: any) {
 
   ipcMain.handle('restaurant:openOrder', async (_e, data: { tableId: string; serverName?: string; notes?: string }) => {
     try {
+      // Guard: a table may only have ONE open order at a time (prevents double-seating).
+      const existingOpen = await prisma.dineInOrder.findFirst({ where: { tableId: data.tableId, status: 'open' } })
+      if (existingOpen) throw new Error('This table already has an open order — pay or void it before opening a new one')
       await prisma.restaurantTable.update({ where: { id: data.tableId }, data: { status: 'occupied' } })
       return await prisma.dineInOrder.create({
         data: { tableId: data.tableId, serverName: data.serverName, notes: data.notes, status: 'open' },

@@ -35,7 +35,7 @@ export const PO_STATUS_BADGE: Record<string, string> = {
 }
 
 export const inputCls =
-  'w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
+  'w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]'
 
 export function expiryTone(days: number): string {
   if (days < 0) return 'text-red-600 dark:text-red-400'

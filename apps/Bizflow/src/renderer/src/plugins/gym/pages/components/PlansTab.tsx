@@ -222,7 +222,7 @@ function PlanFormModal({ isOpen, onClose, initial, onSaved }: {
     finally { setSaving(false) }
   }
 
-  const inputCls = 'w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500'
+  const inputCls = 'w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]'
   const labelCls = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1'
   const col = getColor(form.color)
 
@@ -487,7 +487,7 @@ export default function PlansTab() {
           <p className="text-xs text-slate-400 mt-0.5">{plans.length} plan{plans.length !== 1 ? 's' : ''} configured</p>
         </div>
         <button onClick={() => { setEditTarget(null); setShowForm(true) }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors">
+          className="flex items-center gap-2 px-4 py-2.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-semibold rounded-xl transition-colors">
           <Plus size={14} /> {t('gymNewPlan')}
         </button>
       </div>

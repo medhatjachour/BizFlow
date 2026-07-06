@@ -3,10 +3,11 @@
  * to replace the plain "search input + selects" rows.
  */
 import { Search, X, SlidersHorizontal, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect, useId, useRef } from 'react'
 import type { ComponentType, ButtonHTMLAttributes, ReactNode } from 'react'
 
 export const inputCls =
-  'w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500'
+  'w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]'
 
 // ── Button ─────────────────────────────────────────────────────────────────
 // One consistent button used everywhere in the pharmacy module.
@@ -14,10 +15,10 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'subtle' | 'ghost'
 type Size = 'sm' | 'md' | 'lg'
 
 const VARIANT_CLS: Record<Variant, string> = {
-  primary:   'text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm',
+  primary:   'text-[color:var(--accent-contrast)] bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] shadow-sm',
   secondary: 'text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600',
   danger:    'text-white bg-red-600 hover:bg-red-700 shadow-sm',
-  subtle:    'text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50',
+  subtle:    'text-[color:var(--accent-strong)] bg-[color:var(--accent-soft)] hover:brightness-95',
   ghost:     'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
 }
 const SIZE_CLS: Record<Size, string> = {
@@ -70,14 +71,44 @@ export function Modal({
   onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'sm' | 'md' | 'lg'
 }) {
   const w = size === 'sm' ? 'max-w-sm' : size === 'lg' ? 'max-w-2xl' : 'max-w-lg'
+  const titleId = useId()
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previouslyFocused = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    previouslyFocused.current = document.activeElement as HTMLElement | null
+    document.body.style.overflow = 'hidden'
+    const sel =
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    const panel = panelRef.current
+    ;(panel?.querySelector<HTMLElement>(sel) ?? panel)?.focus()
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { onClose(); return }
+      if (e.key !== 'Tab' || !panelRef.current) return
+      const f = Array.from(panelRef.current.querySelectorAll<HTMLElement>(sel)).filter(el => el.offsetParent !== null)
+      if (f.length === 0) { e.preventDefault(); panelRef.current.focus(); return }
+      const first = f[0], last = f[f.length - 1], active = document.activeElement
+      if (e.shiftKey && (active === first || active === panelRef.current)) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = 'unset'
+      previouslyFocused.current?.focus?.()
+    }
+  }, [onClose])
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
-      <div className={`w-full ${w} bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]`} onClick={e => e.stopPropagation()}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
+        className={`w-full ${w} bg-white dark:bg-slate-900 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] focus:outline-none`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             {Icon && <span className="h-8 w-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center shrink-0"><Icon size={16} className="text-emerald-500" /></span>}
             <div className="min-w-0">
-              <h2 className="font-bold text-slate-900 dark:text-white truncate">{title}</h2>
+              <h2 id={titleId} className="font-bold text-slate-900 dark:text-white truncate">{title}</h2>
               {subtitle && <p className="text-xs text-slate-400 truncate">{subtitle}</p>}
             </div>
           </div>
@@ -146,7 +177,7 @@ export function SearchBox({ value, onChange, placeholder, autoFocus, onKeyDown }
       <input
         value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         autoFocus={autoFocus} onKeyDown={onKeyDown}
-        className="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 dark:bg-slate-900/40 border border-transparent focus:border-emerald-400 dark:focus:border-emerald-600 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-colors"
+        className="w-full pl-9 pr-8 py-2 text-sm bg-slate-50 dark:bg-slate-900/40 border border-transparent focus:border-[color:var(--accent)] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] transition-colors"
       />
       {value && (
         <button onClick={() => onChange('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
@@ -187,7 +218,7 @@ export function Segmented({ options, value, onChange }: {
 export function FilterSelect({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
   return (
     <select value={value} onChange={e => onChange(e.target.value)}
-      className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900/40 border border-transparent rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 capitalize cursor-pointer">
+      className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900/40 border border-transparent rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] capitalize cursor-pointer">
       {children}
     </select>
   )

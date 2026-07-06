@@ -131,7 +131,7 @@ const BakeryFinanceSection: React.FC = () => {
             <option value={90}>{t('bakeryFinanceLast90')}</option>
           </select>
           <button onClick={() => loadData(true)} disabled={refreshing}
-            className="flex items-center gap-2 px-3 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 text-sm font-medium disabled:opacity-50">
+            className="flex items-center gap-2 px-3 py-2 bg-[color:var(--accent)] text-[color:var(--accent-contrast)] rounded-lg hover:bg-[color:var(--accent-strong)] text-sm font-medium disabled:opacity-50">
             <RefreshCcw size={15} className={refreshing ? 'animate-spin' : ''} />{t('bakeryFinanceRefresh')}
           </button>
         </div>

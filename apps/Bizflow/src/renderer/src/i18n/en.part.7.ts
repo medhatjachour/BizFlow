@@ -129,6 +129,7 @@ export const enPart7 = {
     gymEndDate: 'End Date (optional)',
     // Attendance
     gymQuickCheckIn: 'Quick Check-in',
+    gymDailyCheckIns: 'check-ins today',
     gymSearchMember: 'Search member by name or phone…',
     gymCheckIn: 'Check In',
     gymLogAnon: 'Log anonymous walk-in (not in member list)',

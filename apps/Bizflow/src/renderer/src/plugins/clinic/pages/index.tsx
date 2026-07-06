@@ -5,15 +5,15 @@ import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
-import PatientFormModal from './components/PatientFormModal'
-import SessionFormModal from './components/SessionFormModal'
-import AppointmentFormModal from './components/AppointmentFormModal'
-import SessionsTab from './components/SessionsTab'
-import StatsTab from './components/StatsTab'
-import AppointmentsTab from './components/AppointmentsTab'
-import FollowUpsTab from './components/FollowUpsTab'
-import ExpensesTab from './components/ExpensesTab'
-import MaterialsTab from './components/MaterialsTab'
+import PatientFormModal from './components/patients/PatientFormModal'
+import SessionFormModal from './components/sessions/SessionFormModal'
+import AppointmentFormModal from './components/appointments/AppointmentFormModal'
+import SessionsTab from './components/sessions/SessionsTab'
+import StatsTab from './components/stats/StatsTab'
+import AppointmentsTab from './components/appointments/AppointmentsTab'
+import FollowUpsTab from './components/appointments/FollowUpsTab'
+import ExpensesTab from './components/expenses/ExpensesTab'
+import MaterialsTab from './components/materials/MaterialsTab'
 
 type Tab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'materials'
 
@@ -510,7 +510,7 @@ function PatientsTab() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-shadow"
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] transition-shadow"
             placeholder={t('searchPatients')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}

@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../utils/logger'
+import { cacheService } from '../../services/CacheService'
 
 const log = createLogger('SaleTransactions')
 
@@ -204,6 +205,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
         }
       }
 
+      cacheService.invalidatePattern('dashboard:*')
       return { success: true, transaction: transactionWithUser, items: result.items }
     } catch (error) {
       log.error('Error creating sale transaction:', error)
@@ -457,6 +459,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
         }
       }
 
+      cacheService.invalidatePattern('dashboard:*')
       return { success: true, transaction: result }
     } catch (error) {
       log.error('Error refunding transaction:', error)
@@ -693,6 +696,7 @@ export function registerSaleTransactionHandlers(prisma: any) {
         }
       }
 
+      cacheService.invalidatePattern('dashboard:*')
       return { success: true, transaction: result }
     } catch (error) {
       log.error('Error refunding items:', error)

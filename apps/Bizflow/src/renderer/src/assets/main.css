@@ -3,6 +3,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ───────────────────────────────────────────────────────────────────────────
+   Per-plugin accent token
+   One CSS variable drives the brand colour for the active module. RootLayout
+   sets `data-plugin="<id>"` on <body>; everything below cascades from it, so a
+   single component/Tailwind class (ring-[color:var(--accent)], bg, etc.) themes
+   itself automatically per plugin. Default = primary teal.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --accent: #0891b2;          /* primary teal */
+  --accent-strong: #0e7490;   /* hover / solid */
+  --accent-soft: #ecfeff;     /* tinted background */
+  --accent-contrast: #ffffff; /* text on accent */
+}
+[data-plugin='vet']        { --accent: #8b5cf6; --accent-strong: #7c3aed; --accent-soft: #f5f3ff; }
+[data-plugin='pharmacy']   { --accent: #10b981; --accent-strong: #059669; --accent-soft: #ecfdf5; }
+[data-plugin='clinic']     { --accent: #14b8a6; --accent-strong: #0d9488; --accent-soft: #f0fdfa; }
+[data-plugin='gym']        { --accent: #f97316; --accent-strong: #ea580c; --accent-soft: #fff7ed; --accent-contrast: #1c1917; }
+[data-plugin='bakery']     { --accent: #f59e0b; --accent-strong: #d97706; --accent-soft: #fffbeb; --accent-contrast: #1c1917; }
+[data-plugin='restaurant'] { --accent: #f43f5e; --accent-strong: #e11d48; --accent-soft: #fff1f2; }
+[data-plugin='warehouse']  { --accent: #0ea5e9; --accent-strong: #0284c7; --accent-soft: #f0f9ff; }
+[data-plugin='commerce']   { --accent: #0891b2; --accent-strong: #0e7490; --accent-soft: #ecfeff; }
+
 /* Global base styles */
 @layer base {
   * {
@@ -37,12 +59,12 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-700/50 rounded-full border-2 border-transparent;
+    @apply bg-slate-400/50 dark:bg-slate-600/50 rounded-full border-2 border-transparent;
     background-clip: padding-box;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-neutral-600/70;
+    @apply bg-slate-500/60 dark:bg-slate-500/70;
   }
 
   /* Custom scrollbar for cart */
@@ -55,8 +77,12 @@
   }
   
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-primary/30 hover:bg-primary/50 rounded-full;
+    @apply rounded-full;
+    background-color: color-mix(in srgb, var(--accent) 35%, transparent);
     transition: background-color 0.2s ease;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--accent) 55%, transparent);
   }
 
   /* Animation utilities */
@@ -124,10 +150,17 @@
   }
 
   .btn-primary {
-    @apply bg-primary hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl font-semibold;
+    @apply inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold;
     @apply transition-all duration-200;
-    @apply hover:shadow-lg hover:-translate-y-0.5;
-    @apply active:translate-y-0;
+    @apply hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:pointer-events-none;
+    background-color: var(--accent);
+    color: var(--accent-contrast);
+    --tw-ring-color: var(--accent);
+  }
+  .btn-primary:hover {
+    background-color: var(--accent-strong);
   }
 
   .btn-secondary {
@@ -138,146 +171,33 @@
   }
 
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl;
+    @apply w-full px-3 py-2 text-sm rounded-xl;
     @apply bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700;
     @apply text-slate-900 dark:text-white placeholder-slate-400;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
     @apply transition-colors duration-150;
   }
-}
-
-.logo {
-  margin-bottom: 20px;
-  -webkit-user-drag: none;
-  height: 128px;
-  width: 128px;
-  will-change: filter;
-  transition: filter 300ms;
-}
-
-.logo:hover {
-  filter: drop-shadow(0 0 1.2em #6988e6aa);
-}
-
-.creator {
-  font-size: 14px;
-  line-height: 16px;
-  color: var(--ev-c-text-2);
-  font-weight: 600;
-  margin-bottom: 10px;
-}
-
-.text {
-  font-size: 28px;
-  color: var(--ev-c-text-1);
-  font-weight: 700;
-  line-height: 32px;
-  text-align: center;
-  margin: 0 10px;
-  padding: 16px 0;
-}
-
-.tip {
-  font-size: 16px;
-  line-height: 24px;
-  color: var(--ev-c-text-2);
-  font-weight: 600;
-}
-
-.react {
-  background: -webkit-linear-gradient(315deg, #087ea4 55%, #7c93ee);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 700;
-}
-
-.ts {
-  background: -webkit-linear-gradient(315deg, #3178c6 45%, #f0dc4e);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 700;
-}
-
-.actions {
-  display: flex;
-  padding-top: 32px;
-  margin: -6px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-}
-
-.action {
-  flex-shrink: 0;
-  padding: 6px;
-}
-
-.action a {
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-block;
-  border: 1px solid transparent;
-  text-align: center;
-  font-weight: 600;
-  white-space: nowrap;
-  border-radius: 20px;
-  padding: 0 20px;
-  line-height: 38px;
-  font-size: 14px;
-  border-color: var(--ev-button-alt-border);
-  color: var(--ev-button-alt-text);
-  background-color: var(--ev-button-alt-bg);
-}
-
-.action a:hover {
-  border-color: var(--ev-button-alt-hover-border);
-  color: var(--ev-button-alt-hover-text);
-  background-color: var(--ev-button-alt-hover-bg);
-}
-
-.versions {
-  position: absolute;
-  bottom: 30px;
-  margin: 0 auto;
-  padding: 15px 0;
-  font-family: 'Menlo', 'Lucida Console', monospace;
-  display: inline-flex;
-  overflow: hidden;
-  align-items: center;
-  border-radius: 22px;
-  background-color: #202127;
-  backdrop-filter: blur(24px);
-}
-
-.versions li {
-  display: block;
-  float: left;
-  border-right: 1px solid var(--ev-c-gray-1);
-  padding: 0 20px;
-  font-size: 14px;
-  line-height: 14px;
-  opacity: 0.8;
-  &:last-child {
-    border: none;
+  .input-field:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent);
   }
 }
 
-@media (max-width: 720px) {
-  .text {
-    font-size: 20px;
+/* Respect users who prefer reduced motion: neutralise hover-lifts, entrance
+   animations and long transitions across the whole app. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
-}
 
-@media (max-width: 620px) {
-  .versions {
-    display: none;
-  }
-}
-
-@media (max-width: 350px) {
-  .tip,
-  .actions {
-    display: none;
+  .glass-card-hover:hover,
+  .kpi-card:hover,
+  .btn-primary:hover {
+    transform: none !important;
   }
 }

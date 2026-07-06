@@ -252,6 +252,22 @@ const api = {
     error: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'error', message, data }),
     debug: (message: string, data?: unknown) => ipcRenderer.invoke('log:fromRenderer', { level: 'debug', message, data })
   },
+  // Auto-update bridge
+  updater: {
+    getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
+    check: (): Promise<{ status: 'dev' | 'checking' | 'error'; version?: string; message?: string }> =>
+      ipcRenderer.invoke('update:check'),
+    on: (
+      event: 'available' | 'progress' | 'downloaded' | 'none' | 'error',
+      cb: (payload: { version?: string; percent?: number; message?: string } | undefined) => void
+    ): (() => void) => {
+      const channel = `update:${event}`
+      const handler = (_e: unknown, payload: { version?: string; percent?: number; message?: string }): void =>
+        cb(payload)
+      ipcRenderer.on(channel, handler)
+      return () => ipcRenderer.removeListener(channel, handler)
+    }
+  },
   // Module feature flags
   modules: {
     getEnabled: (): Promise<string[]> => ipcRenderer.invoke('module:getEnabled'),

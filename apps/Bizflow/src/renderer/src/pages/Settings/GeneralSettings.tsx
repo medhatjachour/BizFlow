@@ -3,7 +3,8 @@
  * Theme and language preferences
  */
 
-import { Sun, Moon, Monitor, Globe, Check } from 'lucide-react'
+import { Sun, Moon, Monitor, Globe, Check, RefreshCw } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 
 interface GeneralSettingsProps {
@@ -111,6 +112,69 @@ export default function GeneralSettings({
         <p className="text-sm text-slate-500 mt-3">
           {t('languageWillApply')}
         </p>
+      </div>
+
+      {/* Software update */}
+      <SoftwareUpdate />
+    </div>
+  )
+}
+
+/** Shows the installed version and lets the user trigger an update check. */
+function SoftwareUpdate() {
+  const [version, setVersion] = useState('')
+  const [status, setStatus] = useState('')
+  const [checking, setChecking] = useState(false)
+
+  useEffect(() => {
+    if (!window.api?.updater) return
+    window.api.updater.getVersion().then(setVersion).catch(() => {})
+    const offs = [
+      window.api.updater.on('available', (p) => setStatus(`Update available: v${p?.version} — downloading…`)),
+      window.api.updater.on('progress', (p) => setStatus(`Downloading… ${p?.percent ?? 0}%`)),
+      window.api.updater.on('downloaded', (p) => setStatus(`v${p?.version} downloaded — restart to install.`)),
+      window.api.updater.on('none', () => setStatus('You are on the latest version.')),
+      window.api.updater.on('error', (p) => setStatus(`Update error: ${p?.message ?? 'unknown'}`))
+    ]
+    return () => offs.forEach((off) => off())
+  }, [])
+
+  const check = async () => {
+    if (!window.api?.updater) {
+      setStatus('Updates are only available in the installed app.')
+      return
+    }
+    setChecking(true)
+    setStatus('Checking for updates…')
+    try {
+      const res = await window.api.updater.check()
+      if (res.status === 'dev') setStatus('Updates are only available in the installed app.')
+      else if (res.status === 'error') setStatus(`Update error: ${res.message ?? 'unknown'}`)
+      // 'checking' → live events drive the rest of the status.
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Software update</h3>
+      <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            BizFlow{version ? ` v${version}` : ''}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            {status || 'Check whether a newer version is available.'}
+          </p>
+        </div>
+        <button
+          onClick={check}
+          disabled={checking}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[color:var(--accent-contrast)] bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] disabled:opacity-50 transition-colors shrink-0"
+        >
+          <RefreshCw size={16} className={checking ? 'animate-spin' : ''} /> Check for updates
+        </button>
       </div>
     </div>
   )

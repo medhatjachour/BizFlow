@@ -75,8 +75,13 @@ export function registerGymSubscriptionHandlers(prisma: any) {
 
   ipcMain.handle('gym:subscriptions:freeze', async (_e, { id, data }: { id: string; data: { startDate: string; endDate: string; days: number; reason?: string } }) => {
     try {
-      const sub = await prisma.gymSubscription.findUnique({ where: { id } })
+      const sub = await prisma.gymSubscription.findUnique({ where: { id }, include: { plan: true } })
       if (!sub) throw new Error('Subscription not found')
+      // Guard: don't exceed the plan's allowed freeze days.
+      const maxFreeze = sub.plan?.maxFreezeDays ?? 0
+      if (maxFreeze > 0 && sub.freezeDaysUsed + data.days > maxFreeze) {
+        throw new Error(`Freeze limit exceeded — plan allows ${maxFreeze} freeze day(s); ${sub.freezeDaysUsed} already used`)
+      }
       // Extend end date by freeze days
       const newEnd = new Date(sub.endDate)
       newEnd.setDate(newEnd.getDate() + data.days)

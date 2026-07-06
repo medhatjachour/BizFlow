@@ -17,6 +17,7 @@ import {
 } from './ipc/handlers/backup.handlers'
 import { initializeDatabase } from './database/init'
 import { MigrationManager } from './services/MigrationManager'
+import { setupAutoUpdater } from './updater'
 // Static imports — fixes "dynamically and statically imported" Vite warnings
 import { EmailReportService } from './services/EmailReportService'
 import { InstallmentPlanService } from './services/InstallmentPlanService'
@@ -581,6 +582,9 @@ app.whenReady().then(async () => {
     
     // Show window after everything is ready
     mainWindow.show()
+
+    // Start checking for updates (no-op in development / unpackaged builds).
+    setupAutoUpdater(mainWindow)
   } catch (error) {
     mainLog.error('Setup failed:', error)
     // Don't leave a hidden demo window keeping the app alive after a failure.

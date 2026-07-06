@@ -214,12 +214,12 @@ const ClinicReportSection: React.FC<Props> = ({ refreshSignal }) => {
             <div className="flex-1 min-w-[160px]">
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 {t('reportStartDate')}</label>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition-all text-sm" />
+                className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] transition-all text-sm" />
             </div>
             <div className="flex-1 min-w-[160px]">
               <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">📅 {t('reportEndDate')}</label>
               <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-teal-500 transition-all text-sm" />
+                className="w-full px-3 py-2 border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] transition-all text-sm" />
             </div>
             <button onClick={handleGenerateReport} disabled={generating}
               className="px-6 py-2.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2 font-semibold shadow-md transition-all">

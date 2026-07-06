@@ -384,7 +384,7 @@ function DraggablePopover({
             onChange={e => setNote(e.target.value)}
             placeholder="Additional notes..."
             rows={2}
-            className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 px-2.5 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 px-2.5 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]"
           />
         </div>
       </div>

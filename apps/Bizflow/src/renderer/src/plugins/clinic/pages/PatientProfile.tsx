@@ -8,9 +8,9 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
-import SessionFormModal from './components/SessionFormModal'
-import PatientFormModal from './components/PatientFormModal'
-import AppointmentFormModal from './components/AppointmentFormModal'
+import SessionFormModal from './components/sessions/SessionFormModal'
+import PatientFormModal from './components/patients/PatientFormModal'
+import AppointmentFormModal from './components/appointments/AppointmentFormModal'
 import type { Patient } from './index'
 import DentalChart from '../components/DentalChart'
 import type { DentalChartData } from '../components/DentalChart'
@@ -20,10 +20,10 @@ import {
   visitTypeConfig, defaultDotCls, bloodTypeColors,
   appointmentTypeConfig, appointmentStatusConfig, avatarColors
 } from './patientProfile.config'
-import QuickPayModal from './components/QuickPayModal'
-import UploadCheckResultModal from './components/UploadCheckResultModal'
-import PdfViewerModal from './components/PdfViewerModal'
-import TimelineSession from './components/TimelineSession'
+import QuickPayModal from './components/patients/QuickPayModal'
+import UploadCheckResultModal from './components/patients/UploadCheckResultModal'
+import PdfViewerModal from './components/patients/PdfViewerModal'
+import TimelineSession from './components/sessions/TimelineSession'
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PatientProfile() {

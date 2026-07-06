@@ -506,7 +506,7 @@ const ClinicFinanceSection: React.FC = () => {
                   value={debtSearchInput}
                   onChange={(e) => setDebtSearchInput(e.target.value)}
                   placeholder={t('searchDebtorPlaceholder')}
-                  className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 pl-8 pr-8 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  className="w-full text-xs rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 pl-8 pr-8 py-2 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]"
                 />
                 {debtSearchInput && (
                   <button

@@ -94,7 +94,7 @@ export default function QRModal({ isOpen, onClose, type, id, name }: Props) {
           </button>
           <button
             onClick={handlePrint}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium transition-colors"
           >
             <Printer size={14} /> Print
           </button>

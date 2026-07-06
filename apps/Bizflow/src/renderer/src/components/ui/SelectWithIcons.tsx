@@ -62,7 +62,7 @@ export default function SelectWithIcons({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full px-4 py-2.5 text-left bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none flex items-center justify-between"
+          className="w-full px-4 py-2.5 text-left bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] focus:outline-none flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
             {selectedOption?.icon && (

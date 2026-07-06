@@ -14,7 +14,7 @@ const GOAL_BADGE: Record<string, string> = {
 }
 
 const labelCls = 'block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1'
-const inputCls = 'w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500'
+const inputCls = 'w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]'
 
 /* ─── Program Create / Edit Modal ─── */
 function ProgramFormModal({ initial, coaches, onClose, onSaved }: {
@@ -113,7 +113,7 @@ function ProgramFormModal({ initial, coaches, onClose, onSaved }: {
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
               {saving ? t('gymLoggingIn') : initial ? t('gymSave') : t('gymAddProgram')}
             </button>
           </div>
@@ -172,7 +172,7 @@ function DayFormModal({ program, onClose, onSaved }: { program: any; onClose: ()
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
               {saving ? t('gymLoggingIn') : t('gymAddDay')}
             </button>
           </div>
@@ -250,7 +250,7 @@ function ExerciseFormModal({ day, onClose, onSaved }: { day: any; onClose: () =>
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
               {saving ? t('gymLoggingIn') : t('gymAddExercise')}
             </button>
           </div>
@@ -348,7 +348,7 @@ function AssignMemberModal({ program, onClose, onSaved }: { program: any; onClos
           </div>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">{t('gymCancel')}</button>
-            <button type="submit" disabled={saving || !selected} className="flex-1 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
+            <button type="submit" disabled={saving || !selected} className="flex-1 py-2.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors disabled:opacity-50">
               {saving ? t('gymLoggingIn') : t('gymAssign')}
             </button>
           </div>
@@ -424,7 +424,7 @@ function ProgramDetail({ program: initial, coaches, onBack, onProgramUpdated }: 
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <button onClick={() => setAssignOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-medium rounded-lg transition-colors">
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-xs font-medium rounded-lg transition-colors">
                   <User size={12} /> {t('gymAssign')}
                 </button>
                 <button onClick={() => setEditOpen(true)}
@@ -441,7 +441,7 @@ function ProgramDetail({ program: initial, coaches, onBack, onProgramUpdated }: 
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{days.length} Training Day{days.length !== 1 ? 's' : ''}</p>
         <button onClick={() => setDayFormOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors">
+          className="flex items-center gap-1.5 px-4 py-2 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors">
           <Plus size={14} /> {t('gymAddDay')}
         </button>
       </div>
@@ -601,13 +601,13 @@ export default function ProgramsTab() {
         <form onSubmit={handleSearch} className="flex-1 flex items-center gap-2 min-w-[200px]">
           <div className="relative flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            <input className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]"
               placeholder="Search by name, goal, coach…" value={searchInput} onChange={e => setSearchInput(e.target.value)} />
           </div>
           <button type="submit" className="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">{t('gymSearch')}</button>
         </form>
         <button onClick={() => setFormOpen(true)}
-          className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
+          className="flex items-center gap-1.5 px-4 py-2 bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] text-[color:var(--accent-contrast)] text-sm font-medium rounded-xl transition-colors whitespace-nowrap">
           <Plus size={14} /> {t('gymNewProgram')}
         </button>
       </div>

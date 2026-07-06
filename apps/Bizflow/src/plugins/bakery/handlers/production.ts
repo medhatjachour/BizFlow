@@ -97,6 +97,14 @@ export function registerProductionHandlers(prisma: any) {
               // Convert recipe quantity to pantry's unit before deducting
               const deductQty = convertQuantity(ing.quantity * data.quantity, ing.unit, pantryUnit)
                 ?? (ing.quantity * data.quantity) // fallback: same unit assumed
+              // Guard: don't let a production run drive pantry stock negative.
+              const pantryRow = await tx.pantryIngredient.findUnique({
+                where: { id: ing.pantryIngredientId },
+                select: { name: true, currentStock: true }
+              })
+              if (pantryRow && pantryRow.currentStock < deductQty - 1e-6) {
+                throw new Error(`Not enough "${pantryRow.name}" in the pantry — need ${deductQty}${pantryUnit ? ' ' + pantryUnit : ''}, have ${pantryRow.currentStock}`)
+              }
               await tx.pantryIngredient.update({
                 where: { id: ing.pantryIngredientId },
                 data: { currentStock: { decrement: deductQty } }

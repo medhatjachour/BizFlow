@@ -9,21 +9,21 @@ import {
 import { useLanguage }  from '@renderer/contexts/LanguageContext'
 import { useToast }     from '@renderer/contexts/ToastContext'
 import { useAuth }      from '@renderer/contexts/AuthContext'
-import VetOwnerFormModal    from './components/VetOwnerFormModal'
-import VetPatientFormModal  from './components/VetPatientFormModal'
-import VetOwnerProfileModal from './components/VetOwnerProfileModal'
-import VetStaffFormModal, { type VetStaff } from './components/VetStaffFormModal'
-import VetStaffProfileModal from './components/VetStaffProfileModal'
-import VetSessionFormModal  from './components/VetSessionFormModal'
-import VetAppointmentFormModal from './components/VetAppointmentFormModal'
-import VetSessionsTab   from './components/VetSessionsTab'
-import VetStatsTab      from './components/VetStatsTab'
-import VetAppointmentsTab from './components/VetAppointmentsTab'
-import VetFollowUpsTab  from './components/VetFollowUpsTab'
-import VetExpensesTab   from './components/VetExpensesTab'
-import VetMedicinesTab  from './components/VetMedicinesTab'
+import VetOwnerFormModal    from './components/owners/VetOwnerFormModal'
+import VetPatientFormModal  from './components/owners/VetPatientFormModal'
+import VetOwnerProfileModal from './components/owners/VetOwnerProfileModal'
+import VetStaffFormModal, { type VetStaff } from './components/staff/VetStaffFormModal'
+import VetStaffProfileModal from './components/staff/VetStaffProfileModal'
+import VetSessionFormModal  from './components/sessions/VetSessionFormModal'
+import VetAppointmentFormModal from './components/appointments/VetAppointmentFormModal'
+import VetSessionsTab   from './components/sessions/VetSessionsTab'
+import VetStatsTab      from './components/stats/VetStatsTab'
+import VetAppointmentsTab from './components/appointments/VetAppointmentsTab'
+import VetFollowUpsTab  from './components/sessions/VetFollowUpsTab'
+import VetExpensesTab   from './components/expenses/VetExpensesTab'
+import VetMedicinesTab  from './components/medicines/VetMedicinesTab'
 import VetSalesTab, { SalesHistory } from './components/VetSalesTab'
-import { speciesEmoji, speciesLabel } from './components/species'
+import { speciesEmoji, speciesLabel } from './components/owners/species'
 
 type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales' | 'salesHistory'
 
@@ -741,7 +741,7 @@ export default function VetPage() {
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search owners by name, phone, email…"
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] transition-colors"
               />
             </div>
 
@@ -831,7 +831,7 @@ export default function VetPage() {
                 value={staffSearch}
                 onChange={e => setStaffSearch(e.target.value)}
                 placeholder="Search by name or phone…"
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 transition-colors"
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] transition-colors"
               />
             </div>
 

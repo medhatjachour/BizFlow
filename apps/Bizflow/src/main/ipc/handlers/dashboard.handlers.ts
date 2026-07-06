@@ -5,6 +5,7 @@
 
 import { ipcMain } from 'electron'
 import { createLogger } from '../../utils/logger'
+import { cacheService, CacheKeys } from '../../services/CacheService'
 
 const log = createLogger('Dashboard')
 
@@ -12,30 +13,35 @@ export function registerDashboardHandlers(prisma: any) {
   ipcMain.handle('dashboard:getMetrics', async () => {
     try {
       if (prisma) {
-        const totalSales = await prisma.saleTransaction.aggregate({ 
-          where: { status: 'completed' },
-          _sum: { total: true },
-          _count: true
+        // Lifetime metrics change only when a sale is created/refunded, so cache
+        // them. The expensive part is the full-table profit scan below; serving it
+        // from cache keeps the dashboard snappy (invalidated on sale mutations).
+        return await cacheService.getOrCompute(CacheKeys.DASHBOARD_METRICS, async () => {
+          const totalSales = await prisma.saleTransaction.aggregate({
+            where: { status: 'completed' },
+            _sum: { total: true },
+            _count: true
+          })
+
+          // Gross profit = (unit final price − unit cost) × qty.
+          // SaleItem has no cost column; cost lives on the variant (preferred) or
+          // the product's baseCost. LEFT JOIN variant so simple products still work.
+          const profitData: Array<{ profit: number | null }> = await prisma.$queryRaw`
+            SELECT SUM((si.finalPrice - COALESCE(pv.cost, p.baseCost, 0)) * si.quantity) as profit
+            FROM SaleItem si
+            JOIN SaleTransaction st ON si.transactionId = st.id
+            JOIN Product p ON si.productId = p.id
+            LEFT JOIN ProductVariant pv ON si.variantId = pv.id
+            WHERE st.status = 'completed'
+          `
+          const profit = profitData[0]?.profit || 0
+
+          return {
+            sales: totalSales._sum.total || 0,
+            orders: totalSales._count || 0,
+            profit: Math.round(profit * 100) / 100
+          }
         })
-        
-        // Gross profit = (unit final price − unit cost) × qty.
-        // SaleItem has no cost column; cost lives on the variant (preferred) or
-        // the product's baseCost. LEFT JOIN variant so simple products still work.
-        const profitData: Array<{ profit: number | null }> = await prisma.$queryRaw`
-          SELECT SUM((si.finalPrice - COALESCE(pv.cost, p.baseCost, 0)) * si.quantity) as profit
-          FROM SaleItem si
-          JOIN SaleTransaction st ON si.transactionId = st.id
-          JOIN Product p ON si.productId = p.id
-          LEFT JOIN ProductVariant pv ON si.variantId = pv.id
-          WHERE st.status = 'completed'
-        `
-        const profit = profitData[0]?.profit || 0
-        
-        return { 
-          sales: totalSales._sum.total || 0, 
-          orders: totalSales._count || 0, 
-          profit: Math.round(profit * 100) / 100
-        }
       }
 
       return { sales: 0, orders: 0, profit: 0 }

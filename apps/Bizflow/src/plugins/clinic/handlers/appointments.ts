@@ -172,6 +172,26 @@ export function registerAppointmentHandlers(prisma: any) {
   // ─── Create ───────────────────────────────────────────────────────────────
   ipcMain.handle('clinic:appointments:create', async (_e, data: any) => {
     try {
+      // Guard: block a double-booking for the SAME doctor at an overlapping time.
+      if (data.doctorName) {
+        const start = new Date(data.appointmentDate)
+        const dur = Number(data.duration) || 30
+        const end = new Date(start.getTime() + dur * 60000)
+        const sameDoc = await prisma.clinicAppointment.findMany({
+          where: {
+            doctorName: data.doctorName,
+            status: { in: ['scheduled', 'confirmed'] },
+            appointmentDate: { gte: new Date(start.getTime() - 12 * 3600000), lte: new Date(end.getTime() + 12 * 3600000) }
+          },
+          select: { appointmentDate: true, duration: true }
+        })
+        const clash = sameDoc.some(a => {
+          const aStart = new Date(a.appointmentDate).getTime()
+          const aEnd = aStart + (Number(a.duration) || 30) * 60000
+          return aStart < end.getTime() && aEnd > start.getTime()
+        })
+        if (clash) throw new Error(`${data.doctorName} already has an appointment during that time`)
+      }
       return await prisma.clinicAppointment.create({
         data: { ...data, appointmentDate: new Date(data.appointmentDate) },
         include: { patient: { select: { id: true, name: true, phone: true } } }

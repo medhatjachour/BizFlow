@@ -6,6 +6,7 @@
 
 import { ipcMain } from 'electron'
 import { createLogger } from '../../utils/logger'
+import { cacheService } from '../../services/CacheService'
 
 const log = createLogger('Sales')
 
@@ -60,6 +61,7 @@ export function registerSalesHandlers(prisma: any) {
           timeout: 30000
         })
         
+        cacheService.invalidatePattern('dashboard:*')
         return { success: true, sale: result }
       }
       
@@ -256,6 +258,7 @@ export function registerSalesHandlers(prisma: any) {
           }
         }
 
+        cacheService.invalidatePattern('dashboard:*')
         return { success: true, transaction }
       }
       return { success: false, message: 'Database not available' }

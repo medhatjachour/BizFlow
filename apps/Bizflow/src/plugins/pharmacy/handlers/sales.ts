@@ -45,10 +45,18 @@ export function registerPharmacySaleHandlers(prisma: any): void {
               : (product.sellingPrice ?? 0)
 
           // FEFO — consume earliest-expiring active batches first (always in base units).
+          // Expired batches are NEVER dispensed (regulatory) — they must be
+          // written off/disposed first. Mirrors the vet sellCombo guard.
           const batches = await tx.pharmacyBatch.findMany({
-            where: { productId: item.productId, status: 'active', quantity: { gt: 0 } },
+            where: { productId: item.productId, status: 'active', quantity: { gt: 0 }, expiryDate: { gte: new Date() } },
             orderBy: { expiryDate: 'asc' },
           })
+          if (batches.length === 0) {
+            const anyStock = await tx.pharmacyBatch.findFirst({
+              where: { productId: item.productId, status: 'active', quantity: { gt: 0 } },
+            })
+            if (anyStock) throw new Error(`"${product.name}" has only expired stock — write it off before selling`)
+          }
 
           let baseNeeded = saleUnit === 'sub' ? qtyWanted / ratio : qtyWanted
           for (const batch of batches) {

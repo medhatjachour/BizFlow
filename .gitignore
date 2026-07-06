@@ -9,6 +9,9 @@ out
 .eslintcache
 *.log*
 
+# /web?
+apps/Bizflow/web/.dist-web/
+apps/Bizflow/web/.dist/
 # Prisma generated client
 /src/generated/prisma
 /out/generated/prisma

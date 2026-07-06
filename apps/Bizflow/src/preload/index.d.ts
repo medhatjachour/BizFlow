@@ -338,6 +338,14 @@ interface API {
     error: (message: string, data?: unknown) => Promise<void>
     debug: (message: string, data?: unknown) => Promise<void>
   }
+  updater: {
+    getVersion: () => Promise<string>
+    check: () => Promise<{ status: 'dev' | 'checking' | 'error'; version?: string; message?: string }>
+    on: (
+      event: 'available' | 'progress' | 'downloaded' | 'none' | 'error',
+      cb: (payload: { version?: string; percent?: number; message?: string } | undefined) => void
+    ) => () => void
+  }
   modules: {
     getEnabled: () => Promise<string[]>
     setEnabled: (moduleId: string, enabled: boolean) => Promise<void>

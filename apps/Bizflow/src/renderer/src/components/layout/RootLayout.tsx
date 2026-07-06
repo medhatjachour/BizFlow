@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 import SkipToContent from '../ui/SkipToContent'
@@ -101,6 +101,15 @@ interface RootLayoutProps {
 export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
+
+  // Theme the active module: set <body data-plugin> so the --accent CSS variable
+  // (defined in main.css) themes every control in that module automatically.
+  useEffect(() => {
+    const seg = location.pathname.split('/')[1] || ''
+    const known = ['vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'commerce']
+    if (known.includes(seg)) document.body.dataset.plugin = seg
+    else delete document.body.dataset.plugin
+  }, [location.pathname])
   const { t } = useLanguage()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [iconBroken, setIconBroken] = useState(false)

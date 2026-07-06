@@ -49,9 +49,9 @@ export default function Pagination({
   addPage(totalPages)
 
   const btnBase =
-    'inline-flex items-center justify-center h-8 min-w-[32px] rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400'
+    'inline-flex items-center justify-center h-8 min-w-[32px] rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]'
   const btnActive =
-    'bg-amber-500 text-white font-semibold'
+    'bg-[color:var(--accent)] text-white font-semibold'
   const btnDefault =
     'border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none'
 
@@ -66,7 +66,7 @@ export default function Pagination({
             <select
               value={pageSize}
               onChange={e => onPageSize(Number(e.target.value))}
-              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="h-8 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]"
             >
               {pageSizes.map(ps => (
                 <option key={ps} value={ps}>{ps}</option>

@@ -66,6 +66,25 @@ export function registerSalesHandlers(prisma: any) {
       if (!data.quantity || data.quantity <= 0) throw new Error('Quantity must be greater than 0')
       if (!data.unitPrice || data.unitPrice < 0) throw new Error('Unit price must be >= 0')
 
+      // Guard: when selling from a specific batch, never dispense an expired batch
+      // and never oversell beyond what that batch still has available.
+      if (data.batchId) {
+        const batch = await prisma.productionBatch.findUnique({ where: { id: data.batchId } })
+        if (batch) {
+          if (batch.expiresAt && new Date(batch.expiresAt) < new Date()) {
+            throw new Error('This batch has expired — record it as waste instead of selling')
+          }
+          const [soldAgg, wasteAgg] = await Promise.all([
+            prisma.bakerySale.aggregate({ where: { batchId: data.batchId }, _sum: { quantity: true } }),
+            prisma.wasteLog.aggregate({ where: { productionBatchId: data.batchId }, _sum: { quantity: true } }),
+          ])
+          const available = batch.unitsProduced - (soldAgg._sum.quantity ?? 0) - (wasteAgg._sum.quantity ?? 0)
+          if (data.quantity > available + 1e-6) {
+            throw new Error(`Only ${Math.max(0, available)} unit(s) available in this batch`)
+          }
+        }
+      }
+
       const saleDate    = data.saleDate ? new Date(data.saleDate) : new Date()
       const totalAmount = Math.round(data.quantity * data.unitPrice * 100) / 100
 
