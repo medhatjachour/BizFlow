@@ -34,6 +34,7 @@ export interface ExistingSession {
   visitDate: string
   visitType: string
   doctorName?: string | null
+  doctorId?: string | null
   chiefComplaint: string
   vitals?: string | null
   diagnosis?: string | null
@@ -76,6 +77,7 @@ export interface DefaultAppointment {
   appointmentDate: string
   type: string
   doctorName?: string | null
+  doctorId?: string | null
   notes?: string | null
   amountCharged?: number | null
   amountPaid?: number | null

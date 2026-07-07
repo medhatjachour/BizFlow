@@ -59,6 +59,8 @@ export const clinicPreload = {
       ipcRenderer.invoke('clinic:stats:monthlyTrend', months),
     breakdowns: () =>
       ipcRenderer.invoke('clinic:stats:breakdowns'),
+    byDoctor: (params?: { from?: string; to?: string }) =>
+      ipcRenderer.invoke('clinic:stats:byDoctor', params),
     patientStats: (patientId: string) =>
       ipcRenderer.invoke('clinic:stats:patientStats', patientId)
   },
@@ -143,6 +145,18 @@ export const clinicPreload = {
       delete: (id: string) =>
         ipcRenderer.invoke('clinic:staff:salary:delete', id)
     }
+  },
+
+  // ─── Doctors (multi-doctor) ─────────────────────────────────────────────────
+  doctors: {
+    list: () =>
+      ipcRenderer.invoke('clinic:doctors:list'),
+    setDefault: (id: string) =>
+      ipcRenderer.invoke('clinic:doctors:setDefault', id),
+    setAvailability: (id: string, workingHours: any) =>
+      ipcRenderer.invoke('clinic:doctors:availability:set', { id, workingHours }),
+    getProfile: (params: { id: string; from?: string; to?: string }) =>
+      ipcRenderer.invoke('clinic:doctors:getProfile', params)
   },
 
   // ─── Material Categories ────────────────────────────────────────────────

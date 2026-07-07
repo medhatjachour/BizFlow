@@ -186,14 +186,18 @@ BizFlow is an all-in-one desktop POS and business management system. Everything 
 
 ## 🧩 Microkernel / Plugin Architecture
 
-BizFlow is built on a **microkernel** design — the core app is lean and stable, and business-specific features are loaded as isolated plugins.
+BizFlow is built on a **microkernel** design — the core app is lean and stable, and business-specific features are loaded as isolated plugins. Eight business verticals ship today:
 
 | Plugin | Status | What it adds |
 |--------|--------|-------------|
+| 🛒 **Commerce** | ✅ Active | Products & variants, inventory, Point of Sale, sales history & refunds, multi-store, suppliers, purchase orders, installments |
 | 🥐 **Bakery** | ✅ Active | Recipe management, production batches, pantry stock, waste tracking, scheduling, P&L |
-| 🏥 **Clinic** | ✅ Active | Patient records, session tracking, prescriptions, check results (PDF), financial stats |
-| 🍽️ **Restaurant** | ✅ Active | Table management, reservations, kitchen orders, menu management |
-| 🏭 **Warehouse** | ✅ Active | Multi-location inventory, bin tracking, stock transfers |
+| 🍽️ **Restaurant** | ✅ Active | Table management, reservations, dine-in orders, menu management |
+| 🏭 **Warehouse** | ✅ Active | Multi-location inventory, bin/location tracking, stock transfers, transfer audit trail |
+| 🏥 **Clinic** | ✅ Active | Multi-doctor (profiles, live status board, default doctor), patient records, session tracking, prescriptions, check results (PDF), materials/inventory, financial stats |
+| 🐾 **Vet Clinic** | ✅ Active | Pet patients with owner records, vet sessions, medicine inventory (batches/FEFO), appointments, clinical stats |
+| 🏋️ **Gym** | ✅ Active | Coaches, trainees, subscription plans with freeze, walk-in sessions, financials |
+| 💊 **Pharmacy** | ✅ Active | Medicine catalogue, batch & expiry tracking (FEFO), POS, refunds, suppliers & purchase orders |
 
 Plugins can be **enabled or disabled** from Settings → Modules. When a plugin is off, its pages and database tables are completely inactive. Each plugin is fully self-contained — its backend logic, UI pages, IPC bridge, and database schema all live inside `src/plugins/<name>/`.
 
@@ -276,22 +280,24 @@ BizFlow combines two architectural styles:
 
 **Microkernel (Plugin System)**
 
-The core app handles authentication, products, sales, finance, and reporting. Business-vertical features (bakery, restaurant, warehouse) are self-contained plugins loaded on top. Each plugin is completely isolated — removing one has zero impact on the rest.
+The core app handles authentication, employees, customers, finance dashboards, and reporting. Business-vertical features — commerce/retail, bakery, restaurant, warehouse, clinic, vet, gym, and pharmacy — are self-contained plugins loaded on top. Each plugin is completely isolated — removing one has zero impact on the rest.
 
 ```
 src/plugins/<name>/
+  index.ts            ← IPlugin export { id, ensureSchema, registerHandlers }
   handlers/           ← backend IPC handlers (split by domain)
     index.ts          ← registers all plugin handlers
     <entity>.ts       ← per-entity handler file
   preload.ts          ← window.api.<name>.* bindings
   migrate.ts          ← ensures plugin tables exist at runtime
-  manifest.ts         ← metadata (id, name, routes, models)
   schema.prisma       ← plugin's own Prisma models
 
 src/renderer/src/plugins/<name>/pages/
   index.tsx           ← main list / overview page
   components/         ← all UI components for this plugin
 ```
+
+> Plugin identity/route/model metadata is centralized in `src/shared/modules.ts` (`MODULE_REGISTRY`), not a per-plugin manifest file.
 
 Schemas are merged at build time: `scripts/merge-schemas.js` combines `prisma/schema.prisma` + every enabled plugin's `schema.prisma` → `prisma/merged.prisma`.
 
@@ -396,54 +402,31 @@ BizFlow/
 │   │       ├── logger.ts                 # Structured logger (electron-log)
 │   │       └── module-settings.ts        # Plugin enable/disable persistence
 │   │
-│   ├── plugins/                          # ── Microkernel plugin layer (backend) ──
-│   │   ├── bakery/                       # Bakery plugin (self-contained)
-│   │   │   ├── manifest.ts               # id, name, routes, models metadata
+│   ├── plugins/                          # ── Microkernel plugin layer (backend) ── (8 plugins)
+│   │   ├── commerce/                     # Retail core: products, POS, sales, inventory, suppliers
+│   │   │   ├── index.ts                  # IPlugin export { id, ensureSchema, registerHandlers }
 │   │   │   ├── handlers/                 # IPC handlers split by domain
-│   │   │   │   ├── index.ts              # Registers all bakery handlers
-│   │   │   │   ├── recipes.ts
-│   │   │   │   ├── production.ts
-│   │   │   │   ├── pantry.ts
-│   │   │   │   ├── schedule.ts
-│   │   │   │   ├── waste.ts
-│   │   │   │   └── analytics.ts
+│   │   │   ├── preload.ts                # window.api.commerce.* bindings
+│   │   │   ├── migrate.ts                # Ensures tables exist at runtime
+│   │   │   └── schema.prisma             # Plugin's Prisma models
+│   │   ├── bakery/                       # Bakery plugin (self-contained)
+│   │   │   ├── index.ts
+│   │   │   ├── handlers/                 # recipes, production, pantry, schedule, waste, analytics
 │   │   │   ├── preload.ts                # window.api.bakery.* bindings
-│   │   │   ├── migrate.ts                # Ensures bakery tables exist at runtime
-│   │   │   └── schema.prisma             # Bakery Prisma models
-│   │   ├── clinic/                       # Clinic plugin (self-contained)
-│   │   │   ├── manifest.ts
-│   │   │   ├── handlers/
-│   │   │   │   ├── index.ts
-│   │   │   │   ├── patients.ts
-│   │   │   │   ├── sessions.ts
-│   │   │   │   ├── checkResults.ts
-│   │   │   │   └── stats.ts
-│   │   │   ├── preload.ts                # window.api.clinic.* bindings
 │   │   │   ├── migrate.ts
 │   │   │   └── schema.prisma
-│   │   ├── restaurant/                   # Restaurant plugin (self-contained)
-│   │   │   ├── manifest.ts
-│   │   │   ├── handlers/
-│   │   │   │   ├── index.ts
-│   │   │   │   ├── menu.ts
-│   │   │   │   ├── orders.ts
-│   │   │   │   ├── tables.ts
-│   │   │   │   ├── reservations.ts
-│   │   │   │   └── overview.ts
-│   │   │   ├── preload.ts
-│   │   │   ├── migrate.ts
-│   │   │   └── schema.prisma
-│   │   └── warehouse/                    # Warehouse plugin (self-contained)
-│   │       ├── manifest.ts
-│   │       ├── handlers/
-│   │       │   ├── index.ts
-│   │       │   ├── stock.ts
-│   │       │   ├── locations.ts
-│   │       │   ├── transfers.ts
-│   │       │   └── overview.ts
-│   │       ├── preload.ts
-│   │       ├── migrate.ts
-│   │       └── schema.prisma
+│   │   ├── restaurant/                   # menu, orders, tables, reservations, overview
+│   │   │   └── … (index.ts, handlers/, preload.ts, migrate.ts, schema.prisma)
+│   │   ├── warehouse/                    # stock, locations, transfers, overview
+│   │   │   └── … (index.ts, handlers/, preload.ts, migrate.ts, schema.prisma)
+│   │   ├── clinic/                       # patients, sessions, checkResults, appointments, materials, staff, stats
+│   │   │   └── … (index.ts, handlers/, preload.ts, migrate.ts, schema.prisma)
+│   │   ├── vet/                          # owners, patients, medicines (batches/FEFO), sessions, appointments, stats
+│   │   │   └── … (index.ts, handlers/, preload.ts, migrate.ts, schema.prisma)
+│   │   ├── gym/                          # coaches, trainees, subscriptions, walk-ins, expenses
+│   │   │   └── … (index.ts, handlers/, preload.ts, migrate.ts, schema.prisma)
+│   │   └── pharmacy/                     # products, batches, sales (FEFO), suppliers, purchase orders, stats
+│   │       └── … (index.ts, handlers/, preload.ts, migrate.ts, schema.prisma)
 │   │
 │   ├── preload/
 │   │   ├── index.ts                      # contextBridge — exposes window.api.*
@@ -476,14 +459,21 @@ BizFlow/
 │   │       │   ├── Reports/
 │   │       │   └── Settings/
 │   │       ├── plugins/                  # Plugin UI (mirrors src/plugins/)
+│   │       │   ├── commerce/             # POS, Products, Inventory, Sales pages
 │   │       │   ├── bakery/
 │   │       │   │   └── pages/            # Bakery pages & components
-│   │       │   ├── clinic/
-│   │       │   │   └── pages/            # Patient list, PatientProfile, session modals
 │   │       │   ├── restaurant/
 │   │       │   │   └── pages/            # Restaurant pages & components
-│   │       │   └── warehouse/
-│   │       │       └── pages/            # Warehouse pages & components
+│   │       │   ├── warehouse/
+│   │       │   │   └── pages/            # Warehouse pages & components
+│   │       │   ├── clinic/
+│   │       │   │   └── pages/            # Patient list, PatientProfile, session modals
+│   │       │   ├── vet/
+│   │       │   │   └── pages/            # Vet patients, owners, medicines, sessions
+│   │       │   ├── gym/
+│   │       │   │   └── pages/            # Coaches, trainees, subscriptions
+│   │       │   └── pharmacy/
+│   │       │       └── pages/            # Catalogue, POS, batches, purchase orders
 │   │       ├── i18n/
 │   │       │   └── translations.ts       # EN + AR strings (bilingual)
 │   │       └── services/                 # Frontend-side helpers

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
+import { colorForDoctor, initials, displayName as doctorDisplayName } from '../doctors/doctors.shared'
 
 interface Overview {
   totalPatients: number
@@ -118,6 +119,7 @@ export default function StatsTab() {
   const [fullTrend, setFullTrend] = useState<FullTrendEntry[]>([])
   const [monthly, setMonthly] = useState<MonthlyEntry[]>([])
   const [breakdowns, setBreakdowns] = useState<Breakdowns | null>(null)
+  const [byDoctor, setByDoctor] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -137,6 +139,7 @@ export default function StatsTab() {
       setFullTrend(ft)
       setMonthly(mo)
       setBreakdowns(bd)
+      clinicStatsApi.byDoctor().then((rows: any[]) => setByDoctor(rows ?? [])).catch(() => {})
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -156,6 +159,7 @@ export default function StatsTab() {
           clinicStatsApi.breakdowns()
         ])
         if (!cancelled) { setOverview(ov); setDiagnoses(dx); setFullTrend(ft); setMonthly(mo); setBreakdowns(bd) }
+        clinicStatsApi.byDoctor().then((rows: any[]) => { if (!cancelled) setByDoctor(rows ?? []) }).catch(() => {})
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -522,6 +526,54 @@ export default function StatsTab() {
             </div>
           </SectionCard>
         </div>
+      )}
+
+      {/* ── By Doctor ─────────────────────────────────────────── */}
+      {byDoctor.length > 0 && (
+        <SectionCard title={t('byDoctorTitle') || 'By Doctor (this month)'}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-slate-400 border-b border-slate-100 dark:border-slate-700">
+                  <th className="py-2 font-medium">{t('doctorName') || 'Doctor'}</th>
+                  <th className="py-2 font-medium text-right">{t('clinicSessions') || 'Sessions'}</th>
+                  <th className="py-2 font-medium text-right">{t('patientsSeen') || 'Patients'}</th>
+                  <th className="py-2 font-medium text-right">{t('revenue') || 'Revenue'}</th>
+                  <th className="py-2 font-medium text-right">{t('commission') || 'Commission'}</th>
+                  <th className="py-2 font-medium text-right">{t('noShowRate') || 'No-show'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byDoctor.map((d: any) => {
+                  const maxRev = Math.max(...byDoctor.map((x: any) => x.revenue), 1)
+                  return (
+                    <tr key={d.id} className="border-b border-slate-50 dark:border-slate-800 last:border-0">
+                      <td className="py-2">
+                        <div className="flex items-center gap-2">
+                          <span className="h-7 w-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shrink-0" style={{ backgroundColor: colorForDoctor(d) }}>{initials(d.name)}</span>
+                          <div>
+                            <div className="font-medium text-slate-700 dark:text-slate-200 flex items-center gap-1">{doctorDisplayName(d)}{d.isDefault ? ' ★' : ''}</div>
+                            {d.specialty && <div className="text-[11px] text-slate-400">{d.specialty}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2 text-right text-slate-600 dark:text-slate-300">{d.sessions}</td>
+                      <td className="py-2 text-right text-slate-600 dark:text-slate-300">{d.patients}</td>
+                      <td className="py-2 text-right">
+                        <div className="font-semibold text-slate-800 dark:text-white">{formatCurrency(d.revenue)}</div>
+                        <div className="mt-0.5 h-1 w-full rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                          <div className="h-full bg-teal-500" style={{ width: `${Math.round((d.revenue / maxRev) * 100)}%` }} />
+                        </div>
+                      </td>
+                      <td className="py-2 text-right text-slate-600 dark:text-slate-300">{formatCurrency(d.commission)}</td>
+                      <td className="py-2 text-right text-slate-600 dark:text-slate-300">{d.noShowRate}%</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
       )}
 
     </div>

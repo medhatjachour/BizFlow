@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight, Receipt, Package } from 'lucide-react'
+import { Stethoscope, Users, ClipboardList, BarChart3, CalendarClock, Bell, Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar, Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight, Receipt, Package, UserCog } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
@@ -14,8 +14,9 @@ import AppointmentsTab from './components/appointments/AppointmentsTab'
 import FollowUpsTab from './components/appointments/FollowUpsTab'
 import ExpensesTab from './components/expenses/ExpensesTab'
 import MaterialsTab from './components/materials/MaterialsTab'
+import DoctorsTab from './components/doctors/DoctorsTab'
 
-type Tab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'materials'
+type Tab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'materials' | 'doctors'
 
 // ─── Journey help modal ─────────────────────────────────────────────────────
 function JourneyModal({ onClose }: { onClose: () => void }) {
@@ -655,6 +656,7 @@ export default function ClinicPage() {
     appointments: 'A scheduled future slot on the calendar. No medical data yet — start a session from here when the patient shows up.',
     followups:    'Reminders set during a session ("come back in 2 weeks"). Shown here when the date is approaching, due today, or overdue.',
     expenses:     'Track clinic operating costs — rent, utilities, salaries, supplies, and more. View summaries and totals by period.',
+    doctors:      'Your clinic team. See each doctor\'s live status, today\'s load and next patient, set the default doctor, and manage availability.',
   }
 
   const allTabs: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
@@ -662,6 +664,7 @@ export default function ClinicPage() {
     { key: 'sessions',     label: t('clinicSessions'),                  Icon: ClipboardList },
     { key: 'appointments', label: t('clinicAppointments'),              Icon: Users },
     { key: 'followups',    label: t('clinicFollowUps') ?? 'Follow-ups', Icon: Bell, badge: overdueCount },
+    { key: 'doctors',      label: t('clinicDoctors') ?? 'Doctors',      Icon: UserCog },
     { key: 'stats',        label: t('clinicStats'),                     Icon: CalendarClock },
     { key: 'expenses',     label: t('clinicExpenses')  ?? 'Expenses',   Icon: Receipt },
     { key: 'materials',    label: t('clinicMaterials') ?? 'Materials',  Icon: Package },
@@ -750,6 +753,7 @@ export default function ClinicPage() {
         {activeTab === 'stats'        && !isClinicStaff && <StatsTab />}
         {activeTab === 'appointments' && <AppointmentsTab />}
         {activeTab === 'followups'    && <FollowUpsTab />}
+        {activeTab === 'doctors'      && !isClinicStaff && <DoctorsTab />}
         {activeTab === 'expenses'     && !isClinicStaff && <ExpensesTab />}
         {activeTab === 'materials'    && !isClinicStaff && <MaterialsTab />}
       </div>

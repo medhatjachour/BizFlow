@@ -18150,6 +18150,8 @@ function registerSessionHandlers(prisma2) {
       const where = {};
       if (params?.patientId)
         where.patientId = params.patientId;
+      if (params?.doctorId)
+        where.doctorId = params.doctorId;
       if (dateFrom || dateTo) {
         where.visitDate = {};
         if (dateFrom)
@@ -18180,7 +18182,7 @@ function registerSessionHandlers(prisma2) {
   );
   ipcMain.handle("clinic:sessions:create", async (_e, data) => {
     const { prescriptions, ...sessionData } = data;
-    return prisma2.clinicSession.create({
+    const created = await prisma2.clinicSession.create({
       data: {
         ...sessionData,
         prescriptions: prescriptions?.length ? { create: prescriptions } : void 0
@@ -18191,6 +18193,16 @@ function registerSessionHandlers(prisma2) {
         patient: { select: { id: true, name: true } }
       }
     });
+    if (sessionData.doctorId && created.patientId) {
+      try {
+        await prisma2.clinicPatient.updateMany({
+          where: { id: created.patientId, primaryDoctorId: null },
+          data: { primaryDoctorId: sessionData.doctorId }
+        });
+      } catch {
+      }
+    }
+    return created;
   });
   ipcMain.handle("clinic:sessions:update", async (_e, { id, data }) => {
     const { prescriptions, ...sessionData } = data;
@@ -18384,6 +18396,52 @@ function registerStatsHandlers(prisma2) {
       paymentStatuses: psGroups.map((g) => ({ status: g.paymentStatus, count: g._count.paymentStatus }))
     };
   });
+  ipcMain.handle("clinic:stats:byDoctor", async (_e, params) => {
+    const now = /* @__PURE__ */ new Date();
+    const from = params?.from ? new Date(params.from) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const to = params?.to ? new Date(params.to) : now;
+    const doctors = await prisma2.clinicStaff.findMany({
+      where: { role: "doctor" },
+      select: { id: true, name: true, title: true, specialty: true, avatarColor: true, isDefault: true, commissionPct: true }
+    });
+    if (doctors.length === 0)
+      return [];
+    const ids = doctors.map((d) => d.id);
+    const [sessions2, appts] = await Promise.all([
+      prisma2.clinicSession.findMany({
+        where: { doctorId: { in: ids }, visitDate: { gte: from, lte: to } },
+        select: { doctorId: true, patientId: true, amountCharged: true, amountPaid: true }
+      }),
+      prisma2.clinicAppointment.findMany({
+        where: { doctorId: { in: ids }, appointmentDate: { gte: from, lte: to } },
+        select: { doctorId: true, status: true }
+      })
+    ]);
+    return doctors.map((d) => {
+      const mySessions = sessions2.filter((s) => s.doctorId === d.id);
+      const myAppts = appts.filter((a) => a.doctorId === d.id);
+      const revenue = mySessions.reduce((sum, s) => sum + (s.amountPaid ?? 0), 0);
+      const charged = mySessions.reduce((sum, s) => sum + (s.amountCharged ?? 0), 0);
+      const patients = new Set(mySessions.map((s) => s.patientId)).size;
+      const noShows = myAppts.filter((a) => a.status === "no_show").length;
+      return {
+        id: d.id,
+        name: d.name,
+        title: d.title,
+        specialty: d.specialty,
+        avatarColor: d.avatarColor,
+        isDefault: d.isDefault,
+        sessions: mySessions.length,
+        patients,
+        revenue: Math.round(revenue * 100) / 100,
+        outstanding: Math.round((charged - revenue) * 100) / 100,
+        commission: Math.round(revenue * ((d.commissionPct ?? 0) / 100) * 100) / 100,
+        appointments: myAppts.length,
+        noShows,
+        noShowRate: myAppts.length ? Math.round(noShows / myAppts.length * 1e3) / 10 : 0
+      };
+    }).sort((a, b) => b.revenue - a.revenue);
+  });
 }
 
 // src/plugins/clinic/handlers/checkResults.ts
@@ -18489,6 +18547,16 @@ function registerCheckResultHandlers(prisma2) {
 // src/plugins/clinic/handlers/appointments.ts
 init_electron_node();
 var log70 = createLogger("Clinic:Appointments");
+function parseWorkingHours(raw) {
+  if (!raw)
+    return null;
+  try {
+    const p = JSON.parse(raw);
+    return typeof p === "object" && p ? p : null;
+  } catch {
+    return null;
+  }
+}
 function registerAppointmentHandlers(prisma2) {
   ipcMain.handle("clinic:appointments:getAll", async (_e, params) => {
     try {
@@ -18499,6 +18567,8 @@ function registerAppointmentHandlers(prisma2) {
         where.status = params.status;
       if (params?.type)
         where.type = params.type;
+      if (params?.doctorId)
+        where.doctorId = params.doctorId;
       if (params?.date) {
         const d = /* @__PURE__ */ new Date(params.date + "T00:00:00");
         const end = /* @__PURE__ */ new Date(params.date + "T23:59:59.999");
@@ -18656,13 +18726,27 @@ function registerAppointmentHandlers(prisma2) {
   });
   ipcMain.handle("clinic:appointments:create", async (_e, data) => {
     try {
-      if (data.doctorName) {
-        const start = new Date(data.appointmentDate);
-        const dur = Number(data.duration) || 30;
-        const end = new Date(start.getTime() + dur * 6e4);
+      const start = new Date(data.appointmentDate);
+      const dur = Number(data.duration) || 30;
+      const end = new Date(start.getTime() + dur * 6e4);
+      if (data.doctorId) {
+        const doc = await prisma2.clinicStaff.findUnique({
+          where: { id: data.doctorId },
+          select: { name: true, workingHours: true }
+        });
+        const wh = parseWorkingHours(doc?.workingHours);
+        if (wh) {
+          const dayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][start.getDay()];
+          if (wh[dayKey]?.off) {
+            throw new Error(`${doc?.name ?? "This doctor"} is not available on that day`);
+          }
+        }
+      }
+      const doctorWhere = data.doctorId ? { doctorId: data.doctorId } : data.doctorName ? { doctorName: data.doctorName } : null;
+      if (doctorWhere) {
         const sameDoc = await prisma2.clinicAppointment.findMany({
           where: {
-            doctorName: data.doctorName,
+            ...doctorWhere,
             status: { in: ["scheduled", "confirmed"] },
             appointmentDate: { gte: new Date(start.getTime() - 12 * 36e5), lte: new Date(end.getTime() + 12 * 36e5) }
           },
@@ -18673,8 +18757,10 @@ function registerAppointmentHandlers(prisma2) {
           const aEnd = aStart + (Number(a.duration) || 30) * 6e4;
           return aStart < end.getTime() && aEnd > start.getTime();
         });
-        if (clash)
-          throw new Error(`${data.doctorName} already has an appointment during that time`);
+        if (clash) {
+          const who = data.doctorName || "That doctor";
+          throw new Error(`${who} already has an appointment during that time`);
+        }
       }
       return await prisma2.clinicAppointment.create({
         data: { ...data, appointmentDate: new Date(data.appointmentDate) },
@@ -19314,6 +19400,199 @@ function registerClinicStaffHandlers(prisma2) {
   });
 }
 
+// src/plugins/clinic/handlers/doctors.ts
+init_electron_node();
+var log74 = createLogger("Clinic:Doctors");
+var DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+function parseWorkingHours2(raw) {
+  if (!raw)
+    return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function computeLiveStatus(staff, currentAppt, now) {
+  if (staff.status === "inactive")
+    return "inactive";
+  if (staff.status === "on_leave")
+    return "on_leave";
+  const wh = parseWorkingHours2(staff.workingHours);
+  if (wh) {
+    const dayKey = DAY_KEYS[now.getDay()];
+    const today = wh[dayKey];
+    if (today?.off)
+      return "off";
+  }
+  if (currentAppt)
+    return "busy";
+  return "available";
+}
+function registerClinicDoctorHandlers(prisma2) {
+  ipcMain.handle("clinic:doctors:list", async () => {
+    try {
+      if (!prisma2)
+        return [];
+      const now = /* @__PURE__ */ new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(todayStart);
+      todayEnd.setDate(todayEnd.getDate() + 1);
+      const doctors = await prisma2.clinicStaff.findMany({
+        where: { role: "doctor" },
+        orderBy: [{ isDefault: "desc" }, { name: "asc" }]
+      });
+      if (doctors.length === 0)
+        return [];
+      const ids = doctors.map((d) => d.id);
+      const todaysAppts = await prisma2.clinicAppointment.findMany({
+        where: {
+          doctorId: { in: ids },
+          appointmentDate: { gte: todayStart, lt: todayEnd }
+        },
+        select: { id: true, doctorId: true, appointmentDate: true, duration: true, status: true, patient: { select: { name: true } } }
+      });
+      const upcoming = await prisma2.clinicAppointment.findMany({
+        where: {
+          doctorId: { in: ids },
+          appointmentDate: { gte: now },
+          status: { in: ["scheduled", "confirmed"] }
+        },
+        select: { doctorId: true, appointmentDate: true, patient: { select: { name: true } } },
+        orderBy: { appointmentDate: "asc" }
+      });
+      const panelGroups = await prisma2.clinicPatient.groupBy({
+        by: ["primaryDoctorId"],
+        where: { primaryDoctorId: { in: ids } },
+        _count: { primaryDoctorId: true }
+      }).catch(() => []);
+      const panelMap = /* @__PURE__ */ new Map();
+      for (const g of panelGroups)
+        panelMap.set(g.primaryDoctorId, g._count.primaryDoctorId);
+      const nextByDoctor = /* @__PURE__ */ new Map();
+      for (const a of upcoming) {
+        if (!nextByDoctor.has(a.doctorId))
+          nextByDoctor.set(a.doctorId, a);
+      }
+      return doctors.map((d) => {
+        const mine = todaysAppts.filter((a) => a.doctorId === d.id);
+        const current = mine.find((a) => {
+          if (!["scheduled", "confirmed", "completed"].includes(a.status))
+            return false;
+          const start = new Date(a.appointmentDate).getTime();
+          const end = start + (Number(a.duration) || 30) * 6e4;
+          return start <= now.getTime() && now.getTime() <= end;
+        });
+        const next = nextByDoctor.get(d.id);
+        return {
+          ...d,
+          liveStatus: computeLiveStatus(d, current, now),
+          todayCount: mine.length,
+          currentPatient: current?.patient?.name ?? null,
+          nextAppointment: next ? { date: next.appointmentDate, patient: next.patient?.name ?? null } : null,
+          panelSize: panelMap.get(d.id) ?? 0
+        };
+      });
+    } catch (err) {
+      log74.error("list error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:doctors:setDefault", async (_e, id) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      await prisma2.$transaction([
+        prisma2.clinicStaff.updateMany({ where: { role: "doctor", isDefault: true }, data: { isDefault: false } }),
+        prisma2.clinicStaff.update({ where: { id }, data: { isDefault: true } })
+      ]);
+      return { success: true };
+    } catch (err) {
+      log74.error("setDefault error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:doctors:availability:set", async (_e, { id, workingHours }) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      const value = workingHours == null ? null : typeof workingHours === "string" ? workingHours : JSON.stringify(workingHours);
+      return await prisma2.clinicStaff.update({ where: { id }, data: { workingHours: value } });
+    } catch (err) {
+      log74.error("availability:set error", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("clinic:doctors:getProfile", async (_e, params) => {
+    try {
+      if (!prisma2)
+        throw new Error("Database not available");
+      const { id } = params;
+      const now = /* @__PURE__ */ new Date();
+      const from = params.from ? new Date(params.from) : new Date(now.getFullYear(), now.getMonth(), 1);
+      const to = params.to ? new Date(params.to) : now;
+      const doctor = await prisma2.clinicStaff.findUnique({ where: { id } });
+      if (!doctor)
+        throw new Error("Doctor not found");
+      const [periodSessions, periodAppts, upcomingAppts, recentSessions, panelSize] = await Promise.all([
+        prisma2.clinicSession.findMany({
+          where: { doctorId: id, visitDate: { gte: from, lte: to } },
+          select: { id: true, patientId: true, amountCharged: true, amountPaid: true, visitDate: true }
+        }),
+        prisma2.clinicAppointment.findMany({
+          where: { doctorId: id, appointmentDate: { gte: from, lte: to } },
+          select: { id: true, status: true }
+        }),
+        prisma2.clinicAppointment.findMany({
+          where: { doctorId: id, appointmentDate: { gte: now }, status: { in: ["scheduled", "confirmed"] } },
+          include: { patient: { select: { id: true, name: true, phone: true } } },
+          orderBy: { appointmentDate: "asc" },
+          take: 10
+        }),
+        prisma2.clinicSession.findMany({
+          where: { doctorId: id },
+          include: { patient: { select: { id: true, name: true } } },
+          orderBy: { visitDate: "desc" },
+          take: 10
+        }),
+        prisma2.clinicPatient.count({ where: { primaryDoctorId: id } })
+      ]);
+      const revenue = periodSessions.reduce((s, x) => s + (x.amountPaid ?? 0), 0);
+      const charged = periodSessions.reduce((s, x) => s + (x.amountCharged ?? 0), 0);
+      const uniquePatients = new Set(periodSessions.map((x) => x.patientId)).size;
+      const totalAppts = periodAppts.length;
+      const noShows = periodAppts.filter((a) => a.status === "no_show").length;
+      const completedAppts = periodAppts.filter((a) => a.status === "completed").length;
+      const commissionPct = doctor.commissionPct ?? 0;
+      const commission = Math.round(revenue * (commissionPct / 100) * 100) / 100;
+      return {
+        doctor,
+        period: { from: from.toISOString(), to: to.toISOString() },
+        kpis: {
+          sessions: periodSessions.length,
+          patientsSeen: uniquePatients,
+          revenue: Math.round(revenue * 100) / 100,
+          charged: Math.round(charged * 100) / 100,
+          outstanding: Math.round((charged - revenue) * 100) / 100,
+          commission,
+          avgFee: periodSessions.length ? Math.round(charged / periodSessions.length * 100) / 100 : 0,
+          appointments: totalAppts,
+          completedAppts,
+          noShows,
+          noShowRate: totalAppts ? Math.round(noShows / totalAppts * 1e3) / 10 : 0,
+          panelSize
+        },
+        upcomingAppts,
+        recentSessions
+      };
+    } catch (err) {
+      log74.error("getProfile error", err);
+      throw err;
+    }
+  });
+}
+
 // src/plugins/clinic/handlers/materials.categories.ts
 init_electron_node();
 function registerMaterialCategoryHandlers(prisma2) {
@@ -19885,6 +20164,7 @@ function registerClinicHandlers(prisma2) {
   registerClinicPdfHandlers();
   registerExpenseHandlers(prisma2);
   registerClinicStaffHandlers(prisma2);
+  registerClinicDoctorHandlers(prisma2);
   registerMaterialHandlers(prisma2);
 }
 
@@ -19893,7 +20173,7 @@ init_electron_node();
 
 // src/plugins/vet/handlers/owners.ts
 init_electron_node();
-var log74 = createLogger("Vet:Owners");
+var log75 = createLogger("Vet:Owners");
 function registerOwnerHandlers(prisma2) {
   ipcMain.handle("vet:owners:getAll", async (_e, params) => {
     try {
@@ -19922,7 +20202,7 @@ function registerOwnerHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log74.error("getAll", err);
+      log75.error("getAll", err);
       throw err;
     }
   });
@@ -19952,7 +20232,7 @@ function registerOwnerHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log74.error("getById", err);
+      log75.error("getById", err);
       throw err;
     }
   });
@@ -19960,7 +20240,7 @@ function registerOwnerHandlers(prisma2) {
     try {
       return await prisma2.vetOwner.create({ data });
     } catch (err) {
-      log74.error("create", err);
+      log75.error("create", err);
       throw err;
     }
   });
@@ -19968,7 +20248,7 @@ function registerOwnerHandlers(prisma2) {
     try {
       return await prisma2.vetOwner.update({ where: { id }, data });
     } catch (err) {
-      log74.error("update", err);
+      log75.error("update", err);
       throw err;
     }
   });
@@ -19976,7 +20256,7 @@ function registerOwnerHandlers(prisma2) {
     try {
       return await prisma2.vetOwner.delete({ where: { id } });
     } catch (err) {
-      log74.error("delete", err);
+      log75.error("delete", err);
       throw err;
     }
   });
@@ -20020,7 +20300,7 @@ function registerOwnerHandlers(prisma2) {
         totalOutstanding: sessionsOutstanding + salesOutstanding
       };
     } catch (err) {
-      log74.error("getFinance", err);
+      log75.error("getFinance", err);
       throw err;
     }
   });
@@ -20028,7 +20308,7 @@ function registerOwnerHandlers(prisma2) {
 
 // src/plugins/vet/handlers/patients.ts
 init_electron_node();
-var log75 = createLogger("Vet:Patients");
+var log76 = createLogger("Vet:Patients");
 function registerVetPatientHandlers(prisma2) {
   ipcMain.handle("vet:patients:getAll", async (_e, params) => {
     try {
@@ -20090,7 +20370,7 @@ function registerVetPatientHandlers(prisma2) {
       }));
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log75.error("getAll", err);
+      log76.error("getAll", err);
       throw err;
     }
   });
@@ -20127,7 +20407,7 @@ function registerVetPatientHandlers(prisma2) {
       }));
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log75.error("getDebtors", err);
+      log76.error("getDebtors", err);
       throw err;
     }
   });
@@ -20155,7 +20435,7 @@ function registerVetPatientHandlers(prisma2) {
       const totalPaid = Number(rows[0]?.tp) || 0;
       return { ...patient, finance: { totalCharged, totalPaid, outstanding: totalCharged - totalPaid } };
     } catch (err) {
-      log75.error("getById", err);
+      log76.error("getById", err);
       throw err;
     }
   });
@@ -20163,7 +20443,7 @@ function registerVetPatientHandlers(prisma2) {
     try {
       return await prisma2.vetPatient.create({ data, include: { owner: { select: { id: true, name: true } } } });
     } catch (err) {
-      log75.error("create", err);
+      log76.error("create", err);
       throw err;
     }
   });
@@ -20171,7 +20451,7 @@ function registerVetPatientHandlers(prisma2) {
     try {
       return await prisma2.vetPatient.update({ where: { id }, data, include: { owner: { select: { id: true, name: true } } } });
     } catch (err) {
-      log75.error("update", err);
+      log76.error("update", err);
       throw err;
     }
   });
@@ -20179,7 +20459,7 @@ function registerVetPatientHandlers(prisma2) {
     try {
       return await prisma2.vetPatient.delete({ where: { id } });
     } catch (err) {
-      log75.error("delete", err);
+      log76.error("delete", err);
       throw err;
     }
   });
@@ -20187,7 +20467,7 @@ function registerVetPatientHandlers(prisma2) {
 
 // src/plugins/vet/handlers/sessions.ts
 init_electron_node();
-var log76 = createLogger("Vet:Sessions");
+var log77 = createLogger("Vet:Sessions");
 function registerVetSessionHandlers(prisma2) {
   ipcMain.handle("vet:sessions:getRecent", async (_e, params) => {
     try {
@@ -20242,7 +20522,7 @@ function registerVetSessionHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log76.error("getRecent", err);
+      log77.error("getRecent", err);
       throw err;
     }
   });
@@ -20260,7 +20540,7 @@ function registerVetSessionHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log76.error("create", err);
+      log77.error("create", err);
       throw err;
     }
   });
@@ -20276,7 +20556,7 @@ function registerVetSessionHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log76.error("update", err);
+      log77.error("update", err);
       throw err;
     }
   });
@@ -20284,7 +20564,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetSession.delete({ where: { id } });
     } catch (err) {
-      log76.error("delete", err);
+      log77.error("delete", err);
       throw err;
     }
   });
@@ -20310,7 +20590,7 @@ function registerVetSessionHandlers(prisma2) {
         data: { amountPaid: newPaid, paymentStatus: status }
       });
     } catch (err) {
-      log76.error("settlePayment", err);
+      log77.error("settlePayment", err);
       throw err;
     }
   });
@@ -20346,7 +20626,7 @@ function registerVetSessionHandlers(prisma2) {
       });
       return { applied: Math.round(applied * 100) / 100, settledCount };
     } catch (err) {
-      log76.error("settleOwner", err);
+      log77.error("settleOwner", err);
       throw err;
     }
   });
@@ -20354,7 +20634,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetPrescription.create({ data: { ...data, sessionId } });
     } catch (err) {
-      log76.error("addPrescription", err);
+      log77.error("addPrescription", err);
       throw err;
     }
   });
@@ -20362,7 +20642,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetPrescription.update({ where: { id }, data });
     } catch (err) {
-      log76.error("updatePrescription", err);
+      log77.error("updatePrescription", err);
       throw err;
     }
   });
@@ -20373,7 +20653,7 @@ function registerVetSessionHandlers(prisma2) {
         data: { isActive: false, stoppedAt: /* @__PURE__ */ new Date(), stopReason: reason }
       });
     } catch (err) {
-      log76.error("stopPrescription", err);
+      log77.error("stopPrescription", err);
       throw err;
     }
   });
@@ -20381,7 +20661,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetPrescription.delete({ where: { id } });
     } catch (err) {
-      log76.error("deletePrescription", err);
+      log77.error("deletePrescription", err);
       throw err;
     }
   });
@@ -20415,7 +20695,7 @@ function registerVetSessionHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log76.error("getFollowUps", err);
+      log77.error("getFollowUps", err);
       throw err;
     }
   });
@@ -20423,7 +20703,7 @@ function registerVetSessionHandlers(prisma2) {
 
 // src/plugins/vet/handlers/appointments.ts
 init_electron_node();
-var log77 = createLogger("Vet:Appointments");
+var log78 = createLogger("Vet:Appointments");
 function registerVetAppointmentHandlers(prisma2) {
   ipcMain.handle("vet:appointments:getAll", async (_e, params) => {
     try {
@@ -20468,7 +20748,7 @@ function registerVetAppointmentHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log77.error("getAll", err);
+      log78.error("getAll", err);
       throw err;
     }
   });
@@ -20494,7 +20774,7 @@ function registerVetAppointmentHandlers(prisma2) {
       });
       return { available: conflicts.length === 0, conflicts };
     } catch (err) {
-      log77.error("checkSlot", err);
+      log78.error("checkSlot", err);
       throw err;
     }
   });
@@ -20505,7 +20785,7 @@ function registerVetAppointmentHandlers(prisma2) {
         include: { patient: { select: { id: true, name: true, species: true } } }
       });
     } catch (err) {
-      log77.error("create", err);
+      log78.error("create", err);
       throw err;
     }
   });
@@ -20517,7 +20797,7 @@ function registerVetAppointmentHandlers(prisma2) {
         include: { patient: { select: { id: true, name: true, species: true } } }
       });
     } catch (err) {
-      log77.error("update", err);
+      log78.error("update", err);
       throw err;
     }
   });
@@ -20525,7 +20805,7 @@ function registerVetAppointmentHandlers(prisma2) {
     try {
       return await prisma2.vetAppointment.delete({ where: { id } });
     } catch (err) {
-      log77.error("delete", err);
+      log78.error("delete", err);
       throw err;
     }
   });
@@ -20536,7 +20816,7 @@ init_electron_node();
 init_electron_node();
 var import_node_path6 = __toESM(require("node:path"));
 var import_node_fs4 = __toESM(require("node:fs"));
-var log78 = createLogger("Vet:CheckResults");
+var log79 = createLogger("Vet:CheckResults");
 function getResultsDir() {
   const dir = import_node_path6.default.join(app.getPath("userData"), "vet-results");
   if (!import_node_fs4.default.existsSync(dir))
@@ -20560,7 +20840,7 @@ function registerVetCheckResultHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log78.error("getAll", err);
+      log79.error("getAll", err);
       throw err;
     }
   });
@@ -20586,7 +20866,7 @@ function registerVetCheckResultHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log78.error("create", err);
+      log79.error("create", err);
       throw err;
     }
   });
@@ -20600,7 +20880,7 @@ function registerVetCheckResultHandlers(prisma2) {
       }
       return await prisma2.vetCheckResult.delete({ where: { id } });
     } catch (err) {
-      log78.error("delete", err);
+      log79.error("delete", err);
       throw err;
     }
   });
@@ -20613,7 +20893,7 @@ function registerVetCheckResultHandlers(prisma2) {
       await shell2.openPath(record.filePath);
       return true;
     } catch (err) {
-      log78.error("openFile", err);
+      log79.error("openFile", err);
       throw err;
     }
   });
@@ -20621,7 +20901,7 @@ function registerVetCheckResultHandlers(prisma2) {
 
 // src/plugins/vet/handlers/expenses.ts
 init_electron_node();
-var log79 = createLogger("Vet:Expenses");
+var log80 = createLogger("Vet:Expenses");
 function getPeriodRange2(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -20677,7 +20957,7 @@ function registerVetExpenseHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log79.error("getAll", err);
+      log80.error("getAll", err);
       throw err;
     }
   });
@@ -20721,7 +21001,7 @@ function registerVetExpenseHandlers(prisma2) {
         byCategory
       };
     } catch (err) {
-      log79.error("summary", err);
+      log80.error("summary", err);
       throw err;
     }
   });
@@ -20729,7 +21009,7 @@ function registerVetExpenseHandlers(prisma2) {
     try {
       return await prisma2.vetExpense.create({ data });
     } catch (err) {
-      log79.error("create", err);
+      log80.error("create", err);
       throw err;
     }
   });
@@ -20737,7 +21017,7 @@ function registerVetExpenseHandlers(prisma2) {
     try {
       return await prisma2.vetExpense.update({ where: { id }, data });
     } catch (err) {
-      log79.error("update", err);
+      log80.error("update", err);
       throw err;
     }
   });
@@ -20745,7 +21025,7 @@ function registerVetExpenseHandlers(prisma2) {
     try {
       return await prisma2.vetExpense.delete({ where: { id } });
     } catch (err) {
-      log79.error("delete", err);
+      log80.error("delete", err);
       throw err;
     }
   });
@@ -20753,7 +21033,7 @@ function registerVetExpenseHandlers(prisma2) {
 
 // src/plugins/vet/handlers/staff.ts
 init_electron_node();
-var log80 = createLogger("Vet:Staff");
+var log81 = createLogger("Vet:Staff");
 function registerVetStaffHandlers(prisma2) {
   ipcMain.handle("vet:staff:getAll", async (_e, params) => {
     try {
@@ -20780,7 +21060,7 @@ function registerVetStaffHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log80.error("getAll", err);
+      log81.error("getAll", err);
       throw err;
     }
   });
@@ -20791,7 +21071,7 @@ function registerVetStaffHandlers(prisma2) {
         include: { salaryRecords: { orderBy: [{ year: "desc" }, { month: "desc" }] } }
       });
     } catch (err) {
-      log80.error("getById", err);
+      log81.error("getById", err);
       throw err;
     }
   });
@@ -20799,7 +21079,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetStaff.create({ data });
     } catch (err) {
-      log80.error("create", err);
+      log81.error("create", err);
       throw err;
     }
   });
@@ -20807,7 +21087,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetStaff.update({ where: { id }, data });
     } catch (err) {
-      log80.error("update", err);
+      log81.error("update", err);
       throw err;
     }
   });
@@ -20815,7 +21095,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetStaff.delete({ where: { id } });
     } catch (err) {
-      log80.error("delete", err);
+      log81.error("delete", err);
       throw err;
     }
   });
@@ -20826,7 +21106,7 @@ function registerVetStaffHandlers(prisma2) {
         orderBy: [{ year: "desc" }, { month: "desc" }]
       });
     } catch (err) {
-      log80.error("salary:getRecords", err);
+      log81.error("salary:getRecords", err);
       throw err;
     }
   });
@@ -20840,7 +21120,7 @@ function registerVetStaffHandlers(prisma2) {
         create: { staffId, month, year, ...rest, netPay }
       });
     } catch (err) {
-      log80.error("salary:upsert", err);
+      log81.error("salary:upsert", err);
       throw err;
     }
   });
@@ -20848,7 +21128,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetSalaryRecord.delete({ where: { id } });
     } catch (err) {
-      log80.error("salary:delete", err);
+      log81.error("salary:delete", err);
       throw err;
     }
   });
@@ -20877,7 +21157,7 @@ function saleNetRevenue(sale) {
 }
 
 // src/plugins/vet/handlers/stats.overview.ts
-var log81 = createLogger("Vet:Stats:Overview");
+var log82 = createLogger("Vet:Stats:Overview");
 function registerVetStatsOverviewHandlers(prisma2) {
   ipcMain.handle("vet:stats:overview", async (_e, period) => {
     try {
@@ -20948,7 +21228,7 @@ function registerVetStatsOverviewHandlers(prisma2) {
         medicineSales: Number(medSaleRows[0]?.saleCount) || 0
       };
     } catch (err) {
-      log81.error("overview", err);
+      log82.error("overview", err);
       throw err;
     }
   });
@@ -20956,7 +21236,7 @@ function registerVetStatsOverviewHandlers(prisma2) {
 
 // src/plugins/vet/handlers/stats.clinical.ts
 init_electron_node();
-var log82 = createLogger("Vet:Stats:Clinical");
+var log83 = createLogger("Vet:Stats:Clinical");
 function registerVetStatsClinicalHandlers(prisma2) {
   ipcMain.handle("vet:stats:topDiagnoses", async (_e, params) => {
     try {
@@ -20972,7 +21252,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
       `, from, limit);
       return rows.map((r) => ({ diagnosis: r.diagnosis, count: Number(r.cnt) }));
     } catch (err) {
-      log82.error("topDiagnoses", err);
+      log83.error("topDiagnoses", err);
       throw err;
     }
   });
@@ -21002,7 +21282,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
         };
       });
     } catch (err) {
-      log82.error("visitTrend", err);
+      log83.error("visitTrend", err);
       throw err;
     }
   });
@@ -21013,7 +21293,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
       `);
       return rows.map((r) => ({ species: r.species, count: Number(r.cnt) }));
     } catch (err) {
-      log82.error("speciesBreakdown", err);
+      log83.error("speciesBreakdown", err);
       throw err;
     }
   });
@@ -21038,7 +21318,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
         sessions: Number(r.sessions) || 0
       }));
     } catch (err) {
-      log82.error("monthlyTrend", err);
+      log83.error("monthlyTrend", err);
       throw err;
     }
   });
@@ -21046,7 +21326,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
 
 // src/plugins/vet/handlers/stats.sales.ts
 init_electron_node();
-var log83 = createLogger("Vet:Stats:Sales");
+var log84 = createLogger("Vet:Stats:Sales");
 function registerVetStatsSalesHandlers(prisma2) {
   ipcMain.handle("vet:stats:profitAnalysis", async (_e, params) => {
     try {
@@ -21151,7 +21431,7 @@ function registerVetStatsSalesHandlers(prisma2) {
         })
       };
     } catch (err) {
-      log83.error("profitAnalysis", err);
+      log84.error("profitAnalysis", err);
       throw err;
     }
   });
@@ -21215,7 +21495,7 @@ function registerVetStatsSalesHandlers(prisma2) {
         }
       };
     } catch (err) {
-      log83.error("salesBreakdown", err);
+      log84.error("salesBreakdown", err);
       throw err;
     }
   });
@@ -21223,7 +21503,7 @@ function registerVetStatsSalesHandlers(prisma2) {
 
 // src/plugins/vet/handlers/stats.inventory.ts
 init_electron_node();
-var log84 = createLogger("Vet:Stats:Inventory");
+var log85 = createLogger("Vet:Stats:Inventory");
 function registerVetStatsInventoryHandlers(prisma2) {
   ipcMain.handle("vet:stats:inventoryTurnover", async (_e, params) => {
     try {
@@ -21315,7 +21595,7 @@ function registerVetStatsInventoryHandlers(prisma2) {
         items: items.sort((a, b) => b.turnover - a.turnover)
       };
     } catch (err) {
-      log84.error("inventoryTurnover", err);
+      log85.error("inventoryTurnover", err);
       throw err;
     }
   });
@@ -21331,7 +21611,7 @@ function registerVetStatsHandlers(prisma2) {
 
 // src/plugins/vet/handlers/medicines.catalog.ts
 init_electron_node();
-var log85 = createLogger("Vet:Medicines");
+var log86 = createLogger("Vet:Medicines");
 function registerVetMedicineCatalogHandlers(prisma2) {
   ipcMain.handle("vet:medicines:getAll", async (_e, params) => {
     try {
@@ -21400,7 +21680,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
       });
       return { data: enriched, total, hasMore: skip + take < total };
     } catch (err) {
-      log85.error("getAll", err);
+      log86.error("getAll", err);
       throw err;
     }
   });
@@ -21408,7 +21688,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
     try {
       return await prisma2.vetMedicine.create({ data });
     } catch (err) {
-      log85.error("create", err);
+      log86.error("create", err);
       throw err;
     }
   });
@@ -21416,7 +21696,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
     try {
       return await prisma2.vetMedicine.update({ where: { id }, data });
     } catch (err) {
-      log85.error("update", err);
+      log86.error("update", err);
       throw err;
     }
   });
@@ -21425,7 +21705,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
       await prisma2.vetMedicine.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log85.error("delete", err);
+      log86.error("delete", err);
       throw err;
     }
   });
@@ -21434,7 +21714,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
 // src/plugins/vet/handlers/medicines.batches.ts
 init_electron_node();
 init_session();
-var log86 = createLogger("Vet:Medicines");
+var log87 = createLogger("Vet:Medicines");
 var AUDIT_FIELDS = [
   { key: "quantity", label: "Quantity", type: "num" },
   { key: "costPerUnit", label: "Cost/unit", type: "num" },
@@ -21471,7 +21751,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
         // FEFO — First Expired, First Out
       });
     } catch (err) {
-      log86.error("getBatches", err);
+      log87.error("getBatches", err);
       throw err;
     }
   });
@@ -21488,7 +21768,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log86.error("addBatch", err);
+      log87.error("addBatch", err);
       throw err;
     }
   });
@@ -21523,11 +21803,11 @@ function registerVetMedicineBatchHandlers(prisma2) {
           });
         }
       } catch (auditErr) {
-        log86.warn("updateBatch audit skipped", auditErr);
+        log87.warn("updateBatch audit skipped", auditErr);
       }
       return updated;
     } catch (err) {
-      log86.error("updateBatch", err);
+      log87.error("updateBatch", err);
       throw err;
     }
   });
@@ -21536,7 +21816,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
       await prisma2.vetMedicineBatch.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log86.error("deleteBatch", err);
+      log87.error("deleteBatch", err);
       throw err;
     }
   });
@@ -21583,7 +21863,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
       ]);
       return { batch: updatedBatch, expense, lossAmount };
     } catch (err) {
-      log86.error("disposeBatch", err);
+      log87.error("disposeBatch", err);
       throw err;
     }
   });
@@ -21643,11 +21923,11 @@ function registerVetMedicineBatchHandlers(prisma2) {
           }
         });
       } catch (auditErr) {
-        log86.warn("adjustBatchStock audit skipped", auditErr);
+        log87.warn("adjustBatchStock audit skipped", auditErr);
       }
       return { batch: updated, from: current, to: next };
     } catch (err) {
-      log86.error("adjustBatchStock", err);
+      log87.error("adjustBatchStock", err);
       throw err;
     }
   });
@@ -21656,7 +21936,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
 // src/plugins/vet/handlers/medicines.sales.ts
 init_electron_node();
 init_session();
-var log87 = createLogger("Vet:Medicines");
+var log88 = createLogger("Vet:Medicines");
 function registerVetMedicineSalesHandlers(prisma2) {
   ipcMain.handle("vet:medicines:sell", async (_e, data) => {
     try {
@@ -21710,7 +21990,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       ]);
       return sale;
     } catch (err) {
-      log87.error("sell", err);
+      log88.error("sell", err);
       throw err;
     }
   });
@@ -21789,7 +22069,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { count: sales.length, saleGroupId, sales };
     } catch (err) {
-      log87.error("sellCombo", err);
+      log88.error("sellCombo", err);
       throw err;
     }
   });
@@ -21809,7 +22089,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
         data: { amountPaid: validAmount, paymentStatus: status }
       });
     } catch (err) {
-      log87.error("updateSalePayment", err);
+      log88.error("updateSalePayment", err);
       throw err;
     }
   });
@@ -21846,7 +22126,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { applied: Math.round(applied * 100) / 100, settledCount };
     } catch (err) {
-      log87.error("settleOwnerSales", err);
+      log88.error("settleOwnerSales", err);
       throw err;
     }
   });
@@ -21910,7 +22190,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return updated;
     } catch (err) {
-      log87.error("updateSale", err);
+      log88.error("updateSale", err);
       throw err;
     }
   });
@@ -21954,7 +22234,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { sale: result, refundAmount, restockedQty: restockContainers };
     } catch (err) {
-      log87.error("refundSale", err);
+      log88.error("refundSale", err);
       throw err;
     }
   });
@@ -21997,7 +22277,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { count: lines.length, totalRefund };
     } catch (err) {
-      log87.error("refundSaleGroup", err);
+      log88.error("refundSaleGroup", err);
       throw err;
     }
   });
@@ -22005,7 +22285,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
 
 // src/plugins/vet/handlers/medicines.queries.ts
 init_electron_node();
-var log88 = createLogger("Vet:Medicines");
+var log89 = createLogger("Vet:Medicines");
 function registerVetMedicineQueryHandlers(prisma2) {
   ipcMain.handle("vet:medicines:getSales", async (_e, params) => {
     try {
@@ -22060,7 +22340,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
       });
       return { data: enriched, total, hasMore: skip + take < total };
     } catch (err) {
-      log88.error("getSales", err);
+      log89.error("getSales", err);
       throw err;
     }
   });
@@ -22181,7 +22461,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
       });
       return { data: groups, total, hasMore: skip + take < total };
     } catch (err) {
-      log88.error("getSaleGroups", err);
+      log89.error("getSaleGroups", err);
       throw err;
     }
   });
@@ -22295,7 +22575,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
       };
       return { medicine, events: filtered, summary };
     } catch (err) {
-      log88.error("getHistory", err);
+      log89.error("getHistory", err);
       throw err;
     }
   });
@@ -22362,7 +22642,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
         }))
       };
     } catch (err) {
-      log88.error("getSummary", err);
+      log89.error("getSummary", err);
       throw err;
     }
   });
@@ -22378,7 +22658,7 @@ function registerVetMedicineHandlers(prisma2) {
 
 // src/plugins/vet/handlers/catalogue.ts
 init_electron_node();
-var log89 = createLogger("Vet:Catalogue");
+var log90 = createLogger("Vet:Catalogue");
 var DEFAULT_CATEGORIES = [
   { name: "general", color: "#64748b" },
   { name: "antibiotic", color: "#8b5cf6" },
@@ -22439,7 +22719,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await ensureCategoriesSeeded();
       return await prisma2.vetMedicineCategory.findMany({ orderBy: { name: "asc" } });
     } catch (err) {
-      log89.error("categories:getAll", err);
+      log90.error("categories:getAll", err);
       throw err;
     }
   });
@@ -22453,7 +22733,7 @@ function registerVetCatalogueHandlers(prisma2) {
         throw new Error("Category already exists");
       return await prisma2.vetMedicineCategory.create({ data: { name, color: data.color ?? "#8b5cf6" } });
     } catch (err) {
-      log89.error("categories:create", err);
+      log90.error("categories:create", err);
       throw err;
     }
   });
@@ -22477,7 +22757,7 @@ function registerVetCatalogueHandlers(prisma2) {
       }
       return await prisma2.vetMedicineCategory.update({ where: { id }, data: patch });
     } catch (err) {
-      log89.error("categories:update", err);
+      log90.error("categories:update", err);
       throw err;
     }
   });
@@ -22495,7 +22775,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await prisma2.vetMedicineCategory.delete({ where: { id } });
       return { success: true, reassigned: reassigned.count };
     } catch (err) {
-      log89.error("categories:delete", err);
+      log90.error("categories:delete", err);
       throw err;
     }
   });
@@ -22504,7 +22784,7 @@ function registerVetCatalogueHandlers(prisma2) {
       const count = await prisma2.vetMedicine.count({ where: { category: name } });
       return { count };
     } catch (err) {
-      log89.error("categories:getUsageCount", err);
+      log90.error("categories:getUsageCount", err);
       throw err;
     }
   });
@@ -22513,7 +22793,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await ensureUnitsSeeded();
       return await prisma2.vetMedicineUnit.findMany({ orderBy: { name: "asc" } });
     } catch (err) {
-      log89.error("units:getAll", err);
+      log90.error("units:getAll", err);
       throw err;
     }
   });
@@ -22527,7 +22807,7 @@ function registerVetCatalogueHandlers(prisma2) {
         throw new Error("Unit already exists");
       return await prisma2.vetMedicineUnit.create({ data: { name } });
     } catch (err) {
-      log89.error("units:create", err);
+      log90.error("units:create", err);
       throw err;
     }
   });
@@ -22536,7 +22816,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await prisma2.vetMedicineUnit.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log89.error("units:delete", err);
+      log90.error("units:delete", err);
       throw err;
     }
   });
@@ -22544,7 +22824,7 @@ function registerVetCatalogueHandlers(prisma2) {
 
 // src/plugins/vet/handlers/visitTypes.ts
 init_electron_node();
-var log90 = createLogger("Vet:VisitTypes");
+var log91 = createLogger("Vet:VisitTypes");
 var DEFAULT_VISIT_TYPES = [
   { name: "wellness_exam", color: "#14b8a6" },
   { name: "visit", color: "#06b6d4" },
@@ -22587,7 +22867,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       await ensureSeeded();
       return await prisma2.vetVisitType.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
     } catch (err) {
-      log90.error("visitTypes:getAll", err);
+      log91.error("visitTypes:getAll", err);
       throw err;
     }
   });
@@ -22604,7 +22884,7 @@ function registerVetVisitTypeHandlers(prisma2) {
         data: { name, color: data.color ?? "#6366f1", sortOrder: (max._max.sortOrder ?? -1) + 1 }
       });
     } catch (err) {
-      log90.error("visitTypes:create", err);
+      log91.error("visitTypes:create", err);
       throw err;
     }
   });
@@ -22630,7 +22910,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       }
       return await prisma2.vetVisitType.update({ where: { id }, data: patch });
     } catch (err) {
-      log90.error("visitTypes:update", err);
+      log91.error("visitTypes:update", err);
       throw err;
     }
   });
@@ -22643,7 +22923,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       await prisma2.vetVisitType.delete({ where: { id } });
       return { success: true, affectedSessions: count };
     } catch (err) {
-      log90.error("visitTypes:delete", err);
+      log91.error("visitTypes:delete", err);
       throw err;
     }
   });
@@ -22652,7 +22932,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       const count = await prisma2.vetSession.count({ where: { visitType: name } });
       return { count };
     } catch (err) {
-      log90.error("visitTypes:getUsageCount", err);
+      log91.error("visitTypes:getUsageCount", err);
       throw err;
     }
   });
@@ -22664,7 +22944,7 @@ var path14 = __toESM(require("path"));
 var fs11 = __toESM(require("fs"));
 var os5 = __toESM(require("os"));
 var XLSX2 = __toESM(require("xlsx"));
-var log91 = createLogger("Vet:Reports");
+var log92 = createLogger("Vet:Reports");
 var esc2 = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 var money = (v, cur = "") => {
   const n = Number(v);
@@ -22766,7 +23046,7 @@ function registerVetReportExportHandlers() {
       shell.openPath(filePath);
       return { success: true, filePath };
     } catch (err) {
-      log91.error("exportPdf", err);
+      log92.error("exportPdf", err);
       throw err;
     }
   });
@@ -22827,7 +23107,7 @@ function registerVetReportExportHandlers() {
       shell.openPath(filePath);
       return { success: true, filePath };
     } catch (err) {
-      log91.error("exportExcel", err);
+      log92.error("exportExcel", err);
       throw err;
     }
   });
@@ -22851,7 +23131,7 @@ function registerVetHandlers(prisma2) {
 
 // src/plugins/gym/handlers/coaches.ts
 init_electron_node();
-var log92 = createLogger("Gym:Coaches");
+var log93 = createLogger("Gym:Coaches");
 function registerGymCoachHandlers(prisma2) {
   ipcMain.handle("gym:coaches:getAll", async (_e, params) => {
     try {
@@ -22873,7 +23153,7 @@ function registerGymCoachHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log92.error("getAll", err);
+      log93.error("getAll", err);
       throw err;
     }
   });
@@ -22889,7 +23169,7 @@ function registerGymCoachHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log92.error("getById", err);
+      log93.error("getById", err);
       throw err;
     }
   });
@@ -22903,7 +23183,7 @@ function registerGymCoachHandlers(prisma2) {
       }
       return prisma2.gymCoach.create({ data });
     } catch (err) {
-      log92.error("create", err);
+      log93.error("create", err);
       throw err;
     }
   });
@@ -22913,7 +23193,7 @@ function registerGymCoachHandlers(prisma2) {
         data = { ...data, hireDate: new Date(data.hireDate) };
       return prisma2.gymCoach.update({ where: { id }, data });
     } catch (err) {
-      log92.error("update", err);
+      log93.error("update", err);
       throw err;
     }
   });
@@ -22922,7 +23202,7 @@ function registerGymCoachHandlers(prisma2) {
       await prisma2.gymCoach.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log92.error("delete", err);
+      log93.error("delete", err);
       throw err;
     }
   });
@@ -22959,7 +23239,7 @@ function registerGymCoachHandlers(prisma2) {
       ).length;
       return { sessionsToday, sessionsWeek, sessionsMonth, activeTrainees, uniqueTrainees, totalRevenue, expiringSoon, subscriptions };
     } catch (err) {
-      log92.error("getStats", err);
+      log93.error("getStats", err);
       throw err;
     }
   });
@@ -22967,7 +23247,7 @@ function registerGymCoachHandlers(prisma2) {
 
 // src/plugins/gym/handlers/trainees.ts
 init_electron_node();
-var log93 = createLogger("Gym:Trainees");
+var log94 = createLogger("Gym:Trainees");
 function registerGymTraineeHandlers(prisma2) {
   ipcMain.handle("gym:trainees:getAll", async (_e, params) => {
     try {
@@ -23002,7 +23282,7 @@ function registerGymTraineeHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log93.error("getAll", err);
+      log94.error("getAll", err);
       throw err;
     }
   });
@@ -23023,7 +23303,7 @@ function registerGymTraineeHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log93.error("getById", err);
+      log94.error("getById", err);
       throw err;
     }
   });
@@ -23041,7 +23321,7 @@ function registerGymTraineeHandlers(prisma2) {
         take: 10
       });
     } catch (err) {
-      log93.error("searchLite", err);
+      log94.error("searchLite", err);
       throw err;
     }
   });
@@ -23049,7 +23329,7 @@ function registerGymTraineeHandlers(prisma2) {
     try {
       return prisma2.gymTrainee.create({ data });
     } catch (err) {
-      log93.error("create", err);
+      log94.error("create", err);
       throw err;
     }
   });
@@ -23057,7 +23337,7 @@ function registerGymTraineeHandlers(prisma2) {
     try {
       return prisma2.gymTrainee.update({ where: { id }, data });
     } catch (err) {
-      log93.error("update", err);
+      log94.error("update", err);
       throw err;
     }
   });
@@ -23066,7 +23346,7 @@ function registerGymTraineeHandlers(prisma2) {
       await prisma2.gymTrainee.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log93.error("delete", err);
+      log94.error("delete", err);
       throw err;
     }
   });
@@ -23074,13 +23354,13 @@ function registerGymTraineeHandlers(prisma2) {
 
 // src/plugins/gym/handlers/plans.ts
 init_electron_node();
-var log94 = createLogger("Gym:Plans");
+var log95 = createLogger("Gym:Plans");
 function registerGymPlanHandlers(prisma2) {
   ipcMain.handle("gym:plans:getAll", async () => {
     try {
       return prisma2.gymPlan.findMany({ orderBy: { price: "asc" } });
     } catch (err) {
-      log94.error("getAll", err);
+      log95.error("getAll", err);
       throw err;
     }
   });
@@ -23088,7 +23368,7 @@ function registerGymPlanHandlers(prisma2) {
     try {
       return prisma2.gymPlan.create({ data });
     } catch (err) {
-      log94.error("create", err);
+      log95.error("create", err);
       throw err;
     }
   });
@@ -23096,7 +23376,7 @@ function registerGymPlanHandlers(prisma2) {
     try {
       return prisma2.gymPlan.update({ where: { id }, data });
     } catch (err) {
-      log94.error("update", err);
+      log95.error("update", err);
       throw err;
     }
   });
@@ -23105,7 +23385,7 @@ function registerGymPlanHandlers(prisma2) {
       await prisma2.gymPlan.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log94.error("delete", err);
+      log95.error("delete", err);
       throw err;
     }
   });
@@ -23113,7 +23393,7 @@ function registerGymPlanHandlers(prisma2) {
 
 // src/plugins/gym/handlers/subscriptions.ts
 init_electron_node();
-var log95 = createLogger("Gym:Subscriptions");
+var log96 = createLogger("Gym:Subscriptions");
 var INCLUDE = {
   trainee: { select: { id: true, name: true, phone: true } },
   plan: true,
@@ -23136,7 +23416,7 @@ function registerGymSubscriptionHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log95.error("getAll", err);
+      log96.error("getAll", err);
       throw err;
     }
   });
@@ -23144,7 +23424,7 @@ function registerGymSubscriptionHandlers(prisma2) {
     try {
       return prisma2.gymSubscription.findUnique({ where: { id }, include: INCLUDE });
     } catch (err) {
-      log95.error("getById", err);
+      log96.error("getById", err);
       throw err;
     }
   });
@@ -23169,7 +23449,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         include: INCLUDE
       });
     } catch (err) {
-      log95.error("create", err);
+      log96.error("create", err);
       throw err;
     }
   });
@@ -23181,7 +23461,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         data = { ...data, endDate: new Date(data.endDate) };
       return prisma2.gymSubscription.update({ where: { id }, data, include: INCLUDE });
     } catch (err) {
-      log95.error("update", err);
+      log96.error("update", err);
       throw err;
     }
   });
@@ -23190,7 +23470,7 @@ function registerGymSubscriptionHandlers(prisma2) {
       await prisma2.gymSubscription.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log95.error("delete", err);
+      log96.error("delete", err);
       throw err;
     }
   });
@@ -23226,7 +23506,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         })
       ]);
     } catch (err) {
-      log95.error("freeze", err);
+      log96.error("freeze", err);
       throw err;
     }
   });
@@ -23243,7 +23523,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         include: INCLUDE
       });
     } catch (err) {
-      log95.error("unfreeze", err);
+      log96.error("unfreeze", err);
       throw err;
     }
   });
@@ -23251,7 +23531,7 @@ function registerGymSubscriptionHandlers(prisma2) {
 
 // src/plugins/gym/handlers/sessions.ts
 init_electron_node();
-var log96 = createLogger("Gym:Sessions");
+var log97 = createLogger("Gym:Sessions");
 function getPeriodRange3(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -23314,7 +23594,7 @@ function registerGymSessionHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log96.error("getAll", err);
+      log97.error("getAll", err);
       throw err;
     }
   });
@@ -23328,7 +23608,7 @@ function registerGymSessionHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log96.error("create", err);
+      log97.error("create", err);
       throw err;
     }
   });
@@ -23337,7 +23617,7 @@ function registerGymSessionHandlers(prisma2) {
       await prisma2.gymWalkSession.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log96.error("delete", err);
+      log97.error("delete", err);
       throw err;
     }
   });
@@ -23363,7 +23643,7 @@ function registerGymSessionHandlers(prisma2) {
       }
       return byDay;
     } catch (err) {
-      log96.error("getCalendar", err);
+      log97.error("getCalendar", err);
       throw err;
     }
   });
@@ -23371,7 +23651,7 @@ function registerGymSessionHandlers(prisma2) {
 
 // src/plugins/gym/handlers/expenses.ts
 init_electron_node();
-var log97 = createLogger("Gym:Expenses");
+var log98 = createLogger("Gym:Expenses");
 function getPeriodRange4(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -23418,7 +23698,7 @@ function registerGymExpenseHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log97.error("getAll", err);
+      log98.error("getAll", err);
       throw err;
     }
   });
@@ -23436,7 +23716,7 @@ function registerGymExpenseHandlers(prisma2) {
       const byCategory = Object.entries(catMap).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total);
       return { totalExpenses, byCategory };
     } catch (err) {
-      log97.error("summary", err);
+      log98.error("summary", err);
       throw err;
     }
   });
@@ -23444,7 +23724,7 @@ function registerGymExpenseHandlers(prisma2) {
     try {
       return prisma2.gymExpense.create({ data: { ...data, date: new Date(data.date) } });
     } catch (err) {
-      log97.error("create", err);
+      log98.error("create", err);
       throw err;
     }
   });
@@ -23452,7 +23732,7 @@ function registerGymExpenseHandlers(prisma2) {
     try {
       return prisma2.gymExpense.update({ where: { id }, data: { ...data, date: data.date ? new Date(data.date) : void 0 } });
     } catch (err) {
-      log97.error("update", err);
+      log98.error("update", err);
       throw err;
     }
   });
@@ -23461,7 +23741,7 @@ function registerGymExpenseHandlers(prisma2) {
       await prisma2.gymExpense.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log97.error("delete", err);
+      log98.error("delete", err);
       throw err;
     }
   });
@@ -23469,7 +23749,7 @@ function registerGymExpenseHandlers(prisma2) {
 
 // src/plugins/gym/handlers/stats.ts
 init_electron_node();
-var log98 = createLogger("Gym:Stats");
+var log99 = createLogger("Gym:Stats");
 function getPeriodRange5(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -23582,7 +23862,7 @@ function registerGymStatsHandlers(prisma2) {
         anonymousWalkInsToday
       };
     } catch (err) {
-      log98.error("overview", err);
+      log99.error("overview", err);
       throw err;
     }
   });
@@ -23590,7 +23870,7 @@ function registerGymStatsHandlers(prisma2) {
 
 // src/plugins/gym/handlers/alerts.ts
 init_electron_node();
-var log99 = createLogger("Gym:Alerts");
+var log100 = createLogger("Gym:Alerts");
 function registerGymAlertHandlers(prisma2) {
   ipcMain.handle("gym:alerts:atRisk", async (_e, thresholdDays = 14) => {
     try {
@@ -23629,7 +23909,7 @@ function registerGymAlertHandlers(prisma2) {
       results.sort((a, b) => b.daysSince - a.daysSince);
       return results;
     } catch (err) {
-      log99.error("atRisk", err);
+      log100.error("atRisk", err);
       throw err;
     }
   });
@@ -23637,7 +23917,7 @@ function registerGymAlertHandlers(prisma2) {
 
 // src/plugins/gym/handlers/measurements.ts
 init_electron_node();
-var log100 = createLogger("Gym:Measurements");
+var log101 = createLogger("Gym:Measurements");
 function registerGymMeasurementHandlers(prisma2) {
   ipcMain.handle("gym:measurements:getAll", async (_e, traineeId) => {
     try {
@@ -23646,7 +23926,7 @@ function registerGymMeasurementHandlers(prisma2) {
         orderBy: { date: "desc" }
       });
     } catch (err) {
-      log100.error("getAll", err);
+      log101.error("getAll", err);
       throw err;
     }
   });
@@ -23656,7 +23936,7 @@ function registerGymMeasurementHandlers(prisma2) {
         data: { ...data, date: data.date ? new Date(data.date) : /* @__PURE__ */ new Date() }
       });
     } catch (err) {
-      log100.error("create", err);
+      log101.error("create", err);
       throw err;
     }
   });
@@ -23666,7 +23946,7 @@ function registerGymMeasurementHandlers(prisma2) {
         data = { ...data, date: new Date(data.date) };
       return prisma2.gymMeasurement.update({ where: { id }, data });
     } catch (err) {
-      log100.error("update", err);
+      log101.error("update", err);
       throw err;
     }
   });
@@ -23675,7 +23955,7 @@ function registerGymMeasurementHandlers(prisma2) {
       await prisma2.gymMeasurement.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log100.error("delete", err);
+      log101.error("delete", err);
       throw err;
     }
   });
@@ -23683,7 +23963,7 @@ function registerGymMeasurementHandlers(prisma2) {
 
 // src/plugins/gym/handlers/goals.ts
 init_electron_node();
-var log101 = createLogger("Gym:Goals");
+var log102 = createLogger("Gym:Goals");
 function registerGymGoalHandlers(prisma2) {
   ipcMain.handle("gym:goals:getAll", async (_e, traineeId) => {
     try {
@@ -23692,7 +23972,7 @@ function registerGymGoalHandlers(prisma2) {
         orderBy: [{ status: "asc" }, { createdAt: "desc" }]
       });
     } catch (err) {
-      log101.error("getAll", err);
+      log102.error("getAll", err);
       throw err;
     }
   });
@@ -23702,7 +23982,7 @@ function registerGymGoalHandlers(prisma2) {
         data = { ...data, deadline: new Date(data.deadline) };
       return prisma2.gymGoal.create({ data });
     } catch (err) {
-      log101.error("create", err);
+      log102.error("create", err);
       throw err;
     }
   });
@@ -23712,7 +23992,7 @@ function registerGymGoalHandlers(prisma2) {
         data = { ...data, deadline: new Date(data.deadline) };
       return prisma2.gymGoal.update({ where: { id }, data });
     } catch (err) {
-      log101.error("update", err);
+      log102.error("update", err);
       throw err;
     }
   });
@@ -23721,7 +24001,7 @@ function registerGymGoalHandlers(prisma2) {
       await prisma2.gymGoal.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log101.error("delete", err);
+      log102.error("delete", err);
       throw err;
     }
   });
@@ -23729,7 +24009,7 @@ function registerGymGoalHandlers(prisma2) {
     try {
       return prisma2.gymGoal.update({ where: { id }, data: { status: "achieved" } });
     } catch (err) {
-      log101.error("markAchieved", err);
+      log102.error("markAchieved", err);
       throw err;
     }
   });
@@ -23737,7 +24017,7 @@ function registerGymGoalHandlers(prisma2) {
 
 // src/plugins/gym/handlers/shifts.ts
 init_electron_node();
-var log102 = createLogger("Gym:Shifts");
+var log103 = createLogger("Gym:Shifts");
 function registerGymShiftHandlers(prisma2) {
   ipcMain.handle("gym:shifts:getAll", async (_e, params) => {
     try {
@@ -23756,7 +24036,7 @@ function registerGymShiftHandlers(prisma2) {
         orderBy: [{ date: "asc" }, { startTime: "asc" }]
       });
     } catch (err) {
-      log102.error("getAll", err);
+      log103.error("getAll", err);
       throw err;
     }
   });
@@ -23767,7 +24047,7 @@ function registerGymShiftHandlers(prisma2) {
         include: { coach: { select: { id: true, name: true } } }
       });
     } catch (err) {
-      log102.error("create", err);
+      log103.error("create", err);
       throw err;
     }
   });
@@ -23781,7 +24061,7 @@ function registerGymShiftHandlers(prisma2) {
         include: { coach: { select: { id: true, name: true } } }
       });
     } catch (err) {
-      log102.error("update", err);
+      log103.error("update", err);
       throw err;
     }
   });
@@ -23790,7 +24070,7 @@ function registerGymShiftHandlers(prisma2) {
       await prisma2.gymShift.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log102.error("delete", err);
+      log103.error("delete", err);
       throw err;
     }
   });
@@ -23798,7 +24078,7 @@ function registerGymShiftHandlers(prisma2) {
 
 // src/plugins/gym/handlers/lockers.ts
 init_electron_node();
-var log103 = createLogger("Gym:Lockers");
+var log104 = createLogger("Gym:Lockers");
 var INCLUDE2 = {
   assignments: {
     where: { isActive: true },
@@ -23817,7 +24097,7 @@ function registerGymLockerHandlers(prisma2) {
         orderBy: [{ zone: "asc" }, { number: "asc" }]
       });
     } catch (err) {
-      log103.error("getAll", err);
+      log104.error("getAll", err);
       throw err;
     }
   });
@@ -23825,7 +24105,7 @@ function registerGymLockerHandlers(prisma2) {
     try {
       return prisma2.gymLocker.create({ data, include: INCLUDE2 });
     } catch (err) {
-      log103.error("create", err);
+      log104.error("create", err);
       throw err;
     }
   });
@@ -23833,7 +24113,7 @@ function registerGymLockerHandlers(prisma2) {
     try {
       return prisma2.gymLocker.update({ where: { id }, data, include: INCLUDE2 });
     } catch (err) {
-      log103.error("update", err);
+      log104.error("update", err);
       throw err;
     }
   });
@@ -23842,7 +24122,7 @@ function registerGymLockerHandlers(prisma2) {
       await prisma2.gymLocker.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log103.error("delete", err);
+      log104.error("delete", err);
       throw err;
     }
   });
@@ -23864,7 +24144,7 @@ function registerGymLockerHandlers(prisma2) {
       });
       return prisma2.gymLocker.findUnique({ where: { id: lockerId }, include: INCLUDE2 });
     } catch (err) {
-      log103.error("assign", err);
+      log104.error("assign", err);
       throw err;
     }
   });
@@ -23876,7 +24156,7 @@ function registerGymLockerHandlers(prisma2) {
       });
       return prisma2.gymLocker.findUnique({ where: { id: lockerId }, include: INCLUDE2 });
     } catch (err) {
-      log103.error("unassign", err);
+      log104.error("unassign", err);
       throw err;
     }
   });
@@ -23884,7 +24164,7 @@ function registerGymLockerHandlers(prisma2) {
 
 // src/plugins/gym/handlers/programs.ts
 init_electron_node();
-var log104 = createLogger("Gym:Programs");
+var log105 = createLogger("Gym:Programs");
 var DAY_INCLUDE = { exercises: { orderBy: { order: "asc" } } };
 var FULL_INCLUDE = {
   coach: { select: { id: true, name: true } },
@@ -23911,7 +24191,7 @@ function registerGymProgramHandlers(prisma2) {
         orderBy: { createdAt: "desc" }
       });
     } catch (err) {
-      log104.error("getAll", err);
+      log105.error("getAll", err);
       throw err;
     }
   });
@@ -23919,7 +24199,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgram.findUnique({ where: { id }, include: FULL_INCLUDE });
     } catch (err) {
-      log104.error("getById", err);
+      log105.error("getById", err);
       throw err;
     }
   });
@@ -23928,7 +24208,7 @@ function registerGymProgramHandlers(prisma2) {
       const { days: _d, assignments: _a, ...rest } = data;
       return prisma2.gymProgram.create({ data: rest, include: FULL_INCLUDE });
     } catch (err) {
-      log104.error("create", err);
+      log105.error("create", err);
       throw err;
     }
   });
@@ -23937,7 +24217,7 @@ function registerGymProgramHandlers(prisma2) {
       const { days: _d, assignments: _a, coach: _c, ...rest } = data;
       return prisma2.gymProgram.update({ where: { id }, data: rest, include: FULL_INCLUDE });
     } catch (err) {
-      log104.error("update", err);
+      log105.error("update", err);
       throw err;
     }
   });
@@ -23946,7 +24226,7 @@ function registerGymProgramHandlers(prisma2) {
       await prisma2.gymProgram.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log104.error("delete", err);
+      log105.error("delete", err);
       throw err;
     }
   });
@@ -23954,7 +24234,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgramDay.create({ data: { ...data, programId }, include: DAY_INCLUDE });
     } catch (err) {
-      log104.error("addDay", err);
+      log105.error("addDay", err);
       throw err;
     }
   });
@@ -23963,7 +24243,7 @@ function registerGymProgramHandlers(prisma2) {
       const { exercises: _e2, ...rest } = data;
       return prisma2.gymProgramDay.update({ where: { id }, data: rest, include: DAY_INCLUDE });
     } catch (err) {
-      log104.error("updateDay", err);
+      log105.error("updateDay", err);
       throw err;
     }
   });
@@ -23972,7 +24252,7 @@ function registerGymProgramHandlers(prisma2) {
       await prisma2.gymProgramDay.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log104.error("deleteDay", err);
+      log105.error("deleteDay", err);
       throw err;
     }
   });
@@ -23980,7 +24260,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgramExercise.create({ data: { ...data, dayId } });
     } catch (err) {
-      log104.error("addExercise", err);
+      log105.error("addExercise", err);
       throw err;
     }
   });
@@ -23988,7 +24268,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgramExercise.update({ where: { id }, data });
     } catch (err) {
-      log104.error("updateExercise", err);
+      log105.error("updateExercise", err);
       throw err;
     }
   });
@@ -23997,7 +24277,7 @@ function registerGymProgramHandlers(prisma2) {
       await prisma2.gymProgramExercise.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log104.error("deleteExercise", err);
+      log105.error("deleteExercise", err);
       throw err;
     }
   });
@@ -24018,7 +24298,7 @@ function registerGymProgramHandlers(prisma2) {
         include: { trainee: { select: { id: true, name: true } }, program: { select: { id: true, name: true } } }
       });
     } catch (err) {
-      log104.error("assign", err);
+      log105.error("assign", err);
       throw err;
     }
   });
@@ -24030,7 +24310,7 @@ function registerGymProgramHandlers(prisma2) {
       });
       return { success: true };
     } catch (err) {
-      log104.error("unassign", err);
+      log105.error("unassign", err);
       throw err;
     }
   });
@@ -24042,7 +24322,7 @@ function registerGymProgramHandlers(prisma2) {
         orderBy: { createdAt: "desc" }
       });
     } catch (err) {
-      log104.error("getAssignments", err);
+      log105.error("getAssignments", err);
       throw err;
     }
   });
@@ -24067,7 +24347,7 @@ function registerGymHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/products.ts
 init_electron_node();
-var log105 = createLogger("Pharmacy:Products");
+var log106 = createLogger("Pharmacy:Products");
 var DEFAULT_CATEGORIES2 = [
   "general",
   "antibiotic",
@@ -24156,7 +24436,7 @@ function registerPharmacyProductHandlers(prisma2) {
       const data = enriched.slice(skip, skip + take);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log105.error("products:getAll", err);
+      log106.error("products:getAll", err);
       throw err;
     }
   });
@@ -24167,7 +24447,7 @@ function registerPharmacyProductHandlers(prisma2) {
         include: { batches: { orderBy: { expiryDate: "asc" } } }
       });
     } catch (err) {
-      log105.error("products:getById", err);
+      log106.error("products:getById", err);
       throw err;
     }
   });
@@ -24193,7 +24473,7 @@ function registerPharmacyProductHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log105.error("products:create", err);
+      log106.error("products:create", err);
       throw err;
     }
   });
@@ -24226,7 +24506,7 @@ function registerPharmacyProductHandlers(prisma2) {
         patch.isActive = !!data.isActive;
       return await prisma2.pharmacyProduct.update({ where: { id }, data: patch });
     } catch (err) {
-      log105.error("products:update", err);
+      log106.error("products:update", err);
       throw err;
     }
   });
@@ -24240,7 +24520,7 @@ function registerPharmacyProductHandlers(prisma2) {
       await prisma2.pharmacyProduct.delete({ where: { id } });
       return { success: true, softDeleted: false };
     } catch (err) {
-      log105.error("products:delete", err);
+      log106.error("products:delete", err);
       throw err;
     }
   });
@@ -24253,7 +24533,7 @@ function registerPharmacyProductHandlers(prisma2) {
       const used = rows.map((r) => r.category).filter(Boolean);
       return Array.from(/* @__PURE__ */ new Set([...DEFAULT_CATEGORIES2, ...used])).sort();
     } catch (err) {
-      log105.error("products:getCategories", err);
+      log106.error("products:getCategories", err);
       throw err;
     }
   });
@@ -24368,7 +24648,7 @@ function registerPharmacyProductHandlers(prisma2) {
         }
       };
     } catch (err) {
-      log105.error("products:getHistory", err);
+      log106.error("products:getHistory", err);
       throw err;
     }
   });
@@ -24377,7 +24657,7 @@ function registerPharmacyProductHandlers(prisma2) {
 // src/plugins/pharmacy/handlers/batches.ts
 init_electron_node();
 init_session();
-var log106 = createLogger("Pharmacy:Batches");
+var log107 = createLogger("Pharmacy:Batches");
 var AUDIT_FIELDS2 = [
   { key: "quantity", label: "Quantity", type: "num" },
   { key: "costPerUnit", label: "Cost/unit", type: "num" },
@@ -24412,7 +24692,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         orderBy: { expiryDate: "asc" }
       });
     } catch (err) {
-      log106.error("batches:getByProduct", err);
+      log107.error("batches:getByProduct", err);
       throw err;
     }
   });
@@ -24440,7 +24720,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log106.error("batches:add", err);
+      log107.error("batches:add", err);
       throw err;
     }
   });
@@ -24478,11 +24758,11 @@ function registerPharmacyBatchHandlers(prisma2) {
           });
         }
       } catch (auditErr) {
-        log106.warn("batches:update audit skipped", auditErr);
+        log107.warn("batches:update audit skipped", auditErr);
       }
       return updated;
     } catch (err) {
-      log106.error("batches:update", err);
+      log107.error("batches:update", err);
       throw err;
     }
   });
@@ -24494,7 +24774,7 @@ function registerPharmacyBatchHandlers(prisma2) {
       await prisma2.pharmacyBatch.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log106.error("batches:delete", err);
+      log107.error("batches:delete", err);
       throw err;
     }
   });
@@ -24554,11 +24834,11 @@ function registerPharmacyBatchHandlers(prisma2) {
           }
         });
       } catch (auditErr) {
-        log106.warn("batches:adjust audit skipped", auditErr);
+        log107.warn("batches:adjust audit skipped", auditErr);
       }
       return { batch: updated, from: current, to: next };
     } catch (err) {
-      log106.error("batches:adjust", err);
+      log107.error("batches:adjust", err);
       throw err;
     }
   });
@@ -24583,7 +24863,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log106.error("batches:dispose", err);
+      log107.error("batches:dispose", err);
       throw err;
     }
   });
@@ -24608,7 +24888,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         };
       }).filter((b) => params?.includeExpired === false ? !b.isExpired : true);
     } catch (err) {
-      log106.error("batches:getExpiring", err);
+      log107.error("batches:getExpiring", err);
       throw err;
     }
   });
@@ -24617,7 +24897,7 @@ function registerPharmacyBatchHandlers(prisma2) {
 // src/plugins/pharmacy/handlers/sales.ts
 init_electron_node();
 init_session();
-var log107 = createLogger("Pharmacy:Sales");
+var log108 = createLogger("Pharmacy:Sales");
 function paymentStatusFor(total, paid) {
   if (paid >= total - 5e-3)
     return "paid";
@@ -24735,7 +25015,7 @@ function registerPharmacySaleHandlers(prisma2) {
         return sale;
       });
     } catch (err) {
-      log107.error("sales:create", err);
+      log108.error("sales:create", err);
       throw err;
     }
   });
@@ -24777,7 +25057,7 @@ function registerPharmacySaleHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log107.error("sales:getAll", err);
+      log108.error("sales:getAll", err);
       throw err;
     }
   });
@@ -24788,7 +25068,7 @@ function registerPharmacySaleHandlers(prisma2) {
         include: { items: { include: { batch: { select: { batchNumber: true, expiryDate: true } } } } }
       });
     } catch (err) {
-      log107.error("sales:getById", err);
+      log108.error("sales:getById", err);
       throw err;
     }
   });
@@ -24812,7 +25092,7 @@ function registerPharmacySaleHandlers(prisma2) {
         data: { amountPaid: newPaid, paymentStatus: paymentStatusFor(net, newPaid) }
       });
     } catch (err) {
-      log107.error("sales:updatePayment", err);
+      log108.error("sales:updatePayment", err);
       throw err;
     }
   });
@@ -24855,7 +25135,7 @@ function registerPharmacySaleHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log107.error("sales:refund", err);
+      log108.error("sales:refund", err);
       throw err;
     }
   });
@@ -24894,7 +25174,7 @@ function registerPharmacySaleHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log107.error("sales:refundItem", err);
+      log108.error("sales:refundItem", err);
       throw err;
     }
   });
@@ -24902,7 +25182,7 @@ function registerPharmacySaleHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/suppliers.ts
 init_electron_node();
-var log108 = createLogger("Pharmacy:Suppliers");
+var log109 = createLogger("Pharmacy:Suppliers");
 function registerPharmacySupplierHandlers(prisma2) {
   ipcMain.handle("pharmacy:suppliers:getAll", async (_e, params) => {
     try {
@@ -24918,7 +25198,7 @@ function registerPharmacySupplierHandlers(prisma2) {
       });
       return rows.map((s) => ({ ...s, orderCount: s._count.orders, batchCount: s._count.batches, _count: void 0 }));
     } catch (err) {
-      log108.error("suppliers:getAll", err);
+      log109.error("suppliers:getAll", err);
       throw err;
     }
   });
@@ -24926,7 +25206,7 @@ function registerPharmacySupplierHandlers(prisma2) {
     try {
       return await prisma2.pharmacySupplier.findUnique({ where: { id } });
     } catch (err) {
-      log108.error("suppliers:getById", err);
+      log109.error("suppliers:getById", err);
       throw err;
     }
   });
@@ -24945,7 +25225,7 @@ function registerPharmacySupplierHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log108.error("suppliers:create", err);
+      log109.error("suppliers:create", err);
       throw err;
     }
   });
@@ -24960,7 +25240,7 @@ function registerPharmacySupplierHandlers(prisma2) {
         throw new Error("Supplier name is required");
       return await prisma2.pharmacySupplier.update({ where: { id }, data: patch });
     } catch (err) {
-      log108.error("suppliers:update", err);
+      log109.error("suppliers:update", err);
       throw err;
     }
   });
@@ -24969,7 +25249,7 @@ function registerPharmacySupplierHandlers(prisma2) {
       await prisma2.pharmacySupplier.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log108.error("suppliers:delete", err);
+      log109.error("suppliers:delete", err);
       throw err;
     }
   });
@@ -24978,7 +25258,7 @@ function registerPharmacySupplierHandlers(prisma2) {
 // src/plugins/pharmacy/handlers/purchaseOrders.ts
 init_electron_node();
 init_session();
-var log109 = createLogger("Pharmacy:PurchaseOrders");
+var log110 = createLogger("Pharmacy:PurchaseOrders");
 function computeTotal(items) {
   return Math.round(items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.costPerUnit) || 0), 0) * 100) / 100;
 }
@@ -25011,7 +25291,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
       });
       return { data: data.map((o) => ({ ...o, itemCount: o._count.items, _count: void 0 })), total, hasMore: skip + take < total };
     } catch (err) {
-      log109.error("purchaseOrders:getAll", err);
+      log110.error("purchaseOrders:getAll", err);
       throw err;
     }
   });
@@ -25022,7 +25302,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
         include: { supplier: true, items: { orderBy: { createdAt: "asc" } } }
       });
     } catch (err) {
-      log109.error("purchaseOrders:getById", err);
+      log110.error("purchaseOrders:getById", err);
       throw err;
     }
   });
@@ -25055,7 +25335,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
         include: { items: true, supplier: true }
       });
     } catch (err) {
-      log109.error("purchaseOrders:create", err);
+      log110.error("purchaseOrders:create", err);
       throw err;
     }
   });
@@ -25091,7 +25371,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
       }
       return await prisma2.pharmacyPurchaseOrder.update({ where: { id }, data: patch, include: { items: true, supplier: true } });
     } catch (err) {
-      log109.error("purchaseOrders:update", err);
+      log110.error("purchaseOrders:update", err);
       throw err;
     }
   });
@@ -25133,7 +25413,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
         return { ...updated, createdBatches };
       });
     } catch (err) {
-      log109.error("purchaseOrders:receive", err);
+      log110.error("purchaseOrders:receive", err);
       throw err;
     }
   });
@@ -25142,7 +25422,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
       await prisma2.pharmacyPurchaseOrder.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log109.error("purchaseOrders:delete", err);
+      log110.error("purchaseOrders:delete", err);
       throw err;
     }
   });
@@ -25150,7 +25430,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/stats.ts
 init_electron_node();
-var log110 = createLogger("Pharmacy:Stats");
+var log111 = createLogger("Pharmacy:Stats");
 function startOfPeriod(period) {
   const now = /* @__PURE__ */ new Date();
   const d = new Date(now);
@@ -25304,7 +25584,7 @@ function registerPharmacyStatsHandlers(prisma2) {
         sales: periodSales
       };
     } catch (err) {
-      log110.error("stats:overview", err);
+      log111.error("stats:overview", err);
       throw err;
     }
   });
@@ -25316,7 +25596,7 @@ function registerPharmacyStatsHandlers(prisma2) {
       const outstanding = await outstandingTotal(prisma2);
       return { ...agg, outstanding };
     } catch (err) {
-      log110.error("stats:salesSummary", err);
+      log111.error("stats:salesSummary", err);
       throw err;
     }
   });
@@ -25350,7 +25630,7 @@ function registerPharmacyStatsHandlers(prisma2) {
         byCategory: Object.entries(byCategory).map(([category, v]) => ({ category, value: Math.round(v.value * 100) / 100, count: v.count })).sort((a, b) => b.value - a.value)
       };
     } catch (err) {
-      log110.error("stats:inventory", err);
+      log111.error("stats:inventory", err);
       throw err;
     }
   });
@@ -25412,7 +25692,7 @@ function registerPharmacyStatsHandlers(prisma2) {
         expired: Number(batchRows[0]?.expired) || 0
       };
     } catch (err) {
-      log110.error("stats:cashflow", err);
+      log111.error("stats:cashflow", err);
       throw err;
     }
   });
@@ -25420,7 +25700,7 @@ function registerPharmacyStatsHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/customers.ts
 init_electron_node();
-var log111 = createLogger("Pharmacy:Customers");
+var log112 = createLogger("Pharmacy:Customers");
 function outstandingOf(sale) {
   if (sale.status === "refunded")
     return 0;
@@ -25460,7 +25740,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         };
       });
     } catch (err) {
-      log111.error("customers:getAll", err);
+      log112.error("customers:getAll", err);
       throw err;
     }
   });
@@ -25475,7 +25755,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         select: { id: true, name: true, phone: true, defaultDiscount: true }
       });
     } catch (err) {
-      log111.error("customers:searchLite", err);
+      log112.error("customers:searchLite", err);
       throw err;
     }
   });
@@ -25511,7 +25791,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         sales
       };
     } catch (err) {
-      log111.error("customers:profile", err);
+      log112.error("customers:profile", err);
       throw err;
     }
   });
@@ -25531,7 +25811,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log111.error("customers:create", err);
+      log112.error("customers:create", err);
       throw err;
     }
   });
@@ -25547,7 +25827,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         patch.defaultDiscount = Number(data.defaultDiscount) || 0;
       return await prisma2.pharmacyCustomer.update({ where: { id }, data: patch });
     } catch (err) {
-      log111.error("customers:update", err);
+      log112.error("customers:update", err);
       throw err;
     }
   });
@@ -25557,7 +25837,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
       await prisma2.pharmacyCustomer.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log111.error("customers:delete", err);
+      log112.error("customers:delete", err);
       throw err;
     }
   });
@@ -25592,7 +25872,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         return { applied: Math.round(applied * 100) / 100, settledCount };
       });
     } catch (err) {
-      log111.error("customers:settle", err);
+      log112.error("customers:settle", err);
       throw err;
     }
   });
@@ -25611,16 +25891,16 @@ function registerPharmacyHandlers(prisma2) {
 
 // src/main/database/seed-production.ts
 var import_bcryptjs2 = __toESM(require_bcryptjs());
-var log112 = createLogger("DBSeed");
+var log113 = createLogger("DBSeed");
 async function seedProductionDatabase(prisma2) {
-  log112.info("[DB Seed] \u{1F331} Starting first-run database seeding (minimal)...");
+  log113.info("[DB Seed] \u{1F331} Starting first-run database seeding (minimal)...");
   try {
     const userCount = await prisma2.user.count();
     if (userCount > 0) {
-      log112.info("[DB Seed] \u2139\uFE0F Database already seeded, skipping...");
+      log113.info("[DB Seed] \u2139\uFE0F Database already seeded, skipping...");
       return;
     }
-    log112.info("[DB Seed] Creating default setup admin user (minimal seed)...");
+    log113.info("[DB Seed] Creating default setup admin user (minimal seed)...");
     const adminUser = await prisma2.user.create({
       data: {
         username: "setup",
@@ -25631,12 +25911,12 @@ async function seedProductionDatabase(prisma2) {
         isActive: true
       }
     });
-    log112.info("[DB Seed] \u2705 Created default setup admin user:", adminUser.username);
-    log112.info("[DB Seed] \u{1F389} Minimal first-run seeding completed!");
-    log112.info('[DB Seed] \u{1F4DD} Login with username: "setup", password: "setup123"');
-    log112.info("[DB Seed] \u26A0\uFE0F  IMPORTANT: Use this account ONLY to create your permanent admin, then delete it!");
+    log113.info("[DB Seed] \u2705 Created default setup admin user:", adminUser.username);
+    log113.info("[DB Seed] \u{1F389} Minimal first-run seeding completed!");
+    log113.info('[DB Seed] \u{1F4DD} Login with username: "setup", password: "setup123"');
+    log113.info("[DB Seed] \u26A0\uFE0F  IMPORTANT: Use this account ONLY to create your permanent admin, then delete it!");
   } catch (error) {
-    log112.error("[DB Seed] \u274C Error seeding database:", error);
+    log113.error("[DB Seed] \u274C Error seeding database:", error);
     throw error;
   }
 }

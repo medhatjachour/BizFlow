@@ -61,7 +61,21 @@ async function applyColumnMigrations(prisma: any): Promise<void> {
       table: 'ClinicSession',
       column: 'dentalChart',
       sql: `ALTER TABLE "ClinicSession" ADD COLUMN "dentalChart" TEXT`
-    }
+    },
+    // ─── Multi-doctor feature (additive, nullable — safe on existing rows) ─────
+    { table: 'ClinicPatient',     column: 'primaryDoctorId', sql: `ALTER TABLE "ClinicPatient" ADD COLUMN "primaryDoctorId" TEXT` },
+    { table: 'ClinicSession',     column: 'doctorId',        sql: `ALTER TABLE "ClinicSession" ADD COLUMN "doctorId" TEXT` },
+    { table: 'ClinicAppointment', column: 'doctorId',        sql: `ALTER TABLE "ClinicAppointment" ADD COLUMN "doctorId" TEXT` },
+    { table: 'ClinicStaff',       column: 'specialty',       sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "specialty" TEXT` },
+    { table: 'ClinicStaff',       column: 'title',           sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "title" TEXT` },
+    { table: 'ClinicStaff',       column: 'licenseNo',       sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "licenseNo" TEXT` },
+    { table: 'ClinicStaff',       column: 'bio',             sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "bio" TEXT` },
+    { table: 'ClinicStaff',       column: 'avatarColor',     sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "avatarColor" TEXT` },
+    { table: 'ClinicStaff',       column: 'roomNumber',      sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "roomNumber" TEXT` },
+    { table: 'ClinicStaff',       column: 'consultationFee', sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "consultationFee" REAL` },
+    { table: 'ClinicStaff',       column: 'commissionPct',   sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "commissionPct" REAL` },
+    { table: 'ClinicStaff',       column: 'isDefault',       sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "isDefault" BOOLEAN NOT NULL DEFAULT false` },
+    { table: 'ClinicStaff',       column: 'workingHours',    sql: `ALTER TABLE "ClinicStaff" ADD COLUMN "workingHours" TEXT` }
   ]
 
   for (const m of columnMigrations) {
@@ -76,6 +90,40 @@ async function applyColumnMigrations(prisma: any): Promise<void> {
     } catch (err) {
       log.warn(`⚠️  Column migration ${m.table}.${m.column} skipped:`, err)
     }
+  }
+
+  // ─── Backfill doctorId from the legacy free-text doctorName ─────────────────
+  // Links existing sessions/appointments to a matching ClinicStaff doctor by name
+  // (case-insensitive). Idempotent: only touches rows where doctorId IS NULL.
+  // Never creates or deletes doctors — purely a link-up, safe to run every boot.
+  await backfillDoctorLinks(prisma)
+}
+
+async function backfillDoctorLinks(prisma: any): Promise<void> {
+  try {
+    const doctors: Array<{ id: string; name: string }> = await prisma.$queryRawUnsafe(
+      `SELECT id, name FROM "ClinicStaff" WHERE role = 'doctor'`
+    )
+    if (!doctors.length) return
+    const byName = new Map<string, string>()
+    for (const d of doctors) byName.set(d.name.trim().toLowerCase(), d.id)
+
+    for (const table of ['ClinicSession', 'ClinicAppointment']) {
+      const rows: Array<{ id: string; doctorName: string | null }> = await prisma.$queryRawUnsafe(
+        `SELECT id, doctorName FROM "${table}" WHERE doctorId IS NULL AND doctorName IS NOT NULL AND doctorName <> ''`
+      )
+      for (const r of rows) {
+        const match = byName.get((r.doctorName ?? '').trim().toLowerCase())
+        if (match) {
+          await prisma.$executeRawUnsafe(
+            `UPDATE "${table}" SET doctorId = ? WHERE id = ?`, match, r.id
+          )
+        }
+      }
+    }
+    log.info('✅ Doctor links backfilled from doctorName')
+  } catch (err) {
+    log.warn('⚠️  Doctor link backfill skipped:', err)
   }
 }
 

@@ -470,6 +470,7 @@ interface API {
       monthlyTrend: (months?: number) => Promise<any>
       breakdowns: () => Promise<any>
       patientStats: (patientId: string) => Promise<any>
+      byDoctor: (params?: { from?: string; to?: string }) => Promise<any[]>
     }
     checkResults: {
       getByPatient: (patientId: string) => Promise<any>
@@ -522,6 +523,12 @@ interface API {
         markPaid: (id: string) => Promise<any>
         delete: (id: string) => Promise<{ success: boolean }>
       }
+    }
+    doctors: {
+      list: () => Promise<any[]>
+      setDefault: (id: string) => Promise<{ success: boolean }>
+      setAvailability: (id: string, workingHours: any) => Promise<any>
+      getProfile: (params: { id: string; from?: string; to?: string }) => Promise<any>
     }
     materialCategories: {
       getAll: () => Promise<Array<{ id: string; name: string; color: string; sortOrder: number; createdAt: string; updatedAt: string }>>

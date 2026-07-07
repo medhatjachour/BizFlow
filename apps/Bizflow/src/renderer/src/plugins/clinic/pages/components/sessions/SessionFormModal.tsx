@@ -12,6 +12,7 @@ import type {
   LabCheckRow, SessionMaterialRow, PrescriptionRow, Props
 } from './sessionForm.types'
 import { APPT_TO_VISIT_TYPE, toDatetimeLocal, emptyRx, parseVitals, computePaymentStatus } from './sessionForm.shared'
+import { resolveDefaultDoctorId, isSingleDoctorMode, displayName as doctorDisplayName } from '../doctors/doctors.shared'
 
 export default function SessionFormModal({ existingSession, defaultPatient, defaultAppointment, onClose, onSaved }: Props) {
   const { t } = useLanguage()
@@ -36,38 +37,23 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
     () => [...LAB_CHECKS.filter(l => !customLabs.hiddenDefaults.includes(l)), ...customLabs.items],
     [customLabs.items, customLabs.hiddenDefaults]
   )
-  const [doctorSuggestions, setDoctorSuggestions] = useState<string[]>([])
-  const [showDoctorDropdown, setShowDoctorDropdown] = useState(false)
-  const doctorRef = useRef<HTMLDivElement>(null)
+  const [doctors, setDoctors] = useState<any[]>([])
+  const singleDoctor = isSingleDoctorMode()
 
-  // Load staff + employees and merge into one deduplicated list for autocomplete
+  // Load clinic doctors for the picker; auto-select the default on new sessions
   useEffect(() => {
-    async function loadDoctors() {
-      const [clinicStaff, employees] = await Promise.allSettled([
-        window.api.clinic.staff.getAll(),
-        window.electron.ipcRenderer.invoke('employees:getAll'),
-      ])
-      const staff: string[] = clinicStaff.status === 'fulfilled'
-        ? (clinicStaff.value ?? []).map((s: any) => s.name)
-        : []
-      const emps: string[] = employees.status === 'fulfilled'
-        ? (employees.value ?? []).filter((e: any) => e.status === 'active').map((e: any) => e.name)
-        : []
-      const merged = Array.from(new Set([...staff, ...emps])).sort()
-      setDoctorSuggestions(merged)
-    }
-    loadDoctors().catch(() => {})
-  }, [])
-
-  // Close doctor dropdown on outside click
-  useEffect(() => {
-    function onOutside(e: MouseEvent) {
-      if (doctorRef.current && !doctorRef.current.contains(e.target as Node)) {
-        setShowDoctorDropdown(false)
+    window.api.clinic.doctors.list().then((rows: any[]) => {
+      const list = rows ?? []
+      setDoctors(list)
+      if (!existingSession && !defaultAppointment?.doctorId) {
+        const def = resolveDefaultDoctorId(list)
+        if (def) {
+          const d = list.find((x: any) => x.id === def)
+          setDoctorId(def)
+          if (d) setDoctorName(d.name)
+        }
       }
-    }
-    document.addEventListener('mousedown', onOutside)
-    return () => document.removeEventListener('mousedown', onOutside)
+    }).catch(() => {})
   }, [])
 
   // Determine initial patient (from existing session, defaultPatient, or defaultAppointment)
@@ -130,6 +116,7 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
     ?? (defaultAppointment ? (APPT_TO_VISIT_TYPE[defaultAppointment.type] ?? 'routine') : 'routine')
   )
   const [doctorName, setDoctorName] = useState(existingSession?.doctorName ?? defaultAppointment?.doctorName ?? '')
+  const [doctorId, setDoctorId] = useState(existingSession?.doctorId ?? defaultAppointment?.doctorId ?? '')
   const [chiefComplaint, setChiefComplaint] = useState(existingSession?.chiefComplaint ?? '')
   const [vitals, setVitals] = useState(parseVitals(existingSession?.vitals))
   const [diagnosis, setDiagnosis] = useState(existingSession?.diagnosis ?? '')
@@ -277,6 +264,7 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
         visitDate: visitDate ? new Date(visitDate).toISOString() : new Date().toISOString(),
         visitType,
         doctorName: doctorName || null,
+        doctorId: doctorId || null,
         chiefComplaint,
         vitals: vitalsJson === '{}' ? null : vitalsJson,
         diagnosis: diagnosis || null,
@@ -440,39 +428,33 @@ export default function SessionFormModal({ existingSession, defaultPatient, defa
             </div>
           </div>
 
-          {/* Doctor — type-ahead autocomplete from clinic staff + employees */}
-          <div>
-            <label className={labelCls}>{t('doctorName')}</label>
-            <div className="relative" ref={doctorRef}>
-              <input
+          {/* Doctor — pick from the clinic's doctors (linked, not free-text) */}
+          {!singleDoctor && (
+            <div>
+              <label className={labelCls}>{t('doctorName')}</label>
+              <select
                 className={inputCls}
-                value={doctorName}
-                onChange={(e) => { setDoctorName(e.target.value); setShowDoctorDropdown(true) }}
-                onFocus={() => setShowDoctorDropdown(true)}
-                placeholder={t('optional')}
-                autoComplete="off"
-              />
-              {showDoctorDropdown && (() => {
-                const q = doctorName.trim().toLowerCase()
-                const filtered = q
-                  ? doctorSuggestions.filter(n => n.toLowerCase().includes(q))
-                  : doctorSuggestions
-                return filtered.length > 0 ? (
-                  <ul className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {filtered.map(name => (
-                      <li
-                        key={name}
-                        onMouseDown={(e) => { e.preventDefault(); setDoctorName(name); setShowDoctorDropdown(false) }}
-                        className="px-3 py-2 text-sm text-slate-900 dark:text-white hover:bg-teal-50 dark:hover:bg-teal-900/20 cursor-pointer"
-                      >
-                        {name}
-                      </li>
-                    ))}
-                  </ul>
-                ) : null
-              })()}
+                value={doctorId}
+                onChange={(e) => {
+                  const id = e.target.value
+                  setDoctorId(id)
+                  const d = doctors.find((x: any) => x.id === id)
+                  setDoctorName(d ? d.name : '')
+                }}
+              >
+                <option value="">{t('unassigned') || '— Unassigned —'}</option>
+                {doctors.map((d: any) => (
+                  <option key={d.id} value={d.id}>
+                    {doctorDisplayName(d)}{d.specialty ? ` · ${d.specialty}` : ''}{d.isDefault ? ` ★` : ''}
+                  </option>
+                ))}
+                {/* Legacy free-text doctor with no matching entity */}
+                {doctorName && !doctors.some((d: any) => d.id === doctorId) && (
+                  <option value="">{doctorName} ({t('legacy') || 'legacy'})</option>
+                )}
+              </select>
             </div>
-          </div>
+          )}
 
           {/* Chief complaint */}
           <div>

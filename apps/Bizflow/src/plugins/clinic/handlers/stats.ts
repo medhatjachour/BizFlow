@@ -193,4 +193,54 @@ export function registerStatsHandlers(prisma: any) {
       paymentStatuses: psGroups.map((g: any) => ({ status: g.paymentStatus as string, count: g._count.paymentStatus }))
     }
   })
+
+  // ─── Per-doctor breakdown (revenue, patient load, no-shows) ───────────────
+  ipcMain.handle('clinic:stats:byDoctor', async (_e, params?: { from?: string; to?: string }) => {
+    const now = new Date()
+    const from = params?.from ? new Date(params.from) : new Date(now.getFullYear(), now.getMonth(), 1)
+    const to = params?.to ? new Date(params.to) : now
+
+    const doctors = await prisma.clinicStaff.findMany({
+      where: { role: 'doctor' },
+      select: { id: true, name: true, title: true, specialty: true, avatarColor: true, isDefault: true, commissionPct: true }
+    })
+    if (doctors.length === 0) return []
+    const ids = doctors.map((d: any) => d.id)
+
+    const [sessions, appts] = await Promise.all([
+      prisma.clinicSession.findMany({
+        where: { doctorId: { in: ids }, visitDate: { gte: from, lte: to } },
+        select: { doctorId: true, patientId: true, amountCharged: true, amountPaid: true }
+      }),
+      prisma.clinicAppointment.findMany({
+        where: { doctorId: { in: ids }, appointmentDate: { gte: from, lte: to } },
+        select: { doctorId: true, status: true }
+      })
+    ])
+
+    return doctors.map((d: any) => {
+      const mySessions = sessions.filter((s: any) => s.doctorId === d.id)
+      const myAppts = appts.filter((a: any) => a.doctorId === d.id)
+      const revenue = mySessions.reduce((sum: number, s: any) => sum + (s.amountPaid ?? 0), 0)
+      const charged = mySessions.reduce((sum: number, s: any) => sum + (s.amountCharged ?? 0), 0)
+      const patients = new Set(mySessions.map((s: any) => s.patientId)).size
+      const noShows = myAppts.filter((a: any) => a.status === 'no_show').length
+      return {
+        id: d.id,
+        name: d.name,
+        title: d.title,
+        specialty: d.specialty,
+        avatarColor: d.avatarColor,
+        isDefault: d.isDefault,
+        sessions: mySessions.length,
+        patients,
+        revenue: Math.round(revenue * 100) / 100,
+        outstanding: Math.round((charged - revenue) * 100) / 100,
+        commission: Math.round(revenue * ((d.commissionPct ?? 0) / 100) * 100) / 100,
+        appointments: myAppts.length,
+        noShows,
+        noShowRate: myAppts.length ? Math.round((noShows / myAppts.length) * 1000) / 10 : 0
+      }
+    }).sort((a: any, b: any) => b.revenue - a.revenue)
+  })
 }

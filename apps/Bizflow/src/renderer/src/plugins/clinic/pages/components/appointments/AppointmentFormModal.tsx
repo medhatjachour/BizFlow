@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { X, Calendar, Loader2, Search, AlertTriangle, Clock, DollarSign } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { resolveDefaultDoctorId, isSingleDoctorMode, displayName as doctorDisplayName } from '../doctors/doctors.shared'
 
 interface Props {
   existing?: any | null
@@ -80,6 +81,7 @@ export default function AppointmentFormModal({
     duration:        String(existing?.duration ?? 30),
     type:            existing?.type            ?? 'consultation',
     doctorName:      existing?.doctorName      ?? '',
+    doctorId:        existing?.doctorId        ?? '',
     notes:           existing?.notes           ?? '',
     status:          existing?.status          ?? 'scheduled',
     amountCharged:   String(existing?.amountCharged ?? ''),
@@ -91,7 +93,21 @@ export default function AppointmentFormModal({
   const [searching,     setSearching]     = useState(false)
   const [dayAppts,      setDayAppts]      = useState<any[]>([])
   const [loadingSlots,  setLoadingSlots]  = useState(false)
+  const [doctors,       setDoctors]       = useState<any[]>([])
+  const singleDoctor = isSingleDoctorMode()
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Load doctors for the picker; auto-select the default on new appointments
+  useEffect(() => {
+    window.api.clinic.doctors.list().then((rows: any[]) => {
+      const list = rows ?? []
+      setDoctors(list)
+      if (!existing?.id) {
+        const def = resolveDefaultDoctorId(list)
+        if (def) setForm(f => (f.doctorId ? f : { ...f, doctorId: def, doctorName: list.find((x: any) => x.id === def)?.name ?? '' }))
+      }
+    }).catch(() => {})
+  }, [])
 
   // Extract local date and time from the combined field
   const selectedDay  = form.appointmentDate.slice(0, 10)  // "YYYY-MM-DD"
@@ -196,6 +212,7 @@ export default function AppointmentFormModal({
         ...form,
         duration:       Number(form.duration) || 30,
         doctorName:     form.doctorName.trim() || null,
+        doctorId:       form.doctorId || null,
         notes:          form.notes.trim()      || null,
         amountCharged:  form.amountCharged !== '' ? parseFloat(form.amountCharged) : null,
         amountPaid:     form.amountPaid    !== '' ? parseFloat(form.amountPaid)    : null,
@@ -428,10 +445,23 @@ export default function AppointmentFormModal({
             )}
           </div>
 
-          {field(t('doctorName'),
-            <input type="text" className={inputCls} placeholder={t('optionalField')}
-              value={form.doctorName}
-              onChange={(e) => setForm(f => ({ ...f, doctorName: e.target.value }))} />
+          {!singleDoctor && field(t('doctorName'),
+            <select className={inputCls} value={form.doctorId}
+              onChange={(e) => {
+                const id = e.target.value
+                const d = doctors.find((x: any) => x.id === id)
+                setForm(f => ({ ...f, doctorId: id, doctorName: d ? d.name : '' }))
+              }}>
+              <option value="">{t('unassigned') || '— Unassigned —'}</option>
+              {doctors.map((d: any) => (
+                <option key={d.id} value={d.id}>
+                  {doctorDisplayName(d)}{d.specialty ? ` · ${d.specialty}` : ''}{d.isDefault ? ' ★' : ''}
+                </option>
+              ))}
+              {form.doctorName && !doctors.some((d: any) => d.id === form.doctorId) && (
+                <option value="">{form.doctorName} ({t('legacy') || 'legacy'})</option>
+              )}
+            </select>
           )}
 
           {field(t('notes'),

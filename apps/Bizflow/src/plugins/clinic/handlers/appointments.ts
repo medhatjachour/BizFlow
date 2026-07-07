@@ -3,6 +3,11 @@ import { createLogger } from '../../../main/utils/logger'
 
 const log = createLogger('Clinic:Appointments')
 
+function parseWorkingHours(raw: string | null | undefined): Record<string, { start?: string; end?: string; off?: boolean }> | null {
+  if (!raw) return null
+  try { const p = JSON.parse(raw); return typeof p === 'object' && p ? p : null } catch { return null }
+}
+
 export function registerAppointmentHandlers(prisma: any) {
   // ─── Get appointments with optional filters ───────────────────────────────
   // PAGINATION: Returns { data: Appointment[], total: number, hasMore: boolean }
@@ -14,6 +19,7 @@ export function registerAppointmentHandlers(prisma: any) {
       if (params?.patientId) where.patientId = params.patientId
       if (params?.status)    where.status    = params.status
       if (params?.type)      where.type      = params.type
+      if ((params as any)?.doctorId) where.doctorId = (params as any).doctorId
       if (params?.date) {
         // Use T00:00:00 suffix to force local-time parsing (avoids UTC-midnight shift)
         const d   = new Date(params.date + 'T00:00:00')
@@ -172,14 +178,34 @@ export function registerAppointmentHandlers(prisma: any) {
   // ─── Create ───────────────────────────────────────────────────────────────
   ipcMain.handle('clinic:appointments:create', async (_e, data: any) => {
     try {
+      const start = new Date(data.appointmentDate)
+      const dur = Number(data.duration) || 30
+      const end = new Date(start.getTime() + dur * 60000)
+
+      // Working-hours check: block booking on a day the doctor marked as off.
+      if (data.doctorId) {
+        const doc = await prisma.clinicStaff.findUnique({
+          where: { id: data.doctorId },
+          select: { name: true, workingHours: true }
+        })
+        const wh = parseWorkingHours(doc?.workingHours)
+        if (wh) {
+          const dayKey = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][start.getDay()]
+          if (wh[dayKey]?.off) {
+            throw new Error(`${doc?.name ?? 'This doctor'} is not available on that day`)
+          }
+        }
+      }
+
       // Guard: block a double-booking for the SAME doctor at an overlapping time.
-      if (data.doctorName) {
-        const start = new Date(data.appointmentDate)
-        const dur = Number(data.duration) || 30
-        const end = new Date(start.getTime() + dur * 60000)
+      // Prefer the linked doctorId; fall back to the legacy free-text doctorName.
+      const doctorWhere = data.doctorId
+        ? { doctorId: data.doctorId }
+        : data.doctorName ? { doctorName: data.doctorName } : null
+      if (doctorWhere) {
         const sameDoc = await prisma.clinicAppointment.findMany({
           where: {
-            doctorName: data.doctorName,
+            ...doctorWhere,
             status: { in: ['scheduled', 'confirmed'] },
             appointmentDate: { gte: new Date(start.getTime() - 12 * 3600000), lte: new Date(end.getTime() + 12 * 3600000) }
           },
@@ -190,7 +216,10 @@ export function registerAppointmentHandlers(prisma: any) {
           const aEnd = aStart + (Number(a.duration) || 30) * 60000
           return aStart < end.getTime() && aEnd > start.getTime()
         })
-        if (clash) throw new Error(`${data.doctorName} already has an appointment during that time`)
+        if (clash) {
+          const who = data.doctorName || 'That doctor'
+          throw new Error(`${who} already has an appointment during that time`)
+        }
       }
       return await prisma.clinicAppointment.create({
         data: { ...data, appointmentDate: new Date(data.appointmentDate) },

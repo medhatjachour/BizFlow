@@ -5,7 +5,7 @@ export function registerSessionHandlers(prisma: any) {
   // PAGINATION: Returns { data: Session[], total: number, hasMore: boolean }
   ipcMain.handle(
     'clinic:sessions:getRecent',
-    async (_e, params?: { patientId?: string; filter?: 'today' | 'week' | 'month' | 'all'; startDate?: string; endDate?: string; skip?: number; take?: number }) => {
+    async (_e, params?: { patientId?: string; doctorId?: string; filter?: 'today' | 'week' | 'month' | 'all'; startDate?: string; endDate?: string; skip?: number; take?: number }) => {
       const now = new Date()
       let dateFrom: Date | undefined
       let dateTo: Date | undefined
@@ -28,6 +28,7 @@ export function registerSessionHandlers(prisma: any) {
 
       const where: any = {}
       if (params?.patientId) where.patientId = params.patientId
+      if (params?.doctorId) where.doctorId = params.doctorId
       if (dateFrom || dateTo) {
         where.visitDate = {}
         if (dateFrom) where.visitDate.gte = dateFrom
@@ -64,7 +65,7 @@ export function registerSessionHandlers(prisma: any) {
   // ─── Create Session (with nested prescriptions) ────────────────────────
   ipcMain.handle('clinic:sessions:create', async (_e, data: any) => {
     const { prescriptions, ...sessionData } = data
-    return prisma.clinicSession.create({
+    const created = await prisma.clinicSession.create({
       data: {
         ...sessionData,
         prescriptions: prescriptions?.length
@@ -77,6 +78,18 @@ export function registerSessionHandlers(prisma: any) {
         patient: { select: { id: true, name: true } }
       }
     })
+
+    // Auto-assign the patient's primary doctor when it isn't set yet, so the
+    // clinic builds per-doctor patient panels without extra data entry.
+    if (sessionData.doctorId && created.patientId) {
+      try {
+        await prisma.clinicPatient.updateMany({
+          where: { id: created.patientId, primaryDoctorId: null },
+          data: { primaryDoctorId: sessionData.doctorId }
+        })
+      } catch { /* non-critical */ }
+    }
+    return created
   })
 
   // ─── Update Session ───────────────────────────────────────────────────
