@@ -13,6 +13,12 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<HTMLElement | null>(null)
+  // Keep the latest onClose without re-running the focus/keydown effect on every
+  // parent re-render (callers pass an inline arrow, so its identity changes each
+  // render). Re-running the effect would call focusFirst() on every keystroke and
+  // steal focus back to the first field — making inputs impossible to type into.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!isOpen) return
@@ -34,7 +40,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
         return
       }
       if (e.key !== 'Tab') return
@@ -70,7 +76,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
       document.body.style.overflow = 'unset'
       previouslyFocused.current?.focus?.()
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 

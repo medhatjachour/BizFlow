@@ -3,6 +3,7 @@ import { X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { EmployeeFormData } from '../hooks/useEmployees'
 import { usePluginRoles, type RoleGroup } from '../hooks/usePluginRoles'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useAuth } from '../../../contexts/AuthContext'
 
 // ─── Tailwind colour maps (full class names required — no dynamic concat) ─────
 
@@ -170,11 +171,15 @@ function RolePicker({ value, onChange, onDeptSuggest, groups }: {
 interface Props {
   formData: EmployeeFormData
   onChange: (updates: Partial<EmployeeFormData>) => void
+  managerOptions?: { id: string; name: string; role?: string }[]
+  excludeId?: string
 }
 
-export default function EmployeeForm({ formData, onChange }: Props) {
+export default function EmployeeForm({ formData, onChange, managerOptions = [], excludeId }: Props) {
   const { t } = useLanguage()
   const { groups, allDepartments } = usePluginRoles()
+  const { can } = useAuth()
+  const canManageSalary = can('manage_staff')
   const [showMore, setShowMore] = useState(false)
 
   function handleRoleChange(role: string) {
@@ -256,33 +261,51 @@ export default function EmployeeForm({ formData, onChange }: Props) {
         />
       </Field>
 
-      {/* Compensation */}
-      <SectionHeader title="Compensation" />
-
-      <Field label={t('salary')} half>
-        <input
-          type="number"
-          min={0}
-          step={0.01}
-          value={formData.salary}
-          onChange={e => onChange({ salary: Number(e.target.value) })}
-          placeholder={formData.salaryType === 'hourly' ? 'Rate per hour' : '0.00'}
-          className={INP}
-        />
-      </Field>
-
-      <Field label={t('salaryMonthly').replace(' (monthly)', '')} half>
+      <Field label={t('empReportsTo') ?? 'Reports to (manager)'} half>
         <select
-          value={formData.salaryType}
-          onChange={e => onChange({ salaryType: e.target.value })}
+          value={formData.managerId ?? ''}
+          onChange={e => onChange({ managerId: e.target.value })}
           className={SEL}
         >
-          <option value="monthly">{t('empMonthly')}</option>
-          <option value="weekly">Weekly</option>
-          <option value="daily">{t('empDaily')}</option>
-          <option value="hourly">{t('empHourly')}</option>
+          <option value="">{t('empNoManager') ?? '— No manager —'}</option>
+          {managerOptions
+            .filter(m => m.id !== excludeId)
+            .map(m => <option key={m.id} value={m.id}>{m.name}{m.role ? ` · ${m.role}` : ''}</option>)}
         </select>
       </Field>
+
+      {/* Compensation — salary is sensitive; only staff managers can view/edit it */}
+      {canManageSalary && (<>
+        <SectionHeader title="Compensation" />
+
+        <Field label={t('salary')} half>
+          <input
+            type="number"
+            min={0}
+            step={0.01}
+            value={formData.salary}
+            onChange={e => onChange({ salary: Number(e.target.value) })}
+            placeholder={formData.salaryType === 'hourly' ? 'Rate per hour' : '0.00'}
+            className={INP}
+          />
+        </Field>
+
+        <Field label={t('salaryMonthly').replace(' (monthly)', '')} half>
+          <select
+            value={formData.salaryType}
+            onChange={e => onChange({ salaryType: e.target.value })}
+            className={SEL}
+          >
+            <option value="monthly">{t('empMonthly')}</option>
+            <option value="weekly">Weekly</option>
+            <option value="daily">{t('empDaily')}</option>
+            <option value="hourly">{t('empHourly')}</option>
+          </select>
+        </Field>
+      </>)}
+
+      {/* Performance & Leave */}
+      <SectionHeader title={t('empPerfLeaveSection') ?? 'Performance & Leave'} />
 
       <Field label={t('empPerformanceScore')} half>
         <input

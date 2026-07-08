@@ -6,6 +6,7 @@ import {
 import type { Employee, EmployeeStats } from '../types'
 import { expiryState, daysUntil } from '../expiry'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useAuth } from '../../../contexts/AuthContext'
 
 interface Props {
   employees: Employee[]
@@ -67,6 +68,8 @@ function Card({ children, title, icon }: { children: React.ReactNode; title: str
 
 export default function EmployeeAnalytics({ employees, stats }: Props) {
   const { t } = useLanguage()
+  const { can } = useAuth()
+  const canFinance = can('view_finance')
 
   const d = useMemo(() => {
     const active = employees.filter(e => e.status !== 'terminated')
@@ -130,7 +133,7 @@ export default function EmployeeAnalytics({ employees, stats }: Props) {
     { label: t('empHeadcount') ?? 'Headcount', value: `${d.activeCount}`, sub: `${employees.length} ${t('empTotal') ?? 'total'}`, icon: <Users size={16} />, tone: 'text-primary' },
     { label: t('empPresentToday') ?? 'Present today', value: `${stats?.presentToday ?? 0}`, sub: `${stats?.attendanceRate ?? 0}% ${t('empRate') ?? 'rate'}`, icon: <Activity size={16} />, tone: 'text-green-600' },
     { label: t('empAvgPerformance') ?? 'Avg performance', value: d.avgPerf ? `${d.avgPerf}%` : '—', sub: `${d.topPerformers.length} ${t('empRated') ?? 'rated'}`, icon: <Star size={16} />, tone: 'text-amber-500' },
-    { label: t('empPaidThisMonth') ?? 'Paid this month', value: money(stats?.payrollThisMonth ?? 0), sub: `${money(d.monthlyBase)} ${t('empMonthlyBaseShort') ?? 'base'}`, icon: <DollarSign size={16} />, tone: 'text-violet-500' },
+    ...(canFinance ? [{ label: t('empPaidThisMonth') ?? 'Paid this month', value: money(stats?.payrollThisMonth ?? 0), sub: `${money(d.monthlyBase)} ${t('empMonthlyBaseShort') ?? 'base'}`, icon: <DollarSign size={16} />, tone: 'text-violet-500' }] : []),
     { label: t('empAvgTenure') ?? 'Avg tenure', value: `${d.avgTenure.toFixed(1)}`, sub: `${d.newHires} ${t('empNewHiresYear') ?? 'new this yr'}`, icon: <CalendarClock size={16} />, tone: 'text-blue-500' },
   ]
 

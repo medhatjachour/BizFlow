@@ -4,6 +4,7 @@ import type { EmployeeProfile, EmployeeAttendance, AttendanceStatus } from '../t
 import { describePayrollPeriod } from '../payrollPeriod'
 import { expiryState, daysUntil } from '../expiry'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useAuth } from '../../../contexts/AuthContext'
 
 const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
   present:    'bg-green-500',
@@ -32,6 +33,7 @@ interface Props {
 
 export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance, savingPerf, disabled }: Props) {
   const { t } = useLanguage()
+  const { can } = useAuth()
   const [selectedDay, setSelectedDay] = useState<{ date: string; att: EmployeeAttendance | null } | null>(null)
   const [pendingScore, setPendingScore] = useState<number>(emp.performanceScore ?? 0)
 
@@ -235,7 +237,7 @@ export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance
           )}
         </div>
 
-        {emp.payrollRecords.length > 0 && (
+        {can('view_finance') && emp.payrollRecords.length > 0 && (
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('empLatestPayroll')}</h4>
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">

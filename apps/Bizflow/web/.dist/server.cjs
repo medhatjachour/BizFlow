@@ -2815,8 +2815,38 @@ var EMPLOYEE_INCLUDE = {
   payrollRecords: { orderBy: [{ year: "desc" }, { month: "desc" }], take: 24 },
   shifts: { orderBy: { date: "desc" }, take: 60 },
   overtimeRecords: { orderBy: { date: "desc" }, take: 60 },
-  leaveRecords: { orderBy: { startDate: "desc" }, take: 60 }
+  leaveRecords: { orderBy: { startDate: "desc" }, take: 60 },
+  manager: { select: { id: true, name: true, role: true, avatarUrl: true } },
+  reports: { select: { id: true, name: true, role: true, status: true, avatarUrl: true }, orderBy: { name: "asc" } }
 };
+async function ensureEmployeeColumns(prisma2) {
+  try {
+    const cols = await prisma2.$queryRawUnsafe(`PRAGMA table_info("Employee")`);
+    if (!cols.some((c) => c.name === "managerId")) {
+      await prisma2.$executeRawUnsafe(`ALTER TABLE "Employee" ADD COLUMN "managerId" TEXT`);
+      log6.info("\u2705 Employee.managerId column added");
+    }
+  } catch (err) {
+    log6.warn("managerId column migration skipped:", err);
+  }
+}
+async function wouldCreateCycle(prisma2, id, managerId) {
+  let cursor = managerId;
+  const seen = /* @__PURE__ */ new Set();
+  while (cursor) {
+    if (cursor === id)
+      return true;
+    if (seen.has(cursor))
+      break;
+    seen.add(cursor);
+    const m = await prisma2.employee.findUnique({
+      where: { id: cursor },
+      select: { managerId: true }
+    });
+    cursor = m?.managerId ?? null;
+  }
+  return false;
+}
 function computeAttendanceSummary(attendance) {
   const total = attendance.length;
   const present = attendance.filter((a) => a.status === "present").length;
@@ -2837,6 +2867,8 @@ function computeLeaveBalance(emp) {
   return { allowance, taken, pending, remaining: Math.max(0, allowance - taken) };
 }
 function registerEmployeesHandlers(prisma2) {
+  if (prisma2)
+    void ensureEmployeeColumns(prisma2);
   ipcMain.handle("employees:getAll", async () => {
     try {
       if (!prisma2)
@@ -2846,7 +2878,8 @@ function registerEmployeesHandlers(prisma2) {
       const emps = await prisma2.employee.findMany({
         orderBy: { createdAt: "desc" },
         include: {
-          _count: { select: { attendance: true, activityLogs: true } },
+          _count: { select: { attendance: true, activityLogs: true, reports: true } },
+          manager: { select: { id: true, name: true } },
           attendance: { where: { date: today }, take: 1, select: { checkIn: true, checkOut: true, status: true } }
         }
       });
@@ -2884,6 +2917,8 @@ function registerEmployeesHandlers(prisma2) {
       if (!prisma2)
         return { success: false, message: "Database not available" };
       const { createdBy, performedBy, ...data } = employeeData;
+      if (!data.managerId)
+        data.managerId = null;
       const employee = await prisma2.employee.create({ data });
       await prisma2.employeeActivityLog.create({
         data: {
@@ -2904,6 +2939,17 @@ function registerEmployeesHandlers(prisma2) {
       if (!prisma2)
         return { success: false, message: "Database not available" };
       const { performedBy, ...data } = employeeData;
+      if ("managerId" in data) {
+        if (data.managerId === "")
+          data.managerId = null;
+        if (data.managerId) {
+          if (data.managerId === id)
+            return { success: false, message: "An employee cannot report to themselves" };
+          if (await wouldCreateCycle(prisma2, id, data.managerId)) {
+            return { success: false, message: "That assignment would create a reporting loop" };
+          }
+        }
+      }
       const employee = await prisma2.employee.update({ where: { id }, data });
       await prisma2.employeeActivityLog.create({
         data: {

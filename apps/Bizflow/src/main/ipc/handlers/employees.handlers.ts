@@ -25,7 +25,46 @@ const EMPLOYEE_INCLUDE = {
   payrollRecords: { orderBy: [{ year: 'desc' as const }, { month: 'desc' as const }], take: 24 },
   shifts: { orderBy: { date: 'desc' as const }, take: 60 },
   overtimeRecords: { orderBy: { date: 'desc' as const }, take: 60 },
-  leaveRecords: { orderBy: { startDate: 'desc' as const }, take: 60 }
+  leaveRecords: { orderBy: { startDate: 'desc' as const }, take: 60 },
+  manager: { select: { id: true, name: true, role: true, avatarUrl: true } },
+  reports: { select: { id: true, name: true, role: true, status: true, avatarUrl: true }, orderBy: { name: 'asc' as const } }
+}
+
+/**
+ * Ensure the org-chart column exists on the core Employee table.
+ * Idempotent raw ALTER so it works even in packaged installs where
+ * `prisma db push` isn't available. Nullable → safe on existing rows.
+ */
+async function ensureEmployeeColumns(prisma: any): Promise<void> {
+  try {
+    const cols: any[] = await prisma.$queryRawUnsafe(`PRAGMA table_info("Employee")`)
+    if (!cols.some((c: any) => c.name === 'managerId')) {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Employee" ADD COLUMN "managerId" TEXT`)
+      log.info('\u2705 Employee.managerId column added')
+    }
+  } catch (err) {
+    log.warn('managerId column migration skipped:', err)
+  }
+}
+
+/**
+ * Would assigning `managerId` to employee `id` create a cycle?
+ * Walks the prospective manager's own reporting chain upward; a cycle exists
+ * if we ever reach `id` again.
+ */
+async function wouldCreateCycle(prisma: any, id: string, managerId: string): Promise<boolean> {
+  let cursor: string | null = managerId
+  const seen = new Set<string>()
+  while (cursor) {
+    if (cursor === id) return true
+    if (seen.has(cursor)) break
+    seen.add(cursor)
+    const m: { managerId: string | null } | null = await prisma.employee.findUnique({
+      where: { id: cursor }, select: { managerId: true }
+    })
+    cursor = m?.managerId ?? null
+  }
+  return false
 }
 
 // Compute attendance summary from attendance records
@@ -52,7 +91,10 @@ function computeLeaveBalance(emp: any) {
 }
 
 export function registerEmployeesHandlers(prisma: any) {
-  // ─── LIST ─────────────────────────────────────────────────────────────────
+  // Ensure additive org-chart column exists (idempotent, CLI-free).
+  if (prisma) void ensureEmployeeColumns(prisma)
+
+  // ─── LIST ──────────────────────────────────────────────────
   ipcMain.handle('employees:getAll', async () => {
     try {
       if (!prisma) return []
@@ -60,7 +102,8 @@ export function registerEmployeesHandlers(prisma: any) {
       const emps = await prisma.employee.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
-          _count: { select: { attendance: true, activityLogs: true } },
+          _count: { select: { attendance: true, activityLogs: true, reports: true } },
+          manager: { select: { id: true, name: true } },
           attendance: { where: { date: today }, take: 1, select: { checkIn: true, checkOut: true, status: true } }
         }
       })
@@ -100,6 +143,7 @@ export function registerEmployeesHandlers(prisma: any) {
     try {
       if (!prisma) return { success: false, message: 'Database not available' }
       const { createdBy, performedBy, ...data } = employeeData
+      if (!data.managerId) data.managerId = null
       const employee = await prisma.employee.create({ data })
       await prisma.employeeActivityLog.create({
         data: {
@@ -121,6 +165,16 @@ export function registerEmployeesHandlers(prisma: any) {
     try {
       if (!prisma) return { success: false, message: 'Database not available' }
       const { performedBy, ...data } = employeeData
+      // Org-chart guards: an employee can't manage themselves or form a cycle.
+      if ('managerId' in data) {
+        if (data.managerId === '') data.managerId = null
+        if (data.managerId) {
+          if (data.managerId === id) return { success: false, message: 'An employee cannot report to themselves' }
+          if (await wouldCreateCycle(prisma, id, data.managerId)) {
+            return { success: false, message: 'That assignment would create a reporting loop' }
+          }
+        }
+      }
       const employee = await prisma.employee.update({ where: { id }, data })
       await prisma.employeeActivityLog.create({
         data: {

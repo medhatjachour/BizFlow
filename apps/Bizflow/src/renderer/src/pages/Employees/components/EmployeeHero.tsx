@@ -1,6 +1,7 @@
 import { LogIn, LogOut, Edit2, Plus, UserX, UserCheck, Clock } from 'lucide-react'
 import type { EmployeeProfile, EmployeeAttendance } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useAuth } from '../../../contexts/AuthContext'
 
 const STATUS_BADGE: Record<string, string> = {
   active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
@@ -35,6 +36,7 @@ interface Props {
 
 export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, onCheckIn, onCheckOut, onLogAttendance, onAddNote, onEndContract, onReactivate }: Props) {
   const { t } = useLanguage()
+  const { can } = useAuth()
   const alreadyIn  = !!todayAtt?.checkIn
   const alreadyOut = !!todayAtt?.checkOut
 
@@ -121,8 +123,14 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <Briefcase size={14} className="text-slate-400 shrink-0" />
-            <span className="font-semibold text-slate-800 dark:text-white">${Number(emp.salary).toLocaleString()}</span>
-            <span className="text-xs">/{emp.salaryType}</span>
+            {can('view_finance') ? (
+              <>
+                <span className="font-semibold text-slate-800 dark:text-white">${Number(emp.salary).toLocaleString()}</span>
+                <span className="text-xs">/{emp.salaryType}</span>
+              </>
+            ) : (
+              <span className="text-xs italic text-slate-400">{t('empRestricted') ?? 'Restricted'} · {emp.salaryType}</span>
+            )}
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
             <Calendar size={14} className="text-slate-400 shrink-0" />

@@ -7,12 +7,13 @@ interface Props {
   tab: ProfileTab
   onChange: (t: ProfileTab) => void
   counts?: Partial<Record<ProfileTab, number>>
+  hidden?: ProfileTab[]
 }
 
-export default function TabBar({ tab, onChange, counts = {} }: Props) {
+export default function TabBar({ tab, onChange, counts = {}, hidden = [] }: Props) {
   const { t } = useLanguage()
 
-  const TABS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
+  const ALL_TABS: { key: ProfileTab; label: string; icon: React.ReactNode }[] = [
     { key: 'overview',   label: t('tabOverview'),    icon: <User size={16} /> },
     { key: 'attendance', label: t('tabAttendance'),  icon: <Calendar size={16} /> },
     { key: 'shifts',     label: t('tabShifts'),      icon: <Clock size={16} /> },
@@ -22,6 +23,7 @@ export default function TabBar({ tab, onChange, counts = {} }: Props) {
     { key: 'activity',   label: t('tabActivity'),    icon: <Activity size={16} /> },
     { key: 'documents',  label: t('tabDocuments'),   icon: <FileText size={16} /> },
   ]
+  const TABS = ALL_TABS.filter(tb => !hidden.includes(tb.key))
 
   return (
     <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto">

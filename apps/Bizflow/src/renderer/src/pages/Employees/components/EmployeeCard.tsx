@@ -60,12 +60,19 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
               aria-label={`Select ${emp.name}`}
             />
           )}
-          <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${avatarColor(emp.name)} flex items-center justify-center text-white font-bold text-lg shrink-0`}>
+          <div
+            onClick={() => { if (!selectMode) navigate(`/employees/${emp.id}`) }}
+            className={`w-14 h-14 rounded-full bg-gradient-to-br ${avatarColor(emp.name)} flex items-center justify-center text-white font-bold text-lg shrink-0 ${selectMode ? '' : 'cursor-pointer'}`}
+          >
             {getInitials(emp.name)}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="font-semibold text-slate-900 dark:text-white truncate">{emp.name}</h3>
+              <h3
+                onClick={() => { if (!selectMode) navigate(`/employees/${emp.id}`) }}
+                title={selectMode ? undefined : (t('empViewProfile') ?? 'View Profile')}
+                className={`font-semibold text-slate-900 dark:text-white truncate ${selectMode ? '' : 'cursor-pointer hover:text-primary transition-colors'}`}
+              >{emp.name}</h3>
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_COLORS[emp.status] || ''}`}>
                 {statusLabel[emp.status] ?? emp.status}
               </span>

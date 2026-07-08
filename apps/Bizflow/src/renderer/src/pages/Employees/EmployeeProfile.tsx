@@ -15,12 +15,15 @@ import DocumentsTab from './components/DocumentsTab'
 import { useEmployeeProfile } from './hooks/useEmployeeProfile'
 import { expiryState, daysUntil } from './expiry'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { useAuth } from '../../contexts/AuthContext'
 import type { AttendanceStatus } from './types'
 
 export default function EmployeeProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { can } = useAuth()
+  const canFinance = can('view_finance')
   const s = useEmployeeProfile(id)
 
   if (s.loading) return (
@@ -75,9 +78,60 @@ export default function EmployeeProfilePage() {
         )
       })}
 
+      {/* Org chart — manager & direct reports */}
+      {(s.emp.manager || (s.emp.reports?.length ?? 0) > 0) && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">{t('empReportsToTitle') ?? 'Reports to'}</h3>
+              {s.emp.manager ? (
+                <button
+                  onClick={() => navigate(`/employees/${s.emp!.manager!.id}`)}
+                  className="flex items-center gap-3 w-full text-left p-2 -m-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                >
+                  <span className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    {s.emp.manager.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-slate-800 dark:text-white truncate">{s.emp.manager.name}</div>
+                    {s.emp.manager.role && <div className="text-xs text-slate-400 truncate">{s.emp.manager.role}</div>}
+                  </div>
+                </button>
+              ) : (
+                <p className="text-sm text-slate-400">{t('empNoManagerSet') ?? 'No manager assigned'}</p>
+              )}
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-2">
+                {t('empDirectReports') ?? 'Direct reports'} {(s.emp.reports?.length ?? 0) > 0 && <span className="text-slate-300 dark:text-slate-600">({s.emp.reports!.length})</span>}
+              </h3>
+              {(s.emp.reports?.length ?? 0) > 0 ? (
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {s.emp.reports!.map(r => (
+                    <button
+                      key={r.id}
+                      onClick={() => navigate(`/employees/${r.id}`)}
+                      className="flex items-center gap-2.5 w-full text-left p-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                    >
+                      <span className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        {r.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </span>
+                      <span className="text-sm text-slate-700 dark:text-slate-200 truncate">{r.name}</span>
+                      {r.role && <span className="text-xs text-slate-400 truncate ml-auto">{r.role}</span>}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400">{t('empNoReports') ?? 'No direct reports'}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabs panel */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-        <TabBar tab={s.tab} onChange={s.setTab} counts={{
+        <TabBar tab={s.tab === 'payroll' && !canFinance ? 'overview' : s.tab} onChange={s.setTab} hidden={canFinance ? [] : ['payroll']} counts={{
           attendance: s.emp.attendance.length,
           shifts: s.emp.shifts.length,
           overtime: s.emp.overtimeRecords.length,
@@ -106,7 +160,7 @@ export default function EmployeeProfilePage() {
           {s.tab === 'shifts'     && <ShiftsTab shifts={s.emp.shifts} onAdd={() => s.setShowShiftModal(true)} onDelete={s.deleteShift} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onApproveAll={s.approveAllOvertime} onDelete={s.deleteOvertime} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'leave'      && <LeaveTab leaveRecords={s.emp.leaveRecords} balance={s.emp.leaveBalance} onAdd={() => s.setShowLeaveModal(true)} onApprove={id => s.setLeaveStatus(id, 'approved')} onReject={id => s.setLeaveStatus(id, 'rejected')} onApproveAll={s.approveAllLeave} onDelete={s.deleteLeave} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'payroll'    && <PayrollTab emp={s.emp} payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} onMarkPaid={s.markPayrollPaid} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'payroll'    && canFinance && <PayrollTab emp={s.emp} payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} onMarkPaid={s.markPayrollPaid} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'activity'   && <ActivityTab activityLogs={s.emp.activityLogs} onAddNote={() => s.setShowNoteModal(true)} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'documents'  && <DocumentsTab documents={s.emp.documents} onAdd={() => s.setShowDocModal(true)} onOpen={s.openDocument} onDelete={s.deleteDocument} disabled={s.emp.status === 'terminated'} />}
         </div>

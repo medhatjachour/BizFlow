@@ -35,8 +35,10 @@ export interface Employee {
   iban?: string
   contractEndDate?: string | null
   idExpiryDate?: string | null
+  managerId?: string | null
+  manager?: { id: string; name: string; role?: string; avatarUrl?: string | null } | null
   todayAttendance?: { checkIn?: string | null; checkOut?: string | null; status?: string } | null
-  _count?: { attendance: number; activityLogs: number }
+  _count?: { attendance: number; activityLogs: number; reports?: number }
 }
 
 export interface EmployeeAttendance {
@@ -152,6 +154,7 @@ export interface EmployeeProfile extends Employee {
   leaveRecords: EmployeeLeave[]
   attendanceSummary: AttendanceSummary
   leaveBalance: LeaveBalance
+  reports?: { id: string; name: string; role?: string; status?: EmployeeStatus; avatarUrl?: string | null }[]
 }
 
 export interface EmployeeStats {

@@ -25,7 +25,8 @@ export const EMPTY_FORM = {
   performanceScore: 0,
   annualLeaveDays: 21,
   taxId: '', socialInsuranceNo: '', bankName: '', iban: '',
-  contractEndDate: '', idExpiryDate: ''
+  contractEndDate: '', idExpiryDate: '',
+  managerId: ''
 }
 
 export type EmployeeFormData = typeof EMPTY_FORM
@@ -251,7 +252,8 @@ export function useEmployees() {
       taxId: emp.taxId || '', socialInsuranceNo: emp.socialInsuranceNo || '',
       bankName: emp.bankName || '', iban: emp.iban || '',
       contractEndDate: emp.contractEndDate ? new Date(emp.contractEndDate).toISOString().split('T')[0] : '',
-      idExpiryDate: emp.idExpiryDate ? new Date(emp.idExpiryDate).toISOString().split('T')[0] : ''
+      idExpiryDate: emp.idExpiryDate ? new Date(emp.idExpiryDate).toISOString().split('T')[0] : '',
+      managerId: emp.managerId || ''
     })
     setShowEditModal(true)
   }

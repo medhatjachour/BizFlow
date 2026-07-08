@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, Search, Users, Filter, DollarSign, X, BarChart3, Download } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { useAuth } from '../../contexts/AuthContext'
 import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import EmployeeAnalytics from './components/EmployeeAnalytics'
@@ -14,6 +15,8 @@ type TabView = 'team' | 'analytics' | 'payroll'
 
 export default function Employees() {
   const { t } = useLanguage()
+  const { can } = useAuth()
+  const canFinance = can('view_finance')
   const state = useEmployees()
   const { allDepartments } = usePluginRoles()
   const [view, setView] = useState<TabView>('team')
@@ -73,6 +76,7 @@ export default function Employees() {
         >
           <BarChart3 size={15} /> {t('empAnalytics') ?? 'Analytics'}
         </button>
+        {canFinance && (
         <button
           onClick={() => setView('payroll')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -83,11 +87,12 @@ export default function Employees() {
         >
           <DollarSign size={15} /> {t('empPayroll') ?? 'Payroll'}
         </button>
+        )}
       </div>
 
 
       {/* ── Payroll tab ─────────────────────────────────────────────── */}
-      {view === 'payroll' && <PayrollOverview />}
+      {view === 'payroll' && canFinance && <PayrollOverview />}
 
       {/* ── Analytics tab ───────────────────────────────────────────── */}
       {view === 'analytics' && <EmployeeAnalytics employees={state.employees} stats={state.stats} />}
@@ -291,7 +296,7 @@ export default function Employees() {
       {/* Add Modal */}
       <Modal isOpen={state.showAddModal} onClose={() => state.setShowAddModal(false)} title={t('addEmployee')} size="lg">
         <div className="space-y-5">
-          <EmployeeForm formData={state.formData} onChange={updates => state.setFormData(p => ({ ...p, ...updates }))} />
+          <EmployeeForm formData={state.formData} onChange={updates => state.setFormData(p => ({ ...p, ...updates }))} managerOptions={state.employees} />
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
             <button onClick={() => state.setShowAddModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
               {t('cancel')}
@@ -306,7 +311,7 @@ export default function Employees() {
       {/* Edit Modal */}
       <Modal isOpen={state.showEditModal} onClose={() => state.setShowEditModal(false)} title={t('editEmployee')} size="lg">
         <div className="space-y-5">
-          <EmployeeForm formData={state.formData} onChange={updates => state.setFormData(p => ({ ...p, ...updates }))} />
+          <EmployeeForm formData={state.formData} onChange={updates => state.setFormData(p => ({ ...p, ...updates }))} managerOptions={state.employees} excludeId={state.selected?.id} />
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
             <button onClick={() => state.setShowEditModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
               {t('cancel')}
