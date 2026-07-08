@@ -114,7 +114,7 @@ export async function initializePrisma(): Promise<void> {
         const EXPECTED = new Set<string>([
           'User', 'FinancialTransaction', 'RolePermission',
           'Employee', 'EmployeeAttendance', 'EmployeeDocument',
-          'EmployeeActivityLog', 'EmployeePayroll', 'EmployeeShift', 'EmployeeOvertime',
+          'EmployeeActivityLog', 'EmployeePayroll', 'EmployeeShift', 'EmployeeOvertime', 'EmployeeLeave',
           'EmailReport',
         ])
         if (__PLUGIN_COMMERCE__)    ['Category','Product','ProductImage','ProductVariant','ProductAttribute','VariantAttributeValue','StockMovement','Store','Customer','SaleTransaction','SaleItem','Deposit','Installment','InstallmentPlan','ReceiptTemplate','Supplier','SupplierProduct','PurchaseOrder','PurchaseOrderItem','CommerceExpense'].forEach(t => EXPECTED.add(t))
