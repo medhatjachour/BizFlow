@@ -88,7 +88,7 @@ const BakeryFinanceSection: React.FC = () => {
       setRefreshing(false)
     }
   }
-console.log(recipes, 'recipes')
+console.log(plData, 'plData')
   // getProfitLoss returns { rows, totals: { totalRevenue, totalProductionCost, wasteCost, grossProfit } }
   const revenue = Number(
     plData?.totals?.totalRevenue || plData?.totalRevenue || plData?.revenue || 0
@@ -155,7 +155,7 @@ console.log(recipes, 'recipes')
             <option value={7}>{t('bakeryFinanceLast7')}</option>
             <option value={30}>{t('bakeryFinanceLast30')}</option>
             <option value={90}>{t('bakeryFinanceLast90')}</option>
-            <option value={36500000000}>{t('bakeryFinanceAllTheTime')}</option>
+            <option value={3650}>{t('bakeryFinanceAllTheTime')}</option>
           </select>
           <button
             onClick={() => loadData(true)}

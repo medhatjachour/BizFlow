@@ -402,6 +402,13 @@ export const enPart1 = {
     bakeryFinanceNoRecipes: 'No recipes configured yet',
     bakeryFinanceUncategorized: 'Uncategorized',
     bakeryFinanceIngredients: 'ingredients',
+    bakeryFinanceTotalRevenue: 'Total Revenue',
+    bakeryFinanceAllRecipes: 'All recipes',
+    bakeryFinanceProdCost: 'Prod. Cost',
+    bakeryFinanceSold: 'sold',
+    bakeryFinanceProduced: 'produced',
+    bakeryFinanceWaste: 'Waste',
+    bakeryFinanceGrossProfit: 'Gross Profit',
 
     // ── Bakery Report Section ─────────────────────────────────────────────
     bakeryReportTitle: 'Bakery Reports',

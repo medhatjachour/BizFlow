@@ -402,6 +402,13 @@ export const arPart1 = {
     bakeryFinanceNoRecipes: 'لا توجد وصفات مضبوطة بعد',
     bakeryFinanceUncategorized: 'غير مصنف',
     bakeryFinanceIngredients: 'مكونات',
+    bakeryFinanceTotalRevenue: 'إجمالي الإيرادات',
+    bakeryFinanceAllRecipes: 'جميع الوصفات',
+    bakeryFinanceProdCost: 'تكلفة الإنتاج',
+    bakeryFinanceSold: 'مباع',
+    bakeryFinanceProduced: 'منتج',
+    bakeryFinanceWaste: 'هدر',
+    bakeryFinanceGrossProfit: 'الربح الإجمالي',
 
     // ── Bakery Report Section ─────────────────────────────────────────────
     bakeryReportTitle: 'تقارير المخبز',
