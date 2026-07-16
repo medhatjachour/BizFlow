@@ -32,6 +32,7 @@ import {
   Pill
 } from 'lucide-react'
 import LocalIcon from '../../assets/icon.png'
+import { useAuth } from '@renderer/contexts/AuthContext'
 
 interface NavItem {
   name: string
@@ -101,7 +102,8 @@ interface RootLayoutProps {
 export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
-
+// ✅ Call useAuth at the top level
+  const { logout } = useAuth()
   // Theme the active module: set <body data-plugin> so the --accent CSS variable
   // (defined in main.css) themes every control in that module automatically.
   useEffect(() => {
@@ -201,8 +203,9 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
     )
   ]
 
-  const handleLogout = async () => {
-    navigate('/login')
+  const handleLogout = async () => {  
+  logout()                    // Clear state + localStorage + IPC
+  navigate('/login')          // Then navigate
   }
 
   if (location.pathname === '/login') {

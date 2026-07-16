@@ -77,9 +77,9 @@ function setupDailyEmailReports(): void {
 // Override console.* so any remaining console calls in third-party
 // code or handlers are also captured in the log file.
 log.transports.console.level = is.dev ? 'debug' : 'warn'
-console.log   = (...args) => log.info(...args)
+console.log = (...args) => log.info(...args)
 console.error = (...args) => log.error(...args)
-console.warn  = (...args) => log.warn(...args)
+console.warn = (...args) => log.warn(...args)
 console.debug = (...args) => log.debug(...args)
 
 let migrationManager: MigrationManager | null = null
@@ -331,18 +331,30 @@ function createWindow(): BrowserWindow {
       message: 'Do you want to back up your data before closing BizFlow?',
       detail: 'A copy of your database will be saved so you can restore it later.'
     })
-
     if (choice === 2) {
       // Cancel — keep the app open.
       e.preventDefault()
       return
     }
-    if (choice === 1) {
-      // Quit without backing up.
-      backupQuitConfirmed = true
-      return
+    // === CLEAR STORAGE BEFORE QUIT ===
+    const clearStorage = async () => {
+      if (win.isDestroyed()) return
+      try {
+        await win.webContents.executeJavaScript(`localStorage.clear(); sessionStorage.clear();`)
+        // Or use: await win.webContents.session.clearStorageData();
+      } catch (err) {
+        mainLog.warn('Storage clear failed:', err)
+      }
     }
 
+    if (choice === 1) {
+      // Quit without backup
+      clearStorage().then(() => {
+        backupQuitConfirmed = true
+        app.quit()
+      })
+      return
+    }
     // Back up, then quit once the copy is written.
     e.preventDefault()
     const destDir = prefs.backupDir || defaultBackupDir()
@@ -360,12 +372,19 @@ function createWindow(): BrowserWindow {
         } else {
           mainLog.info('Backup-on-close saved to ' + res.data.path)
         }
-        app.quit()
+
+        clearStorage().then(() => {
+          backupQuitConfirmed = true
+          app.quit()
+        })
       })
       .catch((err) => {
         backupQuitConfirmed = true
         mainLog.error('Backup-on-close failed:', err)
-        app.quit()
+        clearStorage().then(() => {
+          backupQuitConfirmed = true
+          app.quit()
+        })
       })
   })
 
@@ -398,7 +417,7 @@ function createWindow(): BrowserWindow {
   // Load renderer: prefer dev URL in development, otherwise load local file.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainLog.info('Loading renderer from URL:', process.env['ELECTRON_RENDERER_URL'])
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']).catch(err => {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']).catch((err) => {
       mainLog.error('Failed to load renderer URL:', err)
     })
   } else {
@@ -411,7 +430,7 @@ function createWindow(): BrowserWindow {
         const errorHtml = `<!doctype html><html><body><h2>Missing renderer build</h2><p>Expected file not found: ${indexPath}</p></body></html>`
         mainWindow.loadURL('data:text/html,' + encodeURIComponent(errorHtml))
       } else {
-        mainWindow.loadFile(indexPath).catch(err => {
+        mainWindow.loadFile(indexPath).catch((err) => {
           mainLog.error('Failed to load index.html:', err)
           const errorHtml = `<!doctype html><html><body><h2>Renderer failed to load</h2><pre>${String(err)}</pre></body></html>`
           mainWindow?.loadURL('data:text/html,' + encodeURIComponent(errorHtml))
@@ -436,8 +455,10 @@ function createWindow(): BrowserWindow {
   // Console message logging for debugging
   mainWindow.webContents.on('console-message', (_event, level, message) => {
     const rendererLog = createLogger('Renderer')
-    if (level >= 3) rendererLog.error(message)       // level 3 = error
-    else if (level >= 2) rendererLog.warn(message)   // level 2 = warning
+    if (level >= 3)
+      rendererLog.error(message) // level 3 = error
+    else if (level >= 2)
+      rendererLog.warn(message) // level 2 = warning
     else rendererLog.verbose(message)
   })
 
@@ -458,7 +479,11 @@ function waitForDemoUnlock(expiredWindow: BrowserWindow): Promise<void> {
       event.preventDefault()
       const code = title.slice(DEMO_UNLOCK_TITLE_SENTINEL.length)
       // Restore the visible title so the typed code never lingers there.
-      try { expiredWindow.setTitle('BizFlow Demo Expired') } catch { /* ignore */ }
+      try {
+        expiredWindow.setTitle('BizFlow Demo Expired')
+      } catch {
+        /* ignore */
+      }
 
       if (code === DEMO_UNLOCK_CODE) {
         mainLog.warn('Demo unlock code accepted \u2014 launching application.')
@@ -543,9 +568,9 @@ app.whenReady().then(async () => {
     // Run database migrations if needed
     mainLog.info('Checking for database migrations...')
     migrationManager = new MigrationManager()
-    
+
     const migrationSuccess = await migrationManager.migrateWithUI(mainWindow)
-    
+
     if (!migrationSuccess) {
       mainLog.warn('Migration failed or cancelled, exiting...')
       return // App will quit from migration manager
@@ -555,9 +580,9 @@ app.whenReady().then(async () => {
 
     // Seed default installment plans (only if none exist — table may not exist in all module configs)
     try {
-      const tableRows = await prisma.$queryRawUnsafe(
+      const tableRows = (await prisma.$queryRawUnsafe(
         `SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name='InstallmentPlan'`
-      ) as { cnt: number }[]
+      )) as { cnt: number }[]
       if (Number(tableRows[0]?.cnt) > 0) {
         const p = prisma as any
         const planCount = await p.installmentPlan.count()
@@ -579,7 +604,7 @@ app.whenReady().then(async () => {
     setupDailyEmailReports()
 
     mainLog.info('Setup complete')
-    
+
     // Show window after everything is ready
     mainWindow.show()
 
