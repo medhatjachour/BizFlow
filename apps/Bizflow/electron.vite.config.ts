@@ -17,7 +17,7 @@ function resolveEnabledPlugins(): string[] {
     if (match) return match[1].split(',').map((s) => s.trim()).filter(Boolean)
   }
   // Default: bundle every known plugin
-  return ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic', 'vet', 'gym', 'pharmacy']
+  return ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic', 'vet', 'gym', 'pharmacy', 'coffee']
   // return ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic']
 }
 
@@ -37,7 +37,8 @@ const pluginDefineFlags = {
   __PLUGIN_CLINIC__: enabledPlugins.includes('clinic'),
   __PLUGIN_VET__: enabledPlugins.includes('vet'),
   __PLUGIN_GYM__: enabledPlugins.includes('gym'),
-  __PLUGIN_PHARMACY__: enabledPlugins.includes('pharmacy')
+  __PLUGIN_PHARMACY__: enabledPlugins.includes('pharmacy'),
+  __PLUGIN_COFFEE__: enabledPlugins.includes('coffee')
 }
 
 export default defineConfig({

@@ -64,6 +64,12 @@ export interface ReceiptData {
   username?: string
   customerName?: string
   customerPhone?: string
+  deliveryAddress?: string
+  orderType?: string
+  tableName?: string
+  shiftName?: string
+  openedAt?: Date
+  closedAt?: Date
   notes?: string
   
   // Installments
@@ -163,6 +169,13 @@ export class ThermalPrinterService {
         cashier: 'الكاشير',
         customer: 'العميل',
         phone: 'الهاتف',
+        deliveryAddress: 'العنوان',
+        orderType: 'نوع الطلب',
+        table: 'الطاولة',
+        shift: 'الوردية',
+        openedAt: 'فتح الطلب',
+        closedAt: 'اغلاق الطلب',
+        notes: 'ملاحظات',
         subtotal: 'المجموع الفرعي',
         vat: 'ضريبة القيمة المضافة',
         total: 'الاجمالي الكلي',
@@ -192,6 +205,13 @@ export class ThermalPrinterService {
       cashier: 'Cashier',
       customer: 'Customer',
       phone: 'Phone',
+      deliveryAddress: 'Address',
+      orderType: 'Order Type',
+      table: 'Table',
+      shift: 'Shift',
+      openedAt: 'Opened At',
+      closedAt: 'Closed At',
+      notes: 'Notes',
       subtotal: 'Subtotal',
       vat: 'VAT',
       total: 'TOTAL',
@@ -252,6 +272,13 @@ export class ThermalPrinterService {
     if (data.username) text += `${lbl.cashier}: ${data.username}\n`
     if (data.customerName) text += `${lbl.customer}: ${data.customerName}\n`
     if (data.customerPhone) text += `${lbl.phone}: ${data.customerPhone}\n`
+    if (data.deliveryAddress) text += `${lbl.deliveryAddress}: ${data.deliveryAddress}\n`
+    if (data.orderType) text += `${lbl.orderType}: ${data.orderType.replace('_', ' ')}\n`
+    if (data.tableName) text += `${lbl.table}: ${data.tableName}\n`
+    if (data.shiftName) text += `${lbl.shift}: ${data.shiftName}\n`
+    if (data.openedAt) text += `${lbl.openedAt}: ${new Date(data.openedAt).toLocaleString(locale)}\n`
+    if (data.closedAt) text += `${lbl.closedAt}: ${new Date(data.closedAt).toLocaleString(locale)}\n`
+    if (data.notes) text += `${lbl.notes}: ${data.notes}\n`
     text += dashes + '\n'
     
     // Items with discount calculation
@@ -510,6 +537,13 @@ export class ThermalPrinterService {
     if (data.username)      printer.println(`${lbl.cashier}: ${data.username}`)
     if (data.customerName)  printer.println(`${lbl.customer}: ${data.customerName}`)
     if (data.customerPhone) printer.println(`${lbl.phone}: ${data.customerPhone}`)
+    if (data.deliveryAddress) printer.println(`${lbl.deliveryAddress}: ${data.deliveryAddress}`)
+    if (data.orderType) printer.println(`${lbl.orderType}: ${data.orderType.replace('_', ' ')}`)
+    if (data.tableName) printer.println(`${lbl.table}: ${data.tableName}`)
+    if (data.shiftName) printer.println(`${lbl.shift}: ${data.shiftName}`)
+    if (data.openedAt) printer.println(`${lbl.openedAt}: ${new Date(data.openedAt).toLocaleString(locale)}`)
+    if (data.closedAt) printer.println(`${lbl.closedAt}: ${new Date(data.closedAt).toLocaleString(locale)}`)
+    if (data.notes) printer.println(`${lbl.notes}: ${data.notes}`)
     printer.drawLine()
 
     // ── Items ─────────────────────────────────────────────────────

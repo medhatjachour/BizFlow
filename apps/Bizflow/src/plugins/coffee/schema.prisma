@@ -1,0 +1,186 @@
+// ─── Coffee Shop Plugin – Schema ─────────────────────────────────────────────
+// Module: coffee
+// Use Case: Coffee shop POS, table management, dine-in/takeaway/delivery orders,
+//           product catalog (no SKU/variants), inventory, sales, and shifts.
+//
+// NOTE: Merged into prisma/merged.prisma at build time via merge-schemas.js
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Product categories (e.g. Hot Drinks, Cold Drinks, Food, Snacks)
+model CoffeeCategory {
+  id           String          @id @default(uuid())
+  name         String          @unique
+  description  String?
+  color        String?         // Tailwind color name for UI badges (e.g. "amber")
+  icon         String?         // Emoji or Lucide icon name
+  displayOrder Int             @default(0)
+  products     CoffeeProduct[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([name])
+}
+
+// Coffee products — no SKU, no variants; each product is a single sellable item
+model CoffeeProduct {
+  id             String                @id @default(uuid())
+  name           String
+  categoryId     String?
+  category       CoffeeCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description    String?
+  price          Float                 // Selling price
+  cost           Float                 @default(0)  // Cost for profit tracking
+  stock          Int                   @default(0)  // Current inventory count
+  reorderPoint   Int                   @default(5)  // Alert threshold for low stock
+  image          String?               // Filename stored in the images/ directory
+  isAvailable    Boolean               @default(true)  // Toggle on POS without deleting
+  displayOrder   Int                   @default(0)
+  notes          String?
+  orderItems     CoffeeOrderItem[]
+  stockMovements CoffeeStockMovement[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([name])
+  @@index([categoryId])
+  @@index([isAvailable])
+}
+
+// Inventory movement log — every stock change is recorded here
+model CoffeeStockMovement {
+  id            String        @id @default(uuid())
+  productId     String
+  product       CoffeeProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type          String        // sale | restock | adjustment | waste
+  quantity      Int           // Positive = stock added, negative = stock removed
+  previousStock Int
+  newStock      Int
+  reason        String?       // Human-readable reason for adjustment
+  referenceId   String?       // Order ID that triggered the movement
+  notes         String?
+  createdAt     DateTime      @default(now())
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// Physical seating tables in the café
+model CoffeeTable {
+  id        String        @id @default(uuid())
+  number    Int           @unique
+  name      String?       // Optional friendly name (e.g. "Window Seat")
+  capacity  Int           @default(4)
+  section   String?       // e.g. "Indoor", "Outdoor", "Bar"
+  status    String        @default("available") // available | occupied | cleaning
+  isActive  Boolean       @default(true)
+  orders    CoffeeOrder[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@index([section])
+  @@index([isActive])
+}
+
+// An order — covers dine-in (linked to table), takeaway, and delivery
+model CoffeeOrder {
+  id            String           @id @default(uuid())
+  orderNumber   String           @unique           // e.g. "#0042", auto-generated
+  type          String           @default("dine_in") // dine_in | takeaway | delivery
+  tableId       String?
+  table         CoffeeTable?     @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  customerName  String?          // For takeaway/delivery identification
+  customerPhone String?          // For delivery contact
+  deliveryAddress String?        // Delivery address (delivery orders)
+  customerId    String?          // Link to registered CoffeeCustomer (optional)
+  customer      CoffeeCustomer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cashierId     String?
+  cashier       User?            @relation("CoffeeOrderCashier", fields: [cashierId], references: [id], onDelete: SetNull)
+  shiftId       String?
+  shift         CoffeeShift?     @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  status        String           @default("open")  // open | ready | paid | voided
+  paymentMethod String?          // cash | card | vodafone_cash — set when closing
+  subtotal      Float            @default(0)
+  discount      Float            @default(0)
+  tax           Float            @default(0)
+  total         Float            @default(0)
+  notes         String?
+  items         CoffeeOrderItem[]
+  openedAt      DateTime         @default(now())
+  closedAt      DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([tableId])
+  @@index([type])
+  @@index([status])
+  @@index([shiftId])
+  @@index([cashierId])
+  @@index([customerId])
+  @@index([openedAt])
+}
+
+// Individual line items within an order
+model CoffeeOrderItem {
+  id          String         @id @default(uuid())
+  orderId     String
+  order       CoffeeOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     CoffeeProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String         // Snapshot of name at time of order
+  unitPrice   Float
+  quantity    Int            @default(1)
+  total       Float
+  notes       String?        // Special instructions (e.g. "no sugar", "extra shot")
+  status      String         @default("pending") // pending | preparing | ready | served
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// Coffee shop customers — track regulars, visit count, and total spend
+model CoffeeCustomer {
+  id          String        @id @default(uuid())
+  name        String
+  phone       String?       @unique
+  email       String?
+  notes       String?       // Preferences (e.g. "oat milk", "no sugar")
+  totalSpent  Float         @default(0)
+  visitCount  Int           @default(0)
+  lastVisit   DateTime?
+  orders      CoffeeOrder[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([name])
+  @@index([phone])
+}
+
+// A work shift — opened at start of day/period, closed at end; summarises all sales
+model CoffeeShift {
+  id                String        @id @default(uuid())
+  cashierId         String
+  cashier           User          @relation("CoffeeShiftCashier", fields: [cashierId], references: [id])
+  status            String        @default("open") // open | closed
+  openingCash       Float         @default(0)   // Cash in drawer at start
+  closingCash       Float?                       // Cash in drawer at end (counted)
+  totalSales        Float         @default(0)   // Sum of all paid order totals
+  totalOrders       Int           @default(0)   // Count of paid orders in this shift
+  cashTotal         Float         @default(0)   // Revenue via cash payments
+  cardTotal         Float         @default(0)   // Revenue via card payments
+  vodafoneCashTotal Float         @default(0)   // Revenue via Vodafone Cash
+  cashDifference    Float?                       // closingCash − (openingCash + cashTotal)
+  notes             String?
+  orders            CoffeeOrder[]
+  openedAt          DateTime      @default(now())
+  closedAt          DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([cashierId])
+  @@index([status])
+  @@index([openedAt])
+}

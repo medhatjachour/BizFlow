@@ -9,6 +9,7 @@ import { clinicPreload } from '../plugins/clinic/preload'
 import { vetPreload } from '../plugins/vet/preload'
 import { gymPreload } from '../plugins/gym/preload'
 import { pharmacyPreload } from '../plugins/pharmacy/preload'
+import { coffeePreload } from '../plugins/coffee/preload'
 
 // Custom APIs for renderer
 const api = {
@@ -292,7 +293,8 @@ const api = {
   clinic: clinicPreload,
   vet: vetPreload,
   gym: typeof __PLUGIN_GYM__ !== 'undefined' && __PLUGIN_GYM__ ? gymPreload : undefined,
-  pharmacy: typeof __PLUGIN_PHARMACY__ !== 'undefined' && __PLUGIN_PHARMACY__ ? pharmacyPreload : undefined
+  pharmacy: typeof __PLUGIN_PHARMACY__ !== 'undefined' && __PLUGIN_PHARMACY__ ? pharmacyPreload : undefined,
+  coffee:   typeof __PLUGIN_COFFEE__   !== 'undefined' && __PLUGIN_COFFEE__   ? coffeePreload   : undefined
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

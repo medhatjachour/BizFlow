@@ -29,7 +29,8 @@ import {
   Stethoscope,
   PawPrint,
   Dumbbell,
-  Pill
+  Pill,
+  Coffee
 } from 'lucide-react'
 import LocalIcon from '../../assets/icon.png'
 import { useAuth } from '@renderer/contexts/AuthContext'
@@ -108,7 +109,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   // (defined in main.css) themes every control in that module automatically.
   useEffect(() => {
     const seg = location.pathname.split('/')[1] || ''
-    const known = ['vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'commerce']
+    const known = ['vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'commerce', 'coffee']
     if (known.includes(seg)) document.body.dataset.plugin = seg
     else delete document.body.dataset.plugin
   }, [location.pathname])
@@ -127,6 +128,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const pharmacyEnabled = useModuleEnabled(MODULE_IDS.PHARMACY)
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
   const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
+  const coffeeEnabled = useModuleEnabled(MODULE_IDS.COFFEE)
 
   // ── Commerce nav items (injected when Commerce plugin is enabled) ─────────
   const commerceNavItems: NavItem[] = __PLUGIN_COMMERCE__ && commerceEnabled ? [
@@ -192,6 +194,13 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       href: '/pharmacy',
       icon: Pill,
       roles: ['admin', 'manager', 'sales', 'inventory']
+    }] : []),
+    ...(__PLUGIN_COFFEE__ && coffeeEnabled ? [{
+      name: 'Coffee Shop',
+      translationKey: 'coffee',
+      href: '/coffee',
+      icon: Coffee,
+      roles: ['admin', 'manager', 'sales']
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&

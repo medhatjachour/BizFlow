@@ -789,6 +789,77 @@ interface API {
       getAssignments: (traineeId: string) => Promise<any[]>
     }
   }
+  coffee: {
+    categories: {
+      getAll: () => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
+    products: {
+      getAll: (opts?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      toggleAvailability: (id: string, isAvailable: boolean) => Promise<any>
+      saveImage: (base64: string) => Promise<string>
+      loadImage: (filename: string) => Promise<string | null>
+    }
+    inventory: {
+      getMovements: (productId: string) => Promise<any[]>
+      adjust: (data: any) => Promise<any>
+    }
+    tables: {
+      getAll: () => Promise<any[]>
+      create: (data: any) => Promise<any>
+      update: (data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      getHistory: (tableId: string) => Promise<any[]>
+    }
+    orders: {
+      getAll: (opts?: any) => Promise<any[]>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      addItem: (data: any) => Promise<any>
+      removeItem: (id: string) => Promise<any>
+      updateItemStatus: (data: any) => Promise<any>
+      close: (data: any) => Promise<any>
+      void: (id: string) => Promise<any>
+    }
+    sales: {
+      getAll: (opts?: any) => Promise<any>
+      getSummary: (opts?: any) => Promise<any>
+    }
+    reports: {
+      getOverview: (opts?: any) => Promise<any>
+      getDailyTrend: (opts?: any) => Promise<any[]>
+      getTopProducts: (opts?: any) => Promise<any[]>
+      getCategoryPerformance: (opts?: any) => Promise<any[]>
+      getCustomerInsights: (opts?: any) => Promise<any>
+    }
+    finance: {
+      getOverview: (opts?: any) => Promise<any>
+      getTransactions: (opts?: any) => Promise<any>
+    }
+    shifts: {
+      getActive: () => Promise<any>
+      getHistory: (opts?: any) => Promise<any>
+      getSummary: (opts?: any) => Promise<any>
+      getDetails: (shiftId: string) => Promise<any>
+      open: (data: any) => Promise<any>
+      close: (data: any) => Promise<any>
+    }
+    getOverview: () => Promise<any>
+    customers: {
+      getAll: (opts?: any) => Promise<any>
+      getById: (id: string) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+      search: (query: string) => Promise<any[]>
+    }
+  }
 }
 
 declare global {

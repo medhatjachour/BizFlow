@@ -21,7 +21,8 @@ export const MODULE_IDS = {
   CLINIC: 'clinic',
   VET: 'vet',
   GYM: 'gym',
-  PHARMACY: 'pharmacy'
+  PHARMACY: 'pharmacy',
+  COFFEE: 'coffee'
 } as const
 
 export type ModuleId = (typeof MODULE_IDS)[keyof typeof MODULE_IDS]
@@ -206,6 +207,28 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     ipcPrefix: 'pharmacy',
     routePrefix: '/pharmacy',
     price: 279
+  },
+  [MODULE_IDS.COFFEE]: {
+    id: MODULE_IDS.COFFEE,
+    name: 'Coffee Shop',
+    description: 'Complete coffee shop management — POS grid, table orders, dine-in/takeaway/delivery, product catalog, inventory, and shift tracking.',
+    features: [
+      'Grid POS with product images, categories & cart',
+      'Dine-in table management with active order tracking',
+      'Takeaway & delivery orders with customer details',
+      'Cash, card, and Vodafone Cash payment methods',
+      'Product catalog (no SKU/variants) with photos',
+      'Inventory tracking with low-stock alerts',
+      'Sales history with payment breakdown per period',
+      'Shift management with opening/closing cash reconciliation',
+    ],
+    icon: '☕',
+    color: 'amber',
+    status: 'active',
+    models: ['CoffeeCategory', 'CoffeeProduct', 'CoffeeStockMovement', 'CoffeeTable', 'CoffeeOrder', 'CoffeeOrderItem', 'CoffeeShift'],
+    ipcPrefix: 'coffee',
+    routePrefix: '/coffee',
+    price: 199
   }
 }
 

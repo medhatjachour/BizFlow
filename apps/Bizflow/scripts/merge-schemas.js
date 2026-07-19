@@ -74,6 +74,15 @@ const MODULE_REGISTRY = {
     file: 'schema.prisma',
     injectFields: {}
   },
+  coffee: {
+    file: 'schema.prisma',
+    injectFields: {
+      User: [
+        '  coffeeOrders  CoffeeOrder[]  @relation("CoffeeOrderCashier")  // Orders processed by this user as cashier',
+        '  coffeeShifts  CoffeeShift[]  @relation("CoffeeShiftCashier")  // Shifts opened by this user'
+      ]
+    }
+  },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
