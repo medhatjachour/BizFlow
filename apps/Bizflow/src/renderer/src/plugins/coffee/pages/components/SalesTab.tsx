@@ -10,6 +10,8 @@ import {
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 
+interface Category { id: string; name: string }
+
 // ── Types ────────────────────────────────────────────────────────────────────
 interface SaleItem { id: string; productName: string; quantity: number; unitPrice: number; total: number }
 interface Sale {
@@ -62,25 +64,42 @@ export default function SalesTab() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [page,     setPage]     = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [paymentMethod, setPaymentMethod] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [categoryId, setCategoryId] = useState('all')
+  const [categories, setCategories] = useState<Category[]>([])
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
     setLoading(true)
-    const opts = { ...periodDates(period), page, pageSize: 50 }
+    const opts = {
+      ...periodDates(period),
+      page,
+      pageSize: 20,
+      paymentMethod: paymentMethod === 'all' ? undefined : paymentMethod,
+      type: typeFilter === 'all' ? undefined : typeFilter,
+      categoryId: categoryId === 'all' ? undefined : categoryId
+    }
     try {
       const [salesRes, sumRes] = await Promise.all([
         window.api.coffee.sales.getAll(opts),
-        window.api.coffee.sales.getSummary(periodDates(period))
+        window.api.coffee.sales.getSummary({
+          ...periodDates(period),
+          categoryId: categoryId === 'all' ? undefined : categoryId
+        })
       ])
       setSales(salesRes?.items ?? [])
       setTotalPages(salesRes?.totalPages ?? 1)
       setSummary(sumRes)
     } catch { toast.error('Failed to load sales') }
     finally { setLoading(false) }
-  }, [period, page])
+  }, [period, page, paymentMethod, typeFilter, categoryId])
 
-  useEffect(() => { setPage(1) }, [period])
+  useEffect(() => { setPage(1) }, [period, paymentMethod, typeFilter, categoryId])
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    window.api.coffee.categories.getAll().then(setCategories).catch(() => setCategories([]))
+  }, [])
 
   function toggleExpand(id: string) {
     setExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -107,6 +126,22 @@ export default function SalesTab() {
             >{label}</button>
           ))}
         </div>
+        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+          <option value="all">All Types</option>
+          <option value="dine_in">Dine In</option>
+          <option value="takeaway">Takeaway</option>
+          <option value="delivery">Delivery</option>
+        </select>
+        <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+          <option value="all">All Payments</option>
+          <option value="cash">Cash</option>
+          <option value="card">Card</option>
+          <option value="vodafone_cash">Vodafone</option>
+        </select>
+        <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="px-3 py-1.5 rounded-lg text-xs border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+          <option value="all">All Categories</option>
+          {categories.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+        </select>
         <button onClick={load} className="ml-auto p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>

@@ -7,18 +7,20 @@
 import { useState } from 'react'
 import {
   CreditCard, LayoutGrid, ClipboardList, Package,
-  BoxesIcon, Receipt, Timer, Coffee, Users, BarChart3, Wallet
+  BoxesIcon, Receipt, Timer, Coffee, Users, BarChart3, Wallet, Truck
 } from 'lucide-react'
 import POSView       from './components/POSView'
 import TablesTab     from './components/TablesTab'
 import OrdersTab     from './components/OrdersTab'
-import ProductsTab   from './components/ProductsTab'
+import ProductsTab   from './product/ProductsTab'
 import InventoryTab  from './components/InventoryTab'
 import SalesTab      from './components/SalesTab'
 import ShiftsTab     from './components/ShiftsTab'
 import CustomersTab  from './components/CustomersTab'
 import ReportsTab    from './components/ReportsTab'
 import FinanceTab    from './components/FinanceTab'
+import IncomingReceiptsTab from './components/IncomingReceiptsTab'
+import ExpensesTab   from './components/ExpensesTab'
 
 // ── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
@@ -27,6 +29,8 @@ const TABS = [
   { id: 'orders',    label: 'Orders',    icon: ClipboardList  },
   { id: 'products',  label: 'Products',  icon: Package        },
   { id: 'inventory', label: 'Inventory', icon: BoxesIcon      },
+  { id: 'incoming',  label: 'Incoming',  icon: Truck          },
+  { id: 'expenses',  label: 'Expenses',  icon: Receipt        },
   { id: 'sales',     label: 'Sales',     icon: Receipt        },
   { id: 'shifts',    label: 'Shifts',    icon: Timer          },
   { id: 'customers', label: 'Customers', icon: Users          },
@@ -84,6 +88,8 @@ export default function CoffeePage() {
         {activeTab === 'orders'    && <OrdersTab    />}
         {activeTab === 'products'  && <ProductsTab  />}
         {activeTab === 'inventory' && <InventoryTab />}
+        {activeTab === 'incoming'  && <IncomingReceiptsTab />}
+        {activeTab === 'expenses'  && <ExpensesTab   />}
         {activeTab === 'sales'     && <SalesTab     />}
         {activeTab === 'shifts'    && <ShiftsTab    />}
         {activeTab === 'customers' && <CustomersTab />}

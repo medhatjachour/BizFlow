@@ -14,11 +14,14 @@ const COFFEE_TABLES = [
   'CoffeeCategory',
   'CoffeeProduct',
   'CoffeeStockMovement',
+  'CoffeeIncomingReceipt',
+  'CoffeeIncomingReceiptItem',
   'CoffeeTable',
   'CoffeeOrder',
   'CoffeeOrderItem',
   'CoffeeShift',
-  'CoffeeCustomer'
+  'CoffeeCustomer',
+  'CoffeeExpense'
 ]
 
 export async function ensureCoffeeSchema(prisma: any, dbUrl: string, cwd: string): Promise<void> {

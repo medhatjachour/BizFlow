@@ -110,6 +110,8 @@ export default function TablesTab() {
   const [history,       setHistory]       = useState<HistoryOrder[]>([])
   const [loadingHist,   setLoadingHist]   = useState(false)
   const [expandedOrd,   setExpandedOrd]   = useState<string | null>(null)
+  const [histPage,      setHistPage]      = useState(1)
+  const [histTotalPages,setHistTotalPages]= useState(1)
 
   // ── Data ────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -222,11 +224,29 @@ export default function TablesTab() {
 
   // ── History ────────────────────────────────────────────────────────────────
   async function openHistory(t: CoffeeTable) {
-    setHistTable(t); setLoadingHist(true); setHistory([])
-    try { setHistory(await window.api.coffee.tables.getHistory(t.id) ?? []) }
+    setHistTable(t); setHistPage(1); setLoadingHist(true); setHistory([])
+    try {
+      const res = await window.api.coffee.tables.getHistory({ tableId: t.id, page: 1, pageSize: 8 })
+      setHistory(res?.items ?? [])
+      setHistTotalPages(res?.totalPages ?? 1)
+    }
     catch { toast.error('Failed to load history') }
     finally { setLoadingHist(false) }
   }
+
+  const loadHistoryPage = useCallback(async (tableId: string, page: number) => {
+    setLoadingHist(true)
+    try {
+      const res = await window.api.coffee.tables.getHistory({ tableId, page, pageSize: 8 })
+      setHistory(res?.items ?? [])
+      setHistTotalPages(res?.totalPages ?? 1)
+      setHistPage(page)
+    } catch {
+      toast.error('Failed to load history')
+    } finally {
+      setLoadingHist(false)
+    }
+  }, [toast])
 
   // ── Filtered products for new-order panel ─────────────────────────────────
   const visibleProds = products.filter(p => {
@@ -633,6 +653,15 @@ export default function TablesTab() {
                 </div>
               ))}
             </div>
+            {histTotalPages > 1 && histTable && (
+              <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-center gap-2 shrink-0">
+                <button disabled={histPage <= 1} onClick={() => loadHistoryPage(histTable.id, histPage - 1)}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40">Prev</button>
+                <span className="px-3 py-1.5 text-xs text-slate-500">{histPage} / {histTotalPages}</span>
+                <button disabled={histPage >= histTotalPages} onClick={() => loadHistoryPage(histTable.id, histPage + 1)}
+                  className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40">Next</button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -64,17 +64,25 @@ export function registerTableHandlers(prisma: any) {
   })
 
   // Return all orders (all statuses) for a specific table — for history view
-  ipcMain.handle('coffee:tables:getHistory', async (_e, tableId: string) => {
+  ipcMain.handle('coffee:tables:getHistory', async (_e, data: { tableId: string; page?: number; pageSize?: number }) => {
     try {
-      return await prisma.coffeeOrder.findMany({
-        where: { tableId },
-        include: {
-          items: { select: { productName: true, quantity: true, unitPrice: true, total: true, notes: true } },
-          cashier: { select: { id: true, username: true, fullName: true } }
-        },
-        orderBy: { openedAt: 'desc' },
-        take: 50
-      })
+      const page = data?.page ?? 1
+      const pageSize = data?.pageSize ?? 12
+      const where = { tableId: data.tableId }
+      const [total, items] = await Promise.all([
+        prisma.coffeeOrder.count({ where }),
+        prisma.coffeeOrder.findMany({
+          where,
+          include: {
+            items: { select: { productName: true, quantity: true, unitPrice: true, total: true, notes: true } },
+            cashier: { select: { id: true, username: true, fullName: true } }
+          },
+          orderBy: { openedAt: 'desc' },
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ])
+      return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
     } catch (err) { log.error('tables:getHistory', err); throw err }
   })
 }

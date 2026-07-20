@@ -15,65 +15,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   ShoppingCart, X, Plus, Minus, Coffee, ChevronDown,
-  CreditCard, Smartphone, Banknote, UtensilsCrossed,
-  Package, Truck, Check, Zap, Grid3X3, Edit2,
+ Check, Zap, Grid3X3, Edit2,
   User, MapPin, UserPlus, Search
 } from 'lucide-react'
 import { useAuth }  from '@renderer/contexts/AuthContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 
 // ── Types ────────────────────────────────────────────────────────────────────
-interface Category { id: string; name: string; color?: string; icon?: string }
-interface Product  { id: string; name: string; price: number; image?: string; categoryId?: string; category?: Category; stock: number; isAvailable: boolean }
-interface CartItem { productId: string; productName: string; unitPrice: number; salePrice: number; quantity: number; notes?: string }
-interface CoffeeTable { id: string; number: number; name?: string; status: string; section?: string }
-interface CoffeeCustomer { id: string; name: string; phone?: string; email?: string; notes?: string }
-interface ReceiptSettings {
-  storeName: string
-  storeAddress: string
-  storePhone: string
-  storeEmail?: string
-  taxNumber: string
-  commercialRegister?: string
-  printerType: 'none' | 'usb' | 'network' | 'html'
-  printerName?: string
-  printerIP?: string
-  paperWidth: '58mm' | '80mm'
-  receiptBottomSpacing?: number
-  printLogo?: boolean
-  printQRCode?: boolean
-  printBarcode?: boolean
-  receiptLanguage?: 'en' | 'ar'
-  openCashDrawer?: boolean
-}
-
-type OrderType     = 'dine_in' | 'takeaway' | 'delivery'
-type PaymentMethod = 'cash' | 'card' | 'vodafone_cash'
-type ViewMode      = 'grid' | 'quick'
-
-const ORDER_TYPES: { value: OrderType; label: string; icon: typeof UtensilsCrossed }[] = [
-  { value: 'dine_in',  label: 'Dine In',  icon: UtensilsCrossed },
-  { value: 'takeaway', label: 'Takeaway',  icon: Package },
-  { value: 'delivery', label: 'Delivery',  icon: Truck }
-]
-
-const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: typeof Banknote }[] = [
-  { value: 'cash',          label: 'Cash',          icon: Banknote   },
-  { value: 'card',          label: 'Card',           icon: CreditCard },
-  { value: 'vodafone_cash', label: 'Vodafone Cash',  icon: Smartphone }
-]
-
-const CAT_COLORS: Record<string, string> = {
-  amber:   'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  orange:  'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  teal:    'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
-  green:   'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  violet:  'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
-  blue:    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  default: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-}
-const catCls = (c?: string) => CAT_COLORS[c ?? 'default'] ?? CAT_COLORS.default
-
+import type { Category, Product, CartItem, CoffeeTable, CoffeeCustomer, OrderType, PaymentMethod, ViewMode, ReceiptSettings } from './type'
+import { ORDER_TYPES, PAYMENT_METHODS, catCls } from './utils'
 // ── Product image card — loads image from disk via IPC ────────────────────────
 function ProductImg({ image, name }: { image?: string; name: string }) {
   const [src, setSrc] = useState<string | null>(null)

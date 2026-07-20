@@ -1,6 +1,6 @@
 /**
  * Coffee – Customers Tab
- * CRUD for coffee shop regulars — name, phone, email, notes, visit count, total spent.
+ * CRUD for coffee shop regulars — name, phone, address, notes, visit count, total spent.
  * Includes inline customer profile drawer with order history.
  */
 
@@ -13,7 +13,7 @@ import { useToast } from '@renderer/contexts/ToastContext'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Customer {
-  id: string; name: string; phone?: string; email?: string
+  id: string; name: string; phone?: string; address?: string
   notes?: string; totalSpent: number; visitCount: number; lastVisit?: string
   _count?: { orders: number }
 }
@@ -41,7 +41,7 @@ export default function CustomersTab() {
   // Modal state
   const [modalOpen,  setModalOpen]  = useState(false)
   const [editTarget, setEditTarget] = useState<Customer | null>(null)
-  const [form,       setForm]       = useState({ name: '', phone: '', email: '', notes: '' })
+  const [form,       setForm]       = useState({ name: '', phone: '', address: '', notes: '' })
   const [saving,     setSaving]     = useState(false)
 
   // Profile drawer
@@ -75,14 +75,14 @@ export default function CustomersTab() {
   }
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
-  function openCreate() { setEditTarget(null); setForm({ name: '', phone: '', email: '', notes: '' }); setModalOpen(true) }
-  function openEdit(c: Customer) { setEditTarget(c); setForm({ name: c.name, phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' }); setModalOpen(true) }
+  function openCreate() { setEditTarget(null); setForm({ name: '', phone: '', address: '', notes: '' }); setModalOpen(true) }
+  function openEdit(c: Customer) { setEditTarget(c); setForm({ name: c.name, phone: c.phone ?? '', address: c.address ?? '', notes: c.notes ?? '' }); setModalOpen(true) }
 
   async function handleSave() {
     if (!form.name.trim()) { toast.error('Name is required'); return }
     setSaving(true)
     try {
-      const data = { name: form.name.trim(), phone: form.phone || undefined, email: form.email || undefined, notes: form.notes || undefined }
+      const data = { name: form.name.trim(), phone: form.phone || undefined, address: form.address || undefined, notes: form.notes || undefined }
       if (editTarget) await window.api.coffee.customers.update({ id: editTarget.id, ...data })
       else             await window.api.coffee.customers.create(data)
       setModalOpen(false); load(); toast.success(editTarget ? 'Customer updated' : 'Customer added')
@@ -103,7 +103,7 @@ export default function CustomersTab() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input type="text" placeholder="Search by name, phone, email…" value={search}
+          <input type="text" placeholder="Search by name, phone, address..." value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none" />
         </div>
@@ -139,7 +139,7 @@ export default function CustomersTab() {
                 <p className="text-sm font-semibold text-slate-800 dark:text-white">{c.name}</p>
                 <div className="flex items-center gap-3 mt-0.5">
                   {c.phone && <span className="text-[10px] text-slate-400 flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" />{c.phone}</span>}
-                  {c.email && <span className="text-[10px] text-slate-400 flex items-center gap-0.5"><Mail className="w-2.5 h-2.5" />{c.email}</span>}
+                  {c.address && <span className="text-[10px] text-slate-400 flex items-center gap-0.5"><Mail className="w-2.5 h-2.5" />{c.address}</span>}
                   {c.notes && <span className="text-[10px] text-slate-400 italic truncate max-w-[120px]">{c.notes}</span>}
                 </div>
               </div>
@@ -179,14 +179,14 @@ export default function CustomersTab() {
                 <label className="block text-xs font-medium text-slate-500 mb-1">Name *</label>
                 <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={INPUT} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Phone</label>
                   <input type="tel" value={form.phone} placeholder="01x…" onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Email</label>
-                  <input type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className={INPUT} />
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Address</label>
+                  <input type="text" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} className={INPUT} />
                 </div>
               </div>
               <div>
@@ -230,7 +230,7 @@ export default function CustomersTab() {
                     <p className="font-bold text-slate-900 dark:text-white">{profile.name}</p>
                     <div className="flex flex-wrap gap-3 mt-0.5">
                       {profile.phone && <span className="text-xs text-slate-500 flex items-center gap-1"><Phone className="w-3 h-3" />{profile.phone}</span>}
-                      {profile.email && <span className="text-xs text-slate-500 flex items-center gap-1"><Mail className="w-3 h-3" />{profile.email}</span>}
+                      {profile.address && <span className="text-xs text-slate-500 flex items-center gap-1"><Mail className="w-3 h-3" />{profile.address}</span>}
                     </div>
                     {profile.notes && <p className="text-xs text-amber-600 dark:text-amber-400 italic mt-1">{profile.notes}</p>}
                   </div>

@@ -67,8 +67,16 @@ export class MigrationManager {
         }
       }
       
-      // Try to query fields that only exist in new schema
-      // This will throw if the fields don't exist
+      const stockMovementTable = await this.prisma.$queryRawUnsafe(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='StockMovement' LIMIT 1"
+      ) as Array<{ name: string }>
+      if (stockMovementTable.length === 0) {
+        log.info('[Migration] Legacy StockMovement table not present in this module build, skipping legacy migration check')
+        return false
+      }
+
+      // Try to query fields that only exist in the legacy commerce schema.
+      // This will throw if the table exists but the field does not.
       await this.prisma.$queryRaw`SELECT newStock FROM StockMovement LIMIT 1`
       
       log.info('[Migration] Database schema is up to date')

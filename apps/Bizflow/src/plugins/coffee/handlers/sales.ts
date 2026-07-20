@@ -15,7 +15,7 @@ export function registerSalesHandlers(prisma: any) {
   // Paginated list of completed sales
   ipcMain.handle('coffee:sales:getAll', async (_e, opts?: {
     startDate?: string; endDate?: string; paymentMethod?: string;
-    type?: string; page?: number; pageSize?: number
+    type?: string; categoryId?: string; page?: number; pageSize?: number
   }) => {
     try {
       const page     = opts?.page     ?? 1
@@ -24,6 +24,9 @@ export function registerSalesHandlers(prisma: any) {
 
       if (opts?.paymentMethod) where.paymentMethod = opts.paymentMethod
       if (opts?.type)          where.type          = opts.type
+      if (opts?.categoryId) {
+        where.items = { some: { product: { categoryId: opts.categoryId } } }
+      }
       if (opts?.startDate || opts?.endDate) {
         where.closedAt = {}
         if (opts?.startDate) where.closedAt.gte = new Date(opts.startDate)
@@ -51,10 +54,13 @@ export function registerSalesHandlers(prisma: any) {
 
   // Period summary — revenue, order counts, and payment method breakdown
   ipcMain.handle('coffee:sales:getSummary', async (_e, opts?: {
-    startDate?: string; endDate?: string
+    startDate?: string; endDate?: string; categoryId?: string
   }) => {
     try {
       const where: any = { status: 'paid' }
+      if (opts?.categoryId) {
+        where.items = { some: { product: { categoryId: opts.categoryId } } }
+      }
       if (opts?.startDate || opts?.endDate) {
         where.closedAt = {}
         if (opts?.startDate) where.closedAt.gte = new Date(opts.startDate)

@@ -12,7 +12,11 @@ interface Overview {
   averageOrderValue: number
   totalItemsSold: number
   totalCogs: number
+  operationalExpenses: number
+  expenseCount: number
+  totalExpenses: number
   grossProfit: number
+  netProfitAfterExpenses: number
   grossMarginPct: number
   avgItemsPerOrder: number
   discountRatePct: number
@@ -27,6 +31,7 @@ interface Overview {
   repeatCustomerRatePct: number
   lowStockCount: number
   outOfStockCount: number
+  expenseByCategory: Array<{ category: string; total: number }>
   bestDay: { date: string; revenue: number; orders: number }
   worstDay: { date: string; revenue: number; orders: number }
 }
@@ -211,9 +216,11 @@ export default function ReportsTab() {
       </div>
 
       {overview && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-10 gap-3">
           <StatCard label="Revenue" value={overview.totalRevenue.toFixed(2)} tone="text-emerald-600" sub="net paid sales" />
           <StatCard label="Gross Profit" value={overview.grossProfit.toFixed(2)} tone="text-teal-600" sub={`COGS ${overview.totalCogs.toFixed(2)}`} />
+          <StatCard label="Ops Expenses" value={overview.operationalExpenses.toFixed(2)} tone="text-orange-600" sub={`${overview.expenseCount} transactions`} />
+          <StatCard label="Net Profit" value={overview.netProfitAfterExpenses.toFixed(2)} tone="text-emerald-700" sub="after expenses" />
           <StatCard label="Margin" value={`${overview.grossMarginPct.toFixed(1)}%`} tone="text-sky-600" sub="profitability" />
           <StatCard label="Orders" value={String(overview.totalOrders)} tone="text-amber-600" sub={`${overview.totalItemsSold} items sold`} />
           <StatCard label="Avg Ticket" value={overview.averageOrderValue.toFixed(2)} tone="text-violet-600" sub={`${overview.avgItemsPerOrder.toFixed(1)} items / order`} />
@@ -329,6 +336,28 @@ export default function ReportsTab() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+            <BadgeDollarSign className="w-4 h-4" />
+            <p className="text-sm font-semibold">Expense Mix</p>
+          </div>
+          {!overview || overview.expenseByCategory.length === 0 ? (
+            <p className="text-sm text-slate-400">No expenses in this range</p>
+          ) : (
+            <div className="space-y-2">
+              {overview.expenseByCategory.slice(0, 6).map(row => (
+                <div key={row.category} className="grid grid-cols-[110px_1fr_70px] items-center gap-2 text-xs">
+                  <span className="text-slate-500 capitalize truncate">{row.category}</span>
+                  <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                    <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.max(4, (row.total / Math.max(overview.operationalExpenses, 1)) * 100)}%` }} />
+                  </div>
+                  <span className="text-right font-medium text-slate-700 dark:text-slate-300">{row.total.toFixed(0)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">

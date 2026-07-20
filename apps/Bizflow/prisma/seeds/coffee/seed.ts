@@ -1,12 +1,470 @@
+/// <reference types="node" />
+
 /**
  * Coffee Shop Seed Data
- * Creates starter categories, products, a sample table layout, and a default customer.
+ * Creates starter categories, products, tables, customers, and five years of
+ * historical coffee orders/shifts for realistic reporting and finance data.
  * Run with: npm run prisma:seed:coffee
  */
 
-import { PrismaClient } from '../../src/generated/prisma'
+import { randomUUID } from 'node:crypto'
+import process from 'node:process'
+import { PrismaClient } from '../../../src/generated/prisma/index.js'
 
 const prisma = new PrismaClient()
+
+type SeedUser = { id: string; username: string; fullName: string }
+type SeedCustomer = { id: string; name: string; phone: string; email: string | null; notes: string | null }
+type SeedTable = { id: string; number: number; name?: string | null; section?: string | null }
+type SeedProduct = {
+  id: string
+  name: string
+  price: number
+  cost: number
+  stock: number
+  category?: { name: string }
+}
+
+type ProductQuantityMap = Map<string, number>
+
+const SEED_USER_DEFS = [
+  { username: 'coffee.seed.nour', fullName: 'Nour Emad' },
+  { username: 'coffee.seed.youssef', fullName: 'Youssef Adel' },
+  { username: 'coffee.seed.mariam', fullName: 'Mariam Hany' },
+  { username: 'coffee.seed.ziad', fullName: 'Ziad Tarek' }
+]
+
+const FIRST_NAMES = ['Ahmed', 'Sara', 'Omar', 'Layla', 'Karim', 'Nour', 'Yara', 'Mostafa', 'Hana', 'Mina', 'Salma', 'Malak', 'Adham', 'Farah', 'Hassan', 'Rana', 'Mariam', 'Tamer', 'Nadine', 'Aly']
+const LAST_NAMES = ['Hassan', 'Mohamed', 'Ibrahim', 'Adel', 'Samir', 'Khaled', 'Mahmoud', 'Nabil', 'Fouad', 'Sayed', 'Shawky', 'Yehia', 'Hamdy', 'Soliman', 'Wael']
+const CUSTOMER_NOTES = [null, null, null, 'No sugar', 'Extra hot', 'Prefers oat milk', 'Lactose free', 'Double shot lover', 'Call before delivery', 'Prefers window seat']
+const DELIVERY_AREAS = ['Nasr City', 'Heliopolis', 'Maadi', 'Zamalek', 'Dokki', '6th of October', 'Sheikh Zayed', 'New Cairo', 'Mohandessin', 'Hadayek El Maadi']
+const ITEM_NOTES = [undefined, undefined, undefined, 'No sugar', 'Extra ice', 'Extra shot', 'Light milk', 'Takeaway lid', 'Serve warm']
+
+function makeRng(seed: number) {
+  let state = seed >>> 0
+  return () => {
+    state = (state * 1664525 + 1013904223) >>> 0
+    return state / 0x100000000
+  }
+}
+
+const rng = makeRng(20260720)
+
+function randInt(min: number, max: number) {
+  return Math.floor(rng() * (max - min + 1)) + min
+}
+
+function chance(probability: number) {
+  return rng() < probability
+}
+
+function pickOne<T>(items: T[]): T {
+  return items[Math.floor(rng() * items.length)]
+}
+
+function weightedPick<T>(items: T[], weight: (item: T) => number): T {
+  const total = items.reduce((sum, item) => sum + weight(item), 0)
+  let threshold = rng() * total
+  for (const item of items) {
+    threshold -= weight(item)
+    if (threshold <= 0) return item
+  }
+  return items[items.length - 1]
+}
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100
+}
+
+function chunk<T>(items: T[], size: number) {
+  const result: T[][] = []
+  for (let i = 0; i < items.length; i += size) result.push(items.slice(i, i + size))
+  return result
+}
+
+function startOfDay(date: Date) {
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function addProductQuantity(quantities: ProductQuantityMap, productId: string, quantity: number) {
+  quantities.set(productId, (quantities.get(productId) ?? 0) + quantity)
+}
+
+async function ensureSeedUsers(): Promise<SeedUser[]> {
+  const users: SeedUser[] = []
+  for (const def of SEED_USER_DEFS) {
+    const user = await prisma.user.upsert({
+      where: { username: def.username },
+      update: { fullName: def.fullName, role: 'sales', isActive: true },
+      create: {
+        username: def.username,
+        passwordHash: 'seeded-history-user-not-for-login',
+        role: 'sales',
+        fullName: def.fullName,
+        isActive: true
+      }
+    })
+    users.push({ id: user.id, username: user.username, fullName: user.fullName ?? user.username })
+  }
+  return users
+}
+
+async function ensureSeedCustomers(existing: SeedCustomer[]): Promise<SeedCustomer[]> {
+  const starters = existing.map(c => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    email: c.email,
+    notes: c.notes
+  }))
+
+  const generated: SeedCustomer[] = []
+  for (let i = 0; i < 120; i++) {
+    const name = `${FIRST_NAMES[i % FIRST_NAMES.length]} ${LAST_NAMES[(i * 3) % LAST_NAMES.length]}`
+    const phone = `0155${String(1000000 + i).slice(-7)}`
+    const email = `coffee.customer.${i + 1}@seed.local`
+    const notes = CUSTOMER_NOTES[i % CUSTOMER_NOTES.length]
+    const customer = await prisma.coffeeCustomer.upsert({
+      where: { phone },
+      update: { name, email, notes },
+      create: { name, phone, email, notes, totalSpent: 0, visitCount: 0 }
+    })
+    generated.push({ id: customer.id, name: customer.name, phone: customer.phone ?? phone, email: customer.email, notes: customer.notes })
+  }
+
+  return [...starters, ...generated]
+}
+
+async function resetHistoricalData(seedUserIds: string[]) {
+  await prisma.coffeeStockMovement.deleteMany({
+    where: {
+      notes: { in: ['Seeded incoming receipt history'] }
+    }
+  })
+  await prisma.coffeeIncomingReceiptItem.deleteMany({
+    where: { receipt: { receiptNumber: { startsWith: 'IN-SEED-' } } }
+  })
+  await prisma.coffeeIncomingReceipt.deleteMany({ where: { receiptNumber: { startsWith: 'IN-SEED-' } } })
+  await prisma.coffeeOrder.deleteMany({ where: { orderNumber: { startsWith: 'HIST-' } } })
+  await prisma.coffeeShift.deleteMany({ where: { cashierId: { in: seedUserIds } } })
+}
+
+function productWeight(product: SeedProduct) {
+  const category = product.category?.name ?? ''
+  if (category === 'Hot Drinks') return 12
+  if (category === 'Cold Drinks') return 9
+  if (category === 'Specialty Drinks') return 7
+  if (category === 'Food & Snacks') return 6
+  if (category === 'Fresh Juice') return 5
+  return 4
+}
+
+async function createHistoricalData(
+  users: SeedUser[],
+  customers: SeedCustomer[],
+  tables: SeedTable[],
+  products: SeedProduct[]
+): Promise<ProductQuantityMap> {
+  const today = startOfDay(new Date())
+  const start = startOfDay(new Date(today.getFullYear() - 5, today.getMonth(), today.getDate()))
+  const end = startOfDay(new Date(today.getTime() - 24 * 60 * 60 * 1000))
+
+  const shifts: any[] = []
+  const orders: any[] = []
+  const items: any[] = []
+  const soldQuantities = new Map<string, number>()
+
+  for (const current = new Date(start); current <= end; current.setDate(current.getDate() + 1)) {
+    const progress = (current.getTime() - start.getTime()) / Math.max(end.getTime() - start.getTime(), 1)
+    const weekday = current.getDay()
+    const weekendBoost = weekday === 5 || weekday === 6 ? 2.2 : 0
+    const summerBoost = [5, 6, 7].includes(current.getMonth()) ? 1.2 : 0
+    const winterDrinkBoost = [11, 0, 1].includes(current.getMonth()) ? 0.8 : 0
+    const baseDemand = 2.8 + progress * 2.4 + weekendBoost + summerBoost + winterDrinkBoost
+    const orderCount = Math.max(2, Math.round(baseDemand + randInt(0, 4)))
+
+    const cashier = pickOne(users)
+    const shiftId = randomUUID()
+    const openHour = weekday === 5 || weekday === 6 ? randInt(8, 10) : randInt(7, 9)
+    const openMinute = pickOne([0, 15, 30, 45])
+    const shiftOpenedAt = new Date(current)
+    shiftOpenedAt.setHours(openHour, openMinute, 0, 0)
+    const openingCash = roundMoney(650 + progress * 450 + randInt(0, 500))
+
+    let shiftSales = 0
+    let shiftPaidOrders = 0
+    let cashTotal = 0
+    let cardTotal = 0
+    let vodafoneCashTotal = 0
+    let latestClose = new Date(shiftOpenedAt)
+
+    for (let orderIndex = 0; orderIndex < orderCount; orderIndex++) {
+      const orderId = randomUUID()
+      const minutesIntoShift = randInt(20, 660)
+      const openedAt = new Date(shiftOpenedAt.getTime() + minutesIntoShift * 60000)
+      const closedAt = new Date(openedAt.getTime() + randInt(8, 95) * 60000)
+      if (closedAt > latestClose) latestClose = closedAt
+
+      const typeRoll = rng()
+      const type = typeRoll < 0.54 ? 'dine_in' : typeRoll < 0.82 ? 'takeaway' : 'delivery'
+      const paymentRoll = rng()
+      const paymentMethod = paymentRoll < 0.57 ? 'cash' : paymentRoll < 0.84 ? 'card' : 'vodafone_cash'
+      const isVoided = chance(0.035)
+      const table = type === 'dine_in' ? pickOne(tables) : null
+      const customer = chance(type === 'delivery' ? 0.92 : 0.48) ? pickOne(customers) : null
+      const linkCustomer = customer && chance(0.88)
+      const customerName = customer ? customer.name : (chance(0.35) ? `${pickOne(FIRST_NAMES)} ${pickOne(LAST_NAMES)}` : null)
+      const customerPhone = customer ? customer.phone : null
+      const deliveryAddress = type === 'delivery' ? `${randInt(10, 180)} ${pickOne(['El Tahrir St', 'Omar Lotfy St', 'Palm Street', 'Nile Corniche', 'Gardenia Ave'])}, ${pickOne(DELIVERY_AREAS)}` : null
+      const itemCount = type === 'dine_in' ? randInt(2, 5) : randInt(1, 4)
+      const priceFactor = 0.72 + progress * 0.28
+
+      let subtotal = 0
+      const selectedProductIds = new Set<string>()
+      for (let itemIndex = 0; itemIndex < itemCount; itemIndex++) {
+        let product = weightedPick(products, productWeight)
+        let attempts = 0
+        while (selectedProductIds.has(product.id) && attempts < 6) {
+          product = weightedPick(products, productWeight)
+          attempts++
+        }
+        selectedProductIds.add(product.id)
+
+        const quantity = product.category?.name === 'Food & Snacks' ? randInt(1, 2) : randInt(1, 3)
+        const unitPrice = roundMoney(Math.max(8, Math.round(product.price * priceFactor)))
+        const total = roundMoney(unitPrice * quantity)
+        subtotal += total
+
+        if (!isVoided) addProductQuantity(soldQuantities, product.id, quantity)
+
+        items.push({
+          id: randomUUID(),
+          orderId,
+          productId: product.id,
+          productName: product.name,
+          unitPrice,
+          quantity,
+          total,
+          notes: pickOne(ITEM_NOTES),
+          status: isVoided ? 'pending' : pickOne(['ready', 'served', 'served', 'served']) ,
+          createdAt: openedAt,
+          updatedAt: closedAt
+        })
+      }
+
+      const discount = chance(0.18) ? roundMoney(subtotal * (randInt(5, 15) / 100)) : 0
+      const total = roundMoney(Math.max(0, subtotal - discount))
+      const orderNumber = `HIST-${current.toISOString().slice(0, 10).replace(/-/g, '')}-${String(orderIndex + 1).padStart(3, '0')}`
+
+      if (!isVoided) {
+        shiftSales += total
+        shiftPaidOrders += 1
+        if (paymentMethod === 'cash') cashTotal += total
+        else if (paymentMethod === 'card') cardTotal += total
+        else vodafoneCashTotal += total
+      }
+
+      orders.push({
+        id: orderId,
+        orderNumber,
+        type,
+        tableId: table?.id ?? null,
+        customerName,
+        customerPhone,
+        deliveryAddress,
+        customerId: linkCustomer ? customer?.id ?? null : null,
+        cashierId: cashier.id,
+        shiftId,
+        status: isVoided ? 'voided' : 'paid',
+        paymentMethod: isVoided ? null : paymentMethod,
+        subtotal,
+        discount,
+        tax: 0,
+        total,
+        notes: type === 'delivery' ? 'Please handle carefully' : (chance(0.1) ? 'VIP regular order' : null),
+        openedAt,
+        closedAt,
+        createdAt: openedAt,
+        updatedAt: closedAt
+      })
+    }
+
+    const closingCash = roundMoney(openingCash + cashTotal + randInt(-40, 35))
+    shifts.push({
+      id: shiftId,
+      cashierId: cashier.id,
+      status: 'closed',
+      openingCash,
+      closingCash,
+      totalSales: roundMoney(shiftSales),
+      totalOrders: shiftPaidOrders,
+      cashTotal: roundMoney(cashTotal),
+      cardTotal: roundMoney(cardTotal),
+      vodafoneCashTotal: roundMoney(vodafoneCashTotal),
+      cashDifference: roundMoney(closingCash - (openingCash + cashTotal)),
+      notes: chance(0.16) ? pickOne(['Busy afternoon rush', 'Smooth handover', 'Strong delivery demand', 'Weekend promo traffic', 'Heavy dine-in evening']) : null,
+      openedAt: shiftOpenedAt,
+      closedAt: latestClose,
+      createdAt: shiftOpenedAt,
+      updatedAt: latestClose
+    })
+  }
+
+  for (const batch of chunk(shifts, 200)) {
+    await prisma.coffeeShift.createMany({ data: batch })
+  }
+  for (const batch of chunk(orders, 300)) {
+    await prisma.coffeeOrder.createMany({ data: batch })
+  }
+  for (const batch of chunk(items, 800)) {
+    await prisma.coffeeOrderItem.createMany({ data: batch })
+  }
+
+  console.log(`  ✅ ${shifts.length} historical shifts seeded`)
+  console.log(`  ✅ ${orders.length} historical orders seeded`)
+  console.log(`  ✅ ${items.length} historical order items seeded`)
+
+  return soldQuantities
+}
+
+async function createHistoricalIncomingReceipts(
+  users: SeedUser[],
+  products: SeedProduct[],
+  soldQuantities: ProductQuantityMap
+) {
+  const today = startOfDay(new Date())
+  const start = startOfDay(new Date(today.getFullYear() - 5, today.getMonth(), today.getDate()))
+  const end = startOfDay(new Date(today.getTime() - 24 * 60 * 60 * 1000))
+  const byProduct = new Map<string, number>(products.map(product => [product.id, product.stock]))
+  const suppliers = ['Bean House Trading', 'Delta Coffee Supply', 'Nile Dairy Co.', 'Fresh Harvest Produce', 'Bakery Source Egypt', 'Premium Syrups Co.']
+  const receipts: any[] = []
+  const receiptItems: any[] = []
+  const stockMovements: any[] = []
+  let receiptNumberCounter = 1
+
+  for (const current = new Date(start); current <= end; current.setDate(current.getDate() + 1)) {
+    const weekday = current.getDay()
+    const shouldRestock = weekday === 1 || weekday === 4 || chance(0.08)
+    if (!shouldRestock) continue
+
+    const receiptId = randomUUID()
+    const createdBy = pickOne(users)
+    const itemCount = randInt(2, 6)
+    const receiptDate = new Date(current)
+    receiptDate.setHours(randInt(7, 11), pickOne([0, 15, 30, 45]), 0, 0)
+    const selected = new Set<string>()
+    let totalCost = 0
+
+    receipts.push({
+      id: receiptId,
+      receiptNumber: `IN-SEED-${String(receiptNumberCounter++).padStart(6, '0')}`,
+      supplierName: pickOne(suppliers),
+      invoiceNumber: `SUP-${receiptDate.getFullYear()}-${randInt(1000, 9999)}`,
+      receivedAt: receiptDate,
+      totalCost: 0,
+      notes: chance(0.2) ? pickOne(['Weekly refill', 'Emergency restock before weekend', 'Milk and perishables delivery', 'Monthly dry goods refill']) : null,
+      createdById: createdBy.id,
+      createdAt: receiptDate,
+      updatedAt: receiptDate
+    })
+
+    for (let itemIndex = 0; itemIndex < itemCount; itemIndex++) {
+      let product = weightedPick(products, productWeight)
+      let attempts = 0
+      while (selected.has(product.id) && attempts < 8) {
+        product = weightedPick(products, productWeight)
+        attempts++
+      }
+      selected.add(product.id)
+
+      const previousStock = byProduct.get(product.id) ?? product.stock
+      const quantity = product.category?.name === 'Food & Snacks' ? randInt(6, 18) : randInt(10, 45)
+      const unitCost = roundMoney(Math.max(1, product.cost * (0.92 + rng() * 0.22)))
+      const lineTotal = roundMoney(quantity * unitCost)
+      const newStock = previousStock + quantity
+      byProduct.set(product.id, newStock)
+      totalCost += lineTotal
+
+      receiptItems.push({
+        id: randomUUID(),
+        receiptId,
+        productId: product.id,
+        productName: product.name,
+        quantity,
+        unitCost,
+        lineTotal,
+        notes: chance(0.12) ? pickOne(['Promo pricing', 'Seasonal batch', 'Urgent top-up', 'Fresh delivery']) : null,
+        createdAt: receiptDate,
+        updatedAt: receiptDate
+      })
+
+      stockMovements.push({
+        id: randomUUID(),
+        productId: product.id,
+        type: 'restock',
+        quantity,
+        previousStock,
+        newStock,
+        reason: 'Incoming receipt',
+        referenceId: receiptId,
+        notes: 'Seeded incoming receipt history',
+        createdAt: receiptDate
+      })
+    }
+
+    receipts[receipts.length - 1].totalCost = roundMoney(totalCost)
+  }
+
+  for (const batch of chunk(receipts, 200)) {
+    await prisma.coffeeIncomingReceipt.createMany({ data: batch })
+  }
+  for (const batch of chunk(receiptItems, 400)) {
+    await prisma.coffeeIncomingReceiptItem.createMany({ data: batch })
+  }
+  for (const batch of chunk(stockMovements, 800)) {
+    await prisma.coffeeStockMovement.createMany({ data: batch })
+  }
+
+  for (const [productId, stock] of Array.from(byProduct.entries())) {
+    const finalStock = Math.max(0, stock - (soldQuantities.get(productId) ?? 0))
+    await prisma.coffeeProduct.update({ where: { id: productId }, data: { stock: finalStock } })
+  }
+
+  console.log(`  ✅ ${receipts.length} historical incoming receipts seeded`)
+  console.log(`  ✅ ${stockMovements.length} historical restock movements seeded`)
+}
+
+async function refreshCustomerStats() {
+  const paidOrders = await prisma.coffeeOrder.findMany({
+    where: { status: 'paid', customerId: { not: null } },
+    select: { customerId: true, total: true, closedAt: true }
+  })
+
+  const totals = new Map<string, { spent: number; visits: number; lastVisit: Date | null }>()
+  for (const order of paidOrders) {
+    if (!order.customerId) continue
+    const row = totals.get(order.customerId) || { spent: 0, visits: 0, lastVisit: null }
+    row.spent += Number(order.total || 0)
+    row.visits += 1
+    if (order.closedAt && (!row.lastVisit || order.closedAt > row.lastVisit)) row.lastVisit = order.closedAt
+    totals.set(order.customerId, row)
+  }
+
+  const customers = await prisma.coffeeCustomer.findMany({ select: { id: true } })
+  for (const customer of customers) {
+    const stats = totals.get(customer.id)
+    await prisma.coffeeCustomer.update({
+      where: { id: customer.id },
+      data: {
+        totalSpent: roundMoney(stats?.spent ?? 0),
+        visitCount: stats?.visits ?? 0,
+        lastVisit: stats?.lastVisit ?? null
+      }
+    })
+  }
+}
 
 async function main() {
   console.log('☕ Seeding coffee shop data…')
@@ -82,13 +540,18 @@ async function main() {
 
   let productCount = 0
   for (const p of products) {
-    const exists = await prisma.coffeeProduct.findFirst({ where: { name: p.name } })
-    if (!exists) {
+    const existing = await prisma.coffeeProduct.findFirst({ where: { name: p.name } })
+    if (existing) {
+      await prisma.coffeeProduct.update({
+        where: { id: existing.id },
+        data: { ...p, isAvailable: true }
+      })
+    } else {
       await prisma.coffeeProduct.create({ data: { ...p, isAvailable: true } })
-      productCount++
     }
+    productCount++
   }
-  console.log(`  ✅ ${productCount} products seeded`)
+  console.log(`  ✅ ${productCount} products reset to seed baseline`)
 
   // ── Tables ───────────────────────────────────────────────────────────────────
   const tables = [
@@ -134,6 +597,41 @@ async function main() {
     }
   }
   console.log(`  ✅ ${customerCount} customers seeded`)
+
+  // ── Historical Data (5 years) ──────────────────────────────────────────────
+  const seedUsers = await ensureSeedUsers()
+  console.log(`  ✅ ${seedUsers.length} seed cashier users ready`)
+
+  const allCustomers = await ensureSeedCustomers(
+    (await prisma.coffeeCustomer.findMany({
+      where: { phone: { in: customers.map(c => c.phone!).filter(Boolean) } },
+      select: { id: true, name: true, phone: true, email: true, notes: true }
+    })).map(c => ({
+      id: c.id,
+      name: c.name,
+      phone: c.phone ?? '',
+      email: c.email,
+      notes: c.notes
+    }))
+  )
+  console.log(`  ✅ ${allCustomers.length} customers available for history`)
+
+  await resetHistoricalData(seedUsers.map(user => user.id))
+  console.log('  ✅ Previous seeded history cleared')
+
+  const seedTables = (await prisma.coffeeTable.findMany({
+    where: { isActive: true },
+    select: { id: true, number: true, name: true, section: true }
+  })) as SeedTable[]
+  const seedProducts = await prisma.coffeeProduct.findMany({
+    where: { isAvailable: true },
+    select: { id: true, name: true, price: true, cost: true, stock: true, category: { select: { name: true } } }
+  }) as SeedProduct[]
+
+  const soldQuantities = await createHistoricalData(seedUsers, allCustomers, seedTables, seedProducts)
+  await createHistoricalIncomingReceipts(seedUsers, seedProducts, soldQuantities)
+  await refreshCustomerStats()
+  console.log('  ✅ Customer totals refreshed from paid orders')
 
   console.log('✅ Coffee seed complete!')
 }

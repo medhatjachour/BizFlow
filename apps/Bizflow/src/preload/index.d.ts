@@ -810,15 +810,27 @@ interface API {
       getMovements: (productId: string) => Promise<any[]>
       adjust: (data: any) => Promise<any>
     }
+    incomingReceipts: {
+      getAll: (opts?: any) => Promise<any>
+      getSummary: (opts?: any) => Promise<any>
+      create: (data: any) => Promise<any>
+    }
+    expenses: {
+      getAll: (opts?: any) => Promise<any>
+      getSummary: (opts?: any) => Promise<any>
+      create: (data: any) => Promise<any>
+      update: (id: string, data: any) => Promise<any>
+      delete: (id: string) => Promise<any>
+    }
     tables: {
       getAll: () => Promise<any[]>
       create: (data: any) => Promise<any>
       update: (data: any) => Promise<any>
       delete: (id: string) => Promise<any>
-      getHistory: (tableId: string) => Promise<any[]>
+      getHistory: (data: any) => Promise<any>
     }
     orders: {
-      getAll: (opts?: any) => Promise<any[]>
+      getAll: (opts?: any) => Promise<any>
       getById: (id: string) => Promise<any>
       create: (data: any) => Promise<any>
       addItem: (data: any) => Promise<any>

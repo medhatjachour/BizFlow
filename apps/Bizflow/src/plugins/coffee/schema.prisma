@@ -38,6 +38,7 @@ model CoffeeProduct {
   notes          String?
   orderItems     CoffeeOrderItem[]
   stockMovements CoffeeStockMovement[]
+  incomingReceiptItems CoffeeIncomingReceiptItem[]
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 
@@ -63,6 +64,65 @@ model CoffeeStockMovement {
   @@index([productId])
   @@index([type])
   @@index([createdAt])
+}
+
+// Incoming stock receipt — documents a restock delivery from a supplier/vendor
+model CoffeeIncomingReceipt {
+  id            String                      @id @default(uuid())
+  receiptNumber String                      @unique
+  supplierName  String?
+  invoiceNumber String?
+  receivedAt    DateTime                    @default(now())
+  totalCost     Float                       @default(0)
+  notes         String?
+  createdById   String?
+  items         CoffeeIncomingReceiptItem[]
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+
+  @@index([receiptNumber])
+  @@index([receivedAt])
+  @@index([createdById])
+}
+
+model CoffeeIncomingReceiptItem {
+  id           String                 @id @default(uuid())
+  receiptId    String
+  receipt      CoffeeIncomingReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  productId    String
+  product      CoffeeProduct          @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName  String
+  quantity     Int                    @default(1)
+  unitCost     Float
+  lineTotal    Float
+  notes        String?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  @@index([receiptId])
+  @@index([productId])
+}
+
+// Coffee operating expenses — operating costs, purchases, fees, etc.
+model CoffeeExpense {
+  id            String         @id @default(uuid())
+  date          DateTime       @default(now())
+  category      String         @default("other")
+  description   String
+  amount        Float
+  vendor        String?
+  paymentMethod String         @default("cash")
+  recurrence    String         @default("one_time")
+  shiftId       String?
+  shift         CoffeeShift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@index([paymentMethod])
+  @@index([shiftId])
 }
 
 // Physical seating tables in the café
@@ -146,7 +206,7 @@ model CoffeeCustomer {
   id          String        @id @default(uuid())
   name        String
   phone       String?       @unique
-  email       String?
+  address   String?
   notes       String?       // Preferences (e.g. "oat milk", "no sugar")
   totalSpent  Float         @default(0)
   visitCount  Int           @default(0)
@@ -175,6 +235,7 @@ model CoffeeShift {
   cashDifference    Float?                       // closingCash − (openingCash + cashTotal)
   notes             String?
   orders            CoffeeOrder[]
+  expenses          CoffeeExpense[]
   openedAt          DateTime      @default(now())
   closedAt          DateTime?
   createdAt         DateTime      @default(now())

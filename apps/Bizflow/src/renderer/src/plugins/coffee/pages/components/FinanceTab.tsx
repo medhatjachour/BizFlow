@@ -12,7 +12,11 @@ interface FinanceOverview {
   totalOrders: number
   averageOrderValue: number
   cogs: number
+  operationalExpenses: number
+  expenseCount: number
+  totalExpenses: number
   grossProfit: number
+  netProfitAfterExpenses: number
   grossMarginPct: number
   avgDiscountPerOrder: number
   discountedOrders: number
@@ -29,6 +33,8 @@ interface FinanceOverview {
     cashDifference: number
     closedShifts: number
     expectedDrawer: number
+    linkedExpenseTotal: number
+    expectedAfterExpenses: number
   }
 }
 
@@ -205,11 +211,13 @@ export default function FinanceTab() {
       </div>
 
       {overview && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-10 gap-3">
           <Kpi label="Net Sales" value={overview.netSales.toFixed(2)} tone="text-emerald-600" sub="paid revenue" />
           <Kpi label="Gross Sales" value={overview.grossSales.toFixed(2)} tone="text-sky-600" sub="before discounts" />
           <Kpi label="COGS" value={overview.cogs.toFixed(2)} tone="text-rose-600" sub="product costs" />
+          <Kpi label="Ops. Expenses" value={overview.operationalExpenses.toFixed(2)} tone="text-orange-600" sub={`${overview.expenseCount} entries`} />
           <Kpi label="Gross Profit" value={overview.grossProfit.toFixed(2)} tone="text-teal-600" sub={`${overview.grossMarginPct.toFixed(1)}% margin`} />
+          <Kpi label="Net Profit" value={overview.netProfitAfterExpenses.toFixed(2)} tone="text-emerald-700" sub="after expenses" />
           <Kpi label="Discounts" value={overview.totalDiscount.toFixed(2)} tone="text-amber-600" sub={`${overview.discountOrderRatePct.toFixed(1)}% orders`} />
           <Kpi label="Avg Ticket" value={overview.averageOrderValue.toFixed(2)} tone="text-violet-600" sub={`${overview.totalOrders} orders`} />
           <Kpi label="Open Orders" value={String(overview.openOrdersCount)} tone="text-indigo-600" sub={`${overview.openOrdersValue.toFixed(2)} pending`} />
@@ -257,6 +265,10 @@ export default function FinanceTab() {
               <div className={`flex items-center gap-2 text-sm font-semibold ${drawerVariance < 0 ? 'text-red-600' : drawerVariance > 0 ? 'text-blue-600' : 'text-emerald-600'}`}>
                 <AlertCircle className="w-4 h-4" />
                 Cash variance: {drawerVariance > 0 ? '+' : ''}{drawerVariance.toFixed(2)}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50"><p className="text-slate-500">Linked Expenses</p><p className="font-semibold">{overview.shiftStats.linkedExpenseTotal.toFixed(2)}</p></div>
+                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50"><p className="text-slate-500">After Expenses</p><p className="font-semibold">{overview.shiftStats.expectedAfterExpenses.toFixed(2)}</p></div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
                 <div className="p-2 rounded-lg border border-slate-100 dark:border-slate-700"><p className="text-slate-500">Avg Discount</p><p className="font-semibold">{overview.avgDiscountPerOrder.toFixed(2)}</p></div>

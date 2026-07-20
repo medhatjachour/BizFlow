@@ -25,6 +25,10 @@ interface Order {
   openedAt: string; closedAt?: string
 }
 
+interface OrdersResponse {
+  items?: Order[]
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_STYLES: Record<string, string> = {
   open:   'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
@@ -65,7 +69,8 @@ export default function OrdersTab() {
     setLoading(true)
     try {
       const opts = filter === 'all' ? {} : { status: filter }
-      setOrders(await window.api.coffee.orders.getAll(opts) ?? [])
+      const response: Order[] | OrdersResponse | null | undefined = await window.api.coffee.orders.getAll(opts)
+      setOrders(Array.isArray(response) ? response : Array.isArray(response?.items) ? response.items : [])
     } catch { toast.error('Failed to load orders') }
     finally { setLoading(false) }
   }, [filter])
