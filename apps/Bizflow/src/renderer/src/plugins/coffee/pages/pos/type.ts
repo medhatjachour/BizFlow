@@ -24,4 +24,3 @@ export interface ReceiptSettings {
 
 export type OrderType     = 'dine_in' | 'takeaway' | 'delivery'
 export type PaymentMethod = 'cash' | 'card' | 'vodafone_cash'
-export type ViewMode      = 'grid' | 'quick'

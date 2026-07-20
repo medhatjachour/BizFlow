@@ -15,14 +15,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   ShoppingCart, X, Plus, Minus, Coffee, ChevronDown,
- Check, Zap, Grid3X3, Edit2,
+ Check, Zap, Edit2,
   User, MapPin, UserPlus, Search
 } from 'lucide-react'
 import { useAuth }  from '@renderer/contexts/AuthContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 
 // ── Types ────────────────────────────────────────────────────────────────────
-import type { Category, Product, CartItem, CoffeeTable, CoffeeCustomer, OrderType, PaymentMethod, ViewMode, ReceiptSettings } from './type'
+import type { Category, Product, CartItem, CoffeeTable, CoffeeCustomer, OrderType, PaymentMethod, ReceiptSettings } from './type'
 import { ORDER_TYPES, PAYMENT_METHODS, catCls } from './utils'
 // ── Product image card — loads image from disk via IPC ────────────────────────
 function ProductImg({ image, name }: { image?: string; name: string }) {
@@ -48,7 +48,6 @@ export default function POSView() {
   const [activeShift,  setActiveShift]  = useState<any>(null)
   const [loading,      setLoading]      = useState(true)
 
-  const [viewMode,     setViewMode]     = useState<ViewMode>('grid')
   const [selectedCat,  setSelectedCat]  = useState<string>('all')
   const [search,       setSearch]       = useState('')
 
@@ -380,30 +379,11 @@ export default function POSView() {
 
         {/* Header bar: view mode toggle + search */}
         <div className="sticky top-0 z-10 bg-slate-50 dark:bg-slate-900 px-4 pt-3 pb-2 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 flex-wrap">
-          {/* Mode toggle */}
-          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0">
-            <button onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'grid' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-              <Grid3X3 className="w-3.5 h-3.5" /> Grid
-            </button>
-            <button onClick={() => setViewMode('quick')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'quick' ? 'bg-amber-500 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-              <Zap className="w-3.5 h-3.5" /> Quick Sale
-            </button>
-          </div>
+        
 
-          {viewMode === 'quick' && cart.length > 0 && (
-            <div className="flex gap-1.5 ml-auto">
-              {PAYMENT_METHODS.map(({ value, label, icon: Icon }) => (
-                <button key={value} onClick={() => quickSale(value)} disabled={checking}
-                  className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white transition-colors">
-                  <Icon className="w-3.5 h-3.5" /> {label}
-                </button>
-              ))}
-            </div>
-          )}
+          
 
-          <div className={`${viewMode === 'quick' ? '' : 'flex-1'} min-w-36`}>
+          <div className="flex-1 min-w-36">
             <input type="text" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)}
               className="w-full px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none" />
           </div>
@@ -431,7 +411,7 @@ export default function POSView() {
               <p className="text-sm">No products</p>
             </div>
           ) : (
-            <div className={`grid gap-3 ${viewMode === 'quick' ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'}`}>
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {visible.map(product => {
                 const inCart = cart.find(i => i.productId === product.id)
                 return (
@@ -442,12 +422,12 @@ export default function POSView() {
                         {inCart.quantity}
                       </span>
                     )}
-                    <div className={`rounded-lg bg-amber-50 dark:bg-slate-700 mb-2 flex items-center justify-center overflow-hidden ${viewMode === 'quick' ? 'aspect-square' : 'aspect-square'}`}>
+                    <div className="rounded-lg bg-amber-50 dark:bg-slate-700 mb-2 flex items-center justify-center overflow-hidden aspect-square">
                       <ProductImg image={product.image} name={product.name} />
                     </div>
                     <p className="text-xs font-semibold text-slate-800 dark:text-white leading-tight line-clamp-2 mb-0.5">{product.name}</p>
-                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{product.price.toFixed(2)}</p>
-                    {product.stock <= 5 && product.stock > 0 && <p className="text-[9px] text-orange-500">Low ({product.stock})</p>}
+                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{product.price.toFixed(2)} {' '}$ </p>
+                    { product.stock > 0 && <p className="text-[9px] text-orange-500">stock ({product.stock})</p>}
                   </button>
                 )
               })}
@@ -539,7 +519,7 @@ export default function POSView() {
                 <span className="text-amber-600 dark:text-amber-400 text-lg">{total.toFixed(2)}</span>
               </div>
 
-              {viewMode === 'grid' ? (
+              
                 <div className="space-y-2">
                   {/* Quick cash checkout (walk-in, no form) */}
                   <button onClick={() => quickSale('cash')} disabled={checking}
@@ -552,19 +532,7 @@ export default function POSView() {
                     Checkout →
                   </button>
                 </div>
-              ) : (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-center text-slate-400 font-medium">QUICK SALE — TAP TO PAY</p>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {PAYMENT_METHODS.map(({ value, label, icon: Icon }) => (
-                      <button key={value} onClick={() => quickSale(value)} disabled={checking}
-                        className="flex flex-col items-center gap-1 py-2 rounded-xl bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white text-[10px] font-bold transition-colors">
-                        <Icon className="w-4 h-4" /> {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              
             </div>
           </>
         )}

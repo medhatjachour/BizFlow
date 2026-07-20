@@ -9,18 +9,18 @@ import {
   CreditCard, LayoutGrid, ClipboardList, Package,
   BoxesIcon, Receipt, Timer, Coffee, Users, BarChart3, Wallet, Truck
 } from 'lucide-react'
-import POSView       from './components/POSView'
 import TablesTab     from './components/TablesTab'
 import OrdersTab     from './components/OrdersTab'
 import ProductsTab   from './product/ProductsTab'
-import InventoryTab  from './components/InventoryTab'
+import InventoryTab  from './inventory/InventoryTab'
 import SalesTab      from './components/SalesTab'
-import ShiftsTab     from './components/ShiftsTab'
+import ShiftsTab     from './shifts/ShiftsTab'
 import CustomersTab  from './components/CustomersTab'
 import ReportsTab    from './components/ReportsTab'
 import FinanceTab    from './components/FinanceTab'
 import IncomingReceiptsTab from './components/IncomingReceiptsTab'
-import ExpensesTab   from './components/ExpensesTab'
+import ExpensesTab   from './expenses/ExpensesTab'
+import POSView from './pos/POSView'
 
 // ── Tab definitions ──────────────────────────────────────────────────────────
 const TABS = [
