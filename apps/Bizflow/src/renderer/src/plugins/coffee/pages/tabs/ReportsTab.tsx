@@ -4,6 +4,7 @@ import {
   Users, Boxes, Percent, BadgeDollarSign, CalendarRange
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Overview {
   totalRevenue: number
@@ -106,6 +107,7 @@ function StatCard({ label, value, sub, tone }: { label: string; value: string; s
 
 export default function ReportsTab() {
   const toast = useToast()
+  const { t } = useLanguage()
 
   const initial = applyPreset('month')
   const [from, setFrom] = useState(initial.from)
@@ -155,12 +157,12 @@ export default function ReportsTab() {
   const exportCsv = () => {
     if (!overview) return
     const lines = [
-      'Coffee Reports',
-      `From,${from || 'All Time'}`,
-      `To,${to || 'All Time'}`,
+      t('cfCoffeeReports'),
+      `${t('cfFromLc')},${from || t('cfAllTime')}`,
+      `${t('cfToLc')},${to || t('cfAllTime')}`,
       '',
-      `Revenue,${overview.totalRevenue.toFixed(2)}`,
-      `Gross Profit,${overview.grossProfit.toFixed(2)}`,
+      `${t('cfRevenueLabel')},${overview.totalRevenue.toFixed(2)}`,
+      `${t('cfGrossProfitLabel')},${overview.grossProfit.toFixed(2)}`,
       `Gross Margin %,${overview.grossMarginPct.toFixed(2)}`,
       `Orders,${overview.totalOrders}`,
       `Items Sold,${overview.totalItemsSold}`,
@@ -197,7 +199,7 @@ export default function ReportsTab() {
             }}
             className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400"
           >
-            {preset === 'all' ? 'All Time' : preset[0].toUpperCase() + preset.slice(1)}
+            {preset === 'today' ? t('cfToday') : preset === 'week' ? t('cfWeek') : preset === 'month' ? t('cfMonth') : t('cfAllTime')}
           </button>
         ))}
         <div className="flex items-center gap-2 ml-auto flex-wrap">
@@ -210,23 +212,23 @@ export default function ReportsTab() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button onClick={exportCsv} className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold flex items-center gap-1.5">
-            <Download className="w-3.5 h-3.5" /> Export CSV
+            <Download className="w-3.5 h-3.5" /> {t('cfExportCsv')}
           </button>
         </div>
       </div>
 
       {overview && (
         <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-10 gap-3">
-          <StatCard label="Revenue" value={overview.totalRevenue.toFixed(2)} tone="text-emerald-600" sub="net paid sales" />
-          <StatCard label="Gross Profit" value={overview.grossProfit.toFixed(2)} tone="text-teal-600" sub={`COGS ${overview.totalCogs.toFixed(2)}`} />
-          <StatCard label="Ops Expenses" value={overview.operationalExpenses.toFixed(2)} tone="text-orange-600" sub={`${overview.expenseCount} transactions`} />
-          <StatCard label="Net Profit" value={overview.netProfitAfterExpenses.toFixed(2)} tone="text-emerald-700" sub="after expenses" />
-          <StatCard label="Margin" value={`${overview.grossMarginPct.toFixed(1)}%`} tone="text-sky-600" sub="profitability" />
-          <StatCard label="Orders" value={String(overview.totalOrders)} tone="text-amber-600" sub={`${overview.totalItemsSold} items sold`} />
-          <StatCard label="Avg Ticket" value={overview.averageOrderValue.toFixed(2)} tone="text-violet-600" sub={`${overview.avgItemsPerOrder.toFixed(1)} items / order`} />
-          <StatCard label="Discount Rate" value={`${overview.discountRatePct.toFixed(1)}%`} tone="text-orange-600" sub={overview.totalDiscount.toFixed(2)} />
-          <StatCard label="Customers" value={String(overview.uniqueCustomers)} tone="text-indigo-600" sub={`${overview.repeatCustomers} repeat`} />
-          <StatCard label="Stock Alerts" value={String(overview.lowStockCount + overview.outOfStockCount)} tone="text-rose-600" sub={`${overview.outOfStockCount} out of stock`} />
+          <StatCard label={t('cfRevenueLabel')} value={overview.totalRevenue.toFixed(2)} tone="text-emerald-600" sub={t('cfNetPaidSales')} />
+          <StatCard label={t('cfGrossProfitLabel')} value={overview.grossProfit.toFixed(2)} tone="text-teal-600" sub={`COGS ${overview.totalCogs.toFixed(2)}`} />
+          <StatCard label={t('cfOpsExpenses')} value={overview.operationalExpenses.toFixed(2)} tone="text-orange-600" sub={`${overview.expenseCount} ${t('cfTransactions')}`} />
+          <StatCard label={t('cfNetProfitLabel')} value={overview.netProfitAfterExpenses.toFixed(2)} tone="text-emerald-700" sub={t('cfAfterExpenses')} />
+          <StatCard label={t('cfMargin')} value={`${overview.grossMarginPct.toFixed(1)}%`} tone="text-sky-600" sub={t('cfProfitability')} />
+          <StatCard label={t('cfOrders')} value={String(overview.totalOrders)} tone="text-amber-600" sub={`${overview.totalItemsSold} ${t('cfItemsSold')}`} />
+          <StatCard label={t('cfAverageTicket')} value={overview.averageOrderValue.toFixed(2)} tone="text-violet-600" sub={`${overview.avgItemsPerOrder.toFixed(1)} ${t('cfItemsPerOrder')}`} />
+          <StatCard label={t('cfDiscountRateLabel')} value={`${overview.discountRatePct.toFixed(1)}%`} tone="text-orange-600" sub={overview.totalDiscount.toFixed(2)} />
+          <StatCard label={t('cfCustomersLabel')} value={String(overview.uniqueCustomers)} tone="text-indigo-600" sub={`${overview.repeatCustomers} ${t('cfRepeat')}`} />
+          <StatCard label={t('cfStockAlerts')} value={String(overview.lowStockCount + overview.outOfStockCount)} tone="text-rose-600" sub={`${overview.outOfStockCount} ${t('cfOutOfStock')}`} />
         </div>
       )}
 
@@ -234,10 +236,10 @@ export default function ReportsTab() {
         <div className="xl:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3 text-slate-700 dark:text-slate-300">
             <TrendingUp className="w-4 h-4" />
-            <p className="text-sm font-semibold">Revenue Trend</p>
+            <p className="text-sm font-semibold">{t('cfRevenueTrend')}</p>
           </div>
           {trend.length === 0 ? (
-            <p className="text-sm text-slate-400">No trend data</p>
+            <p className="text-sm text-slate-400">{t('cfNoTrendData')}</p>
           ) : (
             <div className="space-y-2">
               {trend.map(row => (
@@ -267,11 +269,11 @@ export default function ReportsTab() {
                 <div className="flex justify-between"><span>Repeat Rate</span><span>{overview.repeatCustomerRatePct.toFixed(1)}%</span></div>
               </div>
               <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1 text-xs">
-                <div className="flex justify-between"><span>Best Day</span><span>{overview.bestDay.date ? `${new Date(overview.bestDay.date).toLocaleDateString()} · ${overview.bestDay.revenue.toFixed(2)}` : '-'}</span></div>
-                <div className="flex justify-between"><span>Worst Day</span><span>{overview.worstDay.date ? `${new Date(overview.worstDay.date).toLocaleDateString()} · ${overview.worstDay.revenue.toFixed(2)}` : '-'}</span></div>
+                <div className="flex justify-between"><span>{t('cfBestDay')}</span><span>{overview.bestDay.date ? `${new Date(overview.bestDay.date).toLocaleDateString()} · ${overview.bestDay.revenue.toFixed(2)}` : '-'}</span></div>
+                <div className="flex justify-between"><span>{t('cfWorstDay')}</span><span>{overview.worstDay.date ? `${new Date(overview.worstDay.date).toLocaleDateString()} · ${overview.worstDay.revenue.toFixed(2)}` : '-'}</span></div>
               </div>
               <div className="pt-2 border-t border-slate-100 dark:border-slate-700">
-                <p className="text-xs text-slate-500 mb-1">Payment Mix</p>
+                <p className="text-xs text-slate-500 mb-1">{t('cfPaymentMix')}</p>
                 {[
                   ['Cash', overview.payment.cash, overview.totalRevenue],
                   ['Card', overview.payment.card, overview.totalRevenue],
@@ -292,7 +294,7 @@ export default function ReportsTab() {
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="w-4 h-4 text-amber-500" />
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Top Products</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('cfTopProducts')}</p>
           </div>
           <div className="max-h-80 overflow-y-auto space-y-2">
             {topProducts.slice(0, 10).map(p => (
@@ -303,11 +305,11 @@ export default function ReportsTab() {
                 </div>
                 <div className="text-[11px] text-slate-500 flex justify-between">
                   <span>{p.categoryName}</span>
-                  <span>{p.quantity} sold</span>
+                  <span>{p.quantity} {t('cfSold')}</span>
                 </div>
                 <div className="text-[11px] text-slate-400 flex justify-between">
                   <span>COGS {p.cogs.toFixed(2)}</span>
-                  <span>Profit {p.grossProfit.toFixed(2)}</span>
+                  <span>{t('cfProfit')} {p.grossProfit.toFixed(2)}</span>
                 </div>
               </div>
             ))}
@@ -317,7 +319,7 @@ export default function ReportsTab() {
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Boxes className="w-4 h-4 text-orange-500" />
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Category Performance</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('cfCategoryPerformance')}</p>
           </div>
           <div className="space-y-3 max-h-80 overflow-y-auto">
             {categories.map(row => (
@@ -330,8 +332,8 @@ export default function ReportsTab() {
                   <div className="h-full rounded-full bg-orange-500" style={{ width: `${(row.revenue / maxCategory) * 100}%` }} />
                 </div>
                 <div className="flex justify-between text-[11px] text-slate-400">
-                  <span>{row.quantity} items</span>
-                  <span>Profit {row.grossProfit.toFixed(2)}</span>
+                  <span>{row.quantity} {t('cfItems')}</span>
+                  <span>{t('cfProfit')} {row.grossProfit.toFixed(2)}</span>
                 </div>
               </div>
             ))}
@@ -341,10 +343,10 @@ export default function ReportsTab() {
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
             <BadgeDollarSign className="w-4 h-4" />
-            <p className="text-sm font-semibold">Expense Mix</p>
+            <p className="text-sm font-semibold">{t('cfExpenseMix')}</p>
           </div>
           {!overview || overview.expenseByCategory.length === 0 ? (
-            <p className="text-sm text-slate-400">No expenses in this range</p>
+            <p className="text-sm text-slate-400">{t('cfNoExpensesRange')}</p>
           ) : (
             <div className="space-y-2">
               {overview.expenseByCategory.slice(0, 6).map(row => (
@@ -363,12 +365,12 @@ export default function ReportsTab() {
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-3">
             <Users className="w-4 h-4 text-indigo-500" />
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Customer Insights</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('cfCustomerInsights')}</p>
           </div>
           <div className="space-y-2 text-xs mb-3">
-            <div className="flex justify-between"><span>Total customers</span><span>{customers?.totalCustomers ?? 0}</span></div>
-            <div className="flex justify-between"><span>Repeat customers</span><span>{customers?.repeatCustomers ?? 0}</span></div>
-            <div className="flex justify-between"><span>Repeat rate</span><span>{customers?.repeatRatePct.toFixed(1) ?? '0.0'}%</span></div>
+            <div className="flex justify-between"><span>{t('cfTotalCustomers')}</span><span>{customers?.totalCustomers ?? 0}</span></div>
+            <div className="flex justify-between"><span>{t('cfRepeatCustomers')}</span><span>{customers?.repeatCustomers ?? 0}</span></div>
+            <div className="flex justify-between"><span>{t('cfRepeatRateLc')}</span><span>{customers?.repeatRatePct.toFixed(1) ?? '0.0'}%</span></div>
           </div>
           <div className="max-h-64 overflow-y-auto space-y-2">
             {(customers?.topCustomers ?? []).map(customer => (
@@ -378,8 +380,8 @@ export default function ReportsTab() {
                   <span className="text-xs font-semibold text-indigo-600">{customer.spent.toFixed(2)}</span>
                 </div>
                 <div className="text-[11px] text-slate-400 flex justify-between">
-                  <span>{customer.orders} orders</span>
-                  <span>{customer.deliveryOrders} delivery</span>
+                  <span>{customer.orders} {t('cfOrdersLc')}</span>
+                  <span>{customer.deliveryOrders} {t('cfDeliveryLc')}</span>
                 </div>
               </div>
             ))}
@@ -392,14 +394,14 @@ export default function ReportsTab() {
           <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <BadgeDollarSign className="w-4 h-4 text-green-500" />
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Top Cashiers</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('cfTopCashiers')}</p>
             </div>
             <div className="space-y-2">
               {overview.topCashiers.map(c => (
                 <div key={c.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-700/40">
                   <div>
                     <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{c.name}</p>
-                    <p className="text-[11px] text-slate-400">{c.orders} orders</p>
+                    <p className="text-[11px] text-slate-400">{c.orders} {t('cfOrdersLc')}</p>
                   </div>
                   <p className="text-sm font-semibold text-amber-600">{c.revenue.toFixed(2)}</p>
                 </div>
@@ -410,13 +412,13 @@ export default function ReportsTab() {
           <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-3">
               <Percent className="w-4 h-4 text-rose-500" />
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Order Type Mix</p>
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{t('cfOrderTypeMix')}</p>
             </div>
             <div className="space-y-3">
               {[
-                ['Dine In', overview.orderTypes.dine_in],
-                ['Takeaway', overview.orderTypes.takeaway],
-                ['Delivery', overview.orderTypes.delivery]
+                [t('cfDineIn'), overview.orderTypes.dine_in],
+                [t('cfTakeaway'), overview.orderTypes.takeaway],
+                [t('cfDeliveryOpt'), overview.orderTypes.delivery]
               ].map(([label, count]) => (
                 <div key={String(label)}>
                   <div className="flex justify-between text-xs mb-1"><span>{label}</span><span>{count}</span></div>

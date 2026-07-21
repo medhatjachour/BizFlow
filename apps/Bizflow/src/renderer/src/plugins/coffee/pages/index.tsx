@@ -9,6 +9,7 @@ import {
   CreditCard, LayoutGrid, ClipboardList, Package,
   BoxesIcon, Receipt, Timer, Coffee, Users, BarChart3, Wallet, Truck
 } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import TablesTab     from './tabs/TablesTab'
 import OrdersTab     from './tabs/OrdersTab'
 import ProductsTab   from './product/ProductsTab'
@@ -17,31 +18,32 @@ import SalesTab      from './tabs/SalesTab'
 import ShiftsTab     from './shifts/ShiftsTab'
 import CustomersTab  from './tabs/CustomersTab'
 import ReportsTab    from './tabs/ReportsTab'
-import FinanceTab    from './tabs/FinanceTab'
+import FinanceTab    from './finance/FinanceTab'
 import IncomingReceiptsTab from './tabs/IncomingReceiptsTab'
 import ExpensesTab   from './expenses/ExpensesTab'
 import POSView from './pos/POSView'
 
 // ── Tab definitions ──────────────────────────────────────────────────────────
-const TABS = [
-  { id: 'pos',       label: 'POS',       icon: CreditCard     },
-  { id: 'tables',    label: 'Tables',    icon: LayoutGrid     },
-  { id: 'orders',    label: 'Orders',    icon: ClipboardList  },
-  { id: 'products',  label: 'Products',  icon: Package        },
-  { id: 'inventory', label: 'Inventory', icon: BoxesIcon      },
-  { id: 'incoming',  label: 'Incoming',  icon: Truck          },
-  { id: 'expenses',  label: 'Expenses',  icon: Receipt        },
-  { id: 'sales',     label: 'Sales',     icon: Receipt        },
-  { id: 'shifts',    label: 'Shifts',    icon: Timer          },
-  { id: 'customers', label: 'Customers', icon: Users          },
-  { id: 'reports',   label: 'Reports',   icon: BarChart3      },
-  { id: 'finance',   label: 'Finance',   icon: Wallet         }
+const TABS_DEF = [
+  { id: 'pos',       labelKey: 'cfPOS',       icon: CreditCard     },
+  { id: 'tables',    labelKey: 'cfTables',    icon: LayoutGrid     },
+  { id: 'orders',    labelKey: 'cfOrders',    icon: ClipboardList  },
+  { id: 'products',  labelKey: 'cfProducts',  icon: Package        },
+  { id: 'inventory', labelKey: 'cfInventory', icon: BoxesIcon      },
+  { id: 'incoming',  labelKey: 'cfIncoming',  icon: Truck          },
+  { id: 'expenses',  labelKey: 'cfExpenses',  icon: Receipt        },
+  { id: 'sales',     labelKey: 'cfSales',     icon: Receipt        },
+  { id: 'shifts',    labelKey: 'cfShifts',    icon: Timer          },
+  { id: 'customers', labelKey: 'cfCustomers', icon: Users          },
+  { id: 'reports',   labelKey: 'cfReports',   icon: BarChart3      },
+  { id: 'finance',   labelKey: 'cfFinance',   icon: Wallet         }
 ] as const
 
-type TabId = (typeof TABS)[number]['id']
+type TabId = (typeof TABS_DEF)[number]['id']
 
 // ── Component ────────────────────────────────────────────────────────────────
 export default function CoffeePage() {
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState<TabId>('pos')
 
   return (
@@ -54,14 +56,14 @@ export default function CoffeePage() {
             <Coffee className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">Coffee Shop</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">POS · Tables · Orders · Inventory · Shifts</p>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{t('cfCoffeeShop')}</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('cfPOSTablesOrdersInventoryShifts')}</p>
           </div>
         </div>
 
         {/* ── Tab Bar ──────────────────────────────────────────────────────── */}
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-          {TABS.map(({ id, label, icon: Icon }) => (
+          {TABS_DEF.map(({ id, labelKey, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
@@ -75,7 +77,7 @@ export default function CoffeePage() {
               `}
             >
               <Icon className="w-4 h-4" />
-              {label}
+              {t(labelKey as any)}
             </button>
           ))}
         </div>

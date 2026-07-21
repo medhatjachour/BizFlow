@@ -10,6 +10,7 @@ import {
   Phone, Mail, Coffee, TrendingUp, X, User
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Customer {
@@ -31,6 +32,7 @@ const INPUT = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slat
 // ── Component ────────────────────────────────────────────────────────────────
 export default function CustomersTab() {
   const toast = useToast()
+  const { t } = useLanguage()
 
   const [customers,  setCustomers]  = useState<Customer[]>([])
   const [loading,    setLoading]    = useState(true)
@@ -58,7 +60,7 @@ export default function CustomersTab() {
       const res = await window.api.coffee.customers.getAll({ search: search || undefined, page, pageSize: PAGE_SIZE })
       setCustomers(res?.items ?? [])
       setTotal(res?.total ?? 0)
-    } catch { toast.error('Failed to load customers') }
+    } catch { toast.error(t('cfFailedToLoadCustomers')) }
     finally { setLoading(false) }
   }, [search, page])
 
@@ -70,7 +72,7 @@ export default function CustomersTab() {
   async function loadProfile(id: string) {
     setLoadingProfile(true)
     try { setProfile(await window.api.coffee.customers.getById(id)) }
-    catch { toast.error('Failed to load profile') }
+    catch { toast.error(t('cfFailedToLoadProfile')) }
     finally { setLoadingProfile(false) }
   }
 
@@ -79,21 +81,21 @@ export default function CustomersTab() {
   function openEdit(c: Customer) { setEditTarget(c); setForm({ name: c.name, phone: c.phone ?? '', address: c.address ?? '', notes: c.notes ?? '' }); setModalOpen(true) }
 
   async function handleSave() {
-    if (!form.name.trim()) { toast.error('Name is required'); return }
+    if (!form.name.trim()) { toast.error(t('cfNameIsRequired')); return }
     setSaving(true)
     try {
       const data = { name: form.name.trim(), phone: form.phone || undefined, address: form.address || undefined, notes: form.notes || undefined }
       if (editTarget) await window.api.coffee.customers.update({ id: editTarget.id, ...data })
       else             await window.api.coffee.customers.create(data)
-      setModalOpen(false); load(); toast.success(editTarget ? 'Customer updated' : 'Customer added')
-    } catch (err: any) { toast.error(err?.message ?? 'Save failed') }
+      setModalOpen(false); load(); toast.success(editTarget ? t('cfCustomerUpdated') : t('cfCustomerAdded'))
+    } catch (err: any) { toast.error(err?.message ?? t('cfSaveFailed')) }
     finally { setSaving(false) }
   }
 
   async function handleDelete(c: Customer) {
-    if (!confirm(`Delete customer "${c.name}"? Their order history will be unlinked.`)) return
-    try { await window.api.coffee.customers.delete(c.id); load(); toast.success('Customer deleted') }
-    catch (err: any) { toast.error(err?.message ?? 'Delete failed') }
+    if (!confirm(t('cfDeleteCustomerConfirm').replace('{name}', c.name))) return
+    try { await window.api.coffee.customers.delete(c.id); load(); toast.success(t('cfTableRemoved')) }
+    catch (err: any) { toast.error(err?.message ?? t('cfFailed')) }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -103,7 +105,7 @@ export default function CustomersTab() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input type="text" placeholder="Search by name, phone, address..." value={search}
+          <input type="text" placeholder={t('cfSearchPlaceholder')} value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none" />
         </div>
@@ -111,21 +113,21 @@ export default function CustomersTab() {
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
         </button>
         <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium">
-          <Plus className="w-3.5 h-3.5" /> Add Customer
+          <Plus className="w-3.5 h-3.5" /> {t('cfAddCustomer')}
         </button>
       </div>
 
       {/* Stats bar */}
       <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
         <Users className="w-4 h-4" />
-        <span>{total} customer{total !== 1 ? 's' : ''}</span>
+        <span>{total} {total !== 1 ? t('cfCustomerPlural') : t('cfCustomerSingular')}</span>
       </div>
 
       {/* Customers list */}
       {customers.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-40 text-slate-400">
           <Users className="w-10 h-10 mb-2 opacity-30" />
-          <p className="text-sm">{loading ? 'Loading…' : 'No customers found'}</p>
+          <p className="text-sm">{loading ? t('cfLoadingDots') : t('cfNoCustomersFound')}</p>
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-700">
@@ -145,7 +147,7 @@ export default function CustomersTab() {
               </div>
               <div className="text-right shrink-0">
                 <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{c.totalSpent.toFixed(2)}</p>
-                <p className="text-[10px] text-slate-400">{c.visitCount} visits</p>
+                <p className="text-[10px] text-slate-400">{c.visitCount} {t('cfVisits')}</p>
               </div>
               <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                 <button onClick={() => openEdit(c)} className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-400"><Edit2 className="w-3.5 h-3.5" /></button>
@@ -161,10 +163,10 @@ export default function CustomersTab() {
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
           <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">Prev</button>
+            className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">{t('cfPrev')}</button>
           <span className="px-3 py-1.5 text-xs text-slate-500">{page} / {totalPages}</span>
           <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}
-            className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">Next</button>
+            className="px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700">{t('cfNext')}</button>
         </div>
       )}
 
@@ -173,33 +175,33 @@ export default function CustomersTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setModalOpen(false)} />
           <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">{editTarget ? 'Edit Customer' : 'Add Customer'}</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{editTarget ? t('cfEditCustomer') : t('cfAddCustomer')}</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Name *</label>
+                <label className="block text-xs font-medium text-slate-500 mb-1">{t('cfName')} *</label>
                 <input type="text" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={INPUT} />
               </div>
               <div className="grid grid-cols-1 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Phone</label>
-                  <input type="tel" value={form.phone} placeholder="01x…" onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className={INPUT} />
+                  <label className="block text-xs font-medium text-slate-500 mb-1">{t('cfPhone')}</label>
+                  <input type="tel" value={form.phone} placeholder={t('cfPhonePlaceholder')} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className={INPUT} />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Address</label>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">{t('cfAddress')}</label>
                   <input type="text" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} className={INPUT} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Notes / Preferences</label>
-                <textarea rows={2} value={form.notes} placeholder="e.g. Prefers oat milk, no sugar…"
+                <label className="block text-xs font-medium text-slate-500 mb-1">{t('cfNotesPreferences')}</label>
+                <textarea rows={2} value={form.notes} placeholder={t('cfNotesPlaceholder')}
                   onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
                   className={INPUT + ' resize-none'} />
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setModalOpen(false)} className="flex-1 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-400">Cancel</button>
+              <button onClick={() => setModalOpen(false)} className="flex-1 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-400">{t('cfCancel')}</button>
               <button onClick={handleSave} disabled={saving} className="flex-1 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium">
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? t('cfSaving') : t('cfSave')}
               </button>
             </div>
           </div>
@@ -244,9 +246,9 @@ export default function CustomersTab() {
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-3 p-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
                   {[
-                    { label: 'Total Spent', value: profile.totalSpent.toFixed(2), icon: TrendingUp },
-                    { label: 'Visits',      value: String(profile.visitCount),       icon: Coffee    },
-                    { label: 'Orders',      value: String(profile.orders.length),    icon: Coffee    }
+                    { label: t('cfTotalSpent'), value: profile.totalSpent.toFixed(2), icon: TrendingUp },
+                    { label: t('cfVisits'),      value: String(profile.visitCount),       icon: Coffee    },
+                    { label: t('cfOrders'),      value: String(profile.orders.length),    icon: Coffee    }
                   ].map(({ label, value, icon: Icon }) => (
                     <div key={label} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 text-center">
                       <Icon className="w-4 h-4 text-amber-500 mx-auto mb-0.5" />
@@ -258,9 +260,9 @@ export default function CustomersTab() {
 
                 {/* Order history */}
                 <div className="flex-1 overflow-y-auto p-4">
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Order History</p>
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">{t('cfOrderHistory')}</p>
                   {profile.orders.length === 0 ? (
-                    <p className="text-sm text-slate-400 text-center py-8">No orders yet</p>
+                    <p className="text-sm text-slate-400 text-center py-8">{t('cfNoOrdersYet')}</p>
                   ) : (
                     <div className="space-y-2">
                       {profile.orders.map(order => (
@@ -282,7 +284,7 @@ export default function CustomersTab() {
                           </div>
                           <div className="space-y-0.5">
                             {order.deliveryAddress && (
-                              <p className="text-[10px] text-slate-500">Address: {order.deliveryAddress}</p>
+                              <p className="text-[10px] text-slate-500">{t('cfAddressColon')} {order.deliveryAddress}</p>
                             )}
                             {order.items.slice(0, 3).map((item, i) => (
                               <p key={i} className="text-[10px] text-slate-500">{item.quantity}× {item.productName}</p>
@@ -300,7 +302,7 @@ export default function CustomersTab() {
                   <button
                     onClick={() => { setProfile(null); openEdit(profile) }}
                     className="w-full py-2 border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 rounded-xl text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                  >Edit Customer</button>
+                  >{t('cfEditCustomer')}</button>
                 </div>
               </>
             )}

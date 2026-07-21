@@ -2,6 +2,7 @@
 import { ShoppingCart, Loader2 } from 'lucide-react'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 import { usePOSData } from './hooks/usePOSData'
 import { useCart } from './hooks/useCart'
@@ -22,6 +23,7 @@ import type { ViewMode, CheckoutForm, PaymentMethod } from './types'
 export default function POSView() {
   const { user } = useAuth()
   const toast = useToast()
+  const { t } = useLanguage()
 
   // ── Data ──
   const { categories, products, tables, activeShift, loading, loadData } = usePOSData(toast)

@@ -2,6 +2,7 @@ import {
   X, Loader2, TrendingUp, ShoppingBag, Clock, Banknote,
   Wallet, Receipt, FileText,
 } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Shift } from '../types'
 
 import {  payMeta, orderTypeMeta } from '../constants'

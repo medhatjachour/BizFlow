@@ -1,4 +1,5 @@
 import { Search, UserPlus, X, MapPin, User } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { CoffeeCustomer } from '../types'
 
 interface Props {
@@ -29,6 +30,7 @@ export function CustomerPicker({
   onSearch, onFocus, onBlur, onSelect, onClear, onNewCustomer,
   onNameChange, onPhoneChange, onAddressChange,
 }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-3">
       {/* Search + New */}

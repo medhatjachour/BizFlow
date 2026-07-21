@@ -1,4 +1,5 @@
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useExpenses } from './hooks/useExpenses'
 import { SummaryCards } from './components/SummaryCards'
 import { FilterBar } from './components/FilterBar'
@@ -7,6 +8,7 @@ import { ExpenseModal } from './components/ExpenseModal'
 
 export default function ExpensesTab() {
   const toast = useToast()
+  const { t } = useLanguage()
   const exp = useExpenses(toast)
 
   return (
@@ -27,10 +29,10 @@ export default function ExpensesTab() {
       <div>
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Expense History
+            {t('cfExpenseHistory')}
           </h2>
           <span className="text-xs text-slate-400 dark:text-slate-500">
-            {exp.rows.length} items
+            {exp.rows.length} {t('cfItems')}
           </span>
         </div>
         <ExpenseTable

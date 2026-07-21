@@ -9,6 +9,7 @@ import {
   UtensilsCrossed, Package, Truck, ChevronDown, ChevronUp
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Category { id: string; name: string }
 
@@ -28,12 +29,14 @@ interface SummaryData {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const PERIODS = [
-  { label: 'Today',    value: 'today'  },
-  { label: 'Week',     value: 'week'   },
-  { label: 'Month',    value: 'month'  },
-  { label: 'All Time', value: 'all'    }
-]
+function getPeriods(t: any) {
+  return [
+    { label: t('cfToday'),    value: 'today'  },
+    { label: t('cfWeek'),     value: 'week'   },
+    { label: t('cfMonth'),    value: 'month'  },
+    { label: t('cfAllTime'), value: 'all'    }
+  ]
+}
 
 function periodDates(period: string): { startDate?: string; endDate?: string } {
   const now = new Date()
@@ -56,6 +59,8 @@ function periodDates(period: string): { startDate?: string; endDate?: string } {
 // ── Component ────────────────────────────────────────────────────────────────
 export default function SalesTab() {
   const toast = useToast()
+  const { t } = useLanguage()
+  const PERIODS = getPeriods(t)
 
   const [period,   setPeriod]   = useState('today')
   const [sales,    setSales]    = useState<Sale[]>([])
@@ -91,7 +96,7 @@ export default function SalesTab() {
       setSales(salesRes?.items ?? [])
       setTotalPages(salesRes?.totalPages ?? 1)
       setSummary(sumRes)
-    } catch { toast.error('Failed to load sales') }
+    } catch { toast.error(t('cfFailedToLoad')) }
     finally { setLoading(false) }
   }, [period, page, paymentMethod, typeFilter, categoryId])
 

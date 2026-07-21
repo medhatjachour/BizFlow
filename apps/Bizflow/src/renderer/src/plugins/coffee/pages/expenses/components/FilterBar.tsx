@@ -1,4 +1,5 @@
 import { Search, RefreshCw, Plus, ChevronDown } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { PERIODS, EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../constants'
 import type { Filters, Period } from '../types'
 

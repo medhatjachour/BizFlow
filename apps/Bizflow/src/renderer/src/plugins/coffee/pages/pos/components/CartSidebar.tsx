@@ -1,4 +1,5 @@
 import { ShoppingCart, X, Zap, ArrowRight, Trash2 } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { CartItemRow } from './CartItemRow'
 import { formatMoney } from '../utils'
 import type { CartItem as CartItemType, ViewMode, PaymentMethod } from '../types'

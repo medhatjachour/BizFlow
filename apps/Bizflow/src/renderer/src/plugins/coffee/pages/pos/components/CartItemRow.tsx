@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Minus, Trash2, Pencil } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { CartItem as CartItemType } from '../types'
 import { formatMoney } from '../utils'
 

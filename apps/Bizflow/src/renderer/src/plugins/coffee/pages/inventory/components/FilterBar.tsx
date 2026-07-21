@@ -1,4 +1,5 @@
 import { Search, RefreshCw } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { FilterMode } from '../types'
 
 interface Props {

@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   lowCount: number

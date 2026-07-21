@@ -1,4 +1,5 @@
 import { Plus, History } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Product } from '../types'
 import { isLow, isOut, stockPercent, stockBarColor, formatMoney } from '../utils'
 import { hexToRgba } from '../utils'

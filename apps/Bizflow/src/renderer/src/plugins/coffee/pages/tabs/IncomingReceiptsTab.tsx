@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Plus, RefreshCw, Search, ChevronDown, ChevronUp, PackageCheck, Truck } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Category { id: string; name: string }
 interface Product { id: string; name: string; cost: number; categoryId?: string; category?: Category; stock: number }
@@ -38,6 +39,7 @@ interface DraftItem { productId: string; quantity: string; unitCost: string; not
 export default function IncomingReceiptsTab() {
   const toast = useToast()
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   const [receipts, setReceipts] = useState<IncomingReceipt[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
@@ -145,11 +147,11 @@ export default function IncomingReceiptsTab() {
     <div className="p-4 space-y-4">
       {summary && (
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">Receipts</p><p className="text-lg font-bold text-amber-600">{summary.totalReceipts}</p></div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">Total Cost</p><p className="text-lg font-bold text-emerald-600">{summary.totalCost.toFixed(2)}</p></div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">Units Received</p><p className="text-lg font-bold text-sky-600">{summary.totalUnits}</p></div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">Avg Receipt</p><p className="text-lg font-bold text-violet-600">{summary.averageReceiptCost.toFixed(2)}</p></div>
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">Suppliers</p><p className="text-lg font-bold text-orange-600">{summary.supplierCount}</p></div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">{t('cfReceipts')}</p><p className="text-lg font-bold text-amber-600">{summary.totalReceipts}</p></div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">{t('cfTotalCost')}</p><p className="text-lg font-bold text-emerald-600">{summary.totalCost.toFixed(2)}</p></div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">{t('cfUnitsReceivedLc')}</p><p className="text-lg font-bold text-sky-600">{summary.totalUnits}</p></div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">{t('cfAvgReceipt')}</p><p className="text-lg font-bold text-violet-600">{summary.averageReceiptCost.toFixed(2)}</p></div>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><p className="text-xs text-slate-500">{t('cfSuppliers')}</p><p className="text-lg font-bold text-orange-600">{summary.supplierCount}</p></div>
         </div>
       )}
 

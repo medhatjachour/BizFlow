@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth }  from '@renderer/contexts/AuthContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface OrderItem { id: string; productName: string; quantity: number; unitPrice: number; total: number; notes?: string; status: string }
@@ -53,6 +54,7 @@ function elapsed(openedAt: string): string {
 export default function OrdersTab() {
   const { user } = useAuth()
   const toast    = useToast()
+  const { t } = useLanguage()
 
   const [orders,   setOrders]   = useState<Order[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -71,7 +73,7 @@ export default function OrdersTab() {
       const opts = filter === 'all' ? {} : { status: filter }
       const response: Order[] | OrdersResponse | null | undefined = await window.api.coffee.orders.getAll(opts)
       setOrders(Array.isArray(response) ? response : Array.isArray(response?.items) ? response.items : [])
-    } catch { toast.error('Failed to load orders') }
+    } catch { toast.error(t('cfFailedToLoadOrders')) }
     finally { setLoading(false) }
   }, [filter])
 
@@ -87,8 +89,8 @@ export default function OrdersTab() {
     setPaying(true)
     try {
       await window.api.coffee.orders.close({ orderId: order.id, paymentMethod, cashierId: user?.id })
-      setPayModal(null); load(); toast.success('Order completed')
-    } catch (err: any) { toast.error(err?.message ?? 'Failed') }
+      setPayModal(null); load(); toast.success(t('cfOrderCompleted'))
+    } catch (err: any) { toast.error(err?.message ?? t('cfFailed')) }
     finally { setPaying(false) }
   }
 

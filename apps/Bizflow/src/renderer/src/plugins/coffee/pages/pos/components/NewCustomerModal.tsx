@@ -1,4 +1,5 @@
 import { X, UserPlus, Loader2, User, Phone, Mail } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { NewCustomerForm } from '../types'
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none transition'
 
 export function NewCustomerModal({ open, onClose, form, patchForm, onSave, saving }: Props) {
+  const { t } = useLanguage()
   if (!open) return null
 
   return (

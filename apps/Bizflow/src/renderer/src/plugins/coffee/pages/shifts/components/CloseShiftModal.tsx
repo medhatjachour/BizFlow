@@ -2,6 +2,7 @@ import {
   X, Loader2, Wallet, FileText, TrendingUp, TrendingDown,
   Check, AlertTriangle, Info,
 } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Shift, CloseForm } from '../types'
 import { avgOrdersPerHour, formatMoney, varianceColor } from '../utils'
 

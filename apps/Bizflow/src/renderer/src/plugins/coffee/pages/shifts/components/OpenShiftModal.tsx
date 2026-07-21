@@ -1,4 +1,5 @@
 import { X, Loader2, Wallet, FileText, User, Info } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { OpenForm } from '../types'
 import { QUICK_OPEN_AMOUNTS } from '../constants'
 

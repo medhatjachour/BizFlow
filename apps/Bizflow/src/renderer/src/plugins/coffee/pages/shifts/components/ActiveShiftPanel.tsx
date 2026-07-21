@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import {
   TrendingUp, CheckCircle, Clock, Banknote, ClipboardList,
   CreditCard, Smartphone, Wallet, FileText, ShoppingCart,

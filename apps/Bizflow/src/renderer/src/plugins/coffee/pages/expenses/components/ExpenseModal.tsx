@@ -1,4 +1,5 @@
 import { X, Loader2, Calendar, DollarSign, Tag, Store, CreditCard, Repeat, Briefcase, StickyNote } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { ExpenseForm, ExpenseRow } from '../types'
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS, RECURRENCES, catMeta } from '../constants'
 import { hexToRgba, formatMoney } from '../utils'
@@ -19,6 +20,7 @@ const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-s
 export function ExpenseModal({
   open, onClose, onSubmit, form, patchForm, editing, saving, activeShift,
 }: Props) {
+  const { t } = useLanguage()
   if (!open) return null
 
   const amount = Number(form.amount) || 0

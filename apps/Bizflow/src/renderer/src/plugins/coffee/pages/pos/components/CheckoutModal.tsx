@@ -1,4 +1,5 @@
 import { X, Check, Loader2, UtensilsCrossed, Package, Truck, Banknote, CreditCard, Smartphone, Tag, StickyNote } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { ORDER_TYPES, PAYMENT_METHODS, orderTypeMeta, payMeta } from '../constants'
 import { CustomerPicker } from './CustomerPicker'
 import { hexToRgba, formatMoney } from '../utils'
@@ -46,6 +47,7 @@ export function CheckoutModal({
   open, onClose, cart, subtotal, total,
   checkout, patchCheckout, tables, customerProps, onConfirm, checking,
 }: Props) {
+  const { t } = useLanguage()
   if (!open) return null
 
   const selectedType = orderTypeMeta(checkout.orderType)

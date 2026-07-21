@@ -1,4 +1,5 @@
 import { PencilLine, Trash2, Inbox } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { ExpenseRow } from '../types'
 import { catMeta, payMeta } from '../constants'
 import { hexToRgba, formatMoney, formatDateShort } from '../utils'

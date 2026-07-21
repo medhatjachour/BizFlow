@@ -1,5 +1,6 @@
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useShifts } from './hooks/useShifts'
 import { SummaryCards } from './components/SummaryCards'
 import { FilterBar } from './components/FilterBar'
@@ -13,6 +14,7 @@ import { ShiftDetailDrawer } from './components/ShiftDetailDrawer'
 export default function ShiftsTab() {
   const toast = useToast()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const s = useShifts(toast, user)
 
   return (
@@ -50,16 +52,16 @@ export default function ShiftsTab() {
       <div className="mt-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white">Shift History</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white">{t('cfShiftHistory')}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {s.total} shifts · page {s.page} of {s.totalPages || 1}
+              {s.total} {t('cfShifts')} · {t('cfPage')} {s.page} {t('cfOf')} {s.totalPages || 1}
             </p>
           </div>
         </div>
 
         {s.history.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-12 text-center text-slate-400">
-            {s.loading ? 'Loading…' : 'No shift history yet'}
+            {s.loading ? t('cfLoading') : t('cfNoShiftHistory')}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

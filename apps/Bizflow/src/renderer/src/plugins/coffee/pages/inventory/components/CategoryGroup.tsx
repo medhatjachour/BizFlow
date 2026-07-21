@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { CategoryGroup as GroupType, Product } from '../types'
 import { ProductRow } from './ProductRow'
 import { hexToRgba, formatMoney, formatNumber } from '../utils'

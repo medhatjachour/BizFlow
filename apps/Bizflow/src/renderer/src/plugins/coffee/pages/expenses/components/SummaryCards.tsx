@@ -1,4 +1,5 @@
 import { Wallet, Link2, Unlink, TrendingUp } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Summary } from '../types'
 import { formatMoney } from '../utils'
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function SummaryCards({ summary, loading }: Props) {
+  const { t } = useLanguage()
   if (loading || !summary) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -23,36 +25,36 @@ export function SummaryCards({ summary, loading }: Props) {
 
   const cards = [
     {
-      label:  'Total Expenses',
+      label:  t('cfTotalExpenses'),
       value:  formatMoney(summary.totalExpenses),
-      sub:    `${summary.expenseCount} transactions`,
+      sub:    `${summary.expenseCount} ${t('cfTransactions')}`,
       icon:   Wallet,
       color:  '#dc2626',
       bg:     'bg-red-50 dark:bg-red-900/20',
       ring:   'ring-red-200 dark:ring-red-800',
     },
     {
-      label:  'Linked to Shifts',
+      label:  t('cfLinkedToShifts'),
       value:  formatMoney(summary.linkedToShifts),
-      sub:    'shift expenses',
+      sub:    t('cfShiftExpenses'),
       icon:   Link2,
       color:  '#16a34a',
       bg:     'bg-green-50 dark:bg-green-900/20',
       ring:   'ring-green-200 dark:ring-green-800',
     },
     {
-      label:  'Unlinked',
+      label:  t('cfUnlinked'),
       value:  formatMoney(summary.unlinkedExpenses),
-      sub:    'manual entries',
+      sub:    t('cfManualEntries'),
       icon:   Unlink,
       color:  '#ea580c',
       bg:     'bg-orange-50 dark:bg-orange-900/20',
       ring:   'ring-orange-200 dark:ring-orange-800',
     },
     {
-      label:  'Average',
+      label:  t('cfAverage'),
       value:  formatMoney(summary.averageExpense),
-      sub:    'per transaction',
+      sub:    t('cfPerTransaction'),
       icon:   TrendingUp,
       color:  '#7c3aed',
       bg:     'bg-violet-50 dark:bg-violet-900/20',

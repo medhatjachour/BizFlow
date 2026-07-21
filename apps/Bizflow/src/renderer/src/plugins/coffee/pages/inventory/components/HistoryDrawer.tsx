@@ -3,6 +3,7 @@ import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus,
   Calendar, Filter, Inbox,
 } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Product, StockMovement } from '../types'
 import { MOVEMENT_TYPES, movementMeta, HISTORY_PERIODS, PAGE_SIZE } from '../constants'
 import { hexToRgba, formatNumber } from '../utils'

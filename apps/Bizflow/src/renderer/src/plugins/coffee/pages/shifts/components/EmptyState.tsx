@@ -1,4 +1,5 @@
 import { Clock, Plus } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   onOpenShift: () => void

@@ -1,4 +1,5 @@
 import { TrendingUp, Layers, BarChart3, ShoppingBag, AlertTriangle, Clock } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { ShiftSummary } from '../types'
 import { formatMoney } from '../utils'
 
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export function SummaryCards({ summary, loading }: Props) {
+  const { t } = useLanguage()
   if (loading || !summary) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
@@ -23,49 +25,49 @@ export function SummaryCards({ summary, loading }: Props) {
 
   const cards = [
     {
-      label: 'Total Sales',
+      label: t('cfTotalSales'),
       value: formatMoney(summary.totalSales),
-      sub:   `${summary.totalShifts} shifts`,
+      sub:   `${summary.totalShifts} ${t('cfShifts')}`,
       icon:  TrendingUp,
       color: '#16a34a',
       bg:    'bg-green-50 dark:bg-green-900/20',
     },
     {
-      label: 'Total Orders',
+      label: t('cfTotalOrders'),
       value: String(summary.totalOrders),
-      sub:   'across all shifts',
+      sub:   t('cfAcrossAllShifts'),
       icon:  ShoppingBag,
       color: '#7c3aed',
       bg:    'bg-violet-50 dark:bg-violet-900/20',
     },
     {
-      label: 'Avg Shift Sales',
+      label: t('cfAverageShiftSales'),
       value: formatMoney(summary.averageShiftSales),
-      sub:   'per shift',
+      sub:   t('cfPerShift'),
       icon:  BarChart3,
       color: '#0891b2',
       bg:    'bg-cyan-50 dark:bg-cyan-900/20',
     },
     {
-      label: 'Avg Orders/Shift',
+      label: t('cfAvgOrdersPerShift'),
       value: summary.averageOrdersPerShift.toFixed(1),
-      sub:   'orders per shift',
+      sub:   t('cfOrdersPerShift'),
       icon:  Layers,
       color: '#ea580c',
       bg:    'bg-orange-50 dark:bg-orange-900/20',
     },
     {
-      label: 'Avg Cash Diff',
+      label: t('cfAvgCashDifference'),
       value: (summary.averageCashDifference > 0 ? '+' : '') + formatMoney(summary.averageCashDifference),
-      sub:   'variance average',
+      sub:   t('cfVarianceAverage'),
       icon:  AlertTriangle,
       color: summary.averageCashDifference < 0 ? '#dc2626' : summary.averageCashDifference > 0 ? '#2563eb' : '#16a34a',
       bg:    summary.averageCashDifference < 0 ? 'bg-red-50 dark:bg-red-900/20' : summary.averageCashDifference > 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-green-50 dark:bg-green-900/20',
     },
     {
-      label: 'Longest Shift',
+      label: t('cfLongestShift'),
       value: `${Math.floor(summary.longestShiftMinutes / 60)}h ${summary.longestShiftMinutes % 60}m`,
-      sub:   'maximum duration',
+      sub:   t('cfMaximumDuration'),
       icon:  Clock,
       color: '#a16207',
       bg:    'bg-amber-50 dark:bg-amber-900/20',

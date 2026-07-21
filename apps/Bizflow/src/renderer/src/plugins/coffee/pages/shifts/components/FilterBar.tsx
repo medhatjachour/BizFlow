@@ -1,4 +1,5 @@
 import { CalendarRange, RefreshCw, Plus } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { PRESETS } from '../constants'
 import type { Preset, StatusFilter } from '../types'
 

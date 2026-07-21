@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 const PRESET_COLORS = [
   '#f59e0b', '#f97316', '#ef4444', '#ec4899',
@@ -39,6 +40,7 @@ export default function CategoryModal({
   editMode = false,
   saving = false,
 }: CategoryModalProps) {
+  const { t } = useLanguage()
   const [form, setForm] = useState<CategoryForm>(initial)
   const [showCustomColor, setShowCustomColor] = useState(false)
 

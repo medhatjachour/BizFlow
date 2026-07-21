@@ -17,6 +17,7 @@ import {
   
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import CategoryModal from './CategoryModal'
 import ProductModal from './ProductModat'
 
@@ -80,6 +81,7 @@ function ImageLoader({ filename, name }: { filename: string; name: string }) {
 
 export default function ProductsTab() {
   const toast = useToast()
+  const { t } = useLanguage()
 
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])

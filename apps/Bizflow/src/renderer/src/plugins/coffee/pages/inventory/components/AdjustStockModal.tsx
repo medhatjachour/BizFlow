@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import {
   X, Loader2, Plus, Minus, AlertTriangle, TrendingUp, TrendingDown,
   DollarSign, Package, RefreshCw,
@@ -27,6 +28,7 @@ const REASON_PRESETS: Record<AdjustType, string[]> = {
 const QUICK_DELTAS = [1, 5, 10, 25]
 
 export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, saving }: Props) {
+  const { t } = useLanguage()
   const qtyInputRef = useRef<HTMLInputElement>(null)
   const [localReason, setLocalReason] = useState(form.reason)
 

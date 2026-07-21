@@ -1,4 +1,5 @@
 import { Package, Boxes, DollarSign, TrendingUp } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatMoney, formatNumber } from '../utils'
 
 interface Props {
@@ -12,35 +13,36 @@ interface Props {
 }
 
 export function KPICards({ kpis, loading }: Props) {
+  const { t } = useLanguage()
   const cards = [
     {
-      label: 'Total Products',
+      label: t('cfTotalProducts'),
       value: formatNumber(kpis.totalProducts),
-      sub:   'in inventory',
+      sub:   t('cfInInventory'),
       icon:  Package,
       color: '#7c3aed',
       bg:    'bg-violet-50 dark:bg-violet-900/20',
     },
     {
-      label: 'Stock Units',
+      label: t('cfStockUnits'),
       value: formatNumber(kpis.totalUnits),
-      sub:   'total units',
+      sub:   t('cfTotalUnits'),
       icon:  Boxes,
       color: '#0891b2',
       bg:    'bg-cyan-50 dark:bg-cyan-900/20',
     },
     {
-      label: 'Inventory Value',
+      label: t('cfInventoryValue'),
       value: formatMoney(kpis.invValue),
-      sub:   'at cost price',
+      sub:   t('cfAtCostPrice'),
       icon:  DollarSign,
       color: '#dc2626',
       bg:    'bg-red-50 dark:bg-red-900/20',
     },
     {
-      label: 'Expected Revenue',
+      label: t('cfExpectedRevenue'),
       value: formatMoney(kpis.expRevenue),
-      sub:   'if all sold',
+      sub:   t('cfIfAllSold'),
       icon:  TrendingUp,
       color: '#16a34a',
       bg:    'bg-green-50 dark:bg-green-900/20',

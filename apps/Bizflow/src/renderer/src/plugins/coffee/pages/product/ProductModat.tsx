@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { X, Upload, Trash2, ImageIcon, Plus } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -72,6 +73,7 @@ export default function ProductModal({
   categories = [],
   onNewCategory,
 }: ProductModalProps) {
+  const { t } = useLanguage()
   const [form, setForm] = useState<ProductForm>(initialForm)
   const [imagePreview, setImagePreview] = useState<string | null>(initialImage)
   const [imageFile, setImageFile] = useState<string | null>(null)

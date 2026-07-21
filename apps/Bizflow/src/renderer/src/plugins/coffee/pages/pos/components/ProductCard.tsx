@@ -1,3 +1,4 @@
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { ProductImg } from './ProductImg'
 import type { Product, CartItem } from '../types'
 import { formatMoney } from '../utils'

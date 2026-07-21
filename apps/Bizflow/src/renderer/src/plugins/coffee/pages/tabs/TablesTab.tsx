@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth }  from '@renderer/contexts/AuthContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface OrderItem { id: string; productName: string; quantity: number; unitPrice: number; total: number; notes?: string; status: string }
@@ -77,6 +78,7 @@ function ProductImg({ image, name }: { image?: string; name: string }) {
 export default function TablesTab() {
   const { user } = useAuth()
   const toast    = useToast()
+  const { t } = useLanguage()
 
   const [tables,  setTables]  = useState<CoffeeTable[]>([])
   const [loading, setLoading] = useState(true)
@@ -123,7 +125,7 @@ export default function TablesTab() {
       ])
       setTables(tbls ?? [])
       setActiveShift(shift)
-    } catch { toast.error('Failed to load tables') }
+    } catch { toast.error(t('cfFailedToLoad')) }
     finally { setLoading(false) }
   }, [])
   useEffect(() => { load() }, [load])
@@ -137,7 +139,7 @@ export default function TablesTab() {
         window.api.coffee.categories.getAll()
       ])
       setProducts(prods ?? []); setCategories(cats ?? [])
-    } catch { toast.error('Failed to load products') }
+    } catch { toast.error(t('cfFailedToLoadProducts')) }
     finally { setProdLoading(false) }
   }
 
@@ -149,25 +151,25 @@ export default function TablesTab() {
   function openEdit(t: CoffeeTable) { setEditTarget(t); setForm({ number: String(t.number), name: t.name ?? '', capacity: String(t.capacity), section: t.section ?? '' }); setTableModal(true) }
 
   async function handleSave() {
-    if (!form.number) { toast.error('Table number required'); return }
+    if (!form.number) { toast.error(t('cfTableNumber')); return }
     setSaving(true)
     try {
       const data = { number: +form.number, name: form.name || undefined, capacity: +form.capacity, section: form.section || undefined }
       if (editTarget) await window.api.coffee.tables.update({ id: editTarget.id, ...data })
       else            await window.api.coffee.tables.create(data)
-      setTableModal(false); load(); toast.success(editTarget ? 'Table updated' : 'Table created')
-    } catch (err: any) { toast.error(err?.message ?? 'Save failed') }
+      setTableModal(false); load(); toast.success(editTarget ? t('cfTableUpdated') : t('cfTableCreated'))
+    } catch (err: any) { toast.error(err?.message ?? t('cfSaveFailed')) }
     finally { setSaving(false) }
   }
 
   async function handleDelete(t: CoffeeTable) {
     if (!confirm(`Delete Table ${t.number}?`)) return
-    try { await window.api.coffee.tables.delete(t.id); load(); toast.success('Removed') }
-    catch (err: any) { toast.error(err?.message ?? 'Failed') }
+    try { await window.api.coffee.tables.delete(t.id); load(); toast.success(t('cfTableRemoved')) }
+    catch (err: any) { toast.error(err?.message ?? t('cfFailed')) }
   }
   async function setStatus(t: CoffeeTable, status: string) {
     try { await window.api.coffee.tables.update({ id: t.id, status }); load() }
-    catch { toast.error('Status update failed') }
+    catch { toast.error(t('cfStatusUpdateFailed')) }
   }
 
   // ── New order items helpers ────────────────────────────────────────────────
@@ -186,7 +188,7 @@ export default function TablesTab() {
 
   async function handleCreateOrder() {
     if (!newOrderTable) return
-    if (!newItems.length) { toast.error('Add at least one item'); return }
+    if (!newItems.length) { toast.error(t('cfAddAtLeastOneItem')); return }
     setCreatingOrder(true)
     try {
       await window.api.coffee.orders.create({
@@ -197,8 +199,8 @@ export default function TablesTab() {
         notes:     newOrderNotes || undefined,
         items:     newItems.map(i => ({ productId: i.productId, productName: i.productName, unitPrice: i.price, quantity: i.quantity }))
       })
-      setNewOrderTable(null); load(); toast.success(`Order created for Table ${newOrderTable.number}`)
-    } catch (err: any) { toast.error(err?.message ?? 'Failed to create order') }
+      setNewOrderTable(null); load(); toast.success(t('cfOrderCreated'))
+    } catch (err: any) { toast.error(err?.message ?? t('cfFailedToCreateOrder')) }
     finally { setCreatingOrder(false) }
   }
 
@@ -207,19 +209,19 @@ export default function TablesTab() {
     setClosing(true)
     try {
       await window.api.coffee.orders.close({ orderId: order.id, paymentMethod: payMethod, cashierId: user?.id })
-      setOrderPanel(null); load(); toast.success('Order paid ✓')
-    } catch (err: any) { toast.error(err?.message ?? 'Failed') }
+      setOrderPanel(null); load(); toast.success(t('cfOrderCompleted'))
+    } catch (err: any) { toast.error(err?.message ?? t('cfFailed')) }
     finally { setClosing(false) }
   }
   async function handleVoid(order: ActiveOrder) {
     if (!confirm('Void this order?')) return
-    try { await window.api.coffee.orders.void(order.id); setOrderPanel(null); load(); toast.success('Voided') }
-    catch { toast.error('Void failed') }
+    try { await window.api.coffee.orders.void(order.id); setOrderPanel(null); load(); toast.success(t('cfOrderVoided')) }
+    catch { toast.error(t('cfVoidFailed')) }
   }
   async function cycleItemStatus(itemId: string, current: string) {
     const next = current === 'pending' ? 'preparing' : current === 'preparing' ? 'ready' : current === 'ready' ? 'served' : 'pending'
     try { await window.api.coffee.orders.updateItemStatus({ id: itemId, status: next }); load() }
-    catch { toast.error('Update failed') }
+    catch { toast.error(t('cfStatusUpdateFailed')) }
   }
 
   // ── History ────────────────────────────────────────────────────────────────

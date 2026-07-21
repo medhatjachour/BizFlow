@@ -2,6 +2,7 @@ import {
   Eye, Clock, TrendingUp, ShoppingBag,
   Banknote, CreditCard, Smartphone, Wallet, FileText,
 } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Shift } from '../types'
 import {
   shiftDuration, avgTicket, formatMoney, formatTime, varianceColor,
