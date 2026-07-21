@@ -9,6 +9,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// COFFEE PLUGIN SCHEMA
+// ─────────────────────────────────────────────────────────────────────────────
+// Auto-generated via: node scripts/merge-schemas.js
+// Do not edit manually — this is a placeholder. The build process uses merged.prisma
+// ─────────────────────────────────────────────────────────────────────────────
+
 model User {
   id                      String                 @id @default(uuid())
   username                String                 @unique
