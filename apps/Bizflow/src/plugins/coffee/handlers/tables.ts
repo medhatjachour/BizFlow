@@ -12,7 +12,7 @@ export function registerTableHandlers(prisma: any) {
   ipcMain.handle('coffee:tables:getAll', async () => {
     try {
       return await prisma.coffeeTable.findMany({
-        where: { isActive: true },
+        // where: { isActive: true },
         include: {
           _count: { select: { orders: true } },
           // Eager-load the single open order (if any) for the floor-map view

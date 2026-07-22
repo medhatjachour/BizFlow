@@ -12,6 +12,7 @@ interface Props {
 }
 
 export function ExpenseTable({ rows, loading, onEdit, onDelete }: Props) {
+  const {t} = useLanguage()
   if (loading) {
     return (
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -36,10 +37,10 @@ export function ExpenseTable({ rows, loading, onEdit, onDelete }: Props) {
           <Inbox size={28} className="text-slate-400" />
         </div>
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
-          No expenses found
+          {t('cfNoExpensesFound')}
         </h3>
         <p className="text-xs text-slate-400 dark:text-slate-500">
-          Try adjusting your filters or add a new expense.
+          {t('cfTryAdjustingFiltersOrAddNewExpense')}
         </p>
       </div>
     )
@@ -52,12 +53,12 @@ export function ExpenseTable({ rows, loading, onEdit, onDelete }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Date</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Description</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Category</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Shift</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Amount</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Actions</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">{t('cfExpenseDate')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">{t('cfExpenseDescription')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">{t('cfExpenseCategory')}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">{t('cfShift')}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">{t('cfExpenseAmount')}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">{t('cfActions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">

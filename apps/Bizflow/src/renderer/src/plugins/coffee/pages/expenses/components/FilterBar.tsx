@@ -12,6 +12,7 @@ interface Props {
 }
 
 export function FilterBar({ filters, patchFilters, onRefresh, onAdd, activeShift }: Props) {
+  const {t} = useLanguage()
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Period pills */}
@@ -61,7 +62,7 @@ export function FilterBar({ filters, patchFilters, onRefresh, onAdd, activeShift
         <input
           value={filters.search}
           onChange={e => patchFilters({ search: e.target.value })}
-          placeholder="Search description or vendor..."
+          placeholder={t('cfSearchExpenses')||'Search expenses…'}
           className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
         />
       </div>
@@ -80,7 +81,7 @@ export function FilterBar({ filters, patchFilters, onRefresh, onAdd, activeShift
         onClick={onAdd}
         className="flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
       >
-        <Plus size={16} /> Add Expense
+        <Plus size={16} /> {t('cfAddExpense')||'Add Expense'}
       </button>
     </div>
   )

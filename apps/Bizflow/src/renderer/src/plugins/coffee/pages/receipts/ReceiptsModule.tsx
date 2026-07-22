@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import  { useState, useEffect } from 'react'
 import { ArrowDownToLine, Truck } from 'lucide-react'
 import { IncomingView } from './components/incoming/IncomingView'
 import { TransitView } from './components/transit/TransitView'
 
 import { Product, Category } from './types' // Import types
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 export default function ReceiptsModule() {
   const [activeTab, setActiveTab] = useState<'incoming' | 'transit'>('incoming')
   const [products, setProducts] = useState<Product[]>([]) // Explicitly type as Product[]
   const [categories, setCategories] = useState<Category[]>([]) // Explicitly type as Category[]
 
+  const {t} = useLanguage()
 
   useEffect(() => {
     // Fetch metadata required for Incoming Forms
@@ -38,7 +40,7 @@ export default function ReceiptsModule() {
               : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
         >
-          <ArrowDownToLine size={16} /> Incoming
+          <ArrowDownToLine size={16} /> {t('cfIcnome')||'Incoming'}
         </button>
         <button
           onClick={() => setActiveTab('transit')}
@@ -48,7 +50,7 @@ export default function ReceiptsModule() {
               : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
         >
-          <Truck size={16} /> Transit
+          <Truck size={16} /> {t('cfTransist')||'Transit'}
         </button>
       </div>
 

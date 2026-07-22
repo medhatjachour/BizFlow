@@ -7,10 +7,10 @@
 import { useState } from 'react'
 import {
   CreditCard, LayoutGrid, ClipboardList, Package,
-  BoxesIcon, Receipt, Timer, Coffee, Users, BarChart3, Wallet, Truck
+  BoxesIcon, Receipt, Timer,  Users, BarChart3, Wallet, Truck
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import TablesTab     from './tabs/TablesTab'
+import TablesTab     from './tables/TablesTab'
 import OrdersTab     from './tabs/OrdersTab'
 import ProductsTab   from './product/ProductsTab'
 import InventoryTab  from './inventory/InventoryTab'

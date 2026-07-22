@@ -47,10 +47,10 @@ export function ExpenseModal({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                {editing ? 'Edit Expense' : 'New Expense'}
+                {editing ? t('cfEditExpense') : t('cfNewExpense')}
               </h2>
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                {form.description || 'Untitled expense'}
+                {form.description || t('cfUntitledExpense')}
               </p>
             </div>
           </div>
@@ -66,7 +66,7 @@ export function ExpenseModal({
         >
           {/* Row 1: Date + Amount */}
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Date" icon={Calendar}>
+            <Field label={t('cfExpenseDate')} icon={Calendar}>
               <input
                 type="date"
                 value={form.date}
@@ -74,7 +74,7 @@ export function ExpenseModal({
                 className={inputCls}
               />
             </Field>
-            <Field label="Amount" icon={DollarSign} required>
+            <Field label={t('cfExpenseAmount')} icon={DollarSign} required>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">$</span>
                 <input
@@ -92,29 +92,29 @@ export function ExpenseModal({
           </div>
 
           {/* Description */}
-          <Field label="Description" icon={Tag} required>
+          <Field label={t('cfExpenseDescription')} icon={Tag} required>
             <input
               type="text"
               value={form.description}
               onChange={e => patchForm({ description: e.target.value })}
-              placeholder="e.g. Espresso beans restock"
+              placeholder={t('cfExpenseDescriptionPlaceholder') || 'e.g. Espresso beans restock'}
               className={inputCls}
             />
           </Field>
 
           {/* Vendor */}
-          <Field label="Vendor" icon={Store}>
+          <Field label={t('cfExpenseVendor')} icon={Store}>
             <input
               type="text"
               value={form.vendor}
               onChange={e => patchForm({ vendor: e.target.value })}
-              placeholder="e.g. Local Roastery (optional)"
+              placeholder={t('cfExpenseVendorPlaceholder') || 'e.g. Local Roastery (optional)'}
               className={inputCls}
             />
           </Field>
 
           {/* Category — visual grid */}
-          <Field label="Category" icon={Tag}>
+          <Field label={t('cfExpenseCategory')} icon={Tag}>
             <div className="grid grid-cols-5 gap-2">
               {EXPENSE_CATEGORIES.map(c => {
                 const Icon = c.icon
@@ -144,7 +144,7 @@ export function ExpenseModal({
 
           {/* Row 2: Payment + Recurrence */}
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Payment Method" icon={CreditCard}>
+            <Field label={t('cfExpensePaymentMethod')} icon={CreditCard}>
               <select
                 value={form.paymentMethod}
                 onChange={e => patchForm({ paymentMethod: e.target.value })}
@@ -155,7 +155,7 @@ export function ExpenseModal({
                 ))}
               </select>
             </Field>
-            <Field label="Recurrence" icon={Repeat}>
+            <Field label={t('cfExpenseRecurrence')} icon={Repeat}>
               <select
                 value={form.recurrence}
                 onChange={e => patchForm({ recurrence: e.target.value })}
@@ -169,7 +169,7 @@ export function ExpenseModal({
           </div>
 
           {/* Shift */}
-          <Field label="Shift" icon={Briefcase}>
+          <Field label={t('cfShift')} icon={Briefcase}>
             <select
               value={form.shiftId}
               onChange={e => patchForm({ shiftId: e.target.value })}
@@ -185,7 +185,7 @@ export function ExpenseModal({
           </Field>
 
           {/* Notes */}
-          <Field label="Notes" icon={StickyNote}>
+          <Field label={t('cfNotes')} icon={StickyNote}>
             <textarea
               value={form.notes}
               onChange={e => patchForm({ notes: e.target.value })}
