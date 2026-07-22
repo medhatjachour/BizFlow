@@ -36,7 +36,7 @@ export function CustomerPicker({
       {/* Search + New */}
       <div>
         <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-          Find Customer
+          {t('cfCheckoutFndCustomer')||"Find Customer"}
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -95,7 +95,7 @@ export function CustomerPicker({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-            Customer Name
+            {t('cfCheckoutCustomerNM')||"Name"}
           </label>
           <input
             value={customerName}
@@ -106,7 +106,7 @@ export function CustomerPicker({
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-            Phone
+            {t('cfCheckoutCustomerPH')||"Phone"}
           </label>
           <input
             value={customerPhone}
@@ -121,7 +121,7 @@ export function CustomerPicker({
       {orderType === 'delivery' && (
         <div>
           <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-            Delivery Address
+            {t('cfCheckoutCustomerADDR')||"Delivery Address"}
           </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />

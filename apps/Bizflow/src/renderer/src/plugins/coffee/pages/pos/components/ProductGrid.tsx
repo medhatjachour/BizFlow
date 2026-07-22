@@ -1,4 +1,4 @@
-import { Search, Grid3X3, Zap, X } from 'lucide-react'
+import { Search, X } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { ProductCard } from './ProductCard'
 import { catCls } from '../constants'

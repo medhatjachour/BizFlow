@@ -79,5 +79,5 @@ export interface CheckoutForm {
 export interface NewCustomerForm {
   name: string
   phone: string
-  email: string
+  address: string
 }

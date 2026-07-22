@@ -19,7 +19,7 @@ import ShiftsTab     from './shifts/ShiftsTab'
 import CustomersTab  from './tabs/CustomersTab'
 import ReportsTab    from './tabs/ReportsTab'
 import FinanceTab    from './finance/FinanceTab'
-import IncomingReceiptsTab from './tabs/IncomingReceiptsTab'
+import ReceiptsModule from './receipts/ReceiptsModule'
 import ExpensesTab   from './expenses/ExpensesTab'
 import POSView from './pos/POSView'
 
@@ -90,7 +90,7 @@ export default function CoffeePage() {
         {activeTab === 'orders'    && <OrdersTab    />}
         {activeTab === 'products'  && <ProductsTab  />}
         {activeTab === 'inventory' && <InventoryTab />}
-        {activeTab === 'incoming'  && <IncomingReceiptsTab />}
+        {activeTab === 'incoming'  && <ReceiptsModule />}
         {activeTab === 'expenses'  && <ExpensesTab   />}
         {activeTab === 'sales'     && <SalesTab     />}
         {activeTab === 'shifts'    && <ShiftsTab    />}

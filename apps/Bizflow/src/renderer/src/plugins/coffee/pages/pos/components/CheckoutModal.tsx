@@ -1,4 +1,4 @@
-import { X, Check, Loader2, UtensilsCrossed, Package, Truck, Banknote, CreditCard, Smartphone, Tag, StickyNote } from 'lucide-react'
+import { X, Check, Loader2, Tag, StickyNote } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { ORDER_TYPES, PAYMENT_METHODS, orderTypeMeta, payMeta } from '../constants'
 import { CustomerPicker } from './CustomerPicker'
@@ -51,7 +51,7 @@ export function CheckoutModal({
   if (!open) return null
 
   const selectedType = orderTypeMeta(checkout.orderType)
-  const selectedPay = payMeta(checkout.paymentMethod)
+  // const selectedPay = payMeta(checkout.paymentMethod)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
@@ -64,8 +64,8 @@ export function CheckoutModal({
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">Checkout</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {cart.length} items · {formatMoney(total)}
+              <p className="text-xs text-slate-500 dark:text-slate-400 flex flex-row">
+                <p> {cart.length} </p> {t('cfCheckoutItems')||"Items"} = <p> {formatMoney(total)} $</p>
               </p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export function CheckoutModal({
           {/* Order type */}
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Order Type
+              {t('cfCheckoutOrderType')||"Order Type"}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {ORDER_TYPES.map(({ value, label, icon: Icon, color }) => {
@@ -135,7 +135,8 @@ export function CheckoutModal({
           {/* Payment method */}
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Payment Method
+              
+              {t('cfCheckoutPaymentMethod')||"Payment Method"}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {PAYMENT_METHODS.map(({ value, label, icon: Icon, color }) => {
@@ -165,7 +166,7 @@ export function CheckoutModal({
           {/* Order items review */}
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Items ({cart.length})
+              {t('cfCheckoutItems')||"Items"} ({cart.length})
             </label>
             <div className="space-y-1.5 max-h-40 overflow-y-auto bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3">
               {cart.map(item => (
@@ -193,7 +194,7 @@ export function CheckoutModal({
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                 <Tag className="w-3.5 h-3.5 inline mr-1" />
-                Discount
+                {t("cfCheckoutDiscount")||'Discount'} 
               </label>
               <input
                 type="number"
@@ -208,7 +209,8 @@ export function CheckoutModal({
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                 <StickyNote className="w-3.5 h-3.5 inline mr-1" />
-                Notes
+                
+                {t("cfCheckoutNotes")||'Notes'} 
               </label>
               <input
                 value={checkout.notes}
@@ -224,17 +226,24 @@ export function CheckoutModal({
             {checkout.discount > 0 && (
               <>
                 <div className="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-                  <span>Subtotal</span>
+                  <span>
+                    {t('cfCartSubTotal')||"Subtotal"}
+                  </span>
                   <span className="tabular-nums">{formatMoney(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-red-500">
-                  <span>Discount</span>
+                  <span>
+                    
+                {t('cfCheckoutDiscount')||"Discount"}
+                  </span>
                   <span className="tabular-nums">−{formatMoney(checkout.discount)}</span>
                 </div>
               </>
             )}
             <div className="flex justify-between items-baseline pt-2 border-t border-amber-200 dark:border-amber-800">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">Total</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                {t('cfCartTotal')||"Total"}
+              </span>
               <span className="text-2xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                 {formatMoney(total)}
               </span>

@@ -127,7 +127,7 @@ export async function initializePrisma(): Promise<void> {
         if (__PLUGIN_VET__)         ['VetOwner','VetPatient','VetSession','VetPrescription','VetAppointment','VetCheckResult','VetExpense','VetStaff','VetSalaryRecord','VetMedicine','VetMedicineBatch','VetMedicineSale','VetMedicineCategory','VetMedicineUnit','VetVisitType','VetMedicineAudit'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_GYM__)         ['GymCoach','GymTrainee','GymPlan','GymSubscription','GymFreeze','GymWalkSession','GymExpense','GymMeasurement','GymGoal','GymLocker','GymLockerAssignment','GymProgram','GymProgramDay','GymProgramExercise','GymProgramAssignment','GymShift'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_PHARMACY__)    ['PharmacyProduct','PharmacyBatch','PharmacySale','PharmacySaleItem','PharmacySupplier','PharmacyPurchaseOrder','PharmacyPurchaseOrderItem','PharmacyCustomer','PharmacyStockAudit'].forEach(t => EXPECTED.add(t))
-        if (__PLUGIN_COFFEE__)      ['CoffeeCategory','CoffeeProduct','CoffeeStockMovement','CoffeeIncomingReceipt','CoffeeIncomingReceiptItem','CoffeeTable','CoffeeOrder','CoffeeOrderItem','CoffeeShift','CoffeeCustomer','CoffeeExpense'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_COFFEE__)      ['CoffeeCategory','CoffeeProduct','CoffeeStockMovement','CoffeeIncomingReceipt','CoffeeIncomingReceiptItem','CoffeeTable','CoffeeOrder','CoffeeOrderItem','CoffeeShift','CoffeeCustomer','CoffeeExpense','CoffeeTransitReceipt','CoffeeTransitReceiptItem'].forEach(t => EXPECTED.add(t))
         const allTables: { name: string }[] = await prisma.$queryRawUnsafe(
           `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
         )

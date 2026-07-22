@@ -40,7 +40,7 @@ export function NewCustomerModal({ open, onClose, form, patchForm, onSave, savin
         <form onSubmit={e => { e.preventDefault(); onSave() }} className="p-5 space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              Name *
+              {t('cfCheckoutCustomerNM')||"Customer Name"}
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -56,7 +56,7 @@ export function NewCustomerModal({ open, onClose, form, patchForm, onSave, savin
 
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              Phone (optional)
+              {t('cfCheckoutCustomerPH')||"Phone"} ({t('cfOptional')||"Optional"})
             </label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -71,14 +71,14 @@ export function NewCustomerModal({ open, onClose, form, patchForm, onSave, savin
 
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              Email (optional)
+              {t('cfCheckoutCustomerADDR')||"Address"} ({t('cfOptional')||"Optional"})
             </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
-                value={form.email}
-                onChange={e => patchForm({ email: e.target.value })}
-                placeholder="email@example.com"
+                value={form.address}
+                onChange={e => patchForm({ address: e.target.value })}
+                placeholder="address@example.com"
                 className={inputCls + ' pl-9'}
               />
             </div>

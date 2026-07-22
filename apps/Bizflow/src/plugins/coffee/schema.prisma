@@ -245,3 +245,46 @@ model CoffeeShift {
   @@index([status])
   @@index([openedAt])
 }
+// Transit/Outgoing receipts — orders received for delivery, NOT related to inventory
+// These are orders that come to us and we deliver them (transit only)
+model CoffeeTransitReceipt {
+  id               String                     @id @default(uuid())
+  receiptNumber    String                     @unique
+  senderName       String?
+  senderPhone      String?
+  recipientName    String?
+  recipientPhone   String?
+  recipientAddress String?
+  receivedAt       DateTime                   @default(now())
+  deliveredAt      DateTime?
+  status           String                     @default("received") // received | in_transit | delivered | cancelled
+  totalAmount      Float                      @default(0)
+  deliveryFee      Float                      @default(0)
+  priority         String                     @default("normal") // low | normal | high | urgent
+  notes            String?
+  createdById      String?
+  items            CoffeeTransitReceiptItem[]
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@index([receiptNumber])
+  @@index([receivedAt])
+  @@index([status])
+  @@index([priority])
+  @@index([createdById])
+}
+model CoffeeTransitReceiptItem {
+  id          String               @id @default(uuid())
+  receiptId   String
+  receipt     CoffeeTransitReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  description String               // Free text — not linked to our products
+  quantity    Int                  @default(1)
+  unitPrice   Float                @default(0)
+  lineTotal   Float
+  weight      Float?               // Optional weight in kg
+  notes       String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([receiptId])
+}

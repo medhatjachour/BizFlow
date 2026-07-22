@@ -25,13 +25,14 @@ export function CartSidebar({
   cart, itemCount, subtotal, discount, total,  checking,
   onClear, onClose, onChangeQty, onRemove, onUpdatePrice, onQuickSale, onCheckout,
 }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="w-full h-full lg:w-80 xl:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-2">
           <ShoppingCart className="w-5 h-5 text-amber-500" />
-          <span className="font-semibold text-slate-900 dark:text-white">Cart</span>
+          <span className="font-semibold text-slate-900 dark:text-white">{t('cfCart') || 'Cart'}</span>
           {itemCount > 0 && (
             <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">
               {itemCount}
@@ -44,7 +45,7 @@ export function CartSidebar({
               onClick={onClear}
               className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Clear
+              <Trash2 className="w-3.5 h-3.5" /> {t('cfClearCart') || 'Clear'}
             </button>
           )}
           <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-slate-600">
@@ -58,8 +59,8 @@ export function CartSidebar({
           <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
             <ShoppingCart className="w-8 h-8 text-slate-400" />
           </div>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Cart empty</p>
-          <p className="text-xs text-slate-400 mt-1">Tap a product to add</p>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('cfCartEmpty') || 'Cart Empty'}</p>
+          <p className="text-xs text-slate-400 mt-1">{t('cfTapToAdd') || 'Tap to add Product to cart'}</p>
         </div>
       ) : (
         <>
@@ -92,7 +93,7 @@ export function CartSidebar({
             )}
 
             <div className="flex justify-between items-baseline">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">Total</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">{t('cfCartTotal')||"Total"}</span>
               <span className="text-xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                 {formatMoney(total)}
               </span>
@@ -106,7 +107,7 @@ export function CartSidebar({
                   disabled={checking}
                   className="w-full py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
                 >
-                  <Zap className="w-4 h-4" /> Quick Cash
+                  <Zap className="w-4 h-4" /> {t('cfCartQuickCash') || 'Quick Cash'}
                 </button>
                 {/* Full checkout */}
                 <button
@@ -114,7 +115,7 @@ export function CartSidebar({
                   disabled={checking}
                   className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
                 >
-                  Checkout <ArrowRight className="w-4 h-4" />
+                  {t('cfCartCheckout') || 'Checkout'} <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
            

@@ -1,4 +1,3 @@
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { ProductImg } from './ProductImg'
 import type { Product, CartItem } from '../types'
 import { formatMoney } from '../utils'
@@ -21,8 +20,8 @@ export function ProductCard({ product, inCart, onClick }: Props) {
         isOut
           ? 'opacity-50 cursor-not-allowed border-slate-200 dark:border-slate-700'
           : inCart
-          ? 'border-amber-400 dark:border-amber-600'
-          : 'border-slate-200 dark:border-slate-700'
+            ? 'border-amber-400 dark:border-amber-600'
+            : 'border-slate-200 dark:border-slate-700'
       }`}
     >
       {/* Cart badge */}
@@ -33,7 +32,7 @@ export function ProductCard({ product, inCart, onClick }: Props) {
       )}
 
       {/* Image */}
-      <div className="aspect-square rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700">
+      <div className="aspect-[4/3]  rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700">
         <ProductImg image={product.image} name={product.name} />
       </div>
 
@@ -43,22 +42,22 @@ export function ProductCard({ product, inCart, onClick }: Props) {
           {product.name}
         </p>
       </div>
-
       {/* Price + stock */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+      <div className="flex items-center justify-between w-full border-t border-slate-100 dark:border-slate-800 pt-1">
+        <span className="text-base font-bold text-slate-900 dark:text-slate-100">
           {formatMoney(product.price)}
         </span>
+
         {isOut ? (
-          <span className="text-[10px] font-semibold text-red-500 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
-            Out
+          <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+            Out of Stock
           </span>
         ) : isLow ? (
-          <span className="text-[10px] font-semibold text-amber-600 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">
+          <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
             Low ({product.stock})
           </span>
         ) : (
-          <span className="text-[10px] text-slate-400">
+          <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
             {product.stock} in stock
           </span>
         )}
