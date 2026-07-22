@@ -23,7 +23,7 @@ export function registerCustomerHandlers(prisma: any) {
         where.OR = [
           { name:  { contains: opts.search } },
           { phone: { contains: opts.search } },
-          { email: { contains: opts.search } }
+          { address: { contains: opts.search } }
         ]
       }
       const [total, items] = await Promise.all([
@@ -58,7 +58,7 @@ export function registerCustomerHandlers(prisma: any) {
   })
 
   ipcMain.handle('coffee:customers:create', async (_e, data: {
-    name: string; phone?: string; email?: string; notes?: string
+    name: string; phone?: string; address?: string; notes?: string
   }) => {
     try {
       return await prisma.coffeeCustomer.create({ data })
@@ -66,7 +66,7 @@ export function registerCustomerHandlers(prisma: any) {
   })
 
   ipcMain.handle('coffee:customers:update', async (_e, data: {
-    id: string; name?: string; phone?: string; email?: string; notes?: string
+    id: string; name?: string; phone?: string; address?: string; notes?: string
   }) => {
     try {
       const { id, ...rest } = data
