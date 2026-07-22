@@ -63,5 +63,5 @@ export const EMPTY_CHECKOUT: CheckoutForm = {
 export const EMPTY_NEW_CUSTOMER: NewCustomerForm = {
   name:  '',
   phone: '',
-  email: '',
+  address: '',
 }

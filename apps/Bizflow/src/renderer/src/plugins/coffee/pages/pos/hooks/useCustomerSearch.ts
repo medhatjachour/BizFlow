@@ -49,7 +49,7 @@ export function useCustomerSearch(toast: any) {
       const c = await window.api.coffee.customers.create({
         name: newCustForm.name.trim(),
         phone: newCustForm.phone || undefined,
-        email: newCustForm.email || undefined,
+        address: newCustForm.address || undefined,
       })
       select(c)
       setNewCustModal(false)
