@@ -1,5 +1,4 @@
 import { Search, X } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { ProductCard } from './ProductCard'
 import { catCls } from '../constants'
 import { hexToRgba } from '../utils'
@@ -21,7 +20,7 @@ interface Props {
 }
 
 export function ProductGrid({
-  viewMode, setViewMode, search, setSearch,
+  search, setSearch,
   selectedCat, setSelectedCat, categories, products,
   cart, onAddToCart,  loading,
 }: Props) {
@@ -57,7 +56,8 @@ export function ProductGrid({
       </div>
 
       {/* Category chips */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 overflow-x-auto bg-slate-50 dark:bg-slate-900/50">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+
         <button
           onClick={() => setSelectedCat('all')}
           className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
@@ -76,7 +76,7 @@ export function ProductGrid({
             <button
               key={c.id}
               onClick={() => setSelectedCat(c.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-1 transition-colors ${
+              className={`px-3 py-3 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-2 transition-colors ${
                 isSelected
                   ? 'text-white shadow-sm'
                   : isHex
