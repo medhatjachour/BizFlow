@@ -11,15 +11,28 @@ import { createLogger } from '../../../main/utils/logger'
 
 const log = createLogger('Coffee:Shifts')
 
+function withDateRange(field: string, opts?: { startDate?: string; endDate?: string }) {
+  if (!opts?.startDate && !opts?.endDate) return {}
+  const range: any = {}
+  if (opts.startDate) range.gte = new Date(opts.startDate)
+  if (opts.endDate)   range.lte = new Date(opts.endDate)
+  return { [field]: range }
+}
+
 export function registerShiftHandlers(prisma: any) {
   // Return the currently open shift (if any)
   ipcMain.handle('coffee:shifts:getActive', async () => {
     try {
-      return await prisma.coffeeShift.findFirst({
+      const shift = await prisma.coffeeShift.findFirst({
         where: { status: 'open' },
         include: {
           cashier: { select: { id: true, username: true, fullName: true } },
           _count:  { select: { orders: true } },
+          expenses: {
+            select: { id: true, date: true, category: true, amount: true, description: true, paymentMethod: true, notes: true },
+            orderBy: { date: 'desc' },
+            take: 10
+          },
           orders: {
             select: {
               id: true,
@@ -40,6 +53,20 @@ export function registerShiftHandlers(prisma: any) {
         },
         orderBy: { openedAt: 'desc' }
       })
+
+      if (!shift) return null
+
+      const expenseSummary = await prisma.coffeeExpense.aggregate({
+        where: { shiftId: shift.id },
+        _sum: { amount: true },
+        _count: true
+      })
+
+      return {
+        ...shift,
+        expenseTotal: Number(expenseSummary._sum.amount || 0),
+        expenseCount: expenseSummary._count
+      }
     } catch (err) { log.error('shifts:getActive', err); throw err }
   })
 
@@ -65,6 +92,11 @@ export function registerShiftHandlers(prisma: any) {
           include: {
             cashier: { select: { id: true, username: true, fullName: true } },
             _count:  { select: { orders: true } },
+            expenses: {
+              select: { id: true, amount: true, category: true, paymentMethod: true, date: true },
+              orderBy: { date: 'desc' },
+              take: 5
+            },
             orders: {
               select: {
                 id: true,
@@ -87,7 +119,29 @@ export function registerShiftHandlers(prisma: any) {
         })
       ])
 
-      return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
+      const expenseTotals = await prisma.coffeeExpense.findMany({
+        where: { shiftId: { in: items.map((shift: any) => shift.id) } },
+        select: { shiftId: true, amount: true }
+      })
+      const expenseMap = new Map<string, { total: number; count: number }>()
+      for (const expense of expenseTotals) {
+        if (!expense.shiftId) continue
+        const row = expenseMap.get(expense.shiftId) || { total: 0, count: 0 }
+        row.total += Number(expense.amount || 0)
+        row.count += 1
+        expenseMap.set(expense.shiftId, row)
+      }
+
+      return {
+        items: items.map((shift: any) => {
+          const expense = expenseMap.get(shift.id) || { total: 0, count: 0 }
+          return { ...shift, expenseTotal: expense.total, expenseCount: expense.count }
+        }),
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize)
+      }
     } catch (err) { log.error('shifts:getHistory', err); throw err }
   })
 
@@ -108,12 +162,17 @@ export function registerShiftHandlers(prisma: any) {
           cashier: { select: { id: true, username: true, fullName: true } }
         }
       })
+      const expenses = await prisma.coffeeExpense.findMany({
+        where: { ...withDateRange('date', opts) },
+        select: { amount: true }
+      })
 
       const cashierMap = new Map<string, { id: string; name: string; shifts: number; revenue: number; orders: number }>()
       let totalSales = 0
       let totalOrders = 0
       let totalOpeningCash = 0
       let totalCashDifference = 0
+      let totalExpenses = 0
       let longestMinutes = 0
       let closedShifts = 0
 
@@ -142,15 +201,21 @@ export function registerShiftHandlers(prisma: any) {
         cashierMap.set(key, row)
       }
 
+      for (const expense of expenses) {
+        totalExpenses += Number(expense.amount || 0)
+      }
+
       return {
         totalShifts: shifts.length,
         closedShifts,
         totalSales,
         totalOrders,
+        totalExpenses,
         averageShiftSales: shifts.length > 0 ? totalSales / shifts.length : 0,
         averageOrdersPerShift: shifts.length > 0 ? totalOrders / shifts.length : 0,
         averageOpeningCash: shifts.length > 0 ? totalOpeningCash / shifts.length : 0,
         averageCashDifference: closedShifts > 0 ? totalCashDifference / closedShifts : 0,
+        averageExpensesPerShift: shifts.length > 0 ? totalExpenses / shifts.length : 0,
         longestShiftMinutes: longestMinutes,
         topCashiers: Array.from(cashierMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
       }
@@ -163,6 +228,10 @@ export function registerShiftHandlers(prisma: any) {
         where: { id: shiftId },
         include: {
           cashier: { select: { id: true, username: true, fullName: true } },
+          expenses: {
+            select: { id: true, date: true, category: true, amount: true, description: true, vendor: true, paymentMethod: true, recurrence: true, notes: true },
+            orderBy: { date: 'desc' }
+          },
           orders: {
             include: {
               table: { select: { number: true, name: true } },

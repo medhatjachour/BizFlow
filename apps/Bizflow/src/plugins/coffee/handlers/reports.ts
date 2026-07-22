@@ -17,7 +17,7 @@ export function registerReportHandlers(prisma: any) {
   ipcMain.handle('coffee:reports:getOverview', async (_e, opts?: { startDate?: string; endDate?: string }) => {
     try {
       const where: any = { status: 'paid', ...withDateRange('closedAt', opts) }
-      const [orders, lowStockCount, outOfStockCount] = await Promise.all([
+      const [orders, lowStockCount, outOfStockCount, expenses] = await Promise.all([
         prisma.coffeeOrder.findMany({
           where,
           include: {
@@ -36,7 +36,11 @@ export function registerReportHandlers(prisma: any) {
           }
         }),
         prisma.coffeeProduct.count({ where: { isAvailable: true, stock: { lte: 5, gt: 0 } } }),
-        prisma.coffeeProduct.count({ where: { isAvailable: true, stock: { lte: 0 } } })
+        prisma.coffeeProduct.count({ where: { isAvailable: true, stock: { lte: 0 } } }),
+        prisma.coffeeExpense.findMany({
+          where: { ...withDateRange('date', opts) },
+          select: { amount: true, category: true, paymentMethod: true }
+        })
       ])
 
       let totalRevenue = 0
@@ -44,6 +48,8 @@ export function registerReportHandlers(prisma: any) {
       let totalOrders = 0
       let totalItemsSold = 0
       let totalCogs = 0
+      let operationalExpenses = 0
+      let expenseCount = 0
       let deliveryRevenue = 0
       const payment: Record<string, number> = { cash: 0, card: 0, vodafone_cash: 0, other: 0 }
       const orderTypes: Record<string, number> = { dine_in: 0, takeaway: 0, delivery: 0, other: 0 }
@@ -109,6 +115,14 @@ export function registerReportHandlers(prisma: any) {
         }
       }
 
+      const expenseByCategoryMap = new Map<string, number>()
+      for (const expense of expenses) {
+        const amount = Number(expense.amount || 0)
+        operationalExpenses += amount
+        expenseCount += 1
+        expenseByCategoryMap.set(expense.category, (expenseByCategoryMap.get(expense.category) ?? 0) + amount)
+      }
+
       const bestHour = hourSales.reduce(
         (best, value, hour) => (value > best.value ? { hour, value } : best),
         { hour: 0, value: 0 }
@@ -122,6 +136,7 @@ export function registerReportHandlers(prisma: any) {
       }, { date: '', revenue: 0, orders: 0 })
       const topCustomers = Array.from(customerMap.values()).sort((a, b) => b.spent - a.spent).slice(0, 8)
       const repeatCustomers = Array.from(customerMap.values()).filter(c => c.orders > 1).length
+      const netProfitAfterExpenses = totalRevenue - totalCogs - operationalExpenses
 
       return {
         totalRevenue,
@@ -130,7 +145,11 @@ export function registerReportHandlers(prisma: any) {
         averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
         totalItemsSold,
         totalCogs,
+        operationalExpenses,
+        expenseCount,
+        totalExpenses: totalCogs + operationalExpenses,
         grossProfit: totalRevenue - totalCogs,
+        netProfitAfterExpenses,
         grossMarginPct: totalRevenue > 0 ? ((totalRevenue - totalCogs) / totalRevenue) * 100 : 0,
         avgItemsPerOrder: totalOrders > 0 ? totalItemsSold / totalOrders : 0,
         discountRatePct: totalRevenue > 0 ? (totalDiscount / (totalRevenue + totalDiscount)) * 100 : 0,
@@ -145,6 +164,7 @@ export function registerReportHandlers(prisma: any) {
         repeatCustomerRatePct: customerMap.size > 0 ? (repeatCustomers / customerMap.size) * 100 : 0,
         lowStockCount,
         outOfStockCount,
+        expenseByCategory: Array.from(expenseByCategoryMap.entries()).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total),
         bestDay,
         worstDay
       }

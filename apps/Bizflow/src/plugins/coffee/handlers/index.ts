@@ -12,6 +12,9 @@ import { registerOverviewHandlers } from './overview'
 import { registerCustomerHandlers } from './customers'
 import { registerReportHandlers }   from './reports'
 import { registerFinanceHandlers }  from './finance'
+import { registerIncomingReceiptHandlers } from './incomingReceipts'
+import { registerExpenseHandlers } from './expenses'
+import { registerTransitReceiptHandlers } from './transitReceipts'
 
 export function registerCoffeeHandlers(prisma: any) {
   registerProductHandlers(prisma)
@@ -23,4 +26,7 @@ export function registerCoffeeHandlers(prisma: any) {
   registerCustomerHandlers(prisma)
   registerReportHandlers(prisma)
   registerFinanceHandlers(prisma)
+  registerIncomingReceiptHandlers(prisma)
+  registerExpenseHandlers(prisma)
+  registerTransitReceiptHandlers(prisma)
 }

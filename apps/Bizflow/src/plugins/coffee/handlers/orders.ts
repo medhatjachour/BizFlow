@@ -33,27 +33,45 @@ async function nextOrderNumber(prisma: any): Promise<string> {
 export function registerOrderHandlers(prisma: any) {
   // ── List orders ──────────────────────────────────────────────────────────────
   ipcMain.handle('coffee:orders:getAll', async (_e, opts?: {
-    status?: string; type?: string; shiftId?: string; startDate?: string; endDate?: string
+    status?: string; type?: string; shiftId?: string; search?: string; page?: number; pageSize?: number; startDate?: string; endDate?: string
   }) => {
     try {
+      const page = opts?.page ?? 1
+      const pageSize = opts?.pageSize ?? 20
       const where: any = {}
       if (opts?.status)  where.status  = opts.status
       if (opts?.type)    where.type    = opts.type
       if (opts?.shiftId) where.shiftId = opts.shiftId
+      if (opts?.search?.trim()) {
+        const q = opts.search.trim()
+        where.OR = [
+          { orderNumber: { contains: q, mode: 'insensitive' } },
+          { customerName: { contains: q, mode: 'insensitive' } },
+          { customerPhone: { contains: q, mode: 'insensitive' } },
+          { deliveryAddress: { contains: q, mode: 'insensitive' } },
+          { table: { name: { contains: q, mode: 'insensitive' } } }
+        ]
+      }
       if (opts?.startDate || opts?.endDate) {
         where.openedAt = {}
         if (opts.startDate) where.openedAt.gte = new Date(opts.startDate)
         if (opts.endDate)   where.openedAt.lte = new Date(opts.endDate)
       }
-      return await prisma.coffeeOrder.findMany({
-        where,
-        include: {
-          table:   { select: { id: true, number: true, name: true, section: true } },
-          cashier: { select: { id: true, username: true, fullName: true } },
-          items:   { orderBy: { createdAt: 'asc' } }
-        },
-        orderBy: { openedAt: 'desc' }
-      })
+      const [total, items] = await Promise.all([
+        prisma.coffeeOrder.count({ where }),
+        prisma.coffeeOrder.findMany({
+          where,
+          include: {
+            table:   { select: { id: true, number: true, name: true, section: true } },
+            cashier: { select: { id: true, username: true, fullName: true } },
+            items:   { orderBy: { createdAt: 'asc' } }
+          },
+          orderBy: { openedAt: 'desc' },
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ])
+      return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
     } catch (err) { log.error('orders:getAll', err); throw err }
   })
 

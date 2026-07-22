@@ -9,6 +9,7 @@ import { enPart5 } from './en.part.5'
 import { enPart6 } from './en.part.6'
 import { enPart7 } from './en.part.7'
 import { enPart8 } from './en.part.8'
+import { enPart9 } from './en.part.9'
 
 export const en = {
   ...enPart1,
@@ -19,4 +20,5 @@ export const en = {
   ...enPart6,
   ...enPart7,
   ...enPart8,
+  ...enPart9,
 }

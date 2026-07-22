@@ -35,6 +35,28 @@ export const coffeePreload = {
     adjust:       (d: any)            => ipcRenderer.invoke('coffee:inventory:adjust', d)
   },
 
+  incomingReceipts: {
+    getAll: (opts?: any) => ipcRenderer.invoke('coffee:incomingReceipts:getAll', opts),
+    getSummary: (opts?: any) => ipcRenderer.invoke('coffee:incomingReceipts:getSummary', opts),
+    create: (d: any) => ipcRenderer.invoke('coffee:incomingReceipts:create', d)
+  },
+
+  transitReceipts: {
+    getAll: (opts?: any) => ipcRenderer.invoke('coffee:transitReceipts:getAll', opts),
+    getSummary: (opts?: any) => ipcRenderer.invoke('coffee:transitReceipts:getSummary', opts),
+    create: (d: any) => ipcRenderer.invoke('coffee:transitReceipts:create', d),
+    updateStatus: (d: any) => ipcRenderer.invoke('coffee:transitReceipts:updateStatus', d),
+    delete: (id: string) => ipcRenderer.invoke('coffee:transitReceipts:delete', id)
+  },
+
+  expenses: {
+    getAll: (opts?: any) => ipcRenderer.invoke('coffee:expenses:getAll', opts),
+    getSummary: (opts?: any) => ipcRenderer.invoke('coffee:expenses:getSummary', opts),
+    create: (d: any) => ipcRenderer.invoke('coffee:expenses:create', d),
+    update: (id: string, data: any) => ipcRenderer.invoke('coffee:expenses:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('coffee:expenses:delete', id)
+  },
+
   // ── Tables ───────────────────────────────────────────────────────────────────
   tables: {
     getAll:       ()             => ipcRenderer.invoke('coffee:tables:getAll'),

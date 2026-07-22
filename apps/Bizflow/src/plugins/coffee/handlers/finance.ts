@@ -17,7 +17,7 @@ export function registerFinanceHandlers(prisma: any) {
   ipcMain.handle('coffee:finance:getOverview', async (_e, opts?: { startDate?: string; endDate?: string }) => {
     try {
       const paidWhere: any = { status: 'paid', ...withDateRange('closedAt', opts) }
-      const [orders, shifts, voidedOrders, openOrders] = await Promise.all([
+      const [orders, shifts, voidedOrders, openOrders, expenses] = await Promise.all([
         prisma.coffeeOrder.findMany({
           where: paidWhere,
           include: {
@@ -34,6 +34,10 @@ export function registerFinanceHandlers(prisma: any) {
         prisma.coffeeOrder.findMany({
           where: { status: 'open', ...withDateRange('openedAt', opts) },
           select: { total: true, subtotal: true }
+        }),
+        prisma.coffeeExpense.findMany({
+          where: { ...withDateRange('date', opts) },
+          select: { amount: true, category: true, paymentMethod: true, shiftId: true }
         })
       ])
 
@@ -41,8 +45,12 @@ export function registerFinanceHandlers(prisma: any) {
       let grossSales = 0
       let totalDiscount = 0
       let cogs = 0
+      let operationalExpenses = 0
+      let expenseCount = 0
+      let shiftExpenseTotal = 0
       let discountOrders = 0
       const payment: Record<string, number> = { cash: 0, card: 0, vodafone_cash: 0, other: 0 }
+      const expenseByCategory = new Map<string, number>()
 
       for (const o of orders) {
         netSales += Number(o.total || 0)
@@ -59,7 +67,16 @@ export function registerFinanceHandlers(prisma: any) {
         }
       }
 
+      for (const expense of expenses) {
+        const amount = Number(expense.amount || 0)
+        operationalExpenses += amount
+        expenseCount += 1
+        if (expense.shiftId) shiftExpenseTotal += amount
+        expenseByCategory.set(expense.category, (expenseByCategory.get(expense.category) ?? 0) + amount)
+      }
+
       const grossProfit = netSales - cogs
+      const netProfitAfterExpenses = grossProfit - operationalExpenses
       const grossMarginPct = netSales > 0 ? (grossProfit / netSales) * 100 : 0
       const refundsAndVoids = voidedOrders.reduce((s: number, o: any) => s + Number(o.total || 0), 0)
       const openOrdersValue = openOrders.reduce((s: number, o: any) => s + Number(o.total || o.subtotal || 0), 0)
@@ -83,7 +100,11 @@ export function registerFinanceHandlers(prisma: any) {
         totalOrders: orders.length,
         averageOrderValue: orders.length > 0 ? netSales / orders.length : 0,
         cogs,
+        operationalExpenses,
+        expenseCount,
+        totalExpenses: cogs + operationalExpenses,
         grossProfit,
+        netProfitAfterExpenses,
         grossMarginPct,
         avgDiscountPerOrder: orders.length > 0 ? totalDiscount / orders.length : 0,
         discountedOrders: discountOrders,
@@ -98,9 +119,14 @@ export function registerFinanceHandlers(prisma: any) {
         refundsAndVoids,
         openOrdersCount: openOrders.length,
         openOrdersValue,
+        expenseByCategory: Array.from(expenseByCategory.entries())
+          .map(([category, total]) => ({ category, total }))
+          .sort((a, b) => b.total - a.total),
         shiftStats: {
           ...shiftStats,
-          expectedDrawer: shiftStats.openingCash + shiftStats.cashSales
+          expectedDrawer: shiftStats.openingCash + shiftStats.cashSales,
+          linkedExpenseTotal: shiftExpenseTotal,
+          expectedAfterExpenses: shiftStats.openingCash + shiftStats.cashSales - shiftExpenseTotal
         }
       }
     } catch (err) {

@@ -1,0 +1,7 @@
+{
+  "extends": "../../../tsconfig.node.json",
+  "include": ["seed.ts"],
+  "compilerOptions": {
+    "types": ["electron-vite/node", "node"]
+  }
+}
