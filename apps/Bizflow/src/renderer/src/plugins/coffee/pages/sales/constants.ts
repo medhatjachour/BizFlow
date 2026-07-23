@@ -1,8 +1,7 @@
 import {
   Banknote, CreditCard, Smartphone,
   UtensilsCrossed, Package, Truck,
-  TrendingUp, Receipt, ShoppingBag, Coins,
-  Clock, Users, ArrowUpRight, ArrowDownRight
+  TrendingUp, Receipt, ShoppingBag,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PaymentMethod, OrderType } from './types'

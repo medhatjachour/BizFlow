@@ -16,7 +16,7 @@ interface Props {
 export function ShiftCard({ shift, onView }: Props) {
   const diff = shift.cashDifference ?? 0
   const isOpen = shift.status === 'open'
-
+  const { t } = useLanguage()
   return (
     <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-md transition-shadow">
       {/* Top row: status + date + duration */}
@@ -46,7 +46,7 @@ export function ShiftCard({ shift, onView }: Props) {
             </div>
             <div className="text-[11px] text-slate-400 flex items-center justify-end gap-1">
               <ShoppingBag size={10} />
-              {shift.totalOrders} orders
+              {shift.totalOrders} {t('cfOrders') || 'orders'}
             </div>
           </div>
         </div>
@@ -65,10 +65,10 @@ export function ShiftCard({ shift, onView }: Props) {
       <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
         <div className="grid grid-cols-4 gap-2 text-xs">
           {[
-            { label: 'Open',    value: shift.openingCash,         icon: Wallet },
-            { label: 'Cash',    value: shift.cashTotal,           icon: Banknote },
-            { label: 'Card',    value: shift.cardTotal,           icon: CreditCard },
-            { label: 'Vodafone',value: shift.vodafoneCashTotal,   icon: Smartphone },
+            { label: t('cfOpen') || 'Open',    value: shift.openingCash,         icon: Wallet },
+            { label: t('cfCash') || 'Cash',    value: shift.cashTotal,           icon: Banknote },
+            { label: t('cfCard') || 'Card',    value: shift.cardTotal,           icon: CreditCard },
+            { label: t('cfVodafone') || 'Vodafone',value: shift.vodafoneCashTotal,   icon: Smartphone },
           ].map(item => {
             const Icon = item.icon
             return (
@@ -88,13 +88,13 @@ export function ShiftCard({ shift, onView }: Props) {
         {/* Avg ticket + cash diff */}
         <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs">
           <div className="flex justify-between">
-            <span className="text-slate-400">Avg Ticket</span>
+            <span className="text-slate-400">{t('cfAvgTicket') || 'Avg Ticket'}</span>
             <span className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
               {avgTicket(shift)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Cash Diff</span>
+            <span className="text-slate-400">{t('cfCashDiff') || 'Cash Diff'}</span>
             <span className={`font-semibold tabular-nums ${varianceColor(diff)}`}>
               {diff > 0 ? '+' : ''}{formatMoney(diff)}
             </span>
@@ -121,7 +121,7 @@ export function ShiftCard({ shift, onView }: Props) {
             ))}
             {(shift.orders ?? []).length > 3 && (
               <div className="text-[11px] text-slate-400 text-center pt-1">
-                +{(shift.orders ?? []).length - 3} more orders
+                +{(shift.orders ?? []).length - 3} {t('cfOrders') || 'more orders'}
               </div>
             )}
           </div>
@@ -147,7 +147,7 @@ export function ShiftCard({ shift, onView }: Props) {
           className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300 dark:hover:border-amber-700 hover:text-amber-700 dark:hover:text-amber-400 flex items-center justify-center gap-1.5 transition-colors"
         >
           <Eye size={14} />
-          View Full Details
+          {t('cfViewFullDetails') || 'View Full Details'}
         </button>
       </div>
     </div>

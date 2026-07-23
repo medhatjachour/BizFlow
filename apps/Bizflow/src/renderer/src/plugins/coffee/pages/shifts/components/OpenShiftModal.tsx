@@ -15,6 +15,7 @@ interface Props {
 }
 
 export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, saving, user }: Props) {
+  const { t } = useLanguage()
   if (!open) return null
 
   const inputCls = 'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none transition'
@@ -32,8 +33,8 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
               <Wallet size={20} className="text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white">Open New Shift</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Start a new cash drawer session</p>
+              <h3 className="font-bold text-slate-900 dark:text-white">{t('cfOpenNewShift')}</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">{t('cfStartNewCashDrawerSession')}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
@@ -49,7 +50,7 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
               <User size={16} className="text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">Cashier</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">{t('cfCashier') || 'Cashier'} </div>
               <div className="text-sm font-semibold text-slate-900 dark:text-white">
                 {user?.fullName ?? user?.username ?? 'Current User'}
               </div>
@@ -59,7 +60,7 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
           {/* Opening cash */}
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              Opening Cash in Drawer *
+              {t('cfOpeningCashInDrawer') || 'Opening Cash in Drawer'}*
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
@@ -76,7 +77,7 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
             </div>
             {/* Quick amounts */}
             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-              <span className="text-xs text-slate-400">Quick:</span>
+              <span className="text-xs text-slate-400">{t('cfQuickAmounts') || 'Quick:'}</span>
               {QUICK_OPEN_AMOUNTS.map(a => (
                 <button
                   key={a}
@@ -97,14 +98,14 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
           {/* Notes */}
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              Opening Notes (optional)
+              {t('cfOpeningNotes') || 'Opening Notes (optional)'}
             </label>
             <div className="relative">
               <FileText size={16} className="absolute left-3 top-3 text-slate-400" />
               <textarea
                 value={form.notes}
                 onChange={(e) => patchForm({ notes: e.target.value })}
-                placeholder="Drawer condition, handover notes, expected issues..."
+                placeholder={t('cfOpeningNotesPlaceholder') || 'Drawer condition, handover notes, expected issues...'}
                 rows={3}
                 className={inputCls + ' pl-9 resize-none'}
               />
@@ -115,7 +116,7 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
           <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400">
             <Info size={16} className="flex-shrink-0 mt-0.5" />
             <p className="text-xs">
-              The shift will start now and remain active until you close it. All orders processed during this shift will be linked to it.
+            {t('cfShiftStartInfo') || 'The shift will start now and remain active until you close it. All orders processed during this shift will be linked to it.'}
             </p>
           </div>
         </form>
@@ -126,7 +127,7 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
             onClick={onClose}
             className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
-            Cancel
+            {t('cfCancel') || 'Cancel'}
           </button>
           <button
             onClick={onSubmit}
@@ -134,7 +135,7 @@ export function OpenShiftModal({ open, form, patchForm, onSubmit, onClose, savin
             className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 size={16} className="animate-spin" /> : <Wallet size={16} />}
-            {saving ? 'Opening…' : 'Open Shift'}
+            {saving ? t('cfOpening') || 'Opening…' : t('cfOpenShift') || 'Open Shift'}
           </button>
         </div>
       </div>

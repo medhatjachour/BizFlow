@@ -15,6 +15,7 @@ interface Props {
 }
 
 export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
+  const { t } = useLanguage()
   if (!shift && !loading) return null
 
   return (
@@ -26,7 +27,7 @@ export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-700">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white">Shift Details</h3>
+            <h3 className="font-bold text-slate-900 dark:text-white">{t('cfShiftDetails') || 'Shift Details'}</h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {loading ? 'Loading…' : shiftDurationDetailed(shift!)}
             </p>
@@ -60,12 +61,12 @@ export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
             {/* ── Stats grid ── */}
             <div className="grid grid-cols-3 gap-px bg-slate-200 dark:bg-slate-700">
               {[
-                { label: 'Opening Cash', value: formatMoney(shift.openingCash),       icon: Wallet,       color: '#0891b2' },
-                { label: 'Closing Cash', value: formatMoney(shift.closingCash ?? 0),  icon: Banknote,     color: '#16a34a' },
-                { label: 'Revenue',      value: formatMoney(shift.totalSales),        icon: TrendingUp,   color: '#7c3aed' },
-                { label: 'Orders',       value: String(shift.totalOrders),            icon: ShoppingBag,  color: '#ea580c' },
-                { label: 'Cash Diff',    value: (shift.cashDifference! > 0 ? '+' : '') + formatMoney(shift.cashDifference ?? 0), icon: Banknote, color: shift.cashDifference! < 0 ? '#dc2626' : shift.cashDifference! > 0 ? '#2563eb' : '#16a34a' },
-                { label: 'Duration',     value: shiftDurationDetailed(shift),         icon: Clock,        color: '#a16207' },
+                { label: t('cfOpeningCash') || 'Opening Cash', value: formatMoney(shift.openingCash),       icon: Wallet,       color: '#0891b2' },
+                { label: t('cfClosingCash') || 'Closing Cash', value: formatMoney(shift.closingCash ?? 0),  icon: Banknote,     color: '#16a34a' },
+                { label: t('cfRevenue') || 'Revenue',          value: formatMoney(shift.totalSales),        icon: TrendingUp,   color: '#7c3aed' },
+                { label: t('cfOrders') || 'Orders',           value: String(shift.totalOrders),            icon: ShoppingBag,  color: '#ea580c' },
+                { label: t('cfCashDiff') || 'Cash Diff',      value: (shift.cashDifference! > 0 ? '+' : '') + formatMoney(shift.cashDifference ?? 0), icon: Banknote, color: shift.cashDifference! < 0 ? '#dc2626' : shift.cashDifference! > 0 ? '#2563eb' : '#16a34a' },
+                { label: t('cfDuration') || 'Duration',       value: shiftDurationDetailed(shift),         icon: Clock,        color: '#a16207' },
               ].map(s => {
                 const Icon = s.icon
                 return (
@@ -92,13 +93,13 @@ export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
             {/* ── Payment breakdown ── */}
             <div className="p-4 border-b border-slate-200 dark:border-slate-700">
               <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-                Payment Breakdown
+                {t('cfPaymentBreakdown') || 'Payment Breakdown'}
               </h4>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: 'Cash',    value: shift.cashTotal },
-                  { label: 'Card',    value: shift.cardTotal },
-                  { label: 'Vodafone',value: shift.vodafoneCashTotal },
+                  { label: t('cfCash') || 'Cash',    value: shift.cashTotal },
+                  { label: t('cfCard') || 'Card',    value: shift.cardTotal },
+                  { label: t('cfVodafone') || 'Vodafone',value: shift.vodafoneCashTotal },
                 ].map(p => (
                   <div key={p.label} className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900/50 text-center">
                     <div className="text-[10px] text-slate-400 uppercase">{p.label}</div>
@@ -117,7 +118,7 @@ export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
                   <FileText size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
                   <div>
                     <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">
-                      Shift Notes
+                      {t('cfShiftNotes') || 'Shift Notes'}
                     </div>
                     <p className="text-sm text-slate-700 dark:text-slate-300">{shift.notes}</p>
                   </div>
@@ -130,16 +131,16 @@ export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-2">
                   <Receipt size={14} />
-                  Shift Orders
+                  {t('cfShiftOrders') || 'Shift Orders'}
                 </h4>
                 <span className="text-xs text-slate-400">
-                  {(shift.orders ?? []).length} total
+                  {(shift.orders ?? []).length} {t('cfTotal') || 'total'}
                 </span>
               </div>
 
               {(shift.orders ?? []).length === 0 ? (
                 <div className="text-center py-8 text-sm text-slate-400">
-                  No orders in this shift
+                  {t('cfNoOrdersInShift') || 'No orders in this shift'}
                 </div>
               ) : (
                 <div className="relative">

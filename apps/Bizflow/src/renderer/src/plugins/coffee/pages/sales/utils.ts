@@ -1,4 +1,4 @@
-import type { Period, PaymentMethod, OrderType } from './types'
+import type { Period } from './types'
 
 export function periodDates(period: Period): { startDate?: string; endDate?: string } {
   const now = new Date()
