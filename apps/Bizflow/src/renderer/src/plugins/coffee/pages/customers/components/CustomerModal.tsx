@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { X, User, Phone, MapPin, StickyNote, Star } from 'lucide-react'
 import { INPUT_CLASS } from '../constants'
 import type { Customer } from '../types'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   open: boolean
@@ -13,6 +14,8 @@ interface Props {
 export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
   const [form, setForm] = useState({ name: '', phone: '', address: '', notes: '', isVip: false })
   const [saving, setSaving] = useState(false)
+
+  const {t} = useLanguage()
 
   useEffect(() => {
     if (editTarget) {
@@ -33,6 +36,8 @@ export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
   const handleSave = async () => {
     if (!form.name.trim()) return
     setSaving(true)
+    console.log('Saving customer:', form)
+    console.log('Saving customer:', form.isVip)
     const data = {
       name: form.name.trim(),
       phone: form.phone || undefined,
@@ -54,7 +59,7 @@ export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {editTarget ? 'Edit Customer' : 'Add New Customer'}
+            {editTarget ? t('cfEditCustomer') || 'Edit Customer' : t('cfAddNewCustomer') || 'Add New Customer'}
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700">
             <X className="w-5 h-5" />
@@ -65,7 +70,7 @@ export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
         <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
             <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              <User className="w-3.5 h-3.5" /> Full Name *
+              <User className="w-3.5 h-3.5" />{t('cfCustomerFullName') || 'Full Name *'}
             </label>
             <input
               value={form.name}
@@ -79,7 +84,7 @@ export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                <Phone className="w-3.5 h-3.5" /> Phone
+                <Phone className="w-3.5 h-3.5" />{t('cfCustomerPhone') || 'Phone'}
               </label>
               <input
                 value={form.phone}
@@ -90,26 +95,26 @@ export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
             </div>
             <div>
               <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                <MapPin className="w-3.5 h-3.5" /> Address
+                <MapPin className="w-3.5 h-3.5" />{t('cfCustomerAddress') || 'Address'}
               </label>
               <input
                 value={form.address}
                 onChange={(e) => setForm(p => ({ ...p, address: e.target.value }))}
                 className={INPUT_CLASS}
-                placeholder="Cairo, Egypt"
+                placeholder={t('cfCustomerAddressPlaceholder') || "Cairo, Egypt"}
               />
             </div>
           </div>
 
           <div>
             <label className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-              <StickyNote className="w-3.5 h-3.5" /> Notes / Preferences
+              <StickyNote className="w-3.5 h-3.5" />{t('cfCustomerNotes') || 'Notes / Preferences'}
             </label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
               className={INPUT_CLASS + ' resize-none h-20'}
-              placeholder="Oat milk only, no sugar..."
+              placeholder={t('cfCustomerNotesPlaceholder') || "E.g., prefers almond milk, allergic to peanuts, etc."}
             />
           </div>
 
@@ -123,7 +128,7 @@ export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
             </button>
             <div className="flex items-center gap-1.5">
               <Star className={`w-4 h-4 ${form.isVip ? 'text-amber-500 fill-amber-500' : 'text-slate-400'}`} />
-              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Mark as VIP Customer</span>
+              <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('cfMarkAsVipCustomer') || 'Mark as VIP Customer'}</span>
             </div>
           </label>
         </div>
@@ -134,14 +139,14 @@ export function CustomerModal({ open, editTarget, onClose, onSave }: Props) {
             onClick={onClose}
             className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800"
           >
-            Cancel
+            {t('cfCancel') || 'Cancel'}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !form.name.trim()}
             className="flex-1 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving...' : 'Save Customer'}
+            {saving ? t('cfSaving') || 'Saving...' : t('cfSaveCustomer') || 'Save Customer'}
           </button>
         </div>
       </div>

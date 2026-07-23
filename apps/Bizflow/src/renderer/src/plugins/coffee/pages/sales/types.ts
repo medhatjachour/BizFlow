@@ -26,7 +26,9 @@ export interface Sale {
   total: number
   items: SaleItem[]
   closedAt?: string
+  refundedAmount: number
   createdAt?: string
+  status: 'paid' | 'voided' | 'refunded' | 'partially_refunded' | 'open' | 'ready'
 }
 
 export interface SummaryData {

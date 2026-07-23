@@ -1094,6 +1094,15 @@ interface API {
       updateItemStatus: (data: any) => Promise<any>
       close: (data: any) => Promise<any>
       void: (id: string) => Promise<any>
+      
+      refund: (data: {
+      orderId: string
+      items: Array<{ id: string; quantity: number }>
+      reason: string
+      notes?: string
+      cashierId: string
+      restockItems?: boolean
+    }) => Promise<any>
     }
     sales: {
       getAll: (opts?: any) => Promise<any>

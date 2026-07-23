@@ -50,6 +50,7 @@ export function IncomingView({ products, categories }: { products: any[]; catego
             type="text"
             value={search}
             // onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            onChange={(e) => { console.log(e.target.value)}}
             placeholder={t('cfSearchReceipts')||'Search...'}
             // placeholder="comming soon..."
             className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"

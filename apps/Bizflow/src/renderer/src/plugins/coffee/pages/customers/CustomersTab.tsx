@@ -70,13 +70,6 @@ export default function CustomersTab() {
 
   return (
     <div className="p-6 mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Customers</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Manage your regulars, track their spending, and view order history
-        </p>
-      </div>
 
       {/* Toolbar */}
       <CustomersToolbar

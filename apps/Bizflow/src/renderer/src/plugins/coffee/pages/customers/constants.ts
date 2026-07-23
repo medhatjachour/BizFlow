@@ -1,7 +1,5 @@
-import { 
-  Search, Plus, Download, ArrowUpDown, Star, 
-  Phone, MapPin, StickyNote, TrendingUp, Coffee, 
-  ShoppingBag, CalendarClock, Edit2, Trash2, X, UserPlus 
+import {  TrendingUp, Coffee, 
+  ShoppingBag, CalendarClock, 
 } from 'lucide-react'
 
 export const PAGE_SIZE = 30

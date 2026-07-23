@@ -40,6 +40,7 @@ export interface CoffeeCustomer {
   phone?: string
   email?: string
   notes?: string
+  address?: string
 }
 
 export interface ReceiptSettings {

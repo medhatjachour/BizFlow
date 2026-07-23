@@ -10,14 +10,15 @@ import { Pagination } from './components/Pagination'
 import { EmptyState } from './components/EmptyState'
 import { TopProducts } from './components/TopProducts'
 import { HourlyChart } from './components/HourlyChart'
-import type { SalesFilters as Filters } from './types'
+import type { SalesFilters as Filters, Sale } from './types'
+import { RefundModal } from './components/RefundModal'
 
 function getPeriods(t: any) {
   return [
-    { label: t('cfToday'),    value: 'today'  },
-    { label: t('cfWeek'),     value: 'week'   },
-    { label: t('cfMonth'),    value: 'month'  },
-    { label: t('cfAllTime'), value: 'all'    }
+    { label: t('cfToday'), value: 'today' },
+    { label: t('cfWeek'), value: 'week' },
+    { label: t('cfMonth'), value: 'month' },
+    { label: t('cfAllTime'), value: 'all' }
   ]
 }
 
@@ -36,14 +37,16 @@ export default function SalesTab() {
   })
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
+  // Inside SalesTab component:
+  const [refundOrder, setRefundOrder] = useState<Sale | null>(null)
   const { sales, summary, loading, page, totalPages, total, setPage, reload } = useSales(filters)
 
   const updateFilters = useCallback((patch: Partial<Filters>) => {
-    setFilters(prev => ({ ...prev, ...patch }))
+    setFilters((prev) => ({ ...prev, ...patch }))
   }, [])
 
   const toggleExpand = useCallback((id: string) => {
-    setExpanded(prev => {
+    setExpanded((prev) => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
@@ -56,7 +59,6 @@ export default function SalesTab() {
 
   return (
     <div className="space-y-4 p-4  mx-auto">
-
       {/* Filters */}
       <SalesFilters
         filters={filters}
@@ -97,18 +99,27 @@ export default function SalesTab() {
           <EmptyState loading={loading} />
         ) : (
           <>
-            {sales.map(sale => (
+            {sales.map((sale) => (
               <SaleRow
                 key={sale.id}
                 sale={sale}
                 expanded={expanded.has(sale.id)}
                 onToggle={() => toggleExpand(sale.id)}
+                onRefund={(s) => setRefundOrder(s)}
               />
             ))}
             <Pagination page={page} totalPages={totalPages} total={total} onChange={setPage} />
           </>
         )}
       </div>
+      {/* Refund Modal */}
+      {refundOrder && (
+        <RefundModal 
+          order={refundOrder}
+          onClose={() => setRefundOrder(null)}
+          onSuccess={reload}
+        />
+      )}
     </div>
   )
 }

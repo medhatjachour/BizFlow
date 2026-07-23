@@ -159,7 +159,12 @@ model CoffeeOrder {
   cashier       User?            @relation("CoffeeOrderCashier", fields: [cashierId], references: [id], onDelete: SetNull)
   shiftId       String?
   shift         CoffeeShift?     @relation(fields: [shiftId], references: [id], onDelete: SetNull)
-  status        String           @default("open")  // open | ready | paid | voided
+  status        String           @default("open") // open | ready | paid | voided | refunded | partially_refunded
+  refundedAmount Float           @default(0)
+  refundedAt    DateTime?
+  refundedById  String?
+  refundReason  String?
+  refundNotes   String?
   paymentMethod String?          // cash | card | vodafone_cash — set when closing
   subtotal      Float            @default(0)
   discount      Float            @default(0)
@@ -206,8 +211,9 @@ model CoffeeCustomer {
   id          String        @id @default(uuid())
   name        String
   phone       String?       @unique
-  address   String?
+  address     String?
   notes       String?       // Preferences (e.g. "oat milk", "no sugar")
+  isVip       Boolean       @default(false)
   totalSpent  Float         @default(0)
   visitCount  Int           @default(0)
   lastVisit   DateTime?
