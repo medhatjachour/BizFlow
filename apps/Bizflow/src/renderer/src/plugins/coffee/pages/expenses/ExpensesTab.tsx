@@ -12,9 +12,7 @@ export default function ExpensesTab() {
   const exp = useExpenses(toast)
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 max-w-7xl mx-auto">
-      {/* Summary cards */}
-      <SummaryCards summary={exp.summary} loading={exp.loading} />
+    <div className="p-4 lg:p-6 space-y-4 mx-auto">
 
       {/* Filter bar */}
       <FilterBar
@@ -24,6 +22,11 @@ export default function ExpensesTab() {
         onAdd={exp.openCreate}
         activeShift={exp.activeShift}
       />
+      
+      {/* Summary cards */}
+      <SummaryCards summary={exp.summary} loading={exp.loading} />
+
+      
 
       {/* Table */}
       <div>

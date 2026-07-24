@@ -82,3 +82,8 @@ export interface NewCustomerForm {
   phone: string
   address: string
 }
+
+export type SelectOption = {
+  value: string | number;
+  label: string;
+};

@@ -219,6 +219,9 @@ export const enPart9 = {
   cfExpenseVendorPlaceholder: 'e.g. Local Roastery (optional)',
   cfShift: 'Shift',
   cfActions: 'Actions',
+  cfNoExpensesFound: 'No expenses found',
+  cfTryAdjustingFiltersOrAddNewExpense: 'Try adjusting your filters or add a new expense.',
+
   // ── Sales Tab ──
   cfSalesHistory: 'Sales History',
   cfSalesPeriod: 'Period',
@@ -341,6 +344,23 @@ export const enPart9 = {
   cfCoffeeReports: 'Coffee Reports',
   cfTopCustomers: 'Top Customers',
   cfDeliveryOrders: 'delivery',
+  cfRepeatRateLc:'repeat rate',
+  cfOrdersLc: 'orders',
+  cfDeliveryLc: 'delivery',
+  cfSold: 'sold',
+  cfProfit : 'Profit',
+  cfNoExpensesRange: 'No expenses in this range',
+  cfPaymentMix: 'Payment Mix',
+  cfExpectedDrawer: 'Expected Drawer',
+  cfLinkedExpenses: 'Linked Expenses',
+  cfDeliveryOpt: 'Delivery',
+  cfCustomersLabel: 'Customers',
+  cfDiscountRateLabel: 'Discount Rate',
+  cfAverageTicket: 'Average Ticket',
+  cfOpsExpenses: 'Ops Expenses',
+  cfRevenueLabel: 'Revenue',
+  cfRepeat: 'Repeat',
+  cfExportCsv: 'Export CSV',
 
   // ── Finance Tab ──
   cfFinanceOverview: 'Finance Overview',
@@ -557,7 +577,8 @@ export const enPart9 = {
   cfSearchPlaceholder: 'Search by name, phone, address...',
   cfPhonePlaceholder: '01x…',
   cfNotesPlaceholder: 'e.g. Prefers oat milk, no sugar…',
-
+  cfWalkInNoTable: 'Walk-in / No table',
+  
   // ── Messages ──
   cfSaveFailed: 'Save failed',
   cfDeleteConfirm: 'Are you sure?',

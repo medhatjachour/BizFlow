@@ -18,7 +18,7 @@ export default function ShiftsTab() {
   const s = useShifts(toast, user)
 
   return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto">
+    <div className="p-4 md:p-6 mx-auto">
       {/* Filter bar */}
       <FilterBar
         preset={s.preset}

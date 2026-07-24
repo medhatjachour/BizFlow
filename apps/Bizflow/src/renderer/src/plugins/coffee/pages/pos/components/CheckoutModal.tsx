@@ -9,8 +9,10 @@ import type {
   OrderType,
   PaymentMethod,
   CheckoutForm,
-  CoffeeCustomer
+  CoffeeCustomer,
+  SelectOption
 } from '../types'
+import CustomSelect from '@renderer/components/ui/CustomSelect'
 
 interface Props {
   open: boolean
@@ -66,6 +68,18 @@ export function CheckoutModal({
 }: Props) {
   const { t } = useLanguage()
   if (!open) return null
+
+  // 3. Generate tableOptions dynamically inside the component
+  const tableOptions: SelectOption[] = [
+    {
+      value: '',
+      label: `— ${t('cfWalkInNoTable') || 'Walk-in / No table'} —`
+    },
+    ...tables.map((table) => ({
+      value: table.id,
+      label: `Table ${table.number}${table.name ? ` (${table.name})` : ''}${table.section ? ` · ${table.section}` : ''}`
+    }))
+  ]
 
   const selectedType = orderTypeMeta(checkout.orderType)
   // const selectedPay = payMeta(checkout.paymentMethod)
@@ -149,20 +163,12 @@ export function CheckoutModal({
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                 Table (optional)
               </label>
-              <select
+              <CustomSelect
                 value={checkout.selectedTable}
-                onChange={(e) => patchCheckout({ selectedTable: e.target.value })}
-                className={inputCls + ' appearance-none cursor-pointer'}
-              >
-                <option value="">— Walk-in / No table —</option>
-                {tables.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    Table {t.number}
-                    {t.name ? ` (${t.name})` : ''}
-                    {t.section ? ` · ${t.section}` : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => patchCheckout({ selectedTable: val as string })}
+                options={tableOptions}
+                placeholder={t('cfWalkInNoTable') || 'Walk-in / No table'}
+              />
             </div>
           )}
 

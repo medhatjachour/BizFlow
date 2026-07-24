@@ -251,11 +251,11 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
             {/* Toggle Switch */}
             <button
               onClick={() => setRestockItems(!restockItems)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+              className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors flex-shrink-0 ${
                 restockItems ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
               }`}
             >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${restockItems ? 'translate-x-6' : 'translate-x-1'}`} />
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${restockItems ? 'translate-x-5' : ''}`} />
             </button>
           </div>
 

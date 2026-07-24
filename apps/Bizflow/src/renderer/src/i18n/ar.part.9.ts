@@ -341,6 +341,25 @@ export const arPart9 = {
   cfCoffeeReports: 'تقارير القهوة',
   cfTopCustomers: 'أفضل العملاء',
   cfDeliveryOrders: 'توصيل',
+  cfRepeatRateLc: 'معدل التكرار',
+  cfOrdersLc: 'الطلبات',
+  cfDeliveryLc: 'التوصيل',
+  cfSold: 'تم البيع',
+  cfProfit : 'الربح',
+  cfNoExpensesRange: 'لا توجد مصروفات في هذا النطاق',
+  cfPaymentMix: 'توزيع الدفع',
+  cfExpectedDrawer: 'الدرج المتوقع',
+  cfLinkedExpenses: 'المصروفات المرتبطة',
+  cfDeliveryOpt: 'التوصيل',
+  cfNoExpensesFound: 'لا توجد مصروفات',
+  cfTryAdjustingFiltersOrAddNewExpense: 'حاول تعديل الفلاتر الخاصة بك أو إضافة مصروف جديد.',
+  cfCustomersLabel: 'العملاء',
+  cfDiscountRateLabel: 'معدل الخصم',
+  cfAverageTicket: 'متوسط الفاتورة',
+  cfOpsExpenses: 'نفقات التشغيل',
+  cfRevenueLabel: 'الإيرادات',
+  cfRepeat: 'متكرر',
+  cfExportCsv: 'تصدير CSV',
 
   // ── Finance Tab ──
   cfFinanceOverview: 'نظرة عامة على المالية',
@@ -557,6 +576,7 @@ export const arPart9 = {
   cfSearchPlaceholder: 'البحث حسب الاسم أو الهاتف أو العنوان...',
   cfPhonePlaceholder: '01x…',
   cfNotesPlaceholder: 'مثال: يفضل حليب الشوفان، بدون سكر...',
+  cfWalkInNoTable: 'عميل بدون حجز / لا توجد طاولة',
 
   // ── Messages ──
   cfSaveFailed: 'فشل الحفظ',
