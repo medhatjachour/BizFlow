@@ -7,16 +7,16 @@
 import { useState } from 'react'
 import {
   CreditCard, LayoutGrid, ClipboardList, Package,
-  BoxesIcon, Receipt, Timer, Coffee, Users, BarChart3, Wallet, Truck
+  BoxesIcon, Receipt, Timer,  Users, BarChart3, Wallet, Truck
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import TablesTab     from './tabs/TablesTab'
+import TablesTab     from './tables/TablesTab'
 import OrdersTab     from './tabs/OrdersTab'
 import ProductsTab   from './product/ProductsTab'
 import InventoryTab  from './inventory/InventoryTab'
-import SalesTab      from './tabs/SalesTab'
+import SalesTab      from './sales/SalesTab'
 import ShiftsTab     from './shifts/ShiftsTab'
-import CustomersTab  from './tabs/CustomersTab'
+import CustomersTab  from './customers/CustomersTab'
 import ReportsTab    from './tabs/ReportsTab'
 import FinanceTab    from './finance/FinanceTab'
 import ReceiptsModule from './receipts/ReceiptsModule'
@@ -51,16 +51,6 @@ export default function CoffeePage() {
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 pt-4">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
-            <Coffee className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{t('cfCoffeeShop')}</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t('cfPOSTablesOrdersInventoryShifts')}</p>
-          </div>
-        </div>
-
         {/* ── Tab Bar ──────────────────────────────────────────────────────── */}
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
           {TABS_DEF.map(({ id, labelKey, icon: Icon }) => (

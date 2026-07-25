@@ -1,12 +1,13 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { ChevronDown, ChevronUp, Receipt, Tag } from 'lucide-react'
 import { IncomingReceipt } from '../../types'
 import { formatCurrency, formatDateTime } from '../../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function IncomingRow({ receipt }: { receipt: IncomingReceipt }) {
   const [expanded, setExpanded] = useState(false)
   const totalUnits = receipt.items.reduce((sum, item) => sum + item.quantity, 0)
-
+  const {t} = useLanguage()
   return (
     <div className="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
       <div 
@@ -33,7 +34,7 @@ export function IncomingRow({ receipt }: { receipt: IncomingReceipt }) {
         <div className="flex items-center gap-6">
           <div className="text-right">
             <p className="font-semibold text-slate-800 dark:text-slate-200">{formatCurrency(receipt.totalCost)}</p>
-            <p className="text-xs text-slate-500">{totalUnits} units</p>
+            <p className="text-xs text-slate-500">{totalUnits} {t('cfUnits') || 'units'}</p>
           </div>
           {expanded ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
         </div>
@@ -44,10 +45,10 @@ export function IncomingRow({ receipt }: { receipt: IncomingReceipt }) {
           <table className="w-full text-sm mt-4">
             <thead>
               <tr className="text-left text-slate-400 border-b border-slate-200 dark:border-slate-700">
-                <th className="pb-2 font-medium">Product</th>
-                <th className="pb-2 font-medium text-center">Qty</th>
-                <th className="pb-2 font-medium text-right">Unit Cost</th>
-                <th className="pb-2 font-medium text-right">Total</th>
+                <th className="pb-2 font-medium text-right">{t('cfProduct') || 'Product'}</th>
+                <th className="pb-2 font-medium text-center">{t('cfQuantity') || 'Qty'}</th>
+                <th className="pb-2 font-medium text-right">{t('cfUnitCost') || 'Unit Cost'}</th>
+                <th className="pb-2 font-medium text-right">{t('cfTotal') || 'Total'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">

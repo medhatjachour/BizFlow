@@ -71,7 +71,7 @@ export default function CategoryModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            {editMode ? 'Edit Category' : 'Add Category'}
+            {editMode ? t('cfEditCategory') || 'Edit Category' : t('cfAddCategory') || 'Add Category'}
           </h2>
           <button
             type="button"
@@ -95,14 +95,14 @@ export default function CategoryModal({
               <div className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                 {form.name || 'Category name'}
               </div>
-              <div className="text-xs text-slate-400">Preview</div>
+              <div className="text-xs text-slate-400">{t('cfPreview') || 'Preview'}</div>
             </div>
           </div>
 
           {/* ---------- Name ---------- */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-              Name *
+              {t('cfName') || 'Name *'} 
             </label>
             <input
               value={form.name}
@@ -116,7 +116,7 @@ export default function CategoryModal({
           {/* ---------- Color picker ---------- */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-              Color
+              {t('cfColor') || 'Color'}
             </label>
 
             {/* Swatch grid */}
@@ -146,7 +146,7 @@ export default function CategoryModal({
                 onClick={() => setShowCustomColor((s) => !s)}
                 className="text-xs text-amber-600 dark:text-amber-400 hover:underline"
               >
-                {showCustomColor ? 'Hide custom picker' : 'Pick a custom color…'}
+                {showCustomColor ? t('cfHideCustomPicker') || 'Hide custom picker' : t('cfPickCustomColor') || 'Pick a custom color…'}
               </button>
 
               {showCustomColor && (
@@ -171,12 +171,12 @@ export default function CategoryModal({
           {/* ---------- Icon picker ---------- */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-              Icon
+              {t('cfIcon') || 'Icon'}
             </label>
 
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
               <span className="text-lg">{form.icon}</span>
-              <span>Selected: {form.icon}</span>
+              <span>{t('cfSelected') || 'Selected'}: {form.icon}</span>
             </div>
 
             <div className="grid grid-cols-8 gap-1.5 p-2 rounded-lg border border-slate-200 dark:border-slate-700 max-h-40 overflow-y-auto">
@@ -206,14 +206,14 @@ export default function CategoryModal({
             onClick={onClose}
             className="flex-1 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
-            Cancel
+            {t('cfCancel') || 'Cancel'}
           </button>
           <button
             type="submit"
             disabled={saving}
             className="flex-1 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-sm font-medium disabled:opacity-50"
           >
-            {saving ? 'Saving…' : editMode ? 'Update' : 'Save'}
+            {saving ? t('cfSaving') || 'Saving…' : editMode ? t('cfUpdate') || 'Update' : t('cfSave') || 'Save'}
           </button>
         </div>
       </form>

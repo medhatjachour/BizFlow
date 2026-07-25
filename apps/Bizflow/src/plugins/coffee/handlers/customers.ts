@@ -40,22 +40,35 @@ export function registerCustomerHandlers(prisma: any) {
     } catch (err) { log.error('customers:getAll', err); throw err }
   })
 
-  ipcMain.handle('coffee:customers:getById', async (_e, id: string) => {
+   ipcMain.handle('coffee:customers:getById', async (_e, id: string) => {
     try {
-      return await prisma.coffeeCustomer.findUnique({
+      const customer = await prisma.coffeeCustomer.findUnique({
         where: { id },
         include: {
           orders: {
             where:   { status: 'paid' },
             orderBy: { closedAt: 'desc' },
-            take: 50,
+            take: 50, // Keep the limit for the display list
             include: { items: { select: { productName: true, quantity: true, total: true } } }
           },
           _count: { select: { orders: true } }
         }
       })
+
+      if (!customer) return null
+
+      // ✅ Calculate stats on the backend
+      const totalSpent = customer.orders.reduce((sum, order) => sum + (order.total || 0), 0)
+      const visitCount = customer._count.orders // Total lifetime orders
+
+      return {
+        ...customer,
+        totalSpent,
+        visitCount
+      }
     } catch (err) { log.error('customers:getById', err); throw err }
   })
+
 
   ipcMain.handle('coffee:customers:create', async (_e, data: {
     name: string; phone?: string; address?: string; notes?: string

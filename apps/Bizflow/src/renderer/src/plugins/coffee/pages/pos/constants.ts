@@ -1,7 +1,7 @@
 import {
   UtensilsCrossed, Package, Truck, Banknote, CreditCard, Smartphone,
 } from 'lucide-react'
-import type { OrderType, PaymentMethod, CheckoutForm, NewCustomerForm } from './types'
+import type { OrderType, PaymentMethod, CheckoutForm, NewCustomerForm, SelectOption } from './types'
 
 export const ORDER_TYPES: {
   value: OrderType

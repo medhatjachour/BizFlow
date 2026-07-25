@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { X, Upload, Trash2, ImageIcon, Plus } from 'lucide-react'
+import CustomSelect, { SelectOption } from '@renderer/components/ui/CustomSelect'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Category {
@@ -26,17 +27,13 @@ interface ProductForm {
 interface ProductModalProps {
   open: boolean
   onClose: () => void
-  onSubmit: (data: {
-    form: ProductForm
-    imageFile: string | null
-    clearImage: boolean
-  }) => void
+  onSubmit: (data: { form: ProductForm; imageFile: string | null; clearImage: boolean }) => void
   initialForm?: ProductForm
-  initialImage?: string | null          // base64 or URL for preview
+  initialImage?: string | null // base64 or URL for preview
   editMode?: boolean
   saving?: boolean
   categories: Category[]
-  onNewCategory?: () => void            // opens category modal from parent
+  onNewCategory?: () => void // opens category modal from parent
 }
 
 const EMPTY_FORM: ProductForm = {
@@ -49,7 +46,7 @@ const EMPTY_FORM: ProductForm = {
   isAvailable: true,
   displayOrder: '0',
   notes: '',
-  categoryId: '',
+  categoryId: ''
 }
 
 // ── Helper ─────────────────────────────────────────────────────────────────
@@ -71,7 +68,7 @@ export default function ProductModal({
   editMode = false,
   saving = false,
   categories = [],
-  onNewCategory,
+  onNewCategory
 }: ProductModalProps) {
   const { t } = useLanguage()
   const [form, setForm] = useState<ProductForm>(initialForm)
@@ -92,8 +89,7 @@ export default function ProductModal({
 
   if (!open) return null
 
-  const update = (patch: Partial<ProductForm>) =>
-    setForm((p) => ({ ...p, ...patch }))
+  const update = (patch: Partial<ProductForm>) => setForm((p) => ({ ...p, ...patch }))
 
   const handleFile = (file: File) => {
     const reader = new FileReader()
@@ -117,16 +113,19 @@ export default function ProductModal({
     if (!form.name.trim()) return
     onSubmit({ form, imageFile, clearImage })
   }
+  // ── ADD THIS: Map categories to CustomSelect options ──
+  const categoryOptions: SelectOption[] = [
+    { value: '', label: '— None —' },
+    ...categories.map((c) => ({
+      value: c.id,
+      label: `${c.icon ? `${c.icon} ` : ''}${c.name}`
+    }))
+  ]
 
   const selectedCat = categories.find((c) => c.id === form.categoryId)
   const margin =
-    Number(form.price) > 0 && Number(form.cost) >= 0
-      ? Number(form.price) - Number(form.cost)
-      : 0
-  const marginPct =
-    Number(form.price) > 0
-      ? Math.round((margin / Number(form.price)) * 100)
-      : 0
+    Number(form.price) > 0 && Number(form.cost) >= 0 ? Number(form.price) - Number(form.cost) : 0
+  const marginPct = Number(form.price) > 0 ? Math.round((margin / Number(form.price)) * 100) : 0
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -168,7 +167,7 @@ export default function ProductModal({
           {/* ═══ LEFT: Image picker ═══════════════════════════════ */}
           <div className="space-y-3">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-              Product Image
+              {t('cfProductImage') || 'Product Image'}
             </label>
 
             {/* Drop zone / preview */}
@@ -189,24 +188,17 @@ export default function ProductModal({
                 dragOver
                   ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
                   : imagePreview
-                  ? 'border-transparent'
-                  : 'border-slate-300 dark:border-slate-600 hover:border-amber-400 bg-slate-50 dark:bg-slate-800'
+                    ? 'border-transparent'
+                    : 'border-slate-300 dark:border-slate-600 hover:border-amber-400 bg-slate-50 dark:bg-slate-800'
               }`}
             >
               {imagePreview ? (
-                <img
-                  src={imagePreview}
-                  alt="preview"
-                  className="w-full h-full object-cover"
-                />
+                <img src={imagePreview} alt="preview" className="w-full h-full object-cover" />
               ) : (
                 <div className="text-center px-3">
-                  <ImageIcon
-                    size={28}
-                    className="mx-auto mb-2 text-slate-400"
-                  />
+                  <ImageIcon size={28} className="mx-auto mb-2 text-slate-400" />
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Click or drag image here
+                    {t('cfClickOrDragImageHere') || 'Click or drag image here'}
                   </p>
                 </div>
               )}
@@ -246,15 +238,13 @@ export default function ProductModal({
               </button>
             )}
 
-            <p className="text-[10px] text-slate-400 text-center">
-              JPG, PNG, WEBP · max 5MB
-            </p>
+            <p className="text-[10px] text-slate-400 text-center">JPG, PNG, WEBP · max 5MB</p>
 
             {/* Availability toggle (nice switch) */}
             <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
               <label className="flex items-center justify-between cursor-pointer">
                 <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                  Available on POS
+                  {t('cfAvailableINPos') || 'Available on POS'}
                 </span>
                 <button
                   type="button"
@@ -276,7 +266,7 @@ export default function ProductModal({
           {/* ═══ RIGHT: Form fields ═══════════════════════════════ */}
           <div className="space-y-4">
             {/* Name */}
-            <Field label="Name" required>
+            <Field label={t('cfProductName') || 'Name'} required>
               <input
                 value={form.name}
                 onChange={(e) => update({ name: e.target.value })}
@@ -287,38 +277,32 @@ export default function ProductModal({
             </Field>
 
             {/* Category */}
-            <Field label="Category">
+            <Field label={t('cfProductCategory') || 'Category'}>
               <div className="flex gap-2">
-                <select
+                <CustomSelect
                   value={form.categoryId}
-                  onChange={(e) => update({ categoryId: e.target.value })}
-                  className={inputCls}
-                >
-                  <option value="">— None —</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.icon ? `${c.icon} ` : ''}
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => update({ categoryId: val as string })}
+                  options={categoryOptions}
+                  placeholder="— None —"
+                  // className={inputCls} // Passes your padding/border styles to the trigger button
+                />
                 {onNewCategory && (
                   <button
                     type="button"
                     onClick={onNewCategory}
-                    className="shrink-0 px-3 py-2 text-xs font-medium border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center gap-1"
+                    className="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 whitespace-nowrap"
                   >
-                    <Plus size={14} /> New
+                    + New
                   </button>
                 )}
               </div>
-              {/* Selected category chip */}
+              {/* Selected category chip (keep this exactly as it was) */}
               {selectedCat && (
                 <div
-                  className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                  className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium"
                   style={{
-                    backgroundColor: hexToRgba(selectedCat.color ?? '#78716c', 0.15),
-                    color: selectedCat.color ?? '#78716c',
+                    backgroundColor: hexToRgba(selectedCat.color || '#94a3b8', 0.15),
+                    color: selectedCat.color || '#64748b'
                   }}
                 >
                   {selectedCat.icon && <span>{selectedCat.icon}</span>}
@@ -329,7 +313,7 @@ export default function ProductModal({
 
             {/* Price + Cost row */}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Price" required>
+              <Field label={t('cfProductPrice') || 'Price'} required>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
                     $
@@ -345,7 +329,7 @@ export default function ProductModal({
                   />
                 </div>
               </Field>
-              <Field label="Cost">
+              <Field label={t('cfProductCost') || 'Cost'}>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
                     $
@@ -376,17 +360,8 @@ export default function ProductModal({
             )}
 
             {/* Stock + Reorder row */}
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Stock">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.stock}
-                  onChange={(e) => update({ stock: e.target.value })}
-                  className={inputCls}
-                />
-              </Field>
-              <Field label="Low-stock Alert">
+            <div className="grid  gap-3">
+              <Field label={t('cfLowStock') || 'Low-stock Alert'}>
                 <input
                   type="number"
                   min="0"
@@ -398,7 +373,7 @@ export default function ProductModal({
             </div>
 
             {/* Description */}
-            <Field label="Description">
+            <Field label={t('cfProductDescription') || 'Description'}>
               <textarea
                 value={form.description}
                 onChange={(e) => update({ description: e.target.value })}
@@ -417,14 +392,18 @@ export default function ProductModal({
             onClick={onClose}
             className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
-            Cancel
+            {t('cfTableCancel') || 'Cancel'}
           </button>
           <button
             type="submit"
             disabled={saving}
             className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition"
           >
-            {saving ? 'Saving…' : editMode ? 'Update Product' : 'Save Product'}
+            {saving
+              ? t('cfSaving') || 'Saving…'
+              : editMode
+                ? t('cfUpdateProduct') || 'Update Product'
+                : t('cfSaveProduct') || 'Save Product'}
           </button>
         </div>
       </form>
@@ -439,7 +418,7 @@ const inputCls =
 function Field({
   label,
   required,
-  children,
+  children
 }: {
   label: string
   required?: boolean

@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import  { useState } from 'react'
 import { ChevronDown, ChevronUp, MapPin, Phone, User, Trash2 } from 'lucide-react'
 import { TransitReceipt } from '../../types'
 import { STATUS_CONFIG, PRIORITY_CONFIG } from '../../constants'
 import { formatCurrency, formatDateTime } from '../../utils'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function TransitRow({ receipt, onStatusUpdate }: { receipt: TransitReceipt; onStatusUpdate: () => void }) {
   const [expanded, setExpanded] = useState(false)
@@ -11,6 +12,8 @@ export function TransitRow({ receipt, onStatusUpdate }: { receipt: TransitReceip
   const statusConfig = STATUS_CONFIG[receipt.status]
   const priorityConfig = PRIORITY_CONFIG[receipt.priority]
   const StatusIcon = statusConfig.icon
+
+  const {t} = useLanguage()
 
   const handleStatusChange = async (newStatus: string) => {
     try {
@@ -68,7 +71,7 @@ export function TransitRow({ receipt, onStatusUpdate }: { receipt: TransitReceip
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {/* Sender Card */}
             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-              <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Sender</h4>
+              <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">{t('cfSenderInfo') || 'Sender'}</h4>
               <div className="space-y-1 text-sm">
                 <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300"><User size={14} /> {receipt.senderName || '—'}</p>
                 {receipt.senderPhone && <p className="flex items-center gap-2 text-slate-500"><Phone size={14} /> {receipt.senderPhone}</p>}
@@ -77,7 +80,7 @@ export function TransitRow({ receipt, onStatusUpdate }: { receipt: TransitReceip
             
             {/* Recipient Card */}
             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-              <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Recipient</h4>
+              <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">{t('cfRecipientInfo') || 'Recipient'}</h4>
               <div className="space-y-1 text-sm">
                 <p className="flex items-center gap-2 text-slate-700 dark:text-slate-300"><User size={14} /> {receipt.recipientName || '—'}</p>
                 {receipt.recipientPhone && <p className="flex items-center gap-2 text-slate-500"><Phone size={14} /> {receipt.recipientPhone}</p>}
@@ -88,7 +91,7 @@ export function TransitRow({ receipt, onStatusUpdate }: { receipt: TransitReceip
 
           {/* Items List */}
           <div className="mt-4 bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
-            <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">Items In Transit</h4>
+            <h4 className="text-xs font-bold text-slate-400 uppercase mb-2">{t('cfTransitItems') || 'Items In Transit'}</h4>
             <div className="space-y-2">
               {receipt.items.map(item => (
                 <div key={item.id} className="flex justify-between items-center text-sm border-b border-slate-100 dark:border-slate-700 pb-2 last:border-0">
@@ -105,7 +108,7 @@ export function TransitRow({ receipt, onStatusUpdate }: { receipt: TransitReceip
           {/* Status Actions */}
           <div className="mt-4 flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Update status:</span>
+              <span className="text-xs text-slate-500">{t('cfUpdateStatus') || 'Update status:'}</span>
               {Object.entries(STATUS_CONFIG).map(([key, config]) => (
                 <button
                   key={key}
@@ -120,7 +123,7 @@ export function TransitRow({ receipt, onStatusUpdate }: { receipt: TransitReceip
               ))}
             </div>
             <button onClick={handleDelete} className="flex items-center gap-1 px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg">
-              <Trash2 size={12} /> Delete
+              <Trash2 size={12} /> {t('cfDelete') || 'Delete'}
             </button>
           </div>
         </div>

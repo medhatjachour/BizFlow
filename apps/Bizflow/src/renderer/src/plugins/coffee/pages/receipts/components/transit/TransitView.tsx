@@ -9,6 +9,7 @@ import { formatCurrency } from '../../utils'
 import { StatCard } from '../../ui/StatCard'
 import { Skeleton } from '@renderer/components/ui/Skeleton'
 import { EmptyState } from '../../ui/EmptyState'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function TransitView() {
   const [search, setSearch] = useState('')
@@ -24,7 +25,7 @@ export function TransitView() {
   }), [page, search, status])
 
   const { receipts, summary, loading, totalPages, reload } = useTransitReceipts(filters)
-
+  const {t} = useLanguage()
   return (
     <div className="space-y-6">
       {/* Stats Dashboard */}
@@ -33,12 +34,12 @@ export function TransitView() {
           [...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
         ) : summary ? (
           <>
-            <StatCard icon={<Truck size={20} />} label="Total Transit" value={summary.totalReceipts.toString()} color="bg-blue-100 text-blue-600" />
-            <StatCard icon={<Clock size={20} />} label="Pending" value={summary.pendingCount.toString()} color="bg-amber-100 text-amber-600" />
-            <StatCard icon={<CheckCircle2 size={20} />} label="Delivered" value={summary.deliveredCount.toString()} color="bg-emerald-100 text-emerald-600" />
-            <StatCard icon={<Boxes size={20} />} label="Total Items" value={summary.totalItems.toString()} color="bg-purple-100 text-purple-600" />
-            <StatCard icon={<DollarSign size={20} />} label="Total Amount" value={formatCurrency(summary.totalAmount)} color="bg-orange-100 text-orange-600" />
-            <StatCard icon={<Route size={20} />} label="Delivery Fees" value={formatCurrency(summary.totalDeliveryFees)} color="bg-teal-100 text-teal-600" />
+            <StatCard icon={<Truck size={20} />} label={t('cfTotalTransit') || 'Total Transit'} value={summary.totalReceipts.toString()} color="bg-blue-100 text-blue-600" />
+            <StatCard icon={<Clock size={20} />} label={t('cfPending') || 'Pending'} value={summary.pendingCount.toString()} color="bg-amber-100 text-amber-600" />
+            <StatCard icon={<CheckCircle2 size={20} />} label={t('cfDelivered') || 'Delivered'} value={summary.deliveredCount.toString()} color="bg-emerald-100 text-emerald-600" />
+            <StatCard icon={<Boxes size={20} />} label={t('cfTotalItems') || 'Total Items'} value={summary.totalItems.toString()} color="bg-purple-100 text-purple-600" />
+            <StatCard icon={<DollarSign size={20} />} label={t('cfTotalAmount') || 'Total Amount'} value={formatCurrency(summary.totalAmount)} color="bg-orange-100 text-orange-600" />
+            <StatCard icon={<Route size={20} />} label={t('cfDeliveryFees') || 'Delivery Fees'} value={formatCurrency(summary.totalDeliveryFees)} color="bg-teal-100 text-teal-600" />
           </>
         ) : null}
       </div>
@@ -71,7 +72,7 @@ export function TransitView() {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Search by sender, recipient, #..."
+            placeholder={t('cfSearchBySenderRecipient') || 'Search by sender, recipient, #...'}
             className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
@@ -79,7 +80,7 @@ export function TransitView() {
           onClick={() => setModalOpen(true)}
           className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl text-sm font-medium shadow-sm"
         >
-          <Plus size={16} /> New Transit
+          <Plus size={16} /> {t('cfCreateTransitReceipt') || 'Create Transit Receipt'}
         </button>
       </div>
 
@@ -90,7 +91,7 @@ export function TransitView() {
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
           </div>
         ) : receipts.length === 0 ? (
-          <EmptyState icon={<Truck size={32} />} title="No Transit Receipts" description="Create a transit receipt for orders passing through your cafe." />
+          <EmptyState icon={<Truck size={32} />} title={t('cfNoTransitReceipts') || 'No Transit Receipts'} description={t('cfCreateTransitReceiptDescription') || 'Create a transit receipt for orders passing through your cafe.'} />
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-700">
             {receipts.map(receipt => (

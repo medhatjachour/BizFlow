@@ -21,13 +21,11 @@ export function FilterBar({
   preset, onPreset, from, to, setFrom, setTo,
   statusFilter, setStatusFilter, onRefresh, onOpenShift, hasActiveShift,
 }: Props) {
+  const { t } = useLanguage()
   return (
     <div className="flex flex-wrap items-center gap-2 mb-6">
       {/* Title */}
-      <h2 className="text-lg font-bold text-slate-900 dark:text-white mr-auto">
-        Shifts Operations
-      </h2>
-
+     
       {/* Preset pills */}
       <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
         {PRESETS.map(p => (
@@ -92,7 +90,7 @@ export function FilterBar({
           className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
         >
           <Plus size={14} />
-          Open Shift
+          {t('cfOpenNewShift')||''}
         </button>
       )}
     </div>

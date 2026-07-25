@@ -13,44 +13,51 @@ const log = createLogger('Coffee:Sales')
 
 export function registerSalesHandlers(prisma: any) {
   // Paginated list of completed sales
-  ipcMain.handle('coffee:sales:getAll', async (_e, opts?: {
-    startDate?: string; endDate?: string; paymentMethod?: string;
-    type?: string; categoryId?: string; page?: number; pageSize?: number
-  }) => {
-    try {
-      const page     = opts?.page     ?? 1
-      const pageSize = opts?.pageSize ?? 50
-      const where: any = { status: 'paid' }
+ // In your registerSalesHandlers function
+ipcMain.handle('coffee:sales:getAll', async (_e, opts?: {
+  startDate?: string; endDate?: string; paymentMethod?: string;
+  type?: string; categoryId?: string; page?: number; pageSize?: number
+}) => {
+  try {
+    const page     = opts?.page     ?? 1
+    const pageSize = opts?.pageSize ?? 50
+    
+    // CHANGE THIS LINE: Include refunded statuses
+    const where: any = { 
+      status: { in: ['paid', 'refunded', 'partially_refunded'] } 
+    }
 
-      if (opts?.paymentMethod) where.paymentMethod = opts.paymentMethod
-      if (opts?.type)          where.type          = opts.type
-      if (opts?.categoryId) {
-        where.items = { some: { product: { categoryId: opts.categoryId } } }
-      }
-      if (opts?.startDate || opts?.endDate) {
-        where.closedAt = {}
-        if (opts?.startDate) where.closedAt.gte = new Date(opts.startDate)
-        if (opts?.endDate)   where.closedAt.lte = new Date(opts.endDate)
-      }
+    // ... rest of your existing filter logic ...
+    if (opts?.paymentMethod) where.paymentMethod = opts.paymentMethod
+    if (opts?.type)          where.type          = opts.type
+    if (opts?.categoryId) {
+      where.items = { some: { product: { categoryId: opts.categoryId } } }
+    }
+    if (opts?.startDate || opts?.endDate) {
+      where.closedAt = {}
+      if (opts?.startDate) where.closedAt.gte = new Date(opts.startDate)
+      if (opts?.endDate)   where.closedAt.lte = new Date(opts.endDate)
+    }
 
-      const [total, items] = await Promise.all([
-        prisma.coffeeOrder.count({ where }),
-        prisma.coffeeOrder.findMany({
-          where,
-          include: {
-            table:   { select: { id: true, number: true, name: true } },
-            cashier: { select: { id: true, username: true, fullName: true } },
-            items:   { select: { id: true, productName: true, quantity: true, unitPrice: true, total: true } }
-          },
-          orderBy: { closedAt: 'desc' },
-          skip:  (page - 1) * pageSize,
-          take:  pageSize
-        })
-      ])
+    const [total, items] = await Promise.all([
+      prisma.coffeeOrder.count({ where }),
+      prisma.coffeeOrder.findMany({
+        where,
+        include: {
+          table:   { select: { id: true, number: true, name: true } },
+          cashier: { select: { id: true, username: true, fullName: true } },
+          items:   { select: { id: true, productName: true, quantity: true, unitPrice: true, total: true } }
+        },
+        orderBy: { closedAt: 'desc' },
+        skip:  (page - 1) * pageSize,
+        take:  pageSize
+      })
+    ])
 
-      return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
-    } catch (err) { log.error('sales:getAll', err); throw err }
-  })
+    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
+  } catch (err) { log.error('sales:getAll', err); throw err }
+})
+
 
   // Period summary — revenue, order counts, and payment method breakdown
   ipcMain.handle('coffee:sales:getSummary', async (_e, opts?: {

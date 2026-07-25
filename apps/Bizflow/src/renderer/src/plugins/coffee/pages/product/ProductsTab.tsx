@@ -312,7 +312,7 @@ export default function ProductsTab() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search productsâ€¦"
+            placeholder={t('cfSearchProducts') || 'Search products…'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
@@ -328,21 +328,21 @@ export default function ProductsTab() {
           onClick={openCatCreate}
           className="px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700"
         >
-          + Category
+          + {t('cfAddCategory') || 'Add Category'}
         </button>
         <button
           onClick={openCreate}
           className="flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-medium"
         >
-          <Plus className="w-3.5 h-3.5" /> Add Product
+          <Plus className="w-3.5 h-3.5" /> {t('cfAddProduct') || 'Add Product'}
         </button>
       </div>
 
       {/* Category filter chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+   <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
         <button
           onClick={() => setCatFilter('all')}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${
+          className={`px-6 py-2 rounded-full text-xs font-medium whitespace-nowrap ${
             catFilter === 'all'
               ? 'bg-amber-500 text-white'
               : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
@@ -354,7 +354,7 @@ export default function ProductsTab() {
           <div key={c.id} className="flex items-center gap-1">
             <button
               onClick={() => setCatFilter(c.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-1 ${
+              className={`px-6   py-2 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-1 ${
                 catFilter === c.id ? 'text-white' : 'border border-slate-200 dark:border-slate-700'
               }`}
               style={
@@ -371,13 +371,13 @@ export default function ProductsTab() {
             </button>
             <button
               onClick={() => openCatEdit(c)}
-              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2"
             >
               <Edit2 size={12} />
             </button>
             <button
               onClick={() => handleDeleteCat(c)}
-              className="text-slate-400 hover:text-red-500 p-0.5"
+              className="text-slate-400 hover:text-red-500 p-2"
             >
               <Trash2 size={12} />
             </button>
@@ -433,29 +433,29 @@ export default function ProductsTab() {
                 </span>
               </div>
               {/* Actions */}
-              <div className="flex items-center gap-1 mt-2">
+              <div className="flex items-center justify-between gap-3 mt-2">
                 <button
                   onClick={() => toggleAvailability(product)}
                   className={`p-1 rounded-lg transition-colors ${product.isAvailable ? 'text-green-500 hover:bg-green-50' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                   title={product.isAvailable ? 'Mark unavailable' : 'Mark available'}
                 >
                   {product.isAvailable ? (
-                    <ToggleRight className="w-4 h-4" />
+                    <ToggleRight className="w-8 h-4" />
                   ) : (
-                    <ToggleLeft className="w-4 h-4" />
+                    <ToggleLeft className="w-8 h-4" />
                   )}
                 </button>
                 <button
                   onClick={() => openEdit(product)}
                   className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400"
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
+                  <Edit2 className="w-8 h-4" />
                 </button>
                 <button
                   onClick={() => handleDelete(product)}
                   className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-8 h-4" />
                 </button>
               </div>
             </div>

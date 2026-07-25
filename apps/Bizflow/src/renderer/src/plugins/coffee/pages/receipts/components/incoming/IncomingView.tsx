@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import  { useState, useMemo } from 'react'
 import { Search, Plus, PackageCheck, DollarSign, Boxes, Users, TrendingUp } from 'lucide-react'
 import { useIncomingReceipts } from '../../hooks/useIncomingReceipts'
 
@@ -8,6 +8,7 @@ import { formatCurrency } from '../../utils'
 import { StatCard } from '../../ui/StatCard'
 import { Skeleton } from '@renderer/components/ui/Skeleton'
 import { EmptyState } from '../../ui/EmptyState'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function IncomingView({ products, categories }: { products: any[]; categories: any[] }) {
   const [search, setSearch] = useState('')
@@ -23,7 +24,7 @@ export function IncomingView({ products, categories }: { products: any[]; catego
   }), [page, search, categoryId])
 
   const { receipts, summary, loading, totalPages, reload } = useIncomingReceipts(filters)
-
+  const {t} = useLanguage()
   return (
     <div className="space-y-6">
       {/* Stats Dashboard */}
@@ -32,10 +33,10 @@ export function IncomingView({ products, categories }: { products: any[]; catego
           [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
         ) : summary ? (
           <>
-            <StatCard icon={<PackageCheck size={20} />} label="Total Receipts" value={summary.totalReceipts.toString()} color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" />
-            <StatCard icon={<DollarSign size={20} />} label="Total Cost" value={formatCurrency(summary.totalCost)} color="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
-            <StatCard icon={<Boxes size={20} />} label="Units Received" value={summary.totalUnits.toString()} color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
-            <StatCard icon={<TrendingUp size={20} />} label="Avg Receipt" value={formatCurrency(summary.averageReceiptCost)} color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
+            <StatCard icon={<PackageCheck size={20} />} label={t('cfTotalReciept')||'Total Receipts'} value={summary.totalReceipts.toString()} color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" />
+            <StatCard icon={<DollarSign size={20} />} label={t('cfTotalCost')||'Total Cost'} value={formatCurrency(summary.totalCost)} color="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
+            <StatCard icon={<Boxes size={20} />} label={t('cfUnitRecieved')||'Units Received'} value={summary.totalUnits.toString()} color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
+            <StatCard icon={<TrendingUp size={20} />} label={t('cfAvgReceipt')||'Avg Receipt'} value={formatCurrency(summary.averageReceiptCost)} color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
             <StatCard icon={<Users size={20} />} label="Suppliers" value={summary.supplierCount.toString()} color="bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400" />
           </>
         ) : null}
@@ -48,8 +49,10 @@ export function IncomingView({ products, categories }: { products: any[]; catego
           <input
             type="text"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Search receipts..."
+            // onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            onChange={(e) => { console.log(e.target.value)}}
+            placeholder={t('cfSearchReceipts')||'Search...'}
+            // placeholder="comming soon..."
             className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
           />
         </div>
@@ -68,7 +71,7 @@ export function IncomingView({ products, categories }: { products: any[]; catego
             onClick={() => setModalOpen(true)}
             className="flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-sm font-medium shadow-sm transition-all"
           >
-            <Plus size={16} /> Add Receipt
+            <Plus size={16} />{t('cfAddReciept')||'Add Receipt'}
           </button>
         </div>
       </div>

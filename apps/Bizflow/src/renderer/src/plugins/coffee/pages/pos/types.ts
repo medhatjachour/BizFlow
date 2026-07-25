@@ -40,6 +40,7 @@ export interface CoffeeCustomer {
   phone?: string
   email?: string
   notes?: string
+  address?: string
 }
 
 export interface ReceiptSettings {
@@ -81,3 +82,8 @@ export interface NewCustomerForm {
   phone: string
   address: string
 }
+
+export type SelectOption = {
+  value: string | number;
+  label: string;
+};

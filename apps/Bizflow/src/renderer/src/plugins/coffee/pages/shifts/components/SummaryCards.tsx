@@ -91,8 +91,8 @@ export function SummaryCards({ summary, loading }: Props) {
                 <Icon size={14} />
               </div>
             </div>
-            <div className="text-lg font-bold text-slate-900 dark:text-whiteular-nums">
-              {card.value}
+            <div className="text-lg font-bold text-slate-900  dark:text-white">
+              {card.value} 
             </div>
             <div className="text-[11px text-slate-500 dark:text-slate-400 mt-0.5">
               {card.sub}
