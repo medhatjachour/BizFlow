@@ -8,6 +8,8 @@ import type { Product, AdjustForm, AdjustType } from '../types'
 import { ADJUST_TYPES, adjustMeta } from '../constants'
 import { hexToRgba, formatMoney, stockPercent, stockBarColor } from '../utils'
 
+const INTEGER_UNITS = ['piece', 'box', 'cup', 'packet', 'bottle']
+
 interface Props {
   product: Product | null
   form: AdjustForm
@@ -42,9 +44,11 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
   const Icon = meta.icon
   const isCorrection = form.type === 'adjustment'
   const isSubtract = meta.sign === '-'
+  const isIntegerUnit = INTEGER_UNITS.includes(product.unit || 'piece')
 
   // ── Compute final values ──────────────────────────────────────────────────
-  const inputQty = parseInt(form.quantity, 10) || 0
+  // Use parseFloat to allow fractional quantities (e.g. 1.5 kg)
+  const inputQty = isIntegerUnit ? parseInt(form.quantity, 10) || 0 : parseFloat(form.quantity) || 0
 
   let finalDelta: number
   let newStock: number
@@ -64,16 +68,13 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
     : inputQty > 0 && newStock >= 0
 
   const isNegative = newStock < 0
-  const isLowAfter = newStock > 0 && newStock <= product.reorderPoint
   const isOutAfter = newStock === 0
+  const isLowAfter = newStock > 0 && newStock < product.reorderPoint
+  const stockPerc = newStock > 0 ? (newStock / (product.reorderPoint * 2)) * 100 : 0
 
-  // ── Value impact ──────────────────────────────────────────────────────────
+  // ── Value impacts ─────────────────────────────────────────────────────────
   const valueImpact = finalDelta * product.cost
   const revenueImpact = finalDelta * product.price
-
-  // ── Stock bar widths ──────────────────────────────────────────────────────
-  const currentPct = Math.min(100, stockPercent(product))
-  const newPct = Math.min(100, newStock > 0 ? (newStock / (product.reorderPoint * 2)) * 100 : 0)
 
   // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = () => {
@@ -92,7 +93,7 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
       const next = Math.max(0, product.stock + delta)
       patchForm({ quantity: String(next) })
     } else {
-      const current = parseInt(form.quantity, 10) || 0
+      const current = isIntegerUnit ? parseInt(form.quantity, 10) || 0 : parseFloat(form.quantity) || 0
       patchForm({ quantity: String(current + delta) })
     }
   }
@@ -101,69 +102,62 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
     patchForm({ quantity: String(val) })
   }
 
+  const handleQtyChange = (val: string) => {
+    // Prevent typing decimal point for integer units
+    if (isIntegerUnit && val.includes('.')) return
+    patchForm({ quantity: val })
+  }
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-2xl shadow-xl" onClick={e => e.stopPropagation()}>
         {/* ── Header with product info ──────────────────────────────────── */}
-        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: hexToRgba(meta.color, 0.15), color: meta.color }}
-            >
-              <Icon className="w-5 h-5" />
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Package size={20} />
             </div>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
                 Adjust Stock
               </h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 {product.name}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <X size={20} />
           </button>
         </div>
 
         {/* ── Body ──────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="p-5 space-y-5">
 
           {/* ── Current stock card ─────────────────────────────────────── */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                Current Stock
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
-                  {product.stock}
-                </span>
-                <span className="text-xs text-slate-400">units</span>
-              </div>
+          <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+            <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Current Stock
             </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">
+                {product.stock}
+              </span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {product.unit || 'units'}
+              </span>
+            </div>
+          </div>
 
-            {/* Current stock bar */}
-            <div className="relative h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${currentPct}%`,
-                  backgroundColor: stockBarColor(product),
-                }}
+          {/* Current stock bar */}
+          <div className="space-y-1">
+            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full rounded-full transition-all" 
+                style={{ width: `${stockPercent(product)}%`, backgroundColor: stockBarColor(product) }}
               />
             </div>
-            <div className="flex justify-between mt-1 text-[10px] text-slate-400">
+            <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500">
               <span>0</span>
               <span>Min: {product.reorderPoint}</span>
               <span>{product.reorderPoint * 2}+</span>
@@ -171,8 +165,8 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
           </div>
 
           {/* ── Adjustment type — visual grid ──────────────────────────── */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               Adjustment Type
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -182,7 +176,6 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
                 return (
                   <button
                     key={a.value}
-                    type="button"
                     onClick={() => {
                       patchForm({
                         type: a.value as AdjustType,
@@ -202,16 +195,10 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
                       color: a.color,
                     } : undefined}
                   >
-                    <TypeIcon className="w-4 h-4 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold leading-tight">
-                        {a.label}
-                      </div>
-                      <div className={`text-[10px] leading-tight truncate ${
-                        selected ? 'opacity-70' : 'text-slate-400'
-                      }`}>
-                        {a.description}
-                      </div>
+                    <TypeIcon size={18} />
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">{a.label}</span>
+                      <span className="text-[10px] opacity-80">{a.description}</span>
                     </div>
                   </button>
                 )
@@ -220,46 +207,33 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
           </div>
 
           {/* ── Mode indicator ─────────────────────────────────────────── */}
-          <div
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium"
-            style={{
-              backgroundColor: hexToRgba(meta.color, 0.08),
-              color: meta.color,
-            }}
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
+          <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg">
             {isCorrection ? (
-              <span>
-                <strong>Correction mode:</strong> Enter the exact counted stock — the system will calculate the difference automatically.
-              </span>
+              <span>Correction mode: Enter the exact counted stock — the system will calculate the difference automatically.</span>
             ) : isSubtract ? (
-              <span>
-                <strong>Remove mode:</strong> Enter how many units to subtract from current stock.
-              </span>
+              <span>Remove mode: Enter how many units to subtract from current stock.</span>
             ) : (
-              <span>
-                <strong>Add mode:</strong> Enter how many units to add to current stock.
-              </span>
+              <span>Add mode: Enter how many units to add to current stock.</span>
             )}
           </div>
 
           {/* ── Quantity input ─────────────────────────────────────────── */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               {isCorrection ? 'Counted Stock Level' : 'Quantity'}
             </label>
 
             {/* Main input with prefix */}
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
                 {isCorrection ? '=' : meta.sign}
               </span>
               <input
                 ref={qtyInputRef}
                 type="number"
-                min={0}
+                step={isIntegerUnit ? '1' : 'any'}
                 value={form.quantity}
-                onChange={(e) => patchForm({ quantity: e.target.value })}
+                onChange={(e) => handleQtyChange(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSubmit()
                 }}
@@ -268,73 +242,79 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
               />
             </div>
 
-            {/* Quick adjust buttons */}
-            <div className="flex items-center gap-1.5 mt-2">
-              <span className="text-[10px] text-slate-400 mr-1">Quick:</span>
+                {/* Quick adjust buttons */}
+            <div className="flex items-center justify-between w-full mt-1">
               {isCorrection ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setExact(0)}
-                    className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
-                  >
-                    Zero
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExact(product.reorderPoint)}
-                    className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors"
-                  >
-                    Min
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExact(product.reorderPoint * 2)}
-                    className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 transition-colors"
-                  >
-                    Healthy
-                  </button>
-                  <div className="flex-1" />
-                  <button
-                    type="button"
-                    onClick={() => setExact(product.stock)}
-                    className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    Same as now
-                  </button>
+                  {/* Left: Presets */}
+                  <div className="flex gap-1.5">
+                    <button 
+                      onClick={() => setExact(product.stock)} 
+                      className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      Same as now
+                    </button>
+                    <button 
+                      onClick={() => setExact(product.reorderPoint)} 
+                      className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors"
+                    >
+                      Min
+                    </button>
+                    <button 
+                      onClick={() => setExact(product.reorderPoint * 2)} 
+                      className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 transition-colors"
+                    >
+                      Healthy
+                    </button>
+                  </div>
+
+                  {/* Right: Zero */}
+                  <div className="flex gap-1.5">
+                    <button 
+                      onClick={() => setExact(0)} 
+                      className="px-2 py-1 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors"
+                    >
+                      Zero
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
-                  {QUICK_DELTAS.map(d => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => quickAdjust(d)}
-                      className="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 hover:text-amber-600 transition-colors tabular-nums"
-                    >
-                      +{d}
-                    </button>
-                  ))}
-                  <div className="flex-1" />
-                  {QUICK_DELTAS.slice().reverse().map(d => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => quickAdjust(-d)}
-                      className="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors tabular-nums"
-                    >
-                      −{d}
-                    </button>
-                  ))}
+                  {/* Left: Add */}
+                  <div className="flex gap-1.5">
+                    {QUICK_DELTAS.map(d => (
+                      <button 
+                        key={`add-${d}`}
+                        onClick={() => quickAdjust(d)} 
+                        className="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-green-100 dark:hover:bg-green-900/30 hover:text-green-600 transition-colors tabular-nums"
+                      >
+                        +{d}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Right: Subtract */}
+                  <div className="flex gap-1.5">
+                    {QUICK_DELTAS.slice().reverse().map(d => (
+                      <button 
+                        key={`sub-${d}`}
+                        onClick={() => quickAdjust(-d)} 
+                        className="px-2.5 py-1 text-xs font-medium rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 transition-colors tabular-nums"
+                      >
+                        −{d}
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
+
           </div>
 
           {/* ── Reason with presets ────────────────────────────────────── */}
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Reason <span className="text-slate-400">(optional)</span>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+              Reason (optional)
             </label>
             <input
               type="text"
@@ -344,11 +324,10 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
               className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none transition-colors"
             />
             {/* Preset chips */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-1.5 pt-1">
               {REASON_PRESETS[form.type].map(preset => (
                 <button
                   key={preset}
-                  type="button"
                   onClick={() => setLocalReason(preset)}
                   className={`px-2.5 py-1 text-[11px] rounded-full border transition-colors ${
                     localReason === preset
@@ -363,44 +342,43 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
           </div>
 
           {/* ── Live preview: before → after ───────────────────────────── */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
+          <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 space-y-3">
+            
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Result Preview
               </span>
               {finalDelta !== 0 && !isNegative && (
-                <span
-                  className={`text-xs font-bold tabular-nums px-2 py-0.5 rounded-full ${
-                    finalDelta > 0
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                  }`}
-                >
+                <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
+                  finalDelta > 0
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                }`}>
                   {finalDelta > 0 ? '+' : ''}{finalDelta}
                 </span>
               )}
             </div>
 
             {/* Before → After visual */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-4">
               {/* Before */}
-              <div className="flex-1 text-center">
-                <div className="text-[10px] text-slate-400 mb-1">Before</div>
-                <div className="text-xl font-bold text-slate-700 dark:text-slate-300 tabular-nums">
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-slate-400 mb-1 uppercase">Before</span>
+                <span className="text-lg font-bold text-slate-600 dark:text-slate-300 tabular-nums">
                   {product.stock}
-                </div>
+                </span>
               </div>
 
               {/* Arrow + delta */}
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center text-slate-400">
                 {finalDelta > 0 ? (
-                  <TrendingUp className="w-5 h-5 text-green-500" />
+                  <TrendingUp size={20} className="text-green-500" />
                 ) : finalDelta < 0 ? (
-                  <TrendingDown className="w-5 h-5 text-red-500" />
+                  <TrendingDown size={20} className="text-red-500" />
                 ) : (
-                  <Minus className="w-5 h-5 text-slate-400" />
+                  <RefreshCw size={20} />
                 )}
-                <span className={`text-[10px] font-medium mt-0.5 tabular-nums ${
+                <span className={`text-xs font-medium mt-1 ${
                   finalDelta > 0 ? 'text-green-600' : finalDelta < 0 ? 'text-red-500' : 'text-slate-400'
                 }`}>
                   {finalDelta > 0 ? '+' : ''}{finalDelta}
@@ -408,64 +386,46 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
               </div>
 
               {/* After */}
-              <div className="flex-1 text-center">
-                <div className="text-[10px] text-slate-400 mb-1">After</div>
-                <div
-                  className={`text-2xl font-bold tabular-nums ${
-                    isNegative
-                      ? 'text-red-500'
-                      : isOutAfter
-                      ? 'text-red-500'
-                      : isLowAfter
-                      ? 'text-amber-500'
-                      : 'text-green-600'
-                  }`}
-                >
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-slate-400 mb-1 uppercase">After</span>
+                <span className={`text-lg font-bold tabular-nums ${
+                  isNegative ? 'text-red-500' : 'text-slate-900 dark:text-white'
+                }`}>
                   {isNegative ? '!' : newStock}
-                </div>
+                </span>
               </div>
             </div>
 
             {/* Projected stock bar */}
             {!isNegative && (
               <div className="relative h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${newPct}%`,
-                    backgroundColor: isOutAfter
-                      ? '#dc2626'
-                      : isLowAfter
-                      ? '#f59e0b'
-                      : '#16a34a',
-                  }}
+                <div 
+                  className="h-full rounded-full transition-all" 
+                  style={{ width: `${stockPerc}%`, backgroundColor: stockBarColor({ ...product, stock: newStock }) }}
                 />
                 {/* Min marker */}
-                <div
-                  className="absolute top-0 h-full w-px bg-slate-400 dark:bg-slate-500"
-                  style={{ left: `${(product.reorderPoint / (product.reorderPoint * 2)) * 100}%` }}
-                />
+                <div className="absolute top-0 bottom-0 w-px bg-amber-500/50" style={{ left: '50%' }} />
               </div>
             )}
 
             {/* Status badge */}
             {!isNegative && (
-              <div className="flex justify-center">
+              <div className="text-center text-xs font-medium pt-1">
                 {isOutAfter ? (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                    ⚠ Out of stock after adjustment
+                  <span className="text-red-500 flex items-center justify-center gap-1">
+                    <AlertTriangle size={12} /> Out of stock after adjustment
                   </span>
                 ) : isLowAfter ? (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
-                    ⚠ Below reorder point ({product.reorderPoint})
+                  <span className="text-amber-500 flex items-center justify-center gap-1">
+                    <AlertTriangle size={12} /> Below reorder point ({product.reorderPoint})
                   </span>
                 ) : finalDelta === 0 ? (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500">
-                    No change
+                  <span className="text-slate-400 flex items-center justify-center gap-1">
+                    <RefreshCw size={12} /> No change
                   </span>
                 ) : (
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                    ✓ Healthy stock level
+                  <span className="text-green-500 flex items-center justify-center gap-1">
+                    <TrendingUp size={12} /> Healthy stock level
                   </span>
                 )}
               </div>
@@ -474,38 +434,27 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
             {/* Value impact (for non-correction or when delta ≠ 0) */}
             {finalDelta !== 0 && !isNegative && (
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex items-center gap-2">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                    valueImpact >= 0
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600'
-                      : 'bg-red-100 dark:bg-red-900/30 text-red-500'
-                  }`}>
-                    <DollarSign className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400">Cost value impact</div>
-                    <div className={`text-xs font-semibold tabular-nums ${
-                      valueImpact >= 0 ? 'text-green-600' : 'text-red-500'
-                    }`}>
+                <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                  valueImpact >= 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-600' : 'bg-red-100 dark:bg-red-900/30 text-red-500'
+                }`}>
+                  <DollarSign size={16} />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] opacity-80">Cost value impact</span>
+                    <span className={`text-sm font-bold ${valueImpact >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                       {valueImpact >= 0 ? '+' : ''}{formatMoney(valueImpact)}
-                    </div>
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                    revenueImpact >= 0
-                      ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600'
-                      : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'
-                  }`}>
-                    <Package className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-400">Revenue impact</div>
-                    <div className={`text-xs font-semibold tabular-nums ${
-                      revenueImpact >= 0 ? 'text-violet-600' : 'text-orange-500'
-                    }`}>
+                
+                <div className={`flex items-center gap-2 p-2 rounded-lg ${
+                  revenueImpact >= 0 ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600' : 'bg-orange-100 dark:bg-orange-900/30 text-orange-500'
+                }`}>
+                  <TrendingUp size={16} />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] opacity-80">Revenue impact</span>
+                    <span className={`text-sm font-bold ${revenueImpact >= 0 ? 'text-violet-600' : 'text-orange-500'}`}>
                       {revenueImpact >= 0 ? '+' : ''}{formatMoney(revenueImpact)}
-                    </div>
+                    </span>
                   </div>
                 </div>
               </div>
@@ -514,29 +463,30 @@ export function AdjustStockModal({ product, form, patchForm, onSubmit, onClose, 
 
           {/* ── Negative stock warning ────────────────────────────────── */}
           {isNegative && (
-            <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-              <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-red-700 dark:text-red-400">
-                <strong>Stock cannot go below zero.</strong> Current stock is {product.stock}, you're trying to remove {Math.abs(inputQty)} units.
-              </div>
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
+              <AlertTriangle size={18} className="shrink-0 mt-0.5" />
+              <span>
+                Stock cannot go below zero. Current stock is {product.stock}, you're trying to remove {Math.abs(inputQty)} units.
+              </span>
             </div>
           )}
         </div>
 
         {/* ── Footer ────────────────────────────────────────────────────── */}
-        <div className="px-5 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center gap-3">
+        <div className="flex items-center justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-800">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             Cancel
           </button>
+          
           <button
             onClick={handleSubmit}
-            disabled={saving || !isValid || isNegative}
-            className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+            disabled={!isValid || isNegative || saving}
+            className="px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : null}
             {saving ? 'Saving…' : isCorrection ? 'Apply Correction' : 'Apply Adjustment'}
           </button>
         </div>

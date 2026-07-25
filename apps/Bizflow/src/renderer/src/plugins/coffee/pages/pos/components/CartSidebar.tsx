@@ -19,11 +19,24 @@ interface Props {
   onUpdatePrice: (id: string, price: number) => void
   onQuickSale: (pm: PaymentMethod) => void
   onCheckout: () => void
+  onSetQty: (id: string, qty: number) => void   // <-- ADD
 }
 
 export function CartSidebar({
-  cart, itemCount, subtotal, discount, total,  checking,
-  onClear, onClose, onChangeQty, onRemove, onUpdatePrice, onQuickSale, onCheckout,
+  cart,
+  itemCount,
+  subtotal,
+  discount,
+  total,
+  checking,
+  onClear,
+  onSetQty, // <-- ADD
+  onClose,
+  onChangeQty,
+  onRemove,
+  onUpdatePrice,
+  onQuickSale,
+  onCheckout
 }: Props) {
   const { t } = useLanguage()
   return (
@@ -32,7 +45,9 @@ export function CartSidebar({
       <div className="flex items-center justify-between p-3 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-2">
           <ShoppingCart className="w-5 h-5 text-amber-500" />
-          <span className="font-semibold text-slate-900 dark:text-white">{t('cfCart') || 'Cart'}</span>
+          <span className="font-semibold text-slate-900 dark:text-white">
+            {t('cfCart') || 'Cart'}
+          </span>
           {itemCount > 0 && (
             <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full">
               {itemCount}
@@ -59,18 +74,23 @@ export function CartSidebar({
           <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
             <ShoppingCart className="w-8 h-8 text-slate-400" />
           </div>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('cfCartEmpty') || 'Cart Empty'}</p>
-          <p className="text-xs text-slate-400 mt-1">{t('cfTapToAdd') || 'Tap to add Product to cart'}</p>
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {t('cfCartEmpty') || 'Cart Empty'}
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            {t('cfTapToAdd') || 'Tap to add Product to cart'}
+          </p>
         </div>
       ) : (
         <>
           {/* Items */}
           <div className="flex-1 overflow-y-auto px-3">
-            {cart.map(item => (
-              <CartItemRow
+            {cart.map((item) => (
+               <CartItemRow
                 key={item.productId}
                 item={item}
                 onChangeQty={onChangeQty}
+                onSetQty={onSetQty}
                 onRemove={onRemove}
                 onUpdatePrice={onUpdatePrice}
               />
@@ -93,32 +113,32 @@ export function CartSidebar({
             )}
 
             <div className="flex justify-between items-baseline">
-              <span className="text-sm font-semibold text-slate-900 dark:text-white">{t('cfCartTotal')||"Total"}</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                {t('cfCartTotal') || 'Total'}
+              </span>
               <span className="text-xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">
                 {formatMoney(total)}
               </span>
             </div>
 
-           
-              <div className="space-y-2">
-                {/* Quick cash checkout */}
-                <button
-                  onClick={() => onQuickSale('cash')}
-                  disabled={checking}
-                  className="w-full py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  <Zap className="w-4 h-4" /> {t('cfCartQuickCash') || 'Quick Cash'}
-                </button>
-                {/* Full checkout */}
-                <button
-                  onClick={onCheckout}
-                  disabled={checking}
-                  className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-                >
-                  {t('cfCartCheckout') || 'Checkout'} <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-           
+            <div className="space-y-2">
+              {/* Quick cash checkout */}
+              <button
+                onClick={() => onQuickSale('cash')}
+                disabled={checking}
+                className="w-full py-2.5 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <Zap className="w-4 h-4" /> {t('cfCartQuickCash') || 'Quick Cash'}
+              </button>
+              {/* Full checkout */}
+              <button
+                onClick={onCheckout}
+                disabled={checking}
+                className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {t('cfCartCheckout') || 'Checkout'} <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </>
       )}

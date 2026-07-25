@@ -16,6 +16,7 @@ export interface Product {
   categoryId?: string
   category?: Category
   image?: string
+  unit: string        // ← ADDED THIS
 }
 
 export interface StockMovement {

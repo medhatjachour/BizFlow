@@ -32,7 +32,7 @@ export function ProductCard({ product, inCart, onClick }: Props) {
       )}
 
       {/* Image */}
-      <div className="aspect-[4/3]  rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700">
+      <div className="aspect-[4/3] w-full rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-700">
         <ProductImg image={product.image} name={product.name} />
       </div>
 

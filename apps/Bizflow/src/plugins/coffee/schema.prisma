@@ -11,8 +11,8 @@ model CoffeeCategory {
   id           String          @id @default(uuid())
   name         String          @unique
   description  String?
-  color        String?         // Tailwind color name for UI badges (e.g. "amber")
-  icon         String?         // Emoji or Lucide icon name
+  color        String? // Tailwind color name for UI badges (e.g. "amber")
+  icon         String? // Emoji or Lucide icon name
   displayOrder Int             @default(0)
   products     CoffeeProduct[]
   createdAt    DateTime        @default(now())
@@ -23,24 +23,25 @@ model CoffeeCategory {
 
 // Coffee products — no SKU, no variants; each product is a single sellable item
 model CoffeeProduct {
-  id             String                @id @default(uuid())
-  name           String
-  categoryId     String?
-  category       CoffeeCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  description    String?
-  price          Float                 // Selling price
-  cost           Float                 @default(0)  // Cost for profit tracking
-  stock          Int                   @default(0)  // Current inventory count
-  reorderPoint   Int                   @default(5)  // Alert threshold for low stock
-  image          String?               // Filename stored in the images/ directory
-  isAvailable    Boolean               @default(true)  // Toggle on POS without deleting
-  displayOrder   Int                   @default(0)
-  notes          String?
-  orderItems     CoffeeOrderItem[]
-  stockMovements CoffeeStockMovement[]
+  id                   String                      @id @default(uuid())
+  name                 String
+  categoryId           String?
+  category             CoffeeCategory?             @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  description          String?
+  price                Float
+  cost                 Float                       @default(0)
+  unit                 String                      @default("piece") // ADD THIS
+  stock                Float                       @default(0) // Change from Int to Float
+  reorderPoint         Float                       @default(5) // Change from Int to Float
+  image                String? // Filename stored in the images/ directory
+  isAvailable          Boolean                     @default(true) // Toggle on POS without deleting
+  displayOrder         Int                         @default(0)
+  notes                String?
+  orderItems           CoffeeOrderItem[]
+  stockMovements       CoffeeStockMovement[]
   incomingReceiptItems CoffeeIncomingReceiptItem[]
-  createdAt      DateTime              @default(now())
-  updatedAt      DateTime              @updatedAt
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
 
   @@index([name])
   @@index([categoryId])
@@ -52,12 +53,12 @@ model CoffeeStockMovement {
   id            String        @id @default(uuid())
   productId     String
   product       CoffeeProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
-  type          String        // sale | restock | adjustment | waste
-  quantity      Int           // Positive = stock added, negative = stock removed
-  previousStock Int
-  newStock      Int
-  reason        String?       // Human-readable reason for adjustment
-  referenceId   String?       // Order ID that triggered the movement
+  type          String // sale | restock | adjustment | waste
+  quantity      Float // Change from Int to Float
+  previousStock Float // Change from Int to Float
+  newStock      Float // Change from Int to Float
+  reason        String? // Human-readable reason for adjustment
+  referenceId   String? // Order ID that triggered the movement
   notes         String?
   createdAt     DateTime      @default(now())
 
@@ -86,18 +87,18 @@ model CoffeeIncomingReceipt {
 }
 
 model CoffeeIncomingReceiptItem {
-  id           String                 @id @default(uuid())
-  receiptId    String
-  receipt      CoffeeIncomingReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  productId    String
-  product      CoffeeProduct          @relation(fields: [productId], references: [id], onDelete: Restrict)
-  productName  String
-  quantity     Int                    @default(1)
-  unitCost     Float
-  lineTotal    Float
-  notes        String?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
+  id          String                @id @default(uuid())
+  receiptId   String
+  receipt     CoffeeIncomingReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  productId   String
+  product     CoffeeProduct         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productName String
+  quantity    Float                 @default(1) // Change from Int to Float
+  unitCost    Float
+  lineTotal   Float
+  notes       String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
 
   @@index([receiptId])
   @@index([productId])
@@ -105,19 +106,19 @@ model CoffeeIncomingReceiptItem {
 
 // Coffee operating expenses — operating costs, purchases, fees, etc.
 model CoffeeExpense {
-  id            String         @id @default(uuid())
-  date          DateTime       @default(now())
-  category      String         @default("other")
+  id            String       @id @default(uuid())
+  date          DateTime     @default(now())
+  category      String       @default("other")
   description   String
   amount        Float
   vendor        String?
-  paymentMethod String         @default("cash")
-  recurrence    String         @default("one_time")
+  paymentMethod String       @default("cash")
+  recurrence    String       @default("one_time")
   shiftId       String?
-  shift         CoffeeShift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  shift         CoffeeShift? @relation(fields: [shiftId], references: [id], onDelete: SetNull)
   notes         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@index([date])
   @@index([category])
@@ -129,9 +130,9 @@ model CoffeeExpense {
 model CoffeeTable {
   id        String        @id @default(uuid())
   number    Int           @unique
-  name      String?       // Optional friendly name (e.g. "Window Seat")
+  name      String? // Optional friendly name (e.g. "Window Seat")
   capacity  Int           @default(4)
-  section   String?       // e.g. "Indoor", "Outdoor", "Bar"
+  section   String? // e.g. "Indoor", "Outdoor", "Bar"
   status    String        @default("available") // available | occupied | cleaning
   isActive  Boolean       @default(true)
   orders    CoffeeOrder[]
@@ -145,37 +146,37 @@ model CoffeeTable {
 
 // An order — covers dine-in (linked to table), takeaway, and delivery
 model CoffeeOrder {
-  id            String           @id @default(uuid())
-  orderNumber   String           @unique           // e.g. "#0042", auto-generated
-  type          String           @default("dine_in") // dine_in | takeaway | delivery
-  tableId       String?
-  table         CoffeeTable?     @relation(fields: [tableId], references: [id], onDelete: SetNull)
-  customerName  String?          // For takeaway/delivery identification
-  customerPhone String?          // For delivery contact
-  deliveryAddress String?        // Delivery address (delivery orders)
-  customerId    String?          // Link to registered CoffeeCustomer (optional)
-  customer      CoffeeCustomer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  cashierId     String?
-  cashier       User?            @relation("CoffeeOrderCashier", fields: [cashierId], references: [id], onDelete: SetNull)
-  shiftId       String?
-  shift         CoffeeShift?     @relation(fields: [shiftId], references: [id], onDelete: SetNull)
-  status        String           @default("open") // open | ready | paid | voided | refunded | partially_refunded
-  refundedAmount Float           @default(0)
-  refundedAt    DateTime?
-  refundedById  String?
-  refundReason  String?
-  refundNotes   String?
-  paymentMethod String?          // cash | card | vodafone_cash — set when closing
-  subtotal      Float            @default(0)
-  discount      Float            @default(0)
-  tax           Float            @default(0)
-  total         Float            @default(0)
-  notes         String?
-  items         CoffeeOrderItem[]
-  openedAt      DateTime         @default(now())
-  closedAt      DateTime?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id              String            @id @default(uuid())
+  orderNumber     String            @unique // e.g. "#0042", auto-generated
+  type            String            @default("dine_in") // dine_in | takeaway | delivery
+  tableId         String?
+  table           CoffeeTable?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  customerName    String? // For takeaway/delivery identification
+  customerPhone   String? // For delivery contact
+  deliveryAddress String? // Delivery address (delivery orders)
+  customerId      String? // Link to registered CoffeeCustomer (optional)
+  customer        CoffeeCustomer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cashierId       String?
+  cashier         User?             @relation("CoffeeOrderCashier", fields: [cashierId], references: [id], onDelete: SetNull)
+  shiftId         String?
+  shift           CoffeeShift?      @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+  status          String            @default("open") // open | ready | paid | voided | refunded | partially_refunded
+  refundedAmount  Float             @default(0)
+  refundedAt      DateTime?
+  refundedById    String?
+  refundReason    String?
+  refundNotes     String?
+  paymentMethod   String? // cash | card | vodafone_cash — set when closing
+  subtotal        Float             @default(0)
+  discount        Float             @default(0)
+  tax             Float             @default(0)
+  total           Float             @default(0)
+  notes           String?
+  items           CoffeeOrderItem[]
+  openedAt        DateTime          @default(now())
+  closedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([tableId])
   @@index([type])
@@ -193,11 +194,12 @@ model CoffeeOrderItem {
   order       CoffeeOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId   String?
   product     CoffeeProduct? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  productName String         // Snapshot of name at time of order
+  productName String // Snapshot of name at time of order
   unitPrice   Float
-  quantity    Int            @default(1)
+  quantity    Float          @default(1) // Change from Int to Float
+  unit        String         @default("piece") // ADD THIS
   total       Float
-  notes       String?        // Special instructions (e.g. "no sugar", "extra shot")
+  notes       String? // Special instructions (e.g. "no sugar", "extra shot")
   status      String         @default("pending") // pending | preparing | ready | served
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
@@ -208,18 +210,18 @@ model CoffeeOrderItem {
 
 // Coffee shop customers — track regulars, visit count, and total spend
 model CoffeeCustomer {
-  id          String        @id @default(uuid())
-  name        String
-  phone       String?       @unique
-  address     String?
-  notes       String?       // Preferences (e.g. "oat milk", "no sugar")
-  isVip       Boolean       @default(false)
-  totalSpent  Float         @default(0)
-  visitCount  Int           @default(0)
-  lastVisit   DateTime?
-  orders      CoffeeOrder[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id         String        @id @default(uuid())
+  name       String
+  phone      String?       @unique
+  address    String?
+  notes      String? // Preferences (e.g. "oat milk", "no sugar")
+  isVip      Boolean       @default(false)
+  totalSpent Float         @default(0)
+  visitCount Int           @default(0)
+  lastVisit  DateTime?
+  orders     CoffeeOrder[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   @@index([name])
   @@index([phone])
@@ -227,30 +229,31 @@ model CoffeeCustomer {
 
 // A work shift — opened at start of day/period, closed at end; summarises all sales
 model CoffeeShift {
-  id                String        @id @default(uuid())
+  id                String          @id @default(uuid())
   cashierId         String
-  cashier           User          @relation("CoffeeShiftCashier", fields: [cashierId], references: [id])
-  status            String        @default("open") // open | closed
-  openingCash       Float         @default(0)   // Cash in drawer at start
-  closingCash       Float?                       // Cash in drawer at end (counted)
-  totalSales        Float         @default(0)   // Sum of all paid order totals
-  totalOrders       Int           @default(0)   // Count of paid orders in this shift
-  cashTotal         Float         @default(0)   // Revenue via cash payments
-  cardTotal         Float         @default(0)   // Revenue via card payments
-  vodafoneCashTotal Float         @default(0)   // Revenue via Vodafone Cash
-  cashDifference    Float?                       // closingCash − (openingCash + cashTotal)
+  cashier           User            @relation("CoffeeShiftCashier", fields: [cashierId], references: [id])
+  status            String          @default("open") // open | closed
+  openingCash       Float           @default(0) // Cash in drawer at start
+  closingCash       Float? // Cash in drawer at end (counted)
+  totalSales        Float           @default(0) // Sum of all paid order totals
+  totalOrders       Int             @default(0) // Count of paid orders in this shift
+  cashTotal         Float           @default(0) // Revenue via cash payments
+  cardTotal         Float           @default(0) // Revenue via card payments
+  vodafoneCashTotal Float           @default(0) // Revenue via Vodafone Cash
+  cashDifference    Float? // closingCash − (openingCash + cashTotal)
   notes             String?
   orders            CoffeeOrder[]
   expenses          CoffeeExpense[]
-  openedAt          DateTime      @default(now())
+  openedAt          DateTime        @default(now())
   closedAt          DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 
   @@index([cashierId])
   @@index([status])
   @@index([openedAt])
 }
+
 // Transit/Outgoing receipts — orders received for delivery, NOT related to inventory
 // These are orders that come to us and we deliver them (transit only)
 model CoffeeTransitReceipt {
@@ -279,15 +282,16 @@ model CoffeeTransitReceipt {
   @@index([priority])
   @@index([createdById])
 }
+
 model CoffeeTransitReceiptItem {
   id          String               @id @default(uuid())
   receiptId   String
   receipt     CoffeeTransitReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  description String               // Free text — not linked to our products
+  description String // Free text — not linked to our products
   quantity    Int                  @default(1)
   unitPrice   Float                @default(0)
   lineTotal   Float
-  weight      Float?               // Optional weight in kg
+  weight      Float? // Optional weight in kg
   notes       String?
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt

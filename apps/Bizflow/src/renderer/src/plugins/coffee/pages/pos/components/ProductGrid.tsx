@@ -60,7 +60,7 @@ export function ProductGrid({
 
         <button
           onClick={() => setSelectedCat('all')}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+          className={`px-5 py-2 rounded-full text-md font-medium whitespace-nowrap transition-colors ${
             selectedCat === 'all'
               ? 'bg-amber-500 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-amber-300'
@@ -76,7 +76,7 @@ export function ProductGrid({
             <button
               key={c.id}
               onClick={() => setSelectedCat(c.id)}
-              className={`px-3 py-3 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-2 transition-colors ${
+              className={`px-5 py-2 rounded-full text-md font-medium whitespace-nowrap flex items-center gap-2 transition-colors ${
                 isSelected
                   ? 'text-white shadow-sm'
                   : isHex

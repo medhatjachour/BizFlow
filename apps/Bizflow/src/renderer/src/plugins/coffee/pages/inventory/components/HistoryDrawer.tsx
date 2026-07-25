@@ -99,7 +99,7 @@ export function HistoryDrawer({
                 <button
                   key={p.value}
                   onClick={() => setPeriod(p.value)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  className={`px-2.5 py-1 m-1 rounded-md text-[12px] font-medium transition-colors ${
                     period === p.value
                       ? 'bg-amber-500 text-white'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -117,7 +117,7 @@ export function HistoryDrawer({
             <div className="flex gap-1 flex-wrap">
               <button
                 onClick={() => setTypeFilter('all')}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                className={`px-2.5 py-1 m-1 rounded-md text-[12px] font-medium transition-colors ${
                   typeFilter === 'all'
                     ? 'bg-slate-700 dark:bg-slate-200 text-white dark:text-slate-900'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -132,7 +132,7 @@ export function HistoryDrawer({
                   <button
                     key={t.value}
                     onClick={() => setTypeFilter(t.value)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 transition-all ${
+                    className={`px-2.5 py-1 m-1  rounded-md text-[11px] font-medium flex items-center gap-1 transition-all ${
                       selected ? 'text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                     style={selected ? { backgroundColor: t.color } : undefined}
@@ -166,7 +166,7 @@ export function HistoryDrawer({
             <div className="px-5 py-4">
               <div className="relative">
                 {/* Vertical line */}
-                <div className="absolute left-[19px] top-2 bottom-2 w-px bg-slate-200 dark:bg-slate-700" />
+                <div className="absolute right-[19px] top-2 bottom-2 w-px bg-slate-200 dark:bg-slate-700" />
 
                 <div className="space-y-3">
                   {movements.map(m => {

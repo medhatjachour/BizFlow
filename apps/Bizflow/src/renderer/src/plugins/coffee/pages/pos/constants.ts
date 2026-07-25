@@ -65,3 +65,12 @@ export const EMPTY_NEW_CUSTOMER: NewCustomerForm = {
   phone: '',
   address: '',
 }
+// constants.ts
+export const PRODUCT_UNITS = [
+  { value: 'piece', label: 'Piece', short: 'pc' },
+  { value: 'kg',    label: 'Kilogram', short: 'kg' },
+  { value: 'gram',  label: 'Gram', short: 'g' },
+  { value: 'liter', label: 'Liter', short: 'L' },
+  { value: 'box',   label: 'Box', short: 'box' },
+  { value: 'cup',   label: 'Cup', short: 'cup' },
+] as const

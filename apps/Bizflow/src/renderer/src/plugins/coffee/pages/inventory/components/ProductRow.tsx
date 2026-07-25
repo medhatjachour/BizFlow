@@ -1,8 +1,6 @@
 import { Plus, History } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Product } from '../types'
 import { isLow, isOut, stockPercent, stockBarColor, formatMoney } from '../utils'
-import { hexToRgba } from '../utils'
 
 interface Props {
   product: Product
@@ -68,14 +66,14 @@ export function ProductRow({ product: p, onAdjust, onHistory }: Props) {
       <div className="flex items-center gap-1">
         <button
           onClick={() => onAdjust(p)}
-          className="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 transition-colors"
+          className="p-4 rounded-full mr-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 transition-colors"
           title="Adjust stock"
         >
           <Plus className="w-4 h-4" />
         </button>
         <button
           onClick={() => onHistory(p)}
-          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors"
+          className="p-4 rounded-full mr-2  hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 transition-colors"
           title="History"
         >
           <History className="w-4 h-4" />
