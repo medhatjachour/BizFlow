@@ -217,7 +217,8 @@ export function useCheckout() {
             productId: i.productId,
             productName: i.productName,
             unitPrice: i.salePrice,
-            quantity: i.quantity
+            quantity: i.quantity,
+            unit: i.unit, // ← ADD THIS LINE HERE
           }))
         })
 

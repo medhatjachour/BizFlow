@@ -137,8 +137,8 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
               <RotateCcw size={20} />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Process Refund</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Order #{order.orderNumber}</p>
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">{t('cfProcessRefund') || 'Process Refund'}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t('cfOrder') || 'Order'} #{order.orderNumber}</p>
             </div>
           </div>
           <button 
@@ -155,17 +155,17 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
           {/* Order Summary */}
           <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 space-y-2 border border-slate-100 dark:border-slate-700">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500 dark:text-slate-400">Original Total</span>
+              <span className="text-slate-500 dark:text-slate-400">{t('cfOriginalTotal') || 'Original Total'}</span>
               <span className="font-medium text-slate-900 dark:text-white">${order.total.toFixed(2)}</span>
             </div>
             {order.refundedAmount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-slate-500 dark:text-slate-400">Already Refunded</span>
+                <span className="text-slate-500 dark:text-slate-400">{t('cfAlreadyRefunded') || 'Already Refunded'}</span>
                 <span className="font-medium text-red-600 dark:text-red-400">−${(order.refundedAmount || 0).toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm pt-2 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-slate-600 dark:text-slate-300 font-medium">Available for Refund</span>
+              <span className="text-slate-600 dark:text-slate-300 font-medium">{t('cfAvailableForRefund') || 'Available for Refund'}</span>
               <span className="font-bold text-amber-600 dark:text-amber-400">${maxRefundAvailable.toFixed(2)}</span>
             </div>
           </div>
@@ -173,11 +173,11 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
           {/* Items Selection */}
           <div>
             <div className="flex justify-between items-center mb-2">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Select Items to Refund</h3>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">{t('cfSelectItemsToRefund') || 'Select Items to Refund'}</h3>
               <div className="flex gap-2 text-xs">
-                <button onClick={selectAll} className="text-blue-600 dark:text-blue-400 hover:underline">Select All</button>
+                <button onClick={selectAll} className="text-blue-600 dark:text-blue-400 hover:underline">{t('cfSelectAll') || 'Select All'}</button>
                 <span className="text-slate-300 dark:text-slate-600">|</span>
-                <button onClick={clearAll} className="text-slate-500 dark:text-slate-400 hover:underline">Clear</button>
+                <button onClick={clearAll} className="text-slate-500 dark:text-slate-400 hover:underline">{t('cfClear') || 'Clear'}</button>
               </div>
             </div>
 
@@ -223,7 +223,7 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
                     {/* Refund Amount */}
                     {isSelected && (
                       <div className="text-right min-w-[80px]">
-                        <p className="text-xs text-slate-400">Refund</p>
+                        <p className="text-xs text-slate-400">{t('cfRefunded') || 'Refund'}</p>
                         <p className="text-sm font-semibold text-red-600 dark:text-red-400">
                           −${itemRefundAmount.toFixed(2)}
                         </p>
@@ -242,9 +242,9 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
                 {restockItems ? <Package size={16} /> : <PackageX size={16} />}
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">Restock Items</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">{t('cfRestockItems') || 'Restock Items'}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {restockItems ? 'Refunded items will be added back to inventory' : 'Items will not be returned to stock'}
+                  {restockItems ? t('cfRefundedItemsWillBeAddedBackToInventory') || 'Refunded items will be added back to inventory' : t('cfItemsWillNotBeReturnedToStock') || 'Items will not be returned to stock'}
                 </p>
               </div>
             </div>
@@ -261,31 +261,31 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
 
           {/* Reason Selection */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Reason <span className="text-red-500">*</span></label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('cfReason') || 'Reason'} <span className="text-red-500">*</span></label>
             <select
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-900 rounded-lg p-2.5 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none"
             >
-              <option value="">Select a reason...</option>
-              <option value="customer_request">Customer Request</option>
-              <option value="wrong_item">Wrong Item</option>
-              <option value="quality_issue">Quality Issue</option>
-              <option value="duplicate_charge">Duplicate Charge</option>
-              <option value="damaged">Item Damaged</option>
-              <option value="other">Other</option>
+              <option value="">{t('cfSelectReason') || 'Select a reason...'}</option>
+              <option value="customer_request">{t('cfCustomerRequest') || 'Customer Request'}</option>
+              <option value="wrong_item">{t('cfWrongItem') || 'Wrong Item'}</option>
+              <option value="quality_issue">{t('cfQualityIssue') || 'Quality Issue'}</option>
+              <option value="duplicate_charge">{t('cfDuplicateCharge') || 'Duplicate Charge'}</option>
+              <option value="damaged">{t('cfItemDamaged') || 'Item Damaged'}</option>
+              <option value="other">{t('cfOther') || 'Other'}</option>
             </select>
           </div>
 
           {/* Notes */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Additional Notes</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">{t('cfAdditionalNotes') || 'Additional Notes'}</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="w-full border border-slate-200 dark:border-slate-600 dark:bg-slate-900 rounded-lg p-2.5 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none resize-none"
               rows={2}
-              placeholder="Optional: Add more details about this refund..."
+              placeholder={t('cfOptionalAddMoreDetailsAboutThisRefund') || 'Optional: Add more details about this refund...'}
             />
           </div>
 
@@ -306,7 +306,7 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
         <div className="flex items-center justify-between p-4 border-t border-slate-200 dark:border-slate-700">
           {/* Refund Total */}
           <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Total Refund Amount:</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('cfTotalRefundAmount') || 'Total Refund Amount:'}</p>
             <p className="text-xl font-bold text-red-600 dark:text-red-400">${refundAmount.toFixed(2)}</p>
           </div>
 
@@ -316,7 +316,7 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
             >
-              Cancel
+              {t('cfCancel') || 'Cancel'}
             </button>
             <button
               onClick={handleSubmit}
@@ -326,12 +326,12 @@ export function RefundModal({ order, onClose, onSuccess }: RefundModalProps) {
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  Processing...
+                  {t('cfProcessing') || 'Processing...'}
                 </>
               ) : (
                 <>
                   <RotateCcw size={16} />
-                  Process Refund
+                  {t('cfProcessRefund') || 'Process Refund'}
                 </>
               )}
             </button>

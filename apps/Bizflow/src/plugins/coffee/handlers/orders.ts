@@ -23,7 +23,13 @@ const UNITS: Record<string, { decimals: number }> = {
 
 const roundToUnit = (value: number, unit: string | null | undefined): number => {
   const decimals = UNITS[unit ?? 'piece']?.decimals ?? 0
-  return parseFloat(value.toFixed(decimals))
+  
+  if (decimals === 0) {
+    return Math.round(value)
+  }
+  
+  const factor = Math.pow(10, decimals)
+  return Math.round(value * factor) / factor
 }
 // ────────────────────────────────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp, User, MapPin, Clock, RotateCcw, BadgeAlert } fr
 import { PAYMENT_ICON, TYPE_ICON, COLOR_STYLES } from '../constants'
 import type { Sale } from '../types'
 import { formatCurrency, formatTime, getRelativeTime, getPaymentColor } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   sale: Sale
@@ -20,6 +21,8 @@ export function SaleRow({ sale, expanded, onToggle, onRefund }: Props) {
   const isVoided = sale.status === 'voided'
   
   const netTotal = sale.total - (sale.refundedAmount || 0)
+
+  const {t} = useLanguage()
 
   return (
     <div className="border-b border-slate-200 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
@@ -45,12 +48,12 @@ export function SaleRow({ sale, expanded, onToggle, onRefund }: Props) {
               {/* Refund Badges */}
               {isRefunded && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 flex items-center gap-1">
-                  <BadgeAlert className="w-3 h-3" /> Refunded
+                  <BadgeAlert className="w-3 h-3" /> {t('cfRefunded') || 'Refunded'}
                 </span>
               )}
               {isPartialRefund && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 flex items-center gap-1">
-                  <BadgeAlert className="w-3 h-3" /> Partial Refund
+                  <BadgeAlert className="w-3 h-3" /> {t('cfPartialRefund') || 'Partial Refund'}
                 </span>
               )}
               
@@ -93,7 +96,7 @@ export function SaleRow({ sale, expanded, onToggle, onRefund }: Props) {
               </div>
             )}
             <div className="text-xs text-slate-400 dark:text-slate-500">
-              {sale.items.length} items
+              {sale.items.length} {t('cfItems') || 'items'}
             </div>
           </div>
           
@@ -103,7 +106,7 @@ export function SaleRow({ sale, expanded, onToggle, onRefund }: Props) {
               onRefund(sale)
             }}
             disabled={isRefunded || isVoided || sale.status === 'open'}
-            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+            className="p-5 text-slate-400 mx-2 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
             title="Process Refund"
           >
             <RotateCcw className="w-4 h-4" />
@@ -137,37 +140,37 @@ export function SaleRow({ sale, expanded, onToggle, onRefund }: Props) {
           {/* Totals */}
           <div className="space-y-2 text-sm border-t border-slate-200 dark:border-slate-700/50 pt-4">
             <div className="flex justify-between text-slate-500 dark:text-slate-400">
-              <span>Subtotal</span>
+              <span>{t('cfSubtotal') || 'Subtotal'}</span>
               <span>{formatCurrency(sale.subtotal)}</span>
             </div>
             {sale.discount > 0 && (
               <div className="flex justify-between text-rose-600 dark:text-rose-400">
-                <span>Discount</span>
+                <span>{t('cfDiscount') || 'Discount'}</span>
                 <span>−{formatCurrency(sale.discount)}</span>
               </div>
             )}
             {sale.tax != null && sale.tax > 0 && (
               <div className="flex justify-between text-slate-500 dark:text-slate-400">
-                <span>Tax</span>
+                <span>{t('cfTax') || 'Tax'}</span>
                 <span>{formatCurrency(sale.tax)}</span>
               </div>
             )}
             
             <div className="flex justify-between font-semibold text-slate-900 dark:text-white pt-2 border-t border-dashed border-slate-300 dark:border-slate-600 mt-2">
-              <span>Total</span>
+              <span>{t('cfTotal') || 'Total'}</span>
               <span>{formatCurrency(sale.total)}</span>
             </div>
             
             {/* Show Refunded Line if applicable */}
             {sale.refundedAmount > 0 && (
               <div className="flex justify-between text-rose-600 dark:text-rose-400">
-                <span>Refunded</span>
+                <span>{t('cfRefunded') || 'Refunded'}</span>
                 <span>−{formatCurrency(sale.refundedAmount)}</span>
               </div>
             )}
             {isPartialRefund && (
                <div className="flex justify-between font-semibold text-emerald-600 dark:text-emerald-400 pt-2 border-t border-slate-300 dark:border-slate-600 mt-2">
-                <span>Net Total</span>
+                <span>{t('cfNetTotal') || 'Net Total'}</span>
                 <span>{formatCurrency(netTotal)}</span>
               </div>
             )}

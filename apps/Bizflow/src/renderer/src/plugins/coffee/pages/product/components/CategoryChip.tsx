@@ -28,7 +28,7 @@ export default function CategoryChip({
       onClick={onClick}
     >
       {/* Icon and Name */}
-      <div className="flex items-center gap-1.5 select-none">
+      <div className="flex px-3 items-center gap-1.5 select-none">
         {category.icon && <span>{category.icon}</span>}
         <span className="text-sm font-medium whitespace-nowrap">{category.name}</span>
       </div>
@@ -37,14 +37,14 @@ export default function CategoryChip({
       <div className="flex items-center gap-0.5 ml-1">
         <button 
           onClick={(e) => { e.stopPropagation(); onEdit(category) }}
-          className="p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+          className="p-3 mr-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
           title="Edit Category"
         >
           <Edit2 className="w-3 h-3 text-slate-500 dark:text-slate-400" />
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); onDelete(category) }}
-          className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+          className="p-3 mr-1 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
           title="Delete Category"
         >
           <Trash2 className="w-3 h-3 text-slate-500 dark:text-slate-400 hover:text-red-500" />
