@@ -3,7 +3,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { X, Upload, Trash2, ImageIcon, Plus } from 'lucide-react'
 import CustomSelect, { SelectOption } from '@renderer/components/ui/CustomSelect'
 import { PRODUCT_UNITS, EMPTY_PRODUCT_FORM } from '../constants'
-import { calcMargin, getUnitConfig, hexToRgba } from '../utils'
+import { calcMargin, hexToRgba } from '../utils'
 import type { Category, ProductForm, ProductSubmitData } from '../types'
 
 interface ProductModalProps {
@@ -90,7 +90,8 @@ export default function ProductModal({
 
   const selectedCat = categories.find((c) => c.id === form.categoryId)
   const { margin, pct: marginPct } = calcMargin(Number(form.price), Number(form.cost))
-  const unitConfig = getUnitConfig(form.unit)
+  // const unitConfig = getUnitConfig(form.unit)
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
@@ -103,7 +104,7 @@ export default function ProductModal({
             </div>
             <div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {editMode ? 'Edit Product' : 'Add Product'}
+                {editMode ? t('cfEditProduct') || 'Edit Product' : t('cfAddProduct') || 'Add Product'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {selectedCat ? selectedCat.name : 'Uncategorized'}
@@ -190,7 +191,7 @@ export default function ProductModal({
                   onClick={() => fileInputRef.current?.click()}
                   className="w-full px-3 py-2 text-xs font-medium border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-1.5"
                 >
-                  <Upload size={14} /> Change Image
+                  <Upload size={14} /> {t('cfChangeImage')||''}
                 </button>
               )}
 
@@ -222,7 +223,7 @@ export default function ProductModal({
             {/* ═══ RIGHT: Form fields ═══ */}
             <div className="md:col-span-2 space-y-4">
               {/* Name */}
-              <Field label="Name" required>
+              <Field label={t('cfProductName') || 'Name'} required>
                 <input
                   type="text"
                   value={form.name}
@@ -235,7 +236,7 @@ export default function ProductModal({
 
               {/* Category + Unit */}
               <div className="grid grid-cols-1 gap-3">
-                <Field label="Category">
+                <Field label={t('cfCategory') || 'Category'}>
                   <div className="flex gap-2">
                     <CustomSelect
                       value={form.categoryId}
@@ -247,9 +248,9 @@ export default function ProductModal({
                       <button
                         type="button"
                         onClick={onNewCategory}
-                        className="px-3 py-2 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1 whitespace-nowrap"
+                        className="px-3 py-2 text-xs border rounded-xl border-slate-200 dark:border-slate-700  hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-1 whitespace-nowrap"
                       >
-                        <Plus size={12} /> New
+                        <Plus size={12} /> {t('cfNewCategory') || 'New Category'}
                       </button>
                     )}
                   </div>
@@ -271,7 +272,7 @@ export default function ProductModal({
 
               {/* unit */}
               <div className="grid grid-cols-1 gap-3">
-                <Field label="Unit">
+                <Field label={t('cfUnit') || 'Unit'}>
                   <CustomSelect
                     value={form.unit}
                     onChange={(val) => update({ unit: val as string })}
@@ -282,7 +283,7 @@ export default function ProductModal({
 
               {/* Price + Cost */}
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Price" required>
+                <Field label={t('cfProductPrice') || 'Price'} required>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                       $
@@ -298,7 +299,7 @@ export default function ProductModal({
                     />
                   </div>
                 </Field>
-                <Field label="Cost">
+                <Field label={t('cfProductCost') || 'Cost'}>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                       $
@@ -318,7 +319,7 @@ export default function ProductModal({
               {/* Margin hint */}
               {Number(form.price) > 0 && (
                 <div className="text-xs text-slate-500 dark:text-slate-400 -mt-2">
-                  Margin:{' '}
+                  {t('cfMargin') || 'Margin'}:{' '}
                   <span className="font-medium text-slate-700 dark:text-slate-300">
                     ${margin.toFixed(2)}
                   </span>{' '}
@@ -327,12 +328,12 @@ export default function ProductModal({
               )}
 
               {/* Description */}
-              <Field label="Description">
+              <Field label={t('cfProductDescription') || 'Description'}>
                 <textarea
                   value={form.description}
                   onChange={(e) => update({ description: e.target.value })}
                   rows={2}
-                  placeholder="Short description shown on POS…"
+                  placeholder={t('cfShortDescription') || 'Short description shown on POS…'}
                   className={inputCls + ' resize-none'}
                 />
               </Field>
@@ -368,7 +369,7 @@ export default function ProductModal({
 
 // ── Reusable bits ──
 const inputCls =
-  'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none transition'
+  'w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none transition'
 
 function Field({
   label,

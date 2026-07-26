@@ -1,24 +1,7 @@
 import {
   Plus, RefreshCw, Trash2, XCircle, ShoppingCart, Package, ArrowDownCircle, ArrowUpCircle,
 } from 'lucide-react'
-import type { AdjustType } from './types'
 
-export const ADJUST_TYPES: {
-  value: AdjustType
-  label: string
-  icon: typeof Plus
-  sign: '+' | '-' | '±'
-  color: string
-  description: string
-}[] = [
-  { value: 'restock',    label: 'Restock',    icon: Plus,          sign: '+', color: '#16a34a', description: 'Add new units to stock' },
-  { value: 'adjustment', label: 'Correction', icon: RefreshCw,     sign: '±', color: '#0891b2', description: 'Manual stock correction' },
-  { value: 'waste',      label: 'Waste',      icon: Trash2,        sign: '-', color: '#ea580c', description: 'Spoilage / damaged goods' },
-  { value: 'write_off',  label: 'Write-off',  icon: XCircle,       sign: '-', color: '#dc2626', description: 'Remove from inventory' },
-]
-export function adjustMeta(value: string) {
-  return ADJUST_TYPES.find(a => a.value === value) ?? ADJUST_TYPES[0]
-}
 // ── Movement type metadata (for history drawer) ────────────────────────────
 export const MOVEMENT_TYPES: {
   value: string

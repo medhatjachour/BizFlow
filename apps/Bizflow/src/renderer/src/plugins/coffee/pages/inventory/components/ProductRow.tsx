@@ -1,6 +1,7 @@
 import { Plus, History } from 'lucide-react'
 import type { Product } from '../types'
 import { isLow, isOut, stockPercent, stockBarColor, formatMoney } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   product: Product
@@ -9,6 +10,9 @@ interface Props {
 }
 
 export function ProductRow({ product: p, onAdjust, onHistory }: Props) {
+  
+  const {t} = useLanguage()
+
   const low = isLow(p)
   const out = isOut(p)
   const pct = stockPercent(p)
@@ -36,12 +40,12 @@ export function ProductRow({ product: p, onAdjust, onHistory }: Props) {
             />
           </div>
           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{p.stock}</span>
-          <span className="text-[10px] text-slate-400">/ {p.reorderPoint} min</span>
+          <span className="text-[10px] text-slate-400">/ {p.reorderPoint} {t('cfMin') || 'min'}</span>
           {low && !out && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">LOW</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">{t('cfLow') || 'Low'}</span>
           )}
           {out && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">OUT</span>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">{t('cfOut') || 'Out'}</span>
           )}
         </div>
       </div>
@@ -49,15 +53,15 @@ export function ProductRow({ product: p, onAdjust, onHistory }: Props) {
       {/* Value + revenue */}
       <div className="hidden sm:flex items-center gap-6 text-right">
         <div>
-          <div className="text-[10px] text-slate-400 uppercase">Cost value</div>
+          <div className="text-[10px] text-slate-400 uppercase">{t('cfCostValue') || 'Cost value'}</div>
           <div className="text-sm font-medium text-slate-700 dark:text-slate-300 tabular-nums">{formatMoney(value)}</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-400 uppercase">Exp. rev.</div>
+          <div className="text-[10px] text-slate-400 uppercase">{t('cfExpectedRevenue') || 'Exp. rev.'}</div>
           <div className="text-sm font-medium text-green-600 dark:text-green-400 tabular-nums">{formatMoney(revenue)}</div>
         </div>
         <div>
-          <div className="text-[10px] text-slate-400 uppercase">Price</div>
+          <div className="text-[10px] text-slate-400 uppercase">{t('cfPrice') || 'Price'}</div>
           <div className="text-sm font-medium text-slate-700 dark:text-slate-300 tabular-nums">{formatMoney(p.price)}</div>
         </div>
       </div>

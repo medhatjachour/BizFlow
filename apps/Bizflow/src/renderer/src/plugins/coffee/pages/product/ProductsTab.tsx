@@ -203,7 +203,7 @@ export default function ProductsTab() {
       {visible.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
           <Coffee className="w-12 h-12 mb-3 opacity-50" />
-          <p className="text-sm">{loading ? 'Loading…' : 'No products found'}</p>
+          <p className="text-sm">{loading ? 'Loading…' : t('cfNoProductsFound') || 'No products found'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
