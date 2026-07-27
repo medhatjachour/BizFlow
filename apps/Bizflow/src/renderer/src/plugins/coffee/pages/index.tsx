@@ -6,7 +6,7 @@
 
 import { useState } from 'react'
 import {
-  CreditCard, LayoutGrid, ClipboardList, Package,
+  CreditCard, LayoutGrid, Package,
   BoxesIcon, Receipt, Timer,  Users, BarChart3, Wallet, Truck
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
