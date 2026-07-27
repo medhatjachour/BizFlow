@@ -85,6 +85,7 @@ export const enPart9 = {
   cfTableSave: 'Save',
   cfTableCancel: 'Cancel',
   cfTableDisable: 'Disable',
+  cfNoTables:'Click "Add Table" to create one.',
 
   // ── Orders Tab ──
   cfOrdersList: 'Orders List',
@@ -329,6 +330,7 @@ export const enPart9 = {
   cfProcessing:'Processing...',
   cfTotalRefundAmount:'Total Refund Amount:',
   cfOptionalAddMoreDetailsAboutThisRefund:'Optional: Add more details about this refund...',
+  cfSearchOrders:'Search orders, products, or customers...',
 
   // ── Shifts Tab ──
   cfShiftsManagement: 'Shifts Management',
@@ -401,7 +403,11 @@ export const enPart9 = {
   cfNoOrdersYet:'No orders yet',
   cfMore:'more',
   cfVisits: 'Visits',
-
+  cfRecentActivity: 'Recent Activity',
+  cfNameAZ:'Name (A-Z)',
+  cfHighestSpend: 'Highest Spend',
+  cfMostVisits: 'Most Visits',
+  
   // ── Reports Tab ──
   cfReportsAnalysis: 'Reports & Analysis',
   cfGrossProfit: 'Gross Profit',

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import type { CartItem, OrderType, PaymentMethod, CheckoutForm, ReceiptSettings } from '../types'
+import type { CartItem, OrderType, PaymentMethod, CheckoutForm } from '../types'
 import { buildReceiptData, readReceiptSettings, getAutoPrintSale, type ReceiptData } from '../utils'
 
 interface CheckoutParams {

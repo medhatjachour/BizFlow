@@ -12,7 +12,6 @@ import { PAGE_SIZE } from './constants'
 import type { Customer, CustomerFilters, CustomerDetail } from './types'
 
 export default function CustomersTab() {
-  const { t } = useLanguage()
   
   const [filters, setFilters] = useState<CustomerFilters>({
     search: '',

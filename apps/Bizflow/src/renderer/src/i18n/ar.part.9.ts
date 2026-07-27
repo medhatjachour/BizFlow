@@ -86,6 +86,7 @@ export const arPart9 = {
   cfTableSave: 'حفظ',
   cfTableCancel: 'إلغاء',
   cfTableDisable: 'تعطيل',
+  cfNoTables:'انقر على "إضافة طاولة" لإنشاء واحدة.',
 
   // ── Orders Tab ──
   cfOrdersList: 'قائمة الطلبات',
@@ -357,6 +358,11 @@ export const arPart9 = {
   cfProcessing:'جارٍ المعالجة...',
   cfTotalRefundAmount:'إجمالي مبلغ الاسترداد:',
   cfOptionalAddMoreDetailsAboutThisRefund:'اختياري: أضف مزيدًا من التفاصيل حول هذا الاسترداد...',
+  cfSearchOrders:'ابحث عن الطلبات، المنتجات، أو العملاء...',
+  cfRecentActivity: 'النشاط الأخير',
+  cfNameAZ:'الاسم (أ-ي)',
+  cfHighestSpend: 'أعلى إنفاق',
+  cfMostVisits: 'أكثر الزيارات',
 
   // ── Shifts Tab ──
   cfShiftsManagement: 'إدارة الورديات',
