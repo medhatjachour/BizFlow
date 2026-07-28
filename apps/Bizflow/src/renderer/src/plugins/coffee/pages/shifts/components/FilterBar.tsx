@@ -45,7 +45,7 @@ export function FilterBar({
             className={`px-3 py-2 rounded-xl text-md font-medium transition-colors  ${
               preset === p.value
                 ? 'bg-amber-500 text-white shadow-sm '
-                : 'text-slate-600 dark:text-slate-400 bg-slate-800 hover:bg-white dark:hover:bg-slate-700'
+                : 'text-slate-600 dark:text-slate-400 dark:bg-slate-800 bg-gray-200 hover:bg-white dark:hover:bg-slate-700'
             }`}
           >
             {p.label}

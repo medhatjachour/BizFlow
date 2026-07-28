@@ -258,6 +258,9 @@ export const arPart9 = {
   cfGrandTotal:'المجموع الكلي',
   cfSenderInfo:'معلومات المرسل',
   cfUpdateStatus:'  تحديث الحالة',
+  cfTotalReceipt: 'إجمالي الفاتورة',
+  cfNoIncomingReceipts:'لا توجد فواتير واردة',
+  cfNoIncomingReceiptsDescription:'ابدأ بتتبع المخزون عن طريق إضافة فاتورتك الواردة الأولى.',
 
   
   // ── Expenses Tab ──
@@ -299,6 +302,15 @@ export const arPart9 = {
   cfCashDiff:'فرق النقدية',
   cfVodafone:'فودافون كاش',
   cfShiftOrders:'طلبات الوردية',
+  cfRevenue:'الإيرادات',
+  cfDuration:'المدة',
+  cfOrdersPerHour:'الطلبات/الساعة',
+  cfPaymentSplit:'توزيع الدفع',
+  cfDrawerPosition:'موضع الدرج',
+  cfShiftNotes:'ملاحظات الوردية',
+  cfRecentOrders:'الطلبات الأخيرة',
+  cfThisShift:'هذه الوردية',
+  cfNoOrdersYetDescription:'ستظهر الطلبات هنا عند معالجتها.',
 
   // ── Sales Tab ──
   cfSalesHistory: 'سجل المبيعات',

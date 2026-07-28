@@ -33,7 +33,7 @@ export function IncomingView({ products, categories }: { products: any[]; catego
           [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
         ) : summary ? (
           <>
-            <StatCard icon={<PackageCheck size={20} />} label={t('cfTotalReciept')||'Total Receipts'} value={summary.totalReceipts.toString()} color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" />
+            <StatCard icon={<PackageCheck size={20} />} label={t('cfTotalReceipt')||'Total Receipts'} value={summary.totalReceipts.toString()} color="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" />
             <StatCard icon={<DollarSign size={20} />} label={t('cfTotalCost')||'Total Cost'} value={formatCurrency(summary.totalCost)} color="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" />
             <StatCard icon={<Boxes size={20} />} label={t('cfUnitRecieved')||'Units Received'} value={summary.totalUnits.toString()} color="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" />
             <StatCard icon={<TrendingUp size={20} />} label={t('cfAvgReceipt')||'Avg Receipt'} value={formatCurrency(summary.averageReceiptCost)} color="bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400" />
@@ -83,7 +83,7 @@ export function IncomingView({ products, categories }: { products: any[]; catego
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
           </div>
         ) : receipts.length === 0 ? (
-          <EmptyState icon={<PackageCheck size={32} />} title="No Incoming Receipts" description="Start tracking inventory by adding your first incoming receipt." />
+          <EmptyState icon={<PackageCheck size={32} />} title={t('cfNoIncomingReceipts') || 'No Incoming Receipts'} description={t('cfNoIncomingReceiptsDescription') || 'Start tracking inventory by adding your first incoming receipt.'} />
         ) : (
           <div className="divide-y divide-slate-100 dark:divide-slate-700">
             {receipts.map(receipt => (

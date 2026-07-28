@@ -258,6 +258,9 @@ export const enPart9 = {
   cfGrandTotal: 'Grand Total',
   cfSenderInfo: 'Sender Info',
   cfUpdateStatus: 'Update Status',
+  cfTotalReceipt: 'Total Receipt',
+  cfNoIncomingReceipts:'No Incoming Receipts',
+  cfNoIncomingReceiptsDescription:'Start tracking inventory by adding your first incoming receipt.',
 
   // ── Expenses Tab ──
   cfExpenseTracking: 'Expense Tracking',
@@ -371,6 +374,15 @@ export const enPart9 = {
   cfCashDiff: 'Cash Diff',
   cfVodafone: 'Vodafone cash',
   CFSHIFTORDERS: 'Shift Orders',
+  cfRevenue:'Revenue',
+  cfDuration:'Duration',
+  cfOrdersPerHour:'Orders/Hour',
+  cfPaymentSplit:'Payment Split',
+  cfDrawerPosition:'Drawer Position',
+  cfShiftNotes:'Shift Notes',
+  cfRecentOrders:'Recent Orders',
+  cfThisShift:'this shift',
+  cfNoOrdersYetDescription:'Orders will appear here as they\'re processed.',
 
   // ── Customers Tab ──
   cfCustomersManagement: 'Customers Management',

@@ -1,4 +1,4 @@
-import { Plus, History } from 'lucide-react'
+import { Package , History } from 'lucide-react'
 import type { Product } from '../types'
 import { isLow, isOut, stockPercent, stockBarColor, formatMoney } from '../utils'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -73,7 +73,7 @@ export function ProductRow({ product: p, onAdjust, onHistory }: Props) {
           className="p-4 rounded-full mr-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 transition-colors"
           title="Adjust stock"
         >
-          <Plus className="w-4 h-4" />
+          <Package className="w-4 h-4" />
         </button>
         <button
           onClick={() => onHistory(p)}
