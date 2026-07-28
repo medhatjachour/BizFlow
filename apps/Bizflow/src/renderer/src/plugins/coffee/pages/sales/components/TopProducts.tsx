@@ -1,6 +1,7 @@
 import {  TrendingUp } from 'lucide-react'
 import type { SummaryData } from '../types'
 import { formatCurrency } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   summary: SummaryData | null
@@ -8,7 +9,7 @@ interface Props {
 
 export function TopProducts({ summary }: Props) {
   if (!summary?.topProducts?.length) return null
-
+  const {t} = useLanguage()
   const maxQty = Math.max(...summary.topProducts.map(p => p.qty))
 
   return (
@@ -16,7 +17,7 @@ export function TopProducts({ summary }: Props) {
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
           <TrendingUp className="w-3.5 h-3.5" />
-          Top Products
+          {t('cfTopProduct') || 'Top Products'}
         </h3>
       </div>
       <div className="space-y-2">

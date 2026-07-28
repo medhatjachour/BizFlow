@@ -3,6 +3,7 @@ import { ProductCard } from './ProductCard'
 import { catCls } from '../constants'
 import { hexToRgba } from '../utils'
 import type { Category, Product, CartItem, ViewMode } from '../types'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   viewMode: ViewMode
@@ -30,7 +31,7 @@ export function ProductGrid({
     if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false
     return true
   })
-
+  const {t } = useLanguage()
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Header bar */}
@@ -41,7 +42,7 @@ export function ProductGrid({
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search products..."
+            placeholder={t('cfSearch')||'search for products'}
             className="w-full pl-9 pr-9 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
           />
           {search && (
@@ -60,7 +61,7 @@ export function ProductGrid({
 
         <button
           onClick={() => setSelectedCat('all')}
-          className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+          className={`px-5 py-2 rounded-full text-md font-medium whitespace-nowrap transition-colors ${
             selectedCat === 'all'
               ? 'bg-amber-500 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-amber-300'
@@ -76,7 +77,7 @@ export function ProductGrid({
             <button
               key={c.id}
               onClick={() => setSelectedCat(c.id)}
-              className={`px-3 py-3 rounded-full text-xs font-medium whitespace-nowrap flex items-center gap-2 transition-colors ${
+              className={`px-5 py-2 rounded-full text-md font-medium whitespace-nowrap flex items-center gap-2 transition-colors ${
                 isSelected
                   ? 'text-white shadow-sm'
                   : isHex
@@ -114,8 +115,8 @@ export function ProductGrid({
             <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
               <Search className="w-8 h-8 text-slate-400" />
             </div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">No products found</p>
-            <p className="text-xs text-slate-400 mt-1">Try a different search or category</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{t('noProductsFound')||'No Product Found'}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('tryAdjustingFilters')|| 'Try a different search or category'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">

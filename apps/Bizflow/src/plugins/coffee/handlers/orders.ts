@@ -11,6 +11,28 @@ import { createLogger } from '../../../main/utils/logger'
 
 const log = createLogger('Coffee:Orders')
 
+// ── ADD THIS: Unit precision helpers ────────────────────────────────────────────
+const UNITS: Record<string, { decimals: number }> = {
+  piece: { decimals: 0 },
+  kg:    { decimals: 3 },
+  g:     { decimals: 0 },
+  lb:    { decimals: 3 },
+  liter: { decimals: 3 },
+  ml:    { decimals: 0 },
+}
+
+const roundToUnit = (value: number, unit: string | null | undefined): number => {
+  const decimals = UNITS[unit ?? 'piece']?.decimals ?? 0
+  
+  if (decimals === 0) {
+    return Math.round(value)
+  }
+  
+  const factor = Math.pow(10, decimals)
+  return Math.round(value * factor) / factor
+}
+// ────────────────────────────────────────────────────────────────────────────────
+
 /** Recalculate and persist subtotal/tax/total from current items. */
 async function recalcTotals(prisma: any, orderId: string) {
   const items = await prisma.coffeeOrderItem.findMany({
@@ -135,6 +157,7 @@ export function registerOrderHandlers(prisma: any) {
           productName: string
           unitPrice: number
           quantity: number
+          unit?: string // Added unit
           notes?: string
         }[]
       }
@@ -179,17 +202,21 @@ export function registerOrderHandlers(prisma: any) {
 
           // Add pre-filled items (e.g. from POS quick-checkout)
           if (data.items?.length) {
-            await tx.coffeeOrderItem.createMany({
-              data: data.items.map((i) => ({
-                orderId: order.id,
-                productId: i.productId || null,
-                productName: i.productName,
-                unitPrice: Number(i.unitPrice),
-                quantity: Number(i.quantity),
-                total: Number(i.unitPrice) * Number(i.quantity),
-                notes: i.notes || null
-              }))
-            })
+            for (const i of data.items) {
+              const qty = roundToUnit(Number(i.quantity), i.unit)
+              await tx.coffeeOrderItem.create({
+                data: {
+                  orderId: order.id,
+                  productId: i.productId || null,
+                  productName: i.productName,
+                  unitPrice: Number(i.unitPrice),
+                  quantity: qty,
+                  unit: i.unit || 'piece', // Snapshot unit
+                  total: Number(i.unitPrice) * qty,
+                  notes: i.notes || null
+                }
+              })
+            }
             await recalcTotals(tx, order.id)
           }
 
@@ -216,18 +243,21 @@ export function registerOrderHandlers(prisma: any) {
         productName: string
         unitPrice: number
         quantity: number
+        unit?: string // Added unit
         notes?: string
       }
     ) => {
       try {
+        const qty = roundToUnit(Number(data.quantity), data.unit)
         const item = await prisma.coffeeOrderItem.create({
           data: {
             orderId: data.orderId,
             productId: data.productId || null,
             productName: data.productName,
             unitPrice: Number(data.unitPrice),
-            quantity: Number(data.quantity),
-            total: Number(data.unitPrice) * Number(data.quantity),
+            quantity: qty,
+            unit: data.unit || 'piece', // Snapshot unit
+            total: Number(data.unitPrice) * qty,
             notes: data.notes || null
           }
         })
@@ -311,7 +341,10 @@ export function registerOrderHandlers(prisma: any) {
             if (!item.productId) continue
             const product = await tx.coffeeProduct.findUnique({ where: { id: item.productId } })
             if (!product) continue
-            const newStock = Math.max(0, product.stock - item.quantity)
+            
+            // Use float math and round based on product unit
+            const newStock = Math.max(0, roundToUnit(product.stock - item.quantity, product.unit))
+            
             await tx.coffeeProduct.update({
               where: { id: item.productId },
               data: { stock: newStock }
@@ -320,7 +353,7 @@ export function registerOrderHandlers(prisma: any) {
               data: {
                 productId: item.productId,
                 type: 'sale',
-                quantity: -item.quantity,
+                quantity: -roundToUnit(item.quantity, product.unit), // Store as negative float
                 previousStock: product.stock,
                 newStock,
                 reason: 'order',
@@ -386,106 +419,107 @@ export function registerOrderHandlers(prisma: any) {
     }
   })
 
-// Update the refund handler to accept restockItems parameter
-ipcMain.handle('coffee:orders:refund', async (_e, {
-  orderId, items, reason, notes, cashierId, restockItems = true
-}: {
-  orderId: string
-  items: Array<{ id: string; quantity: number }>
-  reason: string
-  notes?: string
-  cashierId: string
-  restockItems?: boolean
-}) => {
-  try {
-    return await prisma.$transaction(async (tx) => {
-      const order = await tx.coffeeOrder.findUnique({
-        where: { id: orderId },
-        include: { items: true }
-      });
+  // ── Refund an order ───────────────────────────────────────────────────────────
+  ipcMain.handle('coffee:orders:refund', async (_e, {
+    orderId, items, reason, notes, cashierId, restockItems = true
+  }: {
+    orderId: string
+    items: Array<{ id: string; quantity: number }>
+    reason: string
+    notes?: string
+    cashierId: string
+    restockItems?: boolean
+  }) => {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const order = await tx.coffeeOrder.findUnique({
+          where: { id: orderId },
+          include: { items: true }
+        });
 
-      if (!order) throw new Error('Order not found');
-      if (order.status !== 'paid') throw new Error('Only paid orders can be refunded');
+        if (!order) throw new Error('Order not found');
+        if (order.status !== 'paid') throw new Error('Only paid orders can be refunded');
 
-      let refundAmount = 0;
-      const restockMovements: Array<{ productId: string; quantity: number; itemName: string }> = [];
+        let refundAmount = 0;
+        const restockMovements: Array<{ productId: string; quantity: number; itemName: string }> = [];
 
-      // Process each item to refund
-      for (const refundItem of items) {
-        const orderItem = order.items.find(oi => oi.id === refundItem.id);
-        if (!orderItem) throw new Error(`Item ${refundItem.id} not found in order`);
-        
-        if (refundItem.quantity > orderItem.quantity) {
-          throw new Error(`Cannot refund more than ordered quantity for ${orderItem.productName}`);
-        }
-
-        // Calculate refund amount for this item
-        const itemRefundAmount = (orderItem.total / orderItem.quantity) * refundItem.quantity;
-        refundAmount += itemRefundAmount;
-
-        // Track for restocking (only if restockItems is true)
-        if (restockItems && orderItem.productId) {
-          restockMovements.push({
-            productId: orderItem.productId,
-            quantity: refundItem.quantity,
-            itemName: orderItem.productName
-          });
-        }
-      }
-
-      const newRefundedAmount = order.refundedAmount + refundAmount;
-      const isFullRefund = newRefundedAmount >= order.total;
-      const newStatus = isFullRefund ? 'refunded' : 'partially_refunded';
-
-      // Update order
-      const updatedOrder = await tx.coffeeOrder.update({
-        where: { id: orderId },
-        data: {
-          status: newStatus,
-          refundedAmount: newRefundedAmount,
-          refundedAt: new Date(),
-          refundedById: cashierId,
-          refundReason: reason,
-          refundNotes: notes ? `${notes}${restockItems ? '' : ' [NO RESTOCK]'}` : (restockItems ? '' : '[NO RESTOCK]')
-        }
-      });
-
-      // Restock items only if restockItems is true
-      if (restockItems) {
-        for (const movement of restockMovements) {
-          const product = await tx.coffeeProduct.findUnique({ 
-            where: { id: movement.productId } 
-          });
+        // Process each item to refund
+        for (const refundItem of items) {
+          const orderItem = order.items.find(oi => oi.id === refundItem.id);
+          if (!orderItem) throw new Error(`Item ${refundItem.id} not found in order`);
           
-          if (product) {
-            const newStock = product.stock + movement.quantity;
-            await tx.coffeeProduct.update({
-              where: { id: movement.productId },
-              data: { stock: newStock }
-            });
+          if (refundItem.quantity > orderItem.quantity) {
+            throw new Error(`Cannot refund more than ordered quantity for ${orderItem.productName}`);
+          }
 
-            await tx.coffeeStockMovement.create({
-              data: {
-                productId: movement.productId,
-                type: 'adjustment',
-                quantity: movement.quantity,
-                previousStock: product.stock,
-                newStock: newStock,
-                reason: `Refund: ${movement.itemName} (Order ${order.orderNumber})`,
-                referenceId: order.id,
-                notes: reason
-              }
+          // Calculate refund amount for this item
+          const itemRefundAmount = (orderItem.total / orderItem.quantity) * refundItem.quantity;
+          refundAmount += itemRefundAmount;
+
+          // Track for restocking (only if restockItems is true)
+          if (restockItems && orderItem.productId) {
+            restockMovements.push({
+              productId: orderItem.productId,
+              quantity: refundItem.quantity,
+              itemName: orderItem.productName
             });
           }
         }
-      }
 
-      return updatedOrder;
-    });
-  } catch (err) {
-    log.error('orders:refund', err);
-    throw err;
-  }
-});
+        const newRefundedAmount = order.refundedAmount + refundAmount;
+        const isFullRefund = newRefundedAmount >= order.total;
+        const newStatus = isFullRefund ? 'refunded' : 'partially_refunded';
+
+        // Update order
+        const updatedOrder = await tx.coffeeOrder.update({
+          where: { id: orderId },
+          data: {
+            status: newStatus,
+            refundedAmount: newRefundedAmount,
+            refundedAt: new Date(),
+            refundedById: cashierId,
+            refundReason: reason,
+            refundNotes: notes ? `${notes}${restockItems ? '' : ' [NO RESTOCK]'}` : (restockItems ? '' : '[NO RESTOCK]')
+          }
+        });
+
+        // Restock items only if restockItems is true
+        if (restockItems) {
+          for (const movement of restockMovements) {
+            const product = await tx.coffeeProduct.findUnique({ 
+              where: { id: movement.productId } 
+            });
+            
+            if (product) {
+              // Use float math and round based on product unit
+              const newStock = roundToUnit(product.stock + movement.quantity, product.unit);
+              await tx.coffeeProduct.update({
+                where: { id: movement.productId },
+                data: { stock: newStock }
+              });
+
+              await tx.coffeeStockMovement.create({
+                data: {
+                  productId: movement.productId,
+                  type: 'adjustment',
+                  quantity: roundToUnit(movement.quantity, product.unit),
+                  previousStock: product.stock,
+                  newStock: newStock,
+                  reason: `Refund: ${movement.itemName} (Order ${order.orderNumber})`,
+                  referenceId: order.id,
+                  notes: reason
+                }
+              });
+            }
+          }
+        }
+
+        return updatedOrder;
+      });
+    } catch (err) {
+      log.error('orders:refund', err);
+      throw err;
+    }
+  });
 
 }

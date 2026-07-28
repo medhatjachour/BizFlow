@@ -1,7 +1,13 @@
-    import { useState, useEffect, useCallback } from 'react'
-import { IncomingReceipt, IncomingSummary } from '../types'
+import { useState, useEffect, useCallback } from 'react'
+import type { IncomingReceipt, IncomingSummary } from '../types'
 
-export function useIncomingReceipts(filters: any) {
+interface Filters {
+  page?: number
+  categoryId?: string
+  search?: string
+}
+
+export function useIncomingReceipts(filters: Filters) {
   const [receipts, setReceipts] = useState<IncomingReceipt[]>([])
   const [summary, setSummary] = useState<IncomingSummary | null>(null)
   const [loading, setLoading] = useState(true)

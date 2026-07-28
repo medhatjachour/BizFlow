@@ -23,22 +23,15 @@ export default function POSView() {
   const { user } = useAuth()
   const toast = useToast()
 
-
   // ── Data ──
   const { categories, products, tables, activeShift, loading, loadData } = usePOSData(toast)
 
   // ── Cart ──
-  const {
-    cart,
-    subtotal,
-    itemCount,
-    addToCart,
-    changeQty,
-    removeItem,
-    updateSalePrice,
-    clearCart,
-    validateStock,
-  } = useCart(products, toast)
+const { 
+  cart, subtotal, itemCount, 
+  addToCart, changeQty, setQty, removeItem, updateSalePrice, clearCart, // <-- Add setQty here
+  validateStock
+} = useCart(products, toast)
 
   // ── Checkout ──
   const { checking, checkout: doCheckout, quickCheckout, lastReceipt, reprintLast } = useCheckout()
@@ -96,7 +89,7 @@ export default function POSView() {
         cart,
         cashierId: user?.id,
         shiftId: activeShift?.id,
-        toast,
+        toast
       },
       pm
     )
@@ -138,7 +131,7 @@ export default function POSView() {
         cashierId: user?.id,
         shiftId: activeShift?.id,
         tables,
-        toast,
+        toast
       },
       checkoutForm.paymentMethod
     )
@@ -198,6 +191,7 @@ export default function POSView() {
         total={total}
         viewMode={viewMode}
         checking={checking}
+        onSetQty={setQty} // <-- ADD
         onClear={() => {
           clearCart()
           patchCheckout({ discount: 0, notes: '' })
@@ -247,7 +241,11 @@ export default function POSView() {
           onBlur: () => cust.setShowDrop(false),
           onSelect: (c) => {
             cust.select(c)
-            patchCheckout({ customerName: c.name, customerPhone: c.phone ?? '' , customerAddress: c.address ?? '' })
+            patchCheckout({
+              customerName: c.name,
+              customerPhone: c.phone ?? '',
+              customerAddress: c.address ?? ''
+            })
           },
           onClear: () => {
             cust.clear()
@@ -256,7 +254,7 @@ export default function POSView() {
           onNewCustomer: () => cust.setNewCustModal(true),
           onNameChange: (v) => patchCheckout({ customerName: v }),
           onPhoneChange: (v) => patchCheckout({ customerPhone: v }),
-          onAddressChange: (v) => patchCheckout({ customerAddress: v }),
+          onAddressChange: (v) => patchCheckout({ customerAddress: v })
         }}
         onConfirm={handleCheckout}
         checking={checking}

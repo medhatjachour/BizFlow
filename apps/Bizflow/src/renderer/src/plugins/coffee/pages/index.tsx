@@ -6,12 +6,12 @@
 
 import { useState } from 'react'
 import {
-  CreditCard, LayoutGrid, ClipboardList, Package,
+  CreditCard, LayoutGrid, Package,
   BoxesIcon, Receipt, Timer,  Users, BarChart3, Wallet, Truck
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import TablesTab     from './tables/TablesTab'
-import OrdersTab     from './tabs/OrdersTab'
+// import OrdersTab     from './tabs/OrdersTab'
 import ProductsTab   from './product/ProductsTab'
 import InventoryTab  from './inventory/InventoryTab'
 import SalesTab      from './sales/SalesTab'
@@ -27,7 +27,7 @@ import POSView from './pos/POSView'
 const TABS_DEF = [
   { id: 'pos',       labelKey: 'cfPOS',       icon: CreditCard     },
   { id: 'tables',    labelKey: 'cfTables',    icon: LayoutGrid     },
-  { id: 'orders',    labelKey: 'cfOrders',    icon: ClipboardList  },
+  // { id: 'orders',    labelKey: 'cfOrders',    icon: ClipboardList  },
   { id: 'products',  labelKey: 'cfProducts',  icon: Package        },
   { id: 'inventory', labelKey: 'cfInventory', icon: BoxesIcon      },
   { id: 'incoming',  labelKey: 'cfIncoming',  icon: Truck          },
@@ -77,7 +77,7 @@ export default function CoffeePage() {
       <div className="flex-1 overflow-auto">
         {activeTab === 'pos'       && <POSView      />}
         {activeTab === 'tables'    && <TablesTab    />}
-        {activeTab === 'orders'    && <OrdersTab    />}
+        {/* {activeTab === 'orders'    && <OrdersTab    />} */}
         {activeTab === 'products'  && <ProductsTab  />}
         {activeTab === 'inventory' && <InventoryTab />}
         {activeTab === 'incoming'  && <ReceiptsModule />}

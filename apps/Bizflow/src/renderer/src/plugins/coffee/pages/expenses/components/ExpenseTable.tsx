@@ -137,14 +137,14 @@ export function ExpenseTable({ rows, loading, onEdit, onDelete }: Props) {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => onEdit(expense)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                        className="p-5 mr-2 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
                         title="Edit"
                       >
                         <PencilLine size={15} />
                       </button>
                       <button
                         onClick={() => onDelete(expense.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        className="p-5 mr-2 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                         title="Delete"
                       >
                         <Trash2 size={15} />

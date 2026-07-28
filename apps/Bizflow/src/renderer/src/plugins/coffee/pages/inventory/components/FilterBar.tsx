@@ -12,12 +12,12 @@ interface Props {
 }
 
 export function FilterBar({ search, setSearch, filter, setFilter, counts, onRefresh }: Props) {
+  const { t } = useLanguage()
   const pills: { value: FilterMode; label: string; count: number }[] = [
-    { value: 'all', label: 'All',     count: counts.all },
-    { value: 'low', label: 'Low',     count: counts.low },
-    { value: 'out', label: 'Out',     count: counts.out },
+    { value: 'all', label: t('cfAll') || 'All',     count: counts.all },
+    { value: 'low', label: t('cfLow') || 'Low',     count: counts.low },
+    { value: 'out', label: t('cfOut') || 'Out',     count: counts.out },
   ]
-
   return (
     <div className="flex flex-col sm:flex-row gap-3">
       {/* Search */}
@@ -26,7 +26,7 @@ export function FilterBar({ search, setSearch, filter, setFilter, counts, onRefr
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Search products or categories..."
+          placeholder={t('cfSearchProducts') || 'Search products or categories...'}
           className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-amber-500 outline-none"
         />
       </div>

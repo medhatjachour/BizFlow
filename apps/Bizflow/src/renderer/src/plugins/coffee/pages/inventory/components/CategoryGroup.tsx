@@ -13,6 +13,7 @@ interface Props {
 }
 
 export function CategoryGroup({ group, isCollapsed, onToggle, onAdjust, onHistory }: Props) {
+  const { t } = useLanguage()
   const cat = group.category
   const catName = cat?.name ?? 'Uncategorised'
   const margin = group.totalValue > 0
@@ -40,31 +41,31 @@ export function CategoryGroup({ group, isCollapsed, onToggle, onAdjust, onHistor
           </span>
         ) : (
           <span className="px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-500">
-            Uncategorised
+            {t('cfUncategorised') || 'Uncategorised'}
           </span>
         )}
 
         {/* Product count */}
-        <span className="text-xs text-slate-400">{group.products.length} items</span>
+        <span className="text-xs text-slate-400">{group.products.length} {t('cfItems') || 'items'}</span>
 
         <div className="flex-1" />
 
         {/* Subtotals */}
         <div className="hidden md:flex items-center gap-5 text-xs">
           <div className="text-right">
-            <div className="text-slate-400">Units</div>
+            <div className="text-slate-400">{t('cfUnits') || 'Units'}</div>
             <div className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{formatNumber(group.totalUnits)}</div>
           </div>
           <div className="text-right">
-            <div className="text-slate-400">Value</div>
+            <div className="text-slate-400">{t('cfValue') || 'Value'}</div>
             <div className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">{formatMoney(group.totalValue)}</div>
           </div>
           <div className="text-right">
-            <div className="text-slate-400">Exp. Rev.</div>
+            <div className="text-slate-400">{t('cfExpectedRevenue') || 'Exp. Rev.'}</div>
             <div className="font-semibold text-green-600 dark:text-green-400 tabular-nums">{formatMoney(group.expRevenue)}</div>
           </div>
           <div className="text-right">
-            <div className="text-slate-400">Margin</div>
+            <div className="text-slate-400">{t('cfMargin') || 'Margin'}</div>
             <div className={`font-semibold tabular-nums ${margin >= 40 ? 'text-green-600' : margin >= 20 ? 'text-amber-500' : 'text-red-500'}`}>
               {margin.toFixed(0)}%
             </div>

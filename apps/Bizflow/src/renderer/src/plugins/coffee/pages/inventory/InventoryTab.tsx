@@ -46,7 +46,7 @@ export default function InventoryTab() {
       {/* Category groups */}
       {inv.groups.length === 0 ? (
         <div className="flex items-center justify-center py-20 text-slate-400">
-          {inv.loading ? 'Loading…' : 'No products found'}
+          {inv.loading ? 'Loading…' : t('cfNoProductsFound') || 'No products found'}
         </div>
       ) : (
         <div className="space-y-3">

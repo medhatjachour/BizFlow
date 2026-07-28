@@ -223,6 +223,7 @@ export function CheckoutModal({
                 <div key={item.productId} className="flex items-center justify-between text-sm">
                   <span className="text-slate-700 dark:text-slate-300">
                     <span className="font-medium">{item.quantity}×</span> {item.productName}
+                    <span className="text-xs text-slate-400">({item.unit})</span>
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-slate-900 dark:text-white tabular-nums">

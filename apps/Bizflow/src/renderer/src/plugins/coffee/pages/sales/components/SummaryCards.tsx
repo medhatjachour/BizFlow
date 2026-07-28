@@ -1,6 +1,7 @@
-import { SUMMARY_CARD_CONFIG, COLOR_STYLES } from '../constants'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import {COLOR_STYLES } from '../constants'
 import type { SummaryData } from '../types'
-import { Package } from 'lucide-react'
+import { Package, Receipt, ShoppingBag, TrendingUp } from 'lucide-react'
 
 interface Props {
   summary: SummaryData | null
@@ -8,6 +9,42 @@ interface Props {
 }
 
 export function SummaryCards({ summary, loading }: Props) {
+
+const {t} = useLanguage()
+
+const SUMMARY_CARD_CONFIG = [
+  {
+    key: 'revenue',
+    label: t('cfTotalRevenue') || 'Total Revenue',
+    icon: TrendingUp,
+    color: 'emerald',
+    getValue: (s: any) => s?.totalRevenue?.toFixed(2) ?? '0.00',
+    trend: true
+  },
+  {
+    key: 'orders',
+    label: t('cfTotalOrders') || 'Total Orders',
+    icon: Receipt,
+    color: 'amber',
+    getValue: (s: any) => String(s?.totalOrders ?? 0)
+  },
+  {
+    key: 'avg',
+    label: t('cfAverageOrderValue') || 'Avg. Order Value',
+    icon: ShoppingBag,
+    color: 'teal',
+    getValue: (s: any) => s?.avgOrderValue?.toFixed(2) ?? '0.00'
+  },
+  {
+    key: 'items',
+    label: t('cfItemsSold') || 'Items Sold',
+    icon: Package,
+    color: 'violet',
+    getValue: (s: any) => String(s?.totalItems ?? 0)
+  }
+] as const
+
+
   if (loading && !summary) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

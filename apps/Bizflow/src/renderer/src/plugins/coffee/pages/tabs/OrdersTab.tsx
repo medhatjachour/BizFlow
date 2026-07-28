@@ -117,7 +117,7 @@ export default function OrdersTab() {
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
+              className={`px-4 mx-1 py-2 rounded-xl text-md font-medium capitalize transition-colors ${
                 filter === s
                   ? 'bg-amber-500 text-white'
                   : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-amber-300'

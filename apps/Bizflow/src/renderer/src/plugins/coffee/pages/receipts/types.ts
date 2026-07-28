@@ -1,5 +1,20 @@
-export interface Category { id: string; name: string }
-export interface Product { id: string; name: string; cost: number; categoryId?: string; category?: Category; stock: number }
+export interface Category { 
+  id: string; 
+  name: string;
+  color?: string;
+  icon?: string;
+}
+
+export interface Product { 
+  id: string; 
+  name: string; 
+  cost: number; 
+  price: number;
+  categoryId?: string; 
+  category?: Category; 
+  stock: number;
+  unit?: string;
+}
 
 export interface ReceiptItem {
   id: string
@@ -29,7 +44,7 @@ export interface IncomingSummary {
   totalUnits: number
   averageReceiptCost: number
   supplierCount: number
-  topCategories: Array<{ categoryName: string; units: number; totalCost: number }>
+  topCategories: Array<{ categoryId: string; categoryName: string; totalCost: number; totalUnits: number }>
 }
 
 export interface TransitItem {

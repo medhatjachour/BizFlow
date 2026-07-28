@@ -1,13 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { X, Plus, Trash2, Save, Loader2, Search, ChevronDown } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { formatCurrency } from '../../utils'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import type { Product } from '../../types'
 
 // ─── Custom Searchable Dropdown Component ───────────────────────────────────────
 interface ProductSearchInputProps {
-  products: any[]
+  products: Product[]
   value: string
   onChange: (id: string) => void
 }
@@ -15,15 +16,14 @@ interface ProductSearchInputProps {
 function ProductSearchInput({ products, value, onChange }: ProductSearchInputProps) {
   const [search, setSearch] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-// Explicitly type the refs
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  // Close dropdown when clicking outside
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsOpen(false)
-        if (!value) setSearch('') 
+        if (!value) setSearch('')
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -38,14 +38,14 @@ function ProductSearchInput({ products, value, onChange }: ProductSearchInputPro
 
   return (
     <div ref={containerRef} className="relative w-full">
-        <div 
-          className="flex items-center w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 cursor-pointer"
-          onClick={() => {
-            setIsOpen(true)
-            inputRef.current?.focus()
-          }}
-        >
-        <Search className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+      <div 
+        className="flex items-center w-full px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 cursor-pointer"
+        onClick={() => {
+          setIsOpen(true)
+          inputRef.current?.focus()
+        }}
+      >
+        <Search className="w-3 h-3 text-slate-400 mr-1.5 flex-shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -58,14 +58,13 @@ function ProductSearchInput({ products, value, onChange }: ProductSearchInputPro
           placeholder={value ? selectedProduct?.name : "Search product..."}
           className="w-full bg-transparent outline-none text-slate-700 dark:text-white placeholder:text-slate-400"
         />
-        <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-1.5 shrink-0" />
+        <ChevronDown className="w-3 h-3 text-slate-400 ml-1 flex-shrink-0" />
       </div>
 
       {isOpen && (
-        // Changed z-10 to z-50 to ensure it layers over subsequent rows
-        <div className="absolute z-50 mt-1 w-full max-h-40 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-lg">
+        <div className="absolute z-50 mt-1 w-full max-h-32 overflow-y-auto bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-lg">
           {filteredProducts.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-slate-500 text-center">No products found</div>
+            <div className="px-3 py-2 text-xs text-slate-500">No products found</div>
           ) : (
             filteredProducts.map(p => (
               <div
@@ -93,10 +92,17 @@ function ProductSearchInput({ products, value, onChange }: ProductSearchInputPro
 }
 
 // ─── Main Form Component ───────────────────────────────────────────────────────
+interface IncomingItem {
+  productId: string
+  quantity: string
+  unitCost: string
+  notes: string
+}
+
 export function IncomingForm({ isOpen, onClose, products, onSuccess }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  products: any[]; 
+  products: Product[]; 
   onSuccess: () => void 
 }) {
   const toast = useToast()
@@ -108,11 +114,13 @@ export function IncomingForm({ isOpen, onClose, products, onSuccess }: {
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [receivedAt, setReceivedAt] = useState(new Date().toISOString().slice(0, 10))
   const [notes, setNotes] = useState('')
-  const [items, setItems] = useState([{ productId: '', quantity: '1', unitCost: '', notes: '' }])
+  
+  // Changed initial quantity to empty string
+  const [items, setItems] = useState<IncomingItem[]>([{ productId: '', quantity: '', unitCost: '', notes: '' }])
 
   const totalCost = items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.unitCost || 0)), 0)
 
-  const handleAddItem = () => setItems([...items, { productId: '', quantity: '1', unitCost: '', notes: '' }])
+  const handleAddItem = () => setItems([...items, { productId: '', quantity: '', unitCost: '', notes: '' }])
   
   const handleRemoveItem = (index: number) => {
     if (items.length === 1) {
@@ -122,8 +130,20 @@ export function IncomingForm({ isOpen, onClose, products, onSuccess }: {
     setItems(items.filter((_, i) => i !== index))
   }
 
-  const handleItemChange = (index: number, field: string, value: string) => {
+  const handleItemChange = (index: number, field: keyof IncomingItem, value: string) => {
     setItems(items.map((item, i) => i === index ? { ...item, [field]: value } : item))
+  }
+
+  // New handler specifically for selecting a product
+  const handleProductSelect = (index: number, productId: string) => {
+    const selectedProduct = products.find(p => p.id === productId)
+    setItems(prev => prev.map((item, i) => 
+      i === index ? { 
+        ...item, 
+        productId, 
+        unitCost: selectedProduct?.cost ? String(selectedProduct.cost) : '' 
+      } : item
+    ))
   }
 
   const handleSubmit = async () => {
@@ -167,82 +187,79 @@ export function IncomingForm({ isOpen, onClose, products, onSuccess }: {
       setInvoiceNumber('')
       setReceivedAt(new Date().toISOString().slice(0, 10))
       setNotes('')
-      setItems([{ productId: '', quantity: '1', unitCost: '', notes: '' }])
+      setItems([{ productId: '', quantity: '', unitCost: '', notes: '' }])
     }
   }, [isOpen])
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
         
         {/* Header */}
-        <div className="flex justify-between items-center p-5 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-700">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
               {t('cfNewIncomingReceipt') || 'New Incoming Receipt'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {t('cfRestockProductsAndUpdateInventory') || 'Restock products and update inventory'}
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6 overflow-y-auto">
-          
+        <div className="p-5 space-y-5 overflow-y-auto">
           {/* Meta Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                 {t('cfSupplierName') || 'Supplier Name'} *
               </label>
               <input 
                 type="text" 
                 value={supplierName} 
-                onChange={(e) => setSupplierName(e.target.value)} 
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" 
+                onChange={(e) => setSupplierName(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                 {t('cfInvoiceNumber') || 'Invoice Number'}
               </label>
               <input 
                 type="text" 
                 value={invoiceNumber} 
-                onChange={(e) => setInvoiceNumber(e.target.value)} 
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" 
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
                 {t('cfReceivedDate') || 'Received Date'}
               </label>
               <input 
                 type="date" 
                 value={receivedAt} 
-                onChange={(e) => setReceivedAt(e.target.value)} 
-                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500" 
+                onChange={(e) => setReceivedAt(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           </div>
 
           {/* Items Table */}
-          <div className="border border-slate-200 dark:border-slate-800 rounded-xl">
-            <div className="flex justify-between items-center px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                 {t('cfItems') || 'Items'}
               </h3>
               <button 
                 onClick={handleAddItem} 
-                className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-amber-600 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 dark:text-amber-400 rounded-lg transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 {t('cfAddItem') || 'Add Item'}
@@ -250,46 +267,49 @@ export function IncomingForm({ isOpen, onClose, products, onSuccess }: {
             </div>
             
             {/* Grid Header */}
-            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-              <div className="col-span-4">Product</div>
-              <div className="col-span-2">Quantity</div>
-              <div className="col-span-2">Unit Cost</div>
-              <div className="col-span-2">Notes</div>
-              <div className="col-span-2"></div>
+            <div className="hidden md:grid grid-cols-12 gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800/30 text-xs font-medium text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <div className="col-span-4">{t('cfProduct') || 'Product'}</div>
+              <div className="col-span-2">{t('cfUnitsReceived') || 'Quantity'}</div>
+              <div className="col-span-2">{t('cfUnitCost') || 'Unit Cost'}</div>
+              <div className="col-span-3">{t('cfNotes') || 'Notes'}</div>
+              <div className="col-span-1"></div>
             </div>
 
             {/* Grid Body */}
-            <div className="p-4 space-y-3 bg-white dark:bg-slate-900">
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-start">
-                  <div className="col-span-8 md:col-span-4 relative z-50">
+                <div key={index} className="grid grid-cols-12 gap-2 p-4 items-center bg-white dark:bg-slate-900">
+                  <div className="col-span-12 md:col-span-4">
                     <ProductSearchInput 
                       products={products} 
                       value={item.productId} 
-                      onChange={(id) => handleItemChange(index, 'productId', id)} 
+                      onChange={(id) => handleProductSelect(index, id)} 
                     />
                   </div>
                   <input 
                     type="number" 
                     value={item.quantity} 
-                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)} 
-                    className="col-span-4 md:col-span-2 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500" 
+                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                    placeholder="Qty"
+                    className="col-span-4 md:col-span-2 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500"
                   />
                   <input 
                     type="number" 
                     value={item.unitCost} 
-                    onChange={(e) => handleItemChange(index, 'unitCost', e.target.value)} 
-                    className="col-span-4 md:col-span-2 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500" 
+                    onChange={(e) => handleItemChange(index, 'unitCost', e.target.value)}
+                    placeholder="Cost"
+                    className="col-span-4 md:col-span-2 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500"
                   />
                   <input 
                     type="text" 
                     value={item.notes} 
-                    onChange={(e) => handleItemChange(index, 'notes', e.target.value)} 
-                    className="col-span-3 md:col-span-2 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500" 
+                    onChange={(e) => handleItemChange(index, 'notes', e.target.value)}
+                    placeholder="Optional"
+                    className="col-span-3 md:col-span-3 px-2 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-amber-500"
                   />
                   <button 
-                    onClick={() => handleRemoveItem(index)} 
-                    className="col-span-1 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex justify-center items-center transition-colors"
+                    onClick={() => handleRemoveItem(index)}
+                    className="col-span-1 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex justify-center items-center transition-colors mx-auto"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -298,42 +318,42 @@ export function IncomingForm({ isOpen, onClose, products, onSuccess }: {
             </div>
             
             {/* Total Footer */}
-            <div className="flex justify-between items-center px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800">
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">
                 {t('cfTotalCost') || 'Total Cost'}:
               </span>
-              <span className="text-base font-bold text-amber-600 dark:text-amber-400">
+              <span className="text-lg font-bold text-slate-900 dark:text-white">
                 {formatCurrency(totalCost)}
               </span>
             </div>
           </div>
 
           {/* Notes */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
               {t('cfNotes') || 'Notes'}
             </label>
             <textarea 
               value={notes} 
-              onChange={(e) => setNotes(e.target.value)} 
-              rows={2} 
-              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 resize-none" 
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             />
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="flex justify-end gap-3 p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+        <div className="flex items-center justify-end gap-3 p-5 border-t border-slate-200 dark:border-slate-700">
           <button 
             onClick={onClose} 
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             Cancel
           </button>
           <button 
-            onClick={handleSubmit} 
+            onClick={handleSubmit}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 rounded-lg transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 disabled:opacity-50 rounded-lg transition-colors"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? (t('cfSaving') || 'Saving...') : (t('cfSaveReceipt') || 'Save Receipt')}

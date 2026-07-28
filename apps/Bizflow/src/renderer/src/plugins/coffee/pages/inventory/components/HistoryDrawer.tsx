@@ -2,10 +2,15 @@ import {
   X, History, ArrowDownCircle, ArrowUpCircle, ArrowRight,
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus,
   Calendar, Filter, Inbox,
+  Plus,
+  Package,
+  RefreshCw,
+  ShoppingCart,
+  Trash2,
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Product, StockMovement } from '../types'
-import { MOVEMENT_TYPES, movementMeta, HISTORY_PERIODS, PAGE_SIZE } from '../constants'
+import {  HISTORY_PERIODS, PAGE_SIZE } from '../constants'
 import { hexToRgba, formatNumber } from '../utils'
 
 interface Props {
@@ -33,6 +38,34 @@ export function HistoryDrawer({
   page, setPage, totalPages, stats,
 }: Props) {
   if (!product) return null
+  const {t} = useLanguage()
+  // ── Movement type metadata (for history drawer) ────────────────────────────
+ const MOVEMENT_TYPES: {
+  value: string
+  label: string
+  icon: typeof Plus
+  color: string
+  isIncoming: boolean
+}[] = [
+  { value: 'initial',    label: t('cfInitial') ||  'Initial',    icon: Package,         color: '#6366f1', isIncoming: true  },
+  { value: 'restock',    label: t('cfRestock') || 'Restock',    icon: ArrowDownCircle, color: '#16a34a', isIncoming: true  },
+  { value: 'adjustment', label: t('cfAdjustment') || 'Adjustment', icon: RefreshCw,       color: '#0891b2', isIncoming: true  },
+  { value: 'sale',       label: t('cfSale') || 'Sale',       icon: ShoppingCart,    color: '#7c3aed', isIncoming: false },
+  { value: 'waste',      label: t('cfWaste') || 'Waste',      icon: Trash2,          color: '#ea580c', isIncoming: false },
+  { value: 'write_off',  label: t('cfWriteOff') || 'Write-off',  icon: ArrowUpCircle,   color: '#dc2626', isIncoming: false },
+]
+
+ function movementMeta(value: string) {
+  return MOVEMENT_TYPES.find(m => m.value === value) ?? {
+    value,
+    label: value,
+    icon: RefreshCw,
+    color: '#64748b',
+    isIncoming: false,
+  }
+}
+
+
 
   return (
     <div
@@ -51,11 +84,11 @@ export function HistoryDrawer({
             </div>
             <div>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-                Movement History
+               {t('cfMovementHistory') || 'Movement History'}
               </h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">{product.name}</p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                Current stock: <span className="font-semibold text-slate-600 dark:text-slate-300">{product.stock}</span>
+               {t('cfCurrentStock') || 'Current stock'}: <span className="font-semibold text-slate-600 dark:text-slate-300">{product.stock}</span>
               </p>
             </div>
           </div>
@@ -71,19 +104,19 @@ export function HistoryDrawer({
         <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 grid grid-cols-3 gap-2">
           <StatPill
             icon={TrendingUp}
-            label="In"
+            label={t('cfIn') || 'In'}
             value={formatNumber(stats.incoming)}
             color="#16a34a"
           />
           <StatPill
             icon={TrendingDown}
-            label="Out"
+            label={t('cfOutMovements') || 'Out'}
             value={formatNumber(stats.outgoing)}
             color="#dc2626"
           />
           <StatPill
             icon={Minus}
-            label="Net"
+            label={t('cfNet') || 'Net'}
             value={formatNumber(stats.net)}
             color={stats.net >= 0 ? '#16a34a' : '#dc2626'}
           />
@@ -99,7 +132,7 @@ export function HistoryDrawer({
                 <button
                   key={p.value}
                   onClick={() => setPeriod(p.value)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                  className={`px-2.5 py-1 m-1 rounded-md text-[12px] font-medium transition-colors ${
                     period === p.value
                       ? 'bg-amber-500 text-white'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -117,7 +150,7 @@ export function HistoryDrawer({
             <div className="flex gap-1 flex-wrap">
               <button
                 onClick={() => setTypeFilter('all')}
-                className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
+                className={`px-2.5 py-1 m-1 rounded-md text-[12px] font-medium transition-colors ${
                   typeFilter === 'all'
                     ? 'bg-slate-700 dark:bg-slate-200 text-white dark:text-slate-900'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -132,7 +165,7 @@ export function HistoryDrawer({
                   <button
                     key={t.value}
                     onClick={() => setTypeFilter(t.value)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium flex items-center gap-1 transition-all ${
+                    className={`px-2.5 py-1 m-1  rounded-md text-[11px] font-medium flex items-center gap-1 transition-all ${
                       selected ? 'text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                     }`}
                     style={selected ? { backgroundColor: t.color } : undefined}
@@ -157,16 +190,16 @@ export function HistoryDrawer({
               <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
                 <Inbox className="w-7 h-7 text-slate-400" />
               </div>
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No movements found</p>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('cfNoMovementsFound') || 'No movements found'}</p>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                Try changing the date range or type filter.
+                {t('cfTryChangingDateRangeOrTypeFilter') || 'Try changing the date range or type filter.'}
               </p>
             </div>
           ) : (
             <div className="px-5 py-4">
               <div className="relative">
                 {/* Vertical line */}
-                <div className="absolute left-[19px] top-2 bottom-2 w-px bg-slate-200 dark:bg-slate-700" />
+                <div className="absolute right-[19px] top-2 bottom-2 w-px bg-slate-200 dark:bg-slate-700" />
 
                 <div className="space-y-3">
                   {movements.map(m => {

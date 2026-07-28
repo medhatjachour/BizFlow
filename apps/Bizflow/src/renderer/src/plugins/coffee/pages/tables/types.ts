@@ -2,6 +2,7 @@ export interface OrderItem {
   id: string;
   productName: string;
   quantity: number;
+  unit?: string;          // Added unit
   unitPrice: number;
   total: number;
   notes?: string;
@@ -29,7 +30,12 @@ export interface HistoryOrder {
   paymentMethod?: string;
   openedAt: string;
   closedAt?: string;
-  items: { productName: string; quantity: number; total: number }[];
+  items: { 
+    productName: string; 
+    quantity: number; 
+    unit?: string;      // Added unit
+    total: number 
+  }[];
   cashier?: { username: string; fullName?: string };
 }
 
@@ -52,6 +58,9 @@ export interface Product {
   image?: string;
   categoryId?: string;
   isAvailable: boolean;
+  stock: number;         // Added stock
+  unit: string;          // Added unit
+  reorderPoint?: number; // Added reorderPoint
 }
 
 export interface Category {
@@ -66,4 +75,5 @@ export interface NewItem {
   productName: string;
   price: number;
   quantity: number;
+  unit?: string;          // Added unit
 }

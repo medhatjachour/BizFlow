@@ -25,12 +25,13 @@ function buildWhere(opts?: {
   if (opts?.category && opts.category !== 'all') where.category = opts.category
   if (opts?.paymentMethod && opts.paymentMethod !== 'all') where.paymentMethod = opts.paymentMethod
   if (opts?.shiftId && opts.shiftId !== 'all') where.shiftId = opts.shiftId
+ // FIX: Removed mode: 'insensitive' because SQLite doesn't support it
   if (opts?.search?.trim()) {
     const q = opts.search.trim()
     where.OR = [
-      { description: { contains: q, mode: 'insensitive' } },
-      { vendor: { contains: q, mode: 'insensitive' } },
-      { notes: { contains: q, mode: 'insensitive' } }
+      { description: { contains: q } },
+      { vendor: { contains: q } },
+      { notes: { contains: q } }
     ]
   }
   return where

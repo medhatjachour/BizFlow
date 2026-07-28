@@ -13,6 +13,7 @@ export interface Product {
   categoryId?: string
   category?: Category
   stock: number
+  unit: string
   reorderPoint?: number
   isAvailable: boolean
 }
@@ -23,6 +24,7 @@ export interface CartItem {
   unitPrice: number
   salePrice: number
   quantity: number
+  unit?: string
   notes?: string
 }
 

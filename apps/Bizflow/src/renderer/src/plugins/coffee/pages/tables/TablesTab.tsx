@@ -12,7 +12,6 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 export default function TablesTab() {
   const { tables, loading, activeShift, setStatus, saveTable ,toggleTableActive} = useTables()
   const [filter, setFilter] = useState<'all' | 'available' | 'occupied' | 'cleaning'>('all')
-
   // Modal States
   const [newOrderTable, setNewOrderTable] = useState<CoffeeTable | null>(null)
   const [orderPanelState, setOrderPanelState] = useState<{
@@ -58,7 +57,7 @@ export default function TablesTab() {
               <button
                 key={s}
                 onClick={() => setFilter(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${filter === s ? 'bg-amber-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-amber-300'}`}
+                className={`px-4 py-2 mx-1 rounded-xl text-xs font-medium capitalize transition-all ${filter === s ? 'bg-amber-500 text-white shadow-sm' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-amber-300'}`}
               >
                 {s} ({s === 'all' ? tables.length : (counts[s] ?? 0)})
               </button>
@@ -80,7 +79,7 @@ export default function TablesTab() {
           <div className="flex flex-col items-center justify-center h-full text-center text-slate-400">
             <Coffee size={48} className="mb-4 opacity-30" />
             <p className="text-lg font-medium">{loading ? 'Loading...' : 'No tables found'}</p>
-            {!loading && <p className="text-sm">Click "Add Table" to create one.</p>}
+            {!loading && <p className="text-sm">{t('cfNoTables')||'Click "Add Table" to create one.'}</p>}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

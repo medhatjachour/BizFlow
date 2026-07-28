@@ -84,47 +84,51 @@ export function useInventory(toast: any) {
     setAdjForm((prev) => ({ ...prev, ...patch }))
   }, [])
 
-const submitAdjust = useCallback(async () => {
-  if (!adjProduct) return
+  const submitAdjust = useCallback(async () => {
+    if (!adjProduct) return
 
-  // The modal now sends the computed delta
-  // But since we're calling from the hook, we need to compute it here too
-  const qty = parseInt(adjForm.quantity, 10)
-  if (isNaN(qty)) { toast.error('Enter a quantity'); return }
+    // Determine if we should use integer or float
+    const INTEGER_UNITS = ['piece', 'box', 'cup', 'packet', 'bottle']
+    const isIntUnit = INTEGER_UNITS.includes(adjProduct.unit || 'piece')
+    
+    // Use parseFloat instead of parseInt
+    const qty = isIntUnit ? parseInt(adjForm.quantity, 10) : parseFloat(adjForm.quantity)
+    
+    if (isNaN(qty)) { toast.error('Enter a quantity'); return }
 
-  let finalQty: number
-  if (adjForm.type === 'adjustment') {
-    // Correction: delta = newCount - currentStock
-    finalQty = qty - adjProduct.stock
-  } else if (adjForm.type === 'waste' || adjForm.type === 'write_off') {
-    finalQty = -Math.abs(qty)
-  } else {
-    finalQty = Math.abs(qty)
-  }
+    let finalQty: number
+    if (adjForm.type === 'adjustment') {
+      finalQty = qty - adjProduct.stock
+    } else if (adjForm.type === 'waste' || adjForm.type === 'write_off') {
+      finalQty = -Math.abs(qty)
+    } else {
+      finalQty = Math.abs(qty)
+    }
 
-  if (finalQty === 0) { toast.error('No change to apply'); return }
+    if (finalQty === 0) { toast.error('No change to apply'); return }
 
-  setAdjusting(true)
-  try {
-    await window.api.coffee.inventory.adjust({
-      productId: adjProduct.id,
-      quantity: finalQty,
-      type: adjForm.type,
-      reason: adjForm.reason || undefined,
-    })
-    toast.success(
-      finalQty > 0
-        ? `Added ${finalQty} units`
-        : `Removed ${Math.abs(finalQty)} units`
-    )
-    closeAdjust()
-    load()
-  } catch (err: any) {
-    toast.error(err?.message ?? 'Failed to adjust stock')
-  } finally {
-    setAdjusting(false)
-  }
-}, [adjProduct, adjForm, closeAdjust, load, toast])
+    setAdjusting(true)
+    try {
+      await window.api.coffee.inventory.adjust({
+        productId: adjProduct.id,
+        quantity: finalQty,
+        type: adjForm.type,
+        reason: adjForm.reason || undefined,
+      })
+      toast.success(
+        finalQty > 0
+          ? `Added ${finalQty} ${adjProduct.unit || 'units'}`
+          : `Removed ${Math.abs(finalQty)} ${adjProduct.unit || 'units'}`
+      )
+      closeAdjust()
+      load()
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to adjust stock')
+    } finally {
+      setAdjusting(false)
+    }
+  }, [adjProduct, adjForm, closeAdjust, load, toast])
+
 
   // ── History: load ALL movements, filter client-side ──
   const openHistory = useCallback(
