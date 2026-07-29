@@ -20,7 +20,7 @@ const NotificationCenter = lazy(() => import('./components/NotificationCenter'))
 
 // ── Plugin dashboard sections (tree-shaken when build flag is false) ─────────
 const CommerceDashboard = __PLUGIN_COMMERCE__
-  ? lazy(() => import('@renderer/plugins/commerce/dashboard/CommerceDashboardSection'))
+  ? lazy(() => import('@renderer/plugins/commerce/pages/dashboard/CommerceDashboardSection'))
   : null
 
 const BakeryDashboard = __PLUGIN_BAKERY__

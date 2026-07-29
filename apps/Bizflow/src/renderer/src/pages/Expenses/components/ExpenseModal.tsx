@@ -25,7 +25,7 @@ interface Props {
 
 export default function ExpenseModal({ editingExpense, formData, setFormData, onSave, onClose, t }: Props) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className=" fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-scroll">
       <div className="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">

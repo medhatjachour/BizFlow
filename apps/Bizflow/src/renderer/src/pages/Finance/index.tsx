@@ -14,7 +14,7 @@ import { useModuleEnabled } from '@renderer/hooks/useModuleEnabled'
 import NoPluginsFinanceKernel from './components/NoPluginsFinanceKernel'
 
 // Lazy-load plugin sections
-const CommerceFinanceSection   = lazy(() => import('@renderer/plugins/commerce/finance/CommerceFinanceSection'))
+const CommerceFinanceSection   = lazy(() => import('@renderer/plugins/commerce/pages/finance/CommerceFinanceSection'))
 const BakeryFinanceSection     = lazy(() => import('@renderer/plugins/bakery/finance/BakeryFinanceSection'))
 const RestaurantFinanceSection = lazy(() => import('@renderer/plugins/restaurant/finance/RestaurantFinanceSection'))
 const WarehouseFinanceSection  = lazy(() => import('@renderer/plugins/warehouse/finance/WarehouseFinanceSection'))

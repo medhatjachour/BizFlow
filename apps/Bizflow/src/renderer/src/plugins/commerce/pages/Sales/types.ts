@@ -75,3 +75,24 @@ export type SaleTransaction = {
     username: string
   }
 }
+
+export type SalesTab = 'sales' | 'installments'
+
+export type DateFilter = 'all' | 'today' | 'week' | 'month'
+
+export type InstallmentStatusFilter = 'all' | 'pending' | 'paid' | 'overdue'
+
+export type InstallmentDateFilter = 'all' | 'today' | 'week' | 'month' | 'overdue'
+
+export type SalesStats = {
+  totalRevenue: number
+  totalSales: number
+  totalItems: number
+  avgSale: number
+  todayRevenue: number
+  todayCount: number
+  revenueChange: number
+  salesChange: number
+  weeklyRevenueChange: number
+  hasData: boolean
+}

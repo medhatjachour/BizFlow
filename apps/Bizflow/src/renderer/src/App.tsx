@@ -32,8 +32,8 @@ const Settings     = lazy(() => import('./pages/Settings/index'))
 const POS          = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/POS/index')) : null
 const Inventory    = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Inventory/index')) : null
 const Expenses     = lazy(() => import('./pages/Expenses/index'))
-const Sales        = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Sales')) : null
-const Stores       = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Stores')) : null
+const Sales        = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Sales/Sales')) : null
+const Stores       = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/store/Stores')) : null
 const Employees    = lazy(() => import('./pages/Employees/index'))
 const EmployeeProfile = lazy(() => import('./pages/Employees/EmployeeProfile'))
 const Customers    = lazy(() => import('./pages/Customers/Customers'))
