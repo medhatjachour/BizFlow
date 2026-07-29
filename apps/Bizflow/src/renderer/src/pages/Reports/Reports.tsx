@@ -5,7 +5,7 @@ import { useModuleEnabled } from '@renderer/hooks/useModuleEnabled'
 import NoPluginsKernel from './components/NoPluginsKernel'
 
 // Lazy-loaded plugin report sections
-const CommerceReportSection  = lazy(() => import('@renderer/plugins/commerce/reports/CommerceReportSection'))
+const CommerceReportSection  = lazy(() => import('@renderer/plugins/commerce/pages/reports/CommerceReportSection'))
 const BakeryReportSection    = lazy(() => import('@renderer/plugins/bakery/reports/BakeryReportSection'))
 const RestaurantReportSection = lazy(() => import('@renderer/plugins/restaurant/reports/RestaurantReportSection'))
 const WarehouseReportSection  = lazy(() => import('@renderer/plugins/warehouse/reports/WarehouseReportSection'))

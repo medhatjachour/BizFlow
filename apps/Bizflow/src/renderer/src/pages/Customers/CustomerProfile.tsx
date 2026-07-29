@@ -21,9 +21,9 @@ import { ipc } from '../../utils/ipc'
 import { useToast } from '../../contexts/ToastContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
-import { ReceiptPreviewModal } from '@renderer/plugins/commerce/pages/Sales/ReceiptPreviewModal'
 import logger from '../../../../shared/utils/logger'
 import type { CustomerProfile } from './types'
+import { ReceiptPreviewModal } from '@renderer/plugins/commerce/pages/Sales/components/ReceiptPreviewModal'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()

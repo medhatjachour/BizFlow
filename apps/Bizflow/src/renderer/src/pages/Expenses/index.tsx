@@ -22,7 +22,7 @@ export default function Expenses() {
   }
 
   return (
-    <div className="p-6 mx-auto">
+    <div className="p-6 mx-auto overflow-y-scroll">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
