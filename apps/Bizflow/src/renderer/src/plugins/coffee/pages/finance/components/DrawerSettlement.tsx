@@ -1,4 +1,4 @@
-import { Wallet, AlertTriangle, CheckCircle, TrendingUp, TrendingDown } from 'lucide-react'
+import { Wallet, CheckCircle, TrendingUp, TrendingDown } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { FinanceOverview } from '../types'
 import { formatMoney, formatNumber } from '../utils'
@@ -31,7 +31,6 @@ export function DrawerSettlement({ overview, variance, loading }: Props) {
   const s = overview.shiftStats
   const isBalanced = variance === 0
   const isOver = variance > 0
-  const isShort = variance < 0
 
   const cashRows = [
     { label: t('cfOpeningCash'),    value: s.openingCash,    sign: '',  color: 'text-slate-600 dark:text-slate-400' },

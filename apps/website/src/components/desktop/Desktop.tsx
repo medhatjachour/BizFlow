@@ -71,11 +71,14 @@ export default function Desktop() {
       ws.map((w) => (w.id === id ? { ...w, minimized: true } : w))
     );
   }, []);
-
+  
   const toggleMaximize = useCallback((id: number) => {
-    setWindows((ws) =>
-      ws.map((w) => (w.id === id ? { ...w, maximized: !w.maximized } : w))
-    );
+    setWindows((ws) => {
+      const top = (topZ.current += 1); // Bring to front on maximize
+      return ws.map((w) =>
+        w.id === id ? { ...w, maximized: !w.maximized, z: top } : w
+      );
+    });
   }, []);
 
   const openAppIds = windows

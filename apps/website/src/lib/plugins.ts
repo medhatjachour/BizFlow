@@ -131,6 +131,34 @@ export const PLUGINS: BizPlugin[] = [
     downloadEnv: "NEXT_PUBLIC_DL_RESTAURANT",
   },
   {
+    id: "coffee",
+    name: "Coffee",
+    tagline: "Coffee & Orders",
+    description:
+      "Order management, reservations, and coffee menu management for cafés.",
+    longDescription:
+      "Manage your café efficiently: take orders, handle reservations, and keep your coffee menu up-to-date — all from one screen built for baristas.",
+    icon: "☕",
+    accent: "from-green-400 to-blue-500",
+    route: "/coffee",
+    bestFor: "Cafés, coffee shops & small eateries",
+    price: 249,
+    highlights: [
+      { value: "live", label: "table layout" },
+      { value: "1-tap", label: "order to kitchen" },
+      { value: "0", label: "double bookings" },
+    ],
+    features: [
+      "Visual floor plan & table status",
+      "sales and refund items",
+      "Per-category menu management",
+      "Kitchen-ready order status board",
+      "finanace , expenses and reports",
+      "Integrates with Commerce products & sales",
+    ],
+    downloadEnv: "NEXT_PUBLIC_DL_COFFEE",
+  },
+  {
     id: "warehouse",
     name: "Warehouse",
     tagline: "Multi-location Stock",

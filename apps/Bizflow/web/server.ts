@@ -39,6 +39,7 @@ import { registerLogHandlers } from "../src/main/ipc/handlers/log.handlers";
 // (npm run web:setup), so we register handlers directly and skip ensureSchema.
 import { registerCommerceHandlers } from "../src/plugins/commerce/handlers/index";
 import { registerBakeryHandlers } from "../src/plugins/bakery/handlers/index";
+import { registerCoffeeHandlers } from "../src/plugins/coffee/handlers/index";
 import { registerRestaurantHandlers } from "../src/plugins/restaurant/handlers/index";
 import { registerWarehouseHandlers } from "../src/plugins/warehouse/handlers/index";
 import { registerClinicHandlers } from "../src/plugins/clinic/handlers/index";
@@ -137,6 +138,7 @@ async function main() {
   registerVetHandlers(prisma);
   registerGymHandlers(prisma);
   registerPharmacyHandlers(prisma);
+  registerCoffeeHandlers(prisma);
   console.log(`[bridge] ${__handlers.size} channels registered`);
 
   // ── Single-module isolation ──────────────────────────────────────────────
@@ -154,12 +156,14 @@ async function main() {
     "vet",
     "gym",
     "pharmacy",
+    'coffee',
   ];
-  ipcMain.handle("module:getEnabled", (event: { only?: string } = {}) => {
-    const only = event?.only;
+  ipcMain.handle("module:getEnabled", (event: unknown) => {
+    const only = (event as { only?: string } | undefined)?.only;
     if (!only) return ALL_MODULES;
     return ALL_MODULES.includes(only) ? [only] : ALL_MODULES;
   });
+
 
   const server = http.createServer((req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");

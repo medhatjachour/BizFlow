@@ -1,1 +1,0 @@
-function n(t,r=1){const e=Math.abs(t);return e>=1e9?`${(t/1e9).toFixed(r)}B`:e>=1e6?`${(t/1e6).toFixed(r)}M`:e>=1e3?`${(t/1e3).toFixed(r)}K`:t.toLocaleString()}function o(t,r=1){const e=Math.abs(t);return e>=1e9?`$${(t/1e9).toFixed(r)}B`:e>=1e6?`$${(t/1e6).toFixed(r)}M`:e>=1e3?`$${(t/1e3).toFixed(r)}K`:`$${t.toLocaleString()}`}export{o as a,n as f};

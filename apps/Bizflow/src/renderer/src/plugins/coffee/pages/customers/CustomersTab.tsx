@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useCustomers, useCustomerProfile } from './hooks/useCustomers'
 import { exportCustomersToCSV } from './utils'
 import { CustomersToolbar } from './components/CustomersToolbar'

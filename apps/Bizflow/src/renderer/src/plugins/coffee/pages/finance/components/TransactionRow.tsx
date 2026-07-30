@@ -1,4 +1,3 @@
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { payMeta, orderTypeMeta } from '../constants'
 import { formatMoney, formatDateTime } from '../utils'
 import type { Transaction } from '../types'

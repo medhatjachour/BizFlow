@@ -1,5 +1,4 @@
 import { Search, Inbox, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { TransactionRow } from './TransactionRow'
 import type { Transaction } from '../types'
 

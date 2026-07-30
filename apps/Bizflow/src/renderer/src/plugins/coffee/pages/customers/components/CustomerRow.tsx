@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Edit2, Trash2, ChevronRight, Star, Phone, MapPin } from 'lucide-react'
-import { COLOR_STYLES } from '../constants'
 import { formatCurrency, getInitials, getAvatarGradient, formatDate } from '../utils'
 import type { Customer } from '../types'
 

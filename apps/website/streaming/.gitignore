@@ -1,4 +1,0 @@
-# Large binaries and runtime data — don't commit these.
-app/*.exe
-windows-storage/
-shared/

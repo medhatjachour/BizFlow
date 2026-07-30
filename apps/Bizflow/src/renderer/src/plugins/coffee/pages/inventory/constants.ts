@@ -1,5 +1,5 @@
 import {
-  Plus, RefreshCw, Trash2, XCircle, ShoppingCart, Package, ArrowDownCircle, ArrowUpCircle,
+  Plus, RefreshCw, Trash2, ShoppingCart, Package, ArrowDownCircle, ArrowUpCircle,
 } from 'lucide-react'
 
 // ── Movement type metadata (for history drawer) ────────────────────────────

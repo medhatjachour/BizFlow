@@ -26,6 +26,7 @@ export default defineConfig({
     __PLUGIN_VET__: "true",
     __PLUGIN_GYM__: "true",
     __PLUGIN_PHARMACY__: "true",
+    __PLUGIN_COFFEE__: "true",
     "process.env.NODE_ENV": '"production"',
   },
   resolve: {

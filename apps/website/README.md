@@ -110,6 +110,9 @@ npm install
 ### Step 2 — Build the database + Prisma client
 
 ```bash
+  delet 
+[bridge]   web\.dist\server.cjs      972.1kb
+[bridge]   web\.dist\server.cjs.map    1.9mb
 # from the repo root: merges every module's schema, creates the SQLite
 # template DB, and generates the Prisma client with all module models
 npm run setup

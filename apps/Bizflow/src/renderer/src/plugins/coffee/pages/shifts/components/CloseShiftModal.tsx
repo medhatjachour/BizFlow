@@ -1,8 +1,7 @@
 import {
   X, Loader2, Wallet, FileText, TrendingUp, TrendingDown,
-  Check, AlertTriangle, Info,
+  Check, AlertTriangle, 
 } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Shift, CloseForm } from '../types'
 import { avgOrdersPerHour, formatMoney, varianceColor } from '../utils'
 
@@ -28,7 +27,6 @@ export function CloseShiftModal({
   const variancePct = expectedDrawer > 0 ? (variance / expectedDrawer) * 100 : 0
   const isBalanced = variance === 0
   const isOver = variance > 0
-  const isShort = variance < 0
   const isLargeVariance = expectedDrawer > 0 && Math.abs(variance) > expectedDrawer * 0.05
 
   return (

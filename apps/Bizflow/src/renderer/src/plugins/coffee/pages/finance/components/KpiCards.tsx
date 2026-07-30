@@ -1,5 +1,5 @@
 import {
-  TrendingUp, ShoppingBag, Receipt, Percent,
+  TrendingUp, Receipt, Percent,
   DollarSign, Package, Wallet, AlertCircle,
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'

@@ -4,7 +4,6 @@ import {
   Banknote, CreditCard, Smartphone, Building2, Wallet,
   Calendar, CalendarDays, CalendarRange, Infinity as InfinityIcon,
 } from 'lucide-react'
-import type { ComponentType } from 'react'
 
 // ── Categories with metadata ───────────────────────────────────────────────
 export const EXPENSE_CATEGORIES = [

@@ -1,5 +1,4 @@
-import { Banknote, CreditCard, Smartphone } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { Banknote } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { PAYMENT_METHODS } from '../constants'
 import { formatMoney } from '../utils'

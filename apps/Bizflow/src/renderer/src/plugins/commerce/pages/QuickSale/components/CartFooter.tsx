@@ -1,4 +1,4 @@
-import { Trash2, DollarSign } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 type CartFooterProps = {

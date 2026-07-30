@@ -37,6 +37,7 @@ const buildOptions = {
     __PLUGIN_COMMERCE__: "true",
     __PLUGIN_BAKERY__: "true",
     __PLUGIN_RESTAURANT__: "true",
+    __PLUGIN_COFFEE__: "true",
     __PLUGIN_WAREHOUSE__: "true",
     __PLUGIN_CLINIC__: "true",
     __PLUGIN_VET__: "true",

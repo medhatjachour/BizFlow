@@ -11,7 +11,7 @@ import { EmptyState } from '../../ui/EmptyState'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function IncomingView({ products, categories }: { products: any[]; categories: any[] }) {
-  const [search, setSearch] = useState('')
+  const [search] = useState('')
   const [categoryId, setCategoryId] = useState('all')
   const [page, setPage] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)

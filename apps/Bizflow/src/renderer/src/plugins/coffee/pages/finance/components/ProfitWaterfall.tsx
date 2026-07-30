@@ -1,6 +1,4 @@
-import { TrendingDown, TrendingUp, Minus, Package } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import type { LucideIcon } from 'lucide-react'
 import { formatMoney, formatPercent } from '../utils'
 
 interface WaterfallData {

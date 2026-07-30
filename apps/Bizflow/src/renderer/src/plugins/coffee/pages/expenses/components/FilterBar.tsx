@@ -1,6 +1,6 @@
-import { Search, RefreshCw, Plus, ChevronDown } from 'lucide-react'
+import { Search, RefreshCw, Plus } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import { PERIODS, EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../constants'
+import { PERIODS, PAYMENT_METHODS } from '../constants'
 import type { Filters, Period } from '../types'
 
 import CustomSelect from '@renderer/components/ui/CustomSelect'
