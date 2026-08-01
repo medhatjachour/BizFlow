@@ -467,6 +467,8 @@ export const arPart9 = {
   cfRevenueLabel: 'الإيرادات',
   cfRepeat: 'متكرر',
   cfExportCsv: 'تصدير CSV',
+  cfUniqueCustomers:'عملاء فريدون',
+  cfTotalDiscount:'إجمالي الخصم',
 
   // ── Finance Tab ──
   cfFinanceOverview: 'نظرة عامة على المالية',
