@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+// import { useMemo } from 'react'
 import {
   RefreshCw,
   TrendingUp,
@@ -9,7 +9,8 @@ import {
   BadgeDollarSign,
   Receipt,
   Package,
-  AlertCircle
+  AlertCircle,
+  DollarSign
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -36,7 +37,7 @@ import { LoadingSkeleton } from './components/LoadingSkeleton'
 import { EmptyState } from './components/EmptyState'
 
 // Utils
-import { formatCurrency, formatNumber, formatPercent, getDateRangeLabel } from './utils'
+import { formatCurrency, formatNumber, formatPercent } from './utils'
 
 export default function ReportsTab() {
   const toast = useToast()
@@ -55,7 +56,7 @@ export default function ReportsTab() {
     loading,
     error,
     refresh,
-    lastUpdated
+    // lastUpdated
   } = useReports(filters, toast)
 
   // Export functionality
@@ -71,7 +72,7 @@ export default function ReportsTab() {
     toast
   })
 
-  const dateRangeLabel = useMemo(() => getDateRangeLabel(from, to, t), [from, to, t])
+  // const dateRangeLabel = useMemo(() => getDateRangeLabel(from, to, t), [from, to, t])
 
   if (error) {
     return (
@@ -96,8 +97,7 @@ export default function ReportsTab() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 print:bg-white print:p-0">
       {/* Header */}
-      <div className="flex justify-between mb-6 print:hidden">
-        <div className="flex flex-wrap items-center justify-between  mb-4">
+        <div className="flex flex-wrap   justify-between  mb-4 print:hidden">
           {/* Date Range Picker */}
           <div>
             <DateRangePicker
@@ -123,9 +123,6 @@ export default function ReportsTab() {
             <ExportMenu onExport={handleExport} exporting={exporting} disabled={!overview} />
           </div>
         </div>
-        {/* Print Header (only visible when printing) */}
-      </div>
-
       {/* Loading State */}
       {loading && <LoadingSkeleton />}
 
@@ -146,6 +143,7 @@ export default function ReportsTab() {
               label={t('cfGrossProfitLabel')}
               value={formatCurrency(overview.grossProfit)}
               sub={`${formatPercent(overview.grossMarginPct)} margin`}
+              description={t('cfGrossProfitDescDetail')}
               icon={TrendingUp}
               tone="profit"
               loading={loading}
@@ -154,6 +152,7 @@ export default function ReportsTab() {
               label={t('cfNetProfitLabel')}
               value={formatCurrency(overview.netProfitAfterExpenses)}
               sub={`${formatPercent(overview.netMarginPct)} net margin`}
+              description={t('cfNetProfitDescDetail')}
               icon={BadgeDollarSign}
               tone="profit"
               loading={loading}
@@ -186,14 +185,15 @@ export default function ReportsTab() {
               label={t('cfTotalDiscount')}
               value={formatCurrency(overview.totalDiscount)}
               sub={`${formatPercent(overview.discountRatePct)} discount rate`}
-              icon={Percent}
+              icon={DollarSign}
               tone="discount"
               loading={loading}
             />
             <StatCard
               label={t('cfTotalExpenses')}
               value={formatCurrency(overview.totalExpenses)}
-              sub={`${overview.expenseCount} entries`}
+              sub={`D = ${formatCurrency(overview.totalExpenses-overview.totalCogs)} ${overview.expenseCount} ops + ${formatCurrency(overview.totalCogs)} COGS`}
+              description={t('cfExpenseDescDetail')}
               icon={Receipt}
               tone="expense"
               loading={loading}

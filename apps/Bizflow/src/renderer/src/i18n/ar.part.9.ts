@@ -469,6 +469,11 @@ export const arPart9 = {
   cfExportCsv: 'تصدير CSV',
   cfUniqueCustomers:'عملاء فريدون',
   cfTotalDiscount:'إجمالي الخصم',
+  cfQuarter:'الربع',
+  cfYear:'السنة',
+  cfGrossProfitDescDetail:'الإيرادات - تكلفة البضائع المباعة.',
+  cfNetProfitDescDetail:'الإيرادات - تكلفة البضائع  - المصروفات.',
+  cfExpenseDescDetail:'تكلفة البضائع + نفقات التشغيل.',
 
   // ── Finance Tab ──
   cfFinanceOverview: 'نظرة عامة على المالية',

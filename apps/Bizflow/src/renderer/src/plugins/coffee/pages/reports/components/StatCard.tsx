@@ -6,13 +6,14 @@ interface StatCardProps {
   label: string
   value: string
   sub?: string
+  description?: string
   icon: LucideIcon
   tone: StatTone
   trend?: { value: number; isPositive: boolean }
   loading?: boolean
 }
 
-export function StatCard({ label, value, sub, icon: Icon, tone, trend, loading }: StatCardProps) {
+export function StatCard({ label, value, sub,description, icon: Icon, tone, trend, loading }: StatCardProps) {
   const config = STAT_TONE_CONFIG[tone]
 
   if (loading) {
@@ -39,6 +40,8 @@ export function StatCard({ label, value, sub, icon: Icon, tone, trend, loading }
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
           <p className={`mt-1 text-2xl font-bold ${config.text} tabular-nums tracking-tight`}>{value}</p>
           {sub && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">{sub}</p>}
+          {description && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">{description}</p>}
+          
           {trend && (
             <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium">
               <span className={trend.isPositive ? 'text-emerald-600' : 'text-rose-600'}>

@@ -470,6 +470,11 @@ export const enPart9 = {
   cfExportCsv: 'Export CSV',
   cfUniqueCustomers: 'Unique Customers',
   cfTotalDiscount:'Total Discount',
+  cfQuarter :'Quarter',
+  cfYear:'Year',
+  cfGrossProfitDescDetail:'Revenue - COGS.',
+  cfNetProfitDescDetail:'Revenue - COGS - Expenses.',
+  cfExpenseDescDetail:'COGS + Ops Expenses.',
 
   // ── Finance Tab ──
   cfFinanceOverview: 'Finance Overview',

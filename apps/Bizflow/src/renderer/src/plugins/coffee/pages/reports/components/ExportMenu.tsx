@@ -35,8 +35,7 @@ export function ExportMenu({ onExport, exporting, disabled }: ExportMenuProps) {
         ) : (
           <Download className="h-4 w-4" />
         )}
-        <span>Export Report</span>
-        <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
