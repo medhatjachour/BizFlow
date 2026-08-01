@@ -284,6 +284,19 @@ const api = {
     getStats: () =>
       ipcRenderer.invoke('finance:getStats'),
   },
+  // ─── Export APIs ──────────────────────────────────────────────────────────
+  // Handles PDF and file exports with proper encoding
+  export: {
+    printPdf: (html: string, filename: string) =>
+      new Promise<{ success: boolean; filePath?: string; error?: string }>((resolve) => {
+        const handler = (_event: any, result: any) => {
+          ipcRenderer.off('pdf-generated', handler)
+          resolve(result)
+        }
+        ipcRenderer.on('pdf-generated', handler)
+        ipcRenderer.send('print-to-pdf', { html, filename })
+      })
+  },
   // ─── Plugin APIs ──────────────────────────────────────────────────────────
   // Each plugin exposes its IPC bindings under its own namespace.
   // Adding a plugin: import its preload and add it here.

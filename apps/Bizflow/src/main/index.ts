@@ -1,6 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import log, { createLogger } from './utils/logger'
 
@@ -37,6 +37,134 @@ app.commandLine.appendSwitch('disable-features', 'UseChromeOSDirectVideoDecoder'
 let dailyEmailCronTask: ScheduledTask | null = null
 
 const cronLog = createLogger('Cron')
+
+// Register IPC handler for PDF printing with Arabic/RTL support
+// Uses Chromium's native rendering which has full Arabic support
+function registerPdfPrintHandler(): void {
+  ipcMain.on('print-to-pdf', async (event, { html, filename }) => {
+    let pdfWindow: BrowserWindow | null = null
+
+    try {
+      const pdfLog = createLogger('PDF Export')
+      pdfLog.info(`Generating PDF: ${filename}`)
+
+      // Show save dialog to let user choose where to save
+      const result = await dialog.showSaveDialog({
+        defaultPath: join(app.getPath('downloads'), filename),
+        filters: [
+          { name: 'PDF Files', extensions: ['pdf'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      })
+
+      // User cancelled the save dialog
+      if (result.cancelled) {
+        pdfLog.info('PDF export cancelled by user')
+        event.reply('pdf-generated', { success: false, error: 'Export cancelled' })
+        return
+      }
+
+      const savePath = result.filePath
+      if (!savePath) {
+        throw new Error('No save path selected')
+      }
+
+      pdfLog.info(`User selected save path: ${savePath}`)
+
+      // Create a hidden window for rendering
+      pdfWindow = new BrowserWindow({
+        width: 1200,
+        height: 1500,
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      })
+
+      // Load HTML using data URL with base64 encoding
+      // This avoids file system issues on Windows and preserves UTF-8 properly
+      const base64Html = Buffer.from(html, 'utf-8').toString('base64')
+      const dataUrl = `data:text/html;charset=utf-8;base64,${base64Html}`
+      
+      pdfLog.info('Loading HTML from data URL...')
+      await pdfWindow.loadURL(dataUrl)
+
+      // Wait for the page to fully load
+      await new Promise<void>((resolve, reject) => {
+        let resolved = false
+
+        const loadedHandler = () => {
+          if (resolved) return
+          resolved = true
+          pdfWindow?.webContents.removeListener('did-finish-load', loadedHandler)
+          pdfWindow?.webContents.removeListener('crashed', crashHandler)
+          clearTimeout(timeout)
+          mainLog.info('Page fully loaded')
+          resolve()
+        }
+
+        const crashHandler = () => {
+          if (resolved) return
+          resolved = true
+          pdfWindow?.webContents.removeListener('did-finish-load', loadedHandler)
+          pdfWindow?.webContents.removeListener('crashed', crashHandler)
+          clearTimeout(timeout)
+          reject(new Error('Renderer process crashed'))
+        }
+
+        // Increased timeout to 30 seconds for complex HTML with lots of data
+        const timeout = setTimeout(() => {
+          if (resolved) return
+          resolved = true
+          pdfWindow?.webContents.removeListener('did-finish-load', loadedHandler)
+          pdfWindow?.webContents.removeListener('crashed', crashHandler)
+          
+          mainLog.warn('Page load did not complete within 30 seconds, proceeding anyway')
+          // Proceed anyway - the DOM should be ready even if all resources aren't loaded
+          resolve()
+        }, 30000)
+
+        pdfWindow?.webContents.on('did-finish-load', loadedHandler)
+        pdfWindow?.webContents.on('crashed', crashHandler)
+      })
+
+      pdfLog.info('Page loaded, generating PDF...')
+
+      // Add a small delay to ensure the page is fully rendered
+      // This helps with complex tables and styling
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Generate PDF using Chromium's print-to-PDF
+      // This uses Chromium's superior rendering engine which has native Arabic support
+      const pdfData = await pdfWindow.webContents.printToPDF({
+        marginsType: 0, // Default margins
+        pageSize: 'A4',
+        printBackground: true,
+        landscape: false
+      })
+
+      // Save to the user-selected location
+      writeFileSync(savePath, pdfData)
+      pdfLog.info(`PDF saved successfully: ${savePath}`)
+
+      // Send success message back to renderer
+      event.reply('pdf-generated', { success: true, filePath: savePath, filename })
+    } catch (error) {
+      mainLog.error('PDF generation failed:', error)
+      event.reply('pdf-generated', { 
+        success: false, 
+        error: `PDF generation failed: ${(error as Error).message}` 
+      })
+    } finally {
+      // Clean up the window
+      if (pdfWindow && !pdfWindow.isDestroyed()) {
+        pdfWindow.destroy()
+      }
+    }
+  })
+}
 
 // Setup daily email reports cron job
 function setupDailyEmailReports(): void {
@@ -554,6 +682,9 @@ app.whenReady().then(async () => {
     // 3. Register all IPC handlers (they use the prisma export from handlers/index).
     mainLog.info('Registering IPC handlers...')
     registerAllHandlers()
+
+    // Register PDF printing handler for Arabic/RTL support
+    registerPdfPrintHandler()
 
     // Create window (hidden initially)
     mainWindow = createWindow()

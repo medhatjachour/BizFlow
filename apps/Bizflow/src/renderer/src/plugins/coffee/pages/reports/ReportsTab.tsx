@@ -5,7 +5,6 @@ import {
   Trophy,
   Users,
   Boxes,
-  Percent,
   BadgeDollarSign,
   Receipt,
   Package,
@@ -114,13 +113,13 @@ export default function ReportsTab() {
             <button
               onClick={refresh}
               disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-500/50 transition-colors disabled:opacity-50"
+              className="flex items-center p-3 rounded-full text-sm font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-500/50 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+             
             </button>
 
-            <ExportMenu onExport={handleExport} exporting={exporting} disabled={!overview} />
+            <ExportMenu onExport={handleExport}  exporting={exporting} disabled={!overview} />
           </div>
         </div>
       {/* Loading State */}
