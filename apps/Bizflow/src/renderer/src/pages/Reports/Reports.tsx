@@ -3,44 +3,67 @@ import { RefreshCw, FileBarChart } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useModuleEnabled } from '@renderer/hooks/useModuleEnabled'
 import NoPluginsKernel from './components/NoPluginsKernel'
+import { console } from 'inspector'
 
 // Lazy-loaded plugin report sections
-const CommerceReportSection  = lazy(() => import('@renderer/plugins/commerce/pages/reports/CommerceReportSection'))
-const BakeryReportSection    = lazy(() => import('@renderer/plugins/bakery/reports/BakeryReportSection'))
-const RestaurantReportSection = lazy(() => import('@renderer/plugins/restaurant/reports/RestaurantReportSection'))
-const WarehouseReportSection  = lazy(() => import('@renderer/plugins/warehouse/reports/WarehouseReportSection'))
-const ClinicReportSection     = lazy(() => import('@renderer/plugins/clinic/reports/ClinicReportSection'))
-const VetReportSection        = lazy(() => import('@renderer/plugins/vet/reports/VetReportSection'))
-const GymReportSection        = lazy(() => import('@renderer/plugins/gym/reports/GymReportSection'))
-const PharmacyReportSection   = lazy(() => import('@renderer/plugins/pharmacy/reports/PharmacyReportSection'))
+const CommerceReportSection = lazy(
+  () => import('@renderer/plugins/commerce/pages/reports/CommerceReportSection')
+)
+const BakeryReportSection = lazy(
+  () => import('@renderer/plugins/bakery/reports/BakeryReportSection')
+)
+const RestaurantReportSection = lazy(
+  () => import('@renderer/plugins/restaurant/reports/RestaurantReportSection')
+)
+const WarehouseReportSection = lazy(
+  () => import('@renderer/plugins/warehouse/reports/WarehouseReportSection')
+)
+const ClinicReportSection = lazy(
+  () => import('@renderer/plugins/clinic/reports/ClinicReportSection')
+)
+const VetReportSection = lazy(() => import('@renderer/plugins/vet/reports/VetReportSection'))
+const GymReportSection = lazy(() => import('@renderer/plugins/gym/reports/GymReportSection'))
+const PharmacyReportSection = lazy(
+  () => import('@renderer/plugins/pharmacy/reports/PharmacyReportSection')
+)
+const ReportsTab = lazy(() => import('@renderer/plugins/coffee/pages/reports/ReportsTab'))
 
 const SectionFallback: React.FC = () => (
   <div className="h-40 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
 )
 
-const Divider: React.FC = () => (
-  <div className="border-t border-slate-200 dark:border-slate-700" />
-)
+const Divider: React.FC = () => <div className="border-t border-slate-200 dark:border-slate-700" />
 
 const Reports: React.FC = () => {
   const { t } = useLanguage()
   const [refreshSig, setRefreshSig] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
 
-  const isCommerce   = useModuleEnabled('commerce')
-  const isBakery     = useModuleEnabled('bakery')
+  const isCommerce = useModuleEnabled('commerce')
+  const isBakery = useModuleEnabled('bakery')
   const isRestaurant = useModuleEnabled('restaurant')
-  const isWarehouse  = useModuleEnabled('warehouse')
-  const isClinic     = useModuleEnabled('clinic')
-  const isVet        = useModuleEnabled('vet')
-  const isGym        = useModuleEnabled('gym')
-  const isPharmacy   = useModuleEnabled('pharmacy')
+  const isWarehouse = useModuleEnabled('warehouse')
+  const isClinic = useModuleEnabled('clinic')
+  const isVet = useModuleEnabled('vet')
+  const isGym = useModuleEnabled('gym')
+  const isPharmacy = useModuleEnabled('pharmacy')
+  const isCoffee = useModuleEnabled('coffee')
 
-  const anyActive = isCommerce || isBakery || isRestaurant || isWarehouse || (__PLUGIN_CLINIC__ && isClinic) || (__PLUGIN_VET__ && isVet) || isGym || (__PLUGIN_PHARMACY__ && isPharmacy)
+  const anyActive =
+    isCommerce ||
+    isBakery ||
+    isRestaurant ||
+    isWarehouse ||
+    (__PLUGIN_CLINIC__ && isClinic) ||
+    (__PLUGIN_VET__ && isVet) ||
+    isGym ||
+    (__PLUGIN_PHARMACY__ && isPharmacy)||
+    (__PLUGIN_COFFEE__ && isCoffee)
+
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    setRefreshSig(s => s + 1)
+    setRefreshSig((s) => s + 1)
     setTimeout(() => setRefreshing(false), 800)
   }
 
@@ -53,10 +76,12 @@ const Reports: React.FC = () => {
             <FileBarChart size={24} className="text-slate-600 dark:text-slate-300" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('reportsAndAnalytics')}</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+              {t('reportsAndAnalytics')}
+            </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               {anyActive
-                ? 'Per-plugin live reports and today\'s activity'
+                ? "Per-plugin live reports and today's activity"
                 : 'Enable plugins to unlock reports and analytics'}
             </p>
           </div>
@@ -143,6 +168,12 @@ const Reports: React.FC = () => {
       {__PLUGIN_PHARMACY__ && isPharmacy && (
         <Suspense fallback={<SectionFallback />}>
           <PharmacyReportSection refreshSignal={refreshSig} />
+        </Suspense>
+      )}
+
+      {__PLUGIN_COFFEE__ && isCoffee && (
+        <Suspense fallback={<SectionFallback />}>
+          <ReportsTab />
         </Suspense>
       )}
     </div>
