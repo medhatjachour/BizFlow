@@ -68,8 +68,7 @@ export function CashierLeaderboard({ overview, loading, t }: CashierLeaderboardP
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-slate-700 dark:text-slate-200 truncate">{cashier.name}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {cashier.orders} {t('cfOrdersLc')} • Avg {formatCurrency(cashier.avgOrderValue || cashier.revenue / cashier.orders)}
-                  </p>
+                  {cashier.orders} {t('cfOrdersLc')} • Avg {formatCurrency(cashier.avgOrderValue ?? (cashier.orders ? cashier.revenue / cashier.orders : 0))} </p>
                 </div>
 
                 <div className="text-right">

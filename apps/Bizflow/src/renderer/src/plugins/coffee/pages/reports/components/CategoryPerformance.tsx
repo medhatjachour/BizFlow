@@ -28,8 +28,8 @@ export function CategoryPerformance({ categories, loading, t }: CategoryPerforma
     () =>
       categories.map(c => ({
         ...c,
-        marginPct: c.marginPct || calcMarginPct(c.revenue, c.cogs),
-        pct: (c.revenue / totalRevenue) * 100,
+        marginPct: c.marginPct ?? calcMarginPct(c.revenue, c.cogs),
+         pct: totalRevenue ? (c.revenue / totalRevenue) * 100 : 0,
       })),
     [categories, totalRevenue]
   )

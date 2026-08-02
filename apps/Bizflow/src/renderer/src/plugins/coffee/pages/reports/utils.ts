@@ -77,7 +77,7 @@ export function daysBetween(from: string, to: string): number {
 
 // ==================== FORMATTING UTILITIES ====================
 
-export function formatCurrency(value: number, currency = 'EGP'): string {
+export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

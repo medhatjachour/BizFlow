@@ -1,4 +1,4 @@
-import { Calendar, ChevronDown } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 import { DatePreset } from '../types'
 import { DATE_PRESETS } from '../constants'
 

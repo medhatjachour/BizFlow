@@ -37,7 +37,7 @@ export function OperatorSnapshot({ overview, loading, t }: OperatorSnapshotProps
       icon: Truck,
       label: 'Delivery Revenue',
       value: formatCurrency(overview.deliveryRevenue),
-      sub: `${((overview.deliveryRevenue / overview.totalRevenue) * 100).toFixed(1)}% of total`,
+      sub: `${overview.totalRevenue ? ((overview.deliveryRevenue / overview.totalRevenue) * 100).toFixed(1) : '0.0'}% of total`,
       color: 'text-cyan-600 dark:text-cyan-400',
       bg: 'bg-cyan-50 dark:bg-cyan-500/10',
     },

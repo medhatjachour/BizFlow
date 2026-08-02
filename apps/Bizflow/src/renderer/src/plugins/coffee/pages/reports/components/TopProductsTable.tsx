@@ -17,7 +17,7 @@ export function TopProductsTable({ products, loading, t }: TopProductsTableProps
   const processedProducts = useMemo(() => {
     let result = products.map(p => ({
       ...p,
-      marginPct: p.marginPct || calcMarginPct(p.revenue, p.cogs),
+       marginPct: p.marginPct ?? calcMarginPct(p.revenue, p.cogs),
     }))
 
     if (search) {

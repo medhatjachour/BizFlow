@@ -58,7 +58,7 @@ function registerPdfPrintHandler(): void {
       })
 
       // User cancelled the save dialog
-      if (result.cancelled) {
+      if (result.canceled) {
         pdfLog.info('PDF export cancelled by user')
         event.reply('pdf-generated', { success: false, error: 'Export cancelled' })
         return
@@ -139,7 +139,6 @@ function registerPdfPrintHandler(): void {
       // Generate PDF using Chromium's print-to-PDF
       // This uses Chromium's superior rendering engine which has native Arabic support
       const pdfData = await pdfWindow.webContents.printToPDF({
-        marginsType: 0, // Default margins
         pageSize: 'A4',
         printBackground: true,
         landscape: false

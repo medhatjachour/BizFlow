@@ -3,7 +3,6 @@ import { RefreshCw, FileBarChart } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useModuleEnabled } from '@renderer/hooks/useModuleEnabled'
 import NoPluginsKernel from './components/NoPluginsKernel'
-import { console } from 'inspector'
 
 // Lazy-loaded plugin report sections
 const CommerceReportSection = lazy(
