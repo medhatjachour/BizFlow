@@ -63,6 +63,7 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src'),
         '@pages': resolve('src/renderer/src/pages'),
         '@components': resolve('src/renderer/src/components'),
+        '@hooks': resolve('src/renderer/hooks'),
         '@': resolve('src')
       }
     },

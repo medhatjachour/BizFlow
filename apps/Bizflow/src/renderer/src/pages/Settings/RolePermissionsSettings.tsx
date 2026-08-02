@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Shield, Loader2, Lock, RotateCcw, ListChecks, Check } from 'lucide-react'
-import { useAuth } from '../../../hooks/useAuth'
+import { useAuth } from '@hooks/useAuth'
 import { useToast } from '../../contexts/ToastContext'
 import {
   CAPABILITIES,

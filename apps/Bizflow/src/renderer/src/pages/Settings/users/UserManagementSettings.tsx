@@ -5,9 +5,9 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { UserPlus, Edit2, Shield, Lock, Eye, EyeOff, CheckCircle, XCircle, UserX } from 'lucide-react'
-import SmartDeleteDialog from '../../components/SmartDeleteDialog'
-import { useAuth } from '../../../hooks/useAuth'
-import logger from '../../../../shared/utils/logger'
+import SmartDeleteDialog from '../../../components/SmartDeleteDialog'
+import { useAuth } from '@hooks/useAuth'
+import logger from '@/shared/utils/logger'
 
 interface User {
   id: string
