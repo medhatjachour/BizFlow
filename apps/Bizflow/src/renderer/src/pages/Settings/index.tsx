@@ -26,8 +26,6 @@ import { useSettings } from './useSettings'
 import GeneralSettings from './GeneralSettings'
 import DisplaySettings from './DisplaySettings'
 import CategorySettings from './CategorySettings'
-import UserManagementSettings from './users/UserManagementSettings'
-import RolePermissionsSettings from './RolePermissionsSettings'
 import PaymentMethodsSettings from './PaymentMethodsSettings'
 import TaxReceiptSettings from './TaxReceiptSettings'
 import NotificationsSettings from './NotificationsSettings'
@@ -37,6 +35,7 @@ import EmailSettings from './EmailSettings'
 import ModulesSettings from './ModulesSettings'
 import type { SettingsTab } from './types'
 import logger from '../../../../shared/utils/logger'
+import UsersRolesSettings from './users'
 
 export default function Settings() {
   const { theme, setTheme, actualTheme } = useTheme()
@@ -180,10 +179,8 @@ export default function Settings() {
           {activeTab === 'categories' && <CategorySettings />}
 
           {activeTab === 'users' && (
-            <div className="space-y-8">
-              <UserManagementSettings />
-              <RolePermissionsSettings />
-            </div>
+            
+              <UsersRolesSettings/>
           )}
 
           {activeTab === 'payments' && (
