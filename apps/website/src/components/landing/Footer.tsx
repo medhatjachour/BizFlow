@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { DEFAULT_DOWNLOAD_URL } from "@/lib/plugins";
+import { brandIconPath } from "@/lib/site";
 
 export default function Footer() {
   return (
@@ -50,7 +51,7 @@ export default function Footer() {
       <div className="mt-10 flex flex-col items-center justify-between gap-4 text-sm text-foreground/50 sm:flex-row">
         <div className="flex items-center gap-2">
           <Image
-            src="/brand/bizflow-icon.png"
+            src={brandIconPath}
             alt="BizFlow logo"
             width={24}
             height={24}

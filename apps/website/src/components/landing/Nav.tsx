@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { brandIconPath } from "@/lib/site";
 
 const LINKS = [
   { href: "#plugins", label: "Modules" },
@@ -27,7 +28,7 @@ export default function Nav() {
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <Image
-              src="/brand/bizflow-icon.png"
+              src={brandIconPath}
               alt="BizFlow logo"
               width={32}
               height={32}

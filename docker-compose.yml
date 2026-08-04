@@ -1,0 +1,66 @@
+services:
+  # Next.js website + HTTP bridge + Web BizFlow UI
+  bizflow-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BASE_PATH: /bizflow
+        NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
+    container_name: bizflow-app
+    ports:
+      - "3000:3000"    # Nebula website
+      - "5180:5180"    # BizFlow web UI
+      - "8787:8787"    # HTTP bridge (IPC handlers)
+    volumes:
+      # Persistent database volume
+      - bizflow-data:/data/bizflow
+      # Development mode: mount source for hot reload (optional)
+      # - ./apps/bizflow:/app/apps/bizflow
+      # - ./apps/nebula:/app/apps/nebula
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/bizflow/database.db
+      BRIDGE_PORT: 8787
+      NEXT_PUBLIC_BASE_PATH: /bizflow
+      NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
+      NEXTAUTH_URL: https://medhatjachour.tech/bizflow
+      REQUEST_MAIL_TO: medhatjachour8@gmail.com
+      REQUEST_MAIL_FROM: ${REQUEST_MAIL_FROM:-medhatjachour8@gmail.com}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      REQUEST_MAIL_FALLBACK_DIRECT: ${REQUEST_MAIL_FALLBACK_DIRECT:-true}
+      REQUEST_MAIL_HELO_NAME: ${REQUEST_MAIL_HELO_NAME:-medhatjachour.tech}
+      REQUEST_MAIL_FALLBACK_HOST: ${REQUEST_MAIL_FALLBACK_HOST:-gmail-smtp-in.l.google.com}
+      REQUEST_MAIL_FALLBACK_PORT: ${REQUEST_MAIL_FALLBACK_PORT:-25}
+      # Add other env vars as needed
+    restart: unless-stopped
+    networks:
+      - bizflow-network
+
+  # Optional: Nginx reverse proxy for single port access
+  nginx:
+    image: nginx:alpine
+    container_name: bizflow-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - bizflow-app
+    restart: unless-stopped
+    networks:
+      - bizflow-network
+
+volumes:
+  bizflow-data:
+    driver: local
+
+networks:
+  bizflow-network:
+    driver: bridge

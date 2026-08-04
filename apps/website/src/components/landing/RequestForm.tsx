@@ -9,6 +9,7 @@ import {
   type Complexity,
   type RequestType,
 } from "@/lib/pricing";
+import { withBasePath } from "@/lib/site";
 
 /**
  * Guest request / quote form. A visitor can ask for an update to an existing
@@ -91,6 +92,9 @@ export default function RequestForm() {
   const [result, setResult] = useState<{ ref: string; range: string } | null>(
     null
   );
+  const [notify, setNotify] = useState<{ sent: boolean; target: string } | null>(
+    null
+  );
   const [error, setError] = useState("");
 
   const quote = useMemo(
@@ -112,7 +116,7 @@ export default function RequestForm() {
     ].filter(Boolean).join("\n");
     const compiledDetails = [brief, details.trim()].filter(Boolean).join("\n\n");
     try {
-      const res = await fetch("/api/requests", {
+      const res = await fetch(withBasePath("/api/requests"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -126,9 +130,19 @@ export default function RequestForm() {
           details: compiledDetails,
         }),
       });
-      const data = await res.json();
+      const contentType = res.headers.get("content-type") || "";
+      const data = contentType.includes("application/json")
+        ? await res.json()
+        : {
+            error:
+              "Server returned a non-JSON response. Please refresh and try again.",
+          };
       if (!res.ok) throw new Error(data.error || "Something went wrong");
       setResult({ ref: data.ref, range: formatRange(data.quote) });
+      setNotify({
+        sent: Boolean(data.notified),
+        target: String(data.notificationTarget ?? ""),
+      });
       setStatus("done");
     } catch (err) {
       setError((err as Error).message);
@@ -159,12 +173,15 @@ export default function RequestForm() {
             {result.range}
           </p>
           <p className="mt-3 text-sm text-foreground/50">
-            We&apos;ll email a detailed proposal to {email} shortly.
+            {notify?.sent
+              ? `Sent to ${notify.target}. We will reply to ${email}.`
+              : `Saved your request. SMTP is not configured yet, so email delivery is pending.`}
           </p>
           <button
             onClick={() => {
               setStatus("idle");
               setResult(null);
+              setNotify(null);
             }}
             className="mt-8 glass rounded-xl px-6 py-3 text-sm font-semibold transition hover:bg-white/10"
           >

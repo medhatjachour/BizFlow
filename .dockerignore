@@ -1,0 +1,78 @@
+# All node_modules at any depth
+**/node_modules
+
+# Electron build outputs — not needed for web Docker deployment
+apps/*/dist/
+apps/*/out/
+
+# Generated Prisma client — regenerated inside the container via prisma generate
+apps/*/src/generated/
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Build outputs (rebuilt in Docker)
+dist/
+apps/*/out/
+apps/*/.next/
+apps/*/dist/
+apps/*/src/generated/
+.cache/
+.output/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+.dockerignore
+
+# Misc
+README.md
+LICENSE
+.editorconfig
+.prettierignore
+.eslintignore
+
+# Development databases
+prisma/dev.db
+prisma/dev.db-wal
+prisma/dev.db-shm
+prisma/sessions/
+
+# Backup/archives
+*.tar
+*.tar.gz
+*.zip
+*.rar
+backups/
+
+# OS temp files
+Thumbs.db
+.Thumbs.db

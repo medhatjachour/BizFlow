@@ -3,6 +3,18 @@ export const siteUrl = (
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
 ).replace(/\/+$/, "");
 
+export const basePath = (
+  process.env.NEXT_PUBLIC_BASE_PATH ?? ""
+).replace(/\/+$/, "");
+
+export function withBasePath(p: string): string {
+  if (!p.startsWith("/")) return p;
+  if (!basePath) return p;
+  return `${basePath}${p}`;
+}
+
+export const brandIconPath = withBasePath("/brand/bizflow-icon.png");
+
 export const siteConfig = {
   name: "BizFlow",
   title: "BizFlow — Run your whole business in one beautiful app",
