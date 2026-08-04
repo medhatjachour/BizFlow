@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { PLUGINS } from "@/lib/plugins";
 import { OSES, detectOS, installerFor, type OSId } from "@/lib/downloads";
+import { brandIconPath } from "@/lib/site";
 import BuyButton from "@/components/BuyButton";
 import DownloadButton from "@/components/DownloadButton";
 import { usePrices } from "@/components/usePrices";
@@ -36,7 +37,7 @@ export default function DownloadPage() {
       {/* Header */}
       <header className="mb-10 text-center">
         <Link href="/" className="mb-6 inline-flex items-center gap-2">
-          <Image src="/brand/bizflow-icon.png" alt="BizFlow" width={28} height={28} className="rounded-lg" />
+          <Image src={brandIconPath} alt="BizFlow" width={28} height={28} className="rounded-lg" />
           <span className="font-semibold">BizFlow</span>
         </Link>
         <h1 className="bg-gradient-to-r from-white to-foreground/60 bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl">

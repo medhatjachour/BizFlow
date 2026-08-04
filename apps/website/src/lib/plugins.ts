@@ -309,7 +309,7 @@ export const getPlugin = (id: string) => PLUGINS.find((p) => p.id === id);
 
 /** Base URL of the live BizFlow web app embedded in the desktop window. */
 export const BIZFLOW_URL =
-  process.env.NEXT_PUBLIC_BIZFLOW_URL || "http://localhost:5180/";
+  process.env.NEXT_PUBLIC_BIZFLOW_URL || "/app/";
 
 /** Default download URL when a plugin-specific one isn't configured. */
 export const DEFAULT_DOWNLOAD_URL =

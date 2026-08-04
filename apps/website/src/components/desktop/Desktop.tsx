@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { APPS, getApp } from "@/lib/apps";
+import { brandIconPath } from "@/lib/site";
 import type { WindowInstance } from "@/lib/types";
 import Window from "./Window";
 import Dock from "./Dock";
@@ -29,8 +30,8 @@ export default function Desktop() {
     if (!app) return;
 
     setWindows((ws) => {
-      // If minimized instance exists, restore + focus it instead of duplicating.
-      const existing = ws.find((w) => w.appId === appId && w.minimized);
+      // Reuse any existing instance (minimized or visible) instead of duplicating.
+      const existing = ws.find((w) => w.appId === appId);
       if (existing) {
         const top = (topZ.current += 1);
         return ws.map((w) =>
@@ -57,10 +58,10 @@ export default function Desktop() {
   }, []);
 
   // Auto-open a module when arriving via /app?module=<id> (from the picker).
+  const moduleId = searchParams.get("module");
   useEffect(() => {
-    const moduleId = searchParams.get("module");
     if (moduleId && getApp(moduleId)) launch(moduleId);
-  }, [searchParams, launch]);
+  }, [moduleId, launch]);
 
   const close = useCallback((id: number) => {
     setWindows((ws) => ws.filter((w) => w.id !== id));
@@ -110,7 +111,7 @@ export default function Desktop() {
                   className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-3xl shadow-2xl shadow-biz-700/40"
                 >
                   <Image
-                    src="/brand/bizflow-icon.png"
+                    src={brandIconPath}
                     alt="BizFlow logo"
                     width={80}
                     height={80}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { estimate, type EstimateInput } from "@/lib/pricing";
+import { requestsEmailTarget, sendRequestEmail } from "@/lib/request-mail";
 
 /**
  * Receives a guest request (module update, new custom plugin, or full suite),
@@ -66,13 +67,16 @@ export async function POST(request: Request) {
     type: input.type,
     moduleId: input.moduleId ?? null,
     complexity: input.complexity,
-    rush: input.rush,
-    support: input.support,
+    rush: Boolean(input.rush),
+    support: Boolean(input.support),
     email: body.email,
     company: str(body.company, 120),
     details,
     quote,
   };
+
+  let notified = false;
+  let notifyReason: string | undefined;
 
   // Best-effort local persistence (gitignored). Never fatal to the response.
   try {
@@ -90,5 +94,25 @@ export async function POST(request: Request) {
     console.error("[requests] could not persist:", (e as Error).message);
   }
 
-  return NextResponse.json({ ok: true, ref, quote });
+  // Best-effort email notification to the business owner inbox.
+  try {
+    const res = await sendRequestEmail(record);
+    notified = res.sent;
+    notifyReason = res.reason;
+    if (!res.sent) {
+      console.warn(`[requests] email not sent (${notifyReason ?? "unknown"})`);
+    }
+  } catch (e) {
+    notifyReason = (e as Error).message;
+    console.error("[requests] email delivery failed:", notifyReason);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    ref,
+    quote,
+    notified,
+    notificationTarget: requestsEmailTarget(),
+    notifyReason: notified ? undefined : notifyReason,
+  });
 }

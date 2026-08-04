@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { siteConfig, siteUrl } from "@/lib/site";
+import { brandIconPath, siteConfig, siteUrl } from "@/lib/site";
 import Analytics from "@/components/Analytics";
 
 const geistSans = Geist({
@@ -58,8 +58,8 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
   icons: {
-    icon: "/brand/bizflow-icon.png",
-    apple: "/brand/bizflow-icon.png",
+    icon: brandIconPath,
+    apple: brandIconPath,
   },
 };
 

@@ -11,7 +11,17 @@ const repoRoot = path.resolve(
   ".."
 );
 
+const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/+$/, "");
+
 const nextConfig: NextConfig = {
+  output: "standalone",
+  basePath: basePath || undefined,
+  assetPrefix: basePath || undefined,
+  images: basePath
+    ? {
+        path: `${basePath}/_next/image`,
+      }
+    : undefined,
   turbopack: {
     root: repoRoot,
   },

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AuroraBackground from "@/components/AuroraBackground";
+import { brandIconPath } from "@/lib/site";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function AdminLoginPage() {
         >
           <div className="mb-6 flex flex-col items-center text-center">
             <Image
-              src="/brand/bizflow-icon.png"
+              src={brandIconPath}
               alt="BizFlow"
               width={56}
               height={56}

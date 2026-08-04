@@ -14,7 +14,7 @@ export const APPS: AppMeta[] = PLUGINS.map((p) => {
     id: p.id,
     title: p.name,
     accent: p.accent,
-    icon: <span className="text-xl leading-none">{p.icon}</span>,
+    icon: p.icon,
     defaultSize: { width: 1100, height: 720 },
     component: ModuleComponent,
   } satisfies AppMeta;

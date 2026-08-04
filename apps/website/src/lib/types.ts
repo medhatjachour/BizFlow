@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from "react";
+import type { ComponentType } from "react";
 
 /** Static metadata describing an installable Nebula app. */
 export interface AppMeta {
@@ -6,7 +6,7 @@ export interface AppMeta {
   title: string;
   /** Tailwind gradient classes used for the icon tile background. */
   accent: string;
-  icon: ReactNode;
+  icon: string;
   defaultSize: { width: number; height: number };
   component: ComponentType;
 }

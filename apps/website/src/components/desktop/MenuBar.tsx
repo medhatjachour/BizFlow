@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { brandIconPath } from "@/lib/site";
 
 export default function MenuBar() {
   const [now, setNow] = useState<Date | null>(null);
@@ -18,7 +19,7 @@ export default function MenuBar() {
       <div className="flex items-center gap-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <Image
-            src="/brand/bizflow-icon.png"
+            src={brandIconPath}
             alt="BizFlow logo"
             width={20}
             height={20}
