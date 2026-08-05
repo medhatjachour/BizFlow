@@ -9,12 +9,12 @@
  *   materials.categories.ts – material category CRUD
  *   materials.batches.ts    – batch (stock lot) CRUD
  *   materials.crud.ts       – materials CRUD, session usage, stats, finance
- *   materials.logging.ts    – batch audit trail (loss / expiry / adjustment)
+ *   materials.audit.ts      – batch audit trail (loss / expiry / adjustment)
  */
 import { registerMaterialCategoryHandlers } from './materials.categories'
 import { registerMaterialBatchHandlers } from './materials.batches'
 import { registerMaterialCrudHandlers } from './materials.crud'
-import { registerMaterialLoggingHandlers } from './materials.logging'
+import { registerMaterialLoggingHandlers } from './materials.audit'
 
 export function registerMaterialHandlers(prisma: any) {
   // Material categories
