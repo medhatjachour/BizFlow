@@ -1,0 +1,142 @@
+name: Publish Commerce Installers
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/Bizflow/**"
+      - ".github/workflows/publish-commerce-installers.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-commerce-installers
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app (commerce)
+        run: npm run build:commerce
+
+      - name: Package Windows installer
+        run: npx cross-env ENABLED_MODULES=commerce electron-builder --win --x64
+
+      - name: Prepare release asset name
+        shell: pwsh
+        run: |
+          $source = Get-ChildItem dist -Filter *.exe | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $source) { throw "No .exe installer found in dist" }
+          Copy-Item $source.FullName dist/BizFlow-Commerce-windows.exe -Force
+
+      - name: Publish Windows asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: downloads-latest
+          name: BizFlow Downloads
+          prerelease: false
+          make_latest: true
+          files: apps/Bizflow/dist/BizFlow-Commerce-windows.exe
+
+  mac:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app (commerce)
+        run: npm run build:commerce
+
+      - name: Package macOS DMG
+        run: npx cross-env ENABLED_MODULES=commerce electron-builder --mac dmg
+
+      - name: Prepare release asset name
+        run: |
+          source="$(ls -t dist/*.dmg | head -n1)"
+          test -n "$source"
+          cp "$source" dist/BizFlow-Commerce-mac.dmg
+
+      - name: Publish macOS asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: downloads-latest
+          name: BizFlow Downloads
+          prerelease: false
+          make_latest: true
+          files: apps/Bizflow/dist/BizFlow-Commerce-mac.dmg
+
+  linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app (commerce)
+        run: npm run build:commerce
+
+      - name: Package Linux AppImage
+        run: npx cross-env ENABLED_MODULES=commerce electron-builder --linux AppImage
+
+      - name: Prepare release asset name
+        run: |
+          source="$(ls -t dist/*.AppImage | head -n1)"
+          test -n "$source"
+          cp "$source" dist/BizFlow-Commerce-linux.AppImage
+
+      - name: Publish Linux asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: downloads-latest
+          name: BizFlow Downloads
+          prerelease: false
+          make_latest: true
+          files: apps/Bizflow/dist/BizFlow-Commerce-linux.AppImage
