@@ -37,7 +37,7 @@ jobs:
         run: npm run build:commerce
 
       - name: Package Windows installer
-        run: npx cross-env ENABLED_MODULES=commerce electron-builder --win --x64
+        run: npx cross-env ENABLED_MODULES=commerce CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --x64 --publish never
 
       - name: Normalize release asset name
         shell: pwsh
