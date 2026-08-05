@@ -30,8 +30,10 @@ export const OSES: OSMeta[] = [
 
 export const getOS = (id: OSId) => OSES.find((o) => o.id === id)!;
 
-/** Optional direct-download base (e.g. GitHub ".../releases/latest/download"). */
-const DOWNLOAD_BASE = process.env.NEXT_PUBLIC_DOWNLOAD_BASE;
+/** Direct-download base (GitHub releases latest/download by default). */
+const DOWNLOAD_BASE =
+  process.env.NEXT_PUBLIC_DOWNLOAD_BASE ||
+  "https://github.com/medhatjachour/BizFlow/releases/latest/download";
 
 export interface ResolvedDownload {
   url: string;
@@ -53,16 +55,13 @@ export function installerFor(moduleId: string, os: OSId): ResolvedDownload {
   const slug = moduleId === "suite" ? "Suite" : (PLUGINS.find((p) => p.id === moduleId)?.name ?? moduleId).replace(/\s+/g, "");
   const fileName = `BizFlow-${slug}-${os}.${meta.ext}`;
 
-  if (DOWNLOAD_BASE) {
-    return {
-      url: `${DOWNLOAD_BASE.replace(/\/$/, "")}/${fileName}`,
-      direct: true,
-      fileName,
-      os: meta,
-      productName,
-    };
-  }
-  return { url: DEFAULT_DOWNLOAD_URL, direct: false, fileName, os: meta, productName };
+  return {
+    url: `${DOWNLOAD_BASE.replace(/\/$/, "")}/${fileName}`,
+    direct: true,
+    fileName,
+    os: meta,
+    productName,
+  };
 }
 
 /** Best-effort OS detection from the browser. */

@@ -1,4 +1,4 @@
-name: Publish Commerce Installers
+name: Publish Desktop Installers
 
 on:
   push:
@@ -13,12 +13,27 @@ permissions:
   contents: write
 
 concurrency:
-  group: publish-commerce-installers
+  group: publish-desktop-installers
   cancel-in-progress: true
 
 jobs:
   windows:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        module:
+          - suite
+          - commerce
+          - bakery
+          - restaurant
+          - coffee
+          - warehouse
+          - clinic
+          - vet
+          - pharmacy
+          - gym
     defaults:
       run:
         working-directory: apps/Bizflow
@@ -38,17 +53,35 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Build app (commerce)
-        run: npm run build:commerce
+        run: npm run build
+        env:
+          ENABLED_MODULES: ${{ matrix.module }}
 
       - name: Package Windows installer
-        run: npx cross-env ENABLED_MODULES=commerce electron-builder --win --x64
+        run: npx cross-env ENABLED_MODULES=${{ matrix.module }} CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --x64 --publish never
 
       - name: Prepare release asset name
         shell: pwsh
         run: |
+          $module = "${{ matrix.module }}"
+          $slug = switch ($module) {
+            "suite" { "Suite" }
+            "commerce" { "Commerce" }
+            "bakery" { "Bakery" }
+            "restaurant" { "Restaurant" }
+            "coffee" { "Coffee" }
+            "warehouse" { "Warehouse" }
+            "clinic" { "Clinic" }
+            "vet" { "VetClinic" }
+            "pharmacy" { "Pharmacy" }
+            "gym" { "Gym" }
+            default { (Get-Culture).TextInfo.ToTitleCase($module) }
+          }
           $source = Get-ChildItem dist -Filter *.exe | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           if (-not $source) { throw "No .exe installer found in dist" }
-          Copy-Item $source.FullName dist/BizFlow-Commerce-windows.exe -Force
+          $target = "dist/BizFlow-$slug-windows.exe"
+          Copy-Item $source.FullName $target -Force
+          "ASSET_PATH=$target" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Publish Windows asset
         uses: softprops/action-gh-release@v2
@@ -57,10 +90,27 @@ jobs:
           name: BizFlow Downloads
           prerelease: false
           make_latest: true
-          files: apps/Bizflow/dist/BizFlow-Commerce-windows.exe
+          files: |
+            apps/Bizflow/${{ env.ASSET_PATH }}
 
   mac:
     runs-on: macos-latest
+    needs: windows
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        module:
+          - suite
+          - commerce
+          - bakery
+          - restaurant
+          - coffee
+          - warehouse
+          - clinic
+          - vet
+          - pharmacy
+          - gym
     defaults:
       run:
         working-directory: apps/Bizflow
@@ -80,16 +130,34 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Build app (commerce)
-        run: npm run build:commerce
+        run: npm run build
+        env:
+          ENABLED_MODULES: ${{ matrix.module }}
 
       - name: Package macOS DMG
-        run: npx cross-env ENABLED_MODULES=commerce electron-builder --mac dmg
+        run: npx cross-env ENABLED_MODULES=${{ matrix.module }} electron-builder --mac dmg --publish never
 
       - name: Prepare release asset name
         run: |
+          module="${{ matrix.module }}"
+          case "$module" in
+            suite) slug="Suite" ;;
+            commerce) slug="Commerce" ;;
+            bakery) slug="Bakery" ;;
+            restaurant) slug="Restaurant" ;;
+            coffee) slug="Coffee" ;;
+            warehouse) slug="Warehouse" ;;
+            clinic) slug="Clinic" ;;
+            vet) slug="VetClinic" ;;
+            pharmacy) slug="Pharmacy" ;;
+            gym) slug="Gym" ;;
+            *) slug="${module^}" ;;
+          esac
           source="$(ls -t dist/*.dmg | head -n1)"
           test -n "$source"
-          cp "$source" dist/BizFlow-Commerce-mac.dmg
+          target="dist/BizFlow-${slug}-mac.dmg"
+          cp "$source" "$target"
+          echo "ASSET_PATH=$target" >> "$GITHUB_ENV"
 
       - name: Publish macOS asset
         uses: softprops/action-gh-release@v2
@@ -98,10 +166,27 @@ jobs:
           name: BizFlow Downloads
           prerelease: false
           make_latest: true
-          files: apps/Bizflow/dist/BizFlow-Commerce-mac.dmg
+          files: |
+            apps/Bizflow/${{ env.ASSET_PATH }}
 
   linux:
     runs-on: ubuntu-latest
+    needs: mac
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        module:
+          - suite
+          - commerce
+          - bakery
+          - restaurant
+          - coffee
+          - warehouse
+          - clinic
+          - vet
+          - pharmacy
+          - gym
     defaults:
       run:
         working-directory: apps/Bizflow
@@ -121,16 +206,34 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Build app (commerce)
-        run: npm run build:commerce
+        run: npm run build
+        env:
+          ENABLED_MODULES: ${{ matrix.module }}
 
       - name: Package Linux AppImage
-        run: npx cross-env ENABLED_MODULES=commerce electron-builder --linux AppImage
+        run: npx cross-env ENABLED_MODULES=${{ matrix.module }} electron-builder --linux AppImage --publish never
 
       - name: Prepare release asset name
         run: |
+          module="${{ matrix.module }}"
+          case "$module" in
+            suite) slug="Suite" ;;
+            commerce) slug="Commerce" ;;
+            bakery) slug="Bakery" ;;
+            restaurant) slug="Restaurant" ;;
+            coffee) slug="Coffee" ;;
+            warehouse) slug="Warehouse" ;;
+            clinic) slug="Clinic" ;;
+            vet) slug="VetClinic" ;;
+            pharmacy) slug="Pharmacy" ;;
+            gym) slug="Gym" ;;
+            *) slug="${module^}" ;;
+          esac
           source="$(ls -t dist/*.AppImage | head -n1)"
           test -n "$source"
-          cp "$source" dist/BizFlow-Commerce-linux.AppImage
+          target="dist/BizFlow-${slug}-linux.AppImage"
+          cp "$source" "$target"
+          echo "ASSET_PATH=$target" >> "$GITHUB_ENV"
 
       - name: Publish Linux asset
         uses: softprops/action-gh-release@v2
@@ -139,4 +242,5 @@ jobs:
           name: BizFlow Downloads
           prerelease: false
           make_latest: true
-          files: apps/Bizflow/dist/BizFlow-Commerce-linux.AppImage
+          files: |
+            apps/Bizflow/${{ env.ASSET_PATH }}
