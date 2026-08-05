@@ -314,11 +314,23 @@ export const BIZFLOW_URL =
 /** Default download URL when a plugin-specific one isn't configured. */
 export const DEFAULT_DOWNLOAD_URL =
   process.env.NEXT_PUBLIC_DOWNLOAD_URL ||
-  "https://github.com/medhatjachour/electron-app/releases/latest";
+  "https://github.com/medhatjachour/BizFlow/releases/latest";
+
+/** Build an in-site download URL with optional OS preselection and auto-start. */
+export function downloadPageUrlFor(
+  moduleId: string,
+  opts?: { os?: "windows" | "mac" | "linux"; autoStart?: boolean }
+): string {
+  const qs = new URLSearchParams();
+  if (moduleId) qs.set("module", moduleId);
+  if (opts?.os) qs.set("os", opts.os);
+  if (opts?.autoStart) qs.set("autoStart", "1");
+  return qs.size ? `/download?${qs.toString()}` : "/download";
+}
 
 /** Resolve the download URL for a plugin, honoring its per-plugin env override. */
 export function downloadUrlFor(plugin: BizPlugin): string {
-  return process.env[plugin.downloadEnv] || DEFAULT_DOWNLOAD_URL;
+  return downloadPageUrlFor(plugin.id);
 }
 
 /**

@@ -1,0 +1,215 @@
+name: Build Desktop Release Asset
+
+on:
+  workflow_dispatch:
+    inputs:
+      module:
+        description: "Module id (suite, commerce, bakery, restaurant, coffee, warehouse, clinic, vet, pharmacy, gym)"
+        required: true
+        default: "suite"
+        type: string
+      os:
+        description: "Target operating system"
+        required: true
+        default: "windows"
+        type: choice
+        options:
+          - windows
+          - mac
+          - linux
+      release_tag:
+        description: "Release tag to upload into"
+        required: true
+        default: "downloads-latest"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    if: ${{ inputs.os == 'windows' }}
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+        env:
+          ENABLED_MODULES: ${{ inputs.module }}
+
+      - name: Package Windows installer
+        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --win --x64
+
+      - name: Normalize asset file name
+        shell: pwsh
+        run: |
+          $module = "${{ inputs.module }}"
+          $slug = switch ($module) {
+            "suite" { "Suite" }
+            "commerce" { "Commerce" }
+            "bakery" { "Bakery" }
+            "restaurant" { "Restaurant" }
+            "coffee" { "Coffee" }
+            "warehouse" { "Warehouse" }
+            "clinic" { "Clinic" }
+            "vet" { "VetClinic" }
+            "pharmacy" { "Pharmacy" }
+            "gym" { "Gym" }
+            default { (Get-Culture).TextInfo.ToTitleCase($module) }
+          }
+          $source = Get-ChildItem dist -Filter *.exe | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $source) { throw "No .exe installer found in dist" }
+          $target = "dist/BizFlow-$slug-windows.exe"
+          Copy-Item $source.FullName $target -Force
+          "ASSET_PATH=$target" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Upload/Update release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: BizFlow Downloads
+          prerelease: false
+          make_latest: true
+          files: |
+            apps/Bizflow/${{ env.ASSET_PATH }}
+          generate_release_notes: false
+
+  build-mac:
+    if: ${{ inputs.os == 'mac' }}
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+        env:
+          ENABLED_MODULES: ${{ inputs.module }}
+
+      - name: Package macOS installer
+        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --mac
+
+      - name: Normalize asset file name
+        run: |
+          module="${{ inputs.module }}"
+          case "$module" in
+            suite) slug="Suite" ;;
+            commerce) slug="Commerce" ;;
+            bakery) slug="Bakery" ;;
+            restaurant) slug="Restaurant" ;;
+            coffee) slug="Coffee" ;;
+            warehouse) slug="Warehouse" ;;
+            clinic) slug="Clinic" ;;
+            vet) slug="VetClinic" ;;
+            pharmacy) slug="Pharmacy" ;;
+            gym) slug="Gym" ;;
+            *) slug="${module^}" ;;
+          esac
+          source="$(ls -t dist/*.dmg | head -n1)"
+          test -n "$source"
+          target="dist/BizFlow-${slug}-mac.dmg"
+          cp "$source" "$target"
+          echo "ASSET_PATH=$target" >> "$GITHUB_ENV"
+
+      - name: Upload/Update release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: BizFlow Downloads
+          prerelease: false
+          make_latest: true
+          files: |
+            apps/Bizflow/${{ env.ASSET_PATH }}
+          generate_release_notes: false
+
+  build-linux:
+    if: ${{ inputs.os == 'linux' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+        env:
+          ENABLED_MODULES: ${{ inputs.module }}
+
+      - name: Package Linux AppImage
+        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --linux AppImage
+
+      - name: Normalize asset file name
+        run: |
+          module="${{ inputs.module }}"
+          case "$module" in
+            suite) slug="Suite" ;;
+            commerce) slug="Commerce" ;;
+            bakery) slug="Bakery" ;;
+            restaurant) slug="Restaurant" ;;
+            coffee) slug="Coffee" ;;
+            warehouse) slug="Warehouse" ;;
+            clinic) slug="Clinic" ;;
+            vet) slug="VetClinic" ;;
+            pharmacy) slug="Pharmacy" ;;
+            gym) slug="Gym" ;;
+            *) slug="${module^}" ;;
+          esac
+          source="$(ls -t dist/*.AppImage | head -n1)"
+          test -n "$source"
+          target="dist/BizFlow-${slug}-linux.AppImage"
+          cp "$source" "$target"
+          echo "ASSET_PATH=$target" >> "$GITHUB_ENV"
+
+      - name: Upload/Update release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          name: BizFlow Downloads
+          prerelease: false
+          make_latest: true
+          files: |
+            apps/Bizflow/${{ env.ASSET_PATH }}
+          generate_release_notes: false

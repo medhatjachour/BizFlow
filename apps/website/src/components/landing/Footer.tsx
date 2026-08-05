@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { DEFAULT_DOWNLOAD_URL } from "@/lib/plugins";
 import { brandIconPath } from "@/lib/site";
 
 export default function Footer() {
@@ -37,14 +36,12 @@ export default function Footer() {
           >
             Try in browser
           </Link>
-          <a
-            href={DEFAULT_DOWNLOAD_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/download"
             className="glass rounded-2xl px-7 py-3.5 font-semibold transition hover:bg-white/10"
           >
             Download for desktop
-          </a>
+          </Link>
         </div>
       </motion.div>
 

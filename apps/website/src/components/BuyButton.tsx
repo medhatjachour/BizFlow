@@ -45,7 +45,11 @@ export default function BuyButton({
         // Payments not enabled yet — fall back to download if we have one.
         if (fallbackUrl) {
           track("checkout_fallback", { item });
-          window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+          if (/^https?:\/\//i.test(fallbackUrl)) {
+            window.open(fallbackUrl, "_blank", "noopener,noreferrer");
+          } else {
+            window.location.href = fallbackUrl;
+          }
           return;
         }
         setError("Payments aren't enabled yet.");

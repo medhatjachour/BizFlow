@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { PLUGINS, DEFAULT_DOWNLOAD_URL } from "@/lib/plugins";
+import { PLUGINS, downloadPageUrlFor } from "@/lib/plugins";
 import BuyButton from "@/components/BuyButton";
 import { usePrices } from "@/components/usePrices";
 
@@ -99,7 +99,7 @@ export default function Pricing() {
           <BuyButton
             item="suite"
             label="Get the full suite"
-            fallbackUrl={DEFAULT_DOWNLOAD_URL}
+            fallbackUrl={downloadPageUrlFor("suite")}
             className="mt-8 w-full rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-6 py-3 text-center text-sm font-semibold text-white transition hover:scale-[1.02] disabled:opacity-60"
           />
         </motion.div>

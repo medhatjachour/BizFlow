@@ -3,18 +3,22 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { PLUGINS } from "@/lib/plugins";
 import { OSES, detectOS, installerFor, type OSId } from "@/lib/downloads";
 import { brandIconPath } from "@/lib/site";
 import BuyButton from "@/components/BuyButton";
 import DownloadButton from "@/components/DownloadButton";
 import { usePrices } from "@/components/usePrices";
+import { downloadPageUrlFor } from "@/lib/plugins";
 
 const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
 
 type Target = { id: string; name: string; icon: string; accent: string; price: number; tagline: string };
 
-export default function DownloadPage() {
+function DownloadPageContent() {
+  const searchParams = useSearchParams();
   const prices = usePrices();
   const targets: Target[] = [
     { id: "suite", name: "Full Suite", icon: "🚀", accent: "from-biz-400 to-biz-600", price: prices.suite, tagline: "Every module, one app" },
@@ -23,10 +27,23 @@ export default function DownloadPage() {
 
   const [moduleId, setModuleId] = useState<string>("suite");
   const [os, setOs] = useState<OSId>("windows");
+  const autoStart = searchParams.get("autoStart") === "1";
 
   useEffect(() => {
     setOs(detectOS());
   }, []);
+
+  useEffect(() => {
+    const qModule = searchParams.get("module");
+    const qOS = searchParams.get("os");
+
+    if (qModule && targets.some((t) => t.id === qModule)) {
+      setModuleId(qModule);
+    }
+    if (qOS && OSES.some((o) => o.id === qOS)) {
+      setOs(qOS as OSId);
+    }
+  }, [searchParams, targets]);
 
   const target = targets.find((t) => t.id === moduleId)!;
   const dl = installerFor(moduleId, os);
@@ -131,12 +148,13 @@ export default function DownloadPage() {
               moduleId={moduleId}
               os={os}
               productName={target.name}
+              autoStart={autoStart}
               className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-6 py-3 text-sm font-semibold text-white transition hover:shadow-[0_0_24px_rgba(5,121,203,0.6)] disabled:opacity-70"
             />
             <BuyButton
               item={item}
               label={`Buy license · ${usd(target.price)}`}
-              fallbackUrl={dl.url}
+              fallbackUrl={downloadPageUrlFor(moduleId, { os })}
               className="rounded-xl border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-foreground/80 transition hover:bg-white/[0.08]"
             />
           </div>
@@ -166,5 +184,13 @@ export default function DownloadPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function DownloadPage() {
+  return (
+    <Suspense fallback={<main className="mx-auto min-h-screen w-full max-w-5xl px-4 pb-24 pt-28" />}>
+      <DownloadPageContent />
+    </Suspense>
   );
 }

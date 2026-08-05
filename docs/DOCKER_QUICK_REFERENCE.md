@@ -332,3 +332,86 @@ scp ./database.db root@your.vps.ip:/opt/bizflow/data/bizflow/
 - **Check DNS resolution:** `docker exec bizflow-app nslookup google.com`
 - **Test endpoint:** `docker exec bizflow-app curl -v http://localhost:8787/health`
 - **Watch for memory leaks:** `docker stats --no-stream --all | sort -k4 -rn`
+
+---
+
+## GitHub Sync vs Manual Server Push
+
+### Recommended approach
+
+Use a GitHub-synced workflow (push to GitHub, then pull on server) instead of
+manual `scp` for every code change.
+
+Manual copy is okay for emergencies, but GitHub sync is safer and easier to
+maintain.
+
+### Why GitHub sync is better
+
+- One source of truth (`main`)
+- Easy rollback with commit SHA
+- Clear history of production changes
+- Lower risk of missing files during deploy
+
+## Change -> Server Deployment Flow
+
+### 1) Local machine
+
+```bash
+git add .
+git commit -m "describe your change"
+git push origin main
+```
+
+### 2) Server deploy
+
+```bash
+ssh medhat@your.vps.ip
+cd ~/bizflow
+
+git fetch origin
+git checkout main
+git pull --ff-only origin main
+
+docker compose up -d --build bizflow-app
+docker compose ps
+docker compose logs --tail=120 bizflow-app
+```
+
+### 3) Rollback if needed
+
+```bash
+cd ~/bizflow
+git log --oneline -n 10
+git checkout <last_good_commit>
+docker compose up -d --build bizflow-app
+```
+
+## One-liner Deploy (Fast Path)
+
+```bash
+ssh medhat@your.vps.ip "cd ~/bizflow && git pull --ff-only origin main && docker compose up -d --build bizflow-app && docker compose ps"
+```
+
+## Optional Async Auto-Deploy
+
+If you want auto-sync with GitHub ("async"), use one of these:
+
+- GitHub Actions -> SSH -> `git pull` + `docker compose up -d --build`
+- GitHub webhook -> server script doing the same
+
+Recommended guardrails:
+
+- Auto-deploy only from `main`
+- Use pull requests before merge to `main`
+- Keep rollback commands ready
+
+## When to Use SCP
+
+Use `scp` only for:
+
+- Emergency hotfix if git is unavailable
+- Backups, logs, and artifacts
+- Temporary debug files
+
+After an SCP hotfix, commit and push the same change to GitHub immediately so
+server and repo do not drift.

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
+import { withBasePath } from "@/lib/site";
 
 interface Resolution {
   state: "ready" | "building" | "fallback";
@@ -14,6 +15,7 @@ interface Props {
   moduleId: string;
   os: string;
   productName: string;
+  autoStart?: boolean;
   className?: string;
   children?: React.ReactNode;
 }
@@ -32,6 +34,7 @@ export default function DownloadButton({
   moduleId,
   os,
   productName,
+  autoStart = false,
   className,
   children,
 }: Props) {
@@ -39,6 +42,7 @@ export default function DownloadButton({
   const [message, setMessage] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollsRef = useRef(0);
+  const autoStartedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -50,6 +54,7 @@ export default function DownloadButton({
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
     pollsRef.current = 0;
+    autoStartedRef.current = false;
     setPhase("idle");
     setMessage(null);
   }, [moduleId, os]);
@@ -60,9 +65,18 @@ export default function DownloadButton({
     window.location.href = url;
   }
 
-  function openFallback(url: string) {
+  function openFallback(url: string, forceSameTab = false) {
     track("download_fallback", { module: moduleId, os });
-    window.open(url, "_blank", "noopener,noreferrer");
+    if (forceSameTab) {
+      window.location.href = url;
+      return;
+    }
+
+    const popup = window.open(url, "_blank", "noopener,noreferrer");
+    // Some browsers block popups unless opened from a direct click.
+    if (!popup) {
+      window.location.href = url;
+    }
   }
 
   function beginPolling() {
@@ -79,7 +93,9 @@ export default function DownloadButton({
       }
       try {
         const res = await fetch(
-          `/api/download?module=${encodeURIComponent(moduleId)}&os=${encodeURIComponent(os)}`,
+          withBasePath(
+            `/api/download?module=${encodeURIComponent(moduleId)}&os=${encodeURIComponent(os)}`
+          ),
           { cache: "no-store" }
         );
         const data = (await res.json()) as Resolution;
@@ -100,7 +116,7 @@ export default function DownloadButton({
     setMessage(null);
     track("download_request", { module: moduleId, os });
     try {
-      const res = await fetch("/api/download", {
+      const res = await fetch(withBasePath("/api/download"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ module: moduleId, os }),
@@ -115,13 +131,20 @@ export default function DownloadButton({
       } else {
         // Fallback: open the releases page so the link never dead-ends.
         setPhase("idle");
-        openFallback(data.url);
+        openFallback(data.url, autoStart);
       }
     } catch {
       setPhase("error");
       setMessage("Couldn't start the download. Please try again.");
     }
   }
+
+  useEffect(() => {
+    if (!autoStart || autoStartedRef.current) return;
+    if (phase !== "idle") return;
+    autoStartedRef.current = true;
+    void onClick();
+  }, [autoStart, phase]);
 
   const busy = phase === "working" || phase === "building";
   const label =

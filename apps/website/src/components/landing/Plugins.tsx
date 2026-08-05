@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { PLUGINS, downloadUrlFor } from "@/lib/plugins";
+import { PLUGINS, downloadPageUrlFor } from "@/lib/plugins";
 import BuyButton from "@/components/BuyButton";
 import { usePrices } from "@/components/usePrices";
 
@@ -134,7 +134,7 @@ export default function Plugins() {
                 <BuyButton
                   item={`module:${p.id}`}
                   label="Buy"
-                  fallbackUrl={downloadUrlFor(p)}
+                  fallbackUrl={downloadPageUrlFor(p.id)}
                   className="glass flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold transition hover:bg-white/10 disabled:opacity-60"
                 />
               </div>
