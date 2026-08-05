@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: apps/Bizflow/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build app (commerce)
         run: npm run build:commerce
@@ -77,7 +77,7 @@ jobs:
           cache-dependency-path: apps/Bizflow/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build app (commerce)
         run: npm run build:commerce
@@ -118,7 +118,7 @@ jobs:
           cache-dependency-path: apps/Bizflow/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build app (commerce)
         run: npm run build:commerce
