@@ -111,3 +111,78 @@ Use one of these two production models:
 2. Keep prebuilt popular installers + on-demand build for less-used combinations.
 
 This gives users a clean installer-first experience while keeping operations manageable.
+
+## Recommended production blueprint (next step)
+
+For BizFlow scale (many modules x 3 OS), use this architecture:
+
+1. CI/build server builds installers on push to main (or on release tag), not on user click.
+2. Artifacts are uploaded to object storage + CDN (for example Cloudflare R2/S3), not only GitHub Releases.
+3. Website API resolves from a versioned manifest, then falls back to GitHub release only as safety.
+4. Keep only a short history of installers (for example last 3 versions per module+OS).
+
+### Artifact path format
+
+Use deterministic paths:
+
+- `installers/<module>/<os>/latest/BizFlow-<Module>-<os>.<ext>`
+- `installers/<module>/<os>/<version>/BizFlow-<Module>-<os>.<ext>`
+- `manifests/latest.json`
+
+### Manifest shape
+
+`manifests/latest.json` should include explicit URLs and checksums:
+
+```json
+{
+  "generatedAt": "2026-08-06T00:00:00Z",
+  "modules": {
+    "commerce": {
+      "windows": {
+        "version": "1.0.12",
+        "fileName": "BizFlow-Commerce-windows.exe",
+        "url": "https://downloads.bizflow.app/installers/commerce/windows/latest/BizFlow-Commerce-windows.exe",
+        "sha256": "..."
+      }
+    }
+  }
+}
+```
+
+### Cleanup policy
+
+After each successful publish:
+
+1. Keep `latest` pointer files.
+2. Keep last 3 version folders per module+OS.
+3. Delete older objects automatically with a cleanup script/job.
+
+### DB strategy for module installers
+
+Yes, each module installer should ship only what it needs.
+
+Rule set:
+
+1. Include shared core tables in every build.
+2. Include only selected module tables in the module installer template DB.
+3. If the customer adds another module later, run additive migrations to add missing tables.
+4. Keep one compatibility contract for core tables to avoid plugin drift.
+
+This keeps installer size and initialization lean while preserving upgrade safety.
+
+## Server validation commands
+
+Use these checks in production after every publish:
+
+```bash
+# direct asset existence
+curl -I https://github.com/<owner>/<repo>/releases/download/downloads-latest/BizFlow-Commerce-windows.exe
+
+# website resolver state
+curl https://<domain>/bizflow/api/download?module=commerce&os=windows
+```
+
+Expected steady-state response:
+
+- `state: "ready"`
+- `url` points to direct installer
