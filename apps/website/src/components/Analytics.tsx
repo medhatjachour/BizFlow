@@ -22,12 +22,14 @@ export default function Analytics() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-    setConsentState(getConsent());
-    const onChange = (e: Event) =>
-      setConsentState((e as CustomEvent<ConsentValue>).detail);
-    window.addEventListener("bizflow:consent", onChange);
-    return () => window.removeEventListener("bizflow:consent", onChange);
+    (async () => {
+      setMounted(true);
+      setConsentState(getConsent());
+      const onChange = (e: Event) =>
+        setConsentState((e as CustomEvent<ConsentValue>).detail);
+      window.addEventListener("bizflow:consent", onChange);
+      return () => window.removeEventListener("bizflow:consent", onChange);
+    })();
   }, []);
 
   if (!ANALYTICS_ENABLED || !mounted) return null;
@@ -69,10 +71,13 @@ gtag('config', '${GA_ID}', { anonymize_ip: true });`}
           className="glass-strong fixed inset-x-3 bottom-3 z-[60] mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl px-5 py-4 shadow-2xl shadow-black/50 sm:flex-row sm:items-center sm:justify-between"
         >
           <p className="text-sm text-foreground/80">
-            We use privacy-friendly analytics to understand what's useful — no
-            ad tracking, no selling your data.{" "}
-            <span className="text-foreground/50">You can change this anytime.</span>
+            We use privacy-friendly analytics to understand what&apos;s useful —
+            no ad tracking, no selling your data.{" "}
+            <span className="text-foreground/50">
+              You can change this anytime.
+            </span>
           </p>
+
           <div className="flex shrink-0 gap-2">
             <button
               onClick={decline}

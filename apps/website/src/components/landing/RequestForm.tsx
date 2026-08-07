@@ -80,10 +80,13 @@ export default function RequestForm() {
 
   // Auto-size the request from the number of capabilities chosen (until the
   // user overrides it manually) so the estimate reflects what they actually need.
-  useEffect(() => {
-    if (complexityTouched || type === "bundle") return;
-    const n = caps.length;
-    setComplexity(n >= 8 ? "large" : n >= 4 ? "medium" : "small");
+  useEffect( () => {
+    (async () => {
+      if (complexityTouched || type === "bundle") return;
+      const n = caps.length;
+      setComplexity(n >= 8 ? "large" : n >= 4 ? "medium" : "small");
+    })();
+  
   }, [caps, complexityTouched, type]);
 
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">(

@@ -54,7 +54,7 @@ export const PLUGINS: BizPlugin[] = [
     route: "/products",
     popular: true,
     bestFor: "Retail shops, boutiques & multi-branch stores",
-    price: 299,
+    price: 100,
     highlights: [
       { value: "30s", label: "to ring a sale" },
       { value: "∞", label: "products & variants" },
@@ -84,7 +84,7 @@ export const PLUGINS: BizPlugin[] = [
     accent: "from-amber-300 to-orange-500",
     route: "/bakery",
     bestFor: "Bakeries, patisseries & central kitchens",
-    price: 199,
+    price: 100,
     highlights: [
       { value: "−40%", label: "ingredient waste" },
       { value: "per-gram", label: "recipe costing" },
@@ -113,7 +113,7 @@ export const PLUGINS: BizPlugin[] = [
     accent: "from-rose-400 to-pink-600",
     route: "/restaurant",
     bestFor: "Restaurants, cafés & dine-in venues",
-    price: 249,
+    price: 100,
     highlights: [
       { value: "live", label: "table layout" },
       { value: "1-tap", label: "order to kitchen" },
@@ -142,7 +142,7 @@ export const PLUGINS: BizPlugin[] = [
     accent: "from-green-400 to-blue-500",
     route: "/coffee",
     bestFor: "Cafés, coffee shops & small eateries",
-    price: 249,
+    price: 100,
     highlights: [
       { value: "live", label: "table layout" },
       { value: "1-tap", label: "order to kitchen" },
@@ -170,7 +170,7 @@ export const PLUGINS: BizPlugin[] = [
     accent: "from-blue-400 to-indigo-600",
     route: "/warehouse",
     bestFor: "Distributors & multi-warehouse operations",
-    price: 199,
+    price: 100,
     highlights: [
       { value: "multi", label: "locations & bins" },
       { value: "audited", label: "every transfer" },
@@ -198,7 +198,7 @@ export const PLUGINS: BizPlugin[] = [
     accent: "from-teal-300 to-cyan-600",
     route: "/clinic",
     bestFor: "Clinics, dentists & private practices",
-    price: 279,
+    price: 100,
     highlights: [
       { value: "full", label: "patient history" },
       { value: "PDF", label: "prescriptions" },
@@ -227,7 +227,7 @@ export const PLUGINS: BizPlugin[] = [
     accent: "from-violet-400 to-purple-600",
     route: "/vet",
     bestFor: "Veterinary clinics & animal hospitals",
-    price: 279,
+    price: 100,
     highlights: [
       { value: "pet↔owner", label: "linked records" },
       { value: "smart", label: "appointment alerts" },
@@ -257,7 +257,7 @@ export const PLUGINS: BizPlugin[] = [
     route: "/pharmacy",
     popular: true,
     bestFor: "Pharmacies, drugstores & medical retailers",
-    price: 279,
+    price: 100,
     highlights: [
       { value: "FEFO", label: "expiry-safe stock" },
       { value: "scan", label: "sell & receive" },
@@ -287,7 +287,7 @@ export const PLUGINS: BizPlugin[] = [
     accent: "from-orange-400 to-red-500",
     route: "/gym",
     bestFor: "Gyms, studios & fitness centers",
-    price: 199,
+    price: 100,
     highlights: [
       { value: "flexible", label: "plans & freezes" },
       { value: "QR", label: "coach check-in" },

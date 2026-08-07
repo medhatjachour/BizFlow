@@ -9,9 +9,11 @@ export default function MenuBar() {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+    (async () => {
+      setNow(new Date());
+      const id = setInterval(() => setNow(new Date()), 1000);
+      return () => clearInterval(id);
+    })();
   }, []);
 
   return (

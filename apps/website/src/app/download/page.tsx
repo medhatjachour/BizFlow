@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useMemo} from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -20,20 +20,23 @@ type Target = { id: string; name: string; icon: string; accent: string; price: n
 function DownloadPageContent() {
   const searchParams = useSearchParams();
   const prices = usePrices();
-  const targets: Target[] = [
+  const targets: Target[] = useMemo(() => [
     { id: "suite", name: "Full Suite", icon: "🚀", accent: "from-biz-400 to-biz-600", price: prices.suite, tagline: "Every module, one app" },
     ...PLUGINS.map((p) => ({ id: p.id, name: p.name, icon: p.icon, accent: p.accent, price: prices.modules[p.id] ?? p.price, tagline: p.tagline })),
-  ];
+  ], [prices]);
 
   const [moduleId, setModuleId] = useState<string>("suite");
   const [os, setOs] = useState<OSId>("windows");
   const autoStart = searchParams.get("autoStart") === "1";
 
   useEffect(() => {
-    setOs(detectOS());
+    (async () => {
+      setOs(detectOS());
+    })();
   }, []);
 
   useEffect(() => {
+    (async () => {
     const qModule = searchParams.get("module");
     const qOS = searchParams.get("os");
 
@@ -43,6 +46,7 @@ function DownloadPageContent() {
     if (qOS && OSES.some((o) => o.id === qOS)) {
       setOs(qOS as OSId);
     }
+    })();
   }, [searchParams, targets]);
 
   const target = targets.find((t) => t.id === moduleId)!;

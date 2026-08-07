@@ -22381,7 +22381,7 @@ function registerMaterialCrudHandlers(prisma2) {
   });
 }
 
-// src/plugins/clinic/handlers/materials.logging.ts
+// src/plugins/clinic/handlers/materials.audit.ts
 init_electron_node();
 function registerMaterialLoggingHandlers(prisma2) {
   ipcMain.handle("clinic:batches:logLoss", async (_e, {
@@ -28377,7 +28377,7 @@ async function main() {
     "pharmacy",
     "coffee"
   ];
-  ipcMain.handle("module:getEnabled", (event = {}) => {
+  ipcMain.handle("module:getEnabled", (event) => {
     const only = event?.only;
     if (!only)
       return ALL_MODULES;

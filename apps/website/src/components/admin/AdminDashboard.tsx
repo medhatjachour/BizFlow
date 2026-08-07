@@ -628,8 +628,9 @@ function PricingPanel() {
   }
 
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    (async () => {
+      await load();
+    })();
   }, []);
 
   async function save() {

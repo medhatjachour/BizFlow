@@ -52,11 +52,13 @@ export default function DownloadButton({
 
   // Reset to idle if the selection changes mid-flight.
   useEffect(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollsRef.current = 0;
-    autoStartedRef.current = false;
-    setPhase("idle");
-    setMessage(null);
+    (async () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollsRef.current = 0;
+      autoStartedRef.current = false;
+      setPhase("idle");
+      setMessage(null);
+    })();
   }, [moduleId, os]);
 
   function startDownload(url: string) {
@@ -140,10 +142,12 @@ export default function DownloadButton({
   }
 
   useEffect(() => {
-    if (!autoStart || autoStartedRef.current) return;
-    if (phase !== "idle") return;
-    autoStartedRef.current = true;
-    void onClick();
+    (async () => {
+      if (!autoStart || autoStartedRef.current) return;
+      if (phase !== "idle") return;
+      autoStartedRef.current = true;
+      void onClick();
+    })();
   }, [autoStart, phase]);
 
   const busy = phase === "working" || phase === "building";
