@@ -107,6 +107,9 @@ model License {
   orderId       String       @unique
   key           String       @unique
   status        LicenseStatus @default(ACTIVE)
+  deviceFingerprint String?
+  deviceName    String?
+  deviceActivatedAt DateTime?
   revokedReason String?
   issuedAt      DateTime     @default(now())
   revokedAt     DateTime?
@@ -116,6 +119,7 @@ model License {
 
   @@index([customerId])
   @@index([status])
+  @@index([deviceFingerprint])
 }
 
 model OrderAudit {

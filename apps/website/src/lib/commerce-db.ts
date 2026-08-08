@@ -187,6 +187,88 @@ export async function getSupportTicketByPublicId(publicId: string) {
   });
 }
 
+export async function addSupportReplyByPublicId(params: {
+  publicId: string;
+  message: string;
+  status?: "OPEN" | "IN_PROGRESS" | "WAITING_CUSTOMER" | "RESOLVED" | "CLOSED";
+}) {
+  const ticket = await prisma.supportTicket.findUnique({ where: { publicId: params.publicId } });
+  if (!ticket) return null;
+
+  return prisma.supportTicket.update({
+    where: { publicId: params.publicId },
+    data: {
+      status: params.status,
+      lastMessageAt: new Date(),
+      messages: {
+        create: {
+          senderType: "support",
+          body: params.message,
+        },
+      },
+    },
+    include: { messages: { orderBy: { createdAt: "asc" } } },
+  });
+}
+
+export type DeviceActivationResult =
+  | { ok: true; itemId: string; activatedNow: boolean; deviceFingerprint: string; deviceName: string | null }
+  | { ok: false; reason: "NOT_FOUND" | "LOCKED_TO_OTHER_DEVICE"; currentDeviceFingerprint?: string | null; currentDeviceName?: string | null };
+
+export async function activateLicenseForDevice(params: {
+  email: string;
+  licenseKey: string;
+  deviceFingerprint: string;
+  deviceName?: string;
+}): Promise<DeviceActivationResult> {
+  const email = normalizeEmail(params.email);
+  const licenseKey = normalizeLicense(params.licenseKey);
+  const deviceFingerprint = params.deviceFingerprint.trim();
+  const deviceName = params.deviceName?.trim() || null;
+
+  const license = await prisma.license.findFirst({
+    where: {
+      key: licenseKey,
+      status: "ACTIVE",
+      customer: { email },
+      order: { paymentStatus: "paid" },
+    },
+    include: { order: true },
+  });
+
+  if (!license) {
+    return { ok: false, reason: "NOT_FOUND" };
+  }
+
+  if (license.deviceFingerprint && license.deviceFingerprint !== deviceFingerprint) {
+    return {
+      ok: false,
+      reason: "LOCKED_TO_OTHER_DEVICE",
+      currentDeviceFingerprint: license.deviceFingerprint,
+      currentDeviceName: license.deviceName,
+    };
+  }
+
+  const activatedNow = !license.deviceFingerprint;
+
+  await prisma.license.update({
+    where: { id: license.id },
+    data: {
+      deviceFingerprint,
+      deviceName,
+      deviceActivatedAt: license.deviceActivatedAt ?? new Date(),
+    },
+  });
+
+  return {
+    ok: true,
+    itemId: license.order.itemId,
+    activatedNow,
+    deviceFingerprint,
+    deviceName,
+  };
+}
+
 export async function createPasswordResetToken(email: string) {
   const customer = await prisma.customer.findUnique({ where: { email: normalizeEmail(email) } });
   if (!customer) return null;

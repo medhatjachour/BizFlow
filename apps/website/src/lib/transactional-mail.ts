@@ -204,3 +204,47 @@ export async function sendSupportTicketEmails(params: {
     reason: reasons.length ? reasons.join("; ") : undefined,
   };
 }
+
+export async function sendSupportAgentReplyEmail(params: {
+  customerEmail: string;
+  ticketId: string;
+  message: string;
+  status: string;
+}): Promise<{ sent: boolean; reason?: string }> {
+  const transport = createTransport();
+  if (!transport) {
+    return { sent: false, reason: "SMTP_NOT_CONFIGURED" };
+  }
+
+  const from = senderAddress();
+  const statusUrl = `${siteUrl}${withBasePath("/support/status")}`;
+
+  try {
+    await transport.sendMail({
+      from,
+      to: params.customerEmail,
+      subject: `Update on your support ticket (${params.ticketId})`,
+      text: [
+        `Ticket: ${params.ticketId}`,
+        `Status: ${params.status}`,
+        "",
+        "Support reply:",
+        params.message,
+        "",
+        `Track status: ${statusUrl}`,
+      ].join("\n"),
+      html: `
+        <h2>Support Ticket Update</h2>
+        <p><strong>Ticket:</strong> ${params.ticketId}</p>
+        <p><strong>Status:</strong> ${params.status}</p>
+        <h3>Support reply</h3>
+        <pre style="white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace">${params.message}</pre>
+        <p><a href="${statusUrl}">Track your ticket status</a></p>
+      `,
+    });
+
+    return { sent: true };
+  } catch (error) {
+    return { sent: false, reason: (error as Error).message };
+  }
+}

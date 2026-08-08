@@ -648,6 +648,7 @@ function TicketsPanel({ tickets }: { tickets: AdminSupportTicket[] }) {
   const [priority, setPriority] = useState<"all" | "normal" | "high" | "urgent">("all");
   const [busyTicket, setBusyTicket] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
 
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -674,6 +675,25 @@ function TicketsPanel({ tickets }: { tickets: AdminSupportTicket[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ publicId, status }),
       });
+      router.refresh();
+    } finally {
+      setBusyTicket(null);
+    }
+  }
+
+  async function sendReply(publicId: string, status: TicketStatus) {
+    const message = (replyDrafts[publicId] ?? "").trim();
+    if (message.length < 3) return;
+
+    setBusyTicket(publicId);
+    try {
+      await fetch(withBasePath("/api/admin/support-tickets"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId, message, status }),
+      });
+
+      setReplyDrafts((prev) => ({ ...prev, [publicId]: "" }));
       router.refresh();
     } finally {
       setBusyTicket(null);
@@ -819,6 +839,33 @@ function TicketsPanel({ tickets }: { tickets: AdminSupportTicket[] }) {
                           >
                             Reply by email
                           </a>
+
+                          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-foreground/40">
+                              Reply from dashboard
+                            </p>
+                            <textarea
+                              value={replyDrafts[t.publicId] ?? ""}
+                              onChange={(e) =>
+                                setReplyDrafts((prev) => ({ ...prev, [t.publicId]: e.target.value }))
+                              }
+                              rows={4}
+                              placeholder="Write a direct support reply to this customer..."
+                              className="mt-2 w-full rounded-lg border border-white/10 bg-black/10 px-3 py-2 text-sm outline-none focus:border-biz-400"
+                            />
+                            <div className="mt-2 flex items-center justify-between gap-3">
+                              <p className="text-xs text-foreground/50">
+                                This sends an email to the customer and appends the message to the ticket timeline.
+                              </p>
+                              <button
+                                disabled={busyTicket === t.publicId || (replyDrafts[t.publicId] ?? "").trim().length < 3}
+                                onClick={() => sendReply(t.publicId, t.status)}
+                                className="rounded-lg bg-gradient-to-r from-biz-400 to-biz-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                              >
+                                {busyTicket === t.publicId ? "Sending..." : "Send reply"}
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
