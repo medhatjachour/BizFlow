@@ -6,6 +6,15 @@ import { ACCOUNT_COOKIE, getAccountFromToken } from "@/lib/account-auth";
 import { prisma } from "@/lib/db";
 import { withBasePath } from "@/lib/site";
 
+type AccountOrder = {
+  id: string;
+  itemId: string;
+  fulfilledAt: Date;
+  amountTotal: number;
+  currency: string;
+  paymentStatus: string;
+};
+
 export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
@@ -15,7 +24,7 @@ export default async function AccountPage() {
   const account = await getAccountFromToken(token);
   if (!account) redirect(withBasePath("/account/login"));
 
-  const orders = await prisma.order.findMany({
+  const orders: AccountOrder[] = await prisma.order.findMany({
     where: { email: account.customer.email },
     orderBy: { fulfilledAt: "desc" },
     take: 20,
