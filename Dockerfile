@@ -5,6 +5,9 @@ WORKDIR /app
 
 ARG NEXT_PUBLIC_BASE_PATH
 ARG NEXT_PUBLIC_SITE_URL
+ARG ADMIN_PASSWORD=build-validation-only
+
+ENV ADMIN_PASSWORD=${ADMIN_PASSWORD}
 
 COPY package*.json ./
 COPY apps/Bizflow/package*.json ./apps/Bizflow/

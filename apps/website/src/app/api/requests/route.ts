@@ -3,13 +3,14 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { estimate, type EstimateInput } from "@/lib/pricing";
 import { requestsEmailTarget, sendRequestEmail } from "@/lib/request-mail";
+import { dataDir } from "@/lib/data-dir";
 
 /**
  * Receives a guest request (module update, new custom plugin, or full suite),
  * validates it, computes a server-side estimate, stores it locally and returns
  * a reference number. Replace the file store with email/CRM in production.
  */
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = dataDir;
 const STORE = path.join(DATA_DIR, "requests.json");
 
 const TYPES = ["update", "new-plugin", "bundle"];

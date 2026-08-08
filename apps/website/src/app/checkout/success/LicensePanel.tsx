@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { OSES, installerFor, detectOS, type OSId } from "@/lib/downloads";
 
 interface ModuleRef {
@@ -19,10 +19,8 @@ export default function LicensePanel({
   licenseKey: string;
   modules: ModuleRef[];
 }) {
-  const [os, setOs] = useState<OSId>("windows");
+  const [os, setOs] = useState<OSId>(() => detectOS());
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => setOs(detectOS()), []);
 
   async function copyKey() {
     try {

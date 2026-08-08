@@ -7,6 +7,7 @@ services:
       args:
         NEXT_PUBLIC_BASE_PATH: /bizflow
         NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
+        ADMIN_PASSWORD: build-validation-only
     container_name: bizflow-app
     ports:
       - "3000:3000"    # Nebula website
@@ -21,10 +22,12 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: file:/data/bizflow/database.db
+      BIZFLOW_DATA_DIR: /data/bizflow
       BRIDGE_PORT: 8787
       NEXT_PUBLIC_BASE_PATH: /bizflow
       NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
       NEXTAUTH_URL: https://medhatjachour.tech/bizflow
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
       REQUEST_MAIL_TO: medhatjachour8@gmail.com
       REQUEST_MAIL_FROM: ${REQUEST_MAIL_FROM:-medhatjachour8@gmail.com}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -38,6 +41,19 @@ services:
       REQUEST_MAIL_FALLBACK_PORT: ${REQUEST_MAIL_FALLBACK_PORT:-25}
       # Add other env vars as needed
     restart: unless-stopped
+    mem_limit: 3g
+    cpus: 2.0
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:3000/bizflow"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
     networks:
       - bizflow-network
 
@@ -54,8 +70,31 @@ services:
     depends_on:
       - bizflow-app
     restart: unless-stopped
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "3"
     networks:
       - bizflow-network
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: bizflow-dozzle
+    ports:
+      - "127.0.0.1:8088:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.25
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   bizflow-data:

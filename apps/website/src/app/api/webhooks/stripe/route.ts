@@ -4,6 +4,7 @@ import path from "node:path";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { licenseKeyFor } from "@/lib/license";
+import { dataDir } from "@/lib/data-dir";
 
 /**
  * Stripe webhook receiver.
@@ -14,7 +15,7 @@ import { licenseKeyFor } from "@/lib/license";
  * IMPORTANT: webhook signature verification needs the RAW request body, so we
  * read it with request.text() (never request.json()).
  */
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = dataDir;
 const ORDERS = path.join(DATA_DIR, "orders.json");
 
 async function recordOrder(order: Record<string, unknown>): Promise<void> {

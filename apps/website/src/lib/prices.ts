@@ -2,6 +2,7 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { PLUGINS } from "./plugins";
+import { dataDir } from "./data-dir";
 
 /**
  * Admin-editable price overrides.
@@ -15,7 +16,7 @@ import { PLUGINS } from "./plugins";
  * ephemeral/serverless hosts, point DATA at a persistent volume or swap this
  * for a KV/DB — the public API surface stays the same.
  */
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = dataDir;
 const FILE = path.join(DATA_DIR, "prices.json");
 
 export type PriceMap = Record<string, number>;

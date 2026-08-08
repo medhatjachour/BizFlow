@@ -7,7 +7,7 @@
  * ".../releases/latest/download" URL) we point straight at the artifact;
  * otherwise we fall back to the releases page so links never 404.
  */
-import { PLUGINS, DEFAULT_DOWNLOAD_URL } from "./plugins";
+import { PLUGINS } from "./plugins";
 
 export type OSId = "windows" | "mac" | "linux";
 

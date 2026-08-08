@@ -1,0 +1,144 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # never cancel a running deploy; queue instead
+
+jobs:
+  # ── 1) Build & validate ───────────────────────────────────────────────────
+  build:
+    name: Build & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/website/package-lock.json
+
+      - name: Install website deps
+        working-directory: apps/website
+        run: npm ci
+
+      - name: Lint
+        working-directory: apps/website
+        run: npm run lint
+
+      - name: Build website (with build-time placeholder password)
+        working-directory: apps/website
+        env:
+          ADMIN_PASSWORD: build-validation-only
+          NEXT_PUBLIC_BASE_PATH: /bizflow
+          NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
+        run: npm run build
+
+  # ── 2) Deploy to VPS ──────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add VPS host key
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 168.231.107.207 >> ~/.ssh/known_hosts
+
+      - name: Write deploy SSH key
+        run: |
+          echo "${{ secrets.VPS_DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+      # Push only the app source files (not test artifacts)
+      - name: Sync files to VPS
+        run: |
+          REMOTE="medhat@168.231.107.207"
+          BASE="/tmp/bizflow-ci-deploy"
+          SSH="ssh -i ~/.ssh/deploy_key -o BatchMode=yes"
+
+          $SSH $REMOTE "
+            mkdir -p \
+              $BASE/apps/website/src/app/admin/login \
+              $BASE/apps/website/src/app/api/admin \
+              $BASE/apps/website/src/app/api/portal/login \
+              $BASE/apps/website/src/app/api/requests \
+              $BASE/apps/website/src/app/api/webhooks/stripe \
+              $BASE/apps/website/src/app/checkout/success \
+              $BASE/apps/website/src/app/plugins \
+              $BASE/apps/website/src/app/portal/login \
+              $BASE/apps/website/src/components/admin \
+              $BASE/apps/website/src/components/landing \
+              $BASE/apps/website/src/components/portal \
+              $BASE/apps/website/src/lib \
+              $BASE/docs \
+              $BASE/scripts \
+              $BASE/.github/workflows
+          "
+
+          SCP="scp -i ~/.ssh/deploy_key -q"
+
+          # Root infra
+          $SCP Dockerfile docker-compose.yml nginx.conf $REMOTE:$BASE/
+
+          # Website source
+          $SCP -r apps/website/src/app/admin        $REMOTE:$BASE/apps/website/src/app/
+          $SCP -r apps/website/src/app/api          $REMOTE:$BASE/apps/website/src/app/
+          $SCP -r apps/website/src/app/plugins      $REMOTE:$BASE/apps/website/src/app/
+          $SCP -r apps/website/src/app/portal       $REMOTE:$BASE/apps/website/src/app/
+          $SCP -r apps/website/src/app/checkout     $REMOTE:$BASE/apps/website/src/app/
+          $SCP apps/website/src/app/layout.tsx      $REMOTE:$BASE/apps/website/src/app/
+          $SCP apps/website/src/app/sitemap.ts      $REMOTE:$BASE/apps/website/src/app/
+          $SCP -r apps/website/src/components       $REMOTE:$BASE/apps/website/src/
+          $SCP -r apps/website/src/lib              $REMOTE:$BASE/apps/website/src/
+          $SCP apps/website/package.json apps/website/package-lock.json \
+               $REMOTE:$BASE/apps/website/
+
+          # Scripts & docs
+          $SCP -r scripts $REMOTE:$BASE/
+          $SCP docs/DOWNLOAD_FLOW_AND_RELEASES.md $REMOTE:$BASE/docs/
+          $SCP .github/workflows/trivy-container.yml $REMOTE:$BASE/.github/workflows/
+
+      - name: Apply & rebuild on VPS
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes medhat@168.231.107.207 "
+            set -e
+            cd /home/medhat/bizflow
+            cp -a /tmp/bizflow-ci-deploy/. .
+            docker compose config --quiet
+            docker compose up -d --build
+            echo 'Waiting for healthy...'
+            for i in \$(seq 1 20); do
+              s=\$(docker inspect -f '{{.State.Health.Status}}' bizflow-app 2>/dev/null || echo starting)
+              [ \"\$s\" = 'healthy' ] && break
+              sleep 5
+            done
+            docker inspect -f 'STATUS={{.State.Health.Status}}' bizflow-app
+          "
+
+      - name: Smoke test
+        run: |
+          BASE="https://medhatjachour.tech/bizflow"
+          check() { code=\$(curl -s -o /dev/null -w "%{http_code}" "\$1"); echo "\$2=\$code"; [ "\$code" = "200" ]; }
+          check "$BASE"                      HOME
+          check "$BASE/robots.txt"           ROBOTS
+          check "$BASE/sitemap.xml"          SITEMAP
+          check "$BASE/admin/login"          ADMIN_LOGIN
+          check "$BASE/portal/login"         PORTAL_LOGIN
+          check "$BASE/api/prices"           PRICES_API
+          check "https://medhatjachour.tech/app/" APP_UI
+          check "https://medhatjachour.tech/health" BRIDGE
+
+      - name: Cleanup temp deploy dir
+        if: always()
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes medhat@168.231.107.207 \
+            "rm -rf /tmp/bizflow-ci-deploy" || true

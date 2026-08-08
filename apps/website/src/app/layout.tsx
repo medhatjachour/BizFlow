@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { brandIconPath, siteConfig, siteUrl } from "@/lib/site";
+import { brandIconPath, siteConfig, siteUrl, withBasePath } from "@/lib/site";
 import Analytics from "@/components/Analytics";
 
 const geistSans = Geist({
@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   applicationName: "BizFlow",
+  category: "Business software",
   keywords: [
     "BizFlow",
-    "POS",
     "point of sale",
     "business management software",
     "inventory management",
@@ -43,14 +43,14 @@ export const metadata: Metadata = {
     type: "website",
     url: siteUrl,
     siteName: "BizFlow",
-    title: siteConfig.title,
     description: siteConfig.description,
     locale: "en_US",
+    images: [{ url: withBasePath("/opengraph-image"), alt: siteConfig.ogImageAlt }],
   },
   twitter: {
     card: "summary_large_image",
-    title: siteConfig.title,
     description: siteConfig.description,
+    images: [withBasePath("/opengraph-image")],
   },
   robots: {
     index: true,
@@ -73,6 +73,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: siteConfig.name,
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Windows, macOS, Linux",
+    description: siteConfig.description,
+    url: siteUrl,
+    image: `${siteUrl}${withBasePath("/opengraph-image")}`,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  };
+
   return (
     <html
       lang="en"
@@ -80,6 +92,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
         {children}
         <Analytics />
       </body>

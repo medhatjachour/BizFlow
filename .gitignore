@@ -1,4 +1,15 @@
 # Root monorepo ignores (each app also has its own .gitignore)
+
+# Local test / smoke-test artifacts
+live-plugin-*.html
+portal-*.html
+portal-*.json
+portal-*.txt
+portal-*.js
+portal-seed.js
+portal-check.js
+admin-cookie.txt
+admin-login-body.json
 node_modules/
 *.log
 .DS_Store

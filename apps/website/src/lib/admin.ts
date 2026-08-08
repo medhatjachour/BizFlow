@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { dataDir } from "@/lib/data-dir";
 
 /**
  * Server-only data + auth layer for the manager dashboard (/admin).
@@ -14,7 +15,7 @@ import crypto from "node:crypto";
  * verified on every protected page/route.
  */
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = dataDir;
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const REQUESTS_FILE = path.join(DATA_DIR, "requests.json");
 
@@ -23,9 +24,13 @@ export const ADMIN_COOKIE = "bf_admin";
 const SECRET = process.env.LICENSE_SECRET ?? "bizflow-dev-license-secret";
 const RAW_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
 
-/** True when no ADMIN_PASSWORD is set — we fall back to "admin" for local use. */
+/** Local development may use the documented default; production must configure it. */
 export const adminUsingDefault = RAW_PASSWORD.length === 0;
 const PASSWORD = adminUsingDefault ? "admin" : RAW_PASSWORD;
+
+if (process.env.NODE_ENV === "production" && adminUsingDefault) {
+  throw new Error("ADMIN_PASSWORD must be set in production");
+}
 
 /** The opaque token stored in the cookie (HMAC of the password). */
 export function adminToken(): string {

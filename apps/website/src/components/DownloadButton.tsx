@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import { withBasePath } from "@/lib/site";
 
@@ -61,13 +61,13 @@ export default function DownloadButton({
     })();
   }, [moduleId, os]);
 
-  function startDownload(url: string) {
+  const startDownload = useCallback((url: string) => {
     track("download_start", { module: moduleId, os });
     // Navigate to the artifact; the file's headers trigger the save.
     window.location.href = url;
-  }
+  }, [moduleId, os]);
 
-  function openFallback(url: string, forceSameTab = false) {
+  const openFallback = useCallback((url: string, forceSameTab = false) => {
     track("download_fallback", { module: moduleId, os });
     if (forceSameTab) {
       window.location.href = url;
@@ -79,9 +79,9 @@ export default function DownloadButton({
     if (!popup) {
       window.location.href = url;
     }
-  }
+  }, [moduleId, os]);
 
-  function beginPolling() {
+  const beginPolling = useCallback(() => {
     setPhase("building");
     setMessage("Preparing your build on the server… this can take a few minutes.");
     pollsRef.current = 0;
@@ -111,9 +111,9 @@ export default function DownloadButton({
         /* keep polling */
       }
     }, POLL_INTERVAL_MS);
-  }
+  }, [moduleId, os, startDownload]);
 
-  async function onClick() {
+  const onClick = useCallback(async () => {
     setPhase("working");
     setMessage(null);
     track("download_request", { module: moduleId, os });
@@ -139,7 +139,7 @@ export default function DownloadButton({
       setPhase("error");
       setMessage("Couldn't start the download. Please try again.");
     }
-  }
+  }, [autoStart, beginPolling, moduleId, openFallback, os, startDownload]);
 
   useEffect(() => {
     (async () => {
@@ -148,7 +148,7 @@ export default function DownloadButton({
       autoStartedRef.current = true;
       void onClick();
     })();
-  }, [autoStart, phase]);
+  }, [autoStart, onClick, phase]);
 
   const busy = phase === "working" || phase === "building";
   const label =

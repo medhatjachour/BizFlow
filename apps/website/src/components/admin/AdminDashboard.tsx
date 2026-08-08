@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type { CustomRequest, Order, RequestStatus } from "@/lib/admin";
 import { PLUGINS } from "@/lib/plugins";
+import { withBasePath } from "@/lib/site";
 
 type OrderView = Order & { label: string };
 
@@ -80,7 +81,7 @@ export default function AdminDashboard({ orders, requests, usingDefaultPassword 
   }, [orders, requests]);
 
   async function logout() {
-    await fetch("/api/admin/login", { method: "DELETE" });
+    await fetch(withBasePath("/api/admin/login"), { method: "DELETE" });
     router.push("/admin/login");
     router.refresh();
   }
@@ -409,7 +410,7 @@ function RequestsPanel({ requests }: { requests: CustomRequest[] }) {
   async function changeStatus(ref: string, status: RequestStatus) {
     setBusyRef(ref);
     try {
-      await fetch("/api/admin/requests", {
+      await fetch(withBasePath("/api/admin/requests"), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ref, status }),
@@ -606,7 +607,7 @@ function PricingPanel() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/prices", { cache: "no-store" });
+      const res = await fetch(withBasePath("/api/admin/prices"), { cache: "no-store" });
       if (!res.ok) throw new Error(`Failed to load (${res.status})`);
       const data = (await res.json()) as {
         overrides: Record<string, number>;
@@ -643,7 +644,7 @@ function PricingPanel() {
         const n = Number(draft[p.id]);
         if (Number.isFinite(n) && n >= 0) prices[p.id] = Math.round(n);
       }
-      const res = await fetch("/api/admin/prices", {
+      const res = await fetch(withBasePath("/api/admin/prices"), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prices }),

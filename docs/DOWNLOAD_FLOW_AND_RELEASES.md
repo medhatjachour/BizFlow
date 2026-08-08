@@ -186,3 +186,31 @@ Expected steady-state response:
 
 - `state: "ready"`
 - `url` points to direct installer
+
+## Demo operations and VPS hardening
+
+The production stack now includes:
+
+- Nginx API/demo rate limits and security headers.
+- One-year immutable caching for Next.js hashed static assets.
+- Docker healthchecks, CPU/memory limits, and bounded JSON logs.
+- A GitHub Trivy image scan on production-relevant changes.
+- `scripts/reset-demo-data.sh`, guarded by `DEMO_RESET_CONFIRM=1`.
+
+Run a reset manually from the deployment directory:
+
+```bash
+DEMO_RESET_CONFIRM=1 ./scripts/reset-demo-data.sh
+```
+
+For a disposable demo environment, schedule it after taking any required backup:
+
+```cron
+0 */6 * * * cd /opt/bizflow && DEMO_RESET_CONFIRM=1 ./scripts/reset-demo-data.sh >> /var/log/bizflow-demo-reset.log 2>&1
+```
+
+Do not schedule this against a customer-data volume. The current Compose volume is the application database volume, so customer tenancy must be separated before enabling unattended resets in a selling environment.
+
+## Selling layer status
+
+The existing `/admin` dashboard is protected by an HMAC cookie and `ADMIN_PASSWORD`. Production now fails fast if that password is missing. Buyer authentication, tenant provisioning, license lifecycle, and payment webhooks still require a persistent account model and a selected gateway (Stripe, Paymob, Fawry, or PayTabs); those should be implemented before accepting real customer data.

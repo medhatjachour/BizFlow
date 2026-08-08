@@ -92,6 +92,12 @@ export default async function CheckoutSuccessPage({
               Open BizFlow
             </Link>
             <Link
+              href="/portal/login"
+              className="glass rounded-xl px-6 py-3 text-sm font-semibold transition hover:bg-white/10"
+            >
+              Buyer portal
+            </Link>
+            <Link
               href="/"
               className="glass rounded-xl px-6 py-3 text-sm font-semibold transition hover:bg-white/10"
             >
