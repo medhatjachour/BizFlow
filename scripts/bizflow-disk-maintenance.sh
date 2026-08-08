@@ -9,9 +9,9 @@ mkdir -p "$(dirname "$LOG")"
   echo "before:"
   docker system df || true
 
-  # Safe policy: clean only unused build cache older than 7 days.
-  # This avoids touching running containers and persistent data volumes.
-  docker builder prune -af --filter 'until=168h' || true
+  # Safe policy: clean ALL unused build cache each run.
+  # This never removes running containers or active named volumes.
+  docker builder prune -af || true
 
   # Remove dangling image layers only (not tagged images in use).
   docker image prune -f || true
