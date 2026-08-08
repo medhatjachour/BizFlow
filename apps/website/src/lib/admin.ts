@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { dataDir } from "@/lib/data-dir";
+import { prisma } from "@/lib/db";
 
 /**
  * Server-only data + auth layer for the manager dashboard (/admin).
@@ -98,6 +99,37 @@ export interface CustomRequest {
   status?: RequestStatus;
 }
 
+export type TicketStatus = "OPEN" | "IN_PROGRESS" | "WAITING_CUSTOMER" | "RESOLVED" | "CLOSED";
+
+export const TICKET_STATUSES: TicketStatus[] = [
+  "OPEN",
+  "IN_PROGRESS",
+  "WAITING_CUSTOMER",
+  "RESOLVED",
+  "CLOSED",
+];
+
+export interface AdminSupportMessage {
+  senderType: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface AdminSupportTicket {
+  publicId: string;
+  email: string;
+  subject: string;
+  category: string;
+  priority: string;
+  status: TicketStatus;
+  createdAt: string;
+  updatedAt: string;
+  lastMessageAt: string;
+  messageCount: number;
+  latestMessage: string | null;
+  messages: AdminSupportMessage[];
+}
+
 // ── Stores ────────────────────────────────────────────────────────────────
 
 async function readArray<T>(file: string): Promise<T[]> {
@@ -123,5 +155,42 @@ export async function setRequestStatus(
   all[i] = { ...all[i], status };
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(REQUESTS_FILE, JSON.stringify(all, null, 2), "utf8");
+  return true;
+}
+
+export async function readSupportTickets(): Promise<AdminSupportTicket[]> {
+  const rows = await prisma.supportTicket.findMany({
+    include: { messages: { orderBy: { createdAt: "asc" } } },
+    orderBy: { lastMessageAt: "desc" },
+  });
+
+  return rows.map((t) => ({
+    publicId: t.publicId,
+    email: t.email,
+    subject: t.subject,
+    category: t.category,
+    priority: t.priority,
+    status: t.status as TicketStatus,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString(),
+    lastMessageAt: t.lastMessageAt.toISOString(),
+    messageCount: t.messages.length,
+    latestMessage: t.messages.length ? t.messages[t.messages.length - 1].body : null,
+    messages: t.messages.map((m) => ({
+      senderType: m.senderType,
+      body: m.body,
+      createdAt: m.createdAt.toISOString(),
+    })),
+  }));
+}
+
+export async function setSupportTicketStatus(publicId: string, status: TicketStatus): Promise<boolean> {
+  const existing = await prisma.supportTicket.findUnique({ where: { publicId }, select: { id: true } });
+  if (!existing) return false;
+
+  await prisma.supportTicket.update({
+    where: { publicId },
+    data: { status, updatedAt: new Date() },
+  });
   return true;
 }

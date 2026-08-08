@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import type { CustomRequest, Order, RequestStatus } from "@/lib/admin";
+import type {
+  AdminSupportTicket,
+  CustomRequest,
+  Order,
+  RequestStatus,
+  TicketStatus,
+} from "@/lib/admin";
 import { PLUGINS } from "@/lib/plugins";
 import { withBasePath } from "@/lib/site";
 
@@ -12,6 +18,7 @@ type OrderView = Order & { label: string };
 interface Props {
   orders: OrderView[];
   requests: CustomRequest[];
+  tickets: AdminSupportTicket[];
   usingDefaultPassword: boolean;
 }
 
@@ -23,6 +30,22 @@ const STATUS_META: Record<RequestStatus, { label: string; cls: string }> = {
   declined: { label: "Declined", cls: "bg-rose-500/15 text-rose-300 border-rose-400/30" },
 };
 const STATUS_ORDER: RequestStatus[] = ["new", "reviewing", "quoted", "accepted", "declined"];
+
+const TICKET_STATUS_META: Record<TicketStatus, { label: string; cls: string }> = {
+  OPEN: { label: "Open", cls: "bg-biz-500/20 text-biz-200 border-biz-400/30" },
+  IN_PROGRESS: { label: "In progress", cls: "bg-amber-500/15 text-amber-300 border-amber-400/30" },
+  WAITING_CUSTOMER: { label: "Waiting customer", cls: "bg-violet-500/15 text-violet-300 border-violet-400/30" },
+  RESOLVED: { label: "Resolved", cls: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" },
+  CLOSED: { label: "Closed", cls: "bg-slate-500/20 text-slate-300 border-slate-400/30" },
+};
+
+const TICKET_STATUS_ORDER: TicketStatus[] = [
+  "OPEN",
+  "IN_PROGRESS",
+  "WAITING_CUSTOMER",
+  "RESOLVED",
+  "CLOSED",
+];
 
 const TYPE_LABEL: Record<CustomRequest["type"], string> = {
   update: "Module update",
@@ -36,9 +59,9 @@ const fmtDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 const statusOf = (r: CustomRequest): RequestStatus => r.status ?? "new";
 
-type Tab = "overview" | "orders" | "requests" | "pricing";
+type Tab = "overview" | "orders" | "requests" | "tickets" | "pricing";
 
-export default function AdminDashboard({ orders, requests, usingDefaultPassword }: Props) {
+export default function AdminDashboard({ orders, requests, tickets, usingDefaultPassword }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -67,6 +90,19 @@ export default function AdminDashboard({ orders, requests, usingDefaultPassword 
       .sort((a, b) => b.cents - a.cents);
     const topProductCents = products[0]?.cents ?? 1;
 
+    const openTicketStates: TicketStatus[] = ["OPEN", "IN_PROGRESS", "WAITING_CUSTOMER"];
+    const openTickets = tickets.filter((t) => openTicketStates.includes(t.status));
+    const urgentTickets = tickets.filter((t) => {
+      const p = t.priority.trim().toLowerCase();
+      return p === "high" || p === "urgent";
+    });
+    const avgFirstResponseHours = openTickets.length
+      ? Math.round(
+          openTickets.reduce((sum, t) => sum + (Date.now() - new Date(t.createdAt).getTime()) / 36e5, 0) /
+            openTickets.length
+        )
+      : 0;
+
     return {
       revenueCents,
       orders: orders.length,
@@ -77,8 +113,11 @@ export default function AdminDashboard({ orders, requests, usingDefaultPassword 
       won,
       products,
       topProductCents,
+      openTickets: openTickets.length,
+      urgentTickets: urgentTickets.length,
+      avgFirstResponseHours,
     };
-  }, [orders, requests]);
+  }, [orders, requests, tickets]);
 
   async function logout() {
     await fetch(withBasePath("/api/admin/login"), { method: "DELETE" });
@@ -90,6 +129,7 @@ export default function AdminDashboard({ orders, requests, usingDefaultPassword 
     { id: "overview", label: "Overview" },
     { id: "orders", label: "Licenses & orders", badge: orders.length || undefined },
     { id: "requests", label: "Custom requests", badge: metrics.pending || undefined },
+    { id: "tickets", label: "Support tickets", badge: metrics.openTickets || undefined },
     { id: "pricing", label: "Pricing" },
   ];
 
@@ -129,11 +169,12 @@ export default function AdminDashboard({ orders, requests, usingDefaultPassword 
       )}
 
       {/* KPI cards */}
-      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Kpi label="Revenue" value={usdCents(metrics.revenueCents)} hint={`${metrics.paidCount} paid`} accent="from-emerald-400 to-teal-600" />
         <Kpi label="Licenses issued" value={String(metrics.licenses)} hint="active keys" accent="from-biz-400 to-biz-600" />
         <Kpi label="New requests" value={String(metrics.pending)} hint="awaiting review" accent="from-amber-400 to-orange-600" />
         <Kpi label="Open pipeline" value={usd(metrics.pipeline)} hint={`${usd(metrics.won)} won`} accent="from-violet-400 to-fuchsia-600" />
+        <Kpi label="Open tickets" value={String(metrics.openTickets)} hint={`${metrics.urgentTickets} urgent · ${metrics.avgFirstResponseHours}h avg age`} accent="from-cyan-400 to-sky-600" />
       </div>
 
       {/* Tabs */}
@@ -167,9 +208,10 @@ export default function AdminDashboard({ orders, requests, usingDefaultPassword 
           transition={{ duration: 0.18 }}
           className="mt-6"
         >
-          {tab === "overview" && <Overview metrics={metrics} orders={orders} requests={requests} />}
+          {tab === "overview" && <Overview metrics={metrics} orders={orders} requests={requests} tickets={tickets} />}
           {tab === "orders" && <OrdersPanel orders={orders} />}
           {tab === "requests" && <RequestsPanel requests={requests} />}
+          {tab === "tickets" && <TicketsPanel tickets={tickets} />}
           {tab === "pricing" && <PricingPanel />}
         </motion.div>
       </AnimatePresence>
@@ -200,11 +242,25 @@ interface Metrics {
   won: number;
   products: { label: string; count: number; cents: number }[];
   topProductCents: number;
+  openTickets: number;
+  urgentTickets: number;
+  avgFirstResponseHours: number;
 }
 
-function Overview({ metrics, orders, requests }: { metrics: Metrics; orders: OrderView[]; requests: CustomRequest[] }) {
+function Overview({
+  metrics,
+  orders,
+  requests,
+  tickets,
+}: {
+  metrics: Metrics;
+  orders: OrderView[];
+  requests: CustomRequest[];
+  tickets: AdminSupportTicket[];
+}) {
   const recentOrders = [...orders].sort(byDateDesc((o) => o.fulfilledAt)).slice(0, 5);
   const recentRequests = [...requests].sort(byDateDesc((r) => r.receivedAt)).slice(0, 5);
+  const recentTickets = [...tickets].sort(byDateDesc((t) => t.lastMessageAt)).slice(0, 5);
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -294,6 +350,36 @@ function Overview({ metrics, orders, requests }: { metrics: Metrics; orders: Ord
                 <div className="flex items-center gap-2">
                   <StatusPill status={statusOf(r)} />
                   <span className="text-xs text-foreground/50">{fmtRange(r)}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Support queue snapshot */}
+      <div className="glass-strong rounded-2xl p-5 lg:col-span-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="text-sm font-bold">Support queue snapshot</h3>
+          <p className="text-xs text-foreground/50">
+            {metrics.openTickets} open · {metrics.urgentTickets} urgent · {metrics.avgFirstResponseHours}h avg age
+          </p>
+        </div>
+        {recentTickets.length === 0 ? (
+          <Empty text="No support tickets yet." />
+        ) : (
+          <ul className="mt-3 divide-y divide-white/5">
+            {recentTickets.map((t) => (
+              <li key={t.publicId} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{t.subject}</p>
+                  <p className="truncate text-xs text-foreground/50">
+                    {t.email} · {t.publicId} · {t.category}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TicketStatusPill status={t.status} />
+                  <span className="text-xs text-foreground/50">{fmtDate(t.lastMessageAt)}</span>
                 </div>
               </li>
             ))}
@@ -554,9 +640,211 @@ function RequestsPanel({ requests }: { requests: CustomRequest[] }) {
   );
 }
 
+// ── Support tickets panel ───────────────────────────────────────────────────
+function TicketsPanel({ tickets }: { tickets: AdminSupportTicket[] }) {
+  const router = useRouter();
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<TicketStatus | "all">("all");
+  const [priority, setPriority] = useState<"all" | "normal" | "high" | "urgent">("all");
+  const [busyTicket, setBusyTicket] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const rows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return [...tickets]
+      .sort(byDateDesc((t) => t.lastMessageAt))
+      .filter((t) => {
+        if (filter !== "all" && t.status !== filter) return false;
+        if (priority !== "all" && t.priority.trim().toLowerCase() !== priority) return false;
+        if (!needle) return true;
+        return (
+          t.subject.toLowerCase().includes(needle) ||
+          t.email.toLowerCase().includes(needle) ||
+          t.publicId.toLowerCase().includes(needle) ||
+          (t.latestMessage ?? "").toLowerCase().includes(needle)
+        );
+      });
+  }, [tickets, q, filter, priority]);
+
+  async function changeTicketStatus(publicId: string, status: TicketStatus) {
+    setBusyTicket(publicId);
+    try {
+      await fetch(withBasePath("/api/admin/support-tickets"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId, status }),
+      });
+      router.refresh();
+    } finally {
+      setBusyTicket(null);
+    }
+  }
+
+  return (
+    <div className="glass-strong rounded-2xl p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-sm font-bold">Support tickets</h3>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as TicketStatus | "all")}
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400"
+          >
+            <option value="all">All statuses</option>
+            {TICKET_STATUS_ORDER.map((s) => (
+              <option key={s} value={s}>
+                {TICKET_STATUS_META[s].label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as "all" | "normal" | "high" | "urgent")}
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400"
+          >
+            <option value="all">All priorities</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search ticket, subject, email..."
+            className="w-64 max-w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400"
+          />
+        </div>
+      </div>
+
+      {rows.length === 0 ? (
+        <Empty text="No matching tickets." />
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {rows.map((t) => {
+            const open = expanded === t.publicId;
+            const isUrgent = ["urgent", "high"].includes(t.priority.trim().toLowerCase());
+            return (
+              <li
+                key={t.publicId}
+                className={`rounded-2xl border bg-white/5 ${
+                  isUrgent ? "border-rose-400/40" : "border-white/10"
+                }`}
+              >
+                <div className="flex flex-wrap items-center gap-3 p-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold">{t.subject}</span>
+                      <TicketStatusPill status={t.status} />
+                      <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-foreground/70">
+                        {t.priority}
+                      </span>
+                      <span className="font-mono text-[11px] text-foreground/40">{t.publicId}</span>
+                    </div>
+                    <p className="mt-0.5 truncate text-sm text-foreground/60">
+                      {t.email} · {t.category} · {t.messageCount} messages
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-xs text-foreground/50">Last activity</p>
+                    <p className="text-sm font-semibold">{fmtDate(t.lastMessageAt)}</p>
+                  </div>
+
+                  <select
+                    value={t.status}
+                    disabled={busyTicket === t.publicId}
+                    onChange={(e) => changeTicketStatus(t.publicId, e.target.value as TicketStatus)}
+                    className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400 disabled:opacity-50"
+                  >
+                    {TICKET_STATUS_ORDER.map((s) => (
+                      <option key={s} value={s}>
+                        {TICKET_STATUS_META[s].label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    onClick={() => setExpanded(open ? null : t.publicId)}
+                    className="glass rounded-xl px-3 py-2 text-sm transition hover:bg-white/10"
+                  >
+                    {open ? "Hide" : "Details"}
+                  </button>
+                </div>
+
+                <AnimatePresence initial={false}>
+                  {open && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid gap-4 border-t border-white/10 p-4 md:grid-cols-2">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/40">
+                            Conversation timeline
+                          </p>
+                          <ul className="mt-2 space-y-2">
+                            {t.messages.map((m, i) => (
+                              <li key={`${t.publicId}-${i}`} className="rounded-xl bg-white/5 p-3">
+                                <div className="mb-1 flex items-center justify-between gap-3 text-xs text-foreground/50">
+                                  <span className="uppercase tracking-wide">{m.senderType}</span>
+                                  <span>{fmtDate(m.createdAt)}</span>
+                                </div>
+                                <p className="whitespace-pre-wrap text-sm text-foreground/80">{m.body}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-foreground/40">
+                            Ticket actions
+                          </p>
+                          <div className="mt-2 space-y-2 rounded-xl bg-white/5 p-3 text-sm">
+                            <p>
+                              <span className="text-foreground/50">Customer:</span> {t.email}
+                            </p>
+                            <p>
+                              <span className="text-foreground/50">Category:</span> {t.category}
+                            </p>
+                            <p>
+                              <span className="text-foreground/50">Current status:</span> {TICKET_STATUS_META[t.status].label}
+                            </p>
+                          </div>
+                          <a
+                            href={`mailto:${t.email}?subject=Re:${encodeURIComponent(t.subject)} (${t.publicId})`}
+                            className="mt-4 inline-flex rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-4 py-2 text-sm font-semibold text-white transition hover:scale-[1.02]"
+                          >
+                            Reply by email
+                          </a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // ── Small shared bits ────────────────────────────────────────────────────────
 function StatusPill({ status }: { status: RequestStatus }) {
   const m = STATUS_META[status];
+  return (
+    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${m.cls}`}>
+      {m.label}
+    </span>
+  );
+}
+
+function TicketStatusPill({ status }: { status: TicketStatus }) {
+  const m = TICKET_STATUS_META[status];
   return (
     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${m.cls}`}>
       {m.label}

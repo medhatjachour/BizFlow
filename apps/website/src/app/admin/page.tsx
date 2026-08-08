@@ -8,6 +8,7 @@ import {
   adminUsingDefault,
   readOrders,
   readRequests,
+  readSupportTickets,
   verifyToken,
 } from "@/lib/admin";
 import { getPurchasable } from "@/lib/payments";
@@ -24,7 +25,11 @@ export default async function AdminPage() {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   if (!verifyToken(token)) redirect("/admin/login");
 
-  const [orders, requests] = await Promise.all([readOrders(), readRequests()]);
+  const [orders, requests, tickets] = await Promise.all([
+    readOrders(),
+    readRequests(),
+    readSupportTickets(),
+  ]);
 
   // Enrich orders with a human label from the shared catalog.
   const ordersView = orders.map((o) => ({
@@ -38,6 +43,7 @@ export default async function AdminPage() {
       <AdminDashboard
         orders={ordersView}
         requests={requests}
+        tickets={tickets}
         usingDefaultPassword={adminUsingDefault}
       />
     </>
