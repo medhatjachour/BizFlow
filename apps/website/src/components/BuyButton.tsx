@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { track } from "@/lib/analytics";
+import Link from "next/link";
+import { withBasePath } from "@/lib/site";
 
 interface BuyButtonProps {
   /** Catalog item id: "suite" or "module:<pluginId>". */
@@ -13,6 +15,7 @@ interface BuyButtonProps {
    * configured). Usually the module's download link.
    */
   fallbackUrl?: string;
+  requirePolicyConsent?: boolean;
 }
 
 /**
@@ -26,19 +29,26 @@ export default function BuyButton({
   label,
   className,
   fallbackUrl,
+  requirePolicyConsent = true,
 }: BuyButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
 
   const onClick = async () => {
+    if (requirePolicyConsent && !acceptedPolicies) {
+      setError("Please accept Terms, Privacy, and Refund Policy first.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
     track("checkout_start", { item });
     try {
-      const res = await fetch("/api/checkout", {
+      const res = await fetch(withBasePath("/api/checkout"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ item }),
+        body: JSON.stringify({ item, acceptedPolicies }),
       });
 
       if (res.status === 503) {
@@ -70,14 +80,32 @@ export default function BuyButton({
   };
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      className={className}
-      aria-busy={loading}
-    >
-      {loading ? "Starting…" : error ?? label}
-    </button>
+    <div className="space-y-2">
+      {requirePolicyConsent ? (
+        <label className="flex items-start gap-2 text-[11px] text-foreground/60">
+          <input
+            type="checkbox"
+            checked={acceptedPolicies}
+            onChange={(e) => setAcceptedPolicies(e.target.checked)}
+            className="mt-[2px]"
+          />
+          <span>
+            I agree to the <Link className="underline" href={withBasePath("/legal/terms")}>Terms</Link>,{" "}
+            <Link className="underline" href={withBasePath("/legal/privacy")}>Privacy Policy</Link>, and{" "}
+            <Link className="underline" href={withBasePath("/legal/refund")}>Refund Policy</Link>.
+          </span>
+        </label>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={loading}
+        className={className}
+        aria-busy={loading}
+      >
+        {loading ? "Starting…" : error ?? label}
+      </button>
+    </div>
   );
 }

@@ -62,6 +62,7 @@ COPY --from=builder /app/apps/Bizflow/prisma      ./apps/Bizflow/prisma
 COPY --from=builder /app/apps/website/.next/standalone   ./apps/website/standalone
 COPY --from=builder /app/apps/website/.next/static       ./apps/website/standalone/apps/website/.next/static
 COPY --from=builder /app/apps/website/public             ./apps/website/standalone/apps/website/public
+COPY --from=builder /app/apps/website/prisma             ./apps/website/prisma
 
 # Some bridge code still resolves Electron-style unpacked paths; alias them in the container.
 RUN mkdir -p /app/apps/app.asar.unpacked/src/generated && \
@@ -74,6 +75,7 @@ EXPOSE 3000 8787
 
 ENV NODE_ENV=production \
     DATABASE_URL=file:/data/bizflow/database.db \
+    WEBSITE_DATABASE_URL=file:/data/bizflow/website.db \
     BRIDGE_PORT=8787 \
     NEXTAUTH_URL=http://localhost:3000 \
     NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH} \
@@ -87,4 +89,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 ENTRYPOINT ["dumb-init", "--"]
 
 # Bridge + web UI + Next.js standalone
-CMD ["sh", "-c", "(cd /app/apps/Bizflow && node web/.dist/server.cjs) & node /app/apps/Bizflow/web/serve-dist-web.cjs & node /app/apps/website/standalone/apps/website/server.js"]
+CMD ["sh", "-c", "(cd /app/apps/Bizflow && node web/.dist/server.cjs) & node /app/apps/Bizflow/web/serve-dist-web.cjs & (cd /app/apps/website && npx prisma db push --schema prisma/schema.prisma --skip-generate && node standalone/apps/website/server.js)"]

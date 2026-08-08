@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("WEBSITE_DATABASE_URL")
+}
+
+model Customer {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  emailVerifiedAt DateTime?
+  fullName        String?
+  status          CustomerStatus @default(PENDING)
+  role            CustomerRole  @default(CUSTOMER)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  credentials     Credential?
+  sessions        CustomerSession[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens PasswordResetToken[]
+  orders          Order[]
+  licenses        License[]
+  supportTickets  SupportTicket[]
+}
+
+model Credential {
+  id           String   @id @default(cuid())
+  customerId   String   @unique
+  passwordHash String
+  failedCount  Int      @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model CustomerSession {
+  id          String   @id @default(cuid())
+  customerId  String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id          String   @id @default(cuid())
+  customerId  String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id          String   @id @default(cuid())
+  customerId  String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([expiresAt])
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  sessionId     String      @unique
+  customerId    String?
+  email         String?
+  itemId        String
+  amountTotal   Int
+  currency      String      @default("usd")
+  paymentStatus String      @default("paid")
+  fulfilledAt   DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+
+  customer      Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  license       License?
+  audits        OrderAudit[]
+
+  @@index([email])
+  @@index([customerId])
+  @@index([fulfilledAt])
+}
+
+model License {
+  id            String       @id @default(cuid())
+  customerId    String
+  orderId       String       @unique
+  key           String       @unique
+  status        LicenseStatus @default(ACTIVE)
+  revokedReason String?
+  issuedAt      DateTime     @default(now())
+  revokedAt     DateTime?
+
+  customer      Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([status])
+}
+
+model OrderAudit {
+  id          String   @id @default(cuid())
+  orderId     String
+  event       String
+  payloadJson String?
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model SupportTicket {
+  id           String       @id @default(cuid())
+  publicId     String       @unique
+  customerId   String?
+  email        String
+  subject      String
+  category     String
+  priority     String       @default("normal")
+  status       TicketStatus @default(OPEN)
+  lastMessageAt DateTime    @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  customer     Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  messages     SupportMessage[]
+
+  @@index([email])
+  @@index([status])
+  @@index([lastMessageAt])
+}
+
+model SupportMessage {
+  id          String   @id @default(cuid())
+  ticketId    String
+  senderType  String
+  body        String
+  createdAt   DateTime @default(now())
+
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+enum CustomerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum LicenseStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum CustomerRole {
+  CUSTOMER
+  SUPPORT
+  ADMIN
+}

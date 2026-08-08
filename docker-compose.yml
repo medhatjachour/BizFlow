@@ -22,6 +22,7 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: file:/data/bizflow/database.db
+      WEBSITE_DATABASE_URL: file:/data/bizflow/website.db
       BIZFLOW_DATA_DIR: /data/bizflow
       BRIDGE_PORT: 8787
       NEXT_PUBLIC_BASE_PATH: /bizflow

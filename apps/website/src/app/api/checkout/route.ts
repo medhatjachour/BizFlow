@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStripe, isStripeConfigured, siteUrl } from "@/lib/stripe";
 import { getPurchasable, CURRENCY } from "@/lib/payments";
 import { priceForItem } from "@/lib/prices";
+import { requestIdFromHeaders } from "@/lib/observability";
 
 /**
  * Creates a Stripe Checkout session for a module or the full suite and returns
@@ -13,11 +14,14 @@ import { priceForItem } from "@/lib/prices";
  * the UI can gracefully fall back to the download link.
  */
 export async function POST(request: Request) {
+  const requestId = requestIdFromHeaders(request.headers);
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       {
         configured: false,
         error: "Payments are not enabled yet. See docs/STRIPE-SETUP.md.",
+        requestId,
       },
       { status: 503 }
     );
@@ -27,13 +31,23 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid JSON", requestId }, { status: 400 });
+  }
+
+  if (body.acceptedPolicies !== true) {
+    return NextResponse.json(
+      {
+        error: "Please accept Terms, Privacy Policy, and Refund Policy before checkout.",
+        requestId,
+      },
+      { status: 400 }
+    );
   }
 
   const itemId = String(body.item ?? "");
   const item = getPurchasable(itemId);
   if (!item) {
-    return NextResponse.json({ error: "Unknown item" }, { status: 400 });
+    return NextResponse.json({ error: "Unknown item", requestId }, { status: 400 });
   }
 
   const email =
@@ -72,11 +86,11 @@ export async function POST(request: Request) {
       allow_promotion_codes: true,
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url, requestId });
   } catch (e) {
     console.error("[checkout] Stripe error:", (e as Error).message);
     return NextResponse.json(
-      { error: "Could not start checkout. Please try again." },
+      { error: "Could not start checkout. Please try again.", requestId },
       { status: 502 }
     );
   }

@@ -66,6 +66,15 @@ export default function Footer() {
           <Link href="/app" className="transition hover:text-foreground">
             Launch
           </Link>
+          <Link href="/support" className="transition hover:text-foreground">
+            Support
+          </Link>
+          <Link href="/status" className="transition hover:text-foreground">
+            Status
+          </Link>
+          <Link href="/legal/terms" className="transition hover:text-foreground">
+            Terms
+          </Link>
         </div>
       </div>
     </footer>

@@ -11,7 +11,9 @@ const LINKS = [
   { href: "#whats-new", label: "What's new" },
   { href: "#pricing", label: "Pricing" },
   { href: "/download", label: "Download" },
-  { href: "/portal/login", label: "Buyer Portal" },
+  { href: "/account/login", label: "Account" },
+  { href: "/support", label: "Support" },
+  { href: "/status", label: "Status" },
   { href: "#request", label: "Custom" },
 ];
 

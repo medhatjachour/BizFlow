@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { getPurchasable } from "@/lib/payments";
 import { dataDir } from "@/lib/data-dir";
+import { getCustomerOrdersDb, hasPaidLicenseDb } from "@/lib/commerce-db";
 
 const DATA_DIR = dataDir;
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
@@ -108,6 +109,12 @@ async function readOrders(): Promise<StoredOrder[]> {
 }
 
 export async function hasPaidLicense(email: string, licenseKey: string): Promise<boolean> {
+  try {
+    if (await hasPaidLicenseDb(email, licenseKey)) return true;
+  } catch {
+    // Fall back to legacy file storage if DB is not ready yet.
+  }
+
   const e = normalizeEmail(email);
   const k = normalizeLicense(licenseKey);
   const orders = await readOrders();
@@ -120,6 +127,13 @@ export async function hasPaidLicense(email: string, licenseKey: string): Promise
 }
 
 export async function getCustomerOrders(email: string, licenseKey: string): Promise<CustomerOrderView[]> {
+  try {
+    const dbOrders = await getCustomerOrdersDb(email, licenseKey);
+    if (dbOrders.length) return dbOrders;
+  } catch {
+    // Fall back to legacy file storage if DB is not ready yet.
+  }
+
   const e = normalizeEmail(email);
   const k = normalizeLicense(licenseKey);
   const orders = await readOrders();

@@ -5,6 +5,8 @@ import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { licenseKeyFor } from "@/lib/license";
 import { dataDir } from "@/lib/data-dir";
+import { recordPaidOrder } from "@/lib/commerce-db";
+import { logEvent, requestIdFromHeaders } from "@/lib/observability";
 
 /**
  * Stripe webhook receiver.
@@ -40,7 +42,7 @@ async function recordOrder(order: Record<string, unknown>): Promise<void> {
  * TODO (see docs/STRIPE-SETUP.md): generate a license key, email the
  * download link, create the customer's account, etc.
  */
-async function fulfill(session: Stripe.Checkout.Session): Promise<void> {
+async function fulfill(session: Stripe.Checkout.Session, requestId: string): Promise<void> {
   const itemId = session.metadata?.itemId ?? "unknown";
   const email = session.customer_details?.email ?? session.customer_email ?? null;
   const amount = session.amount_total ?? 0;
@@ -48,9 +50,24 @@ async function fulfill(session: Stripe.Checkout.Session): Promise<void> {
   // Deterministic key — the success page derives the same value for display.
   const licenseKey = licenseKeyFor({ sessionId: session.id, itemId, email });
 
-  console.log(
-    `[webhook] ✅ Payment for "${itemId}" by ${email} (${amount / 100} ${session.currency}) → ${licenseKey}`
-  );
+  logEvent("info", "stripe_webhook_fulfill_start", {
+    requestId,
+    sessionId: session.id,
+    itemId,
+    email,
+    amount,
+    currency: session.currency,
+  });
+
+  await recordPaidOrder({
+    sessionId: session.id,
+    itemId,
+    email,
+    licenseKey,
+    amountTotal: amount,
+    currency: session.currency ?? "usd",
+    paymentStatus: session.payment_status ?? "paid",
+  });
 
   await recordOrder({
     fulfilledAt: new Date().toISOString(),
@@ -63,10 +80,17 @@ async function fulfill(session: Stripe.Checkout.Session): Promise<void> {
     paymentStatus: session.payment_status,
   });
 
+  logEvent("info", "stripe_webhook_fulfill_success", {
+    requestId,
+    sessionId: session.id,
+    licenseKey,
+  });
+
   // TODO: email the license key + download link to {email} (see docs/STRIPE-SETUP.md).
 }
 
 export async function POST(request: Request) {
+  const requestId = requestIdFromHeaders(request.headers);
   const stripe = getStripe();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -88,7 +112,10 @@ export async function POST(request: Request) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
   } catch (e) {
-    console.error("[webhook] signature verification failed:", (e as Error).message);
+    logEvent("warn", "stripe_webhook_invalid_signature", {
+      requestId,
+      error: (e as Error).message,
+    });
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -97,7 +124,7 @@ export async function POST(request: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.payment_status === "paid") {
-          await fulfill(session);
+          await fulfill(session, requestId);
         }
         break;
       }
@@ -106,10 +133,14 @@ export async function POST(request: Request) {
         break;
     }
   } catch (e) {
-    console.error("[webhook] handler error:", (e as Error).message);
+    logEvent("error", "stripe_webhook_handler_error", {
+      requestId,
+      eventType: event.type,
+      error: (e as Error).message,
+    });
     return NextResponse.json({ error: "Handler error" }, { status: 500 });
   }
 
   // Always 200 quickly so Stripe doesn't retry a handled event.
-  return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true, requestId });
 }
