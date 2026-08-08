@@ -27,6 +27,10 @@ jobs:
         working-directory: apps/website
         run: npm ci
 
+      - name: Generate Prisma client
+        working-directory: apps/website
+        run: npx prisma generate --schema=prisma/schema.prisma
+
       - name: Lint
         working-directory: apps/website
         run: npm run lint

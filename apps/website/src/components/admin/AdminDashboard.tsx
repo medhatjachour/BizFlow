@@ -58,6 +58,7 @@ const usdCents = (c: number) => usd((c || 0) / 100);
 const fmtDate = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 const statusOf = (r: CustomRequest): RequestStatus => r.status ?? "new";
+const DASHBOARD_RENDER_TS = Date.now();
 
 type Tab = "overview" | "orders" | "requests" | "tickets" | "pricing";
 
@@ -98,7 +99,7 @@ export default function AdminDashboard({ orders, requests, tickets, usingDefault
     });
     const avgFirstResponseHours = openTickets.length
       ? Math.round(
-          openTickets.reduce((sum, t) => sum + (Date.now() - new Date(t.createdAt).getTime()) / 36e5, 0) /
+          openTickets.reduce((sum, t) => sum + (DASHBOARD_RENDER_TS - new Date(t.createdAt).getTime()) / 36e5, 0) /
             openTickets.length
         )
       : 0;

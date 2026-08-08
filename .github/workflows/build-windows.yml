@@ -133,15 +133,20 @@ jobs:
           NODE_ENV: production
 
       - name: Setup code signing certificate (optional)
-        if: ${{ (secrets.WINDOWS_CERTIFICATE_PFX_BASE64 != '' || secrets.WINDOWS_CERTIFICATE_FILE_BASE64 != '') && secrets.WINDOWS_CERTIFICATE_PASSWORD != '' }}
         shell: pwsh
         env:
           WINDOWS_CERT_B64: ${{ secrets.WINDOWS_CERTIFICATE_PFX_BASE64 != '' && secrets.WINDOWS_CERTIFICATE_PFX_BASE64 || secrets.WINDOWS_CERTIFICATE_FILE_BASE64 }}
+          WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: |
-          $certPath = Join-Path $PWD "windows-codesign.pfx"
-          [System.IO.File]::WriteAllBytes($certPath, [System.Convert]::FromBase64String("$env:WINDOWS_CERT_B64"))
-          "WINDOWS_CERTIFICATE_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "WINDOWS_CERTIFICATE_PASSWORD=${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+          if (-not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERT_B64) -and -not [string]::IsNullOrWhiteSpace($env:WINDOWS_CERT_PASSWORD)) {
+            $certPath = Join-Path $PWD "windows-codesign.pfx"
+            [System.IO.File]::WriteAllBytes($certPath, [System.Convert]::FromBase64String($env:WINDOWS_CERT_B64))
+            "WINDOWS_CERTIFICATE_FILE=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Append
+            "WINDOWS_CERTIFICATE_PASSWORD=$env:WINDOWS_CERT_PASSWORD" | Out-File -FilePath $env:GITHUB_ENV -Append
+            Write-Host "Code-signing certificate configured."
+          } else {
+            Write-Host "Skipping code-signing certificate setup (secrets not configured)."
+          }
       
       - name: Package Windows installer
         run: npm run build:win

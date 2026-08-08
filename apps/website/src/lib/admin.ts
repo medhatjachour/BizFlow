@@ -161,10 +161,10 @@ export async function setRequestStatus(
 export async function readSupportTickets(): Promise<AdminSupportTicket[]> {
   const rows = await prisma.supportTicket.findMany({
     include: { messages: { orderBy: { createdAt: "asc" } } },
-    orderBy: { lastMessageAt: "desc" },
+    orderBy: { lastMessageAt: "desc" }
   });
 
-  return rows.map((t) => ({
+  return rows.map((t: (typeof rows)[number]) => ({
     publicId: t.publicId,
     email: t.email,
     subject: t.subject,
@@ -176,7 +176,7 @@ export async function readSupportTickets(): Promise<AdminSupportTicket[]> {
     lastMessageAt: t.lastMessageAt.toISOString(),
     messageCount: t.messages.length,
     latestMessage: t.messages.length ? t.messages[t.messages.length - 1].body : null,
-    messages: t.messages.map((m) => ({
+    messages: t.messages.map((m: (typeof t.messages)[number]) => ({
       senderType: m.senderType,
       body: m.body,
       createdAt: m.createdAt.toISOString(),
