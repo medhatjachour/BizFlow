@@ -420,6 +420,37 @@ interface API {
     setEnabled: (moduleId: string, enabled: boolean) => Promise<void>
     relaunch: () => Promise<void>
   }
+  license: {
+    getDeviceFingerprint: () => Promise<{
+      deviceFingerprint: string
+      deviceName: string
+      serverBaseUrl: string
+      appVersion: string
+    }>
+    getActivationState: () => Promise<{
+      activated: boolean
+      checksumValid?: boolean
+      boundToCurrentDevice?: boolean
+      deviceFingerprint: string
+      deviceName: string
+      activation?: {
+        email: string
+        licenseKey: string
+        itemId: string
+        deviceFingerprint: string
+        deviceName: string
+        activatedAt: string
+      }
+    }>
+    activateOnline: (email: string, licenseKey: string) => Promise<{
+      ok: boolean
+      error?: string
+      code?: string
+      activationState?: {
+        activated: boolean
+      }
+    }>
+  }
   // ─── Plugin APIs ────────────────────────────────────────────────────────
   bakery: {
     getRecipes: () => Promise<any>

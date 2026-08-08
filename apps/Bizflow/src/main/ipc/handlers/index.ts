@@ -19,6 +19,7 @@ import './backup.handlers' // Import backup handlers (self-contained, no registr
 import { registerLogHandlers } from './log.handlers'
 import { registerFinanceHandlers } from './finance.handlers'
 import { registerModuleHandlers } from './module.handlers'
+import { registerLicenseHandlers } from './license.handlers'
 import { registerPermissionsHandlers } from './permissions.handlers'
 import { installPermissionGuard } from './permissionsGuard'
 import type { IPlugin } from '../../../shared/interfaces/IPlugin'
@@ -195,6 +196,7 @@ export function registerAllHandlers() {
   registerEmailHandlers(prisma)
   registerLogHandlers()
   registerModuleHandlers()
+  registerLicenseHandlers()
   registerPermissionsHandlers(prisma)
 
   // ── Plugin Handlers ──────────────────────────────────────────────────────

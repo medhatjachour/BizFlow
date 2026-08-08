@@ -276,6 +276,37 @@ const api = {
       ipcRenderer.invoke('module:setEnabled', { moduleId, enabled }),
     relaunch: (): Promise<void> => ipcRenderer.invoke('module:relaunch'),
   },
+  license: {
+    getDeviceFingerprint: (): Promise<{
+      deviceFingerprint: string
+      deviceName: string
+      serverBaseUrl: string
+      appVersion: string
+    }> => ipcRenderer.invoke('license:getDeviceFingerprint'),
+    getActivationState: (): Promise<{
+      activated: boolean
+      checksumValid?: boolean
+      boundToCurrentDevice?: boolean
+      deviceFingerprint: string
+      deviceName: string
+      activation?: {
+        email: string
+        licenseKey: string
+        itemId: string
+        deviceFingerprint: string
+        deviceName: string
+        activatedAt: string
+      }
+    }> => ipcRenderer.invoke('license:getActivationState'),
+    activateOnline: (email: string, licenseKey: string): Promise<{
+      ok: boolean
+      error?: string
+      code?: string
+      activationState?: {
+        activated: boolean
+      }
+    }> => ipcRenderer.invoke('license:activateOnline', { email, licenseKey }),
+  },
   finance: {
     addTransaction: (data: { type: string; amount: number; description?: string; userId?: string }) =>
       ipcRenderer.invoke('finance:addTransaction', data),
