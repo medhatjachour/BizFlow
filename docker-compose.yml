@@ -5,8 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_BASE_PATH: /bizflow
-        NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
+        NEXT_PUBLIC_BASE_PATH: ""
+        NEXT_PUBLIC_SITE_URL: https://bizflow.medhatjachour.tech
         ADMIN_PASSWORD: build-validation-only
     container_name: bizflow-app
     ports:
@@ -25,9 +25,9 @@ services:
       WEBSITE_DATABASE_URL: file:/data/bizflow/website.db
       BIZFLOW_DATA_DIR: /data/bizflow
       BRIDGE_PORT: 8787
-      NEXT_PUBLIC_BASE_PATH: /bizflow
-      NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
-      NEXTAUTH_URL: https://medhatjachour.tech/bizflow
+      NEXT_PUBLIC_BASE_PATH: ""
+      NEXT_PUBLIC_SITE_URL: https://bizflow.medhatjachour.tech
+      NEXTAUTH_URL: https://bizflow.medhatjachour.tech
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
       REQUEST_MAIL_TO: medhatjachour8@gmail.com
       REQUEST_MAIL_FROM: ${REQUEST_MAIL_FROM:-medhatjachour8@gmail.com}
@@ -45,7 +45,7 @@ services:
     mem_limit: 3g
     cpus: 2.0
     healthcheck:
-      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:3000/bizflow"]
+      test: ["CMD", "wget", "--spider", "--quiet", "http://127.0.0.1:3000/api/status"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -68,6 +68,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
+      - ./root-chooser.html:/usr/share/nginx/html/root-chooser.html:ro
     depends_on:
       - bizflow-app
     restart: unless-stopped

@@ -39,8 +39,8 @@ jobs:
         working-directory: apps/website
         env:
           ADMIN_PASSWORD: build-validation-only
-          NEXT_PUBLIC_BASE_PATH: /bizflow
-          NEXT_PUBLIC_SITE_URL: https://medhatjachour.tech/bizflow
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_SITE_URL: https://bizflow.medhatjachour.tech
         run: npm run build
 
   # ── 2) Deploy to VPS ──────────────────────────────────────────────────────
@@ -91,7 +91,7 @@ jobs:
           SCP="scp -i ~/.ssh/deploy_key -q"
 
           # Root infra
-          $SCP Dockerfile docker-compose.yml nginx.conf $REMOTE:$BASE/
+          $SCP Dockerfile docker-compose.yml nginx.conf root-chooser.html $REMOTE:$BASE/
 
           # Website source
           $SCP -r apps/website/src/app/admin        $REMOTE:$BASE/apps/website/src/app/
@@ -130,7 +130,8 @@ jobs:
 
       - name: Smoke test
         run: |
-          BASE="https://medhatjachour.tech/bizflow"
+          BASE="https://bizflow.medhatjachour.tech"
+          ROOT="https://medhatjachour.tech"
           check() { code=\$(curl -s -o /dev/null -w "%{http_code}" "\$1"); echo "\$2=\$code"; [ "\$code" = "200" ]; }
           check "$BASE"                      HOME
           check "$BASE/robots.txt"           ROBOTS
@@ -138,8 +139,8 @@ jobs:
           check "$BASE/admin/login"          ADMIN_LOGIN
           check "$BASE/portal/login"         PORTAL_LOGIN
           check "$BASE/api/prices"           PRICES_API
-          check "https://medhatjachour.tech/app/" APP_UI
-          check "https://medhatjachour.tech/health" BRIDGE
+          check "$ROOT/"                     ROOT_CHOOSER
+          check "$ROOT/root-chooser.html"    ROOT_FILE
 
       - name: Cleanup temp deploy dir
         if: always()

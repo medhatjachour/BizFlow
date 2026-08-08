@@ -55,7 +55,7 @@ function getDeviceName(): string {
 function getLicenseServerBaseUrl(): string {
   const fromEnv = process.env.BIZFLOW_LICENSE_API_BASE?.trim()
   if (fromEnv) return fromEnv.replace(/\/$/, '')
-  return 'https://medhatjachour.tech/bizflow'
+  return 'https://bizflow.medhatjachour.tech'
 }
 
 function readActivation(): LocalActivation | null {
