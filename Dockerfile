@@ -25,6 +25,9 @@ RUN cd apps/Bizflow && \
     npx prisma generate --schema=prisma/merged.prisma && \
     DATABASE_URL=file:./dev.db npx prisma db push --schema=prisma/merged.prisma --accept-data-loss --skip-generate
 
+RUN cd apps/website && \
+    npx prisma generate --schema=prisma/schema.prisma
+
 # esbuild compiles server.ts → web/.dist/server.cjs, then spawns it; timeout kills the server
 RUN cd apps/Bizflow && timeout 60 node web/build-server.mjs || true
 RUN test -f apps/Bizflow/web/.dist/server.cjs
