@@ -93,6 +93,17 @@ export interface CustomerOrderView {
   paymentStatus: string;
 }
 
+type LicenseWithOrder = {
+  order: {
+    sessionId: string;
+    itemId: string;
+    amountTotal: number;
+    currency: string;
+    fulfilledAt: Date;
+    paymentStatus: string;
+  };
+};
+
 export async function hasPaidLicenseDb(email: string, licenseKey: string): Promise<boolean> {
   const e = normalizeEmail(email);
   const k = normalizeLicense(licenseKey);
@@ -125,7 +136,7 @@ export async function getCustomerOrdersDb(email: string, licenseKey: string): Pr
     orderBy: { order: { fulfilledAt: "desc" } },
   });
 
-  return licenses.map((l) => ({
+  return licenses.map((l: LicenseWithOrder) => ({
     sessionId: l.order.sessionId,
     itemId: l.order.itemId,
     itemLabel: getPurchasable(l.order.itemId)?.label ?? l.order.itemId,
