@@ -7,6 +7,8 @@ import { licenseKeyFor } from "@/lib/license";
 import { dataDir } from "@/lib/data-dir";
 import { recordPaidOrder } from "@/lib/commerce-db";
 import { logEvent, requestIdFromHeaders } from "@/lib/observability";
+import { sendLicenseDeliveryEmail } from "@/lib/transactional-mail";
+import { getPurchasable } from "@/lib/payments";
 
 /**
  * Stripe webhook receiver.
@@ -86,7 +88,29 @@ async function fulfill(session: Stripe.Checkout.Session, requestId: string): Pro
     licenseKey,
   });
 
-  // TODO: email the license key + download link to {email} (see docs/STRIPE-SETUP.md).
+  if (email) {
+    const itemLabel = getPurchasable(itemId)?.label ?? itemId;
+    const mail = await sendLicenseDeliveryEmail({
+      to: email,
+      itemLabel,
+      licenseKey,
+    });
+
+    if (!mail.sent) {
+      logEvent("warn", "stripe_webhook_license_email_failed", {
+        requestId,
+        sessionId: session.id,
+        email,
+        reason: mail.reason ?? "unknown",
+      });
+    } else {
+      logEvent("info", "stripe_webhook_license_email_sent", {
+        requestId,
+        sessionId: session.id,
+        email,
+      });
+    }
+  }
 }
 
 export async function POST(request: Request) {

@@ -36,14 +36,14 @@ asarUnpack:
 win:
   executableName: BizFlow
   icon: build/icon.ico
-  sign: null  # Set to signing script path for production
+  # Do not force sign:null; unsigned builds trigger SmartScreen "Publisher: Unknown".
+  # Provide certificate vars in CI for signed installers.
+  # certificateFile: ${WINDOWS_CERTIFICATE_FILE}
+  # certificatePassword: ${WINDOWS_CERTIFICATE_PASSWORD}
   target:
     - target: nsis
       arch:
         - x64
-  # Optional: Code signing (uncomment for production)
-  # certificateFile: ${WINDOWS_CERTIFICATE_FILE}
-  # certificatePassword: ${WINDOWS_CERTIFICATE_PASSWORD}
   # Ensure native modules work properly
   requestedExecutionLevel: asInvoker
 nsis:

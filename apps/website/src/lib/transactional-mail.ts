@@ -33,6 +33,52 @@ function supportInbox(): string {
   return process.env.SUPPORT_MAIL_TO?.trim() || process.env.REQUEST_MAIL_TO?.trim() || DEFAULT_SUPPORT_TO;
 }
 
+export async function sendLicenseDeliveryEmail(params: {
+  to: string;
+  itemLabel: string;
+  licenseKey: string;
+}): Promise<{ sent: boolean; reason?: string }> {
+  const transport = createTransport();
+  if (!transport) {
+    return { sent: false, reason: "SMTP_NOT_CONFIGURED" };
+  }
+
+  const from = senderAddress();
+  const downloadUrl = `${siteUrl}${withBasePath("/download")}`;
+  const portalUrl = `${siteUrl}${withBasePath("/portal/login")}`;
+
+  try {
+    await transport.sendMail({
+      from,
+      to: params.to,
+      subject: `Your BizFlow license key for ${params.itemLabel}`,
+      text: [
+        "Thanks for your purchase.",
+        "",
+        `Product: ${params.itemLabel}`,
+        `License key: ${params.licenseKey}`,
+        "",
+        `Download: ${downloadUrl}`,
+        `Manage licenses: ${portalUrl}`,
+        "",
+        "Keep this license key private and store it safely.",
+      ].join("\n"),
+      html: `
+        <h2>BizFlow License Delivery</h2>
+        <p>Thanks for your purchase.</p>
+        <p><strong>Product:</strong> ${params.itemLabel}</p>
+        <p><strong>License key:</strong> <code>${params.licenseKey}</code></p>
+        <p><a href="${downloadUrl}">Download BizFlow</a></p>
+        <p><a href="${portalUrl}">Manage your licenses</a></p>
+        <p>Keep this license key private and store it safely.</p>
+      `,
+    });
+    return { sent: true };
+  } catch (error) {
+    return { sent: false, reason: (error as Error).message };
+  }
+}
+
 export async function sendPasswordResetEmail(params: {
   to: string;
   token: string;
