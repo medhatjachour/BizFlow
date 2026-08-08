@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { getSupportTicketByPublicId } from "@/lib/commerce-db";
 import { requestIdFromHeaders } from "@/lib/observability";
 
+type TicketMessage = {
+  senderType: string;
+  body: string;
+  createdAt: Date;
+};
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ publicId: string }> }
@@ -31,7 +37,7 @@ export async function GET(
       status: ticket.status,
       createdAt: ticket.createdAt,
       updatedAt: ticket.updatedAt,
-      messages: ticket.messages.map((m) => ({
+      messages: ticket.messages.map((m: TicketMessage) => ({
         senderType: m.senderType,
         body: m.body,
         createdAt: m.createdAt,
