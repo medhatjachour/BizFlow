@@ -38,12 +38,15 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        working-directory: apps/Bizflow
+        run: npm ci --legacy-peer-deps
       
       - name: Generate Prisma Client
-        run: npx prisma generate
+        working-directory: apps/Bizflow
+        run: node scripts/merge-schemas.js --all; npx prisma generate --schema=prisma/merged.prisma
       
       - name: Debug Prisma generation
+        working-directory: apps/Bizflow
         run: |
           Write-Host "=== Debugging Prisma Client Generation ==="
           Write-Host "`nChecking if src/generated/prisma exists:"
@@ -74,12 +77,14 @@ jobs:
         shell: pwsh
       
       - name: Copy Prisma binaries
+        working-directory: apps/Bizflow
         run: |
           Write-Host "Copying Prisma binaries..."
           node scripts/copy-prisma-binaries.js
         shell: pwsh
       
       - name: Prepare template database
+        working-directory: apps/Bizflow
         run: |
           Write-Host "Creating fresh template database..."
           if (Test-Path "prisma/template.db") {
@@ -128,6 +133,7 @@ jobs:
         shell: pwsh
       
       - name: Build application
+        working-directory: apps/Bizflow
         run: npm run build
         env:
           NODE_ENV: production
@@ -149,6 +155,7 @@ jobs:
           }
       
       - name: Package Windows installer
+        working-directory: apps/Bizflow
         run: npm run build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -157,12 +164,14 @@ jobs:
       
       - name: Get version from package.json
         id: package-version
+        working-directory: apps/Bizflow
         run: |
           $version = node -p "require('./package.json').version"
           echo "version=$version" >> $env:GITHUB_OUTPUT
         shell: pwsh
       
       - name: List build artifacts
+        working-directory: apps/Bizflow
         run: |
           Write-Host "Build artifacts in dist folder:"
           Get-ChildItem -Path dist -Recurse -File | Select-Object Name, Length, LastWriteTime
@@ -173,8 +182,8 @@ jobs:
         with:
           name: BizFlow-Windows-Setup-${{ steps.package-version.outputs.version }}
           path: |
-            dist/*.exe
-            dist/*.exe.blockmap
+            apps/Bizflow/dist/*.exe
+            apps/Bizflow/dist/*.exe.blockmap
           retention-days: 30
           if-no-files-found: error
       
@@ -183,7 +192,7 @@ jobs:
         if: always()
         with:
           name: BizFlow-Windows-Portable-${{ steps.package-version.outputs.version }}
-          path: dist/*.zip
+          path: apps/Bizflow/dist/*.zip
           retention-days: 30
           if-no-files-found: warn
 
@@ -200,9 +209,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/*.exe
-            dist/*.exe.blockmap
-            dist/*.zip
+            apps/Bizflow/dist/*.exe
+            apps/Bizflow/dist/*.exe.blockmap
+            apps/Bizflow/dist/*.zip
           draft: false
           prerelease: false
           generate_release_notes: true
