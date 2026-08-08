@@ -36,6 +36,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+          cache-dependency-path: apps/Bizflow/package-lock.json
       
       - name: Install dependencies
         working-directory: apps/Bizflow
@@ -156,7 +157,7 @@ jobs:
       
       - name: Package Windows installer
         working-directory: apps/Bizflow
-        run: npm run build:win
+        run: npx cross-env ENABLED_MODULES=all CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WINDOWS_CERTIFICATE_FILE: ${{ env.WINDOWS_CERTIFICATE_FILE }}

@@ -54,7 +54,7 @@ jobs:
           ENABLED_MODULES: ${{ inputs.module }}
 
       - name: Package Windows installer
-        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --win --x64
+        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --x64 --publish never
 
       - name: Normalize asset file name
         shell: pwsh
@@ -117,7 +117,7 @@ jobs:
           ENABLED_MODULES: ${{ inputs.module }}
 
       - name: Package macOS installer
-        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --mac
+        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --mac --publish never
 
       - name: Normalize asset file name
         run: |
@@ -179,7 +179,7 @@ jobs:
           ENABLED_MODULES: ${{ inputs.module }}
 
       - name: Package Linux AppImage
-        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --linux AppImage
+        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --linux AppImage --publish never
 
       - name: Normalize asset file name
         run: |

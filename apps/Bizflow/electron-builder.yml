@@ -94,8 +94,8 @@ appImage:
 npmRebuild: false
 publish:
   provider: github
-  owner: YOUR_GITHUB_USER_OR_ORG   # <-- set to your GitHub username or org
-  repo: YOUR_REPO_NAME             # <-- set to the repo that holds the Releases
+  owner: medhatjachour
+  repo: BizFlow
   releaseType: release
   # If you publish several plugin variants to the SAME repo, also set a per-variant
   # `channel:` here (and autoUpdater.channel in src/main/updater.ts) so their
