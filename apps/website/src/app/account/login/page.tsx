@@ -13,11 +13,14 @@ export default function AccountLoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [requestingReset, setRequestingReset] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    setResetMessage(null);
 
     try {
       if (mode === "register") {
@@ -45,6 +48,34 @@ export default function AccountLoginPage() {
       setError((err as Error).message);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function requestReset() {
+    setError(null);
+    setResetMessage(null);
+
+    if (!email.trim()) {
+      setError("Enter your email first, then request a reset link.");
+      return;
+    }
+
+    setRequestingReset(true);
+    try {
+      const res = await fetch(withBasePath("/api/account/password/request-reset"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Could not request password reset");
+
+      setResetMessage("If this email exists, a reset link has been sent.");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setRequestingReset(false);
     }
   }
 
@@ -108,6 +139,17 @@ export default function AccountLoginPage() {
           />
         </label>
 
+        {mode === "login" ? (
+          <button
+            type="button"
+            onClick={requestReset}
+            disabled={requestingReset}
+            className="text-left text-xs font-semibold text-foreground/75 underline disabled:opacity-60"
+          >
+            {requestingReset ? "Sending reset link..." : "Forgot password? Send reset link"}
+          </button>
+        ) : null}
+
         <button
           type="submit"
           disabled={submitting}
@@ -116,6 +158,7 @@ export default function AccountLoginPage() {
           {submitting ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
         </button>
 
+        {resetMessage ? <p className="text-sm text-emerald-300">{resetMessage}</p> : null}
         {error ? <p className="text-sm text-rose-300">{error}</p> : null}
       </form>
     </main>

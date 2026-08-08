@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createSupportTicket } from "@/lib/commerce-db";
 import { logEvent, requestIdFromHeaders } from "@/lib/observability";
+import { sendSupportTicketEmails } from "@/lib/transactional-mail";
 
 function isEmail(v: unknown): v is string {
   return typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && v.length <= 254;
@@ -55,9 +56,29 @@ export async function POST(request: Request) {
       priority,
     });
 
+    const mail = await sendSupportTicketEmails({
+      ticketId: ticket.publicId,
+      customerEmail: email,
+      subject,
+      category,
+      priority,
+      message,
+    });
+
+    if (!mail.supportSent || !mail.customerSent) {
+      logEvent("warn", "support_ticket_email_partial_failure", {
+        requestId,
+        publicId: ticket.publicId,
+        supportSent: mail.supportSent,
+        customerSent: mail.customerSent,
+        reason: mail.reason ?? "unknown",
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       requestId,
+      notified: mail.supportSent,
       ticket: {
         publicId: ticket.publicId,
         status: ticket.status,
