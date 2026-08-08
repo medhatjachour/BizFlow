@@ -12,6 +12,7 @@ ENV ADMIN_PASSWORD=${ADMIN_PASSWORD}
 COPY package*.json ./
 COPY apps/Bizflow/package*.json ./apps/Bizflow/
 COPY apps/website/package*.json ./apps/website/
+COPY scripts/container-entrypoint.sh ./scripts/container-entrypoint.sh
 
 # lock file was generated on Windows; use install to resolve Linux-specific platform packages
 # Skip scripts so the Electron postinstall hook does not fail in the container build
@@ -47,6 +48,7 @@ ARG NEXT_PUBLIC_SITE_URL
 COPY package*.json ./
 COPY apps/Bizflow/package*.json ./apps/Bizflow/
 COPY apps/website/package*.json ./apps/website/
+COPY scripts/container-entrypoint.sh ./scripts/container-entrypoint.sh
 
 # Production deps only — no devDeps, no esbuild, no build tools
 # --ignore-scripts skips postinstall (electron-builder install-app-deps) which only matters for Electron
@@ -73,6 +75,7 @@ RUN mkdir -p /app/apps/app.asar.unpacked/src/generated && \
     ln -s /app/apps/Bizflow/prisma /app/apps/app.asar.unpacked/prisma
 
 RUN mkdir -p /data/bizflow && chmod 777 /data/bizflow
+RUN chmod +x /app/scripts/container-entrypoint.sh
 
 EXPOSE 3000 8787
 
@@ -86,10 +89,4 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     PORT=3000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:8787/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
-
-ENTRYPOINT ["dumb-init", "--"]
-
-# Bridge + web UI + Next.js standalone
-CMD ["sh", "-c", "(cd /app/apps/Bizflow && node web/.dist/server.cjs) & node /app/apps/Bizflow/web/serve-dist-web.cjs & (cd /app/apps/website && npx prisma db push --schema prisma/schema.prisma --skip-generate && node standalone/apps/website/server.js)"]
+ENTRYPOINT ["dumb-init", "--", "/app/scripts/container-entrypoint.sh"]
