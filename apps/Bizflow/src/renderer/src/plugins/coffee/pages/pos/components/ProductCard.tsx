@@ -50,7 +50,7 @@ export function ProductCard({ product, inCart, onClick }: Props) {
 
         {isOut ? (
           <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-            Out of Stock
+            Out 
           </span>
         ) : isLow ? (
           <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
@@ -58,7 +58,7 @@ export function ProductCard({ product, inCart, onClick }: Props) {
           </span>
         ) : (
           <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-            {product.stock} in stock
+            {product.stock} in 
           </span>
         )}
       </div>

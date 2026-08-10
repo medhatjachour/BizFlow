@@ -119,7 +119,7 @@ export function ProductGrid({
             <p className="text-xs text-slate-400 mt-1">{t('tryAdjustingFilters')|| 'Try a different search or category'}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3">
             {visible.map(product => (
               <ProductCard
                 key={product.id}
