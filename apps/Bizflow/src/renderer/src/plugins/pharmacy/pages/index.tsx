@@ -2,7 +2,7 @@
  * Pharmacy plugin — main page.
  * Tabbed shell: Dashboard · Sell (POS) · Products · Inventory · Sales · Suppliers · Purchase Orders · Reports
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   LayoutDashboard, ShoppingCart, Pill, PackageSearch,
   Receipt, Truck, ClipboardList, BarChart3, Users
@@ -17,11 +17,14 @@ import PharmacyCustomers from './components/PharmacyCustomers'
 import PharmacySuppliers from './components/purchasing/PharmacySuppliers'
 import PharmacyPurchaseOrders from './components/purchasing/PharmacyPurchaseOrders'
 import PharmacyReports from './components/analytics/PharmacyReports'
+import { useAuth } from '@renderer/contexts/AuthContext'
+import { pluginTabCapability } from '../../../../../shared/permissions'
 
 type Tab = 'dashboard' | 'pos' | 'products' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'orders' | 'reports'
 
 export default function PharmacyPage() {
   const { t } = useLanguage()
+  const { can } = useAuth()
   const [tab, setTab] = useState<Tab>('dashboard')
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
@@ -35,6 +38,11 @@ export default function PharmacyPage() {
     { key: 'orders', label: t('phPurchaseOrders') || 'Purchase Orders', icon: ClipboardList },
     { key: 'reports', label: t('phReports') || 'Reports', icon: BarChart3 },
   ]
+
+  const visibleTabs = tabs.filter(item => can(pluginTabCapability('pharmacy', item.key)!))
+  useEffect(() => {
+    if (!visibleTabs.some(item => item.key === tab)) setTab(visibleTabs[0]?.key ?? 'dashboard')
+  }, [tab, visibleTabs])
 
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -51,7 +59,7 @@ export default function PharmacyPage() {
         </div>
         {/* Tabs */}
         <div className="flex gap-1 overflow-x-auto -mb-px">
-          {tabs.map(({ key, label, icon: Icon }) => (
+          {visibleTabs.map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setTab(key)}
               className={`flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 tab === key
@@ -66,15 +74,15 @@ export default function PharmacyPage() {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
-        {tab === 'dashboard' && <PharmacyDashboard onNavigate={(t) => setTab(t as Tab)} />}
-        {tab === 'pos' && <PharmacyPOS />}
-        {tab === 'products' && <PharmacyProducts />}
-        {tab === 'inventory' && <PharmacyInventory />}
-        {tab === 'sales' && <PharmacySales />}
-        {tab === 'customers' && <PharmacyCustomers />}
-        {tab === 'suppliers' && <PharmacySuppliers />}
-        {tab === 'orders' && <PharmacyPurchaseOrders />}
-        {tab === 'reports' && <PharmacyReports />}
+        {tab === 'dashboard' && can('access_pharmacy') && <PharmacyDashboard onNavigate={(t) => setTab(t as Tab)} />}
+        {tab === 'pos' && can('access_pharmacy') && <PharmacyPOS />}
+        {tab === 'products' && can('manage_inventory') && <PharmacyProducts />}
+        {tab === 'inventory' && can('manage_inventory') && <PharmacyInventory />}
+        {tab === 'sales' && can('access_pharmacy') && <PharmacySales />}
+        {tab === 'customers' && can('manage_customers') && <PharmacyCustomers />}
+        {tab === 'suppliers' && can('manage_purchasing') && <PharmacySuppliers />}
+        {tab === 'orders' && can('manage_purchasing') && <PharmacyPurchaseOrders />}
+        {tab === 'reports' && can('view_finance') && <PharmacyReports />}
       </div>
     </div>
   )

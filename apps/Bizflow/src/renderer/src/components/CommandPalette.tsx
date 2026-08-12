@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { 
   Search, 
   LayoutDashboard, 
@@ -41,6 +41,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const navigate = useNavigate()
+  const location = useLocation()
   const inputRef = useRef<HTMLInputElement>(null)
 
   const commands: Command[] = [
@@ -139,7 +140,9 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
       description: 'Configure application',
       icon: Settings,
       action: () => {
-        navigate('/settings')
+        const pluginRoutes = ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic', 'vet', 'gym', 'pharmacy', 'coffee']
+        const currentPlugin = location.pathname.split('/')[1]
+        navigate(pluginRoutes.includes(currentPlugin) ? `/settings?plugin=${currentPlugin}` : '/settings')
         onClose()
       },
       keywords: ['preferences', 'config']

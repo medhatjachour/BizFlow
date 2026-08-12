@@ -23,6 +23,7 @@ import VetFollowUpsTab  from './components/sessions/VetFollowUpsTab'
 import VetExpensesTab   from './components/expenses/VetExpensesTab'
 import VetMedicinesTab  from './components/medicines/VetMedicinesTab'
 import VetSalesTab, { SalesHistory } from './components/VetSalesTab'
+import { pluginTabCapability } from '../../../../../shared/permissions'
 import { speciesEmoji, speciesLabel } from './components/owners/species'
 
 type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales' | 'salesHistory'
@@ -430,7 +431,7 @@ function StaffCard({ staff, onViewProfile, onEdit, onDelete }: StaffCardProps) {
 export default function VetPage() {
   const { t }    = useLanguage()
   const toast    = useToast()
-  const { user } = useAuth()
+  const { user, can } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -453,9 +454,15 @@ export default function VetPage() {
       : [])
   ]
 
+  const visibleTabs = allTabs.filter(item => can(pluginTabCapability('vet', item.key)!))
+
   const [tab, setTab] = useState<Tab>('owners')
   const [salesCartCount, setSalesCartCount] = useState(0)
   const [pendingMainTab, setPendingMainTab] = useState<Tab | null>(null)
+
+  useEffect(() => {
+    if (!visibleTabs.some(item => item.key === tab)) setTab(visibleTabs[0]?.key ?? 'owners')
+  }, [tab, visibleTabs])
 
   // Guard: leaving the Sales tab with a non-empty cart would discard it.
   function requestMainTab(key: Tab) {
@@ -705,7 +712,7 @@ export default function VetPage() {
 
         {/* Tabs */}
         <div className="flex gap-0.5 overflow-x-auto -mb-px">
-          {allTabs.map(({ key, label, icon: Icon }) => (
+          {visibleTabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
               onClick={() => requestMainTab(key)}

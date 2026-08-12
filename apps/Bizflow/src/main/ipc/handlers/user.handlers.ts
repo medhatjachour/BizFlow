@@ -6,6 +6,8 @@
 import { ipcMain } from 'electron'
 import * as bcrypt from 'bcryptjs'
 import { createLogger } from '../../utils/logger'
+import type { PluginRoleAssignments } from '../../../shared/permissions'
+import { bindUser, getCurrentUser, requireCap } from './session'
 
 const log = createLogger('Users')
 
@@ -13,6 +15,7 @@ export function registerUserHandlers(prisma: any) {
   // Get all users
   ipcMain.handle('users:getAll', async () => {
     try {
+      requireCap('manage_users')
       const users = await prisma.user.findMany({
         orderBy: {
           createdAt: 'desc'
@@ -28,10 +31,11 @@ export function registerUserHandlers(prisma: any) {
           lastLogin: true,
           createdAt: true,
           updatedAt: true
+          ,pluginRoles: true
         }
       })
 
-      return { success: true, data: users }
+      return { success: true, data: users.map((user: any) => ({ ...user, pluginRoles: parsePluginRoles(user.pluginRoles) })) }
     } catch (error) {
       log.error('[Users] Failed to get users:', error)
       return { success: false, error: 'Failed to load users' }
@@ -41,6 +45,7 @@ export function registerUserHandlers(prisma: any) {
   // Get user by ID
   ipcMain.handle('users:getById', async (_event, userId: string) => {
     try {
+      requireCap('manage_users')
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -54,6 +59,7 @@ export function registerUserHandlers(prisma: any) {
           lastLogin: true,
           createdAt: true,
           updatedAt: true
+          ,pluginRoles: true
         }
       })
 
@@ -61,7 +67,7 @@ export function registerUserHandlers(prisma: any) {
         return { success: false, error: 'User not found' }
       }
 
-      return { success: true, data: user }
+      return { success: true, data: { ...user, pluginRoles: parsePluginRoles(user.pluginRoles) } }
     } catch (error) {
       log.error('[Users] Failed to get user:', error)
       return { success: false, error: 'Failed to load user' }
@@ -76,8 +82,10 @@ export function registerUserHandlers(prisma: any) {
     email?: string | null
     phone?: string | null
     role: string
+    pluginRoles?: PluginRoleAssignments
   }) => {
     try {
+      requireCap('manage_users')
       // Check if username already exists
       const existingUser = await prisma.user.findUnique({
         where: { username: userData.username }
@@ -110,6 +118,7 @@ export function registerUserHandlers(prisma: any) {
           email: userData.email || null,
           phone: userData.phone || null,
           role: userData.role,
+          pluginRoles: JSON.stringify(userData.pluginRoles ?? {}),
           isActive: true
         },
         select: {
@@ -121,10 +130,11 @@ export function registerUserHandlers(prisma: any) {
           phone: true,
           isActive: true,
           createdAt: true
+          ,pluginRoles: true
         }
       })
 
-      return { success: true, data: user }
+      return { success: true, data: { ...user, pluginRoles: parsePluginRoles(user.pluginRoles) } }
     } catch (error) {
       log.error('[Users] Failed to create user:', error)
       return { success: false, error: 'Failed to create user' }
@@ -137,9 +147,11 @@ export function registerUserHandlers(prisma: any) {
     email?: string | null
     phone?: string | null
     role?: string
+    pluginRoles?: PluginRoleAssignments
     isActive?: boolean
   }) => {
     try {
+      requireCap('manage_users')
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
         where: { id: userId }
@@ -147,6 +159,13 @@ export function registerUserHandlers(prisma: any) {
 
       if (!existingUser) {
         return { success: false, error: 'User not found' }
+      }
+
+      const removesLastAdmin = existingUser.role === 'admin' && existingUser.isActive &&
+        (updateData.role !== undefined && updateData.role !== 'admin' || updateData.isActive === false)
+      if (removesLastAdmin) {
+        const adminCount = await prisma.user.count({ where: { role: 'admin', isActive: true } })
+        if (adminCount <= 1) return { success: false, error: 'Cannot remove or deactivate the last admin user' }
       }
 
       // Check if email is being changed and is already in use
@@ -171,6 +190,7 @@ export function registerUserHandlers(prisma: any) {
           email: updateData.email !== undefined ? updateData.email : undefined,
           phone: updateData.phone !== undefined ? updateData.phone : undefined,
           role: updateData.role,
+          pluginRoles: updateData.pluginRoles ? JSON.stringify(updateData.pluginRoles) : undefined,
           isActive: updateData.isActive
         },
         select: {
@@ -182,10 +202,21 @@ export function registerUserHandlers(prisma: any) {
           phone: true,
           isActive: true,
           updatedAt: true
+          ,pluginRoles: true
         }
       })
 
-      return { success: true, data: user }
+      const actingUser = getCurrentUser()
+      if (actingUser?.id === user.id) {
+        await bindUser(prisma, {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          pluginRoles: parsePluginRoles(user.pluginRoles),
+        })
+      }
+
+      return { success: true, data: { ...user, pluginRoles: parsePluginRoles(user.pluginRoles) } }
     } catch (error) {
       log.error('[Users] Failed to update user:', error)
       return { success: false, error: 'Failed to update user' }
@@ -195,6 +226,7 @@ export function registerUserHandlers(prisma: any) {
   // Change password
   ipcMain.handle('users:changePassword', async (_event, userId: string, newPassword: string) => {
     try {
+      requireCap('manage_users')
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
         where: { id: userId }
@@ -223,6 +255,7 @@ export function registerUserHandlers(prisma: any) {
   // Delete user
   ipcMain.handle('users:delete', async (_event, userId: string) => {
     try {
+      requireCap('manage_users')
       // Check if user exists
       const existingUser = await prisma.user.findUnique({
         where: { id: userId }
@@ -287,4 +320,14 @@ export function registerUserHandlers(prisma: any) {
       return { success: false, error: 'Failed to update last login' }
     }
   })
+}
+
+function parsePluginRoles(raw: unknown): PluginRoleAssignments {
+  if (!raw || typeof raw !== 'string') return {}
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
 }

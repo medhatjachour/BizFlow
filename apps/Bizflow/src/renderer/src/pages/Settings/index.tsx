@@ -3,7 +3,8 @@
  * Clean, modular architecture with separated settings panels
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Settings as SettingsIcon,
   Bell,
@@ -26,7 +27,7 @@ import { useSettings } from './useSettings'
 import GeneralSettings from './GeneralSettings'
 import DisplaySettings from './DisplaySettings'
 import CategorySettings from './CategorySettings'
-import UserManagementSettings from './UserManagementSettings'
+import UserManagementSettings from './userMangement'
 import RolePermissionsSettings from './RolePermissionsSettings'
 import PaymentMethodsSettings from './PaymentMethodsSettings'
 import TaxReceiptSettings from './TaxReceiptSettings'
@@ -36,9 +37,11 @@ import ArchiveManagementSettings from './ArchiveManagementSettings'
 import EmailSettings from './EmailSettings'
 import ModulesSettings from './ModulesSettings'
 import type { SettingsTab } from './types'
+import type { PluginId } from '../../../../shared/permissions'
 import logger from '../../../../shared/utils/logger'
 
 export default function Settings() {
+  const [searchParams] = useSearchParams()
   const { theme, setTheme, actualTheme } = useTheme()
   const { language, setLanguage, t } = useLanguage()
   const { updateSettings: updateDisplaySettingsContext } = useDisplaySettingsContext()
@@ -86,12 +89,36 @@ export default function Settings() {
   const VET_TABS: SettingsTab[] = ['general', 'users', 'backup']
   const BAKERY_TABS: SettingsTab[] = ['general', 'users', 'backup']
 
-  const tabs =
-    clinicEnabled || vetEnabled || bakeryEnabled
+  const pluginRoutes: PluginId[] = ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic', 'vet', 'gym', 'pharmacy', 'coffee']
+  const bundledPlugins: PluginId[] = [
+    __PLUGIN_COMMERCE__ ? 'commerce' : null,
+    __PLUGIN_BAKERY__ ? 'bakery' : null,
+    __PLUGIN_RESTAURANT__ ? 'restaurant' : null,
+    __PLUGIN_WAREHOUSE__ ? 'warehouse' : null,
+    __PLUGIN_CLINIC__ ? 'clinic' : null,
+    __PLUGIN_VET__ ? 'vet' : null,
+    __PLUGIN_GYM__ ? 'gym' : null,
+    __PLUGIN_PHARMACY__ ? 'pharmacy' : null,
+    __PLUGIN_COFFEE__ ? 'coffee' : null,
+  ].filter((value): value is PluginId => Boolean(value))
+  const requestedPlugin = searchParams.get('plugin')
+  const activePlugin = document.body.dataset.plugin
+  const lastPlugin = localStorage.getItem('bizflow:lastPlugin')
+  const singleBundledPlugin = bundledPlugins.length === 1 ? bundledPlugins[0] : null
+  const pluginContext = ([requestedPlugin, activePlugin, lastPlugin, singleBundledPlugin]
+    .find((value): value is PluginId => !!value && pluginRoutes.includes(value as PluginId)) ?? null)
+  const pluginTabs: SettingsTab[] = ['general', 'users', 'backup']
+  const tabs = pluginContext
+    ? allTabs.filter(tab => pluginTabs.includes(tab.id))
+    : clinicEnabled || vetEnabled || bakeryEnabled
       ? allTabs.filter((tab) =>
           (clinicEnabled ? CLINIC_TABS : vetEnabled ? VET_TABS : BAKERY_TABS).includes(tab.id)
         )
       : allTabs
+
+  useEffect(() => {
+    if (!tabs.some(tab => tab.id === activeTab)) setActiveTab(tabs[0]?.id ?? 'general')
+  }, [activeTab, tabs])
 
   const handleSave = () => {
     try {
@@ -107,7 +134,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 mx-auto">
+    <div className="p-6 mx-auto w-full max-w-[1800px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
@@ -135,7 +162,7 @@ export default function Settings() {
       )}
 
       {/* Tabs and Content */}
-      <div className="flex  gap-6 ">
+      <div className="flex gap-6 min-w-0 items-start">
         {/* Sidebar Tabs */}
         <div className="w-64 flex-shrink-0">
           <div className="sticky top-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -162,54 +189,60 @@ export default function Settings() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
-          {activeTab === 'general' && (
-            <GeneralSettings
-              theme={theme}
-              onThemeChange={(theme: 'light' | 'dark' | 'system') => setTheme(theme as any)}
-              actualTheme={actualTheme}
-              language={language}
-              onLanguageChange={setLanguage}
-            />
-          )}
+        <div className="flex-1 min-w-0 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 lg:p-8">
+          <div className="space-y-6">
+            {activeTab === 'general' && (
+              <GeneralSettings
+                theme={theme}
+                onThemeChange={(theme: 'light' | 'dark' | 'system') => setTheme(theme as any)}
+                actualTheme={actualTheme}
+                language={language}
+                onLanguageChange={setLanguage}
+              />
+            )}
 
-          {activeTab === 'display' && (
-            <DisplaySettings settings={displaySettings} onChange={handleDisplaySettingsChange} />
-          )}
+            {activeTab === 'display' && (
+              <DisplaySettings settings={displaySettings} onChange={handleDisplaySettingsChange} />
+            )}
 
-          {activeTab === 'categories' && <CategorySettings />}
+            {activeTab === 'categories' && <CategorySettings />}
 
-          {activeTab === 'users' && (
-            <div className="space-y-8">
-              <UserManagementSettings />
-              <RolePermissionsSettings />
-            </div>
-          )}
+            {activeTab === 'users' && (
+              <div className="min-w-0 grid grid-cols-1 2xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-8 items-start">
+                <div className="min-w-0">
+                  <UserManagementSettings pluginId={pluginContext} />
+                </div>
+                <div className="min-w-0">
+                  <RolePermissionsSettings pluginId={pluginContext} />
+                </div>
+              </div>
+            )}
 
-          {activeTab === 'payments' && (
-            <PaymentMethodsSettings settings={paymentMethods} onChange={setPaymentMethods} />
-          )}
+            {activeTab === 'payments' && (
+              <PaymentMethodsSettings settings={paymentMethods} onChange={setPaymentMethods} />
+            )}
 
-          {activeTab === 'tax' && (
-            <TaxReceiptSettings settings={taxReceiptSettings} onChange={setTaxReceiptSettings} />
-          )}
+            {activeTab === 'tax' && (
+              <TaxReceiptSettings settings={taxReceiptSettings} onChange={setTaxReceiptSettings} />
+            )}
 
-          {activeTab === 'notifications' && (
-            <NotificationsSettings
-              settings={notificationSettings}
-              onChange={setNotificationSettings}
-            />
-          )}
+            {activeTab === 'notifications' && (
+              <NotificationsSettings
+                settings={notificationSettings}
+                onChange={setNotificationSettings}
+              />
+            )}
 
-          {activeTab === 'email' && <EmailSettings onSave={handleSave} />}
+            {activeTab === 'email' && <EmailSettings onSave={handleSave} />}
 
-          {activeTab === 'backup' && (
-            <BackupSettings settings={backupSettings} onChange={setBackupSettings} />
-          )}
+            {activeTab === 'backup' && (
+              <BackupSettings settings={backupSettings} onChange={setBackupSettings} />
+            )}
 
-          {activeTab === 'archive' && <ArchiveManagementSettings />}
+            {activeTab === 'archive' && <ArchiveManagementSettings />}
 
-          {activeTab === 'modules' && <ModulesSettings />}
+            {activeTab === 'modules' && <ModulesSettings />}
+          </div>
         </div>
       </div>
     </div>

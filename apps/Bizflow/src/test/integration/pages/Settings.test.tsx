@@ -54,7 +54,7 @@ vi.mock('@renderer/pages/Settings/CategorySettings', () => ({
   default: vi.fn(() => <div>Category Settings</div>)
 }))
 
-vi.mock('@renderer/pages/Settings/UserManagementSettings', () => ({
+vi.mock('@renderer/pages/Settings/userMangement', () => ({
   default: vi.fn(() => <div>User Management Settings</div>)
 }))
 
@@ -239,7 +239,7 @@ describe('SettingsPage', () => {
       }
     }
 
-    // Set up window.api mock for CategorySettings and UserManagementSettings
+    // Set up window.api mock for CategorySettings and user management settings
     ;(window as any).api = {
       categories: {
         getAll: vi.fn().mockResolvedValue({ success: true, categories: [] }),
@@ -259,7 +259,7 @@ describe('SettingsPage', () => {
     const GeneralSettings = vi.mocked(await import('@renderer/pages/Settings/GeneralSettings')).default
     const DisplaySettings = vi.mocked(await import('@renderer/pages/Settings/DisplaySettings')).default
     const CategorySettings = vi.mocked(await import('@renderer/pages/Settings/CategorySettings')).default
-    const UserManagementSettings = vi.mocked(await import('@renderer/pages/Settings/UserManagementSettings')).default
+    const UserManagementSettings = vi.mocked(await import('@renderer/pages/Settings/userMangement')).default
     const PaymentMethodsSettings = vi.mocked(await import('@renderer/pages/Settings/PaymentMethodsSettings')).default
     const TaxReceiptSettings = vi.mocked(await import('@renderer/pages/Settings/TaxReceiptSettings')).default
     const NotificationsSettings = vi.mocked(await import('@renderer/pages/Settings/NotificationsSettings')).default

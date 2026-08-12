@@ -6,7 +6,7 @@
  * - Route-based Code Splitting
  */
 
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Suspense, lazy, ReactNode, useState } from 'react'
 import { useModuleEnabled } from './hooks/useModuleEnabled'
 import { MODULE_IDS } from '@/shared/modules'
@@ -22,6 +22,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import CommandPalette from './components/CommandPalette'
 import { MigrationProgress } from './components/MigrationProgress'
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
+import type { Capability } from '../../shared/permissions'
 
 // Lazy-load ALL pages for maximum code splitting and fast initial load
 const Dashboard    = lazy(() => import('./pages/Dashboard/index'))
@@ -442,6 +443,41 @@ function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>) {
 }
 
 function RootLayoutWrapper({ children }: Readonly<{ children: ReactNode }>) {
-  const { user } = useAuth()
+  const { user, can } = useAuth()
+  const location = useLocation()
+  const pluginId = location.pathname.split('/')[1]
+  const required = pluginId ? PLUGIN_ROUTE_CAPABILITIES[pluginId] : undefined
+  if (required && !can(required)) return <PluginAccessDenied />
   return <RootLayout userRole={user?.role || 'admin'}>{children}</RootLayout>
+}
+
+const PLUGIN_ROUTE_CAPABILITIES: Record<string, Capability> = {
+  products: 'access_commerce',
+  pos: 'access_commerce',
+  inventory: 'access_commerce',
+  sales: 'access_commerce',
+  stores: 'access_commerce',
+  installments: 'access_commerce',
+  bakery: 'access_bakery',
+  restaurant: 'access_restaurant',
+  warehouse: 'access_warehouse',
+  clinic: 'access_clinic',
+  vet: 'access_vet',
+  gym: 'access_gym',
+  pharmacy: 'access_pharmacy',
+  coffee: 'access_coffee',
+}
+
+function PluginAccessDenied() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-6">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center shadow-xl">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+          <span className="text-xl text-amber-700 dark:text-amber-300">!</span>
+        </div>
+        <h1 className="text-lg font-semibold text-slate-900 dark:text-white">Plugin access is restricted</h1>
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Ask an administrator to assign you a role for this plugin.</p>
+      </div>
+    </div>
+  )
 }

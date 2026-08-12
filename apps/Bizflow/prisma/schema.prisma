@@ -21,6 +21,7 @@ model User {
   username                String                 @unique
   passwordHash            String
   role                    String                 @default("sales") // admin, manager, sales, inventory, finance
+  pluginRoles             String                 @default("{}") // JSON map: plugin id -> plugin role key
   fullName                String?                // Full display name
   email                   String?                @unique
   phone                   String?

@@ -1,4 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+import type { PluginRoleAssignments } from '../shared/permissions'
 
 interface API {
   auth: {
@@ -122,6 +123,7 @@ interface API {
       email?: string | null
       phone?: string | null
       role: string
+      pluginRoles?: PluginRoleAssignments
     }) => Promise<any>
     update: (
       id: string,
@@ -130,6 +132,7 @@ interface API {
         email?: string | null
         phone?: string | null
         role?: string
+        pluginRoles?: PluginRoleAssignments
         isActive?: boolean
       }
     ) => Promise<any>

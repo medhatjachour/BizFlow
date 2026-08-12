@@ -11,6 +11,7 @@ import {
   ALL_CAPABILITIES,
   resolveCapabilities,
   isWildcardRole,
+  type PluginRoleAssignments,
   type Capability,
 } from '../../../shared/permissions'
 
@@ -19,6 +20,7 @@ export interface CurrentUser {
   username: string
   role: string
   capabilities: Capability[]
+  pluginRoles: PluginRoleAssignments
 }
 
 let currentUser: CurrentUser | null = null
@@ -53,10 +55,20 @@ export async function resolveUserCapabilities(prisma: any, role: string): Promis
 /** Bind the acting user and return their resolved capabilities. */
 export async function bindUser(
   prisma: any,
-  u: { id: string; username: string; role: string }
+  u: { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments | null }
 ): Promise<Capability[]> {
-  const capabilities = await resolveUserCapabilities(prisma, u.role)
-  setCurrentUser({ id: u.id, username: u.username, role: u.role, capabilities })
+  const globalCapabilities = await resolveUserCapabilities(prisma, u.role)
+  const pluginCapabilities = (await Promise.all(
+    Object.values(u.pluginRoles ?? {}).map(pluginRole => resolveUserCapabilities(prisma, pluginRole))
+  )).flat()
+  const capabilities = [...new Set([...globalCapabilities, ...pluginCapabilities])]
+  setCurrentUser({
+    id: u.id,
+    username: u.username,
+    role: u.role,
+    capabilities,
+    pluginRoles: u.pluginRoles ?? {},
+  })
   return capabilities
 }
 

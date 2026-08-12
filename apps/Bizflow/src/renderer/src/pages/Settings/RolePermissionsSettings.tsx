@@ -4,23 +4,34 @@
  * profit visibility, etc.). Admin role is always full-access and locked.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react'
 import { Shield, Loader2, Lock, RotateCcw, ListChecks, Check } from 'lucide-react'
-import { useAuth } from '../../../hooks/useAuth'
+import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import {
   CAPABILITIES,
   ALL_CAPABILITIES,
+  PLUGIN_ROLE_DEFAULTS,
+  PLUGIN_PERMISSION_CATALOG,
+  PLUGIN_ACCESS_CAPABILITIES,
+  type PluginPermissionCatalog,
+  type PluginId,
   type Capability,
 } from '../../../../shared/permissions'
+import PermissionMatrix from './PermissionMatrix'
 
 type RoleInfo = { capabilities: Capability[]; isDefault: boolean; isWildcard: boolean }
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: 'Admin', manager: 'Manager', finance: 'Finance',
+  admin: 'Admin', manager: 'Manager', member: 'Member', finance: 'Finance',
   inventory: 'Inventory', sales: 'Sales', cashier: 'Cashier',
+  coffee_cashier: 'Cashier',
+  coffee_inventory_manager: 'Inventory Manager',
+  coffee_shift_manager: 'Shift Manager',
+  coffee_manager: 'Coffee Manager',
 }
 const roleLabel = (r: string) => ROLE_LABELS[r] ?? r.charAt(0).toUpperCase() + r.slice(1)
+const KERNEL_ROLES = ['admin', 'manager', 'member', 'finance', 'inventory', 'sales', 'cashier'] as const
 
 // capability keys grouped for display
 const GROUPS = ALL_CAPABILITIES.reduce((acc, cap) => {
@@ -29,15 +40,42 @@ const GROUPS = ALL_CAPABILITIES.reduce((acc, cap) => {
   return acc
 }, {} as Record<string, Capability[]>)
 
-export default function RolePermissionsSettings() {
+export default function RolePermissionsSettings({ pluginId = null }: { pluginId?: PluginId | null }) {
   const { can } = useAuth()
   const toast = useToast()
   const editable = can('manage_settings')
+  const visibleGroups = Object.entries(GROUPS).filter(([group]) => !pluginId || group !== 'Plugin Access')
+  const [catalogs, setCatalogs] = useState<PluginPermissionCatalog[]>([])
+  const pluginCatalog = pluginId
+    ? catalogs.find(catalog => catalog.id === pluginId) ?? PLUGIN_PERMISSION_CATALOG[pluginId]
+    : null
 
   const [roles, setRoles] = useState<Record<string, RoleInfo>>({})
   const [loading, setLoading] = useState(true)
   const [savingRole, setSavingRole] = useState<string | null>(null)
   const [selected, setSelected] = useState<string>('manager')
+  const scrollTopBeforeUpdateRef = useRef<number | null>(null)
+
+  const captureMainScroll = () => {
+    const main = document.getElementById('main-content')
+    if (!main) return
+    scrollTopBeforeUpdateRef.current = main.scrollTop
+  }
+
+  useLayoutEffect(() => {
+    if (scrollTopBeforeUpdateRef.current === null) return
+    const main = document.getElementById('main-content')
+    if (!main) {
+      scrollTopBeforeUpdateRef.current = null
+      return
+    }
+
+    const nextTop = scrollTopBeforeUpdateRef.current
+    requestAnimationFrame(() => {
+      main.scrollTop = nextTop
+      scrollTopBeforeUpdateRef.current = null
+    })
+  }, [roles, savingRole])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -53,7 +91,15 @@ export default function RolePermissionsSettings() {
 
   useEffect(() => { void load() }, [load])
 
+  useEffect(() => {
+    if (!pluginId) return
+    void (window as any).api?.plugins?.getCatalog?.()
+      .then((catalog: PluginPermissionCatalog[] | undefined) => setCatalogs(catalog ?? []))
+      .catch(() => setCatalogs([]))
+  }, [pluginId])
+
   async function persist(role: string, caps: Capability[]) {
+    captureMainScroll()
     setSavingRole(role)
     try {
       await (window as any).api?.permissions?.setRole(role, caps)
@@ -77,11 +123,11 @@ export default function RolePermissionsSettings() {
     return <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div>
   }
 
-  const roleKeys = Object.keys(roles).sort((a, b) => {
-    const order = ['admin', 'manager', 'finance', 'inventory', 'sales', 'cashier']
-    const ai = order.indexOf(a), bi = order.indexOf(b)
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
-  })
+  // Plugin roles are assignments on individual users, not global kernel roles.
+  const roleKeys: string[] = (pluginId
+    ? Object.keys(PLUGIN_ROLE_DEFAULTS[pluginId])
+    : KERNEL_ROLES
+  ).filter(role => roles[role] && role !== 'coffee_staff')
 
   const activeRole = roleKeys.includes(selected) ? selected : (roleKeys[0] ?? 'manager')
   const info = roles[activeRole]
@@ -89,19 +135,23 @@ export default function RolePermissionsSettings() {
   const enabledCount = wildcard ? ALL_CAPABILITIES.length : (info?.capabilities.length ?? 0)
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 min-w-0">
       <div className="flex items-center gap-2">
         <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
           <Shield className="h-5 w-5 text-blue-500" />
         </div>
         <div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">Role Permissions</h3>
+          <h3 className="font-semibold text-slate-900 dark:text-white">{pluginId ? 'Plugin Role Permissions' : 'Kernel Role Permissions'}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Choose a role, then switch capabilities on or off. Changes save instantly. Admin always has full access.
+            {pluginId ? 'Choose a plugin role, then switch its capabilities on or off. Changes save instantly.' : 'Choose a kernel role, then switch its shared capabilities on or off. Changes save instantly. Admin always has full access.'}
             {!editable && ' (read-only — needs the “Manage settings” permission)'}
           </p>
         </div>
       </div>
+
+      {!pluginId && <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-900/10 px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
+        Plugin roles are assigned separately for each user. Open User Management from a plugin to manage access for that plugin; those assignments do not appear as global kernel roles here.
+      </div>}
 
       {/* Role selector pills */}
       <div className="flex flex-wrap gap-2">
@@ -127,8 +177,8 @@ export default function RolePermissionsSettings() {
 
       {/* Selected role detail */}
       {info && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden min-w-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-800 dark:text-slate-100">{roleLabel(activeRole)}</span>
               {wildcard ? (
@@ -163,34 +213,46 @@ export default function RolePermissionsSettings() {
               <p className="text-sm text-slate-500 dark:text-slate-400">The <b>Admin</b> role always has every permission and can’t be limited.</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100 dark:divide-slate-800">
-              {Object.entries(GROUPS).map(([group, caps]) => (
-                <div key={group} className="px-5 py-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{group}</p>
-                  <div className="space-y-1">
-                    {caps.map(cap => {
-                      const on = info.capabilities.includes(cap)
-                      return (
-                        <div key={cap}
-                          className={`flex items-center justify-between gap-3 rounded-lg px-2.5 py-2 transition-colors ${editable ? 'hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer' : ''}`}
-                          onClick={() => editable && toggle(activeRole, cap)}>
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className={`h-5 w-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                              {on && <Check size={12} className="text-white" strokeWidth={3} />}
+            <div className="min-w-0">
+              {pluginCatalog ? (
+                <PermissionMatrix
+                  catalog={pluginCatalog}
+                  capabilities={info.capabilities}
+                  disabled={!editable}
+                  onChange={capabilities => persist(activeRole, [...new Set([
+                    ...capabilities,
+                    PLUGIN_ACCESS_CAPABILITIES[pluginId!],
+                  ])])}
+                />
+              ) : <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {visibleGroups.map(([group, caps]) => (
+                  <div key={group} className="px-5 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{group}</p>
+                    <div className="space-y-1">
+                      {caps.map(cap => {
+                        const on = info.capabilities.includes(cap)
+                        return (
+                          <div key={cap}
+                            className={`flex items-center justify-between gap-3 rounded-lg px-2.5 py-2 transition-colors ${editable ? 'hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer' : ''}`}
+                            onClick={() => editable && toggle(activeRole, cap)}>
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className={`h-5 w-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                {on && <Check size={12} className="text-white" strokeWidth={3} />}
+                              </span>
+                              <span className={`text-sm break-words ${on ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>{CAPABILITIES[cap].label}</span>
+                            </div>
+                            {/* toggle switch */}
+                            <span role="switch" aria-checked={on}
+                              className={`relative inline-flex h-5 w-9 items-center rounded-full shrink-0 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'} ${editable ? '' : 'opacity-60'}`}>
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-4' : 'translate-x-0.5'}`} />
                             </span>
-                            <span className={`text-sm truncate ${on ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>{CAPABILITIES[cap].label}</span>
                           </div>
-                          {/* toggle switch */}
-                          <span role="switch" aria-checked={on}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full shrink-0 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'} ${editable ? '' : 'opacity-60'}`}>
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                          </span>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>}
             </div>
           )}
         </div>

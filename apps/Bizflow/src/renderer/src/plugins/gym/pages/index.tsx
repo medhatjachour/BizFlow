@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Dumbbell, Users, UserCheck, CalendarCheck, Footprints,
   ListChecks, CalendarCheck2, Lock, ClipboardList, Info, X
@@ -12,6 +12,8 @@ import PlansTab          from './components/PlansTab'
 import AttendanceTab     from './components/AttendanceTab'
 import LockersTab        from './components/LockersTab'
 import ProgramsTab       from './components/ProgramsTab'
+import { useAuth } from '@renderer/contexts/AuthContext'
+import { pluginTabCapability } from '../../../../../shared/permissions'
 
 type Tab = 'attendance' | 'trainees' | 'coaches' | 'subscriptions' | 'walkins' | 'plans' | 'lockers' | 'programs'
 
@@ -130,6 +132,7 @@ function GymJourneyModal({ onClose }: { onClose: () => void }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function GymPage() {
   const { t } = useLanguage()
+  const { can } = useAuth()
   const [tab, setTab] = useState<Tab>('attendance')
   const [showJourney, setShowJourney] = useState(false)
   const [hoveredInfo, setHoveredInfo] = useState<Tab | null>(null)
@@ -145,7 +148,12 @@ export default function GymPage() {
     { key: 'programs',      label: t('gymTabPrograms'),      icon: ClipboardList,  tooltip: t('gymJourneyProgramsDesc') },
   ]
 
-  const activeTooltip = hoveredInfo ? TABS.find(t => t.key === hoveredInfo) : null
+  const visibleTabs = TABS.filter(item => can(pluginTabCapability('gym', item.key)!))
+  const activeTooltip = hoveredInfo ? visibleTabs.find(t => t.key === hoveredInfo) : null
+
+  useEffect(() => {
+    if (!visibleTabs.some(item => item.key === tab)) setTab(visibleTabs[0]?.key ?? 'attendance')
+  }, [tab, visibleTabs])
 
   return (
     <div className="flex flex-col h-full">
@@ -179,7 +187,7 @@ export default function GymPage() {
             </div>
           )}
           <div className="flex gap-0.5 overflow-x-auto">
-            {TABS.map(({ key, label, icon: Icon }) => (
+            {visibleTabs.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}

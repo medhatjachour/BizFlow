@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react'
 import logger from '../../../shared/utils/logger'
-import type { Capability } from '../../../shared/permissions'
+import type { Capability, PluginRoleAssignments } from '../../../shared/permissions'
 
-type User = { id: string; username: string; role: string } | null
+type User = { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments } | null
 
 type AuthContextType = {
   user: User
@@ -17,6 +17,7 @@ type AuthContextType = {
   // Capability-based permissions (role-configurable)
   capabilities: Capability[]
   can: (cap: Capability) => boolean
+  refreshPermissions: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -138,6 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const refreshPermissions = useCallback(async () => {
+    if (user) await bindSession(user)
+  }, [bindSession, user])
+
   // Calculate permissions based on user role
   const isAdmin = user?.role === 'admin'
   const isManager = user?.role === 'manager' || isAdmin
@@ -162,8 +167,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       canManageInventory,
       capabilities,
       can,
+      refreshPermissions,
     }),
-    [user, isAdmin, isManager, canEdit, canDelete, canManageInventory, capabilities, can]
+    [user, isAdmin, isManager, canEdit, canDelete, canManageInventory, capabilities, can, refreshPermissions]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

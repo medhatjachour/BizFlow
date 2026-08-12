@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import LocalIcon from '../../assets/icon.png'
 import { useAuth } from '@renderer/contexts/AuthContext'
+import type { Capability } from '../../../../shared/permissions'
 
 interface NavItem {
   name: string
@@ -41,6 +42,7 @@ interface NavItem {
   href: string
   icon: React.ElementType
   roles: string[]
+  capability?: Capability
 }
 
 const navigation: NavItem[] = [
@@ -91,7 +93,8 @@ const navigation: NavItem[] = [
     translationKey: 'settings',
     href: '/settings',
     icon: Settings,
-    roles: ['admin']
+    roles: ['admin'],
+    capability: 'manage_settings'
   }
 ]
 
@@ -103,15 +106,18 @@ interface RootLayoutProps {
 export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
+  const pluginRoutes = ['vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'commerce', 'coffee']
 // ✅ Call useAuth at the top level
-  const { logout } = useAuth()
+  const { logout, can } = useAuth()
   // Theme the active module: set <body data-plugin> so the --accent CSS variable
   // (defined in main.css) themes every control in that module automatically.
   useEffect(() => {
     const seg = location.pathname.split('/')[1] || ''
-    const known = ['vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'commerce', 'coffee']
-    if (known.includes(seg)) document.body.dataset.plugin = seg
-    else delete document.body.dataset.plugin
+    if (pluginRoutes.includes(seg)) {
+      document.body.dataset.plugin = seg
+      localStorage.setItem('bizflow:lastPlugin', seg)
+    }
+    else if (seg !== 'settings') delete document.body.dataset.plugin
   }, [location.pathname])
   const { t } = useLanguage()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -132,11 +138,11 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
 
   // ── Commerce nav items (injected when Commerce plugin is enabled) ─────────
   const commerceNavItems: NavItem[] = __PLUGIN_COMMERCE__ && commerceEnabled ? [
-    { name: 'Stores',    translationKey: 'stores',    href: '/stores',    icon: Store,         roles: ['admin', 'manager'] },
-    { name: 'Products',  translationKey: 'products',  href: '/products',  icon: BoxIcon,       roles: ['admin', 'manager', 'inventory'] },
-    { name: 'POS',       translationKey: 'pos',       href: '/pos',       icon: CreditCard,    roles: ['admin', 'manager', 'sales'] },
-    { name: 'Inventory', translationKey: 'inventory', href: '/inventory', icon: Package,       roles: ['admin', 'manager', 'inventory'] },
-    { name: 'Sales',     translationKey: 'sales',     href: '/sales',     icon: ShoppingCart,  roles: ['admin', 'manager', 'sales'] },
+    { name: 'Stores',    translationKey: 'stores',    href: '/stores',    icon: Store,         roles: ['admin', 'manager'], capability: 'access_commerce' },
+    { name: 'Products',  translationKey: 'products',  href: '/products',  icon: BoxIcon,       roles: ['admin', 'manager', 'inventory'], capability: 'access_commerce' },
+    { name: 'POS',       translationKey: 'pos',       href: '/pos',       icon: CreditCard,    roles: ['admin', 'manager', 'sales'], capability: 'access_commerce' },
+    { name: 'Inventory', translationKey: 'inventory', href: '/inventory', icon: Package,       roles: ['admin', 'manager', 'inventory'], capability: 'access_commerce' },
+    { name: 'Sales',     translationKey: 'sales',     href: '/sales',     icon: ShoppingCart,  roles: ['admin', 'manager', 'sales'], capability: 'access_commerce' },
   ] : []
 
   // Build dynamic nav — inject commerce items after Dashboard, then plugin items after Employees
@@ -151,56 +157,64 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       translationKey: 'bakery',
       href: '/bakery',
       icon: ChefHat,
-      roles: ['admin', 'manager', 'inventory']
+      roles: ['admin', 'manager', 'bakery_staff'],
+      capability: 'access_bakery' as Capability
     }] : []),
     ...(__PLUGIN_RESTAURANT__ && restaurantEnabled ? [{
       name: 'Restaurant',
       translationKey: 'restaurant',
       href: '/restaurant',
       icon: UtensilsCrossed,
-      roles: ['admin', 'manager', 'sales']
+      roles: ['admin', 'manager', 'restaurant_staff'],
+      capability: 'access_restaurant' as Capability
     }] : []),
     ...(__PLUGIN_WAREHOUSE__ && warehouseEnabled ? [{
       name: 'Warehouse',
       translationKey: 'warehouse',
       href: '/warehouse',
       icon: WarehouseIcon,
-      roles: ['admin', 'manager', 'inventory']
+      roles: ['admin', 'manager', 'warehouse_staff'],
+      capability: 'access_warehouse' as Capability
     }] : []),
     ...(__PLUGIN_CLINIC__ && clinicEnabled ? [{
       name: 'Clinic',
       translationKey: 'clinic',
       href: '/clinic',
       icon: Stethoscope,
-      roles: ['admin', 'manager', 'clinic_staff']
+      roles: ['admin', 'manager', 'clinic_staff'],
+      capability: 'access_clinic' as Capability
     }] : []),
     ...(__PLUGIN_VET__ && vetEnabled ? [{
       name: 'Vet Clinic',
       translationKey: 'vet',
       href: '/vet',
       icon: PawPrint,
-      roles: ['admin', 'manager', 'vet_staff']
+      roles: ['admin', 'manager', 'vet_staff'],
+      capability: 'access_vet' as Capability
     }] : []),
     ...(__PLUGIN_GYM__ && gymEnabled ? [{
       name: 'Gym',
       translationKey: 'gym',
       href: '/gym',
       icon: Dumbbell,
-      roles: ['admin', 'manager']
+      roles: ['admin', 'manager', 'gym_staff'],
+      capability: 'access_gym' as Capability
     }] : []),
     ...(__PLUGIN_PHARMACY__ && pharmacyEnabled ? [{
       name: 'Pharmacy',
       translationKey: 'pharmacy',
       href: '/pharmacy',
       icon: Pill,
-      roles: ['admin', 'manager', 'sales', 'inventory']
+      roles: ['admin', 'manager', 'sales', 'inventory', 'pharmacy_staff'],
+      capability: 'access_pharmacy' as Capability
     }] : []),
     ...(__PLUGIN_COFFEE__ && coffeeEnabled ? [{
       name: 'Coffee Shop',
       translationKey: 'coffee',
       href: '/coffee',
       icon: Coffee,
-      roles: ['admin', 'manager', 'sales']
+      roles: ['admin', 'manager', 'coffee_staff'],
+      capability: 'access_coffee' as Capability
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&
@@ -305,13 +319,20 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-3 overflow-y-auto" aria-label="Main navigation">
           {navItems
-            .filter(item => item.roles.includes(userRole))
+            .filter(item => item.roles.includes(userRole) && (!item.capability || can(item.capability)))
             .map(item => {
               const isActive = location.pathname === item.href
+              const currentPlugin = location.pathname.split('/')[1]
+              const fallbackPlugin = pluginRoutes.includes(currentPlugin)
+                ? currentPlugin
+                : localStorage.getItem('bizflow:lastPlugin') || ''
+              const settingsHref = item.href === '/settings' && pluginRoutes.includes(fallbackPlugin)
+                ? `/settings?plugin=${fallbackPlugin}`
+                : item.href
               return (
                 <Link
                   key={item.name}
-                  to={item.href}
+                  to={settingsHref}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`
                     flex items-center gap-3 rounded-xl px-2.5 py-2.5
@@ -361,7 +382,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         {/* Top Header */}
         <header className="h-16 flex items-center justify-between px-6 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 shadow-sm">
           <div className="flex items-center gap-4">
@@ -398,12 +419,12 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
         </header>
 
         {/* Main Content Area */}
-        <main id="main-content" className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-900" tabIndex={-1}>
+        <main id="main-content" className="flex-1 min-h-0 overflow-auto bg-slate-50 dark:bg-slate-900" tabIndex={-1}>
           {children}
         </main>
         
         {/* status bar */}
-        <div className='px-6 py-1  text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700'>
+        <div className='shrink-0 px-6 py-1 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700'>
           © 2026 BizFlow. Made by <a href="https://www.linkedin.com/in/medhatjachour" target="_blank" rel="noopener noreferrer">MedhatJachour</a>
         </div>
       </div>

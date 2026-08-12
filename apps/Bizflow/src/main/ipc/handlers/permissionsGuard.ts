@@ -16,6 +16,16 @@ import { requireCap } from './session'
 import type { Capability } from '../../../shared/permissions'
 
 const RULES: Array<{ test: RegExp; cap: Capability }> = [
+  { test: /^users:/i,                   cap: 'manage_users' },
+  { test: /^auth:create$/i,             cap: 'manage_users' },
+  { test: /^bakery:/i,                  cap: 'access_bakery' },
+  { test: /^restaurant:/i,              cap: 'access_restaurant' },
+  { test: /^warehouse:/i,               cap: 'access_warehouse' },
+  { test: /^clinic:/i,                  cap: 'access_clinic' },
+  { test: /^vet:/i,                     cap: 'access_vet' },
+  { test: /^gym:/i,                     cap: 'access_gym' },
+  { test: /^pharmacy:/i,                cap: 'access_pharmacy' },
+  { test: /^coffee:/i,                  cap: 'access_coffee' },
   { test: /refund|return/i,            cap: 'issue_refund' },
   { test: /void|cancelsale|cancelorder/i, cap: 'void_sale' },
 ]

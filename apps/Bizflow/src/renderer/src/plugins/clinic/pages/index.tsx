@@ -15,6 +15,7 @@ import FollowUpsTab from './components/appointments/FollowUpsTab'
 import ExpensesTab from './components/expenses/ExpensesTab'
 import MaterialsTab from './components/materials/MaterialsTab'
 import DoctorsTab from './components/doctors/DoctorsTab'
+import { pluginTabCapability } from '../../../../../shared/permissions'
 
 type Tab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'materials' | 'doctors'
 
@@ -631,7 +632,7 @@ function PatientsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ClinicPage() {
   const { t } = useLanguage()
-  const { user } = useAuth()
+  const { user, can } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('patients')
   const [overdueCount, setOverdueCount] = useState(0)
   const [showJourney, setShowJourney] = useState(false)
@@ -672,11 +673,12 @@ export default function ClinicPage() {
 
   const staffTabs: Tab[] = ['patients', 'sessions', 'appointments', 'followups']
   const tabs = isClinicStaff ? allTabs.filter((t) => staffTabs.includes(t.key)) : allTabs
+  const visibleTabs = tabs.filter(tab => can(pluginTabCapability('clinic', tab.key)!))
 
   useEffect(() => {
-    if (tabs.some((t) => t.key === activeTab)) return
-    if (tabs.length > 0) setActiveTab(tabs[0].key)
-  }, [tabs, activeTab])
+    if (visibleTabs.some((t) => t.key === activeTab)) return
+    if (visibleTabs.length > 0) setActiveTab(visibleTabs[0].key)
+  }, [visibleTabs, activeTab])
 
   return (
     <div className="flex flex-col h-full p-6 gap-5 overflow-auto">
@@ -724,7 +726,7 @@ export default function ClinicPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-slate-200 dark:border-slate-700 gap-0.5">
-        {tabs.map(({ key, label, Icon, badge }) => (
+        {visibleTabs.map(({ key, label, Icon, badge }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
@@ -748,14 +750,14 @@ export default function ClinicPage() {
 
       {/* Tab content */}
       <div className="flex-1 min-h-0">
-        {activeTab === 'patients'     && <PatientsTab />}
-        {activeTab === 'sessions'     && <SessionsTab />}
-        {activeTab === 'stats'        && !isClinicStaff && <StatsTab />}
-        {activeTab === 'appointments' && <AppointmentsTab />}
-        {activeTab === 'followups'    && <FollowUpsTab />}
-        {activeTab === 'doctors'      && !isClinicStaff && <DoctorsTab />}
-        {activeTab === 'expenses'     && !isClinicStaff && <ExpensesTab />}
-        {activeTab === 'materials'    && !isClinicStaff && <MaterialsTab />}
+        {activeTab === 'patients'     && can('manage_customers') && <PatientsTab />}
+        {activeTab === 'sessions'     && can('manage_customers') && <SessionsTab />}
+        {activeTab === 'stats'        && can('view_finance') && !isClinicStaff && <StatsTab />}
+        {activeTab === 'appointments' && can('manage_customers') && <AppointmentsTab />}
+        {activeTab === 'followups'    && can('manage_customers') && <FollowUpsTab />}
+        {activeTab === 'doctors'      && can('manage_staff') && !isClinicStaff && <DoctorsTab />}
+        {activeTab === 'expenses'     && can('view_finance') && !isClinicStaff && <ExpensesTab />}
+        {activeTab === 'materials'    && can('manage_inventory') && !isClinicStaff && <MaterialsTab />}
       </div>
     </div>
   )

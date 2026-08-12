@@ -11,7 +11,7 @@
  *  6. Profit & Loss – revenue vs costs (including waste), margin analysis
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChefHat, FlaskConical, BarChart3, Package, Trash2, Calendar, LayoutDashboard, ShoppingBag, Info, X, ArrowDown, Receipt } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import DailyOverviewTab from './components/overview/DailyOverviewTab'
@@ -24,6 +24,8 @@ import ScheduleTab from './components/schedule/ScheduleTab'
 import ProfitLossTab from './components/overview/ProfitLossTab'
 import EndOfDayModal from './components/overview/EndOfDayModal'
 import BakeryExpensesTab from './components/expenses/ExpensesTab'
+import { useAuth } from '@renderer/contexts/AuthContext'
+import { pluginTabCapability } from '../../../../../shared/permissions'
 
 type Tab = 'overview' | 'recipes' | 'production' | 'sales' | 'pantry' | 'waste' | 'schedule' | 'pnl' | 'expenses'
 
@@ -181,6 +183,7 @@ export default function BakeryPage() {
   const [showEOD, setShowEOD] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const { t } = useLanguage()
+  const { can } = useAuth()
 
   const tabs: { key: Tab; label: string; Icon: typeof ChefHat }[] = [
     { key: 'overview',   label: t('bakeryOverviewTab'),   Icon: LayoutDashboard },
@@ -193,6 +196,11 @@ export default function BakeryPage() {
     { key: 'pnl',        label: t('bakeryProfitLossTab'), Icon: BarChart3 },
     { key: 'expenses',   label: t('expenses'),   Icon: Receipt }
   ]
+
+  const visibleTabs = tabs.filter(tab => can(pluginTabCapability('bakery', tab.key)!))
+  useEffect(() => {
+    if (!visibleTabs.some(tab => tab.key === active)) setActive(visibleTabs[0]?.key ?? 'overview')
+  }, [active, visibleTabs])
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
@@ -228,7 +236,7 @@ export default function BakeryPage() {
 
         {/* Tab bar */}
         <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700 overflow-x-auto overflow-y-hidden">
-          {tabs.map(({ key, label, Icon }) => (
+          {visibleTabs.map(({ key, label, Icon }) => (
             <button
               key={key}
               onClick={() => setActive(key)}
@@ -248,15 +256,15 @@ export default function BakeryPage() {
 
       {/* Tab content */}
       <div className="flex-1 overflow-auto p-6">
-        {active === 'overview'   && <DailyOverviewTab onEndOfDay={() => setShowEOD(true)} />}
-        {active === 'recipes'    && <RecipesTab />}
-        {active === 'production' && <ProductionTab />}
-        {active === 'sales'      && <SalesTab />}
-        {active === 'pantry'     && <PantryTab />}
-        {active === 'waste'      && <WasteTab />}
-        {active === 'schedule'  && <ScheduleTab />}
-        {active === 'pnl'       && <ProfitLossTab />}
-        {active === 'expenses'  && <BakeryExpensesTab />}
+        {active === 'overview'   && can('access_bakery') && <DailyOverviewTab onEndOfDay={() => setShowEOD(true)} />}
+        {active === 'recipes'    && can('manage_inventory') && <RecipesTab />}
+        {active === 'production' && can('manage_inventory') && <ProductionTab />}
+        {active === 'sales'      && can('access_bakery') && <SalesTab />}
+        {active === 'pantry'     && can('manage_inventory') && <PantryTab />}
+        {active === 'waste'      && can('manage_inventory') && <WasteTab />}
+        {active === 'schedule'  && can('manage_inventory') && <ScheduleTab />}
+        {active === 'pnl'       && can('view_profit') && <ProfitLossTab />}
+        {active === 'expenses'  && can('view_finance') && <BakeryExpensesTab />}
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Warehouse, Package, MapPin, ArrowRightLeft, ClipboardList, Info, X, ArrowRight } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import OverviewTab from './components/OverviewTab'
@@ -7,6 +7,8 @@ import InventoryTab from './components/InventoryTab'
 import TransfersTab from './components/TransfersTab'
 import OperationsTab from './components/OperationsTab'
 import InfoTooltip from './components/InfoTooltip'
+import { useAuth } from '@renderer/contexts/AuthContext'
+import { pluginTabCapability } from '../../../../../shared/permissions'
 
 type Tab = 'overview' | 'operations' | 'locations' | 'inventory' | 'transfers'
 
@@ -14,6 +16,7 @@ export default function WarehousePage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [showHowItWorks, setShowHowItWorks] = useState(false)
   const { t } = useLanguage()
+  const { can } = useAuth()
 
   const TAB_INFO: Record<Tab, string> = {
     overview: t('warehouseTabInfoOverview'),
@@ -30,6 +33,11 @@ export default function WarehousePage() {
     { id: 'inventory', label: t('warehouseInventoryTab'), icon: <Package className="w-4 h-4" /> },
     { id: 'transfers', label: t('warehouseTransfersTab'), icon: <ArrowRightLeft className="w-4 h-4" /> }
   ]
+
+  const visibleTabs = TABS.filter(tab => can(pluginTabCapability('warehouse', tab.id)!))
+  useEffect(() => {
+    if (!visibleTabs.some(tab => tab.id === activeTab)) setActiveTab(visibleTabs[0]?.id ?? 'overview')
+  }, [activeTab, visibleTabs])
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-gradient-to-b from-slate-50 via-white to-white dark:from-slate-900 dark:via-slate-900 dark:to-slate-900">
@@ -59,7 +67,7 @@ export default function WarehousePage() {
 
           <div className="px-4 py-3 border-t border-slate-200 dark:border-slate-700">
             <div className="flex gap-1.5 flex-wrap">
-              {TABS.map(tab => (
+              {visibleTabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}

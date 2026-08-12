@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UtensilsCrossed, Table2, CalendarDays, BookOpen, ClipboardList, LayoutDashboard } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import OverviewTab  from './components/OverviewTab'
@@ -6,12 +6,15 @@ import TablesTab    from './components/TablesTab'
 import ReservationsTab from './components/ReservationsTab'
 import MenuTab      from './components/MenuTab'
 import OrdersTab    from './components/OrdersTab'
+import { useAuth } from '@renderer/contexts/AuthContext'
+import { pluginTabCapability } from '../../../../../shared/permissions'
 
 type Tab = 'overview' | 'tables' | 'reservations' | 'menu' | 'orders'
 
 export default function RestaurantPage() {
   const [active, setActive] = useState<Tab>('overview')
   const { t } = useLanguage()
+  const { can } = useAuth()
 
   const tabs: { key: Tab; label: string; Icon: typeof LayoutDashboard }[] = [
     { key: 'overview',     label: t('restaurantOverviewTab'),     Icon: LayoutDashboard },
@@ -20,6 +23,11 @@ export default function RestaurantPage() {
     { key: 'menu',         label: t('restaurantMenuTab'),         Icon: BookOpen },
     { key: 'orders',       label: t('restaurantOrdersTab'),       Icon: ClipboardList }
   ]
+
+  const visibleTabs = tabs.filter(tab => can(pluginTabCapability('restaurant', tab.key)!))
+  useEffect(() => {
+    if (!visibleTabs.some(tab => tab.key === active)) setActive(visibleTabs[0]?.key ?? 'overview')
+  }, [active, visibleTabs])
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
@@ -37,7 +45,7 @@ export default function RestaurantPage() {
 
         {/* Tab bar */}
         <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700 overflow-x-auto overflow-y-hidden">
-          {tabs.map(({ key, label, Icon }) => (
+          {visibleTabs.map(({ key, label, Icon }) => (
             <button
               key={key}
               onClick={() => setActive(key)}

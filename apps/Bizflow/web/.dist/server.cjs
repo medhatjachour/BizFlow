@@ -2014,10 +2014,30 @@ function resolveCapabilities(role, override) {
     return override;
   return DEFAULT_ROLE_CAPABILITIES[role ?? ""] ?? [];
 }
-var CAPABILITIES, ALL_CAPABILITIES, DEFAULT_ROLE_CAPABILITIES;
+var CAPABILITIES, ALL_CAPABILITIES, DEFAULT_ROLE_CAPABILITIES, PLUGIN_PERMISSION_CATALOG;
 var init_permissions = __esm({
   "src/shared/permissions.ts"() {
     CAPABILITIES = {
+      access_commerce: { label: "Access the Commerce plugin", group: "Plugin Access" },
+      access_bakery: { label: "Access the Bakery plugin", group: "Plugin Access" },
+      access_restaurant: { label: "Access the Restaurant plugin", group: "Plugin Access" },
+      access_warehouse: { label: "Access the Warehouse plugin", group: "Plugin Access" },
+      access_clinic: { label: "Access the Clinic plugin", group: "Plugin Access" },
+      access_vet: { label: "Access the Vet Clinic plugin", group: "Plugin Access" },
+      access_gym: { label: "Access the Gym plugin", group: "Plugin Access" },
+      access_pharmacy: { label: "Access the Pharmacy plugin", group: "Plugin Access" },
+      access_coffee: { label: "Access the Coffee Shop plugin", group: "Coffee Shop" },
+      coffee_pos: { label: "Use the Coffee Shop POS", group: "Coffee Shop" },
+      coffee_tables: { label: "Manage Coffee Shop tables", group: "Coffee Shop" },
+      coffee_products: { label: "Manage Coffee Shop products", group: "Coffee Shop" },
+      coffee_inventory: { label: "Manage Coffee Shop inventory", group: "Coffee Shop" },
+      coffee_incoming: { label: "Manage Coffee Shop incoming stock", group: "Coffee Shop" },
+      coffee_expenses: { label: "Manage Coffee Shop expenses", group: "Coffee Shop" },
+      coffee_sales: { label: "View Coffee Shop sales", group: "Coffee Shop" },
+      coffee_shifts: { label: "Manage Coffee Shop shifts", group: "Coffee Shop" },
+      coffee_customers: { label: "Manage Coffee Shop customers", group: "Coffee Shop" },
+      coffee_reports: { label: "View Coffee Shop reports", group: "Coffee Shop" },
+      coffee_finance: { label: "View Coffee Shop finance", group: "Coffee Shop" },
       view_profit: { label: "View profit, COGS & margins", group: "Visibility" },
       view_finance: { label: "View finance & reports", group: "Visibility" },
       give_discount: { label: "Give discounts on sales", group: "Sales" },
@@ -2035,22 +2055,53 @@ var init_permissions = __esm({
     DEFAULT_ROLE_CAPABILITIES = {
       admin: [...ALL_CAPABILITIES],
       // wildcard, but list it for the settings UI
-      manager: [
-        "view_profit",
-        "view_finance",
-        "give_discount",
-        "issue_refund",
-        "void_sale",
-        "manage_inventory",
-        "manage_purchasing",
-        "manage_customers",
-        "manage_staff",
-        "export_data"
+      manager: [...ALL_CAPABILITIES],
+      member: [],
+      finance: ["access_commerce", "view_profit", "view_finance", "export_data"],
+      inventory: ["access_commerce", "manage_inventory", "manage_purchasing"],
+      sales: ["access_commerce", "give_discount", "manage_customers"],
+      cashier: ["access_commerce"],
+      coffee_staff: [
+        "access_coffee",
+        "coffee_pos",
+        "coffee_tables",
+        "coffee_customers",
+        "coffee_sales"
       ],
-      finance: ["view_profit", "view_finance", "export_data"],
-      inventory: ["manage_inventory", "manage_purchasing"],
-      sales: ["give_discount", "manage_customers"],
-      cashier: []
+      coffee_cashier: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_customers", "coffee_sales"],
+      coffee_inventory_manager: ["access_coffee", "coffee_products", "coffee_inventory", "coffee_incoming"],
+      coffee_shift_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_customers", "coffee_sales", "coffee_shifts", "coffee_expenses"],
+      coffee_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_products", "coffee_inventory", "coffee_incoming", "coffee_expenses", "coffee_sales", "coffee_shifts", "coffee_customers", "coffee_reports", "coffee_finance"],
+      bakery_staff: ["access_bakery"],
+      restaurant_staff: ["access_restaurant"],
+      warehouse_staff: ["access_warehouse"],
+      clinic_staff: ["access_clinic"],
+      vet_staff: ["access_vet"],
+      gym_staff: ["access_gym"],
+      pharmacy_staff: ["access_pharmacy"]
+    };
+    PLUGIN_PERMISSION_CATALOG = {
+      coffee: {
+        id: "coffee",
+        label: "Coffee Shop",
+        isPrimary: true,
+        entries: [
+          { id: "pos", label: "Point of Sale", capability: "coffee_pos", kind: "page" },
+          { id: "tables", label: "Tables", capability: "coffee_tables", kind: "page" },
+          { id: "products", label: "Products", capability: "coffee_products", kind: "page" },
+          { id: "inventory", label: "Inventory", capability: "coffee_inventory", kind: "page" },
+          { id: "incoming", label: "Incoming Stock", capability: "coffee_incoming", kind: "page" },
+          { id: "expenses", label: "Expenses", capability: "coffee_expenses", kind: "page" },
+          { id: "sales", label: "Sales", capability: "coffee_sales", kind: "page" },
+          { id: "shifts", label: "Shifts", capability: "coffee_shifts", kind: "page" },
+          { id: "customers", label: "Customers", capability: "coffee_customers", kind: "page" },
+          { id: "reports", label: "Reports", capability: "coffee_reports", kind: "page" },
+          { id: "finance", label: "Finance", capability: "coffee_finance", kind: "page" },
+          { id: "void-sale", label: "Void sales", capability: "void_sale", kind: "action", parentId: "pos" },
+          { id: "refund", label: "Issue refunds", capability: "issue_refund", kind: "action", parentId: "sales" },
+          { id: "discount", label: "Give discounts", capability: "give_discount", kind: "action", parentId: "pos" }
+        ]
+      }
     };
   }
 });
@@ -2090,8 +2141,18 @@ async function resolveUserCapabilities(prisma2, role) {
   return resolveCapabilities(role, override);
 }
 async function bindUser(prisma2, u) {
-  const capabilities = await resolveUserCapabilities(prisma2, u.role);
-  setCurrentUser({ id: u.id, username: u.username, role: u.role, capabilities });
+  const globalCapabilities = await resolveUserCapabilities(prisma2, u.role);
+  const pluginCapabilities = (await Promise.all(
+    Object.values(u.pluginRoles ?? {}).map((pluginRole) => resolveUserCapabilities(prisma2, pluginRole))
+  )).flat();
+  const capabilities = [.../* @__PURE__ */ new Set([...globalCapabilities, ...pluginCapabilities])];
+  setCurrentUser({
+    id: u.id,
+    username: u.username,
+    role: u.role,
+    capabilities,
+    pluginRoles: u.pluginRoles ?? {}
+  });
   return capabilities;
 }
 function userCan(cap) {
@@ -2356,9 +2417,10 @@ function registerAuthHandlers(prisma2) {
           where: { id: user.id },
           data: { lastLogin: /* @__PURE__ */ new Date() }
         });
+        const pluginRoles = parsePluginRoles(user.pluginRoles);
         log2.info(`\u2705 Login successful: ${user.username} (${user.role}) - ID: ${user.id}`);
-        const capabilities = await bindUser(prisma2, { id: user.id, username: user.username, role: user.role });
-        return { success: true, user: { id: user.id, username: user.username, role: user.role }, capabilities };
+        const capabilities = await bindUser(prisma2, { id: user.id, username: user.username, role: user.role, pluginRoles });
+        return { success: true, user: { id: user.id, username: user.username, role: user.role, pluginRoles }, capabilities };
       }
       log2.warn("\u26A0\uFE0F Using mock login - database not available");
       return { success: true, user: { id: "1", username, role: "admin" } };
@@ -2380,6 +2442,7 @@ function registerAuthHandlers(prisma2) {
   });
   ipcMain.handle("auth:create", async (_, { username, password, role = "sales" }) => {
     try {
+      requireCap("manage_users");
       if (!prisma2) {
         return { success: false, message: "Database not available" };
       }
@@ -2400,6 +2463,16 @@ function registerAuthHandlers(prisma2) {
     setCurrentUser(null);
     return { success: true };
   });
+}
+function parsePluginRoles(raw) {
+  if (!raw || typeof raw !== "string")
+    return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 // src/main/ipc/handlers/dashboard.handlers.ts
@@ -6030,10 +6103,12 @@ function enrichProduct(product) {
 // src/main/ipc/handlers/user.handlers.ts
 init_electron_node();
 var bcrypt2 = __toESM(require_bcryptjs());
+init_session();
 var log12 = createLogger("Users");
 function registerUserHandlers(prisma2) {
   ipcMain.handle("users:getAll", async () => {
     try {
+      requireCap("manage_users");
       const users = await prisma2.user.findMany({
         orderBy: {
           createdAt: "desc"
@@ -6048,10 +6123,11 @@ function registerUserHandlers(prisma2) {
           isActive: true,
           lastLogin: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          pluginRoles: true
         }
       });
-      return { success: true, data: users };
+      return { success: true, data: users.map((user) => ({ ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) })) };
     } catch (error) {
       log12.error("[Users] Failed to get users:", error);
       return { success: false, error: "Failed to load users" };
@@ -6059,6 +6135,7 @@ function registerUserHandlers(prisma2) {
   });
   ipcMain.handle("users:getById", async (_event, userId) => {
     try {
+      requireCap("manage_users");
       const user = await prisma2.user.findUnique({
         where: { id: userId },
         select: {
@@ -6071,13 +6148,14 @@ function registerUserHandlers(prisma2) {
           isActive: true,
           lastLogin: true,
           createdAt: true,
-          updatedAt: true
+          updatedAt: true,
+          pluginRoles: true
         }
       });
       if (!user) {
         return { success: false, error: "User not found" };
       }
-      return { success: true, data: user };
+      return { success: true, data: { ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) } };
     } catch (error) {
       log12.error("[Users] Failed to get user:", error);
       return { success: false, error: "Failed to load user" };
@@ -6085,6 +6163,7 @@ function registerUserHandlers(prisma2) {
   });
   ipcMain.handle("users:create", async (_event, userData) => {
     try {
+      requireCap("manage_users");
       const existingUser = await prisma2.user.findUnique({
         where: { username: userData.username }
       });
@@ -6108,6 +6187,7 @@ function registerUserHandlers(prisma2) {
           email: userData.email || null,
           phone: userData.phone || null,
           role: userData.role,
+          pluginRoles: JSON.stringify(userData.pluginRoles ?? {}),
           isActive: true
         },
         select: {
@@ -6118,10 +6198,11 @@ function registerUserHandlers(prisma2) {
           email: true,
           phone: true,
           isActive: true,
-          createdAt: true
+          createdAt: true,
+          pluginRoles: true
         }
       });
-      return { success: true, data: user };
+      return { success: true, data: { ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) } };
     } catch (error) {
       log12.error("[Users] Failed to create user:", error);
       return { success: false, error: "Failed to create user" };
@@ -6129,11 +6210,18 @@ function registerUserHandlers(prisma2) {
   });
   ipcMain.handle("users:update", async (_event, userId, updateData) => {
     try {
+      requireCap("manage_users");
       const existingUser = await prisma2.user.findUnique({
         where: { id: userId }
       });
       if (!existingUser) {
         return { success: false, error: "User not found" };
+      }
+      const removesLastAdmin = existingUser.role === "admin" && existingUser.isActive && (updateData.role !== void 0 && updateData.role !== "admin" || updateData.isActive === false);
+      if (removesLastAdmin) {
+        const adminCount = await prisma2.user.count({ where: { role: "admin", isActive: true } });
+        if (adminCount <= 1)
+          return { success: false, error: "Cannot remove or deactivate the last admin user" };
       }
       if (updateData.email && updateData.email !== existingUser.email) {
         const emailInUse = await prisma2.user.findFirst({
@@ -6153,6 +6241,7 @@ function registerUserHandlers(prisma2) {
           email: updateData.email !== void 0 ? updateData.email : void 0,
           phone: updateData.phone !== void 0 ? updateData.phone : void 0,
           role: updateData.role,
+          pluginRoles: updateData.pluginRoles ? JSON.stringify(updateData.pluginRoles) : void 0,
           isActive: updateData.isActive
         },
         select: {
@@ -6163,10 +6252,20 @@ function registerUserHandlers(prisma2) {
           email: true,
           phone: true,
           isActive: true,
-          updatedAt: true
+          updatedAt: true,
+          pluginRoles: true
         }
       });
-      return { success: true, data: user };
+      const actingUser = getCurrentUser();
+      if (actingUser?.id === user.id) {
+        await bindUser(prisma2, {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+          pluginRoles: parsePluginRoles2(user.pluginRoles)
+        });
+      }
+      return { success: true, data: { ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) } };
     } catch (error) {
       log12.error("[Users] Failed to update user:", error);
       return { success: false, error: "Failed to update user" };
@@ -6174,6 +6273,7 @@ function registerUserHandlers(prisma2) {
   });
   ipcMain.handle("users:changePassword", async (_event, userId, newPassword) => {
     try {
+      requireCap("manage_users");
       const existingUser = await prisma2.user.findUnique({
         where: { id: userId }
       });
@@ -6193,6 +6293,7 @@ function registerUserHandlers(prisma2) {
   });
   ipcMain.handle("users:delete", async (_event, userId) => {
     try {
+      requireCap("manage_users");
       const existingUser = await prisma2.user.findUnique({
         where: { id: userId }
       });
@@ -6240,6 +6341,16 @@ function registerUserHandlers(prisma2) {
     }
   });
 }
+function parsePluginRoles2(raw) {
+  if (!raw || typeof raw !== "string")
+    return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 
 // src/main/ipc/handlers/permissions.handlers.ts
 init_electron_node();
@@ -6247,6 +6358,7 @@ init_permissions();
 init_session();
 var log13 = createLogger("Permissions");
 function registerPermissionsHandlers(prisma2) {
+  ipcMain.handle("plugins:getCatalog", async () => Object.values(PLUGIN_PERMISSION_CATALOG));
   ipcMain.handle("permissions:getRoles", async () => {
     try {
       const roles = new Set(Object.keys(DEFAULT_ROLE_CAPABILITIES));
@@ -6312,6 +6424,33 @@ function registerPermissionsHandlers(prisma2) {
       return { capabilities, isWildcard: isWildcardRole(u?.role) };
     }
   });
+  ipcMain.handle("rbac:resolveUserPermissions", async (_e, userId) => {
+    const user = await prisma2.user.findUnique({ where: { id: userId }, select: { id: true, username: true, role: true, pluginRoles: true } });
+    if (!user)
+      throw new Error("User not found");
+    const pluginRoles = parsePluginRoles3(user.pluginRoles);
+    const capabilities = [.../* @__PURE__ */ new Set([
+      ...await resolveUserCapabilities(prisma2, user.role),
+      ...(await Promise.all(Object.values(pluginRoles).map((role) => resolveUserCapabilities(prisma2, role)))).flat()
+    ])];
+    return {
+      capabilities,
+      allowed: Object.fromEntries(Object.values(PLUGIN_PERMISSION_CATALOG).map((plugin) => [
+        plugin.id,
+        plugin.entries.filter((entry) => capabilities.includes(entry.capability)).map((entry) => entry.id)
+      ]))
+    };
+  });
+}
+function parsePluginRoles3(raw) {
+  if (!raw || typeof raw !== "string")
+    return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
 }
 
 // src/main/ipc/handlers/reports.handlers.ts

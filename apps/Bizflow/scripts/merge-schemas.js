@@ -137,17 +137,14 @@ const PLUGIN_DEPENDENCIES = {
  * the closing `createdAt` / `updatedAt` / `}`.
  */
 function injectFields(schemaText, modelName, fields) {
-  // Regex: finds the model block up to (but not including) the closing brace
-  const modelRegex = new RegExp(
-    `(model ${modelName} \\{[^}]*?)(\\n  createdAt|\\n  updatedAt|\\n  @@|\\n\\})`,
-    's'
-  )
   const insertion = '\n' + fields.join('\n')
-  const replaced = schemaText.replace(modelRegex, `$1${insertion}$2`)
-  if (replaced === schemaText) {
+  const modelStart = schemaText.indexOf(`model ${modelName} {`)
+  const modelEnd = modelStart === -1 ? -1 : schemaText.indexOf('\n}', modelStart)
+  if (modelEnd === -1) {
     console.warn(`  ⚠  Could not inject fields into model "${modelName}" — block not found.`)
+    return schemaText
   }
-  return replaced
+  return schemaText.slice(0, modelEnd) + insertion + schemaText.slice(modelEnd)
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────

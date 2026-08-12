@@ -6,7 +6,7 @@
 import { ipcMain } from 'electron'
 import bcrypt from 'bcryptjs'
 import { createLogger } from '../../utils/logger'
-import { bindUser, setCurrentUser } from './session'
+import { bindUser, requireCap, setCurrentUser } from './session'
 
 const log = createLogger('Auth')
 
@@ -38,10 +38,11 @@ export function registerAuthHandlers(prisma: any) {
           data: { lastLogin: new Date() }
         })
 
+        const pluginRoles = parsePluginRoles(user.pluginRoles)
         log.info(`✅ Login successful: ${user.username} (${user.role}) - ID: ${user.id}`)
         // Bind the acting user so sensitive handlers can enforce permissions.
-        const capabilities = await bindUser(prisma, { id: user.id, username: user.username, role: user.role })
-        return { success: true, user: { id: user.id, username: user.username, role: user.role }, capabilities }
+        const capabilities = await bindUser(prisma, { id: user.id, username: user.username, role: user.role, pluginRoles })
+        return { success: true, user: { id: user.id, username: user.username, role: user.role, pluginRoles }, capabilities }
       }
 
       // Mock fallback
@@ -69,6 +70,7 @@ export function registerAuthHandlers(prisma: any) {
   // Create user (admin-only from UI) - exposed so production users can add accounts
   ipcMain.handle('auth:create', async (_, { username, password, role = 'sales' }) => {
     try {
+      requireCap('manage_users')
       if (!prisma) {
         return { success: false, message: 'Database not available' }
       }
@@ -95,4 +97,14 @@ export function registerAuthHandlers(prisma: any) {
     setCurrentUser(null)
     return { success: true }
   })
+}
+
+function parsePluginRoles(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'string') return {}
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
 }

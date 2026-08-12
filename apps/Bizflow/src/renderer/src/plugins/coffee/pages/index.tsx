@@ -4,7 +4,7 @@
  * Tabs: POS | Tables | Orders | Products | Inventory | Sales | Shifts
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   CreditCard, LayoutGrid, Package,
   BoxesIcon, Receipt, Timer,  Users, BarChart3, Wallet, Truck
@@ -22,21 +22,23 @@ import FinanceTab    from './finance/FinanceTab'
 import ReceiptsModule from './receipts/ReceiptsModule'
 import ExpensesTab   from './expenses/ExpensesTab'
 import POSView from './pos/POSView'
+import { useAuth } from '@renderer/contexts/AuthContext'
+import type { Capability } from '../../../../../shared/permissions'
 
 // ── Tab definitions ──────────────────────────────────────────────────────────
 const TABS_DEF = [
-  { id: 'pos',       labelKey: 'cfPOS',       icon: CreditCard     },
-  { id: 'tables',    labelKey: 'cfTables',    icon: LayoutGrid     },
+  { id: 'pos',       labelKey: 'cfPOS',       icon: CreditCard, capability: 'coffee_pos'       },
+  { id: 'tables',    labelKey: 'cfTables',    icon: LayoutGrid, capability: 'coffee_tables'    },
   // { id: 'orders',    labelKey: 'cfOrders',    icon: ClipboardList  },
-  { id: 'products',  labelKey: 'cfProducts',  icon: Package        },
-  { id: 'inventory', labelKey: 'cfInventory', icon: BoxesIcon      },
-  { id: 'incoming',  labelKey: 'cfIncoming',  icon: Truck          },
-  { id: 'expenses',  labelKey: 'cfExpenses',  icon: Receipt        },
-  { id: 'sales',     labelKey: 'cfSales',     icon: Receipt        },
-  { id: 'shifts',    labelKey: 'cfShifts',    icon: Timer          },
-  { id: 'customers', labelKey: 'cfCustomers', icon: Users          },
-  { id: 'reports',   labelKey: 'cfReports',   icon: BarChart3      },
-  { id: 'finance',   labelKey: 'cfFinance',   icon: Wallet         }
+  { id: 'products',  labelKey: 'cfProducts',  icon: Package, capability: 'coffee_products'  },
+  { id: 'inventory', labelKey: 'cfInventory', icon: BoxesIcon, capability: 'coffee_inventory' },
+  { id: 'incoming',  labelKey: 'cfIncoming',  icon: Truck, capability: 'coffee_incoming'    },
+  { id: 'expenses',  labelKey: 'cfExpenses',  icon: Receipt, capability: 'coffee_expenses'  },
+  { id: 'sales',     labelKey: 'cfSales',     icon: Receipt, capability: 'coffee_sales'     },
+  { id: 'shifts',    labelKey: 'cfShifts',    icon: Timer, capability: 'coffee_shifts'      },
+  { id: 'customers', labelKey: 'cfCustomers', icon: Users, capability: 'coffee_customers'   },
+  { id: 'reports',   labelKey: 'cfReports',   icon: BarChart3, capability: 'coffee_reports'  },
+  { id: 'finance',   labelKey: 'cfFinance',   icon: Wallet, capability: 'coffee_finance'    }
 ] as const
 
 type TabId = (typeof TABS_DEF)[number]['id']
@@ -44,7 +46,22 @@ type TabId = (typeof TABS_DEF)[number]['id']
 // ── Component ────────────────────────────────────────────────────────────────
 export default function CoffeePage() {
   const { t } = useLanguage()
+  const { can } = useAuth()
+  const hasPluginAccess = can('access_coffee')
+  const visibleTabs = hasPluginAccess
+    ? TABS_DEF.filter(tab => can(tab.capability as Capability))
+    : []
   const [activeTab, setActiveTab] = useState<TabId>('pos')
+
+  useEffect(() => {
+    if (!visibleTabs.some(tab => tab.id === activeTab)) {
+      setActiveTab(visibleTabs[0]?.id ?? 'pos')
+    }
+  }, [activeTab, visibleTabs])
+
+  if (!hasPluginAccess) {
+    return <div className="flex h-full items-center justify-center p-6 text-sm text-slate-500">You do not have access to this plugin.</div>
+  }
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
@@ -53,7 +70,7 @@ export default function CoffeePage() {
       <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 pt-4">
         {/* ── Tab Bar ──────────────────────────────────────────────────────── */}
         <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-          {TABS_DEF.map(({ id, labelKey, icon: Icon }) => (
+          {visibleTabs.map(({ id, labelKey, icon: Icon }) => (
             <button
               key={id}
               onClick={() => setActiveTab(id)}
@@ -75,18 +92,18 @@ export default function CoffeePage() {
 
       {/* ── Tab Content ────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-auto">
-        {activeTab === 'pos'       && <POSView      />}
-        {activeTab === 'tables'    && <TablesTab    />}
+        {activeTab === 'pos'       && can('coffee_pos')       && <POSView      />}
+        {activeTab === 'tables'    && can('coffee_tables')    && <TablesTab    />}
         {/* {activeTab === 'orders'    && <OrdersTab    />} */}
-        {activeTab === 'products'  && <ProductsTab  />}
-        {activeTab === 'inventory' && <InventoryTab />}
-        {activeTab === 'incoming'  && <ReceiptsModule />}
-        {activeTab === 'expenses'  && <ExpensesTab   />}
-        {activeTab === 'sales'     && <SalesTab     />}
-        {activeTab === 'shifts'    && <ShiftsTab    />}
-        {activeTab === 'customers' && <CustomersTab />}
-        {activeTab === 'reports'   && <ReportsTab   />}
-        {activeTab === 'finance'   && <FinanceTab   />}
+        {activeTab === 'products'  && can('coffee_products')  && <ProductsTab  />}
+        {activeTab === 'inventory' && can('coffee_inventory') && <InventoryTab />}
+        {activeTab === 'incoming'  && can('coffee_incoming')  && <ReceiptsModule />}
+        {activeTab === 'expenses'  && can('coffee_expenses')  && <ExpensesTab   />}
+        {activeTab === 'sales'     && can('coffee_sales')     && <SalesTab     />}
+        {activeTab === 'shifts'    && can('coffee_shifts')    && <ShiftsTab    />}
+        {activeTab === 'customers' && can('coffee_customers') && <CustomersTab />}
+        {activeTab === 'reports'   && can('coffee_reports')   && <ReportsTab   />}
+        {activeTab === 'finance'   && can('coffee_finance')   && <FinanceTab   />}
       </div>
     </div>
   )

@@ -9,6 +9,7 @@ import { ipcMain } from 'electron'
 import {
   ALL_CAPABILITIES,
   DEFAULT_ROLE_CAPABILITIES,
+  PLUGIN_PERMISSION_CATALOG,
   resolveCapabilities,
   isWildcardRole,
 } from '../../../shared/permissions'
@@ -24,6 +25,8 @@ import { createLogger } from '../../utils/logger'
 const log = createLogger('Permissions')
 
 export function registerPermissionsHandlers(prisma: any): void {
+  ipcMain.handle('plugins:getCatalog', async () => Object.values(PLUGIN_PERMISSION_CATALOG))
+
   ipcMain.handle('permissions:getRoles', async () => {
     try {
       const roles = new Set<string>(Object.keys(DEFAULT_ROLE_CAPABILITIES))
@@ -68,7 +71,7 @@ export function registerPermissionsHandlers(prisma: any): void {
     } catch (err) { log.error('setRole', err); throw err }
   })
 
-  ipcMain.handle('permissions:bindSession', async (_e, u: { id: string; username: string; role: string } | null) => {
+  ipcMain.handle('permissions:bindSession', async (_e, u: { id: string; username: string; role: string; pluginRoles?: Record<string, string> } | null) => {
     try {
       if (!u?.role) { setCurrentUser(null); return { capabilities: [], isWildcard: false } }
       const capabilities = await bindUser(prisma, u)
@@ -80,4 +83,31 @@ export function registerPermissionsHandlers(prisma: any): void {
       return { capabilities, isWildcard: isWildcardRole(u?.role) }
     }
   })
+
+  ipcMain.handle('rbac:resolveUserPermissions', async (_e, userId: string) => {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, username: true, role: true, pluginRoles: true } })
+    if (!user) throw new Error('User not found')
+    const pluginRoles = parsePluginRoles(user.pluginRoles)
+    const capabilities = [...new Set([
+      ...await resolveUserCapabilities(prisma, user.role),
+      ...(await Promise.all(Object.values(pluginRoles).map(role => resolveUserCapabilities(prisma, role)))).flat(),
+    ])]
+    return {
+      capabilities,
+      allowed: Object.fromEntries(Object.values(PLUGIN_PERMISSION_CATALOG).map(plugin => [
+        plugin!.id,
+        plugin!.entries.filter(entry => capabilities.includes(entry.capability)).map(entry => entry.id),
+      ])),
+    }
+  })
+}
+
+function parsePluginRoles(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'string') return {}
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
 }
