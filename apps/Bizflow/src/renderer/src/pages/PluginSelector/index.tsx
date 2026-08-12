@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useModuleEnabled } from '../../hooks/useModuleEnabled'
 import { MODULE_IDS, MODULE_REGISTRY } from '@/shared/modules'
-import { ChevronRight, Settings } from 'lucide-react'
+import { ChevronRight, Grid2X2, Settings, ArrowRight } from 'lucide-react'
 
 export default function PluginSelector() {
   const navigate = useNavigate()
@@ -61,24 +61,38 @@ export default function PluginSelector() {
     navigate('/settings')
   }
 
+  const lastPluginId = localStorage.getItem('bizflow:lastPlugin')
+  const lastPlugin = enabledPlugins.find(plugin => plugin.id === lastPluginId) ?? enabledPlugins[0]
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
-            Welcome to BizFlow
-          </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
-            {user?.username ? `Hi ${user.username}, ` : ''}
-            Select a business module to get started
-          </p>
-        </div>
+    <div className="min-h-full bg-slate-50 p-4 dark:bg-slate-950 sm:p-6">
+      <div className="mx-auto max-w-6xl">
+        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <Grid2X2 size={15} />
+              Module workspace
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+              Choose what to run
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+              {user?.username ? `Hi ${user.username}. ` : ''}Open a module, test its workflow, then switch instantly whenever you want.
+            </p>
+          </div>
+          <button
+            onClick={handleViewDashboard}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-primary/40 hover:text-primary dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            View dashboard
+            <ArrowRight size={15} />
+          </button>
+        </header>
 
         {/* No plugins state */}
         {enabledPlugins.length === 0 ? (
-          <div className="max-w-md mx-auto">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+          <div className="mx-auto max-w-md">
+            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700 dark:bg-slate-900">
               <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
                 <Settings className="w-8 h-8 text-amber-600 dark:text-amber-400" />
               </div>
@@ -105,31 +119,58 @@ export default function PluginSelector() {
           </div>
         ) : (
           <>
-            {/* Plugins grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {lastPlugin && (
+              <section className="mb-6 rounded-xl border border-primary/20 bg-white p-5 shadow-sm dark:border-primary/30 dark:bg-slate-900 sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="grid h-14 w-14 place-items-center rounded-xl bg-primary/10 text-3xl">
+                      {lastPlugin.icon}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-primary">Ready to continue</p>
+                      <h2 className="mt-1 text-xl font-bold text-slate-950 dark:text-white">{lastPlugin.name}</h2>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Your last selected workspace</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleSelectPlugin(lastPlugin.id)}
+                    className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary/90"
+                  >
+                    Continue
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </section>
+            )}
+
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">All modules</h2>
+              <span className="text-xs text-slate-400">{enabledPlugins.length} available</span>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {enabledPlugins.map(plugin => {
                 return (
                   <button
                     key={plugin.id}
                     onClick={() => handleSelectPlugin(plugin.id)}
-                    className="text-left group relative overflow-hidden rounded-2xl border-2 transition-all hover:shadow-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-slate-300 dark:hover:border-slate-600"
+                    className="group flex min-h-36 flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 text-left text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                   >
-                    <div className="p-8 relative z-10">
+                    <div>
                       {/* Icon */}
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-slate-100 dark:bg-slate-700 text-2xl">
+                      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xl dark:bg-slate-800">
                         {plugin.icon}
                       </div>
 
                       {/* Content */}
-                      <h3 className="text-xl font-bold mb-2">{plugin.name}</h3>
-                      <p className="text-sm opacity-75 mb-6 leading-relaxed">
+                      <h3 className="mb-1 text-base font-bold">{plugin.name}</h3>
+                      <p className="line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                         {plugin.description || 'Manage your business operations'}
                       </p>
 
                       {/* CTA */}
-                      <div className="flex items-center justify-between text-sm font-medium">
-                        <span>Open Module</span>
-                        <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+                      <div className="mt-4 flex items-center justify-between text-xs font-semibold text-primary">
+                        <span>Open module</span>
+                        <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </div>
                     </div>
                   </button>
@@ -137,20 +178,10 @@ export default function PluginSelector() {
               })}
             </div>
 
-            {/* Footer actions */}
-            <div className="flex flex-wrap gap-4 justify-center">
-              <button
-                onClick={handleViewDashboard}
-                className="px-6 py-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-lg font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                View Dashboard
-              </button>
-              <button
-                onClick={handleOpenSettings}
-                className="px-6 py-3 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-lg font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Manage Modules
+            <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4 dark:border-slate-800">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Need to change what is available?</span>
+              <button onClick={handleOpenSettings} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+                <Settings size={15} /> Manage modules
               </button>
             </div>
           </>

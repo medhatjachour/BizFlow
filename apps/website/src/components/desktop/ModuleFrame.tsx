@@ -35,21 +35,29 @@ export default function ModuleFrame({ pluginId }: { pluginId: string }) {
             </p>
           </div>
         </div>
-        <Link
-          href={downloadPageUrlFor(plugin.id)}
-          className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-biz-400 to-biz-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:scale-[1.03]"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Choose installer
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/app"
+            className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-semibold text-foreground/70 transition hover:border-white/30 hover:text-white"
+          >
+            All modules
+          </Link>
+          <Link
+            href={downloadPageUrlFor(plugin.id)}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-biz-400 to-biz-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:scale-[1.03]"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Choose installer
+          </Link>
+        </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-black/30 px-2 py-1.5 text-[11px]">
