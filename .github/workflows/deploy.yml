@@ -71,6 +71,7 @@ jobs:
 
           $SSH $REMOTE "
             mkdir -p \
+              $BASE/apps/Bizflow \
               $BASE/apps/website/src/app/admin/login \
               $BASE/apps/website/src/app/api/admin \
               $BASE/apps/website/src/app/api/portal/login \
@@ -92,6 +93,9 @@ jobs:
 
           # Root infra
           $SCP Dockerfile docker-compose.yml nginx.conf root-chooser.html $REMOTE:$BASE/
+
+          # BizFlow bridge, web UI, schemas, and build configuration
+          $SCP -r apps/Bizflow $REMOTE:$BASE/apps/
 
           # Website source
           $SCP -r apps/website/src/app/admin        $REMOTE:$BASE/apps/website/src/app/
