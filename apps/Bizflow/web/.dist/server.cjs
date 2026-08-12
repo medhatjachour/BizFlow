@@ -2220,7 +2220,11 @@ function configureSessionDb(opts) {
   PrismaCtor = opts.PrismaClient;
   templateDbPath = opts.templateDbPath;
   sessionsDir = opts.sessionsDir;
-  import_node_fs2.default.rmSync(sessionsDir, { recursive: true, force: true });
+  try {
+    import_node_fs2.default.rmSync(sessionsDir, { recursive: true, force: true });
+  } catch (err) {
+    console.warn("[session-db] Could not remove sessions directory (may be locked):", err);
+  }
   import_node_fs2.default.mkdirSync(sessionsDir, { recursive: true });
   fallbackClient = getSessionClient(DEFAULT_SESSION);
 }

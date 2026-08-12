@@ -84,7 +84,13 @@ export function configureSessionDb(opts: ConfigureOpts): void {
   templateDbPath = opts.templateDbPath;
   sessionsDir = opts.sessionsDir;
 
-  fs.rmSync(sessionsDir, { recursive: true, force: true });
+  try {
+    fs.rmSync(sessionsDir, { recursive: true, force: true });
+  } catch (err) {
+    // Ignore permission errors (e.g., on Windows when files are locked)
+    // The directory will be reused with potentially stale sessions, which is acceptable
+    console.warn('[session-db] Could not remove sessions directory (may be locked):', err);
+  }
   fs.mkdirSync(sessionsDir, { recursive: true });
 
   // The fallback covers the rare case of `prisma.*` being touched outside an

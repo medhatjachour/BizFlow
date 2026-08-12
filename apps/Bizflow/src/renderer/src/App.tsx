@@ -27,6 +27,7 @@ import type { Capability } from '../../shared/permissions'
 // Lazy-load ALL pages for maximum code splitting and fast initial load
 const Dashboard    = lazy(() => import('./pages/Dashboard/index'))
 const Login        = lazy(() => import('./pages/login'))
+const PluginSelector = lazy(() => import('./pages/PluginSelector/index'))
 const Finance      = lazy(() => import('./pages/Finance/index'))
 const Products     = __PLUGIN_COMMERCE__ ? lazy(() => import('./plugins/commerce/pages/Products/index')) : null
 const Settings     = lazy(() => import('./pages/Settings/index'))
@@ -119,6 +120,16 @@ function AppContent() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <RouteErrorBoundary name="Plugin Selector">
+                  <PluginSelector />
+                </RouteErrorBoundary>
+              </RequireAuth>
+            }
+          />
           <Route
             path="/dashboard"
             element={
@@ -405,7 +416,7 @@ function AppContent() {
               }
             />
           )}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
          
       </Suspense>
