@@ -65,6 +65,21 @@ export default async function PortalPage() {
           <p className="mt-1 select-all font-mono text-sm tracking-wide">{token.licenseKey}</p>
         </div>
 
+        <section className="mt-4 grid gap-3 rounded-2xl border border-biz-400/20 bg-biz-500/10 p-5 sm:grid-cols-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-biz-200">1. Download</p>
+            <p className="mt-1 text-sm text-foreground/70">Choose the installer for your operating system below.</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-biz-200">2. Activate</p>
+            <p className="mt-1 text-sm text-foreground/70">In BizFlow, open Settings and enter this email and license key.</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-biz-200">3. Work offline</p>
+            <p className="mt-1 text-sm text-foreground/70">Activation binds the purchase to one device for offline use.</p>
+          </div>
+        </section>
+
         <div className="mt-6 grid gap-4">
           {orders.map((order) => {
             const moduleId = moduleIdFromItem(order.itemId);
