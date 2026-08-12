@@ -5,7 +5,6 @@
 
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-import { useLanguage } from '../../contexts/LanguageContext'
 import { useModuleEnabled } from '../../hooks/useModuleEnabled'
 import { MODULE_IDS, MODULE_REGISTRY } from '@/shared/modules'
 import { ChevronRight, Settings } from 'lucide-react'
@@ -13,7 +12,6 @@ import { ChevronRight, Settings } from 'lucide-react'
 export default function PluginSelector() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { t } = useLanguage()
 
   // Check all enabled plugins
   const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
@@ -72,7 +70,7 @@ export default function PluginSelector() {
             Welcome to BizFlow
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            {user?.name ? `Hi ${user.name}, ` : ''}
+            {user?.username ? `Hi ${user.username}, ` : ''}
             Select a business module to get started
           </p>
         </div>
@@ -110,32 +108,20 @@ export default function PluginSelector() {
             {/* Plugins grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {enabledPlugins.map(plugin => {
-                const Icon = plugin.icon
                 return (
                   <button
                     key={plugin.id}
                     onClick={() => handleSelectPlugin(plugin.id)}
-                    className={`text-left group relative overflow-hidden rounded-2xl border-2 transition-all hover:shadow-xl hover:border-opacity-100 ${
-                      plugin.activeClass
-                        ? `${plugin.activeClass} border-opacity-60 hover:border-opacity-100`
-                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-slate-300 dark:hover:border-slate-600'
-                    }`}
+                    className="text-left group relative overflow-hidden rounded-2xl border-2 transition-all hover:shadow-xl bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white hover:border-slate-300 dark:hover:border-slate-600"
                   >
-                    {/* Gradient background for active plugins */}
-                    {plugin.activeClass && (
-                      <div className="absolute inset-0 opacity-5 bg-gradient-to-br from-current to-transparent" />
-                    )}
-
                     <div className="p-8 relative z-10">
                       {/* Icon */}
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${
-                        plugin.activeClass ? 'bg-current/10' : 'bg-slate-100 dark:bg-slate-700'
-                      }`}>
-                        <Icon className="w-6 h-6" />
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 bg-slate-100 dark:bg-slate-700 text-2xl">
+                        {plugin.icon}
                       </div>
 
                       {/* Content */}
-                      <h3 className="text-xl font-bold mb-2">{plugin.label}</h3>
+                      <h3 className="text-xl font-bold mb-2">{plugin.name}</h3>
                       <p className="text-sm opacity-75 mb-6 leading-relaxed">
                         {plugin.description || 'Manage your business operations'}
                       </p>
