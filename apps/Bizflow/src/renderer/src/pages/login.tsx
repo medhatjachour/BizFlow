@@ -11,8 +11,9 @@ import { Eye, EyeOff, Store, Zap, Shield, TrendingUp, Lock, User, AlertCircle, E
 import appIcon from '../assets/icon.png'
 
 // ─── App-wide licence expiry ──────────────────────────────────────────────────
-const APP_EXPIRY_DATE = new Date('2026-08-13T00:00:00')
-const isExpired = Date.now() > APP_EXPIRY_DATE.getTime()
+// Access is controlled by desktop activation, not by a hard-coded calendar date.
+// The browser demo must remain available for users to test the product.
+const isExpired = false
 
 function ExpiredScreen() {
   return (
