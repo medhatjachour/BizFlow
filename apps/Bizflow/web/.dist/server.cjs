@@ -182,9 +182,9 @@ var init_electron_node = __esm({
   }
 });
 
-// node_modules/bcryptjs/dist/bcrypt.js
+// ../../node_modules/bcryptjs/dist/bcrypt.js
 var require_bcrypt = __commonJS({
-  "node_modules/bcryptjs/dist/bcrypt.js"(exports, module2) {
+  "../../node_modules/bcryptjs/dist/bcrypt.js"(exports, module2) {
     (function(global, factory) {
       if (typeof define === "function" && define["amd"])
         define([], factory);
@@ -1996,9 +1996,9 @@ var require_bcrypt = __commonJS({
   }
 });
 
-// node_modules/bcryptjs/index.js
+// ../../node_modules/bcryptjs/index.js
 var require_bcryptjs = __commonJS({
-  "node_modules/bcryptjs/index.js"(exports, module2) {
+  "../../node_modules/bcryptjs/index.js"(exports, module2) {
     module2.exports = require_bcrypt();
   }
 });
@@ -3667,6 +3667,29 @@ function registerEmployeesHandlers(prisma2) {
     } catch (error) {
       log6.error("Error deleting leave:", error);
       return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:approvals:pending", async () => {
+    try {
+      if (!prisma2)
+        return { leave: [], overtime: [] };
+      const empSelect = { select: { id: true, name: true, role: true, department: true, avatarUrl: true, status: true } };
+      const [leave, overtime] = await Promise.all([
+        prisma2.employeeLeave.findMany({
+          where: { status: "pending" },
+          include: { employee: empSelect },
+          orderBy: { createdAt: "asc" }
+        }),
+        prisma2.employeeOvertime.findMany({
+          where: { approved: false },
+          include: { employee: empSelect },
+          orderBy: { createdAt: "asc" }
+        })
+      ]);
+      return { leave, overtime };
+    } catch (error) {
+      log6.error("Error fetching pending approvals:", error);
+      return { leave: [], overtime: [] };
     }
   });
   ipcMain.handle("employees:documents:add", async (_, { employeeId, title, type, performedBy }) => {
