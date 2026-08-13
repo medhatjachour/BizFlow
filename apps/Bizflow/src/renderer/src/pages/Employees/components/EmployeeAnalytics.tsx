@@ -4,7 +4,7 @@ import {
   Briefcase, AlertTriangle, Award, TrendingDown,
 } from 'lucide-react'
 import type { Employee, EmployeeStats } from '../types'
-import { expiryState, daysUntil } from '../expiry'
+import { expiryState, daysUntil } from '../utils'
 import { useLanguage } from '../../../contexts/LanguageContext'
 import { useAuth } from '../../../contexts/AuthContext'
 

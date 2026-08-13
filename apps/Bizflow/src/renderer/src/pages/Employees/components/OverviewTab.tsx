@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Calendar, User, Clock, FileText, X, Pencil, Plus } from 'lucide-react'
 import type { EmployeeProfile, EmployeeAttendance, AttendanceStatus } from '../types'
-import { describePayrollPeriod } from '../payrollPeriod'
-import { expiryState, daysUntil } from '../expiry'
+import { describePayrollPeriod, expiryState, daysUntil } from '../utils'
 import { useLanguage } from '../../../contexts/LanguageContext'
 import { useAuth } from '../../../contexts/AuthContext'
 

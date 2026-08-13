@@ -161,6 +161,9 @@ const mockIPC = {
       add: async (_data: any) => ({ success: true }),
       setStatus: async (_id: string, _status: string, _by?: string) => ({ success: true }),
       delete: async (_id: string) => ({ success: true })
+    },
+    approvals: {
+      pending: async () => ({ leave: [], overtime: [] })
     }
   },
   customers: {
@@ -565,6 +568,9 @@ export const ipc = isElectron ? {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:leave:add', data),
       setStatus: (id: string, status: string, approvedBy?: string) => window.electron.ipcRenderer.invoke('employees:leave:setStatus', { id, status, approvedBy }),
       delete: (id: string) => window.electron.ipcRenderer.invoke('employees:leave:delete', id)
+    },
+    approvals: {
+      pending: () => window.electron.ipcRenderer.invoke('employees:approvals:pending')
     }
   },
   

@@ -1,6 +1,6 @@
 import { X, Printer } from 'lucide-react'
 import type { Employee, EmployeePayroll } from '../types'
-import { describePayrollPeriod } from '../payrollPeriod'
+import { describePayrollPeriod } from '../utils'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface Props {

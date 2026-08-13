@@ -21,7 +21,7 @@ import {
 import { ipc } from '../../../utils/ipc'
 import { useToast } from '../../../contexts/ToastContext'
 import type { Employee, EmployeePayroll } from '../types'
-import { encodePayrollPeriodKey } from '../payrollPeriod'
+import { encodePayrollPeriodKey } from '../utils'
 import Modal from '../../../components/ui/Modal'
 
 // ─── Constants ─────────────────────────────────────────────────────────────────

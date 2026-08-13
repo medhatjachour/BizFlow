@@ -91,6 +91,9 @@ const api = {
       add: (data: any) => ipcRenderer.invoke('employees:overtime:add', data),
       approve: (id: string, approvedBy?: string) => ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy }),
       delete: (id: string) => ipcRenderer.invoke('employees:overtime:delete', id)
+    },
+    approvals: {
+      pending: () => ipcRenderer.invoke('employees:approvals:pending')
     }
   },
   users: {

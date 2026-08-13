@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Plus, CheckCircle, FileText } from 'lucide-react'
 import type { Employee, EmployeePayroll } from '../types'
-import { describePayrollPeriod } from '../payrollPeriod'
+import { describePayrollPeriod } from '../utils'
 import PayslipModal from './PayslipModal'
 import { useLanguage } from '../../../contexts/LanguageContext'
 

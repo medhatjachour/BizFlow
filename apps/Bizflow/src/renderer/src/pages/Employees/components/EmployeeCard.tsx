@@ -2,22 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Edit2, Trash2, LogIn, LogOut, ChevronRight, Mail, Phone, Briefcase, Star, CheckCircle2 } from 'lucide-react'
 import type { Employee } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
-
-const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  'on-leave': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  terminated: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-}
-
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-function avatarColor(name: string) {
-  const colors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-600', 'from-emerald-500 to-teal-600', 'from-rose-500 to-pink-600', 'from-amber-500 to-orange-600']
-  let h = 0
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff
-  return colors[h % colors.length]
-}
+import { STATUS_COLORS } from '../constants'
+import { getInitials, avatarColor, formatTime } from '../utils'
 
 interface Props {
   emp: Employee
@@ -42,7 +28,7 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
   }
 
   const att = emp.todayAttendance
-  const fmtTime = (v?: string | null) => (v ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+  const fmtTime = formatTime
   const checkedIn = !!att?.checkIn
   const checkedOut = !!att?.checkOut
   const busy = checkingIn === emp.id

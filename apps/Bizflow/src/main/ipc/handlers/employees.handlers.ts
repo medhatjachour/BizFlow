@@ -833,6 +833,34 @@ export function registerEmployeesHandlers(prisma: any) {
     }
   })
 
+  // ─── APPROVALS HUB (team-wide pending requests) ─────────────────────────────
+  // Aggregates every pending leave request and unapproved overtime across the
+  // whole team so HR can review and approve from one place.
+  ipcMain.handle('employees:approvals:pending', async () => {
+    try {
+      if (!prisma) return { leave: [], overtime: [] }
+      const empSelect = { select: { id: true, name: true, role: true, department: true, avatarUrl: true, status: true } }
+
+      const [leave, overtime] = await Promise.all([
+        prisma.employeeLeave.findMany({
+          where: { status: 'pending' },
+          include: { employee: empSelect },
+          orderBy: { createdAt: 'asc' },
+        }),
+        prisma.employeeOvertime.findMany({
+          where: { approved: false },
+          include: { employee: empSelect },
+          orderBy: { createdAt: 'asc' },
+        }),
+      ])
+
+      return { leave, overtime }
+    } catch (error: any) {
+      log.error('Error fetching pending approvals:', error)
+      return { leave: [], overtime: [] }
+    }
+  })
+
   // ─── DOCUMENTS ────────────────────────────────────────────────────────────
   // Prompts the user for a file, copies it into userData/employee-documents and
   // records the metadata. { employeeId, title, type, performedBy }

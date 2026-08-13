@@ -5,31 +5,11 @@ import { useLanguage } from '../../../contexts/LanguageContext'
 import { useAuth } from '../../../contexts/AuthContext'
 import logger from '../../../../../shared/utils/logger'
 import type { Employee, EmployeeStats } from '../types'
+import { EMPTY_FORM, type EmployeeFormData, type SortOption } from '../constants'
+import { buildEmployeesCsv, downloadCsv } from '../utils'
 
-export const ROLES = [
-  // General
-  'Cashier', 'Manager', 'Supervisor', 'Accountant', 'HR', 'IT',
-  'Warehouse', 'Delivery', 'Security', 'Other',
-  // Clinic / Medical
-  'Doctor', 'Nurse', 'Receptionist', 'Technician', 'Pharmacist',
-  'Lab Technician', 'Physiotherapist', 'Radiologist',
-]
-export const DEPARTMENTS = ['Sales', 'Operations', 'Finance', 'Logistics', 'Management', 'IT', 'HR', 'Clinic', 'Medical', 'Administration']
-
-export const EMPTY_FORM = {
-  name: '', role: '', department: '', email: '', phone: '',
-  address: '', nationalId: '', employmentType: 'full-time' as const,
-  status: 'active' as const, salary: 0, salaryType: 'monthly',
-  emergencyName: '', emergencyPhone: '', notes: '',
-  hireDate: new Date().toISOString().split('T')[0],
-  performanceScore: 0,
-  annualLeaveDays: 21,
-  taxId: '', socialInsuranceNo: '', bankName: '', iban: '',
-  contractEndDate: '', idExpiryDate: '',
-  managerId: ''
-}
-
-export type EmployeeFormData = typeof EMPTY_FORM
+// Re-exported for any code still importing these from the hook.
+export { ROLES, DEPARTMENTS, EMPTY_FORM, type EmployeeFormData } from '../constants'
 
 export function useEmployees() {
   const toast = useToast()
@@ -56,7 +36,7 @@ export function useEmployees() {
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkBusy, setBulkBusy] = useState(false)
-  const [sortBy, setSortBy] = useState<'name' | 'hire' | 'performance' | 'department'>('name')
+  const [sortBy, setSortBy] = useState<SortOption>('name')
 
   const load = useCallback(async () => {
     try {
@@ -101,29 +81,10 @@ export function useEmployees() {
   }
 
   const exportCsv = () => {
-    const cols: [string, (e: Employee) => string][] = [
-      ['Name', e => e.name],
-      ['Role', e => e.role],
-      ['Department', e => e.department ?? ''],
-      ['Status', e => e.status],
-      ['Employment', e => e.employmentType],
-      ['Email', e => e.email ?? ''],
-      ['Phone', e => e.phone],
-      ['Salary', e => String(e.salary ?? 0)],
-      ['Salary type', e => e.salaryType],
-      ['Hire date', e => e.hireDate ? new Date(e.hireDate).toISOString().split('T')[0] : ''],
-      ['Performance', e => e.performanceScore != null ? String(e.performanceScore) : ''],
-    ]
-    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`
-    const rows = [cols.map(c => c[0]).join(',')]
-    for (const e of sorted) rows.push(cols.map(c => esc(c[1](e))).join(','))
-    const blob = new Blob([rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadCsv(
+      buildEmployeesCsv(sorted),
+      `employees-${new Date().toISOString().split('T')[0]}.csv`,
+    )
   }
 
   const validateForm = () => {

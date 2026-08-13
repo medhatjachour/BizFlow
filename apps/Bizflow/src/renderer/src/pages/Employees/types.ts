@@ -166,3 +166,18 @@ export interface EmployeeStats {
   attendanceRate: number
   payrollThisMonth: number
 }
+
+// ─── Approvals hub ───────────────────────────────────────────────────────────
+
+export interface PendingLeaveApproval extends EmployeeLeave {
+  employee?: { id: string; name: string; role: string; department?: string | null; avatarUrl?: string | null; status?: string } | null
+}
+
+export interface PendingOvertimeApproval extends EmployeeOvertime {
+  employee?: { id: string; name: string; role: string; department?: string | null; avatarUrl?: string | null; status?: string } | null
+}
+
+export interface ApprovalsData {
+  leave: PendingLeaveApproval[]
+  overtime: PendingOvertimeApproval[]
+}

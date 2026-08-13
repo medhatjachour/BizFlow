@@ -194,6 +194,9 @@ interface API {
       approve: (id: string, approvedBy?: string) => Promise<any>
       delete: (id: string) => Promise<any>
     }
+    approvals: {
+      pending: () => Promise<{ leave: any[]; overtime: any[] }>
+    }
   }
   reports: {
     getSalesData: (options: { startDate: Date; endDate: Date }) => Promise<any>

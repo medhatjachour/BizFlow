@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Plus, Search, Users, Filter, DollarSign, X, BarChart3, Download } from 'lucide-react'
+import { Plus, Search, Users, Filter, DollarSign, X, BarChart3, Download, LayoutDashboard } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useAuth } from '../../contexts/AuthContext'
 import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import Dashboard from './components/Dashboard'
 import EmployeeAnalytics from './components/EmployeeAnalytics'
 import EmployeeCard from './components/EmployeeCard'
 import EmployeeForm from './components/EmployeeForm'
@@ -11,7 +12,7 @@ import PayrollOverview from './components/PayrollOverview'
 import { useEmployees } from './hooks/useEmployees'
 import { usePluginRoles } from './hooks/usePluginRoles'
 
-type TabView = 'team' | 'analytics' | 'payroll'
+type TabView = 'dashboard' | 'team' | 'analytics' | 'payroll'
 
 export default function Employees() {
   const { t } = useLanguage()
@@ -19,7 +20,7 @@ export default function Employees() {
   const canFinance = can('view_finance')
   const state = useEmployees()
   const { allDepartments } = usePluginRoles()
-  const [view, setView] = useState<TabView>('team')
+  const [view, setView] = useState<TabView>('dashboard')
 
   // Count helpers for the quick-status pills
   const countAll        = state.employees.length
@@ -57,6 +58,16 @@ export default function Employees() {
       {/* Tab bar */}
       <div className="flex gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit border border-slate-200 dark:border-slate-700">
         <button
+          onClick={() => setView('dashboard')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            view === 'dashboard'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          <LayoutDashboard size={15} /> {t('empDashboard') ?? 'Dashboard'}
+        </button>
+        <button
           onClick={() => setView('team')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             view === 'team'
@@ -90,6 +101,21 @@ export default function Employees() {
         )}
       </div>
 
+
+      {/* ── Dashboard tab ───────────────────────────────────────────── */}
+      {view === 'dashboard' && (
+        <Dashboard
+          employees={state.employees}
+          stats={state.stats}
+          checkingIn={state.checkingIn}
+          onCheckIn={state.handleCheckIn}
+          onCheckOut={state.handleCheckOut}
+          onFilterByDepartment={(dept) => {
+            state.setFilterDepartment(dept)
+            setView('team')
+          }}
+        />
+      )}
 
       {/* ── Payroll tab ─────────────────────────────────────────────── */}
       {view === 'payroll' && canFinance && <PayrollOverview />}

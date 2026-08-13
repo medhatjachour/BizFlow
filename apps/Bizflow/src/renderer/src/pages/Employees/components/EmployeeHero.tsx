@@ -2,22 +2,8 @@ import { LogIn, LogOut, Edit2, Plus, UserX, UserCheck, Clock } from 'lucide-reac
 import type { EmployeeProfile, EmployeeAttendance } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
 import { useAuth } from '../../../contexts/AuthContext'
-
-const STATUS_BADGE: Record<string, string> = {
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  'on-leave': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  terminated: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-}
-
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-}
-function avatarColor(name: string) {
-  const colors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-600', 'from-emerald-500 to-teal-600', 'from-rose-500 to-pink-600', 'from-amber-500 to-orange-600']
-  let h = 0
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff
-  return colors[h % colors.length]
-}
+import { STATUS_COLORS } from '../constants'
+import { getInitials, avatarColor } from '../utils'
 
 import { Mail, Phone, Briefcase, Calendar, Star, Ban } from 'lucide-react'
 
@@ -76,7 +62,7 @@ export default function EmployeeHero({ emp, todayAtt, checkingIn, checkingOut, o
           <div className="pt-11 flex-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{emp.name}</h1>
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_BADGE[emp.status]}`}>{statusLabel[emp.status] ?? emp.status}</span>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_COLORS[emp.status]}`}>{statusLabel[emp.status] ?? emp.status}</span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 capitalize">{emp.employmentType}</span>
               {emp.performanceScore != null && (() => {
                 const score = emp.performanceScore as number
