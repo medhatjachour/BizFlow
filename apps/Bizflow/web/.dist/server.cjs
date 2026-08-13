@@ -2073,14 +2073,158 @@ var init_permissions = __esm({
       coffee_shift_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_customers", "coffee_sales", "coffee_shifts", "coffee_expenses"],
       coffee_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_products", "coffee_inventory", "coffee_incoming", "coffee_expenses", "coffee_sales", "coffee_shifts", "coffee_customers", "coffee_reports", "coffee_finance"],
       bakery_staff: ["access_bakery"],
+      bakery_manager: ["access_bakery", "manage_inventory", "manage_purchasing", "manage_customers", "manage_staff", "manage_settings", "give_discount", "issue_refund", "void_sale", "view_profit", "view_finance", "export_data"],
       restaurant_staff: ["access_restaurant"],
+      restaurant_manager: ["access_restaurant", "manage_inventory", "manage_purchasing", "manage_customers", "manage_staff", "manage_settings", "give_discount", "issue_refund", "void_sale", "view_profit", "view_finance", "export_data"],
       warehouse_staff: ["access_warehouse"],
+      warehouse_manager: ["access_warehouse", "manage_inventory", "manage_purchasing", "manage_staff", "manage_settings", "view_profit", "view_finance", "export_data"],
       clinic_staff: ["access_clinic"],
+      clinic_manager: ["access_clinic", "manage_inventory", "manage_purchasing", "manage_customers", "manage_staff", "manage_settings", "view_profit", "view_finance", "export_data"],
       vet_staff: ["access_vet"],
+      vet_manager: ["access_vet", "manage_inventory", "manage_purchasing", "manage_customers", "manage_staff", "manage_settings", "give_discount", "issue_refund", "void_sale", "view_profit", "view_finance", "export_data"],
       gym_staff: ["access_gym"],
-      pharmacy_staff: ["access_pharmacy"]
+      gym_manager: ["access_gym", "manage_customers", "manage_staff", "manage_settings", "view_profit", "view_finance", "export_data"],
+      pharmacy_staff: ["access_pharmacy"],
+      pharmacy_manager: ["access_pharmacy", "manage_inventory", "manage_purchasing", "manage_customers", "manage_staff", "manage_settings", "give_discount", "issue_refund", "void_sale", "view_profit", "view_finance", "export_data"]
     };
     PLUGIN_PERMISSION_CATALOG = {
+      commerce: {
+        id: "commerce",
+        label: "Commerce",
+        isPrimary: true,
+        entries: [
+          { id: "stores", label: "Stores", capability: "manage_settings", kind: "page" },
+          { id: "products", label: "Products", capability: "manage_inventory", kind: "page" },
+          { id: "pos", label: "Point of Sale", capability: "access_commerce", kind: "page" },
+          { id: "inventory", label: "Inventory", capability: "manage_inventory", kind: "page" },
+          { id: "sales", label: "Sales", capability: "access_commerce", kind: "page" },
+          { id: "installments", label: "Installments", capability: "access_commerce", kind: "page" },
+          { id: "discount", label: "Give discounts", capability: "give_discount", kind: "action", parentId: "pos" },
+          { id: "void-sale", label: "Void sales", capability: "void_sale", kind: "action", parentId: "pos" },
+          { id: "refund", label: "Issue refunds", capability: "issue_refund", kind: "action", parentId: "sales" },
+          { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "inventory" }
+        ]
+      },
+      bakery: {
+        id: "bakery",
+        label: "Bakery",
+        isPrimary: true,
+        entries: [
+          { id: "overview", label: "Overview", capability: "access_bakery", kind: "page" },
+          { id: "recipes", label: "Recipes", capability: "manage_inventory", kind: "page" },
+          { id: "production", label: "Production", capability: "manage_inventory", kind: "page" },
+          { id: "sales", label: "Sales", capability: "access_bakery", kind: "page" },
+          { id: "pantry", label: "Pantry", capability: "manage_inventory", kind: "page" },
+          { id: "waste", label: "Waste", capability: "manage_inventory", kind: "page" },
+          { id: "schedule", label: "Schedule", capability: "manage_inventory", kind: "page" },
+          { id: "pnl", label: "Profit & Loss", capability: "view_profit", kind: "page" },
+          { id: "expenses", label: "Expenses", capability: "view_finance", kind: "page" },
+          { id: "discount", label: "Give discounts", capability: "give_discount", kind: "action", parentId: "sales" },
+          { id: "void-sale", label: "Void sales", capability: "void_sale", kind: "action", parentId: "sales" },
+          { id: "refund", label: "Issue refunds", capability: "issue_refund", kind: "action", parentId: "sales" },
+          { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "pnl" }
+        ]
+      },
+      restaurant: {
+        id: "restaurant",
+        label: "Restaurant",
+        isPrimary: true,
+        entries: [
+          { id: "overview", label: "Overview", capability: "access_restaurant", kind: "page" },
+          { id: "tables", label: "Tables", capability: "access_restaurant", kind: "page" },
+          { id: "reservations", label: "Reservations", capability: "manage_customers", kind: "page" },
+          { id: "menu", label: "Menu", capability: "manage_inventory", kind: "page" },
+          { id: "orders", label: "Orders", capability: "access_restaurant", kind: "page" },
+          { id: "discount", label: "Give discounts", capability: "give_discount", kind: "action", parentId: "orders" },
+          { id: "void-order", label: "Void / cancel orders", capability: "void_sale", kind: "action", parentId: "orders" },
+          { id: "refund", label: "Issue refunds", capability: "issue_refund", kind: "action", parentId: "orders" }
+        ]
+      },
+      warehouse: {
+        id: "warehouse",
+        label: "Warehouse",
+        isPrimary: true,
+        entries: [
+          { id: "overview", label: "Overview", capability: "access_warehouse", kind: "page" },
+          { id: "operations", label: "Operations", capability: "access_warehouse", kind: "page" },
+          { id: "locations", label: "Locations", capability: "manage_inventory", kind: "page" },
+          { id: "inventory", label: "Inventory", capability: "manage_inventory", kind: "page" },
+          { id: "transfers", label: "Transfers", capability: "manage_inventory", kind: "page" },
+          { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "inventory" }
+        ]
+      },
+      clinic: {
+        id: "clinic",
+        label: "Clinic",
+        isPrimary: true,
+        entries: [
+          { id: "patients", label: "Patients", capability: "access_clinic", kind: "page" },
+          { id: "sessions", label: "Sessions", capability: "access_clinic", kind: "page" },
+          { id: "appointments", label: "Appointments", capability: "manage_customers", kind: "page" },
+          { id: "followups", label: "Follow-ups", capability: "manage_customers", kind: "page" },
+          { id: "doctors", label: "Doctors", capability: "manage_staff", kind: "page" },
+          { id: "materials", label: "Materials", capability: "manage_inventory", kind: "page" },
+          { id: "stats", label: "Statistics", capability: "view_finance", kind: "page" },
+          { id: "expenses", label: "Expenses", capability: "view_finance", kind: "page" },
+          { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "stats" }
+        ]
+      },
+      vet: {
+        id: "vet",
+        label: "Vet Clinic",
+        isPrimary: true,
+        entries: [
+          { id: "owners", label: "Pet Owners", capability: "access_vet", kind: "page" },
+          { id: "vets", label: "Veterinarians", capability: "manage_staff", kind: "page" },
+          { id: "sessions", label: "Sessions", capability: "access_vet", kind: "page" },
+          { id: "appointments", label: "Appointments", capability: "manage_customers", kind: "page" },
+          { id: "followups", label: "Follow-ups", capability: "manage_customers", kind: "page" },
+          { id: "medicines", label: "Medicines", capability: "manage_inventory", kind: "page" },
+          { id: "sales", label: "Sales", capability: "access_vet", kind: "page" },
+          { id: "salesHistory", label: "Sales History", capability: "access_vet", kind: "page" },
+          { id: "stats", label: "Statistics", capability: "view_finance", kind: "page" },
+          { id: "expenses", label: "Expenses", capability: "view_finance", kind: "page" },
+          { id: "refund", label: "Issue refunds", capability: "issue_refund", kind: "action", parentId: "sales" },
+          { id: "void-sale", label: "Void sales", capability: "void_sale", kind: "action", parentId: "sales" },
+          { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "stats" }
+        ]
+      },
+      gym: {
+        id: "gym",
+        label: "Gym",
+        isPrimary: true,
+        entries: [
+          { id: "attendance", label: "Attendance", capability: "access_gym", kind: "page" },
+          { id: "trainees", label: "Trainees", capability: "access_gym", kind: "page" },
+          { id: "coaches", label: "Coaches", capability: "manage_staff", kind: "page" },
+          { id: "subscriptions", label: "Subscriptions", capability: "manage_customers", kind: "page" },
+          { id: "walkins", label: "Walk-ins", capability: "access_gym", kind: "page" },
+          { id: "plans", label: "Plans", capability: "manage_settings", kind: "page" },
+          { id: "lockers", label: "Lockers", capability: "access_gym", kind: "page" },
+          { id: "programs", label: "Programs", capability: "access_gym", kind: "page" },
+          { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "attendance" }
+        ]
+      },
+      pharmacy: {
+        id: "pharmacy",
+        label: "Pharmacy",
+        isPrimary: true,
+        entries: [
+          { id: "dashboard", label: "Dashboard", capability: "access_pharmacy", kind: "page" },
+          { id: "pos", label: "Point of Sale", capability: "access_pharmacy", kind: "page" },
+          { id: "products", label: "Products", capability: "manage_inventory", kind: "page" },
+          { id: "inventory", label: "Inventory", capability: "manage_inventory", kind: "page" },
+          { id: "sales", label: "Sales", capability: "access_pharmacy", kind: "page" },
+          { id: "customers", label: "Customers", capability: "manage_customers", kind: "page" },
+          { id: "suppliers", label: "Suppliers", capability: "manage_purchasing", kind: "page" },
+          { id: "orders", label: "Purchase Orders", capability: "manage_purchasing", kind: "page" },
+          { id: "reports", label: "Reports", capability: "view_finance", kind: "page" },
+          { id: "discount", label: "Give discounts", capability: "give_discount", kind: "action", parentId: "pos" },
+          { id: "void-sale", label: "Void sales", capability: "void_sale", kind: "action", parentId: "pos" },
+          { id: "refund", label: "Issue refunds", capability: "issue_refund", kind: "action", parentId: "sales" },
+          { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "reports" }
+        ]
+      },
       coffee: {
         id: "coffee",
         label: "Coffee Shop",

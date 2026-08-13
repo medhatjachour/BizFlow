@@ -14,6 +14,7 @@ import {
   PLUGIN_ROLE_DEFAULTS,
   PLUGIN_PERMISSION_CATALOG,
   PLUGIN_ACCESS_CAPABILITIES,
+  pluginRoleLabel,
   type PluginPermissionCatalog,
   type PluginId,
   type Capability,
@@ -22,16 +23,8 @@ import PermissionMatrix from './PermissionMatrix'
 
 type RoleInfo = { capabilities: Capability[]; isDefault: boolean; isWildcard: boolean }
 
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Admin', manager: 'Manager', member: 'Member', finance: 'Finance',
-  inventory: 'Inventory', sales: 'Sales', cashier: 'Cashier',
-  coffee_cashier: 'Cashier',
-  coffee_inventory_manager: 'Inventory Manager',
-  coffee_shift_manager: 'Shift Manager',
-  coffee_manager: 'Coffee Manager',
-}
-const roleLabel = (r: string) => ROLE_LABELS[r] ?? r.charAt(0).toUpperCase() + r.slice(1)
 const KERNEL_ROLES = ['admin', 'manager', 'member', 'finance', 'inventory', 'sales', 'cashier'] as const
+const roleLabel = (r: string) => pluginRoleLabel(r)
 
 // capability keys grouped for display
 const GROUPS = ALL_CAPABILITIES.reduce((acc, cap) => {

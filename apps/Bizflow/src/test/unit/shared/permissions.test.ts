@@ -1,9 +1,15 @@
 import {
   hasCapability,
   PLUGIN_PERMISSION_CATALOG,
+  PLUGIN_ROLE_DEFAULTS,
+  PLUGIN_ROLE_LABELS,
+  pluginRoleLabel,
   resolvePluginRoleCapabilities,
   resolveCapabilities,
+  type PluginId,
 } from '../../../shared/permissions'
+
+const ALL_PLUGINS: PluginId[] = ['commerce', 'bakery', 'restaurant', 'warehouse', 'clinic', 'vet', 'gym', 'pharmacy', 'coffee']
 
 describe('plugin-scoped permissions', () => {
   it('gives coffee staff access to operational coffee tabs only', () => {
@@ -68,5 +74,58 @@ describe('plugin-scoped permissions', () => {
       expect.objectContaining({ id: 'shifts', capability: 'coffee_shifts', kind: 'page' }),
       expect.objectContaining({ id: 'void-sale', capability: 'void_sale', kind: 'action', parentId: 'pos' }),
     ]))
+  })
+
+  it('registers a permission catalog for every plugin (page + tabs + actions)', () => {
+    for (const id of ALL_PLUGINS) {
+      const catalog = PLUGIN_PERMISSION_CATALOG[id]
+      expect(catalog, `catalog for ${id}`).toBeDefined()
+      expect(catalog.entries.length, `entries for ${id}`).toBeGreaterThanOrEqual(5)
+      expect(catalog.entries.filter(e => e.kind === 'page').length, `pages for ${id}`).toBeGreaterThanOrEqual(3)
+      // Every action/tab is anchored to a page that exists in the catalog.
+      const pageIds = new Set(catalog.entries.filter(e => e.kind === 'page').map(e => e.id))
+      for (const entry of catalog.entries) {
+        if (entry.parentId) expect(pageIds.has(entry.parentId), `${id}:${entry.id} parent ${entry.parentId}`).toBe(true)
+      }
+    }
+  })
+
+  it('every plugin role resolves to at least its plugin access capability', () => {
+    for (const id of ALL_PLUGINS) {
+      for (const [role, caps] of Object.entries(PLUGIN_ROLE_DEFAULTS[id])) {
+        expect(caps, `${role}`).toContain(`access_${id}`)
+        expect(pluginRoleLabel(role), `${role} label`).not.toBe('')
+      }
+    }
+  })
+
+  it('adds full manager roles for every non-coffee plugin', () => {
+    const managerRoles = [
+      'bakery_manager', 'restaurant_manager', 'warehouse_manager',
+      'clinic_manager', 'vet_manager', 'gym_manager', 'pharmacy_manager',
+    ]
+    for (const role of managerRoles) {
+      const caps = resolveCapabilities(role)
+      expect(PLUGIN_ROLE_LABELS[role], `${role} label`).toBeDefined()
+      expect(caps, `${role}`).toEqual(expect.arrayContaining(['view_profit', 'view_finance', 'export_data', 'manage_staff']))
+    }
+  })
+
+  it('scopes a single-plugin run to that plugin only', () => {
+    // A user running the app for only the Bakery plugin needs just bakery roles.
+    const bakeryStaff = resolvePluginRoleCapabilities({ bakery: 'bakery_staff' })
+    const bakeryManager = resolvePluginRoleCapabilities({ bakery: 'bakery_manager' })
+
+    expect(bakeryStaff).toContain('access_bakery')
+    expect(bakeryManager).toEqual(expect.arrayContaining(['access_bakery', 'manage_inventory', 'view_profit']))
+    expect(bakeryManager).not.toContain('access_coffee')
+    expect(bakeryStaff).not.toContain('access_commerce')
+  })
+
+  it('keeps an override as the hard boundary even when a full role exists', () => {
+    const caps = resolveCapabilities('bakery_manager', ['access_bakery', 'manage_inventory'])
+
+    expect(caps).toEqual(['access_bakery', 'manage_inventory'])
+    expect(hasCapability(caps, 'bakery_manager', 'view_finance')).toBe(false)
   })
 })

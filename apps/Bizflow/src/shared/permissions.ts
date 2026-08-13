@@ -81,12 +81,19 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, Capability[]> = {
   coffee_shift_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales', 'coffee_shifts', 'coffee_expenses'],
   coffee_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_products', 'coffee_inventory', 'coffee_incoming', 'coffee_expenses', 'coffee_sales', 'coffee_shifts', 'coffee_customers', 'coffee_reports', 'coffee_finance'],
   bakery_staff: ['access_bakery'],
+  bakery_manager: ['access_bakery', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
   restaurant_staff: ['access_restaurant'],
+  restaurant_manager: ['access_restaurant', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
   warehouse_staff: ['access_warehouse'],
+  warehouse_manager: ['access_warehouse', 'manage_inventory', 'manage_purchasing', 'manage_staff', 'manage_settings', 'view_profit', 'view_finance', 'export_data'],
   clinic_staff: ['access_clinic'],
+  clinic_manager: ['access_clinic', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'view_profit', 'view_finance', 'export_data'],
   vet_staff: ['access_vet'],
+  vet_manager: ['access_vet', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
   gym_staff: ['access_gym'],
+  gym_manager: ['access_gym', 'manage_customers', 'manage_staff', 'manage_settings', 'view_profit', 'view_finance', 'export_data'],
   pharmacy_staff: ['access_pharmacy'],
+  pharmacy_manager: ['access_pharmacy', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
 }
 
 export const PLUGIN_ACCESS_CAPABILITIES: Record<PluginId, Capability> = {
@@ -107,13 +114,34 @@ export const PLUGIN_ROLE_DEFAULTS: Record<PluginId, Record<string, Capability[]>
     inventory: ['access_commerce', 'manage_inventory', 'manage_purchasing'],
     finance: ['access_commerce', 'view_profit', 'view_finance', 'export_data'],
   },
-  bakery: { bakery_staff: ['access_bakery'] },
-  restaurant: { restaurant_staff: ['access_restaurant'] },
-  warehouse: { warehouse_staff: ['access_warehouse'] },
-  clinic: { clinic_staff: ['access_clinic'] },
-  vet: { vet_staff: ['access_vet'] },
-  gym: { gym_staff: ['access_gym'] },
-  pharmacy: { pharmacy_staff: ['access_pharmacy'] },
+  bakery: {
+    bakery_staff: ['access_bakery'],
+    bakery_manager: ['access_bakery', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
+  },
+  restaurant: {
+    restaurant_staff: ['access_restaurant'],
+    restaurant_manager: ['access_restaurant', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
+  },
+  warehouse: {
+    warehouse_staff: ['access_warehouse'],
+    warehouse_manager: ['access_warehouse', 'manage_inventory', 'manage_purchasing', 'manage_staff', 'manage_settings', 'view_profit', 'view_finance', 'export_data'],
+  },
+  clinic: {
+    clinic_staff: ['access_clinic'],
+    clinic_manager: ['access_clinic', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'view_profit', 'view_finance', 'export_data'],
+  },
+  vet: {
+    vet_staff: ['access_vet'],
+    vet_manager: ['access_vet', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
+  },
+  gym: {
+    gym_staff: ['access_gym'],
+    gym_manager: ['access_gym', 'manage_customers', 'manage_staff', 'manage_settings', 'view_profit', 'view_finance', 'export_data'],
+  },
+  pharmacy: {
+    pharmacy_staff: ['access_pharmacy'],
+    pharmacy_manager: ['access_pharmacy', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
+  },
   coffee: {
     coffee_cashier: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales'],
     coffee_inventory_manager: ['access_coffee', 'coffee_products', 'coffee_inventory', 'coffee_incoming'],
@@ -122,6 +150,37 @@ export const PLUGIN_ROLE_DEFAULTS: Record<PluginId, Record<string, Capability[]>
     // Legacy assignment kept so existing users retain their operational access.
     coffee_staff: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales'],
   },
+}
+
+/** Human-readable labels for every built-in plugin role. */
+export const PLUGIN_ROLE_LABELS: Record<string, string> = {
+  bakery_staff: 'Bakery Staff',
+  bakery_manager: 'Bakery Manager',
+  restaurant_staff: 'Restaurant Staff',
+  restaurant_manager: 'Restaurant Manager',
+  warehouse_staff: 'Warehouse Staff',
+  warehouse_manager: 'Warehouse Manager',
+  clinic_staff: 'Clinic Staff',
+  clinic_manager: 'Clinic Manager',
+  vet_staff: 'Vet Staff',
+  vet_manager: 'Vet Manager',
+  gym_staff: 'Gym Staff',
+  gym_manager: 'Gym Manager',
+  pharmacy_staff: 'Pharmacy Staff',
+  pharmacy_manager: 'Pharmacy Manager',
+  coffee_cashier: 'Cashier',
+  coffee_inventory_manager: 'Inventory Manager',
+  coffee_shift_manager: 'Shift Manager',
+  coffee_manager: 'Coffee Manager',
+  coffee_staff: 'Coffee Shop Staff',
+  sales: 'Sales',
+  inventory: 'Inventory',
+  finance: 'Finance',
+}
+
+/** Resolve a friendly label for a kernel or plugin role key. */
+export function pluginRoleLabel(role: string): string {
+  return PLUGIN_ROLE_LABELS[role] ?? role.charAt(0).toUpperCase() + role.slice(1)
 }
 
 export const PLUGIN_TAB_CAPABILITIES: Record<PluginId, Record<string, Capability>> = {
@@ -171,10 +230,149 @@ export const PLUGIN_TAB_CAPABILITIES: Record<PluginId, Record<string, Capability
 }
 
 /**
- * Registered permission blueprints exposed over IPC. Plugins own their entries;
- * the RBAC UI only renders the selected plugin's blueprint.
+ * Registered permission blueprints exposed over IPC. Every plugin owns its
+ * entries — one per page/tab plus the sensitive actions available on them —
+ * so the RBAC UI can show a precise matrix for any plugin, and the app can
+ * scope itself to a single plugin (only that plugin's page + tabs matter).
  */
-export const PLUGIN_PERMISSION_CATALOG: Partial<Record<PluginId, PluginPermissionCatalog>> = {
+export const PLUGIN_PERMISSION_CATALOG: Record<PluginId, PluginPermissionCatalog> = {
+  commerce: {
+    id: 'commerce',
+    label: 'Commerce',
+    isPrimary: true,
+    entries: [
+      { id: 'stores', label: 'Stores', capability: 'manage_settings', kind: 'page' },
+      { id: 'products', label: 'Products', capability: 'manage_inventory', kind: 'page' },
+      { id: 'pos', label: 'Point of Sale', capability: 'access_commerce', kind: 'page' },
+      { id: 'inventory', label: 'Inventory', capability: 'manage_inventory', kind: 'page' },
+      { id: 'sales', label: 'Sales', capability: 'access_commerce', kind: 'page' },
+      { id: 'installments', label: 'Installments', capability: 'access_commerce', kind: 'page' },
+      { id: 'discount', label: 'Give discounts', capability: 'give_discount', kind: 'action', parentId: 'pos' },
+      { id: 'void-sale', label: 'Void sales', capability: 'void_sale', kind: 'action', parentId: 'pos' },
+      { id: 'refund', label: 'Issue refunds', capability: 'issue_refund', kind: 'action', parentId: 'sales' },
+      { id: 'export', label: 'Export / print reports', capability: 'export_data', kind: 'action', parentId: 'inventory' },
+    ],
+  },
+  bakery: {
+    id: 'bakery',
+    label: 'Bakery',
+    isPrimary: true,
+    entries: [
+      { id: 'overview', label: 'Overview', capability: 'access_bakery', kind: 'page' },
+      { id: 'recipes', label: 'Recipes', capability: 'manage_inventory', kind: 'page' },
+      { id: 'production', label: 'Production', capability: 'manage_inventory', kind: 'page' },
+      { id: 'sales', label: 'Sales', capability: 'access_bakery', kind: 'page' },
+      { id: 'pantry', label: 'Pantry', capability: 'manage_inventory', kind: 'page' },
+      { id: 'waste', label: 'Waste', capability: 'manage_inventory', kind: 'page' },
+      { id: 'schedule', label: 'Schedule', capability: 'manage_inventory', kind: 'page' },
+      { id: 'pnl', label: 'Profit & Loss', capability: 'view_profit', kind: 'page' },
+      { id: 'expenses', label: 'Expenses', capability: 'view_finance', kind: 'page' },
+      { id: 'discount', label: 'Give discounts', capability: 'give_discount', kind: 'action', parentId: 'sales' },
+      { id: 'void-sale', label: 'Void sales', capability: 'void_sale', kind: 'action', parentId: 'sales' },
+      { id: 'refund', label: 'Issue refunds', capability: 'issue_refund', kind: 'action', parentId: 'sales' },
+      { id: 'export', label: 'Export / print reports', capability: 'export_data', kind: 'action', parentId: 'pnl' },
+    ],
+  },
+  restaurant: {
+    id: 'restaurant',
+    label: 'Restaurant',
+    isPrimary: true,
+    entries: [
+      { id: 'overview', label: 'Overview', capability: 'access_restaurant', kind: 'page' },
+      { id: 'tables', label: 'Tables', capability: 'access_restaurant', kind: 'page' },
+      { id: 'reservations', label: 'Reservations', capability: 'manage_customers', kind: 'page' },
+      { id: 'menu', label: 'Menu', capability: 'manage_inventory', kind: 'page' },
+      { id: 'orders', label: 'Orders', capability: 'access_restaurant', kind: 'page' },
+      { id: 'discount', label: 'Give discounts', capability: 'give_discount', kind: 'action', parentId: 'orders' },
+      { id: 'void-order', label: 'Void / cancel orders', capability: 'void_sale', kind: 'action', parentId: 'orders' },
+      { id: 'refund', label: 'Issue refunds', capability: 'issue_refund', kind: 'action', parentId: 'orders' },
+    ],
+  },
+  warehouse: {
+    id: 'warehouse',
+    label: 'Warehouse',
+    isPrimary: true,
+    entries: [
+      { id: 'overview', label: 'Overview', capability: 'access_warehouse', kind: 'page' },
+      { id: 'operations', label: 'Operations', capability: 'access_warehouse', kind: 'page' },
+      { id: 'locations', label: 'Locations', capability: 'manage_inventory', kind: 'page' },
+      { id: 'inventory', label: 'Inventory', capability: 'manage_inventory', kind: 'page' },
+      { id: 'transfers', label: 'Transfers', capability: 'manage_inventory', kind: 'page' },
+      { id: 'export', label: 'Export / print reports', capability: 'export_data', kind: 'action', parentId: 'inventory' },
+    ],
+  },
+  clinic: {
+    id: 'clinic',
+    label: 'Clinic',
+    isPrimary: true,
+    entries: [
+      { id: 'patients', label: 'Patients', capability: 'access_clinic', kind: 'page' },
+      { id: 'sessions', label: 'Sessions', capability: 'access_clinic', kind: 'page' },
+      { id: 'appointments', label: 'Appointments', capability: 'manage_customers', kind: 'page' },
+      { id: 'followups', label: 'Follow-ups', capability: 'manage_customers', kind: 'page' },
+      { id: 'doctors', label: 'Doctors', capability: 'manage_staff', kind: 'page' },
+      { id: 'materials', label: 'Materials', capability: 'manage_inventory', kind: 'page' },
+      { id: 'stats', label: 'Statistics', capability: 'view_finance', kind: 'page' },
+      { id: 'expenses', label: 'Expenses', capability: 'view_finance', kind: 'page' },
+      { id: 'export', label: 'Export / print reports', capability: 'export_data', kind: 'action', parentId: 'stats' },
+    ],
+  },
+  vet: {
+    id: 'vet',
+    label: 'Vet Clinic',
+    isPrimary: true,
+    entries: [
+      { id: 'owners', label: 'Pet Owners', capability: 'access_vet', kind: 'page' },
+      { id: 'vets', label: 'Veterinarians', capability: 'manage_staff', kind: 'page' },
+      { id: 'sessions', label: 'Sessions', capability: 'access_vet', kind: 'page' },
+      { id: 'appointments', label: 'Appointments', capability: 'manage_customers', kind: 'page' },
+      { id: 'followups', label: 'Follow-ups', capability: 'manage_customers', kind: 'page' },
+      { id: 'medicines', label: 'Medicines', capability: 'manage_inventory', kind: 'page' },
+      { id: 'sales', label: 'Sales', capability: 'access_vet', kind: 'page' },
+      { id: 'salesHistory', label: 'Sales History', capability: 'access_vet', kind: 'page' },
+      { id: 'stats', label: 'Statistics', capability: 'view_finance', kind: 'page' },
+      { id: 'expenses', label: 'Expenses', capability: 'view_finance', kind: 'page' },
+      { id: 'refund', label: 'Issue refunds', capability: 'issue_refund', kind: 'action', parentId: 'sales' },
+      { id: 'void-sale', label: 'Void sales', capability: 'void_sale', kind: 'action', parentId: 'sales' },
+      { id: 'export', label: 'Export / print reports', capability: 'export_data', kind: 'action', parentId: 'stats' },
+    ],
+  },
+  gym: {
+    id: 'gym',
+    label: 'Gym',
+    isPrimary: true,
+    entries: [
+      { id: 'attendance', label: 'Attendance', capability: 'access_gym', kind: 'page' },
+      { id: 'trainees', label: 'Trainees', capability: 'access_gym', kind: 'page' },
+      { id: 'coaches', label: 'Coaches', capability: 'manage_staff', kind: 'page' },
+      { id: 'subscriptions', label: 'Subscriptions', capability: 'manage_customers', kind: 'page' },
+      { id: 'walkins', label: 'Walk-ins', capability: 'access_gym', kind: 'page' },
+      { id: 'plans', label: 'Plans', capability: 'manage_settings', kind: 'page' },
+      { id: 'lockers', label: 'Lockers', capability: 'access_gym', kind: 'page' },
+      { id: 'programs', label: 'Programs', capability: 'access_gym', kind: 'page' },
+      { id: 'export', label: 'Export / print reports', capability: 'export_data', kind: 'action', parentId: 'attendance' },
+    ],
+  },
+  pharmacy: {
+    id: 'pharmacy',
+    label: 'Pharmacy',
+    isPrimary: true,
+    entries: [
+      { id: 'dashboard', label: 'Dashboard', capability: 'access_pharmacy', kind: 'page' },
+      { id: 'pos', label: 'Point of Sale', capability: 'access_pharmacy', kind: 'page' },
+      { id: 'products', label: 'Products', capability: 'manage_inventory', kind: 'page' },
+      { id: 'inventory', label: 'Inventory', capability: 'manage_inventory', kind: 'page' },
+      { id: 'sales', label: 'Sales', capability: 'access_pharmacy', kind: 'page' },
+      { id: 'customers', label: 'Customers', capability: 'manage_customers', kind: 'page' },
+      { id: 'suppliers', label: 'Suppliers', capability: 'manage_purchasing', kind: 'page' },
+      { id: 'orders', label: 'Purchase Orders', capability: 'manage_purchasing', kind: 'page' },
+      { id: 'reports', label: 'Reports', capability: 'view_finance', kind: 'page' },
+      { id: 'discount', label: 'Give discounts', capability: 'give_discount', kind: 'action', parentId: 'pos' },
+      { id: 'void-sale', label: 'Void sales', capability: 'void_sale', kind: 'action', parentId: 'pos' },
+      { id: 'refund', label: 'Issue refunds', capability: 'issue_refund', kind: 'action', parentId: 'sales' },
+      { id: 'export', label: 'Export / print reports', capability: 'export_data', kind: 'action', parentId: 'reports' },
+    ],
+  },
   coffee: {
     id: 'coffee',
     label: 'Coffee Shop',

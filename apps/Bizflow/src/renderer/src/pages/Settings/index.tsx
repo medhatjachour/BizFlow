@@ -3,7 +3,7 @@
  * Clean, modular architecture with separated settings panels
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Settings as SettingsIcon,
@@ -17,7 +17,9 @@ import {
   Users,
   Archive,
   Mail,
-  Puzzle
+  Puzzle,
+  Shield,
+  LayoutGrid
 } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -37,7 +39,7 @@ import ArchiveManagementSettings from './ArchiveManagementSettings'
 import EmailSettings from './EmailSettings'
 import ModulesSettings from './ModulesSettings'
 import type { SettingsTab } from './types'
-import type { PluginId } from '../../../../shared/permissions'
+import { PLUGIN_PERMISSION_CATALOG, type PluginId } from '../../../../shared/permissions'
 import logger from '../../../../shared/utils/logger'
 
 export default function Settings() {
@@ -48,6 +50,12 @@ export default function Settings() {
   const clinicEnabled = useModuleEnabled('clinic')
   const vetEnabled = useModuleEnabled('vet')
   const bakeryEnabled = useModuleEnabled('bakery')
+  const commerceEnabled = useModuleEnabled('commerce')
+  const restaurantEnabled = useModuleEnabled('restaurant')
+  const warehouseEnabled = useModuleEnabled('warehouse')
+  const gymEnabled = useModuleEnabled('gym')
+  const pharmacyEnabled = useModuleEnabled('pharmacy')
+  const coffeeEnabled = useModuleEnabled('coffee')
   const [activeTab, setActiveTab] = useState<SettingsTab>('general')
   const [saveSuccess, setSaveSuccess] = useState(false)
 
@@ -101,10 +109,25 @@ export default function Settings() {
     __PLUGIN_PHARMACY__ ? 'pharmacy' : null,
     __PLUGIN_COFFEE__ ? 'coffee' : null,
   ].filter((value): value is PluginId => Boolean(value))
+  // Plugins that are bundled AND currently enabled — these are the ones whose
+  // roles/permissions the admin can manage (single-plugin mode narrows this to 1).
+  const enabledPlugins: PluginId[] = [
+    commerceEnabled ? 'commerce' : null,
+    bakeryEnabled ? 'bakery' : null,
+    restaurantEnabled ? 'restaurant' : null,
+    warehouseEnabled ? 'warehouse' : null,
+    clinicEnabled ? 'clinic' : null,
+    vetEnabled ? 'vet' : null,
+    gymEnabled ? 'gym' : null,
+    pharmacyEnabled ? 'pharmacy' : null,
+    coffeeEnabled ? 'coffee' : null,
+  ].filter((value): value is PluginId => Boolean(value)).filter(id => bundledPlugins.includes(id))
   const requestedPlugin = searchParams.get('plugin')
   const activePlugin = document.body.dataset.plugin
   const lastPlugin = localStorage.getItem('bizflow:lastPlugin')
   const singleBundledPlugin = bundledPlugins.length === 1 ? bundledPlugins[0] : null
+  const onlyParam = searchParams.get('only')
+  const validOnly = onlyParam && pluginRoutes.includes(onlyParam as PluginId) ? onlyParam as PluginId : null
   const pluginContext = ([requestedPlugin, activePlugin, lastPlugin, singleBundledPlugin]
     .find((value): value is PluginId => !!value && pluginRoutes.includes(value as PluginId)) ?? null)
   const pluginTabs: SettingsTab[] = ['general', 'users', 'backup']
@@ -115,6 +138,24 @@ export default function Settings() {
           (clinicEnabled ? CLINIC_TABS : vetEnabled ? VET_TABS : BAKERY_TABS).includes(tab.id)
         )
       : allTabs
+
+  // ── Permissions & Roles scope ─────────────────────────────────────────────
+  // Which plugin's roles + users the "Users" tab manages. Auto-scoped when the
+  // app runs for a single plugin (only one bundled/enabled) or when the URL
+  // pins one (?plugin= / ?only=); otherwise a pill bar lets the admin switch.
+  const permPluginPickerRef = useRef(false)
+  const resolvePermPlugin = (): PluginId | null => {
+    const ctx = pluginContext && enabledPlugins.includes(pluginContext) ? pluginContext : null
+    const only = validOnly && enabledPlugins.includes(validOnly) ? validOnly : null
+    const single = enabledPlugins.length === 1 ? enabledPlugins[0] : null
+    return ctx ?? only ?? single
+  }
+  const [permPlugin, setPermPlugin] = useState<PluginId | null>(resolvePermPlugin)
+  useEffect(() => {
+    if (permPluginPickerRef.current) return
+    setPermPlugin(resolvePermPlugin())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pluginContext, validOnly, enabledPlugins.length])
 
   useEffect(() => {
     if (!tabs.some(tab => tab.id === activeTab)) setActiveTab(tabs[0]?.id ?? 'general')
@@ -208,12 +249,47 @@ export default function Settings() {
             {activeTab === 'categories' && <CategorySettings />}
 
             {activeTab === 'users' && (
-              <div className="min-w-0 grid grid-cols-1 2xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-8 items-start">
-                <div className="min-w-0">
-                  <UserManagementSettings pluginId={pluginContext} />
-                </div>
-                <div className="min-w-0">
-                  <RolePermissionsSettings pluginId={pluginContext} />
+              <div className="min-w-0 space-y-5">
+                {/* Per-plugin scope pills */}
+                {enabledPlugins.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {enabledPlugins.length > 1 && (
+                      <button
+                        onClick={() => { permPluginPickerRef.current = true; setPermPlugin(null) }}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium border transition-all ${
+                          permPlugin === null
+                            ? 'bg-primary border-primary text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary/50'
+                        }`}
+                      >
+                        <Shield size={13} /> System roles
+                      </button>
+                    )}
+                    {enabledPlugins.map(id => {
+                      const isActive = permPlugin === id
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => { permPluginPickerRef.current = true; setPermPlugin(id) }}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium border transition-all ${
+                            isActive
+                              ? 'bg-primary border-primary text-white shadow-sm'
+                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary/50'
+                          }`}
+                        >
+                          <LayoutGrid size={13} /> {PLUGIN_PERMISSION_CATALOG[id]?.label ?? id}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-8 items-start">
+                  <div className="min-w-0">
+                    <UserManagementSettings pluginId={permPlugin} />
+                  </div>
+                  <div className="min-w-0">
+                    <RolePermissionsSettings pluginId={permPlugin} />
+                  </div>
                 </div>
               </div>
             )}
