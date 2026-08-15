@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { UserPlus, Eye, EyeOff, Loader2 } from 'lucide-react'
 import SmartDeleteDialog from '../../../components/SmartDeleteDialog'
 import { useToast } from '../../../contexts/ToastContext'
+import { useAuth } from '../../../contexts/AuthContext'
 import type { PluginId } from '../../../../../shared/permissions'
 import { BUNDLED_PLUGIN_FLAGS } from './constants'
 import { useUserManagement } from './hooks/useUserManagement'
@@ -10,8 +11,16 @@ import { getAvailableRoles, getDefaultRole, getPluginRoleLabel, getRoleMeta, get
 import PluginRoleSelects from './components/PluginRoleSelects'
 import UsersTable from './components/UsersTable'
 
-export default function UserManagementSettings({ pluginId = null }: { pluginId?: PluginId | null }) {
+export default function UserManagementSettings({
+  pluginId = null,
+  onViewAccess,
+}: {
+  pluginId?: PluginId | null
+  onViewAccess?: (user: User) => void
+}) {
   const toast = useToast()
+  const { can } = useAuth()
+  const canManageUsers = can('manage_users')
   const availableRoles = getAvailableRoles()
   const defaultRole = getDefaultRole()
   const pluginScope = pluginId && BUNDLED_PLUGIN_FLAGS[pluginId] ? pluginId : null
@@ -193,7 +202,9 @@ export default function UserManagementSettings({ pluginId = null }: { pluginId?:
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+          disabled={!canManageUsers}
+          title={canManageUsers ? undefined : 'Requires the “Manage user accounts” permission'}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <UserPlus className="w-5 h-5" />
           {pluginScope ? `Add ${scopedPlugin?.label} user` : 'Add User'}
@@ -223,6 +234,8 @@ export default function UserManagementSettings({ pluginId = null }: { pluginId?:
         pluginLabel={scopedPlugin?.label}
         resolveRoleLabel={(account) => getPluginRoleLabel(account, pluginScope)}
         resolveKernelRoleLabel={(role) => getRoleMeta(role).label}
+        onViewAccess={onViewAccess}
+        canManageUsers={canManageUsers}
         onEdit={(account) => {
           setSelectedUser(account)
           setShowEditModal(true)

@@ -3,7 +3,7 @@
  * Clean, modular architecture with separated settings panels
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Settings as SettingsIcon,
@@ -18,8 +18,6 @@ import {
   Archive,
   Mail,
   Puzzle,
-  Shield,
-  LayoutGrid
 } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -29,8 +27,7 @@ import { useSettings } from './useSettings'
 import GeneralSettings from './GeneralSettings'
 import DisplaySettings from './DisplaySettings'
 import CategorySettings from './CategorySettings'
-import UserManagementSettings from './userMangement'
-import RolePermissionsSettings from './RolePermissionsSettings'
+import TeamPermissions from './TeamPermissions'
 import PaymentMethodsSettings from './PaymentMethodsSettings'
 import TaxReceiptSettings from './TaxReceiptSettings'
 import NotificationsSettings from './NotificationsSettings'
@@ -39,7 +36,7 @@ import ArchiveManagementSettings from './ArchiveManagementSettings'
 import EmailSettings from './EmailSettings'
 import ModulesSettings from './ModulesSettings'
 import type { SettingsTab } from './types'
-import { PLUGIN_PERMISSION_CATALOG, type PluginId } from '../../../../shared/permissions'
+import type { PluginId } from '../../../../shared/permissions'
 import logger from '../../../../shared/utils/logger'
 
 export default function Settings() {
@@ -126,8 +123,6 @@ export default function Settings() {
   const activePlugin = document.body.dataset.plugin
   const lastPlugin = localStorage.getItem('bizflow:lastPlugin')
   const singleBundledPlugin = bundledPlugins.length === 1 ? bundledPlugins[0] : null
-  const onlyParam = searchParams.get('only')
-  const validOnly = onlyParam && pluginRoutes.includes(onlyParam as PluginId) ? onlyParam as PluginId : null
   const pluginContext = ([requestedPlugin, activePlugin, lastPlugin, singleBundledPlugin]
     .find((value): value is PluginId => !!value && pluginRoutes.includes(value as PluginId)) ?? null)
   const pluginTabs: SettingsTab[] = ['general', 'users', 'backup']
@@ -138,24 +133,6 @@ export default function Settings() {
           (clinicEnabled ? CLINIC_TABS : vetEnabled ? VET_TABS : BAKERY_TABS).includes(tab.id)
         )
       : allTabs
-
-  // ── Permissions & Roles scope ─────────────────────────────────────────────
-  // Which plugin's roles + users the "Users" tab manages. Auto-scoped when the
-  // app runs for a single plugin (only one bundled/enabled) or when the URL
-  // pins one (?plugin= / ?only=); otherwise a pill bar lets the admin switch.
-  const permPluginPickerRef = useRef(false)
-  const resolvePermPlugin = (): PluginId | null => {
-    const ctx = pluginContext && enabledPlugins.includes(pluginContext) ? pluginContext : null
-    const only = validOnly && enabledPlugins.includes(validOnly) ? validOnly : null
-    const single = enabledPlugins.length === 1 ? enabledPlugins[0] : null
-    return ctx ?? only ?? single
-  }
-  const [permPlugin, setPermPlugin] = useState<PluginId | null>(resolvePermPlugin)
-  useEffect(() => {
-    if (permPluginPickerRef.current) return
-    setPermPlugin(resolvePermPlugin())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pluginContext, validOnly, enabledPlugins.length])
 
   useEffect(() => {
     if (!tabs.some(tab => tab.id === activeTab)) setActiveTab(tabs[0]?.id ?? 'general')
@@ -249,49 +226,7 @@ export default function Settings() {
             {activeTab === 'categories' && <CategorySettings />}
 
             {activeTab === 'users' && (
-              <div className="min-w-0 space-y-5">
-                {/* Per-plugin scope pills */}
-                {enabledPlugins.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {enabledPlugins.length > 1 && (
-                      <button
-                        onClick={() => { permPluginPickerRef.current = true; setPermPlugin(null) }}
-                        className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium border transition-all ${
-                          permPlugin === null
-                            ? 'bg-primary border-primary text-white shadow-sm'
-                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary/50'
-                        }`}
-                      >
-                        <Shield size={13} /> System roles
-                      </button>
-                    )}
-                    {enabledPlugins.map(id => {
-                      const isActive = permPlugin === id
-                      return (
-                        <button
-                          key={id}
-                          onClick={() => { permPluginPickerRef.current = true; setPermPlugin(id) }}
-                          className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium border transition-all ${
-                            isActive
-                              ? 'bg-primary border-primary text-white shadow-sm'
-                              : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary/50'
-                          }`}
-                        >
-                          <LayoutGrid size={13} /> {PLUGIN_PERMISSION_CATALOG[id]?.label ?? id}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-                <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-8 items-start">
-                  <div className="min-w-0">
-                    <UserManagementSettings pluginId={permPlugin} />
-                  </div>
-                  <div className="min-w-0">
-                    <RolePermissionsSettings pluginId={permPlugin} />
-                  </div>
-                </div>
-              </div>
+              <TeamPermissions enabledPlugins={enabledPlugins} />
             )}
 
             {activeTab === 'payments' && (

@@ -61,6 +61,20 @@ export type PluginPermissionCatalog = {
 export const ALL_CAPABILITIES = Object.keys(CAPABILITIES) as Capability[]
 
 /**
+ * Capabilities editable in the "System roles" (kernel) scope of the Team &
+ * Permissions page. Coffee-specific page capabilities (coffee_pos, coffee_sales,
+ * …) belong to the Coffee plugin roles and are edited under that plugin scope;
+ * only the kernel-level `access_coffee` toggle stays editable here.
+ */
+export const SYSTEM_SCOPE_CAPABILITIES: Capability[] = ALL_CAPABILITIES.filter(
+  cap => !cap.startsWith('coffee_')
+)
+
+export function isSystemScopeCapability(cap: Capability): boolean {
+  return SYSTEM_SCOPE_CAPABILITIES.includes(cap)
+}
+
+/**
  * Default capabilities per built-in role. `admin` is intentionally omitted —
  * it is treated as a wildcard (all capabilities) in code so it can never be
  * locked out of the very settings screen used to grant permissions.
@@ -79,7 +93,7 @@ export const DEFAULT_ROLE_CAPABILITIES: Record<string, Capability[]> = {
   coffee_cashier: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales'],
   coffee_inventory_manager: ['access_coffee', 'coffee_products', 'coffee_inventory', 'coffee_incoming'],
   coffee_shift_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales', 'coffee_shifts', 'coffee_expenses'],
-  coffee_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_products', 'coffee_inventory', 'coffee_incoming', 'coffee_expenses', 'coffee_sales', 'coffee_shifts', 'coffee_customers', 'coffee_reports', 'coffee_finance'],
+    coffee_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_products', 'coffee_inventory', 'coffee_incoming', 'coffee_expenses', 'coffee_sales', 'coffee_shifts', 'coffee_customers', 'coffee_reports', 'coffee_finance', 'give_discount', 'issue_refund', 'void_sale'],
   bakery_staff: ['access_bakery'],
   bakery_manager: ['access_bakery', 'manage_inventory', 'manage_purchasing', 'manage_customers', 'manage_staff', 'manage_settings', 'give_discount', 'issue_refund', 'void_sale', 'view_profit', 'view_finance', 'export_data'],
   restaurant_staff: ['access_restaurant'],
@@ -146,7 +160,7 @@ export const PLUGIN_ROLE_DEFAULTS: Record<PluginId, Record<string, Capability[]>
     coffee_cashier: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales'],
     coffee_inventory_manager: ['access_coffee', 'coffee_products', 'coffee_inventory', 'coffee_incoming'],
     coffee_shift_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales', 'coffee_shifts', 'coffee_expenses'],
-    coffee_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_products', 'coffee_inventory', 'coffee_incoming', 'coffee_expenses', 'coffee_sales', 'coffee_shifts', 'coffee_customers', 'coffee_reports', 'coffee_finance'],
+  coffee_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_products', 'coffee_inventory', 'coffee_incoming', 'coffee_expenses', 'coffee_sales', 'coffee_shifts', 'coffee_customers', 'coffee_reports', 'coffee_finance', 'give_discount', 'issue_refund', 'void_sale'],
     // Legacy assignment kept so existing users retain their operational access.
     coffee_staff: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales'],
   },

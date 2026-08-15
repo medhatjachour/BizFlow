@@ -6,6 +6,15 @@ interface API {
     login: (username: string, password: string) => Promise<any>
     setupExists: () => Promise<boolean>
   }
+  permissions: {
+    getRoles: () => Promise<Record<string, { capabilities: string[]; isDefault: boolean; isWildcard: boolean }>>
+    setRole: (role: string, caps: string[]) => Promise<{ success: boolean; capabilities: string[] }>
+    resetRole: (role: string) => Promise<{ success: boolean }>
+    bindSession: (user: { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments } | null) => Promise<{ capabilities: string[]; isWildcard: boolean }>
+  }
+  plugins: {
+    getCatalog: () => Promise<unknown[]>
+  }
   dashboard: {
     getMetrics: () => Promise<any>
   }

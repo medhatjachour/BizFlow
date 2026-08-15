@@ -1,4 +1,4 @@
-import { Check, Eye, Pencil, ShieldCheck } from 'lucide-react'
+import { Check, Eye, Pencil, ShieldCheck, Link2 } from 'lucide-react'
 import type { Capability, PluginPermissionCatalog } from '../../../../shared/permissions'
 
 type Props = {
@@ -18,6 +18,15 @@ export default function PermissionMatrix({ catalog, capabilities, disabled = fal
   const pages = catalog.entries.filter(entry => entry.kind === 'page')
   const items = catalog.entries.filter(entry => entry.kind !== 'page')
   const selected = new Set(capabilities)
+
+  // Entries that share the same capability toggle (e.g. several pages gated by
+  // manage_inventory) so the UI can surface the link instead of confusing dupes.
+  const capabilityEntries = new Map<Capability, typeof catalog.entries>()
+  for (const entry of catalog.entries) {
+    const list = capabilityEntries.get(entry.capability) ?? []
+    list.push(entry)
+    capabilityEntries.set(entry.capability, list)
+  }
 
   function update(capability: Capability, enabled: boolean) {
     const next = new Set(capabilities)
@@ -50,6 +59,13 @@ export default function PermissionMatrix({ catalog, capabilities, disabled = fal
     onChange([...new Set([...preserved, ...next])])
   }
 
+  const sharedHint = (entryId: string, capability: Capability): string | null => {
+    const siblings = (capabilityEntries.get(capability) ?? []).filter(entry => entry.id !== entryId)
+    if (siblings.length === 0) return null
+    const names = siblings.slice(0, 3).map(entry => entry.label).join(', ')
+    return siblings.length > 3 ? `${names}…` : names
+  }
+
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
       <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/40 sm:flex-row sm:items-center sm:justify-between">
@@ -69,12 +85,20 @@ export default function PermissionMatrix({ catalog, capabilities, disabled = fal
         {pages.map(page => {
           const enabled = selected.has(page.capability)
           const pageItems = items.filter(item => item.parentId === page.id)
+          const hint = sharedHint(page.id, page.capability)
           return (
             <div key={page.id} className="px-4 py-3">
               <label className="flex cursor-pointer items-center justify-between gap-3">
                 <span>
                   <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">{page.label}</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Page</span>
+                  <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                    Page
+                    {hint && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-400 dark:text-slate-500">
+                        <Link2 className="h-3 w-3" /> also controls {hint}
+                      </span>
+                    )}
+                  </span>
                 </span>
                 <input type="checkbox" checked={enabled} disabled={disabled} onChange={event => updatePage(page.id, page.capability, event.target.checked)} className="sr-only" />
                 <span className={`flex h-5 w-5 items-center justify-center rounded border ${enabled ? 'border-primary bg-primary text-white' : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
@@ -83,12 +107,19 @@ export default function PermissionMatrix({ catalog, capabilities, disabled = fal
               </label>
               {pageItems.length > 0 && (
                 <div className={`mt-2 grid grid-cols-1 gap-1 border-l-2 pl-3 sm:grid-cols-3 ${enabled ? 'border-primary/40' : 'border-slate-200 opacity-45 dark:border-slate-700'}`}>
-                  {pageItems.map(item => (
-                    <label key={item.id} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                      <input type="checkbox" checked={selected.has(item.capability)} disabled={disabled || !enabled} onChange={event => update(item.capability, event.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-primary" />
-                      <span className="flex items-center gap-1">{item.label}<span className="text-[9px] uppercase tracking-wider text-slate-400">{item.kind === 'tab' ? 'tab' : 'action'}</span></span>
-                    </label>
-                  ))}
+                  {pageItems.map(item => {
+                    const itemHint = sharedHint(item.id, item.capability)
+                    return (
+                      <label key={item.id} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                        <input type="checkbox" checked={selected.has(item.capability)} disabled={disabled || !enabled} onChange={event => update(item.capability, event.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-primary" />
+                        <span className="flex items-center gap-1">
+                          {item.label}
+                          <span className="text-[9px] uppercase tracking-wider text-slate-400">{item.kind === 'tab' ? 'tab' : 'action'}</span>
+                          {itemHint && <span className="text-[9px] text-slate-400" title={`Also controls: ${itemHint}`}>(linked)</span>}
+                        </span>
+                      </label>
+                    )
+                  })}
                 </div>
               )}
             </div>

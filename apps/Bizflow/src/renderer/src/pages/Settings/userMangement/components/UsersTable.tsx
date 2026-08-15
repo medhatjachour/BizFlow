@@ -1,4 +1,4 @@
-import { Edit2, Lock, Shield, UserX, CheckCircle, XCircle } from 'lucide-react'
+import { Edit2, Eye, Lock, Shield, UserX, CheckCircle, XCircle } from 'lucide-react'
 import type { PluginId } from '../../../../../../shared/permissions'
 import type { User } from '../types'
 
@@ -12,6 +12,8 @@ type Props = {
   onChangePassword: (user: User) => void
   onToggleActive: (user: User) => void
   onDelete: (user: User) => void
+  onViewAccess?: (user: User) => void
+  canManageUsers?: boolean
 }
 
 export default function UsersTable({
@@ -24,6 +26,8 @@ export default function UsersTable({
   onChangePassword,
   onToggleActive,
   onDelete,
+  onViewAccess,
+  canManageUsers = true,
 }: Props) {
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
@@ -90,10 +94,15 @@ export default function UsersTable({
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium min-w-[150px]">
                 <div className="flex items-center justify-end gap-2">
-                  <button onClick={() => onEdit(user)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="Edit user" aria-label={`Edit ${user.username}`}><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => onChangePassword(user)} className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300" title="Change password" aria-label={`Change password for ${user.username}`}><Lock className="w-4 h-4" /></button>
-                  <button onClick={() => onToggleActive(user)} className={user.isActive ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300' : 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300'} title={user.isActive ? 'Deactivate' : 'Activate'} aria-label={`${user.isActive ? 'Deactivate' : 'Activate'} ${user.username}`}><Shield className="w-4 h-4" /></button>
-                  <button onClick={() => onDelete(user)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" title="Deactivate or delete user" aria-label={`Delete or deactivate ${user.username}`}><UserX className="w-4 h-4" /></button>
+                  {onViewAccess && (
+                    <button onClick={() => onViewAccess(user)} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200" title="View access" aria-label={`View access for ${user.username}`}><Eye className="w-4 h-4" /></button>
+                  )}
+                  {canManageUsers && (<>
+                    <button onClick={() => onEdit(user)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300" title="Edit user" aria-label={`Edit ${user.username}`}><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => onChangePassword(user)} className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300" title="Change password" aria-label={`Change password for ${user.username}`}><Lock className="w-4 h-4" /></button>
+                    <button onClick={() => onToggleActive(user)} className={user.isActive ? 'text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300' : 'text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300'} title={user.isActive ? 'Deactivate' : 'Activate'} aria-label={`${user.isActive ? 'Deactivate' : 'Activate'} ${user.username}`}><Shield className="w-4 h-4" /></button>
+                    <button onClick={() => onDelete(user)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" title="Deactivate or delete user" aria-label={`Delete or deactivate ${user.username}`}><UserX className="w-4 h-4" /></button>
+                  </>)}
                 </div>
               </td>
             </tr>

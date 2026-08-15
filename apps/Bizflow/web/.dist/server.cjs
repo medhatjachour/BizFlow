@@ -182,9 +182,9 @@ var init_electron_node = __esm({
   }
 });
 
-// ../../node_modules/bcryptjs/dist/bcrypt.js
+// node_modules/bcryptjs/dist/bcrypt.js
 var require_bcrypt = __commonJS({
-  "../../node_modules/bcryptjs/dist/bcrypt.js"(exports, module2) {
+  "node_modules/bcryptjs/dist/bcrypt.js"(exports, module2) {
     (function(global, factory) {
       if (typeof define === "function" && define["amd"])
         define([], factory);
@@ -1996,9 +1996,9 @@ var require_bcrypt = __commonJS({
   }
 });
 
-// ../../node_modules/bcryptjs/index.js
+// node_modules/bcryptjs/index.js
 var require_bcryptjs = __commonJS({
-  "../../node_modules/bcryptjs/index.js"(exports, module2) {
+  "node_modules/bcryptjs/index.js"(exports, module2) {
     module2.exports = require_bcrypt();
   }
 });
@@ -2014,7 +2014,7 @@ function resolveCapabilities(role, override) {
     return override;
   return DEFAULT_ROLE_CAPABILITIES[role ?? ""] ?? [];
 }
-var CAPABILITIES, ALL_CAPABILITIES, DEFAULT_ROLE_CAPABILITIES, PLUGIN_PERMISSION_CATALOG;
+var CAPABILITIES, ALL_CAPABILITIES, SYSTEM_SCOPE_CAPABILITIES, DEFAULT_ROLE_CAPABILITIES, PLUGIN_PERMISSION_CATALOG;
 var init_permissions = __esm({
   "src/shared/permissions.ts"() {
     CAPABILITIES = {
@@ -2052,6 +2052,9 @@ var init_permissions = __esm({
       export_data: { label: "Export / print reports", group: "Administration" }
     };
     ALL_CAPABILITIES = Object.keys(CAPABILITIES);
+    SYSTEM_SCOPE_CAPABILITIES = ALL_CAPABILITIES.filter(
+      (cap) => !cap.startsWith("coffee_")
+    );
     DEFAULT_ROLE_CAPABILITIES = {
       admin: [...ALL_CAPABILITIES],
       // wildcard, but list it for the settings UI
@@ -2071,7 +2074,7 @@ var init_permissions = __esm({
       coffee_cashier: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_customers", "coffee_sales"],
       coffee_inventory_manager: ["access_coffee", "coffee_products", "coffee_inventory", "coffee_incoming"],
       coffee_shift_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_customers", "coffee_sales", "coffee_shifts", "coffee_expenses"],
-      coffee_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_products", "coffee_inventory", "coffee_incoming", "coffee_expenses", "coffee_sales", "coffee_shifts", "coffee_customers", "coffee_reports", "coffee_finance"],
+      coffee_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_products", "coffee_inventory", "coffee_incoming", "coffee_expenses", "coffee_sales", "coffee_shifts", "coffee_customers", "coffee_reports", "coffee_finance", "give_discount", "issue_refund", "void_sale"],
       bakery_staff: ["access_bakery"],
       bakery_manager: ["access_bakery", "manage_inventory", "manage_purchasing", "manage_customers", "manage_staff", "manage_settings", "give_discount", "issue_refund", "void_sale", "view_profit", "view_finance", "export_data"],
       restaurant_staff: ["access_restaurant"],
@@ -6581,6 +6584,29 @@ function registerPermissionsHandlers(prisma2) {
       throw err;
     }
   });
+  ipcMain.handle("permissions:resetRole", async (_e, role) => {
+    try {
+      if (!userCan("manage_settings")) {
+        const e = new Error('Permission denied \u2014 requires "manage_settings".');
+        e.code = "EPERM_CAP";
+        throw e;
+      }
+      if (isWildcardRole(role))
+        throw new Error("The admin role always has full access and cannot be edited.");
+      try {
+        await prisma2.rolePermission.delete({ where: { role } });
+      } catch {
+      }
+      const { getCurrentUser: getCurrentUser2 } = await Promise.resolve().then(() => (init_session(), session_exports));
+      const cur = getCurrentUser2();
+      if (cur && cur.role === role)
+        setCurrentUser({ ...cur, capabilities: await resolveUserCapabilities(prisma2, role) });
+      return { success: true };
+    } catch (err) {
+      log13.error("resetRole", err);
+      throw err;
+    }
+  });
   ipcMain.handle("permissions:bindSession", async (_e, u) => {
     try {
       if (!u?.role) {
@@ -6622,6 +6648,43 @@ function parsePluginRoles3(raw) {
   } catch {
     return {};
   }
+}
+
+// src/main/ipc/handlers/permissionsGuard.ts
+init_electron_node();
+init_session();
+var RULES = [
+  { test: /^users:/i, cap: "manage_users" },
+  { test: /^auth:create$/i, cap: "manage_users" },
+  { test: /^bakery:/i, cap: "access_bakery" },
+  { test: /^restaurant:/i, cap: "access_restaurant" },
+  { test: /^warehouse:/i, cap: "access_warehouse" },
+  { test: /^clinic:/i, cap: "access_clinic" },
+  { test: /^vet:/i, cap: "access_vet" },
+  { test: /^gym:/i, cap: "access_gym" },
+  { test: /^pharmacy:/i, cap: "access_pharmacy" },
+  { test: /^coffee:/i, cap: "access_coffee" },
+  { test: /refund|return/i, cap: "issue_refund" },
+  { test: /void|cancelsale|cancelorder/i, cap: "void_sale" }
+];
+var installed = false;
+function installPermissionGuard() {
+  if (installed)
+    return;
+  installed = true;
+  const original = ipcMain.handle.bind(ipcMain);
+  ipcMain.handle = (channel, listener) => {
+    if (typeof channel !== "string")
+      return original(channel, listener);
+    const rules = RULES.filter((r) => r.test.test(channel));
+    if (rules.length === 0)
+      return original(channel, listener);
+    const guarded = async (...args) => {
+      rules.forEach((rule) => requireCap(rule.cap));
+      return listener(...args);
+    };
+    return original(channel, guarded);
+  };
 }
 
 // src/main/ipc/handlers/reports.handlers.ts
@@ -28654,6 +28717,7 @@ async function main() {
   configureSessionDb({ PrismaClient, templateDbPath: templateDbPath2, sessionsDir: sessionsDir2 });
   const prisma2 = createPrismaProxy();
   console.log("[bridge] registering handlers\u2026");
+  installPermissionGuard();
   registerAuthHandlers(prisma2);
   registerDashboardHandlers(prisma2);
   registerFinanceHandlers(prisma2);

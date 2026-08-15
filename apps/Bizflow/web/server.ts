@@ -31,6 +31,7 @@ import { registerCustomersHandlers } from "../src/main/ipc/handlers/customers.ha
 import { registerSearchHandlers } from "../src/main/ipc/handlers/search.handlers";
 import { registerUserHandlers } from "../src/main/ipc/handlers/user.handlers";
 import { registerPermissionsHandlers } from "../src/main/ipc/handlers/permissions.handlers";
+import { installPermissionGuard } from "../src/main/ipc/handlers/permissionsGuard";
 import { registerReportsHandlers } from "../src/main/ipc/handlers/reports.handlers";
 import { registerAnalyticsHandlers } from "../src/main/ipc/handlers/analytics.handlers";
 import { registerModuleHandlers } from "../src/main/ipc/handlers/module.handlers";
@@ -117,6 +118,9 @@ async function main() {
   const prisma = createPrismaProxy();
 
   console.log("[bridge] registering handlers…");
+  // Install the universal channel guard FIRST so every sensitive handler below
+  // is permission-checked (matches the Electron main-process setup).
+  installPermissionGuard();
   registerAuthHandlers(prisma);
   registerDashboardHandlers(prisma);
   registerFinanceHandlers(prisma);

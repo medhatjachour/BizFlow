@@ -122,6 +122,11 @@ describe('plugin-scoped permissions', () => {
     expect(bakeryStaff).not.toContain('access_commerce')
   })
 
+  it('gives coffee_manager the sensitive sales actions by default', () => {
+    const caps = resolveCapabilities('coffee_manager')
+    expect(caps).toEqual(expect.arrayContaining(['give_discount', 'issue_refund', 'void_sale']))
+  })
+
   it('keeps an override as the hard boundary even when a full role exists', () => {
     const caps = resolveCapabilities('bakery_manager', ['access_bakery', 'manage_inventory'])
 

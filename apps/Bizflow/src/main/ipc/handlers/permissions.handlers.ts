@@ -71,6 +71,25 @@ export function registerPermissionsHandlers(prisma: any): void {
     } catch (err) { log.error('setRole', err); throw err }
   })
 
+  ipcMain.handle('permissions:resetRole', async (_e, role: string) => {
+    try {
+      if (!userCan('manage_settings')) {
+        const e: any = new Error('Permission denied — requires "manage_settings".'); e.code = 'EPERM_CAP'; throw e
+      }
+      if (isWildcardRole(role)) throw new Error('The admin role always has full access and cannot be edited.')
+      try {
+        await prisma.rolePermission.delete({ where: { role } })
+      } catch {
+        /* no override stored — nothing to reset */
+      }
+      // If the acting user shares this role, refresh their live capabilities.
+      const { getCurrentUser } = await import('./session')
+      const cur = getCurrentUser()
+      if (cur && cur.role === role) setCurrentUser({ ...cur, capabilities: await resolveUserCapabilities(prisma, role) })
+      return { success: true }
+    } catch (err) { log.error('resetRole', err); throw err }
+  })
+
   ipcMain.handle('permissions:bindSession', async (_e, u: { id: string; username: string; role: string; pluginRoles?: Record<string, string> } | null) => {
     try {
       if (!u?.role) { setCurrentUser(null); return { capabilities: [], isWildcard: false } }

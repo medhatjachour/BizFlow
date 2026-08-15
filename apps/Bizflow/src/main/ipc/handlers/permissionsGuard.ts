@@ -8,6 +8,11 @@
  * cannot be detected from the channel name (e.g. "a sale that carries a
  * discount") are enforced inline in the relevant handlers via requireCap().
  *
+ * ALL matching rules are enforced (AND semantics): a plugin void channel such
+ * as `coffee:orders:void` must satisfy BOTH its plugin-access rule AND the
+ * fine-grained `/void/` rule, so sensitive actions never slip through just
+ * because their channel is prefixed by a plugin name.
+ *
  * Install once, before any handlers are registered.
  */
 
@@ -38,10 +43,11 @@ export function installPermissionGuard(): void {
 
   const original = ipcMain.handle.bind(ipcMain)
   ;(ipcMain as any).handle = (channel: string, listener: (...args: any[]) => any) => {
-    const rule = typeof channel === 'string' ? RULES.find(r => r.test.test(channel)) : undefined
-    if (!rule) return original(channel, listener)
+    if (typeof channel !== 'string') return original(channel, listener)
+    const rules = RULES.filter(r => r.test.test(channel))
+    if (rules.length === 0) return original(channel, listener)
     const guarded = async (...args: any[]) => {
-      requireCap(rule.cap) // fails open until a user is bound, closed afterwards
+      rules.forEach(rule => requireCap(rule.cap)) // fails open until a user is bound, closed afterwards
       return listener(...args)
     }
     return original(channel, guarded)

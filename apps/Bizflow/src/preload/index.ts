@@ -34,6 +34,7 @@ const api = {
   permissions: {
     getRoles: () => ipcRenderer.invoke('permissions:getRoles'),
     setRole: (role: string, caps: string[]) => ipcRenderer.invoke('permissions:setRole', role, caps),
+    resetRole: (role: string) => ipcRenderer.invoke('permissions:resetRole', role),
     bindSession: (user: { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments } | null) =>
       ipcRenderer.invoke('permissions:bindSession', user)
   },
