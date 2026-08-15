@@ -370,6 +370,15 @@ export const arPart1 = {
     bakeryCustomSale: 'بيع مخصص',
     bakeryRecordSaleBtn:'تسجيل البيع',
     bakerySaleNoStock:'لا يوجد مخزون متاح لهذه الوصفة',
+    bakeryTrackedIngredients: 'المكونات المتتبعة',
+    bakeryLowStockAlerts:'تنبيهات المخزون المنخفض',
+    bakeryNeedsReorderCount:' يحتاج إعادة طلب',
+    bakerySearchPantryPlaceholder:'ابحث عن مكون في المخزن...',
+    bakeryPantryFilterLow:'مخزون منخفض',
+    bakeryPantryFilterReorder:'بحاجة لإعادة طلب',
+    bakeryPantryFilterHealthy:'مخزون صحي',
+    bakeryPantryTotalValuation:'إجمالي تقييم المخزون',
+    bakeryPantryFilterAll:'الكل',
 
     // ── Bakery Finance Section ────────────────────────────────────────────
     bakeryFinanceTitle: 'مالية المخبز',

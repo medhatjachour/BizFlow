@@ -364,14 +364,22 @@ export const enPart1 = {
     bakerySaleLoading: 'Loading sales…',
     bakerySaleTabSell: 'Sell',
     bakerySaleTabHistory: 'History',
-    
     bakerySaleFilterAll: 'All',
     bakerySaleFilterExpiring: 'Expiring',
     bakerySaleFilterNoPrice: 'No Price',
     bakeryCustomSale: 'Custom Sale',
     bakeryRecordSaleBtn:'Record Sale',
     bakerySaleNoStock:'No stock available for this recipe',
-    
+    bakeryTrackedIngredients: 'Tracked Ingredients',
+    bakeryLowStockAlerts:'Low Stock Alerts',
+    bakeryNeedsReorderCount:'Needs Reorder',
+    bakerySearchPantryPlaceholder:'Search for an ingredient in the pantry...',
+    bakeryPantryFilterLow:'Low Stock',
+    bakeryPantryFilterReorder:'Needs Reorder',
+    bakeryPantryFilterHealthy:'Healthy Stock',
+    bakeryPantryTotalValuation:'Total Pantry Valuation',
+    bakeryPantryFilterAll:'ِAll',
+
 
     // ── Bakery Finance Section ────────────────────────────────────────────
     bakeryFinanceTitle: 'Bakery Finance',
