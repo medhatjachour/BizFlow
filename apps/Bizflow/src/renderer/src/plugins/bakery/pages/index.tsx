@@ -23,7 +23,7 @@ import WasteTab from './components/waste/WasteTab'
 import ScheduleTab from './components/schedule/ScheduleTab'
 import ProfitLossTab from './components/overview/ProfitLossTab'
 import EndOfDayModal from './components/overview/EndOfDayModal'
-import BakeryExpensesTab from './components/expenses/ExpensesTab'
+import BakeryExpensesTab from './expenses/ExpensesTab'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 
