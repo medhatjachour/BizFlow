@@ -362,6 +362,16 @@ export const enPart1 = {
     bakerySaleDeleteFailed: 'Failed to delete',
     bakerySaleDeleteConfirm: 'Delete this sale record? This cannot be undone.',
     bakerySaleLoading: 'Loading sales…',
+    bakerySaleTabSell: 'Sell',
+    bakerySaleTabHistory: 'History',
+    
+    bakerySaleFilterAll: 'All',
+    bakerySaleFilterExpiring: 'Expiring',
+    bakerySaleFilterNoPrice: 'No Price',
+    bakeryCustomSale: 'Custom Sale',
+    bakeryRecordSaleBtn:'Record Sale',
+    bakerySaleNoStock:'No stock available for this recipe',
+    
 
     // ── Bakery Finance Section ────────────────────────────────────────────
     bakeryFinanceTitle: 'Bakery Finance',

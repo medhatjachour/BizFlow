@@ -1,5 +1,3 @@
-// Shared types for the bakery SalesTab.
-
 export interface Recipe {
   id: string
   name: string
@@ -19,7 +17,7 @@ export interface Sale {
   batch: { id: string; batchDate: string; unitsProduced: number } | null
 }
 
-export interface PagedResult {
+export interface PagedSalesResult {
   data: Sale[]
   total: number
   page: number
@@ -27,17 +25,19 @@ export interface PagedResult {
   totalPages: number
 }
 
+export interface RecipeSummaryItem {
+  recipeId: string | null
+  recipe: { id: string; name: string; yieldUnit: string } | null
+  totalAmount: number
+  quantity: number
+  count: number
+}
+
 export interface SalesSummary {
   totalRevenue: number
   totalUnitsSold: number
   totalTransactions: number
-  byRecipe: Array<{
-    recipeId: string | null
-    recipe: { id: string; name: string; yieldUnit: string } | null
-    totalAmount: number
-    quantity: number
-    count: number
-  }>
+  byRecipe: RecipeSummaryItem[]
 }
 
 export interface SellableBatch {
@@ -47,12 +47,31 @@ export interface SellableBatch {
   unitsSold: number
   unitsAvailable: number
   expiresAt: string | null
-  recipe: { id: string; name: string; yieldQty: number; yieldUnit: string; sellingPrice?: number | null; expiryDays: number | null }
+  recipe: {
+    id: string
+    name: string
+    yieldQty: number
+    yieldUnit: string
+    sellingPrice?: number | null
+    expiryDays: number | null
+  }
 }
 
 export interface RecipeGroup {
   recipe: SellableBatch['recipe']
-  batches: SellableBatch[]   // FIFO-sorted (oldest first)
+  batches: SellableBatch[]
   totalAvailable: number
   earliestExpiry: string | null
+}
+
+export type PosFilterType = '' | 'expiring' | 'noprice'
+export type SalesSubTab = 'sell' | 'history'
+
+export interface CustomSaleFormData {
+  recipeId: string
+  itemName: string
+  quantity: string
+  unitPrice: string
+  saleDate: string
+  notes: string
 }

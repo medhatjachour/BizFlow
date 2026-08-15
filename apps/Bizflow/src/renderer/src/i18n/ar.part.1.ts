@@ -362,6 +362,14 @@ export const arPart1 = {
     bakerySaleDeleteFailed: 'فشل الحذف',
     bakerySaleDeleteConfirm: 'هل تريد حذف هذا السجل؟ لا يمكن التراجع.',
     bakerySaleLoading: 'جارٍ تحميل المبيعات…',
+    bakerySaleTabSell: 'بيع',
+    bakerySaleTabHistory: 'السجل',
+    bakerySaleFilterAll: 'الكل',
+    bakerySaleFilterExpiring: 'منتهي الصلاحية',
+    bakerySaleFilterNoPrice: 'بدون سعر',
+    bakeryCustomSale: 'بيع مخصص',
+    bakeryRecordSaleBtn:'تسجيل البيع',
+    bakerySaleNoStock:'لا يوجد مخزون متاح لهذه الوصفة',
 
     // ── Bakery Finance Section ────────────────────────────────────────────
     bakeryFinanceTitle: 'مالية المخبز',
