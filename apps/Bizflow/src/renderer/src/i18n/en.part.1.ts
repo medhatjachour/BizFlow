@@ -384,6 +384,11 @@ export const enPart1 = {
     bakerySearchProductionPlaceholder:'Search for a recipe or product...',
     bakeryProductionDate:'Production Date',
     bakeryNoProductionDesc:'No production batches recorded yet',
+    bakeryTotalRecipes:'Total Recipes',
+    bakeryAvgUnitCost:'Average Unit Cost',
+    bakeryAvgMargin:'Average Margin',
+    bakeryLinkedProducts:'Linked Products',
+    bakerySearchRecipesPlaceholder:'Search for a recipe...',
 
 
     // ── Bakery Finance Section ────────────────────────────────────────────
