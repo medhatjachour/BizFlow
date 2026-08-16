@@ -9,9 +9,7 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import SessionFormModal from './components/sessions/SessionFormModal'
-import PatientFormModal from './components/patients/PatientFormModal'
 import AppointmentFormModal from './components/appointments/AppointmentFormModal'
-import type { Patient } from './index'
 import DentalChart from '../components/DentalChart'
 import type { DentalChartData } from '../components/DentalChart'
 import type { Session, PatientStats, CheckResult, Appointment } from './patientProfile.types'
@@ -20,10 +18,12 @@ import {
   visitTypeConfig, defaultDotCls, bloodTypeColors,
   appointmentTypeConfig, appointmentStatusConfig, avatarColors
 } from './patientProfile.config'
-import QuickPayModal from './components/patients/QuickPayModal'
-import UploadCheckResultModal from './components/patients/UploadCheckResultModal'
-import PdfViewerModal from './components/patients/PdfViewerModal'
 import TimelineSession from './components/sessions/TimelineSession'
+import { Patient } from './patients/types'
+import QuickPayModal from './patients/components/QuickPayModal'
+import PdfViewerModal from './patients/components/PdfViewerModal'
+import UploadCheckResultModal from './patients/components/UploadCheckResultModal'
+import PatientFormModal from './patients/components/PatientFormModal'
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PatientProfile() {
