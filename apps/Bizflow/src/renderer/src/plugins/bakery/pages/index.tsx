@@ -16,7 +16,6 @@ import { ChefHat, FlaskConical, BarChart3, Package, Trash2, Calendar, LayoutDash
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import DailyOverviewTab from './components/overview/DailyOverviewTab'
 import RecipesTab from './components/recipes/RecipesTab'
-import ProductionTab from './components/production/ProductionTab'
 import PantryTab from './pantry'
 import ProfitLossTab from './components/overview/ProfitLossTab'
 import EndOfDayModal from './components/overview/EndOfDayModal'
@@ -26,6 +25,7 @@ import { pluginTabCapability } from '../../../../../shared/permissions'
 import WasteTab from './waste/WasteTab'
 import ScheduleTab from './schedule'
 import SalesTab from './sales'
+import ProductionTab from './production'
 
 type Tab = 'overview' | 'recipes' | 'production' | 'sales' | 'pantry' | 'waste' | 'schedule' | 'pnl' | 'expenses'
 

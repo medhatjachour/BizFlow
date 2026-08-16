@@ -379,6 +379,11 @@ export const enPart1 = {
     bakeryPantryFilterHealthy:'Healthy Stock',
     bakeryPantryTotalValuation:'Total Pantry Valuation',
     bakeryPantryFilterAll:'ِAll',
+    bakeryTotalBatches:'Total Batches',
+    bakeryWasteLoss:'Waste Loss',
+    bakerySearchProductionPlaceholder:'Search for a recipe or product...',
+    bakeryProductionDate:'Production Date',
+    bakeryNoProductionDesc:'No production batches recorded yet',
 
 
     // ── Bakery Finance Section ────────────────────────────────────────────

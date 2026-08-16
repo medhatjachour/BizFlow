@@ -380,6 +380,11 @@ export const arPart1 = {
     bakeryPantryTotalValuation:'إجمالي تقييم المخزون',
     bakeryPantryFilterAll:'الكل',
 
+    bakeryTotalBatches:'إجمالي الدفعات',
+    bakeryWasteLoss:'خسارة الهدر',
+    bakerySearchProductionPlaceholder:'ابحث عن وصفة أو منتج...',
+    bakeryProductionDate:'تاريخ الإنتاج',
+    bakeryNoProductionDesc:'لا توجد دفعات إنتاج مسجلة بعد',
     // ── Bakery Finance Section ────────────────────────────────────────────
     bakeryFinanceTitle: 'مالية المخبز',
     bakeryFinanceSubtitle: 'الأرباح والخسائر · تكاليف الهدر · ربحية الوصفات',
