@@ -8,7 +8,7 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import AppointmentFormModal from './AppointmentFormModal'
-import SessionFormModal from '../sessions/SessionFormModal'
+import SessionFormModal from '../../sessions/components/SessionFormModal'
 
 interface Appointment {
   id: string

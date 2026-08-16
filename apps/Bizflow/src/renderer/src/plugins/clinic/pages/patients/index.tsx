@@ -11,7 +11,7 @@ import PatientCard from './components/PatientCard'
 import PatientRow from './components/PatientRow'
 import PatientFormModal from './components/PatientFormModal'
 import AppointmentFormModal from '../components/appointments/AppointmentFormModal'
-import SessionFormModal from '../components/sessions/SessionFormModal'
+import SessionFormModal from '../sessions/components/SessionFormModal'
 
 export default function PatientsTab() {
   const { t } = useLanguage()
