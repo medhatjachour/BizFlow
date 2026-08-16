@@ -389,7 +389,17 @@ export const enPart1 = {
     bakeryAvgMargin:'Average Margin',
     bakeryLinkedProducts:'Linked Products',
     bakerySearchRecipesPlaceholder:'Search for a recipe...',
-
+    bakeryOverdue:'Overdue',
+    bakeryDatePast:'Past Date',
+    bakeryDateNext7:'Next 7 Days',
+    bakeryDateWeek: 'Current Week',
+    bakeryDateToday:'Today',
+    bakeryDateAll:'All',
+    bakeryScheduleSearchPlaceholder:'Search for a recipe or product...',
+    bakeryStatus_planned: 'Planned',
+    bakeryStatus_in_progress: 'In Progress',
+    bakeryStatus_completed: 'Completed',
+    bakeryStatus_cancelled: 'Cancelled',
 
     // ── Bakery Finance Section ────────────────────────────────────────────
     bakeryFinanceTitle: 'Bakery Finance',

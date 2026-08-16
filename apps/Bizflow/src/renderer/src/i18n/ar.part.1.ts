@@ -389,6 +389,18 @@ export const arPart1 = {
     bakeryAvgMargin:'متوسط الهامش',
     bakeryLinkedProducts:'المنتجات المرتبطة',
     bakerySearchRecipesPlaceholder:'ابحث عن وصفة...',
+    bakeryOverdue:'متأخر',
+    bakeryDatePast:'تاريخ سابق',
+    bakeryDateNext7:'7 أيام القادمة',
+    bakeryDateWeek: 'الأسبوع الحالي',
+    bakeryDateToday:'اليوم',
+    bakeryDateAll:'الكل',
+
+    bakeryScheduleSearchPlaceholder:'ابحث عن وصفة أو منتج...',
+    bakeryStatus_planned: 'مخطط',
+    bakeryStatus_in_progress: 'قيد التنفيذ',
+    bakeryStatus_completed: 'مكتمل',
+    bakeryStatus_cancelled: 'ملغي',
 
     // ── Bakery Finance Section ────────────────────────────────────────────
     bakeryFinanceTitle: 'مالية المخبز',
