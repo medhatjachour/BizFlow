@@ -8,7 +8,6 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
-import SessionFormModal from './components/sessions/SessionFormModal'
 import AppointmentFormModal from './components/appointments/AppointmentFormModal'
 import DentalChart from '../components/DentalChart'
 import type { DentalChartData } from '../components/DentalChart'
@@ -18,12 +17,13 @@ import {
   visitTypeConfig, defaultDotCls, bloodTypeColors,
   appointmentTypeConfig, appointmentStatusConfig, avatarColors
 } from './patientProfile.config'
-import TimelineSession from './components/sessions/TimelineSession'
 import { Patient } from './patients/types'
 import QuickPayModal from './patients/components/QuickPayModal'
 import PdfViewerModal from './patients/components/PdfViewerModal'
 import UploadCheckResultModal from './patients/components/UploadCheckResultModal'
 import PatientFormModal from './patients/components/PatientFormModal'
+import SessionFormModal from './sessions/components/SessionFormModal'
+import TimelineSession from './sessions/components/TimelineSession'
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PatientProfile() {
@@ -206,6 +206,22 @@ export default function PatientProfile() {
   if (!patient) return null
 
   const sessions = patient.sessions ?? []
+  const normalizedSessions = sessions.map((s) => ({
+    ...s,
+    patientId: s.patientId ?? patient.id,
+    patient: s.patient ?? {
+      id: patient.id,
+      name: patient.name,
+      phone: patient.phone,
+      dateOfBirth: patient.dateOfBirth,
+      bloodType: patient.bloodType,
+      gender: patient.gender,
+    },
+    visitType: s.visitType ?? 'routine',
+    status: s.status ?? 'completed',
+    paymentStatus: s.paymentStatus ?? 'unpaid',
+    prescriptions: s.prescriptions ?? [],
+  })) as any[]
   const today = startOfToday()
   const upcomingAppointments = appointments
     .filter((appt) => new Date(appt.appointmentDate).getTime() >= today.getTime())
@@ -952,12 +968,12 @@ export default function PatientProfile() {
             </div>
           ) : (
             <div className="relative">
-              {sessions.map((s, i) => (
+              {normalizedSessions.map((s, i) => (
                 <TimelineSession
                   key={s.id}
-                  session={s}
-                  isLast={i === sessions.length - 1}
-                  onEdit={(session) => setEditSession(session)}
+                  session={s as any}
+                  isLast={i === normalizedSessions.length - 1}
+                  onEdit={(session) => setEditSession(session as any)}
                 />
               ))}
             </div>
@@ -983,7 +999,15 @@ export default function PatientProfile() {
       )}
       {editSession && (
         <SessionFormModal
-          existingSession={{ ...editSession, patientId: patient.id, patient: { id: patient.id, name: patient.name } }}
+          existingSession={{
+            ...editSession,
+            patientId: patient.id,
+            patient: { id: patient.id, name: patient.name, phone: patient.phone, dateOfBirth: patient.dateOfBirth, bloodType: patient.bloodType, gender: patient.gender },
+            visitType: (editSession.visitType as any) ?? 'routine',
+            status: (editSession.status as any) ?? 'completed',
+            paymentStatus: (editSession.paymentStatus as any) ?? 'unpaid',
+            prescriptions: editSession.prescriptions ?? [],
+          } as any}
           onClose={() => setEditSession(null)}
           onSaved={() => { setEditSession(null); load() }}
         />

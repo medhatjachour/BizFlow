@@ -1,36 +1,35 @@
 // Shared domain types for the clinic Patient Profile page and its sub-components.
 
-export interface Prescription {
-  id: string
-  medicineName: string
-  dosage?: string | null
-  frequency?: string | null
-  duration?: string | null
-  quantity?: number | null
-  instructions?: string | null
-  isActive?: boolean
-  startDate?: string | null
-  stoppedAt?: string | null
-  stopReason?: string | null
-}
+import type { PaymentStatus, PrescriptionItem, SessionStatus, VisitType } from './sessions/types'
+
+export interface Prescription extends PrescriptionItem {}
 
 export interface Session {
   id: string
+  patientId: string
+  patient: {
+    id: string
+    name: string
+    phone?: string
+    dateOfBirth?: string | null
+    bloodType?: string | null
+    gender?: string | null
+  }
   visitDate: string
-  visitType: string
+  visitType: VisitType
   doctorName?: string | null
   chiefComplaint: string
   vitals?: string | null
   diagnosis?: string | null
   notes?: string | null
   followUpDate?: string | null
-  status: string
+  status: SessionStatus
   amountCharged?: number | null
   amountPaid?: number | null
-  paymentStatus: string
+  paymentStatus: PaymentStatus
   paymentMethod?: string | null
   dentalChart?: string | null
-  prescriptions: Prescription[]
+  prescriptions: PrescriptionItem[]
 }
 
 export interface PatientStats {
