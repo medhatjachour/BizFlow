@@ -12,6 +12,7 @@ interface Props {
   visitType: VisitType
   onVisitTypeChange: (val: VisitType) => void
   doctorId: string
+  doctorName: string
   onDoctorChange: (id: string, name: string) => void
   doctors: any[]
   singleDoctor: boolean
@@ -40,6 +41,7 @@ export default function ClinicalSection({
   visitType,
   onVisitTypeChange,
   doctorId,
+  doctorName,
   onDoctorChange,
   doctors,
   singleDoctor,
@@ -87,7 +89,15 @@ export default function ClinicalSection({
             <option value="emergency">🚨 Emergency</option>
           </select>
         </div>
-        {!singleDoctor && (
+        {singleDoctor ? (
+          <div>
+            <label className={labelCls}>Assigned Doctor</label>
+            <div className={`${inputCls} flex items-center justify-between text-slate-700 dark:text-slate-200`}>
+              <span>{doctorName || 'Default doctor assigned'}</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-teal-600 dark:text-teal-400">Single Doctor</span>
+            </div>
+          </div>
+        ) : (
           <div>
             <label className={labelCls}>Attending Doctor</label>
             <select

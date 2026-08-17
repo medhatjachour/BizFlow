@@ -9,7 +9,7 @@ import PrescriptionPrintModal from '../../../components/PrescriptionPrintModal'
 import { SessionFormProps, PrescriptionItem, LabOrderItem, SessionMaterialItem, VisitType, SessionStatus, VitalsData } from '../types'
 import { APPT_TO_VISIT_TYPE } from '../constants'
 import { toDatetimeLocal, parseVitals, computePaymentStatus } from '../utils'
-import { isSingleDoctorMode } from '../../doctors/utils'
+import { isSingleDoctorMode, resolveDefaultDoctorId } from '../../doctors/utils'
 import PatientSelector from './PatientSelector'
 import ClinicalSection from './ClinicalSection'
 import PrescriptionsSection from './PrescriptionsSection'
@@ -49,8 +49,20 @@ export default function SessionFormModal({
   const [doctors, setDoctors] = useState<any[]>([])
   const singleDoctor = isSingleDoctorMode()
   useEffect(() => {
-    window.api.clinic.doctors.list().then((rows: any[]) => setDoctors(rows ?? [])).catch(() => {})
-  }, [])
+    window.api.clinic.doctors.list().then((rows: any[]) => {
+      const list = rows ?? []
+      setDoctors(list)
+
+      if (singleDoctor && !existingSession?.doctorId && !defaultAppointment?.doctorId) {
+        const defaultId = resolveDefaultDoctorId(list)
+        if (defaultId) {
+          const selected = list.find((d: any) => d.id === defaultId)
+          setDoctorId(defaultId)
+          setDoctorName(selected?.name ?? '')
+        }
+      }
+    }).catch(() => {})
+  }, [singleDoctor, existingSession?.doctorId, defaultAppointment?.doctorId])
 
   // Form State
   const [patientId, setPatientId] = useState(existingSession?.patientId ?? defaultPatient?.id ?? defaultAppointment?.patient?.id ?? '')
@@ -250,6 +262,7 @@ export default function SessionFormModal({
               visitType={visitType}
               onVisitTypeChange={setVisitType}
               doctorId={doctorId}
+              doctorName={doctorName}
               onDoctorChange={(id, name) => { setDoctorId(id); setDoctorName(name) }}
               doctors={doctors}
               singleDoctor={singleDoctor}
