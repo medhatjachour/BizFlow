@@ -18,7 +18,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import StatsTab from './stats'
 
-import MaterialsTab from './components/materials/MaterialsTab'
+import MaterialsTab from './materials'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import PatientsTab from './patients'
 import SessionsTab from './sessions'

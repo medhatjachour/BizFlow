@@ -1,5 +1,3 @@
-// Shared domain types for the clinic Materials tab and its modals.
-
 export interface Material {
   id: string
   name: string
@@ -21,7 +19,7 @@ export interface Category {
   id: string
   name: string
   color: string
-  sortOrder: number
+  sortOrder?: number
 }
 
 export interface Batch {
@@ -44,13 +42,26 @@ export interface MaterialStats {
   expiringSoon: number
 }
 
-export interface FormModalProps {
-  existing?: Material | null
-  onClose: () => void
-  onSaved: () => void
+export type StockFilter = 'all' | 'in_stock' | 'out_of_stock' | 'low_stock'
+export type ExpiryFilter = 'all' | 'expired' | 'expiring_soon' | 'valid' | 'no_expiry'
+export type SortField = 'name' | 'quantity' | 'expiryDate' | 'updatedAt'
+export type SortDirection = 'asc' | 'desc'
+export type ExpiryState = 'expired' | 'soon' | 'ok' | 'none'
+
+export interface MaterialFormData {
+  name: string
+  category: string
+  description: string
+  unit: string
+  quantity: string
+  minQuantity: string
+  costPerUnit: string
+  supplier: string
+  notes: string
+  isActive: boolean
 }
 
-export interface BatchFormValues {
+export interface BatchFormData {
   batchNumber: string
   quantity: string
   expiryDate: string
