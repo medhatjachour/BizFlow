@@ -60,6 +60,22 @@ export default function PatientProfile() {
   const [isDentistMode] = useState(() => localStorage.getItem('clinicDentistMode') === 'true')
   const [showDentalPanel, setShowDentalPanel] = useState(false)
 
+  const getDateInputValue = (value: unknown) => {
+    if (!value) return new Date().toISOString().slice(0, 10)
+
+    try {
+      if (value instanceof Date) return value.toISOString().slice(0, 10)
+      if (typeof value === 'string') return value.slice(0, 10)
+
+      const date = new Date(value as string | number | Date)
+      if (!Number.isNaN(date.getTime())) return date.toISOString().slice(0, 10)
+    } catch {
+      // fall through to safe default below
+    }
+
+    return new Date().toISOString().slice(0, 10)
+  }
+
   const load = useCallback(async () => {
     if (!id) return
     setLoading(true)
@@ -1017,7 +1033,7 @@ export default function PatientProfile() {
           existing={editAppointment}
           defaultPatientId={patient.id}
           defaultPatientName={patient.name}
-          defaultDate={editAppointment?.appointmentDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10)}
+          defaultDate={getDateInputValue(editAppointment?.appointmentDate)}
           onClose={() => { setShowAppointmentForm(false); setEditAppointment(null) }}
           onSaved={() => { setShowAppointmentForm(false); setEditAppointment(null); load() }}
         />
