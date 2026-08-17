@@ -20,12 +20,12 @@ import StatsTab from './components/stats/StatsTab'
 
 import ExpensesTab from './components/expenses/ExpensesTab'
 import MaterialsTab from './components/materials/MaterialsTab'
-import DoctorsTab from './doctors/DoctorsTab'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import PatientsTab from './patients'
 import SessionsTab from './sessions'
 import AppointmentsTab from './appointments'
 import { FollowUpsTab } from './appointments/components/FollowUpsTab'
+import DoctorsTab from './doctors'
 
 export type ClinicTab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'materials' | 'doctors'
 

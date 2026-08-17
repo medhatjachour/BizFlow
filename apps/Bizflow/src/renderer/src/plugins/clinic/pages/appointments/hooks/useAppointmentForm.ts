@@ -3,7 +3,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { toDatetimeLocal, buildTimeSlots, toArray } from '../utils'
 import type { Appointment, AppointmentFormData, DoctorOption, SlotStatusResult } from '../types'
-import { isSingleDoctorMode, resolveDefaultDoctorId } from '../../doctors/doctors.shared'
+import { isSingleDoctorMode, resolveDefaultDoctorId } from '../../doctors/utils'
 
 const normalizeAppointmentDate = (value: unknown): string | null => {
   if (!value) return null
