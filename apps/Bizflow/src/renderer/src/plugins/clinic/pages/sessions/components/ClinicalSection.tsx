@@ -4,7 +4,7 @@ import { VisitType, VitalsData } from '../types'
 import DentalChart, { DentalChartData } from '@renderer/plugins/clinic/components/DentalChart'
 import SuggestInput from '@renderer/plugins/clinic/components/SuggestInput'
 import { VITAL_LABELS } from '../constants'
-import { displayName } from '../../components/doctors/doctors.shared'
+import { displayName } from '../../doctors/doctors.shared'
 
 interface Props {
   visitDate: string

@@ -20,7 +20,7 @@ import StatsTab from './components/stats/StatsTab'
 
 import ExpensesTab from './components/expenses/ExpensesTab'
 import MaterialsTab from './components/materials/MaterialsTab'
-import DoctorsTab from './components/doctors/DoctorsTab'
+import DoctorsTab from './doctors/DoctorsTab'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import PatientsTab from './patients'
 import SessionsTab from './sessions'

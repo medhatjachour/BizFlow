@@ -3,7 +3,23 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { toDatetimeLocal, buildTimeSlots, toArray } from '../utils'
 import type { Appointment, AppointmentFormData, DoctorOption, SlotStatusResult } from '../types'
-import { isSingleDoctorMode, resolveDefaultDoctorId } from '../../components/doctors/doctors.shared'
+import { isSingleDoctorMode, resolveDefaultDoctorId } from '../../doctors/doctors.shared'
+
+const normalizeAppointmentDate = (value: unknown): string | null => {
+  if (!value) return null
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString()
+  }
+
+  if (typeof value === 'string') {
+    const parsed = new Date(value)
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+  }
+
+  const parsed = new Date(value as string | number | Date)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
+}
 
 export function useAppointmentForm(
   existing?: Appointment | null,
@@ -16,8 +32,12 @@ export function useAppointmentForm(
   const { showToast } = useToast()
 
   const initDateTime = useCallback(() => {
-    if (existing?.appointmentDate) return toDatetimeLocal(existing.appointmentDate)
-    if (defaultDate) return `${defaultDate}T09:00`
+    const existingDate = normalizeAppointmentDate(existing?.appointmentDate)
+    if (existingDate) return toDatetimeLocal(existingDate)
+
+    const defaultDateValue = normalizeAppointmentDate(defaultDate)
+    if (defaultDateValue) return `${defaultDateValue.slice(0, 10)}T09:00`
+
     const d = new Date()
     d.setMinutes(0, 0, 0)
     d.setHours(d.getHours() + 1)

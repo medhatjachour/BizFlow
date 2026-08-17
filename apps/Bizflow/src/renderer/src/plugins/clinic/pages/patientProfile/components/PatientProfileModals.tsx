@@ -1,5 +1,5 @@
 
-import AppointmentFormModal from '../../components/appointments/AppointmentFormModal'
+import { AppointmentFormModal } from '../../appointments/components/AppointmentFormModal'
 import PatientFormModal from '../../patients/components/PatientFormModal'
 import PdfViewerModal from '../../patients/components/PdfViewerModal'
 import QuickPayModal from '../../patients/components/QuickPayModal'
@@ -62,6 +62,19 @@ export const PatientProfileModals: React.FC<Props> = ({
   onClosePayModal,
   onReload
 }) => {
+  const appointmentFormExisting = editAppointment
+    ? {
+        ...editAppointment,
+        patient: {
+          id: patient.id,
+          name: patient.name,
+          phone: patient.phone,
+          bloodType: patient.bloodType,
+          nationalId: patient.nationalId ?? undefined
+        }
+      }
+    : null
+
   return (
     <>
       {showEditPatient && (
@@ -114,7 +127,7 @@ export const PatientProfileModals: React.FC<Props> = ({
 
       {showAppointmentForm && (
         <AppointmentFormModal
-          existing={editAppointment}
+          existing={appointmentFormExisting as any}
           defaultPatientId={patient.id}
           defaultPatientName={patient.name}
           defaultDate={getDateInputValue(editAppointment?.appointmentDate)}
