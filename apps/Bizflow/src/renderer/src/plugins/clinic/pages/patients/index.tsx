@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Loader2, ArrowDown, UserPlus } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { usePatients } from './hooks/usePatients'
 import { Patient } from './types'
 
@@ -14,7 +13,6 @@ import SessionFormModal from '../sessions/components/SessionFormModal'
 import { AppointmentFormModal } from '../appointments/components/AppointmentFormModal'
 
 export default function PatientsTab() {
-  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const {

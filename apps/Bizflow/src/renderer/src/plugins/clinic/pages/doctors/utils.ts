@@ -1,4 +1,4 @@
-import { SINGLE_DOCTOR_KEY, type Doctor, type WorkingHours } from './types'
+import { SINGLE_DOCTOR_KEY, type WorkingHours } from './types'
 import { AVATAR_SWATCHES } from './constants'
 
 export function isSingleDoctorMode(): boolean {

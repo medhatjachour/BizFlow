@@ -33,7 +33,7 @@ export function getInitials(name: string): string {
     .join('')
 }
 
-export function formatCurrency(amount: number, locale = 'en-US', currency = 'USD'): string {
+export function formatCurrency(amount: number, locale = 'en-US'): string {
   return new Intl.NumberFormat(locale, {
     style: 'decimal',
     minimumFractionDigits: 2,

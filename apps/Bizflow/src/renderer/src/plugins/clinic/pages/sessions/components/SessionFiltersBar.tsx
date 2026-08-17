@@ -1,4 +1,4 @@
-import { Search, Plus, Filter, X, ChevronDown, Calendar, CreditCard, Activity } from 'lucide-react'
+import { Search, Plus,  X, ChevronDown,  CreditCard, Activity } from 'lucide-react'
 import { SessionFilterState } from '../types'
 import { TIMEFRAME_FILTERS } from '../constants'
 

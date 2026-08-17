@@ -1,4 +1,3 @@
-import React from 'react'
 import { ShoppingBag, Calendar } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useBakerySales } from './hooks/useBakerySales'
@@ -25,7 +24,6 @@ export default function SalesTab() {
     setPosFilter,
     searchQuery,
     setSearchQuery,
-    page,
     setPage,
     pageSize,
     setPageSize,

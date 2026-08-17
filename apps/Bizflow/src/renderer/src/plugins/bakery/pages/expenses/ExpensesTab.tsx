@@ -1,4 +1,3 @@
-import React from 'react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useBakeryExpenses } from './hooks/useBakeryExpenses'
 import { ExpenseSummaryCards } from './components/ExpenseSummaryCards'

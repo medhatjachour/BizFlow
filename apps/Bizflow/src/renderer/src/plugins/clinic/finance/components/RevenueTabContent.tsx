@@ -44,7 +44,6 @@ export const RevenueTabContent: React.FC<Props> = ({
   debtPatients,
   debtMeta,
   debtSearchInput,
-  debtSearch,
   revBreakdown,
   loading,
   loadingMore,

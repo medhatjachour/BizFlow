@@ -2,19 +2,18 @@ import { useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 
+import type { Session, Appointment, CheckResult, Prescription } from './types'
 import { usePatientProfile } from './hooks/usePatientProfile'
 import { PatientBanner } from './components/PatientBanner'
 import { PatientStatCards } from './components/PatientStatCards'
-import { CheckResultsPanel } from './components/CheckResultsPanel'
-import { DentalChartPanel } from './components/DentalChartPanel'
 import { FinanceSummaryCard } from './components/FinanceSummaryCard'
+import { DentalChartPanel } from './components/DentalChartPanel'
 import { MedicalHighlights } from './components/MedicalHighlights'
 import { UpcomingScheduleGrid } from './components/UpcomingScheduleGrid'
 import { PrescriptionsTable } from './components/PrescriptionsTable'
 import { SessionTimelineSection } from './components/SessionTimelineSection'
+import { CheckResultsPanel } from './components/CheckResultsPanel'
 import { PatientProfileModals } from './components/PatientProfileModals'
-
-import type { Session, Appointment, CheckResult, Prescription } from './types'
 
 export default function PatientProfile() {
   const { id } = useParams<{ id: string }>()

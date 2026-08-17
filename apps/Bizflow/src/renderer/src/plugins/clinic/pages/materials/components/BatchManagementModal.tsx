@@ -243,7 +243,6 @@ export const BatchManagementModal: React.FC<Props> = ({ material, onClose }) => 
 
 function BatchForm({
   initial,
-  showActive = false,
   saving,
   onSave,
   onCancel
