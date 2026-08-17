@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
-import StatsTab from './stats/StatsTab'
+import StatsTab from './stats'
 
 import MaterialsTab from './components/materials/MaterialsTab'
 import { pluginTabCapability } from '../../../../../shared/permissions'
