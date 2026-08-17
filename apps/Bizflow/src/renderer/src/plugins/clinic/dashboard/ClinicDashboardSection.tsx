@@ -19,7 +19,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { TrendsResult, AgeDistResult, DiagnosisFreqResult } from '@renderer/hooks/useDashboardWorker'
 import logger from '@/shared/utils/logger'
-import AppointmentFormModal from '../pages/components/appointments/AppointmentFormModal'
+import { AppointmentFormModal } from '../pages/appointments/components/AppointmentFormModal'
 
 interface Props { refreshSignal?: number }
 

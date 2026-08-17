@@ -10,8 +10,8 @@ import PatientFiltersBar from './components/PatientFiltersBar'
 import PatientCard from './components/PatientCard'
 import PatientRow from './components/PatientRow'
 import PatientFormModal from './components/PatientFormModal'
-import AppointmentFormModal from '../components/appointments/AppointmentFormModal'
 import SessionFormModal from '../sessions/components/SessionFormModal'
+import { AppointmentFormModal } from '../appointments/components/AppointmentFormModal'
 
 export default function PatientsTab() {
   const { t } = useLanguage()
