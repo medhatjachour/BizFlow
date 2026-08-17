@@ -32,7 +32,7 @@ export const PatientStatCards: React.FC<Props> = ({
   const dentalChartsCount = sessions.filter((s) => s.dentalChart).length
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5  gap-3 sm:gap-4">
       {/* 1. Total Visits */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-700/80 shadow-sm flex items-center gap-3.5">
         <div className="h-11 w-11 rounded-xl bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0 text-teal-600 dark:text-teal-400">
