@@ -16,7 +16,7 @@ export interface DailyOverviewTabProps {
 
 export default function DailyOverviewTab({ onEndOfDay }: DailyOverviewTabProps) {
   const { t } = useLanguage()
-  const [showEODModal, setShowEODModal] = useState(false)
+  const [, setShowEODModal] = useState(false)
 
   const {
     data,
