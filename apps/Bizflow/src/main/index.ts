@@ -91,45 +91,6 @@ function registerPdfPrintHandler(): void {
       pdfLog.info('Loading HTML from data URL...')
       await pdfWindow.loadURL(dataUrl)
 
-      // Wait for the page to fully load
-      await new Promise<void>((resolve, reject) => {
-        let resolved = false
-
-        const loadedHandler = () => {
-          if (resolved) return
-          resolved = true
-          pdfWindow?.webContents.removeListener('did-finish-load', loadedHandler)
-          pdfWindow?.webContents.removeListener('crashed', crashHandler)
-          clearTimeout(timeout)
-          mainLog.info('Page fully loaded')
-          resolve()
-        }
-
-        const crashHandler = () => {
-          if (resolved) return
-          resolved = true
-          pdfWindow?.webContents.removeListener('did-finish-load', loadedHandler)
-          pdfWindow?.webContents.removeListener('crashed', crashHandler)
-          clearTimeout(timeout)
-          reject(new Error('Renderer process crashed'))
-        }
-
-        // Increased timeout to 30 seconds for complex HTML with lots of data
-        const timeout = setTimeout(() => {
-          if (resolved) return
-          resolved = true
-          pdfWindow?.webContents.removeListener('did-finish-load', loadedHandler)
-          pdfWindow?.webContents.removeListener('crashed', crashHandler)
-          
-          mainLog.warn('Page load did not complete within 30 seconds, proceeding anyway')
-          // Proceed anyway - the DOM should be ready even if all resources aren't loaded
-          resolve()
-        }, 30000)
-
-        pdfWindow?.webContents.on('did-finish-load', loadedHandler)
-        pdfWindow?.webContents.on('crashed', crashHandler)
-      })
-
       pdfLog.info('Page loaded, generating PDF...')
 
       // Add a small delay to ensure the page is fully rendered

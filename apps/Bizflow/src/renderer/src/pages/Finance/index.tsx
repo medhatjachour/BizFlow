@@ -18,7 +18,7 @@ const CommerceFinanceSection   = lazy(() => import('@renderer/plugins/commerce/p
 const BakeryFinanceSection     = lazy(() => import('@renderer/plugins/bakery/finance/BakeryFinanceSection'))
 const RestaurantFinanceSection = lazy(() => import('@renderer/plugins/restaurant/finance/RestaurantFinanceSection'))
 const WarehouseFinanceSection  = lazy(() => import('@renderer/plugins/warehouse/finance/WarehouseFinanceSection'))
-const ClinicFinanceSection     = lazy(() => import('@renderer/plugins/clinic/finance/ClinicFinanceSection'))
+const ClinicFinanceSection     = lazy(() => import('@renderer/plugins/clinic/finance/'))
 const VetFinanceSection        = lazy(() => import('@renderer/plugins/vet/finance/VetFinanceSection'))
 const GymFinanceSection        = lazy(() => import('@renderer/plugins/gym/finance/GymFinanceSection'))
 const PharmacyFinanceSection   = lazy(() => import('@renderer/plugins/pharmacy/finance/PharmacyFinanceSection'))

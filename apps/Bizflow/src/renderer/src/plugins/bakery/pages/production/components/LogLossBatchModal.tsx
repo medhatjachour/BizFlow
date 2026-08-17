@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Flame, X, Loader2 } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { LOSS_REASONS } from '../constants'
 import { ProductionBatch, LossReason } from '../types'
 import { formatCurrency } from '../utils'
@@ -17,7 +16,6 @@ interface Props {
 }
 
 export const LogLossBatchModal: React.FC<Props> = ({ batch, onClose, onConfirmLoss }) => {
-  const { t } = useLanguage()
 
   const [qty, setQty] = useState('')
   const [reason, setReason] = useState<LossReason>('expired')

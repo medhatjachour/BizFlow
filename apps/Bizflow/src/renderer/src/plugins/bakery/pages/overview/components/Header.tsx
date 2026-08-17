@@ -1,4 +1,4 @@
-import { Flame, RefreshCw, Sunset, LineChart } from 'lucide-react'
+import { Flame, RefreshCw, Sunset } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface HeaderProps {

@@ -27,7 +27,6 @@ export const ExpenseTable: React.FC<Props> = ({
   loading,
   totalAmount,
   sortField,
-  sortOrder,
   onSort,
   onEdit,
   onDelete,

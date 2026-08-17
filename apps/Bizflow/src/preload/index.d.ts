@@ -202,6 +202,12 @@ interface API {
     getCustomerData: (options: { startDate: Date; endDate: Date }) => Promise<any>
     getQuickInsights: () => Promise<any>
   }
+  export: {
+    printPdf: (
+      html: string,
+      filename: string
+    ) => Promise<{ success: boolean; filePath?: string; error?: string }>
+  }
   analytics: {
     recordStockMovement: (data: {
       variantId: string

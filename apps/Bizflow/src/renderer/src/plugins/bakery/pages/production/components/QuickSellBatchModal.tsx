@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { ShoppingBag, X, CheckCircle2, Loader2 } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { ProductionBatch } from '../types'
 import { formatCurrency, formatDate, getTodayDateString } from '../utils'
 
@@ -19,7 +18,6 @@ interface Props {
 }
 
 export const QuickSellBatchModal: React.FC<Props> = ({ batch, onClose, onSell }) => {
-  const { t } = useLanguage()
 
   const [sellQty, setSellQty] = useState(1)
   const [sellPrice, setSellPrice] = useState(

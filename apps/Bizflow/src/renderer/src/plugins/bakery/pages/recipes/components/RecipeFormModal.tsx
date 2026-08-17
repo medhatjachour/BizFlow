@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   CheckCircle2,
   Unlink,
-  Package,
   BookOpen,
   Layers,
   DollarSign,
