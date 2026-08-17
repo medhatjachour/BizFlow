@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
-import { colorForDoctor, initials, displayName as doctorDisplayName } from '../../doctors/utils'
+import { colorForDoctor, initials, displayName as doctorDisplayName } from '../doctors/utils'
 
 interface Overview {
   totalPatients: number

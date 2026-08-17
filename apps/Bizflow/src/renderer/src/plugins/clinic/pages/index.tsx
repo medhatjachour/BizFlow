@@ -16,9 +16,8 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
-import StatsTab from './components/stats/StatsTab'
+import StatsTab from './stats/StatsTab'
 
-import ExpensesTab from './components/expenses/ExpensesTab'
 import MaterialsTab from './components/materials/MaterialsTab'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import PatientsTab from './patients'
@@ -26,6 +25,7 @@ import SessionsTab from './sessions'
 import AppointmentsTab from './appointments'
 import { FollowUpsTab } from './appointments/components/FollowUpsTab'
 import DoctorsTab from './doctors'
+import ExpensesTab from './expenses'
 
 export type ClinicTab = 'patients' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'materials' | 'doctors'
 
