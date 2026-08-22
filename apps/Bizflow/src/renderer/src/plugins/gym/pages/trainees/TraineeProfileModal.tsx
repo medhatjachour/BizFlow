@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { X, Loader2, Info, QrCode, History, Pencil, Calendar, Phone, Mail, User, Ruler, Target, Plus, Trash2, CheckCircle2 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
-import QRModal from '../../../components/QRModal'
+import QRModal from '../../components/QRModal'
 import TraineeFormModal from './TraineeFormModal'
 
 type InnerTab = 'info' | 'measurements' | 'goals' | 'history' | 'qr'

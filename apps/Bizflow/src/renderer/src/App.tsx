@@ -49,7 +49,7 @@ const Clinic       = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pag
 const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages')) : null
 const Vet          = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/index')) : null
 const VetPatientProfile = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/VetPatientProfile')) : null
-const Gym          = __PLUGIN_GYM__ ? lazy(() => import('./plugins/gym/pages/index')) : null
+const Gym          = __PLUGIN_GYM__ ? lazy(() => import('./plugins/gym/index')) : null
 const Pharmacy     = __PLUGIN_PHARMACY__ ? lazy(() => import('./plugins/pharmacy/pages/index')) : null
 const Coffee       = __PLUGIN_COFFEE__ ? lazy(() => import('./plugins/coffee/pages/index')) : null
 

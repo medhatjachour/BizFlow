@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Pencil, QrCode, Info, Users, Activity, Zap, Calendar, TrendingUp, AlertTriangle, DollarSign, Clock, Plus, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
-import QRModal from '../../../components/QRModal'
+import QRModal from '../../components/QRModal'
 import CoachFormModal from './CoachFormModal'
 
 type InnerTab = 'info' | 'trainees' | 'activity' | 'shifts' | 'qr'
