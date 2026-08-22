@@ -11,7 +11,7 @@ import WalkInsTab        from './pages/walkins'
 import PlansTab          from './pages/plans'
 import AttendanceTab     from './pages/Attendance'
 import LockersTab        from './pages/lockers'
-import ProgramsTab       from './pages/components/ProgramsTab'
+import ProgramsTab       from './pages/programs/'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { pluginTabCapability } from '../../../../shared/permissions'
 
