@@ -6,7 +6,7 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import TraineesTab       from './pages/trainees'
 import CoachesTab        from './pages/coaches'
-import SubscriptionsTab  from './pages/subscriptions/SubscriptionsTab'
+import SubscriptionsTab  from './pages/subscriptions'
 import WalkInsTab        from './pages/walkins/WalkInsTab'
 import PlansTab          from './pages/components/PlansTab'
 import AttendanceTab     from './pages/Attendance'
