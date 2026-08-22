@@ -1,12 +1,15 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useToast } from '@renderer/contexts/ToastContext'
-import { Program, ProgramDay } from '../types'
+import { Program, ProgramDay, DayFormData, ExerciseFormData } from '../types'
 
 export function useProgramDetail(
   initialProgram: Program,
-  onProgramUpdated: (p: Program) => void
+  onProgramUpdated?: (p: Program) => void
 ) {
   const toast = useToast()
+  const toastRef = useRef(toast)
+  toastRef.current = toast
+
   const [program, setProgram] = useState<Program>(initialProgram)
   const [loading, setLoading] = useState(false)
 
@@ -17,85 +20,103 @@ export function useProgramDetail(
   const [assignOpen, setAssignOpen] = useState(false)
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({})
 
+  const programId = initialProgram?.id
+
+  // 1. Fetch full program details (days + exercises)
   const reloadProgram = useCallback(async () => {
+    if (!programId) return
     setLoading(true)
     try {
-      const full = await (window.api as any).gym?.programs?.getById(program.id)
+      const full = await (window.api as any).gym?.programs?.getById(programId)
       if (full) {
         setProgram(full)
-        onProgramUpdated(full)
+        // Automatically expand all days on initial load
+        setExpandedDays(prev => {
+          const map: Record<string, boolean> = { ...prev }
+          full.days?.forEach((d: ProgramDay) => {
+            if (map[d.id] === undefined) map[d.id] = true
+          })
+          return map
+        })
       }
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to load program details')
+      toastRef.current.error(err.message ?? 'Failed to load program details')
     } finally {
       setLoading(false)
     }
-  }, [program.id, onProgramUpdated, toast])
+  }, [programId])
 
   useEffect(() => {
     reloadProgram()
   }, [reloadProgram])
 
-  // Fixed IPC invocation for addDay
-  const handleAddDay = async (data: { weekNumber: number; dayNumber: number; name?: string }) => {
+  // 2. Add Day (Passes 2 separate arguments: programId, dayPayload)
+  const handleAddDay = async (data: DayFormData) => {
+    if (!programId) return
     try {
-      const created = await (window.api as any).gym?.programs?.addDay({
-        programId: program.id,
-        data: {
-          weekNumber: Number(data.weekNumber),
-          dayNumber: Number(data.dayNumber),
-          name: data.name?.trim() || undefined
-        }
-      })
-      toast.success('Training day added to program')
+      const dayPayload = {
+        weekNumber: Number(data.weekNumber) || 1,
+        dayNumber: Number(data.dayNumber) || 1,
+        name: data.name?.trim() || undefined
+      }
+
+      const api = (window.api as any).gym?.programs
+      const created = await api.addDay(programId, dayPayload)
+
+      toastRef.current.success('Training day added')
       setDayFormOpen(false)
-      reloadProgram()
+      await reloadProgram()
       return created
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to add day')
+      toastRef.current.error(err.message ?? 'Failed to add day')
     }
   }
 
+  // 3. Delete Day
   const handleDeleteDay = async (dayId: string) => {
     try {
       await (window.api as any).gym?.programs?.deleteDay(dayId)
-      toast.success('Training day removed')
+      toastRef.current.success('Training day removed')
       setProgram(prev => ({
         ...prev,
         days: prev.days?.filter(d => d.id !== dayId)
       }))
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to delete day')
+      toastRef.current.error(err.message ?? 'Failed to delete day')
     }
   }
 
-  // Fixed IPC invocation for addExercise
-  const handleAddExercise = async (dayId: string, data: any) => {
+  // 4. Add Exercise (Passes 2 separate arguments: dayId, exercisePayload)
+  const handleAddExercise = async (dayId: string, data: ExerciseFormData) => {
     try {
-      const created = await (window.api as any).gym?.programs?.addExercise({
-        dayId,
-        data: {
-          name: data.name.trim(),
-          sets: Number(data.sets) || 3,
-          reps: String(data.reps || '10'),
-          weight: data.weight?.trim() || undefined,
-          restSec: Number(data.restSec) || undefined,
-          notes: data.notes?.trim() || undefined
-        }
-      })
-      toast.success('Exercise added')
+      const exercisePayload = {
+        name: data.name.trim(),
+        sets: Number(data.sets) || 3,
+        reps: String(data.reps || '10'),
+        weight: data.weight?.trim() || undefined,
+        restSec: data.restSec ? Number(data.restSec) : undefined,
+        notes: data.notes?.trim() || undefined
+      }
+
+      const api = (window.api as any).gym?.programs
+
+      // ✅ Direct 2-argument call
+      const created = await api.addExercise(dayId, exercisePayload)
+
+      toastRef.current.success('Exercise added')
       setExFormDay(null)
-      reloadProgram()
+      await reloadProgram()
       return created
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to add exercise')
+      toastRef.current.error(err.message ?? 'Failed to add exercise')
     }
   }
 
+  // 5. Delete Exercise
   const handleDeleteExercise = async (dayId: string, exerciseId: string) => {
     try {
       await (window.api as any).gym?.programs?.deleteExercise(exerciseId)
-      toast.success('Exercise removed')
+      toastRef.current.success('Exercise removed')
       setProgram(prev => ({
         ...prev,
         days: prev.days?.map(d =>
@@ -103,7 +124,7 @@ export function useProgramDetail(
         )
       }))
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to delete exercise')
+      toastRef.current.error(err.message ?? 'Failed to delete exercise')
     }
   }
 

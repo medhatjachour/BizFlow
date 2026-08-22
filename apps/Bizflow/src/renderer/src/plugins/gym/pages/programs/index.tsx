@@ -37,6 +37,7 @@ export default function ProgramsTab() {
 
   // Full Screen Program Schedule Builder View
   if (detailTarget) {
+    console.log('detailTarget:', detailTarget) // Log the detailTarget for debugging
     return (
       <ProgramDetailView
         program={detailTarget}

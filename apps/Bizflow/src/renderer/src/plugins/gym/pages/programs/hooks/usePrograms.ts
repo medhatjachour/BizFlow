@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { Program, CoachLite, ProgramViewMode } from '../types'
 
 export function usePrograms() {
   const toast = useToast()
+  const toastRef = useRef(toast)
+  toastRef.current = toast
+
   const [programs, setPrograms] = useState<Program[]>([])
   const [coaches, setCoaches] = useState<CoachLite[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,11 +31,11 @@ export function usePrograms() {
       setPrograms(Array.isArray(progsRes) ? progsRes : progsRes?.data ?? [])
       setCoaches(Array.isArray(coachRes) ? coachRes : coachRes?.data ?? [])
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to load training programs')
+      toastRef.current.error(err.message ?? 'Failed to load training programs')
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [])
 
   useEffect(() => {
     loadData()
@@ -43,28 +46,25 @@ export function usePrograms() {
     setDeleting(true)
     try {
       await (window.api as any).gym?.programs?.delete(deleteTarget.id)
-      toast.success(`Program "${deleteTarget.name}" deleted`)
+      toastRef.current.success(`Program "${deleteTarget.name}" deleted`)
       setPrograms(prev => prev.filter(p => p.id !== deleteTarget.id))
       setDeleteTarget(null)
       if (detailTarget?.id === deleteTarget.id) {
         setDetailTarget(null)
       }
     } catch (err: any) {
-      toast.error(err.message ?? 'Failed to delete program')
+      toastRef.current.error(err.message ?? 'Failed to delete program')
     } finally {
       setDeleting(false)
     }
   }
 
-  const handleProgramSaved = (saved: Program) => {
+  const handleProgramSaved = useCallback((saved: Program) => {
     setPrograms(prev => {
       const idx = prev.findIndex(p => p.id === saved.id)
       return idx >= 0 ? prev.map(p => (p.id === saved.id ? saved : p)) : [saved, ...prev]
     })
-    if (detailTarget?.id === saved.id) {
-      setDetailTarget(saved)
-    }
-  }
+  }, [])
 
   const filteredPrograms = useMemo(() => {
     const q = searchQuery.toLowerCase().trim()
@@ -74,7 +74,7 @@ export function usePrograms() {
         !q ||
         p.name.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q) ||
-        p.coach?.name.toLowerCase().includes(q) ||
+        p.coach?.name?.toLowerCase().includes(q) ||
         p.goal.toLowerCase().includes(q)
       return matchesGoal && matchesSearch
     })
