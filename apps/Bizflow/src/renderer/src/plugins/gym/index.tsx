@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import TraineesTab       from './pages/trainees'
-import CoachesTab        from './pages/coaches/CoachesTab'
+import CoachesTab        from './pages/coaches'
 import SubscriptionsTab  from './pages/subscriptions/SubscriptionsTab'
 import WalkInsTab        from './pages/walkins/WalkInsTab'
 import PlansTab          from './pages/components/PlansTab'
