@@ -44,7 +44,7 @@ const VetDashboard = __PLUGIN_VET__
   : null
 
 const GymDashboard = __PLUGIN_GYM__
-  ? lazy(() => import('@renderer/plugins/gym/dashboard/GymDashboardSection'))
+  ? lazy(() => import('@renderer/plugins/gym/dashboard'))
   : null
 
 const PharmacyDashboard = __PLUGIN_PHARMACY__
