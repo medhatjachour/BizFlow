@@ -21,7 +21,7 @@ const ClinicReportSection = lazy(
   () => import('@renderer/plugins/clinic/reports')
 )
 const VetReportSection = lazy(() => import('@renderer/plugins/vet/reports/VetReportSection'))
-const GymReportSection = lazy(() => import('@renderer/plugins/gym/reports/GymReportSection'))
+const GymReportSection = lazy(() => import('@renderer/plugins/gym/reports/'))
 const PharmacyReportSection = lazy(
   () => import('@renderer/plugins/pharmacy/reports/PharmacyReportSection')
 )
