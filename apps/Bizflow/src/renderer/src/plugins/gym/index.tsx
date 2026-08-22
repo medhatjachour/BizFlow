@@ -4,7 +4,7 @@ import {
   ListChecks, CalendarCheck2, Lock, ClipboardList, Info, X
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import TraineesTab       from './pages/trainees/TraineesTab'
+import TraineesTab       from './pages/trainees'
 import CoachesTab        from './pages/coaches/CoachesTab'
 import SubscriptionsTab  from './pages/subscriptions/SubscriptionsTab'
 import WalkInsTab        from './pages/walkins/WalkInsTab'
