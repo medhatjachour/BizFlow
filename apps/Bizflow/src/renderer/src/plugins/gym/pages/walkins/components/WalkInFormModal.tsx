@@ -27,7 +27,7 @@ export function WalkInFormModal({ isOpen, onClose, onSaved }: WalkInFormModalPro
     handleSubmit
   } = useWalkInForm(isOpen, onSaved, onClose)
 
-  const [presets, setPresets] = useState<number[]>(WALK_IN_PRESETS)
+  const [presets, ] = useState<number[]>(WALK_IN_PRESETS)
   const isWalkIn = form.type === 'walkin'
 
   if (!isOpen) return null
@@ -166,7 +166,7 @@ export function WalkInFormModal({ isOpen, onClose, onSaved }: WalkInFormModalPro
                 </button>
                 <input
                   type="number"
-                  min={isWalkIn ? '0.01' : '0'}
+                  min={isWalkIn ? '0' : '0'}
                   step="0.5"
                   className="w-full text-center text-sm font-bold text-slate-800 dark:text-slate-100 bg-transparent focus:outline-none py-1 tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={form.amount}
