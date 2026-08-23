@@ -6,7 +6,7 @@ import {
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
-import { pharma, money, int } from '../_shared'
+import { pharma, money, int } from '../components/_shared'
 
 const PERIODS = ['today', 'week', 'month', 'year'] as const
 

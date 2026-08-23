@@ -8,17 +8,17 @@ import {
   Receipt, Truck, ClipboardList, BarChart3, Users
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import PharmacyDashboard from './components/analytics/PharmacyDashboard'
 import PharmacyPOS from './PharmacyPOS'
 import PharmacySales from './sales'
 import PharmacyCustomers from './customers'
 import PharmacySuppliers from './supplier'
 import PharmacyPurchaseOrders from './purchaseOrders'
-import PharmacyReports from './components/analytics/PharmacyReports'
+import PharmacyReports from './analytics'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import PharmacyProducts from './products'
 import PharmacyInventory from './inventory'
+import PharmacyDashboard from './dashboard/PharmacyDashboard'
 
 type Tab = 'dashboard' | 'pos' | 'products' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'orders' | 'reports'
 
