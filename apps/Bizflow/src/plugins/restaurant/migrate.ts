@@ -3,7 +3,17 @@ import { createLogger } from '../../main/utils/logger'
 
 const log = createLogger('Restaurant:Migrate')
 
-const RESTAURANT_TABLES = ['RestaurantTable', 'TableReservation', 'MenuItem', 'DineInOrder', 'DineInOrderItem']
+const RESTAURANT_TABLES = [
+  'RestaurantTable',
+  'TableReservation',
+  'MenuItem',
+  'ModifierGroup',
+  'ModifierOption',
+  'DineInOrder',
+  'DineInOrderItem',
+  'OrderPayment',
+  'RestaurantShift'
+]
 
 export async function ensureRestaurantSchema(prisma: any, dbUrl: string, cwd: string): Promise<void> {
   const missing = await getMissingTables(prisma)
@@ -34,7 +44,9 @@ async function getMissingTables(prisma: any): Promise<string[]> {
 function runDbPush(dbUrl: string, cwd: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn('npx', ['prisma', 'db', 'push', '--schema=prisma/merged.prisma', '--accept-data-loss'], {
-        cwd, shell: true, env: { ...process.env, DATABASE_URL: dbUrl }
+      cwd,
+      shell: true,
+      env: { ...process.env, DATABASE_URL: dbUrl }
     })
     let output = ''
     let stderrOutput = ''
@@ -50,8 +62,7 @@ function runDbPush(dbUrl: string, cwd: string): Promise<void> {
       if (code === 0 || output.includes('Your database is now in sync')) {
         resolve()
       } else if (stderrOutput.includes('already exists')) {
-        // Tables were created in a previous partial run — treat as success
-        log.info('⚠️  Some tables already existed; treating as up-to-date')
+        log.info('⚠️ Some tables already existed; treating as up-to-date')
         resolve()
       } else {
         reject(new Error(`prisma db push failed (exit ${code})`))

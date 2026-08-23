@@ -526,6 +526,10 @@ interface API {
     updateOrderItemStatus: (data: any) => Promise<any>
     closeOrder: (data: any) => Promise<any>
     getOverview: () => Promise<any>
+    updateTablePosition: (data: any) => Promise<any>
+    mergeTables: (data: any) => Promise<any>
+    transferTable: (data: any) => Promise<any>
+    getTableActivityLogs: (tableId: string) => Promise<any>
   }
   warehouse: {
     getLocations: (options?: any) => Promise<any>

@@ -1,16 +1,19 @@
-// ─── Restaurant Module ──────────────────────────────────────────────────────
+// ─── Restaurant Module Schema ───────────────────────────────────────────────
 // Module: restaurant
-// Use Case: Table management, reservations, menu, dine-in orders
-//
-// NOTE: Merged into prisma/merged.prisma at build time via merge-schemas.js
+// Use Case: Floor plan layout, table orchestrations, POS orders, modifiers, 
+//           KDS kitchen routing, host stand reservations, shifts & reconciliation.
 // ────────────────────────────────────────────────────────────────────────────
 
 model RestaurantTable {
   id           String             @id @default(uuid())
   number       Int                @unique
+  name         String?            // e.g. "T-1", "Patio-4", "Bar-2"
   capacity     Int                @default(4)
-  status       String             @default("available") // available | occupied | reserved | cleaning
-  section      String?            // e.g. "Indoor", "Outdoor", "Bar"
+  status       String             @default("available") // available | occupied | reserved | cleaning | billing
+  section      String             @default("Main Hall") // "Indoor", "Patio", "Bar", "VIP Room"
+  posX         Float              @default(0)           // Visual Canvas X position (px or %)
+  posY         Float              @default(0)           // Visual Canvas Y position (px or %)
+  shape        String             @default("square")    // square | circle | rectangle
   isActive     Boolean            @default(true)
   reservations TableReservation[]
   orders       DineInOrder[]
@@ -19,20 +22,23 @@ model RestaurantTable {
 
   @@index([status])
   @@index([section])
+  @@index([isActive])
 }
 
 model TableReservation {
-  id            String          @id @default(uuid())
-  tableId       String
-  table         RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  id            String           @id @default(uuid())
+  tableId       String?
+  table         RestaurantTable? @relation(fields: [tableId], references: [id], onDelete: SetNull)
   customerName  String
   customerPhone String?
-  partySize     Int             @default(1)
-  date          DateTime        // Date & time of reservation
+  partySize     Int              @default(1)
+  date          DateTime         // Reservation date & time
+  durationMins  Int              @default(90)
   notes         String?
-  status        String          @default("pending") // pending | confirmed | seated | completed | cancelled
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  guestTags     String?          // e.g. "VIP, Window Seat, High Chair"
+  status        String           @default("confirmed") // pending | confirmed | seated | completed | cancelled | no-show
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   @@index([tableId])
   @@index([date])
@@ -46,33 +52,70 @@ model MenuItem {
   description     String?
   price           Float
   cost            Float             @default(0)
-  preparationTime Int               @default(15) // minutes
-  isAvailable     Boolean           @default(true)
+  preparationTime Int               @default(15) // In minutes
+  station         String            @default("Kitchen") // Kitchen | Grill | Bar | Pastry | Cold Station
+  isAvailable     Boolean           @default(true)      // 86'd out-of-stock toggle
   displayOrder    Int               @default(0)
+  colorTag        String?           // Visual badge/tile color
   notes           String?
+  modifierGroups  ModifierGroup[]
   orderItems      DineInOrderItem[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   @@index([category])
   @@index([isAvailable])
+  @@index([station])
+}
+
+model ModifierGroup {
+  id         String           @id @default(uuid())
+  menuItemId String
+  menuItem   MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  title      String           // e.g. "Meat Temp", "Side Choice", "Extras"
+  minSelect  Int              @default(0)
+  maxSelect  Int              @default(1)
+  options    ModifierOption[]
+
+  @@index([menuItemId])
+}
+
+model ModifierOption {
+  id         String        @id @default(uuid())
+  groupId    String
+  group      ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name       String        // e.g. "French Fries", "Medium Rare", "Extra Cheese"
+  priceDelta Float         @default(0)
+
+  @@index([groupId])
 }
 
 model DineInOrder {
-  id         String            @id @default(uuid())
-  tableId    String
-  table      RestaurantTable   @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  status     String            @default("open") // open | ready | paid | voided
-  serverName String?
-  notes      String?
-  subtotal   Float             @default(0)
-  tax        Float             @default(0)
-  total      Float             @default(0)
-  openedAt   DateTime          @default(now())
-  closedAt   DateTime?
-  items      DineInOrderItem[]
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  id             String            @id @default(uuid())
+  orderNumber    Int?
+  tableId        String
+  table          RestaurantTable   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  orderType      String            @default("dine_in") // dine_in | takeout | bar
+  status         String            @default("open")    // open | billing | paid | voided
+  guestCount     Int               @default(1)
+  serverName     String?
+  serverId       String?
+  notes          String?
+  subtotal       Float             @default(0)
+  discountType   String?           // percentage | fixed
+  discountAmount Float             @default(0)
+  taxRate        Float             @default(0)         // e.g. 0.14 for 14%
+  tax            Float             @default(0)
+  serviceCharge  Float             @default(0)
+  tipAmount      Float             @default(0)
+  total          Float             @default(0)
+  paymentMethod  String?           // cash | card | split | voucher
+  openedAt       DateTime          @default(now())
+  closedAt       DateTime?
+  items          DineInOrderItem[]
+  payments       OrderPayment[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([tableId])
   @@index([status])
@@ -85,14 +128,54 @@ model DineInOrderItem {
   order      DineInOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItemId String?
   menuItem   MenuItem?    @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
-  itemName   String       // Snapshot name
+  itemName   String       // Snapshot item name
   quantity   Int          @default(1)
   unitPrice  Float
-  notes      String?
-  status     String       @default("pending") // pending | preparing | ready | served
+  totalPrice Float        @default(0)
+  course     String       @default("main")      // beverage | starter | main | dessert
+  notes      String?                            // Custom prep notes
+  modifiers  String?                            // JSON string of selected modifiers
+  status     String       @default("pending")   // pending | preparing | ready | served | voided
+  station    String       @default("Kitchen")
+  firedAt    DateTime?
+  readyAt    DateTime?
+  servedAt   DateTime?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
   @@index([orderId])
   @@index([menuItemId])
+  @@index([status])
+  @@index([station])
+}
+
+model OrderPayment {
+  id            String      @id @default(uuid())
+  orderId       String
+  order         DineInOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Float
+  paymentMethod String      // cash | card | visa | apple_pay | voucher
+  reference     String?     // Card last 4 digits or receipt reference
+  createdAt     DateTime    @default(now())
+
+  @@index([orderId])
+}
+
+model RestaurantShift {
+  id         String    @id @default(uuid())
+  serverId   String
+  serverName String
+  startCash  Float     @default(0)
+  endCash    Float?
+  totalSales Float     @default(0)
+  totalTips  Float     @default(0)
+  notes      String?
+  status     String    @default("active") // active | closed
+  openedAt   DateTime  @default(now())
+  closedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([serverId])
+  @@index([status])
 }
