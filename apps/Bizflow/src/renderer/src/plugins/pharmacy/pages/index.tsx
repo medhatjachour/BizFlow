@@ -10,8 +10,6 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import PharmacyDashboard from './components/analytics/PharmacyDashboard'
 import PharmacyPOS from './PharmacyPOS'
-import PharmacyProducts from './components/products/PharmacyProducts'
-import PharmacyInventory from './components/products/PharmacyInventory'
 import PharmacySales from './sales'
 import PharmacyCustomers from './components/PharmacyCustomers'
 import PharmacySuppliers from './components/purchasing/PharmacySuppliers'
@@ -19,6 +17,8 @@ import PharmacyPurchaseOrders from './components/purchasing/PharmacyPurchaseOrde
 import PharmacyReports from './components/analytics/PharmacyReports'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { pluginTabCapability } from '../../../../../shared/permissions'
+import PharmacyProducts from './products'
+import PharmacyInventory from './inventory/PharmacyInventory'
 
 type Tab = 'dashboard' | 'pos' | 'products' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'orders' | 'reports'
 

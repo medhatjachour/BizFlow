@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Loader2, History } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import { pharma, money, expiryTone } from '../_shared'
-import { Modal } from '../ui'
+import { pharma, money, expiryTone } from '../components/_shared'
+import { Modal } from '../components/ui'
 
 /** Product history & details — used by both Products and Inventory. */
 export default function ProductDetailModal({ product, onClose }: { product: any; onClose: () => void }) {

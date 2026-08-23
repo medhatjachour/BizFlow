@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Loader2, PackageX, AlertTriangle, CalendarClock, History } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import { pharma, money, int, expiryTone } from '../_shared'
-import { IconButton } from '../ui'
+import { pharma, money, int, expiryTone } from '../components/_shared'
+import { IconButton } from '../components/ui'
 import ProductDetailModal from './ProductDetailModal'
 
 export default function PharmacyInventory() {
