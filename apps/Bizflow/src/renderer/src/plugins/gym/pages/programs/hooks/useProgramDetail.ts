@@ -4,7 +4,6 @@ import { Program, ProgramDay, DayFormData, ExerciseFormData } from '../types'
 
 export function useProgramDetail(
   initialProgram: Program,
-  onProgramUpdated?: (p: Program) => void
 ) {
   const toast = useToast()
   const toastRef = useRef(toast)

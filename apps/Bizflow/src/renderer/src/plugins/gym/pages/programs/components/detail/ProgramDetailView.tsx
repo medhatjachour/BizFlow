@@ -40,7 +40,7 @@ export function ProgramDetailView({
     handleDeleteDay,
     handleAddExercise,
     handleDeleteExercise
-  } = useProgramDetail(initial, onProgramUpdated)
+  } = useProgramDetail(initial)
 
   const days = [...(program.days ?? [])].sort(
     (a, b) => a.weekNumber - b.weekNumber || a.dayNumber - b.dayNumber

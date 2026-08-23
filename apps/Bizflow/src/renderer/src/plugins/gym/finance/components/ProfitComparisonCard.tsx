@@ -1,7 +1,7 @@
 import React from 'react'
 import { GymStatsOverview } from '../types'
 import { formatCurrency, calculateProfitMargin } from '../utils'
-import { Percent, TrendingUp, AlertTriangle } from 'lucide-react'
+import { TrendingUp, AlertTriangle } from 'lucide-react'
 
 interface Props {
   stats: GymStatsOverview

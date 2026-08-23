@@ -8,8 +8,9 @@ import { money, inputCls } from '../components/_shared'
 import { useThermalReceipt } from './hooks/useThermalReceipt'
 import { PosCart } from './components/PosCart'
 import { PosReceiptModal } from './components/PosReceiptModal'
-import { usePosProducts } from './hooks/usePOSProducts'
-import { usePosCart } from './hooks/usePOSCart'
+import { usePosProducts } from './hooks/usePosProducts'
+import { usePosCart } from './hooks/usePosCart'
+
 
 export default function PharmacyPOS() {
   const toast = useToast()
