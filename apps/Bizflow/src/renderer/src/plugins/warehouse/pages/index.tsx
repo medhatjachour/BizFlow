@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Warehouse, Package, MapPin, ArrowRightLeft, ClipboardList, Info, X, ArrowRight } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import OverviewTab from './components/OverviewTab'
+import OverviewTab from './overview'
 import LocationsTab from './components/LocationsTab'
 import InventoryTab from './components/InventoryTab'
 import TransfersTab from './components/TransfersTab'
