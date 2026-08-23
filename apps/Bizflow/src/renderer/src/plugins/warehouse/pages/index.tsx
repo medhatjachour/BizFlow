@@ -3,7 +3,7 @@ import { Warehouse, Package, MapPin, ArrowRightLeft, ClipboardList, Info, X, Arr
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import OverviewTab from './overview'
 import LocationsTab from './locations'
-import InventoryTab from './components/InventoryTab'
+import InventoryTab from './inventory'
 import TransfersTab from './components/TransfersTab'
 import OperationsTab from './Operations'
 import InfoTooltip from './components/InfoTooltip'
