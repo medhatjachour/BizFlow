@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import PharmacyDashboard from './components/analytics/PharmacyDashboard'
-import PharmacyPOS from './components/sales/PharmacyPOS'
+import PharmacyPOS from './PharmacyPOS'
 import PharmacyProducts from './components/products/PharmacyProducts'
 import PharmacyInventory from './components/products/PharmacyInventory'
 import PharmacySales from './components/sales/PharmacySales'
