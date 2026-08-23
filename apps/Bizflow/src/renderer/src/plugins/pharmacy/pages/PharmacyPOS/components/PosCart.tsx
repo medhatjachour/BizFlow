@@ -5,7 +5,7 @@ import { PosCartItemRow } from './PosCartItemRow'
 import { QUICK_CASH_DENOMINATIONS, PAYMENT_METHODS } from '../constants'
 import { money } from '../../components/_shared'
 import { Button } from '../../components/ui'
-import { PosCustomerPicker } from './POSCustomerPicker'
+import { PosCustomerPicker } from './PosCustomerPicker'
 
 interface PosCartProps {
   cart: CartLine[]

@@ -28,12 +28,17 @@ export const LocationValueChart: React.FC<Props> = ({ data }) => {
       </div>
 
       <div className="h-44 w-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer
+          width="100%"
+          height={176}
+          initialDimension={{ width: 0, height: 176 }}
+          minWidth={0}
+        >
           <BarChart data={data} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
             <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
             <YAxis
-              tickFormatter={v => `$${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
               tick={{ fontSize: 10 }}
               axisLine={false}
               tickLine={false}

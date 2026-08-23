@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { Warehouse, Package, ArrowRightLeft, AlertTriangle, ClipboardList } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { Tab, StatItemConfig } from './types'

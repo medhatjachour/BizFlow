@@ -1,13 +1,6 @@
 import React from 'react'
 import { MapPin } from 'lucide-react'
-import {
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend
-} from 'recharts'
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 import { LocationQtyMetric } from '../types'
 import { FINANCE_PALETTE } from '../constants'
 
@@ -43,11 +36,18 @@ export const ValuationTabView: React.FC<Props> = ({
               {totalUnits.toLocaleString()} Total Units
             </span>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Asset distribution across storage nodes</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Asset distribution across storage nodes
+          </p>
         </div>
 
         <div className="h-64 w-full my-3">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer
+            width="100%"
+            height={176}
+            initialDimension={{ width: 0, height: 176 }}
+            minWidth={0}
+          >
             <PieChart>
               <Pie
                 data={locationData}
@@ -64,7 +64,10 @@ export const ValuationTabView: React.FC<Props> = ({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(val: any, name: any) => [`${Number(val || 0).toLocaleString()} units`, name]}
+                formatter={(val: any, name: any) => [
+                  `${Number(val || 0).toLocaleString()} units`,
+                  name
+                ]}
                 contentStyle={{
                   backgroundColor: 'rgba(15, 23, 42, 0.9)',
                   borderRadius: '12px',
@@ -74,7 +77,11 @@ export const ValuationTabView: React.FC<Props> = ({
                 }}
               />
               <Legend
-                formatter={(value: string) => <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{value}</span>}
+                formatter={(value: string) => (
+                  <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+                    {value}
+                  </span>
+                )}
               />
             </PieChart>
           </ResponsiveContainer>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { LocationItem } from './types'
 import { buildLocationTree, filterLocationList } from './utils'
 import { useLocationsData } from './hooks/useLocationsData'

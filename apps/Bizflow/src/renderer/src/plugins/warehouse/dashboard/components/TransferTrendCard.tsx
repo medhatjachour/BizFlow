@@ -34,8 +34,8 @@ export const TransferTrendCard: React.FC<Props> = ({
               transferTrend.trend === 'up'
                 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
                 : transferTrend.trend === 'down'
-                ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
-                : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                  ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
+                  : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
             }`}
           >
             {transferTrend.change >= 0 ? '+' : ''}
@@ -47,7 +47,12 @@ export const TransferTrendCard: React.FC<Props> = ({
       {/* Sparkline */}
       <div className="h-28 w-full">
         {trendData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer
+            width="100%"
+            height={112}
+            initialDimension={{ width: 0, height: 112 }}
+            minWidth={0}
+          >
             <AreaChart data={trendData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
               <defs>
                 <linearGradient id="velocityGrad" x1="0" y1="0" x2="0" y2="1">
@@ -98,9 +103,7 @@ export const TransferTrendCard: React.FC<Props> = ({
           <span className="text-[10px] text-slate-400">Peak Load</span>
         </div>
         <div>
-          <span className="block font-bold text-slate-900 dark:text-white">
-            {doneTodayCount}
-          </span>
+          <span className="block font-bold text-slate-900 dark:text-white">{doneTodayCount}</span>
           <span className="text-[10px] text-slate-400">Done Today</span>
         </div>
       </div>

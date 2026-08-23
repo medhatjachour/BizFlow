@@ -1,7 +1,7 @@
 import React from 'react'
 import { X, RotateCcw, Printer } from 'lucide-react'
 import { PharmacySale } from '../types'
-import { money, PAY_BADGE, SALE_STATUS_BADGE } from '../../components/_shared'
+import { money, SALE_STATUS_BADGE } from '../../components/_shared'
 import { Button } from '../../components/ui'
 import { SaleItemRefundRow } from './SaleItemRefundRow'
 import { SettlePaymentSection } from './SettlePaymentSection'

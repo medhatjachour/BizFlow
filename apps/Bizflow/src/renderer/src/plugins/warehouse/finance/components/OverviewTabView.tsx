@@ -19,11 +19,7 @@ interface Props {
   locationData: LocationQtyMetric[]
 }
 
-export const OverviewTabView: React.FC<Props> = ({
-  overviewData,
-  totalSKUs,
-  locationData
-}) => {
+export const OverviewTabView: React.FC<Props> = ({ overviewData, totalSKUs, locationData }) => {
   const cards = [
     {
       label: 'Tracked SKU Count',
@@ -63,7 +59,7 @@ export const OverviewTabView: React.FC<Props> = ({
     <div className="space-y-5">
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {cards.map(card => {
+        {cards.map((card) => {
           const Icon = card.icon
           return (
             <div
@@ -96,17 +92,34 @@ export const OverviewTabView: React.FC<Props> = ({
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
               Stock Quantity Balance by Location
             </h4>
-            <p className="text-[11px] text-slate-400">Total physical units grouped by storage facilities</p>
+            <p className="text-[11px] text-slate-400">
+              Total physical units grouped by storage facilities
+            </p>
           </div>
 
           <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={locationData.slice(0, 8)} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
+            <ResponsiveContainer
+              width="100%"
+              height={176}
+              initialDimension={{ width: 0, height: 176 }}
+              minWidth={0}
+            >
+              <BarChart
+                data={locationData.slice(0, 8)}
+                margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(148,163,184,0.15)"
+                  vertical={false}
+                />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip
-                  formatter={(val: any) => [`${Number(val || 0).toLocaleString()} units`, 'Physical Stock']}
+                  formatter={(val: any) => [
+                    `${Number(val || 0).toLocaleString()} units`,
+                    'Physical Stock'
+                  ]}
                   contentStyle={{
                     backgroundColor: 'rgba(15, 23, 42, 0.9)',
                     borderRadius: '12px',
