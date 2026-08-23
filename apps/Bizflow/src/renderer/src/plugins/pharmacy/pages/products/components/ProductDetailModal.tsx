@@ -11,7 +11,7 @@ interface ProductDetailModalProps {
   t: (k: string) => string
 }
 
-export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose, t }) => {
+export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose}) => {
   const [data, setData] = useState<ProductDetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'timeline' | 'batches'>('timeline')
