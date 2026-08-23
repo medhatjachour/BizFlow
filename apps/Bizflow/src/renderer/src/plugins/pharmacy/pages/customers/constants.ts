@@ -1,0 +1,3 @@
+export const CUSTOMERS_PAGE_SIZE = 12
+
+export const QUICK_SETTLE_PERCENTAGES = [25, 50, 75, 100]
