@@ -18,7 +18,7 @@ import PharmacyReports from './components/analytics/PharmacyReports'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import PharmacyProducts from './products'
-import PharmacyInventory from './inventory/PharmacyInventory'
+import PharmacyInventory from './inventory'
 
 type Tab = 'dashboard' | 'pos' | 'products' | 'inventory' | 'sales' | 'customers' | 'suppliers' | 'orders' | 'reports'
 
