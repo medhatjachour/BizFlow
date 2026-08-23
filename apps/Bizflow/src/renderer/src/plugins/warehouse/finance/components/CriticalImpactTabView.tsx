@@ -7,7 +7,7 @@ interface Props {
   totalSKUs: number
 }
 
-export const CriticalImpactTabView: React.FC<Props> = ({ items, totalSKUs }) => {
+export const CriticalImpactTabView: React.FC<Props> = ({ items }) => {
   if (items.length === 0) {
     return (
       <div className="p-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-center flex flex-col items-center justify-center space-y-2">
