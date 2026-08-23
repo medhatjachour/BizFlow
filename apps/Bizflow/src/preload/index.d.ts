@@ -530,6 +530,19 @@ interface API {
     mergeTables: (data: any) => Promise<any>
     transferTable: (data: any) => Promise<any>
     getTableActivityLogs: (tableId: string) => Promise<any>
+    updateOrderItem: (data: any) => Promise<any>
+    fireCourse: (data: { orderId: string; course: CourseType }) => Promise<any>
+    applyDiscount: (data: { orderId: string; discountType: DiscountType; discountAmount: number }) => Promise<any>
+    processPayment: (data: {
+      orderId: string
+      amount: number
+      paymentMethod: string
+      reference?: string
+      tipAmount?: number
+    }) => Promise<any>
+    getKdsActiveTickets: (station?: string) => Promise<KdsTicket[]>
+    bumpKdsItem: (itemId: string) => Promise<void>
+    bumpKdsTicket: (orderId: string) => Promise<void>
   }
   warehouse: {
     getLocations: (options?: any) => Promise<any>

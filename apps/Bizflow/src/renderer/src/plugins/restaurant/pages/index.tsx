@@ -1,13 +1,13 @@
-import { useEffect, useState } from 'react'
+import OverviewAndKdsPage  from './Kitchen/index'
 import { UtensilsCrossed, Table2, CalendarDays, BookOpen, ClipboardList, LayoutDashboard } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import OverviewTab  from './components/OverviewTab'
 import TablesTab    from './tables'
-import ReservationsTab from './components/ReservationsTab'
+import ReservationsTab from './Reservation/ReservationsTab'
 import MenuTab      from './components/MenuTab'
-import OrdersTab    from './components/OrdersTab'
+import OrdersTab    from './POS'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { pluginTabCapability } from '../../../../../shared/permissions'
+import { useEffect, useState } from 'react'
 
 type Tab = 'overview' | 'tables' | 'reservations' | 'menu' | 'orders'
 
@@ -65,7 +65,7 @@ export default function RestaurantPage() {
 
       {/* Tab content */}
       <div className="flex-1 overflow-auto p-6">
-        {active === 'overview'     && <OverviewTab     onNavigate={setActive} />}
+        {active === 'overview'     && <OverviewAndKdsPage     />}
         {active === 'tables'       && <TablesTab />}
         {active === 'reservations' && <ReservationsTab />}
         {active === 'menu'         && <MenuTab />}
