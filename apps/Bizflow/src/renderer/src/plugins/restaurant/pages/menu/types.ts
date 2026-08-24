@@ -1,3 +1,5 @@
+// src/pages/menu/types.ts
+
 export interface ModifierOptionData {
   id?: string
   name: string
@@ -12,6 +14,29 @@ export interface ModifierGroupData {
   options: ModifierOptionData[]
 }
 
+export interface RecipeIngredientItem {
+  id?: string
+  ingredientId: string
+  quantity: number
+  unit: string
+  ingredient?: {
+    id: string
+    name: string
+    unit: string
+    costPerUnit: number
+    currentStock: number
+    minStockAlert: number
+  }
+}
+
+export interface MenuItemRecipeData {
+  id?: string
+  menuItemId?: string
+  yieldCount: number
+  prepNotes?: string | null
+  ingredients: RecipeIngredientItem[]
+}
+
 export interface MenuItemData {
   id: string
   name: string
@@ -19,6 +44,7 @@ export interface MenuItemData {
   description?: string | null
   price: number
   cost: number
+  taxRate?: number
   preparationTime: number
   station: string
   isAvailable: boolean
@@ -26,19 +52,7 @@ export interface MenuItemData {
   colorTag?: string | null
   notes?: string | null
   modifierGroups?: ModifierGroupData[]
+  recipe?: MenuItemRecipeData | null
   createdAt: string
   updatedAt: string
-}
-
-export interface MenuItemFormData {
-  name: string
-  category: string
-  description: string
-  price: string
-  cost: string
-  preparationTime: string
-  station: string
-  colorTag: string
-  notes: string
-  modifierGroups: ModifierGroupData[]
 }

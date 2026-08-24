@@ -121,6 +121,27 @@ export function registerInventoryHandlers(prisma: any) {
       throw err
     }
   })
+  // In src/restaurant/handlers/inventory.ts -> getIngredients handler:
+ipcMain.handle('restaurant:getIngredients', async () => {
+  try {
+    return await prisma.restaurantIngredient.findMany({
+      where: { isActive: true },
+      include: {
+        recipeUsages: {
+          include: {
+            recipe: {
+              include: { menuItem: true }
+            }
+          }
+        }
+      },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }]
+    })
+  } catch (err) {
+    log.error('getIngredients error', err)
+    throw err
+  }
+})
 
   ipcMain.handle('restaurant:deleteIngredient', async (_e, id: string) => {
     try {

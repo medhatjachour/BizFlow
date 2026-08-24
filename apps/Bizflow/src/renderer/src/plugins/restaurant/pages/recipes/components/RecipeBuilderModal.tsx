@@ -241,8 +241,8 @@ export const RecipeBuilderModal: React.FC<Props> = ({
                 <div className="w-24">
                   <input
                     type="number"
-                    step="0.01"
-                    min="0.001"
+                    step="1"
+                    min="1"
                     required
                     placeholder="Qty"
                     value={row.quantity}

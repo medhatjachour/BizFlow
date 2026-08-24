@@ -1,3 +1,4 @@
+// src/pages/menu/components/MenuItemRow.tsx
 import React from 'react'
 import {
   Clock,
@@ -5,110 +6,153 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
-  SlidersHorizontal,
+  Package,
+  Layers,
+  Utensils
 } from 'lucide-react'
 import { MenuItemData } from '../types'
-import { calculateGrossMargin, formatCurrency } from '../utils'
+import { analyzeDishFinancials, calculateAvailablePortions, formatCurrency } from '../utils'
+import { sounds } from '../../utils/sound'
 
 interface Props {
   item: MenuItemData
   onToggle86: (id: string) => void
   onEdit: (item: MenuItemData) => void
+  onOpenCostBreakdown: (item: MenuItemData) => void
   onDelete: (id: string) => void
 }
 
-export const MenuItemRow: React.FC<Props> = ({ item, onToggle86, onEdit, onDelete }) => {
-  const margin = calculateGrossMargin(item.price, item.cost)
-  const modifierCount = item.modifierGroups?.length || 0
+export const MenuItemRow: React.FC<Props> = ({
+  item,
+  onToggle86,
+  onEdit,
+  onOpenCostBreakdown,
+  onDelete
+}) => {
+  const financials = analyzeDishFinancials(item.price, item.cost)
+  const { availablePortions } = calculateAvailablePortions(item)
+  const hasRecipe = Boolean(item.recipe?.ingredients?.length)
 
   return (
     <div
-      className={`group p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-4 ${
+      className={`group p-4 rounded-3xl border transition-all flex items-center justify-between gap-4 ${
         item.isAvailable
-          ? 'bg-white dark:bg-slate-800/90 border-slate-200/80 dark:border-slate-700/60 hover:shadow-md'
-          : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-60'
+          ? 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-amber-400 shadow-xs'
+          : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60'
       }`}
     >
-      {/* Left: Dish Name, Description, Station & Modifiers */}
-      <div className="flex-1 min-w-0">
+      {/* ─── Left Details ─────────────────────────────────────────── */}
+      <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-black text-slate-900 dark:text-white tracking-tight">
             {item.name}
           </span>
-          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold">
-            {item.station || 'Kitchen'}
+          <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black">
+            {item.station}
           </span>
-          {modifierCount > 0 && (
-            <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold flex items-center gap-1">
-              <SlidersHorizontal className="w-2.5 h-2.5" />
-              {modifierCount} Option Groups
+
+          {/* Live Inventory Portions Badge */}
+          {hasRecipe && availablePortions !== null && (
+            <span
+              className={`px-2 py-0.5 rounded-lg text-[10px] font-black flex items-center gap-1 ${
+                availablePortions === 0
+                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400'
+                  : availablePortions <= 5
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400'
+                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+              }`}
+            >
+              <Package className="w-3 h-3" />
+              {availablePortions === 0 ? '0 in stock' : `${availablePortions} left`}
             </span>
           )}
+
+          {!hasRecipe && (
+            <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px] font-bold">
+              No Recipe BOM
+            </span>
+          )}
+
           {!item.isAvailable && (
-            <span className="px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[10px] font-black uppercase">
+            <span className="px-2 py-0.5 rounded-lg bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[10px] font-black uppercase">
               86'd Out of Stock
             </span>
           )}
         </div>
 
         {item.description && (
-          <p className="text-xs text-slate-400 mt-1 line-clamp-1">{item.description}</p>
+          <p className="text-xs text-slate-400 line-clamp-1">{item.description}</p>
         )}
 
-        <div className="text-[11px] text-slate-400 flex items-center gap-3 mt-1.5">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3 text-slate-400" />
-            {item.preparationTime}m prep
+        <div className="text-[11px] text-slate-400 flex items-center gap-3 pt-0.5">
+          <span className="flex items-center gap-1 font-medium">
+            <Clock className="w-3 h-3" /> {item.preparationTime}m prep
           </span>
           <span>•</span>
-          <span>Cost: {formatCurrency(item.cost)}</span>
+          <button
+            type="button"
+            onClick={() => {
+              sounds.playBump()
+              onOpenCostBreakdown(item)
+            }}
+            className="text-amber-600 dark:text-amber-400 font-bold hover:underline flex items-center gap-1"
+          >
+            <Utensils className="w-3 h-3" /> View Ingredient BOM (${item.cost.toFixed(2)} cost)
+          </button>
         </div>
       </div>
 
-      {/* Center: Financials & Gross Margin Badge */}
+      {/* ─── Financial Margin Card ────────────────────────────────── */}
       <div className="text-right shrink-0">
         <div className="text-base font-black text-slate-900 dark:text-white">
           {formatCurrency(item.price)}
         </div>
         <div
           className={`text-[10px] font-black uppercase tracking-wider ${
-            margin.rating === 'high'
+            financials.rating === 'high'
               ? 'text-emerald-600 dark:text-emerald-400'
-              : margin.rating === 'medium'
+              : financials.rating === 'medium'
                 ? 'text-amber-600 dark:text-amber-400'
                 : 'text-rose-600 dark:text-rose-400'
           }`}
         >
-          {margin.marginPercent}% Margin (+{formatCurrency(margin.profit)})
+          {financials.costPercent}% Cost (+{formatCurrency(financials.profit)} Profit)
         </div>
       </div>
 
-      {/* Right: Actions (86 Toggle, Edit, Delete) */}
+      {/* ─── Action Controls ──────────────────────────────────────── */}
       <div className="flex items-center gap-1 shrink-0">
         <button
-          onClick={() => onToggle86(item.id)}
+          type="button"
+          onClick={() => {
+            sounds.playBump()
+            onToggle86(item.id)
+          }}
           className={`p-1.5 rounded-xl transition-colors ${
-            item.isAvailable
-              ? 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
-              : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+            item.isAvailable ? 'text-emerald-500 hover:bg-emerald-50' : 'text-slate-400'
           }`}
-          title={item.isAvailable ? 'Click to 86 (Mark Out of Stock)' : 'Click to Make Available'}
+          title={item.isAvailable ? '86 Out of Stock' : 'Mark Available'}
         >
           {item.isAvailable ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
         </button>
 
         <button
-          onClick={() => onEdit(item)}
-          className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-          title="Edit item"
+          type="button"
+          onClick={() => {
+            sounds.playBump()
+            onEdit(item)
+          }}
+          className="p-2 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100"
+          title="Edit Dish & Modifiers"
         >
           <Edit2 className="w-4 h-4" />
         </button>
 
         <button
+          type="button"
           onClick={() => onDelete(item.id)}
-          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-          title="Delete item"
+          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+          title="Delete Dish"
         >
           <Trash2 className="w-4 h-4" />
         </button>
