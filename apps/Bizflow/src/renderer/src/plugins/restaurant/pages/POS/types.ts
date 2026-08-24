@@ -1,17 +1,19 @@
+// src/pages/POS/types.ts
+
 export type OrderStatus = 'open' | 'billing' | 'paid' | 'voided'
 export type ItemStatus = 'pending' | 'preparing' | 'ready' | 'served' | 'voided'
 export type CourseType = 'beverage' | 'starter' | 'main' | 'dessert'
-export type OrderType = 'dine_in' | 'takeout' | 'bar'
+export type OrderType = 'dine_in' | 'takeout' | 'delivery' | 'bar_tab'
 export type DiscountType = 'percentage' | 'fixed'
 
 export interface ModifierOptionChoice {
-  id: string
+  id?: string
   name: string
   priceDelta: number
 }
 
 export interface ModifierGroupConfig {
-  id: string
+  id?: string
   title: string
   minSelect: number
   maxSelect: number
@@ -25,6 +27,7 @@ export interface PosMenuItem {
   description?: string | null
   price: number
   cost: number
+  taxRate?: number
   preparationTime: number
   station: string
   isAvailable: boolean
@@ -42,16 +45,20 @@ export interface PosOrderItem {
   unitPrice: number
   totalPrice: number
   course: CourseType
+  seatNumber: number
   notes?: string | null
-  modifiers?: string | null // JSON string of selected modifiers
+  modifiers?: string | null
   status: ItemStatus
   station: string
   firedAt?: string | null
+  voidReason?: string | null
+  createdAt: string
 }
 
 export interface OrderPaymentRecord {
   id: string
   amount: number
+  tipAmount: number
   paymentMethod: string
   reference?: string | null
   createdAt: string
@@ -60,12 +67,13 @@ export interface OrderPaymentRecord {
 export interface PosOrder {
   id: string
   orderNumber?: number | null
-  tableId: string
+  tableId?: string | null
   orderType: OrderType
   status: OrderStatus
   guestCount: number
   serverName?: string | null
   serverId?: string | null
+  shiftId?: string | null
   notes?: string | null
   subtotal: number
   discountType?: DiscountType | null
@@ -86,5 +94,5 @@ export interface PosOrder {
     name?: string | null
     section: string
     capacity: number
-  }
+  } | null
 }

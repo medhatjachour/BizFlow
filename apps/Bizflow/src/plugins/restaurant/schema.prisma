@@ -1,9 +1,6 @@
 // ─── Restaurant Module Schema ───────────────────────────────────────────────
 // Module: restaurant
-// Use Case: Floor plan, POS, KDS, Reservations, Shifts,
-//           Ingredient Pantry, Recipe BOM, Auto-Depletion & Kitchen Waste Log.
 // ────────────────────────────────────────────────────────────────────────────
-
 model RestaurantTable {
   id           String             @id @default(uuid())
   number       Int                @unique
@@ -13,7 +10,7 @@ model RestaurantTable {
   section      String             @default("Main Hall")
   posX         Float              @default(0)
   posY         Float              @default(0)
-  shape        String             @default("square")
+  shape        String             @default("square")    // square | circle | rectangle
   isActive     Boolean            @default(true)
   reservations TableReservation[]
   orders       DineInOrder[]
@@ -52,11 +49,13 @@ model MenuItem {
   description     String?
   price           Float
   cost            Float             @default(0)
+  taxRate         Float             @default(0.0)        // Optional per-item tax override (0 = fallback to order tax)
   preparationTime Int               @default(15)
-  station         String            @default("Kitchen")
-  isAvailable     Boolean           @default(true) // 86'd out-of-stock toggle
+  station         String            @default("Kitchen")  // Kitchen | Grill | Bar | Pastry | Cold Station | Pizza Oven
+  isAvailable     Boolean           @default(true)       // 86'd toggle
   displayOrder    Int               @default(0)
   colorTag        String?
+  barcode         String?
   notes           String?
   modifierGroups  ModifierGroup[]
   orderItems      DineInOrderItem[]
@@ -73,7 +72,7 @@ model ModifierGroup {
   id         String           @id @default(uuid())
   menuItemId String
   menuItem   MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
-  title      String           // e.g. "Meat Temp", "Choice of Side"
+  title      String
   minSelect  Int              @default(0)
   maxSelect  Int              @default(1)
   options    ModifierOption[]
@@ -85,21 +84,22 @@ model ModifierOption {
   id         String        @id @default(uuid())
   groupId    String
   group      ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  name       String        // e.g. "French Fries", "Medium Rare"
+  name       String
   priceDelta Float         @default(0)
+  costDelta  Float         @default(0)
 
   @@index([groupId])
 }
 
-// ─── Ingredient Pantry & Inventory ───────────────────────────────────────────
+// ─── Inventory & Pantry ──────────────────────────────────────────────────────
 model RestaurantIngredient {
   id               String                    @id @default(uuid())
   name             String
-  category         String                    @default("General") // Meat, Dairy, Produce, Dry Goods, Bakery, Beverage, Spices
-  unit             String                    @default("kg")      // kg, g, L, ml, pcs, can, bottle
+  category         String                    @default("General") // Meats, Dairy, Produce, Dry Goods, etc.
+  unit             String                    @default("g")       // Standard base unit: g, ml, pcs
   currentStock     Float                     @default(0)
-  minStockAlert    Float                     @default(5)
-  costPerUnit      Float                     @default(0)         // Purchase cost per unit
+  minStockAlert    Float                     @default(500)
+  costPerUnit      Float                     @default(0)         // Purchase cost per base unit
   supplierName     String?
   notes            String?
   isActive         Boolean                   @default(true)
@@ -117,10 +117,10 @@ model IngredientStockMovement {
   id           String               @id @default(uuid())
   ingredientId String
   ingredient   RestaurantIngredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-  type         String               // "restock" | "order_deduction" | "waste" | "manual_adjustment"
+  type         String               // restock | order_deduction | waste | manual_adjustment | void_reversal
   quantity     Float                // + for restock, - for deduction
   unitCost     Float                @default(0)
-  referenceId  String?              // orderId or wasteLogId
+  referenceId  String?              // orderId, wasteLogId, or PO number
   notes        String?
   createdAt    DateTime             @default(now())
 
@@ -134,7 +134,7 @@ model MenuItemRecipe {
   id           String             @id @default(uuid())
   menuItemId   String             @unique
   menuItem     MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
-  yieldCount   Int                @default(1)    // Portion yield
+  yieldCount   Int                @default(1)
   prepNotes    String?
   ingredients  RecipeIngredient[]
   createdAt    DateTime           @default(now())
@@ -147,24 +147,24 @@ model RecipeIngredient {
   recipe       MenuItemRecipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   ingredientId String
   ingredient   RestaurantIngredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-  quantity     Float                // Required quantity per portion yield
-  unit         String               // Matching ingredient unit
+  quantity     Float                // Amount in standard base unit
+  unit         String               // Matching unit (e.g. g, ml, pcs)
   notes        String?
 
   @@index([recipeId])
   @@index([ingredientId])
 }
 
-// ─── Kitchen Waste & Spoilage Log ────────────────────────────────────────────
+// ─── Kitchen Waste Log ───────────────────────────────────────────────────────
 model RestaurantWasteLog {
   id           String                @id @default(uuid())
   ingredientId String?
   ingredient   RestaurantIngredient? @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
-  itemName     String                // Snapshot name
+  itemName     String
   quantity     Float
   unit         String
-  costLoss     Float                 @default(0) // Quantity * Cost
-  reason       String                // "expired" | "dropped_spill" | "overcooked" | "customer_returned" | "prep_trim"
+  costLoss     Float                 @default(0)
+  reason       String                // expired | dropped_spill | overcooked | customer_returned | prep_trim
   loggedBy     String?
   notes        String?
   createdAt    DateTime              @default(now())
@@ -174,38 +174,40 @@ model RestaurantWasteLog {
   @@index([createdAt])
 }
 
-// ─── Dine-In, Takeout & Delivery Orders ───────────────────────────────────────
+// ─── Orders, POS & Checks ────────────────────────────────────────────────────
 model DineInOrder {
-  id             String            @id @default(uuid())
-  orderNumber    Int?
-  tableId        String
-  table          RestaurantTable   @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  orderType      String            @default("dine_in") // dine_in | takeout | delivery | bar_tab
-  status         String            @default("open")    // open | billing | paid | voided
-  guestCount     Int               @default(1)
-  serverName     String?
-  serverId       String?
-  notes          String?
-  subtotal       Float             @default(0)
-  discountType   String?           // percentage | fixed
-  discountAmount Float             @default(0)
-  taxRate        Float             @default(0)
-  tax            Float             @default(0)
-  serviceCharge  Float             @default(0)
-  tipAmount      Float             @default(0)
-  total          Float             @default(0)
-  paymentMethod  String?
-  isStockDeducted Boolean          @default(false)
-  openedAt       DateTime          @default(now())
-  closedAt       DateTime?
-  items          DineInOrderItem[]
-  payments       OrderPayment[]
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  id              String            @id @default(uuid())
+  orderNumber     Int?
+  tableId         String?           // NULLABLE: allows takeout, delivery, bar tabs
+  table           RestaurantTable?  @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  orderType       String            @default("dine_in") // dine_in | takeout | delivery | bar_tab
+  status          String            @default("open")    // open | billing | paid | voided
+  guestCount      Int               @default(1)
+  serverName      String?
+  serverId        String?
+  shiftId         String?           // Active cashier/server shift connection
+  notes           String?
+  subtotal        Float             @default(0)
+  discountType    String?           // percentage | fixed
+  discountAmount  Float             @default(0)
+  taxRate         Float             @default(0)
+  tax             Float             @default(0)
+  serviceCharge   Float             @default(0)
+  tipAmount       Float             @default(0)
+  total           Float             @default(0)
+  paymentMethod   String?
+  isStockDeducted Boolean           @default(false)
+  openedAt        DateTime          @default(now())
+  closedAt        DateTime?
+  items           DineInOrderItem[]
+  payments        OrderPayment[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
   @@index([tableId])
   @@index([status])
   @@index([openedAt])
+  @@index([shiftId])
 }
 
 model DineInOrderItem {
@@ -219,13 +221,15 @@ model DineInOrderItem {
   unitPrice  Float
   totalPrice Float        @default(0)
   course     String       @default("main") // beverage | starter | main | dessert
+  seatNumber Int          @default(1)      // Seat assignment for easy bill splitting
   notes      String?
-  modifiers  String?
+  modifiers  String?                       // JSON stringified array of selected modifiers
   status     String       @default("pending") // pending | preparing | ready | served | voided
   station    String       @default("Kitchen")
   firedAt    DateTime?
   readyAt    DateTime?
   servedAt   DateTime?
+  voidReason String?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
@@ -240,27 +244,29 @@ model OrderPayment {
   orderId       String
   order         DineInOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount        Float
-  paymentMethod String      // cash | card | visa | apple_pay | voucher
+  tipAmount     Float       @default(0)
+  paymentMethod String      // cash | card | apple_pay | voucher
   reference     String?
   createdAt     DateTime    @default(now())
 
   @@index([orderId])
 }
 
+// ─── Shifts & Drawer Balancing ───────────────────────────────────────────────
 model RestaurantShift {
-  id         String    @id @default(uuid())
-  serverId   String
-  serverName String
-  startCash  Float     @default(0)
-  endCash    Float?
-  totalSales Float     @default(0)
-  totalTips  Float     @default(0)
-  notes      String?
-  status     String    @default("active") // active | closed
-  openedAt   DateTime  @default(now())
-  closedAt   DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id          String    @id @default(uuid())
+  serverId    String
+  serverName  String
+  startCash   Float     @default(0)
+  endCash     Float?
+  totalSales  Float     @default(0)
+  totalTips   Float     @default(0)
+  notes       String?
+  status      String    @default("active") // active | closed
+  openedAt    DateTime  @default(now())
+  closedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([serverId])
   @@index([status])

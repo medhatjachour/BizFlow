@@ -1,5 +1,7 @@
+// src/pages/Reservation/hooks/useReservations.ts
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { ReservationData, TableBrief, ReservationFormData, ReservationStatus } from '../types'
+import { sounds } from '../../utils/sound'
 
 export function useReservations() {
   const [reservations, setReservations] = useState<ReservationData[]>([])
@@ -9,7 +11,6 @@ export function useReservations() {
   const [filterDate, setFilterDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
-  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -22,7 +23,7 @@ export function useReservations() {
       setReservations(resList || [])
       setTables(tblList || [])
     } catch (err: any) {
-      setError(err?.message || 'Failed to load reservations')
+      setError(err?.message || 'Failed to load guest reservations')
     } finally {
       setLoading(false)
     }
@@ -84,47 +85,55 @@ export function useReservations() {
           notes: data.notes || undefined
         })
       }
+      sounds.playSuccess()
       loadData()
       return true
     } catch (err: any) {
-      alert(err?.message || 'Failed to save reservation')
+      sounds.playError()
+      alert(err?.message || 'Failed to record reservation')
       return false
     }
   }
 
+  // Auto-Seating: Changes Table status to occupied and opens a fresh DineInOrder
   const seatReservation = async (id: string, tableId?: string) => {
     try {
+      sounds.playSuccess()
       await window.api.restaurant.seatReservation({ reservationId: id, tableId })
       loadData()
       return true
     } catch (err: any) {
-      alert(err?.message || 'Failed to seat reservation')
+      sounds.playError()
+      alert(err?.message || 'Failed to seat guest')
       return false
     }
   }
 
   const updateStatus = async (id: string, status: string) => {
     try {
+      sounds.playBump()
       await window.api.restaurant.updateReservation({ id, status })
       loadData()
     } catch (err: any) {
-      alert(err?.message || 'Failed to update reservation status')
+      sounds.playError()
+      alert(err?.message || 'Failed to update booking status')
     }
   }
 
   const deleteReservation = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this booking?')) return
+    if (!confirm('Are you sure you want to cancel this booking?')) return
     try {
+      sounds.playBump()
       await window.api.restaurant.deleteReservation(id)
       loadData()
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete reservation')
+      sounds.playError()
+      alert(err?.message || 'Failed to remove reservation')
     }
   }
 
   return {
     reservations: filteredReservations,
-    allReservations: reservations,
     tables,
     loading,
     error,
@@ -134,8 +143,6 @@ export function useReservations() {
     setStatusFilter,
     searchQuery,
     setSearchQuery,
-    viewMode,
-    setViewMode,
     stats,
     refreshReservations: loadData,
     saveReservation,

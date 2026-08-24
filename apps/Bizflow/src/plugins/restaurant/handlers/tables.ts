@@ -1,27 +1,30 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { recalcOrderTotalsInTx } from './orders'
+import { broadcastRestaurantEvent } from '../utils/events'
 
 const log = createLogger('Restaurant:Tables')
 
 export function registerTableHandlers(prisma: any) {
+  // ─── Get Tables ───────────────────────────────────────────────────────────
   ipcMain.handle('restaurant:getTables', async () => {
     try {
+      const todayStart = new Date(new Date().setHours(0, 0, 0, 0))
+      const todayEnd = new Date(new Date().setHours(23, 59, 59, 999))
+
       return await prisma.restaurantTable.findMany({
         where: { isActive: true },
         include: {
           orders: {
             where: { status: { in: ['open', 'billing'] } },
             include: {
-              items: true,
+              items: { orderBy: [{ seatNumber: 'asc' }, { createdAt: 'asc' }] },
               payments: true
             }
           },
           reservations: {
             where: {
-              date: {
-                gte: new Date(new Date().setHours(0, 0, 0, 0)),
-                lte: new Date(new Date().setHours(23, 59, 59, 999))
-              },
+              date: { gte: todayStart, lte: todayEnd },
               status: { in: ['confirmed', 'pending'] }
             },
             orderBy: { date: 'asc' }
@@ -36,6 +39,7 @@ export function registerTableHandlers(prisma: any) {
     }
   })
 
+  // ─── Create Table ─────────────────────────────────────────────────────────
   ipcMain.handle('restaurant:createTable', async (_e, data: {
     number: number
     capacity: number
@@ -46,7 +50,7 @@ export function registerTableHandlers(prisma: any) {
     posY?: number
   }) => {
     try {
-      return await prisma.restaurantTable.create({
+      const table = await prisma.restaurantTable.create({
         data: {
           number: Number(data.number),
           capacity: Number(data.capacity || 4),
@@ -58,12 +62,15 @@ export function registerTableHandlers(prisma: any) {
           status: 'available'
         }
       })
+      broadcastRestaurantEvent('table:updated', table)
+      return table
     } catch (err) {
       log.error('createTable error', err)
       throw err
     }
   })
 
+  // ─── Update Table ─────────────────────────────────────────────────────────
   ipcMain.handle('restaurant:updateTable', async (_e, data: { id: string; [key: string]: any }) => {
     try {
       const { id, ...rest } = data
@@ -71,97 +78,114 @@ export function registerTableHandlers(prisma: any) {
       if (rest.capacity !== undefined) rest.capacity = Number(rest.capacity)
       if (rest.posX !== undefined) rest.posX = Number(rest.posX)
       if (rest.posY !== undefined) rest.posY = Number(rest.posY)
-      return await prisma.restaurantTable.update({ where: { id }, data: rest })
+
+      const table = await prisma.restaurantTable.update({ where: { id }, data: rest })
+      broadcastRestaurantEvent('table:updated', table)
+      return table
     } catch (err) {
       log.error('updateTable error', err)
       throw err
     }
   })
 
+  // ─── Update Table Position ────────────────────────────────────────────────
   ipcMain.handle('restaurant:updateTablePosition', async (_e, data: { id: string; posX: number; posY: number }) => {
     try {
-      return await prisma.restaurantTable.update({
+      const table = await prisma.restaurantTable.update({
         where: { id: data.id },
         data: { posX: Number(data.posX), posY: Number(data.posY) }
       })
+      broadcastRestaurantEvent('table:updated', table)
+      return table
     } catch (err) {
       log.error('updateTablePosition error', err)
       throw err
     }
   })
 
+  // ─── Atomic Transfer Table ────────────────────────────────────────────────
   ipcMain.handle('restaurant:transferTable', async (_e, data: { fromTableId: string; toTableId: string }) => {
-    try {
-      const { fromTableId, toTableId } = data
-      const openOrder = await prisma.dineInOrder.findFirst({
-        where: { tableId: fromTableId, status: { in: ['open', 'billing'] } }
+    return await prisma.$transaction(async (tx: any) => {
+      const openOrder = await tx.dineInOrder.findFirst({
+        where: { tableId: data.fromTableId, status: { in: ['open', 'billing'] } }
       })
-      if (!openOrder) throw new Error('Source table has no active open order to transfer')
+      if (!openOrder) throw new Error('Source table has no active order to transfer')
 
-      const destinationOrder = await prisma.dineInOrder.findFirst({
-        where: { tableId: toTableId, status: { in: ['open', 'billing'] } }
+      const destOrder = await tx.dineInOrder.findFirst({
+        where: { tableId: data.toTableId, status: { in: ['open', 'billing'] } }
       })
-      if (destinationOrder) throw new Error('Target table is currently occupied')
+      if (destOrder) throw new Error('Destination table is currently occupied')
 
-      // Move order to target table and swap table statuses
-      const updatedOrder = await prisma.dineInOrder.update({
+      // Move order and swap statuses
+      const updatedOrder = await tx.dineInOrder.update({
         where: { id: openOrder.id },
-        data: { tableId: toTableId }
+        data: { tableId: data.toTableId }
       })
-      await prisma.restaurantTable.update({ where: { id: fromTableId }, data: { status: 'available' } })
-      await prisma.restaurantTable.update({ where: { id: toTableId }, data: { status: 'occupied' } })
+
+      await tx.restaurantTable.update({ where: { id: data.fromTableId }, data: { status: 'available' } })
+      await tx.restaurantTable.update({ where: { id: data.toTableId }, data: { status: 'occupied' } })
+
+      broadcastRestaurantEvent('table:updated', { id: data.fromTableId, status: 'available' })
+      broadcastRestaurantEvent('table:updated', { id: data.toTableId, status: 'occupied' })
+      broadcastRestaurantEvent('order:updated', updatedOrder)
 
       return updatedOrder
-    } catch (err) {
-      log.error('transferTable error', err)
-      throw err
-    }
+    })
   })
 
+  // ─── Atomic Merge Tables ──────────────────────────────────────────────────
   ipcMain.handle('restaurant:mergeTables', async (_e, data: { sourceTableId: string; targetTableId: string }) => {
-    try {
-      const { sourceTableId, targetTableId } = data
-      const sourceOrder = await prisma.dineInOrder.findFirst({
-        where: { tableId: sourceTableId, status: { in: ['open', 'billing'] } },
-        include: { items: true }
+    return await prisma.$transaction(async (tx: any) => {
+      const sourceOrder = await tx.dineInOrder.findFirst({
+        where: { tableId: data.sourceTableId, status: { in: ['open', 'billing'] } },
+        include: { items: true, payments: true }
       })
-      const targetOrder = await prisma.dineInOrder.findFirst({
-        where: { tableId: targetTableId, status: { in: ['open', 'billing'] } }
+      const targetOrder = await tx.dineInOrder.findFirst({
+        where: { tableId: data.targetTableId, status: { in: ['open', 'billing'] } }
       })
-      if (!sourceOrder || !targetOrder) throw new Error('Both tables must have active open orders to merge')
 
-      // Transfer all items from source order to target order
-      await prisma.dineInOrderItem.updateMany({
+      if (!sourceOrder || !targetOrder) {
+        throw new Error('Both tables must have active open checks to merge')
+      }
+
+      // Reassign all order items and payments to target order
+      await tx.dineInOrderItem.updateMany({
         where: { orderId: sourceOrder.id },
         data: { orderId: targetOrder.id }
       })
 
-      // Void the source order and release source table
-      await prisma.dineInOrder.update({
+      await tx.orderPayment.updateMany({
+        where: { orderId: sourceOrder.id },
+        data: { orderId: targetOrder.id }
+      })
+
+      // Void the source order and release table
+      await tx.dineInOrder.update({
         where: { id: sourceOrder.id },
-        data: { status: 'voided', notes: `Merged into Table order ${targetOrder.id}` }
+        data: { status: 'voided', notes: `Merged into Table order #${targetOrder.id}` }
       })
-      await prisma.restaurantTable.update({ where: { id: sourceTableId }, data: { status: 'available' } })
 
-      // Recalculate target order totals
-      const items = await prisma.dineInOrderItem.findMany({ where: { orderId: targetOrder.id } })
-      const subtotal = items.reduce((s: number, i: any) => s + (i.totalPrice || i.unitPrice * i.quantity), 0)
-      const tax = subtotal * (targetOrder.taxRate || 0)
-      const total = subtotal + tax + (targetOrder.serviceCharge || 0) - (targetOrder.discountAmount || 0)
-
-      return await prisma.dineInOrder.update({
-        where: { id: targetOrder.id },
-        data: { subtotal, tax, total }
+      await tx.restaurantTable.update({
+        where: { id: data.sourceTableId },
+        data: { status: 'available' }
       })
-    } catch (err) {
-      log.error('mergeTables error', err)
-      throw err
-    }
+
+      broadcastRestaurantEvent('table:updated', { id: data.sourceTableId, status: 'available' })
+
+      // Recalculate target check
+      return await recalcOrderTotalsInTx(tx, targetOrder.id)
+    })
   })
 
+  // ─── Delete Table ─────────────────────────────────────────────────────────
   ipcMain.handle('restaurant:deleteTable', async (_e, id: string) => {
     try {
-      return await prisma.restaurantTable.update({ where: { id }, data: { isActive: false } })
+      const table = await prisma.restaurantTable.update({
+        where: { id },
+        data: { isActive: false }
+      })
+      broadcastRestaurantEvent('table:updated', table)
+      return table
     } catch (err) {
       log.error('deleteTable error', err)
       throw err

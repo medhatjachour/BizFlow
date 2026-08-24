@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { roundMoney, convertToBaseUnit } from '../utils/mathEngine'
+import { broadcastRestaurantEvent } from '../utils/events'
 
 const log = createLogger('Restaurant:Waste')
 
@@ -34,41 +36,43 @@ export function registerWasteHandlers(prisma: any) {
     loggedBy?: string
     notes?: string
   }) => {
-    try {
-      let costLoss = Number(data.costLoss || 0)
+    return await prisma.$transaction(async (tx: any) => {
+      let costLoss = roundMoney(Number(data.costLoss || 0))
 
-      // If tied to an ingredient, deduct stock automatically and compute exact cost
       if (data.ingredientId) {
-        const ing = await prisma.restaurantIngredient.findUnique({
-          where: { id: data.ingredientId }
-        })
+        const ing = await tx.restaurantIngredient.findUnique({ where: { id: data.ingredientId } })
         if (ing) {
-          costLoss = Number(data.quantity) * ing.costPerUnit
-          const newStock = Math.max(0, ing.currentStock - Number(data.quantity))
+          const { normalizedQty: deductQty } = convertToBaseUnit(Number(data.quantity), data.unit)
+          costLoss = roundMoney(deductQty * ing.costPerUnit)
+          const newStock = roundMoney(Math.max(0, ing.currentStock - deductQty))
 
-          await prisma.restaurantIngredient.update({
+          await tx.restaurantIngredient.update({
             where: { id: data.ingredientId },
             data: { currentStock: newStock }
           })
 
-          await prisma.ingredientStockMovement.create({
+          await tx.ingredientStockMovement.create({
             data: {
               ingredientId: data.ingredientId,
               type: 'waste',
-              quantity: -Number(data.quantity),
+              quantity: -deductQty,
               unitCost: ing.costPerUnit,
-              notes: `Waste reason: ${data.reason}`
+              notes: `Waste: ${data.reason} (${data.notes || 'No notes'})`
             }
           })
+
+          if (newStock <= ing.minStockAlert) {
+            broadcastRestaurantEvent('inventory:low_stock', ing)
+          }
         }
       }
 
-      return await prisma.restaurantWasteLog.create({
+      return await tx.restaurantWasteLog.create({
         data: {
           ingredientId: data.ingredientId || null,
           itemName: data.itemName,
           quantity: Number(data.quantity),
-          unit: data.unit || 'pcs',
+          unit: data.unit || 'g',
           costLoss,
           reason: data.reason || 'expired',
           loggedBy: data.loggedBy || 'Staff',
@@ -76,10 +80,7 @@ export function registerWasteHandlers(prisma: any) {
         },
         include: { ingredient: true }
       })
-    } catch (err) {
-      log.error('logWaste error', err)
-      throw err
-    }
+    })
   })
 
   ipcMain.handle('restaurant:deleteWasteLog', async (_e, id: string) => {

@@ -1,34 +1,52 @@
+// src/pages/POS/hooks/useActiveOrder.ts
 import { useState, useEffect, useCallback } from 'react'
 import { PosOrder, PosMenuItem, CourseType, DiscountType } from '../types'
+import { sounds } from '../../utils/sound'
 
 export function useActiveOrder(initialOrderId?: string) {
   const [order, setOrder] = useState<PosOrder | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [activeSeat, setActiveSeat] = useState<number>(1)
 
   const fetchOrder = useCallback(async (id: string) => {
     setLoading(true)
-    setError(null)
     try {
       const data = await window.api.restaurant.getOrder(id)
       setOrder(data || null)
-    } catch (err: any) {
-      setError(err?.message || 'Failed to fetch active order')
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    if (initialOrderId) {
-      fetchOrder(initialOrderId)
-    }
+    if (initialOrderId) fetchOrder(initialOrderId)
   }, [initialOrderId, fetchOrder])
+
+  // Real-Time Event Bus Subscription: Instant sync across screens without polling
+  useEffect(() => {
+    const unsubOrder = window.api.restaurant.onEvent('order:updated', (updated: PosOrder) => {
+      if (order && updated.id === order.id) {
+        setOrder(updated)
+      }
+    })
+
+    const unsubSettled = window.api.restaurant.onEvent('order:settled', ({ orderId }: { orderId: string }) => {
+      if (order && order.id === orderId) {
+        setOrder(null)
+      }
+    })
+
+    return () => {
+      unsubOrder()
+      unsubSettled()
+    }
+  }, [order])
 
   const addItemToOrder = async (
     menuItem: PosMenuItem,
     quantity = 1,
     course: CourseType = 'main',
+    seatNumber = activeSeat,
     modifiers: any[] = [],
     notes = ''
   ) => {
@@ -44,12 +62,14 @@ export function useActiveOrder(initialOrderId?: string) {
         quantity,
         unitPrice,
         course,
+        seatNumber,
         station: menuItem.station || 'Kitchen',
         notes: notes || null,
         modifiers: modifiers.length ? JSON.stringify(modifiers) : null
       })
       await fetchOrder(order.id)
     } catch (err: any) {
+      sounds.playError()
       alert(err?.message || 'Failed to add item to ticket')
     }
   }
@@ -58,87 +78,63 @@ export function useActiveOrder(initialOrderId?: string) {
     if (!order) return
     try {
       if (quantity <= 0) {
-        await window.api.restaurant.removeOrderItem(itemId)
+        await window.api.restaurant.removeOrderItem( itemId )
       } else {
         await window.api.restaurant.updateOrderItem({ id: itemId, quantity })
       }
       await fetchOrder(order.id)
     } catch (err: any) {
-      alert(err?.message || 'Failed to update item quantity')
-    }
-  }
-
-  const updateItemStatus = async (itemId: string, status: string) => {
-    if (!order) return
-    try {
-      await window.api.restaurant.updateOrderItemStatus({ id: itemId, status })
-      await fetchOrder(order.id)
-    } catch (err: any) {
-      alert(err?.message || 'Failed to update status')
+      sounds.playError()
     }
   }
 
   const fireCourse = async (course: CourseType) => {
     if (!order) return
     try {
+      sounds.playBump()
       await window.api.restaurant.fireCourse({ orderId: order.id, course })
       await fetchOrder(order.id)
     } catch (err: any) {
-      alert(err?.message || 'Failed to fire course')
+      sounds.playError()
     }
+  }
+
+  const splitBySeats = async (seatNumbers: number[]) => {
+    if (!order) return
+    await window.api.restaurant.splitCheckBySeat({ orderId: order.id, seatNumbers })
+    await fetchOrder(order.id)
   }
 
   const applyDiscount = async (discountType: DiscountType, discountAmount: number) => {
     if (!order) return
-    try {
-      await window.api.restaurant.applyDiscount({ orderId: order.id, discountType, discountAmount })
-      await fetchOrder(order.id)
-    } catch (err: any) {
-      alert(err?.message || 'Failed to apply discount')
-    }
+    await window.api.restaurant.applyDiscount({ orderId: order.id, discountType, discountAmount })
+    await fetchOrder(order.id)
   }
 
   const processPayment = async (amount: number, paymentMethod: string, reference?: string, tipAmount = 0) => {
     if (!order) return
-    try {
-      const res = await window.api.restaurant.processPayment({
-        orderId: order.id,
-        amount,
-        paymentMethod,
-        reference,
-        tipAmount
-      })
-      await fetchOrder(order.id)
-      return res
-    } catch (err: any) {
-      alert(err?.message || 'Payment processing failed')
-      throw err
-    }
-  }
-
-  const voidOrder = async (reason: string) => {
-    if (!order) return
-    if (!confirm('Are you sure you want to void this entire order?')) return
-    try {
-      await window.api.restaurant.closeOrder({ orderId: order.id, status: 'voided', notes: reason })
-      setOrder(null)
-    } catch (err: any) {
-      alert(err?.message || 'Failed to void order')
-    }
+    const res = await window.api.restaurant.processPayment({
+      orderId: order.id,
+      amount,
+      paymentMethod,
+      reference,
+      tipAmount
+    })
+    await fetchOrder(order.id)
+    return res
   }
 
   return {
     order,
     loading,
-    error,
     setOrder,
-    refreshOrder: () => (order ? fetchOrder(order.id) : Promise.resolve()),
+    activeSeat,
+    setActiveSeat,
     addItemToOrder,
     updateItemQty,
-    updateItemStatus,
     fireCourse,
+    splitBySeats,
     applyDiscount,
-    processPayment,
-    voidOrder
+    processPayment
   }
 }

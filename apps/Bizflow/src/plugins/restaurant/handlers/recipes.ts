@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
+import { roundMoney, convertToBaseUnit } from '../utils/mathEngine'
 
 const log = createLogger('Restaurant:Recipes')
 
@@ -9,31 +10,12 @@ export function registerRecipeHandlers(prisma: any) {
       return await prisma.menuItemRecipe.findMany({
         include: {
           menuItem: true,
-          ingredients: {
-            include: { ingredient: true }
-          }
+          ingredients: { include: { ingredient: true } }
         },
         orderBy: { createdAt: 'desc' }
       })
     } catch (err) {
       log.error('getRecipes error', err)
-      throw err
-    }
-  })
-
-  ipcMain.handle('restaurant:getRecipeForMenuItem', async (_e, menuItemId: string) => {
-    try {
-      return await prisma.menuItemRecipe.findUnique({
-        where: { menuItemId },
-        include: {
-          menuItem: true,
-          ingredients: {
-            include: { ingredient: true }
-          }
-        }
-      })
-    } catch (err) {
-      log.error('getRecipeForMenuItem error', err)
       throw err
     }
   })
@@ -44,17 +26,15 @@ export function registerRecipeHandlers(prisma: any) {
     prepNotes?: string
     ingredients: Array<{ ingredientId: string; quantity: number; unit: string; notes?: string }>
   }) => {
-    try {
-      const existing = await prisma.menuItemRecipe.findUnique({
-        where: { menuItemId: data.menuItemId }
-      })
+    return await prisma.$transaction(async (tx: any) => {
+      const existing = await tx.menuItemRecipe.findUnique({ where: { menuItemId: data.menuItemId } })
 
       if (existing) {
-        await prisma.recipeIngredient.deleteMany({ where: { recipeId: existing.id } })
-        await prisma.menuItemRecipe.update({
+        await tx.recipeIngredient.deleteMany({ where: { recipeId: existing.id } })
+        await tx.menuItemRecipe.update({
           where: { id: existing.id },
           data: {
-            yieldCount: Number(data.yieldCount || 1),
+            yieldCount: Math.max(1, Number(data.yieldCount || 1)),
             prepNotes: data.prepNotes || null,
             ingredients: {
               create: data.ingredients.map((ing) => ({
@@ -67,10 +47,10 @@ export function registerRecipeHandlers(prisma: any) {
           }
         })
       } else {
-        await prisma.menuItemRecipe.create({
+        await tx.menuItemRecipe.create({
           data: {
             menuItemId: data.menuItemId,
-            yieldCount: Number(data.yieldCount || 1),
+            yieldCount: Math.max(1, Number(data.yieldCount || 1)),
             prepNotes: data.prepNotes || null,
             ingredients: {
               create: data.ingredients.map((ing) => ({
@@ -84,31 +64,29 @@ export function registerRecipeHandlers(prisma: any) {
         })
       }
 
-      // Automatically recalculate MenuItem Cost based on ingredients
-      const updatedRecipe = await prisma.menuItemRecipe.findUnique({
+      // Auto-compute Dish Food Cost based on linked ingredient prices
+      const recipe = await tx.menuItemRecipe.findUnique({
         where: { menuItemId: data.menuItemId },
         include: { ingredients: { include: { ingredient: true } } }
       })
 
-      if (updatedRecipe) {
-        const totalCalculatedCost = updatedRecipe.ingredients.reduce((acc: number, item: any) => {
+      if (recipe) {
+        const totalBatchCost = recipe.ingredients.reduce((sum: number, item: any) => {
+          const { normalizedQty } = convertToBaseUnit(item.quantity, item.unit)
           const unitCost = item.ingredient?.costPerUnit || 0
-          return acc + item.quantity * unitCost
+          return sum + normalizedQty * unitCost
         }, 0)
 
-        const unitDishCost = totalCalculatedCost / (updatedRecipe.yieldCount || 1)
+        const portionCost = roundMoney(totalBatchCost / (recipe.yieldCount || 1))
 
-        await prisma.menuItem.update({
+        await tx.menuItem.update({
           where: { id: data.menuItemId },
-          data: { cost: Number(unitDishCost.toFixed(2)) }
+          data: { cost: portionCost }
         })
       }
 
-      return updatedRecipe
-    } catch (err) {
-      log.error('saveRecipe error', err)
-      throw err
-    }
+      return recipe
+    })
   })
 
   ipcMain.handle('restaurant:deleteRecipe', async (_e, recipeId: string) => {

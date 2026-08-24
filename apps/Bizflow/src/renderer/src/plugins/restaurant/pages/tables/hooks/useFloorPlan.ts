@@ -1,3 +1,4 @@
+// src/pages/tables/hooks/useFloorPlan.ts
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { RestaurantTableData, TableStatus } from '../types'
 
@@ -18,11 +19,11 @@ export function useFloorPlan() {
       const data = await window.api.restaurant.getTables()
       setTables(data || [])
       if (selectedTable) {
-        const fresh = data.find((t: RestaurantTableData) => t.id === selectedTable.id)
+        const fresh = (data || []).find((t: RestaurantTableData) => t.id === selectedTable.id)
         setSelectedTable(fresh || null)
       }
     } catch (err: any) {
-      setError(err?.message || 'Failed to fetch restaurant floor tables')
+      setError(err?.message || 'Failed to fetch floor layout')
     } finally {
       setLoading(false)
     }
@@ -30,9 +31,38 @@ export function useFloorPlan() {
 
   useEffect(() => {
     loadTables()
-    const interval = setInterval(loadTables, 20000) // 20s auto-refresh
-    return () => clearInterval(interval)
   }, [])
+
+  // Real-Time Event Bus Subscriptions: Update UI instantly when any table changes
+  useEffect(() => {
+    const unsubTable = window.api.restaurant.onEvent('table:updated', (updatedTable: any) => {
+      setTables((prev) =>
+        prev.map((t) => (t.id === updatedTable.id ? { ...t, ...updatedTable } : t))
+      )
+      setSelectedTable((curr) =>
+        curr && curr.id === updatedTable.id ? { ...curr, ...updatedTable } : curr
+      )
+    })
+
+    const unsubOrderCreated = window.api.restaurant.onEvent('order:created', () => {
+      loadTables()
+    })
+
+    const unsubOrderUpdated = window.api.restaurant.onEvent('order:updated', () => {
+      loadTables()
+    })
+
+    const unsubOrderSettled = window.api.restaurant.onEvent('order:settled', () => {
+      loadTables()
+    })
+
+    return () => {
+      unsubTable()
+      unsubOrderCreated()
+      unsubOrderUpdated()
+      unsubOrderSettled()
+    }
+  }, [loadTables])
 
   const sections = useMemo(() => {
     const list = tables.map((t) => t.section).filter(Boolean)
@@ -58,11 +88,12 @@ export function useFloorPlan() {
     return tables.filter((t) => {
       const matchSection = selectedSection === 'ALL' || t.section === selectedSection
       const matchStatus = statusFilter === 'ALL' || t.status === statusFilter
+      const query = searchQuery.trim().toLowerCase()
       const matchSearch =
-        searchQuery.trim() === '' ||
-        String(t.number).includes(searchQuery) ||
-        (t.name && t.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (t.section && t.section.toLowerCase().includes(searchQuery.toLowerCase()))
+        query === '' ||
+        String(t.number).includes(query) ||
+        (t.name && t.name.toLowerCase().includes(query)) ||
+        (t.section && t.section.toLowerCase().includes(query))
 
       return matchSection && matchStatus && matchSearch
     })

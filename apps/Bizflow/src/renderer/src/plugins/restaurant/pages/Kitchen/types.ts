@@ -8,6 +8,7 @@ export interface KdsItem {
   itemName: string
   quantity: number
   course: string
+  seatNumber?: number | null
   notes?: string | null
   modifiers?: string | null
   status: KdsItemStatus

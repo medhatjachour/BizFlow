@@ -530,6 +530,8 @@ interface API {
     mergeTables: (data: any) => Promise<any>
     transferTable: (data: any) => Promise<any>
     getTableActivityLogs: (tableId: string) => Promise<any>
+    onEvent: (event: string, callback: (data?: any) => void) => () => void
+    splitCheckBySeat: (data: { orderId: string; seatNumbers: number[] }) => Promise<any>
     updateOrderItem: (data: any) => Promise<any>
     fireCourse: (data: { orderId: string; course: CourseType }) => Promise<any>
     applyDiscount: (data: {
