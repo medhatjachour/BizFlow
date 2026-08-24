@@ -46,7 +46,8 @@ export const restaurantPreload = {
   closeOrder: (data: any) => ipcRenderer.invoke('restaurant:closeOrder', data),
 
   // ─── Kitchen Display System (KDS) ────────────────────────────────────────────
-  getKdsActiveTickets: (station?: string) => ipcRenderer.invoke('restaurant:getKdsActiveTickets', station),
+  getKdsActiveTickets: (station?: string) =>
+    ipcRenderer.invoke('restaurant:getKdsActiveTickets', station),
   bumpKdsItem: (itemId: string) => ipcRenderer.invoke('restaurant:bumpKdsItem', itemId),
   bumpKdsTicket: (orderId: string) => ipcRenderer.invoke('restaurant:bumpKdsTicket', orderId),
 
@@ -55,12 +56,14 @@ export const restaurantPreload = {
   openShift: (data: any) => ipcRenderer.invoke('restaurant:openShift', data),
   closeShift: (data: any) => ipcRenderer.invoke('restaurant:closeShift', data),
   getZReportData: (shiftId: string) => ipcRenderer.invoke('restaurant:getZReportData', shiftId),
+  getShiftHistory: (opts?: any) => ipcRenderer.invoke('restaurant:getShiftHistory', opts),
 
   // ─── Inventory, Pantry & BOM ─────────────────────────────────────────────────
   getIngredients: () => ipcRenderer.invoke('restaurant:getIngredients'),
   createIngredient: (data: any) => ipcRenderer.invoke('restaurant:createIngredient', data),
   adjustStock: (data: any) => ipcRenderer.invoke('restaurant:adjustStock', data),
-  getStockMovements: (ingredientId?: string) => ipcRenderer.invoke('restaurant:getStockMovements', ingredientId),
+  getStockMovements: (ingredientId?: string) =>
+    ipcRenderer.invoke('restaurant:getStockMovements', ingredientId),
   deleteIngredient: (id: string) => ipcRenderer.invoke('restaurant:deleteIngredient', id),
 
   // ─── Recipes & Food Costing ──────────────────────────────────────────────────
@@ -72,6 +75,7 @@ export const restaurantPreload = {
   getWasteLogs: (opts?: any) => ipcRenderer.invoke('restaurant:getWasteLogs', opts),
   logWaste: (data: any) => ipcRenderer.invoke('restaurant:logWaste', data),
   deleteWasteLog: (id: string) => ipcRenderer.invoke('restaurant:deleteWasteLog', id),
+  getWasteAnalytics: (opts?: any) => ipcRenderer.invoke('restaurant:getWasteAnalytics', opts),
 
   // ─── Reservations ────────────────────────────────────────────────────────────
   getReservations: (opts?: any) => ipcRenderer.invoke('restaurant:getReservations', opts),

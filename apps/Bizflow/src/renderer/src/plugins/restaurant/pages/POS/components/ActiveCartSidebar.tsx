@@ -1,16 +1,18 @@
 // src/pages/POS/components/ActiveCartSidebar.tsx
-import React, { useMemo } from 'react'
-import { Flame, Percent, CreditCard, GitFork, Printer, FileText, Users } from 'lucide-react'
-import { PosOrder, CourseType } from '../types'
-import { CartItemRow } from './CartItemRow'
+import React from 'react'
+import {
+  Percent,
+  CreditCard,
+  Printer,
+  Send,
+  Trash2,
+  CheckCircle2,
+  ArrowLeft
+} from 'lucide-react'
+import { useRestaurant } from '../../../context/RestaurantContext'
 import { sounds } from '../../utils/sound'
 
 interface Props {
-  order: PosOrder | null
-  activeSeat: number
-  onSelectSeat: (seat: number) => void
-  onUpdateQty: (id: string, qty: number) => Promise<void>
-  onFireCourse: (course: CourseType) => Promise<void>
   onOpenDiscount: () => void
   onOpenPayment: () => void
   onOpenSplitCheck: () => void
@@ -18,214 +20,260 @@ interface Props {
 }
 
 export const ActiveCartSidebar: React.FC<Props> = ({
-  order,
-  activeSeat,
-  onSelectSeat,
-  onUpdateQty,
-  onFireCourse,
   onOpenDiscount,
   onOpenPayment,
-  onOpenSplitCheck,
   onOpenReceiptPreview
 }) => {
-  if (!order) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center p-8 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 text-center space-y-3 select-none">
-        <div className="w-16 h-16 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-          <FileText className="w-8 h-8" />
-        </div>
-        <div>
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-200">No Active Check Selected</h3>
-          <p className="text-xs text-slate-400 max-w-[200px] mx-auto mt-1">
-            Tap a dining table or open a quick check to begin adding items.
-          </p>
-        </div>
-      </div>
-    )
+  const {
+      activeTable,
+      activeOrderData,
+    draftItems,
+    activeSeat,
+    setActiveSeat,
+    updateDraftItemQty,
+    removeDraftItem,
+    sendDraftsToKitchen,
+    isSendingToKitchen,
+    returnToFloor
+  } = useRestaurant()
+
+  const sentItems = (activeOrderData?.items || []).filter((i: any) => i.status !== 'voided')
+
+  // Calculate live combined subtotal (Sent items in DB + Local Draft items)
+  const sentSubtotal = sentItems.reduce((s: number, i: any) => s + (i.totalPrice || i.unitPrice * i.quantity), 0)
+  const draftSubtotal = draftItems.reduce((s: number, i: any) => s + i.totalPrice, 0)
+  const combinedTotal = (activeOrderData?.total || sentSubtotal) + draftSubtotal
+
+  const handleSend = async () => {
+    sounds.playSuccess()
+    await sendDraftsToKitchen()
   }
-
-  // Group active non-voided items by seat number
-  const groupedBySeat = useMemo(() => {
-    const map: Record<number, typeof order.items> = {}
-    order.items
-      .filter((it) => it.status !== 'voided')
-      .forEach((it) => {
-        const seat = it.seatNumber || 1
-        if (!map[seat]) map[seat] = []
-        map[seat].push(it)
-      })
-    return map
-  }, [order.items])
-
-  const distinctSeats = Object.keys(groupedBySeat).map(Number).sort((a, b) => a - b)
-  const activeItemsCount = order.items.filter((i) => i.status !== 'voided').length
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col h-full overflow-hidden select-none">
-      {/* ─── Sidebar Header ─────────────────────────────────────────── */}
-      <div className="p-3.5 border-b border-slate-100 dark:border-slate-800/80 space-y-2.5 bg-slate-50/60 dark:bg-slate-800/40">
+      {/* ─── Check Header ─────────────────────────────────────────── */}
+      <div className="p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
-              Guest Pad
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-black">
-              {activeItemsCount} {activeItemsCount === 1 ? 'item' : 'items'}
-            </span>
+            <button
+              type="button"
+              onClick={returnToFloor}
+              className="p-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+              title="Return to floor plan"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <span className="text-xs font-black text-slate-900 dark:text-white block">
+                {activeTable ? `Table #${activeTable.number}` : activeOrderData?.orderType?.toUpperCase() || 'Quick Check'}
+              </span>
+              <span className="text-[10px] text-slate-400">
+                Check #{activeOrderData?.orderNumber || '1'} • {activeOrderData?.guestCount || 2} Guests
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-1">
-            {distinctSeats.length > 1 && (
-              <button
-                type="button"
-                onClick={onOpenSplitCheck}
-                className="p-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 hover:bg-purple-100 transition-colors"
-                title="Split check by seat"
-              >
-                <GitFork className="w-4 h-4" />
-              </button>
-            )}
             <button
               type="button"
               onClick={onOpenReceiptPreview}
-              className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors"
-              title="Receipt thermal preview"
+              className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
             >
               <Printer className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* ─── Fast Course Kitchen Fire Ribbon ───────────────────────── */}
-        <div className="grid grid-cols-3 gap-1.5">
-          {(['starter', 'main', 'dessert'] as CourseType[]).map((crs) => (
+        {/* ─── Seat Selector Strip ──────────────────────────────────── */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
+          <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Seat:</span>
+          {[1, 2, 3, 4, 5, 6].map((st) => (
             <button
-              key={crs}
+              key={st}
               type="button"
-              onClick={() => onFireCourse(crs)}
-              className="py-1.5 px-2 rounded-xl bg-orange-500/10 hover:bg-orange-500 hover:text-white text-orange-600 dark:text-orange-400 text-[10px] font-black flex items-center justify-center gap-1 transition-all active:scale-95"
+              onClick={() => {
+                sounds.playBump()
+                setActiveSeat(st)
+              }}
+              className={`px-2.5 py-1 rounded-xl text-xs font-black transition-all ${
+                activeSeat === st
+                  ? 'bg-amber-500 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+              }`}
             >
-              <Flame className="w-3 h-3" />
-              <span className="capitalize">Fire {crs}</span>
+              S{st}
             </button>
           ))}
         </div>
       </div>
 
-      {/* ─── Scrollable Items Stream Grouped by Seat ───────────────── */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {distinctSeats.map((seat) => {
-          const seatItems = groupedBySeat[seat]
-          const isCurrentActive = activeSeat === seat
-
-          return (
-            <div key={seat} className="space-y-1.5">
-              {/* Seat Indicator Header */}
-              <div
-                onClick={() => {
-                  sounds.playBump()
-                  onSelectSeat(seat)
-                }}
-                className={`flex items-center justify-between px-2 py-1 rounded-xl cursor-pointer transition-all ${
-                  isCurrentActive
-                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 font-black'
-                    : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold'
-                }`}
-              >
-                <div className="flex items-center gap-1.5 text-xs">
-                  <Users className="w-3 h-3" />
-                  <span>Seat #{seat}</span>
-                  {isCurrentActive && (
-                    <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-amber-500 text-white uppercase font-black tracking-wider">
-                      Active
-                    </span>
-                  )}
-                </div>
-                <span className="text-[10px] opacity-70">
-                  {seatItems.length} {seatItems.length === 1 ? 'item' : 'items'}
-                </span>
-              </div>
-
-              {/* Items for this seat */}
-              <div className="space-y-1.5">
-                {seatItems.map((item) => (
-                  <CartItemRow key={item.id} item={item} onUpdateQty={onUpdateQty} />
-                ))}
-              </div>
+      {/* ─── Scrollable Items Pad (Drafts + Sent Items) ───────────── */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {/* TIER 1: UN-SENT DRAFT ITEMS (STAGING) */}
+        {draftItems.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                Unsent Kitchen Drafts ({draftItems.length})
+              </span>
             </div>
-          )
-        })}
 
-        {activeItemsCount === 0 && (
+            <div className="space-y-1.5">
+              {draftItems.map((draft) => (
+                <div
+                  key={draft.clientId}
+                  className="p-2.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-300/80 dark:border-amber-700/60 space-y-1"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black text-slate-900 dark:text-white">
+                          {draft.itemName}
+                        </span>
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200">
+                          Seat {draft.seatNumber}
+                        </span>
+                      </div>
+                      {draft.modifiers.length > 0 && (
+                        <div className="text-[10px] text-amber-700 dark:text-amber-400 font-bold">
+                          ↳ {draft.modifiers.map((m) => m.name).join(', ')}
+                        </div>
+                      )}
+                      {draft.notes && (
+                        <div className="text-[10px] text-slate-500 italic">
+                          Note: "{draft.notes}"
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-xs font-black text-slate-900 dark:text-white">
+                        ${draft.totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-amber-200/60 dark:border-amber-800/40 text-xs">
+                    <span className="text-[10px] font-bold text-amber-600 uppercase">
+                      {draft.course}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => updateDraftItemQty(draft.clientId, draft.quantity - 1)}
+                        className="w-5 h-5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center"
+                      >
+                        -
+                      </button>
+                      <span className="font-black text-xs">{draft.quantity}</span>
+                      <button
+                        type="button"
+                        onClick={() => updateDraftItemQty(draft.clientId, draft.quantity + 1)}
+                        className="w-5 h-5 rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center justify-center"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeDraftItem(draft.clientId)}
+                        className="p-1 text-rose-500 hover:text-rose-700 ml-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TIER 2: LOCKED SENT ITEMS (ALREADY IN KITCHEN) */}
+        {sentItems.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-1 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Sent to Kitchen ({sentItems.length})
+            </span>
+
+            <div className="space-y-1.5 opacity-85">
+              {sentItems.map((item: any) => (
+                <div
+                  key={item.id}
+                  className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-1"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                          {item.quantity}x {item.itemName}
+                        </span>
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                          Seat {item.seatNumber || 1}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-black uppercase">
+                        {item.status} ({item.station})
+                      </span>
+                    </div>
+
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-300">
+                      ${(item.unitPrice * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {draftItems.length === 0 && sentItems.length === 0 && (
           <div className="py-16 text-center text-slate-400 text-xs font-semibold">
-            Order ticket is currently empty
+            Check pad is empty. Tap dishes from the menu to add.
           </div>
         )}
       </div>
 
-      {/* ─── Financial Totals & Cashier Actions ─────────────────────── */}
-      <div className="p-3.5 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-800/60 space-y-2.5">
-        <div className="space-y-1 text-xs">
-          <div className="flex justify-between text-slate-500">
-            <span>Subtotal</span>
-            <span className="font-bold text-slate-800 dark:text-slate-200">${order.subtotal.toFixed(2)}</span>
-          </div>
-
-          {order.discountAmount > 0 && (
-            <div className="flex justify-between text-rose-500 font-bold">
-              <span>Discount ({order.discountType === 'percentage' ? `${order.discountAmount}%` : 'Fixed'})</span>
-              <span>
-                -$
-                {(order.discountType === 'percentage'
-                  ? (order.subtotal * order.discountAmount) / 100
-                  : order.discountAmount
-                ).toFixed(2)}
-              </span>
-            </div>
-          )}
-
-          {order.tax > 0 && (
-            <div className="flex justify-between text-slate-500">
-              <span>Tax ({((order.taxRate || 0) * 100).toFixed(0)}%)</span>
-              <span className="font-semibold">${order.tax.toFixed(2)}</span>
-            </div>
-          )}
-
-          {order.tipAmount > 0 && (
-            <div className="flex justify-between text-emerald-600 font-bold">
-              <span>Server Gratuity</span>
-              <span>${order.tipAmount.toFixed(2)}</span>
-            </div>
-          )}
-
-          <div className="flex justify-between text-base font-black text-slate-900 dark:text-white pt-1.5 border-t border-slate-200/80 dark:border-slate-700">
-            <span>Balance Due</span>
-            <span className="text-emerald-600 dark:text-emerald-400 text-lg">
-              ${order.total.toFixed(2)}
-            </span>
-          </div>
+      {/* ─── Financial Footer & Action Buttons ──────────────────────── */}
+      <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 space-y-2.5">
+        <div className="flex justify-between items-baseline">
+          <span className="text-xs font-bold text-slate-500">Estimated Total</span>
+          <span className="text-xl font-black text-slate-900 dark:text-white">
+            ${combinedTotal.toFixed(2)}
+          </span>
         </div>
 
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-2 pt-1">
+        {/* Big Action: "Send to Kitchen" if drafts exist, or "Pay / Settle" */}
+        {draftItems.length > 0 ? (
           <button
             type="button"
-            onClick={onOpenDiscount}
-            className="py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-100 dark:hover:bg-slate-700/60 active:scale-98 transition-all"
+            disabled={isSendingToKitchen}
+            onClick={handleSend}
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-xs shadow-md shadow-orange-500/25 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
           >
-            <Percent className="w-3.5 h-3.5 text-amber-500" />
-            <span>Discount</span>
+            <Send className="w-4 h-4" />
+            <span>{isSendingToKitchen ? 'Sending...' : `SEND TO KITCHEN (${draftItems.length} ITEMS)`}</span>
           </button>
-
-          <button
-            type="button"
-            onClick={onOpenPayment}
-            className="py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-98 transition-all"
-          >
-            <CreditCard className="w-3.5 h-3.5" />
-            <span>Pay / Settle</span>
-          </button>
-        </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onOpenDiscount}
+              className="py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-1 hover:bg-slate-100"
+            >
+              <Percent className="w-3.5 h-3.5 text-amber-500" />
+              <span>Discount</span>
+            </button>
+            <button
+              type="button"
+              onClick={onOpenPayment}
+              className="py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-[0.98]"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Settle Check</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

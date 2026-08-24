@@ -1,5 +1,5 @@
 // src/pages/POS/components/PaymentSplitModal.tsx
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { X, CreditCard, Banknote, Smartphone, Gift, CheckCircle2 } from 'lucide-react'
 import { PosOrder } from '../types'
 import { sounds } from '../../utils/sound'
@@ -9,38 +9,49 @@ interface Props {
   onClose: () => void
   order: PosOrder | null
   onProcessPayment: (amount: number, method: string, ref?: string, tip?: number) => Promise<any>
+  onSettlementSuccess?: (changeDue: number) => void
 }
 
 const METHODS = [
-  { id: 'cash', label: 'Cash', icon: Banknote },
-  { id: 'card', label: 'Credit Card', icon: CreditCard },
+  { id: 'cash', label: 'Cash Tender', icon: Banknote },
+  { id: 'card', label: 'Credit / Debit', icon: CreditCard },
   { id: 'apple_pay', label: 'Contactless', icon: Smartphone },
   { id: 'voucher', label: 'Gift Voucher', icon: Gift }
 ]
 
-export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onProcessPayment }) => {
+export const PaymentSplitModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  order,
+  onProcessPayment,
+  onSettlementSuccess
+}) => {
   if (!isOpen || !order) return null
 
-  const alreadyPaid = order.payments.reduce((s, p) => s + p.amount, 0)
-  const remainingBase = Math.max(0, order.total - alreadyPaid)
+  const alreadyPaid = (order.payments || []).reduce((s, p) => s + p.amount, 0)
+  const remainingBalance = Math.max(0, Math.round((order.total - alreadyPaid) * 100) / 100)
 
   const [method, setMethod] = useState('cash')
   const [tipRate, setTipRate] = useState<number>(0)
   const [customTip, setCustomTip] = useState<string>('')
-  const [tenderAmount, setTenderAmount] = useState<string>(remainingBase.toFixed(2))
+  const [tenderAmount, setTenderAmount] = useState<string>(remainingBalance.toFixed(2))
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const tipValue = customTip ? Number(customTip) : remainingBase * tipRate
-  const totalWithTip = remainingBase + tipValue
-  const tenderNumber = Number(tenderAmount || totalWithTip)
-  const changeDue = Math.max(0, tenderNumber - totalWithTip)
+  const tipValue = useMemo(() => {
+    if (customTip) return Number(customTip) || 0
+    return Math.round(remainingBalance * tipRate * 100) / 100
+  }, [customTip, tipRate, remainingBalance])
 
-  const handleExact = () => {
+  const totalRequired = Math.round((remainingBalance + tipValue) * 100) / 100
+  const tenderNumber = Number(tenderAmount) || totalRequired
+  const changeDue = method === 'cash' ? Math.max(0, Math.round((tenderNumber - totalRequired) * 100) / 100) : 0
+
+  const handleExactCash = () => {
     sounds.playBump()
-    setTenderAmount(totalWithTip.toFixed(2))
+    setTenderAmount(totalRequired.toFixed(2))
   }
 
-  const handlePreset = (amt: number) => {
+  const handleQuickCash = (amt: number) => {
     sounds.playBump()
     setTenderAmount(String(amt))
   }
@@ -49,9 +60,19 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      sounds.playSuccess()
-      await onProcessPayment(Math.min(tenderNumber, totalWithTip), method, undefined, tipValue)
-      onClose()
+      const payAmount = method === 'cash' ? Math.min(tenderNumber, totalRequired) : tenderNumber
+      const result = await onProcessPayment(payAmount, method, undefined, tipValue)
+
+      if (result?.isFullyPaid || result?.remaining <= 0.001) {
+        sounds.playSuccess()
+        if (onSettlementSuccess) {
+          onSettlementSuccess(changeDue)
+        }
+        onClose()
+      } else {
+        sounds.playBump()
+        onClose()
+      }
     } catch {
       sounds.playError()
     } finally {
@@ -60,15 +81,18 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in select-none">
       <form
         onSubmit={handleSubmit}
         className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 p-6 space-y-4"
       >
+        {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h3 className="text-base font-black text-slate-900 dark:text-white">Check Settlement</h3>
-            <p className="text-xs text-slate-400">Bill #{order.orderNumber} • Remaining Due</p>
+            <p className="text-xs text-slate-400">
+              Check #{order.orderNumber || '1'} • {order.table ? `Table #${order.table.number}` : 'Counter Tab'}
+            </p>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X className="w-5 h-5" />
@@ -76,15 +100,17 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
         </div>
 
         {/* Due Banner */}
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center">
-          <span className="text-[11px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
-            Total Balance with Tip
+        <div className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-center">
+          <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
+            Total Balance Due
           </span>
           <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 my-0.5">
-            ${totalWithTip.toFixed(2)}
+            ${totalRequired.toFixed(2)}
           </div>
           {alreadyPaid > 0 && (
-            <span className="text-[10px] text-slate-400">Previous Payments: ${alreadyPaid.toFixed(2)}</span>
+            <span className="text-[11px] font-bold text-slate-400">
+              Partial paid: ${alreadyPaid.toFixed(2)} / ${order.total.toFixed(2)}
+            </span>
           )}
         </div>
 
@@ -101,20 +127,20 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
                   sounds.playBump()
                   setMethod(m.id)
                 }}
-                className={`py-2.5 px-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                className={`py-3 px-3 rounded-2xl border text-xs font-black flex items-center justify-center gap-2 transition-all active:scale-95 ${
                   isSelected
                     ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-2 ring-emerald-500/30'
                     : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {m.label}
+                <span>{m.label}</span>
               </button>
             )
           })}
         </div>
 
-        {/* Tip Selector */}
+        {/* Gratuity / Tip Presets */}
         <div>
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
             Server Gratuity
@@ -141,13 +167,13 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
           </div>
         </div>
 
-        {/* Quick Cash Presets (If Cash Selected) */}
+        {/* Quick Cash Buttons */}
         {method === 'cash' && (
           <div className="space-y-1.5">
             <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
-              <span>Quick Cash Tender</span>
-              <button type="button" onClick={handleExact} className="text-[11px] text-amber-600 hover:underline">
-                Exact Total (${totalWithTip.toFixed(2)})
+              <span>Quick Cash Presets</span>
+              <button type="button" onClick={handleExactCash} className="text-[11px] text-amber-600 hover:underline">
+                Exact Total (${totalRequired.toFixed(2)})
               </button>
             </div>
             <div className="grid grid-cols-4 gap-1.5">
@@ -155,8 +181,8 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
                 <button
                   key={amt}
                   type="button"
-                  onClick={() => handlePreset(amt)}
-                  className="py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-800 dark:text-slate-200 hover:bg-slate-200"
+                  onClick={() => handleQuickCash(amt)}
+                  className="py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-black text-slate-800 dark:text-slate-200 active:scale-95"
                 >
                   ${amt}
                 </button>
@@ -165,9 +191,9 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
           </div>
         )}
 
-        {/* Tender Input & Change Due */}
-        <div className="space-y-1.5">
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+        {/* Tendered Input */}
+        <div>
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
             Amount Tendered ($)
           </span>
           <input
@@ -176,14 +202,15 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
             required
             value={tenderAmount}
             onChange={(e) => setTenderAmount(e.target.value)}
-            className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-2.5 text-lg font-black text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-3 text-lg font-black text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
           />
         </div>
 
+        {/* Change Due Display */}
         {method === 'cash' && changeDue > 0 && (
-          <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 text-xs font-bold text-amber-800 dark:text-amber-300 flex justify-between items-center">
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-xs font-black text-amber-800 dark:text-amber-300 flex justify-between items-center">
             <span>Change Due to Patron:</span>
-            <span className="text-base font-black">${changeDue.toFixed(2)}</span>
+            <span className="text-lg font-black">${changeDue.toFixed(2)}</span>
           </div>
         )}
 
@@ -198,10 +225,10 @@ export const PaymentSplitModal: React.FC<Props> = ({ isOpen, onClose, order, onP
           <button
             type="submit"
             disabled={isSubmitting || tenderNumber <= 0}
-            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform"
+            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
           >
             <CheckCircle2 className="w-4 h-4" />
-            {isSubmitting ? 'Settling...' : 'Complete Payment'}
+            <span>{isSubmitting ? 'Settling...' : 'Complete Payment'}</span>
           </button>
         </div>
       </form>
