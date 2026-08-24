@@ -1,15 +1,19 @@
 import OverviewAndKdsPage  from './Kitchen/index'
-import { UtensilsCrossed, Table2, CalendarDays, BookOpen, ClipboardList, LayoutDashboard } from 'lucide-react'
+import { UtensilsCrossed, Table2, Trash ,CalendarDays, Receipt, BookOpen, ClipboardList, LayoutDashboard, ShieldCheck ,Package} from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import TablesTab    from './tables'
-import ReservationsTab from './Reservation/ReservationsTab'
-import MenuTab      from './components/MenuTab'
+import ReservationsTab from './Reservation'
+import MenuTab      from './menu'
 import OrdersTab    from './POS'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import { useEffect, useState } from 'react'
+import StaffShiftsPage from './shifts'
+import RestaurantInventoryPage from './inventory'
+import RecipesPage from './recipes'
+import KitchenWasteLogPage from './waste'
 
-type Tab = 'overview' | 'tables' | 'reservations' | 'menu' | 'orders'
+type Tab = 'overview' | 'tables' | 'reservations' | 'menu' | 'orders' | 'shifts' | 'inventory'| 'recipes' | 'waste'
 
 export default function RestaurantPage() {
   const [active, setActive] = useState<Tab>('overview')
@@ -21,7 +25,11 @@ export default function RestaurantPage() {
     { key: 'tables',       label: t('restaurantTablesTab'),       Icon: Table2 },
     { key: 'reservations', label: t('restaurantReservationsTab'), Icon: CalendarDays },
     { key: 'menu',         label: t('restaurantMenuTab'),         Icon: BookOpen },
-    { key: 'orders',       label: t('restaurantOrdersTab'),       Icon: ClipboardList }
+    { key: 'orders',       label: t('restaurantOrdersTab'),       Icon: ClipboardList },
+    { key: 'shifts',       label: t('restaurantShiftsTab'),       Icon: ShieldCheck },
+    { key: 'inventory',    label: t('restaurantInventoryTab'),    Icon: Package },
+    { key: 'recipes',      label: t('restaurantRecipesTab'),      Icon: Receipt },
+    { key: 'waste',        label: t('restaurantWasteTab'),        Icon: Trash },
   ]
 
   const visibleTabs = tabs.filter(tab => can(pluginTabCapability('restaurant', tab.key)!))
@@ -70,6 +78,10 @@ export default function RestaurantPage() {
         {active === 'reservations' && <ReservationsTab />}
         {active === 'menu'         && <MenuTab />}
         {active === 'orders'       && <OrdersTab />}
+        {active === 'shifts'       && <StaffShiftsPage />}
+        {active === 'inventory'    && <RestaurantInventoryPage />}
+        {active === 'recipes'      && <RecipesPage />}
+        {active === 'waste'        && <KitchenWasteLogPage />}
       </div>
     </div>
   )

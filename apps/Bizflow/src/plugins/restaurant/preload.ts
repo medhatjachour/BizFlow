@@ -19,6 +19,25 @@ export const restaurantPreload = {
   deleteModifierGroup: (id: string) => ipcRenderer.invoke('restaurant:deleteModifierGroup', id),
   deleteMenuItem: (id: string) => ipcRenderer.invoke('restaurant:deleteMenuItem', id),
 
+  // ─── Ingredients Pantry (Inventory) ────────────────────────────────────────
+  getIngredients: () => ipcRenderer.invoke('restaurant:getIngredients'),
+  createIngredient: (data: any) => ipcRenderer.invoke('restaurant:createIngredient', data),
+  updateIngredient: (data: any) => ipcRenderer.invoke('restaurant:updateIngredient', data),
+  adjustStock: (data: any) => ipcRenderer.invoke('restaurant:adjustStock', data),
+  getStockMovements: (ingredientId?: string) => ipcRenderer.invoke('restaurant:getStockMovements', ingredientId),
+  deleteIngredient: (id: string) => ipcRenderer.invoke('restaurant:deleteIngredient', id),
+
+  // ─── Recipes & Bill of Materials (BOM) ──────────────────────────────────────
+  getRecipes: () => ipcRenderer.invoke('restaurant:getRecipes'),
+  getRecipeForMenuItem: (menuItemId: string) => ipcRenderer.invoke('restaurant:getRecipeForMenuItem', menuItemId),
+  saveRecipe: (data: any) => ipcRenderer.invoke('restaurant:saveRecipe', data),
+  deleteRecipe: (id: string) => ipcRenderer.invoke('restaurant:deleteRecipe', id),
+
+  // ─── Kitchen Waste & Spoilage Logs ──────────────────────────────────────────
+  getWasteLogs: (opts?: any) => ipcRenderer.invoke('restaurant:getWasteLogs', opts),
+  logWaste: (data: any) => ipcRenderer.invoke('restaurant:logWaste', data),
+  deleteWasteLog: (id: string) => ipcRenderer.invoke('restaurant:deleteWasteLog', id),
+
   // ─── Orders & POS ───────────────────────────────────────────────────────────
   getOrders: (opts?: any) => ipcRenderer.invoke('restaurant:getOrders', opts),
   getOrder: (id: string) => ipcRenderer.invoke('restaurant:getOrder', id),

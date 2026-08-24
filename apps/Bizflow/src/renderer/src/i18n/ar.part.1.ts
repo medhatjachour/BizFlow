@@ -510,6 +510,10 @@ export const arPart1 = {
     restaurantReservationsTab: 'الحجوزات',
     restaurantMenuTab: 'القائمة',
     restaurantOrdersTab: 'الطلبات',
+    restaurantShiftsTab: 'الفترات',
+    restaurantInventoryTab: 'المخزون',
+    restaurantRecipesTab:'الوصفات',
+    restaurantWasteTab: 'الهدر',
     // Overview
     restaurantTotalTables: 'إجمالي الطاولات',
     restaurantOpenOrders: 'الطلبات المفتوحة',

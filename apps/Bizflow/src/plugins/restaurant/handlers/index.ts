@@ -5,6 +5,9 @@ import { registerKdsHandlers } from './kds'
 import { registerReservationHandlers } from './reservations'
 import { registerShiftHandlers } from './shifts'
 import { registerOverviewHandlers } from './overview'
+import { registerInventoryHandlers } from './inventory'
+import { registerRecipeHandlers } from './recipes'
+import { registerWasteHandlers } from './waste'
 
 export function registerRestaurantHandlers(prisma: any) {
   registerTableHandlers(prisma)
@@ -14,4 +17,7 @@ export function registerRestaurantHandlers(prisma: any) {
   registerReservationHandlers(prisma)
   registerShiftHandlers(prisma)
   registerOverviewHandlers(prisma)
+  registerInventoryHandlers(prisma)
+  registerRecipeHandlers(prisma)
+  registerWasteHandlers(prisma)
 }

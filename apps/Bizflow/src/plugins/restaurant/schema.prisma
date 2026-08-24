@@ -1,19 +1,19 @@
 // ─── Restaurant Module Schema ───────────────────────────────────────────────
 // Module: restaurant
-// Use Case: Floor plan layout, table orchestrations, POS orders, modifiers, 
-//           KDS kitchen routing, host stand reservations, shifts & reconciliation.
+// Use Case: Floor plan, POS, KDS, Reservations, Shifts,
+//           Ingredient Pantry, Recipe BOM, Auto-Depletion & Kitchen Waste Log.
 // ────────────────────────────────────────────────────────────────────────────
 
 model RestaurantTable {
   id           String             @id @default(uuid())
   number       Int                @unique
-  name         String?            // e.g. "T-1", "Patio-4", "Bar-2"
+  name         String?            // e.g. "T-1", "Patio-4"
   capacity     Int                @default(4)
   status       String             @default("available") // available | occupied | reserved | cleaning | billing
-  section      String             @default("Main Hall") // "Indoor", "Patio", "Bar", "VIP Room"
-  posX         Float              @default(0)           // Visual Canvas X position (px or %)
-  posY         Float              @default(0)           // Visual Canvas Y position (px or %)
-  shape        String             @default("square")    // square | circle | rectangle
+  section      String             @default("Main Hall")
+  posX         Float              @default(0)
+  posY         Float              @default(0)
+  shape        String             @default("square")
   isActive     Boolean            @default(true)
   reservations TableReservation[]
   orders       DineInOrder[]
@@ -32,11 +32,11 @@ model TableReservation {
   customerName  String
   customerPhone String?
   partySize     Int              @default(1)
-  date          DateTime         // Reservation date & time
+  date          DateTime
   durationMins  Int              @default(90)
   notes         String?
   guestTags     String?          // e.g. "VIP, Window Seat, High Chair"
-  status        String           @default("confirmed") // pending | confirmed | seated | completed | cancelled | no-show
+  status        String           @default("confirmed") // pending | confirmed | seated | completed | cancelled | no_show
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -48,18 +48,19 @@ model TableReservation {
 model MenuItem {
   id              String            @id @default(uuid())
   name            String
-  category        String            @default("Main")
+  category        String            @default("Main Dishes")
   description     String?
   price           Float
   cost            Float             @default(0)
-  preparationTime Int               @default(15) // In minutes
-  station         String            @default("Kitchen") // Kitchen | Grill | Bar | Pastry | Cold Station
-  isAvailable     Boolean           @default(true)      // 86'd out-of-stock toggle
+  preparationTime Int               @default(15)
+  station         String            @default("Kitchen")
+  isAvailable     Boolean           @default(true) // 86'd out-of-stock toggle
   displayOrder    Int               @default(0)
-  colorTag        String?           // Visual badge/tile color
+  colorTag        String?
   notes           String?
   modifierGroups  ModifierGroup[]
   orderItems      DineInOrderItem[]
+  recipe          MenuItemRecipe?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -72,7 +73,7 @@ model ModifierGroup {
   id         String           @id @default(uuid())
   menuItemId String
   menuItem   MenuItem         @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
-  title      String           // e.g. "Meat Temp", "Side Choice", "Extras"
+  title      String           // e.g. "Meat Temp", "Choice of Side"
   minSelect  Int              @default(0)
   maxSelect  Int              @default(1)
   options    ModifierOption[]
@@ -84,18 +85,102 @@ model ModifierOption {
   id         String        @id @default(uuid())
   groupId    String
   group      ModifierGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  name       String        // e.g. "French Fries", "Medium Rare", "Extra Cheese"
+  name       String        // e.g. "French Fries", "Medium Rare"
   priceDelta Float         @default(0)
 
   @@index([groupId])
 }
 
+// ─── Ingredient Pantry & Inventory ───────────────────────────────────────────
+model RestaurantIngredient {
+  id               String                    @id @default(uuid())
+  name             String
+  category         String                    @default("General") // Meat, Dairy, Produce, Dry Goods, Bakery, Beverage, Spices
+  unit             String                    @default("kg")      // kg, g, L, ml, pcs, can, bottle
+  currentStock     Float                     @default(0)
+  minStockAlert    Float                     @default(5)
+  costPerUnit      Float                     @default(0)         // Purchase cost per unit
+  supplierName     String?
+  notes            String?
+  isActive         Boolean                   @default(true)
+  recipeUsages     RecipeIngredient[]
+  stockMovements   IngredientStockMovement[]
+  wasteLogs        RestaurantWasteLog[]
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model IngredientStockMovement {
+  id           String               @id @default(uuid())
+  ingredientId String
+  ingredient   RestaurantIngredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  type         String               // "restock" | "order_deduction" | "waste" | "manual_adjustment"
+  quantity     Float                // + for restock, - for deduction
+  unitCost     Float                @default(0)
+  referenceId  String?              // orderId or wasteLogId
+  notes        String?
+  createdAt    DateTime             @default(now())
+
+  @@index([ingredientId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// ─── Recipe Bill of Materials (BOM) ──────────────────────────────────────────
+model MenuItemRecipe {
+  id           String             @id @default(uuid())
+  menuItemId   String             @unique
+  menuItem     MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  yieldCount   Int                @default(1)    // Portion yield
+  prepNotes    String?
+  ingredients  RecipeIngredient[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model RecipeIngredient {
+  id           String               @id @default(uuid())
+  recipeId     String
+  recipe       MenuItemRecipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   RestaurantIngredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  quantity     Float                // Required quantity per portion yield
+  unit         String               // Matching ingredient unit
+  notes        String?
+
+  @@index([recipeId])
+  @@index([ingredientId])
+}
+
+// ─── Kitchen Waste & Spoilage Log ────────────────────────────────────────────
+model RestaurantWasteLog {
+  id           String                @id @default(uuid())
+  ingredientId String?
+  ingredient   RestaurantIngredient? @relation(fields: [ingredientId], references: [id], onDelete: SetNull)
+  itemName     String                // Snapshot name
+  quantity     Float
+  unit         String
+  costLoss     Float                 @default(0) // Quantity * Cost
+  reason       String                // "expired" | "dropped_spill" | "overcooked" | "customer_returned" | "prep_trim"
+  loggedBy     String?
+  notes        String?
+  createdAt    DateTime              @default(now())
+
+  @@index([ingredientId])
+  @@index([reason])
+  @@index([createdAt])
+}
+
+// ─── Dine-In, Takeout & Delivery Orders ───────────────────────────────────────
 model DineInOrder {
   id             String            @id @default(uuid())
   orderNumber    Int?
   tableId        String
   table          RestaurantTable   @relation(fields: [tableId], references: [id], onDelete: Cascade)
-  orderType      String            @default("dine_in") // dine_in | takeout | bar
+  orderType      String            @default("dine_in") // dine_in | takeout | delivery | bar_tab
   status         String            @default("open")    // open | billing | paid | voided
   guestCount     Int               @default(1)
   serverName     String?
@@ -104,12 +189,13 @@ model DineInOrder {
   subtotal       Float             @default(0)
   discountType   String?           // percentage | fixed
   discountAmount Float             @default(0)
-  taxRate        Float             @default(0)         // e.g. 0.14 for 14%
+  taxRate        Float             @default(0)
   tax            Float             @default(0)
   serviceCharge  Float             @default(0)
   tipAmount      Float             @default(0)
   total          Float             @default(0)
-  paymentMethod  String?           // cash | card | split | voucher
+  paymentMethod  String?
+  isStockDeducted Boolean          @default(false)
   openedAt       DateTime          @default(now())
   closedAt       DateTime?
   items          DineInOrderItem[]
@@ -128,14 +214,14 @@ model DineInOrderItem {
   order      DineInOrder  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItemId String?
   menuItem   MenuItem?    @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
-  itemName   String       // Snapshot item name
+  itemName   String
   quantity   Int          @default(1)
   unitPrice  Float
   totalPrice Float        @default(0)
-  course     String       @default("main")      // beverage | starter | main | dessert
-  notes      String?                            // Custom prep notes
-  modifiers  String?                            // JSON string of selected modifiers
-  status     String       @default("pending")   // pending | preparing | ready | served | voided
+  course     String       @default("main") // beverage | starter | main | dessert
+  notes      String?
+  modifiers  String?
+  status     String       @default("pending") // pending | preparing | ready | served | voided
   station    String       @default("Kitchen")
   firedAt    DateTime?
   readyAt    DateTime?
@@ -155,7 +241,7 @@ model OrderPayment {
   order         DineInOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
   amount        Float
   paymentMethod String      // cash | card | visa | apple_pay | voucher
-  reference     String?     // Card last 4 digits or receipt reference
+  reference     String?
   createdAt     DateTime    @default(now())
 
   @@index([orderId])

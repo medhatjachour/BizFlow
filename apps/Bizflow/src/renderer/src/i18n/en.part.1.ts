@@ -509,6 +509,10 @@ export const enPart1 = {
     restaurantReservationsTab: 'Reservations',
     restaurantMenuTab: 'Menu',
     restaurantOrdersTab: 'Orders',
+    restaurantShiftsTab: 'Shifts',
+    restaurantInventoryTab: 'Inventory',
+    restaurantRecipesTab:' Recipes',
+    restaurantWasteTab: 'Waste',
     // Overview
     restaurantTotalTables: 'Total Tables',
     restaurantOpenOrders: 'Open Orders',
