@@ -141,10 +141,7 @@ export function registerMenuHandlers(prisma: any) {
       if (rest.price !== undefined) rest.price = roundMoney(Number(rest.price))
       if (rest.cost !== undefined) rest.cost = roundMoney(Number(rest.cost))
 
-      const updated = await tx.menuItem.update({
-        where: { id },
-        data: rest
-      })
+      
 
       // Update recipe if provided
       if (recipeIngredients) {
