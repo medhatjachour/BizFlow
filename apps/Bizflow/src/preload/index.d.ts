@@ -386,10 +386,7 @@ interface API {
     generateThermal: (receipt: any) => Promise<any>
   }
   thermalReceipts: {
-    print: (data: {
-      receiptData: any
-      settings: any
-    }) => Promise<{
+    print: (data: { receiptData: any; settings: any }) => Promise<{
       success: boolean
       error?: string
       buffer?: string
@@ -451,7 +448,10 @@ interface API {
         activatedAt: string
       }
     }>
-    activateOnline: (email: string, licenseKey: string) => Promise<{
+    activateOnline: (
+      email: string,
+      licenseKey: string
+    ) => Promise<{
       ok: boolean
       error?: string
       code?: string
@@ -526,6 +526,91 @@ interface API {
     updateOrderItemStatus: (data: any) => Promise<any>
     closeOrder: (data: any) => Promise<any>
     getOverview: () => Promise<any>
+    updateTablePosition: (data: any) => Promise<any>
+    mergeTables: (data: any) => Promise<any>
+    transferTable: (data: any) => Promise<any>
+    getTableActivityLogs: (tableId: string) => Promise<any>
+    onEvent: (event: string, callback: (data?: any) => void) => () => void
+    splitCheckBySeat: (data: { orderId: string; seatNumbers: number[] }) => Promise<any>
+    getShiftHistory: (opts?: any) => Promise<any>
+    getWasteAnalytics: (opts?: any) => Promise<any>
+    updateOrderItem: (data: any) => Promise<any>
+    fireCourse: (data: { orderId: string; course: CourseType }) => Promise<any>
+    applyDiscount: (data: {
+      orderId: string
+      discountType: DiscountType
+      discountAmount: number
+    }) => Promise<any>
+    processPayment: (data: {
+      orderId: string
+      amount: number
+      paymentMethod: string
+      reference?: string
+      tipAmount?: number
+    }) => Promise<any>
+    getKdsActiveTickets: (station?: string) => Promise<KdsTicket[]>
+    bumpKdsItem: (itemId: string) => Promise<void>
+    bumpKdsTicket: (orderId: string) => Promise<void>
+    seatReservation: (data: { reservationId: string; tableId?: string }) => Promise<void>
+    toggleItem86: (id: string) => Promise<void>
+    getActiveShift: () => Promise<any>
+    openShift: (data: { serverId: string; serverName: string; startCash: number }) => Promise<any>
+    closeShift: (data: { id: string; endCash: number; notes?: string }) => Promise<any>
+    getZReportData: (shiftId: string) => Promise<any>
+    getIngredients: () => Promise<any>
+    updateIngredient: (data: {
+      id: string
+      name: string
+      category: string
+      unit: string
+      currentStock: number
+      minStockAlert: number
+      supplierName?: string
+      notes?: string
+      costPerUnit: number
+    }) => Promise<any>
+    createIngredient: (data: {
+      name: string
+      category: string
+      unit: string
+      currentStock: number
+      minStockAlert: number
+      supplierName?: string
+      notes?: string
+      costPerUnit: number
+    }) => Promise<any>
+    adjustStock: (data: {
+      ingredientId: string
+      type: any
+      quantity: number
+      unitCost?: number
+      notes?: string
+    }) => Promise<any>
+    deleteIngredient: (id: string) => Promise<any>
+    getRecipes: () => Promise<any>
+    saveRecipe: (data: {
+      menuItemId?: string
+      yieldCount: number
+      prepNotes: string
+      ingredients: Array<{
+        ingredientId: string
+        quantity: number
+        unit: string
+        notes?: string
+      }>
+    }) => Promise<any>
+    deleteRecipe: (id: string) => Promise<any>
+    getWasteLogs: (options?: any) => Promise<any>
+    logWaste: (data: {
+      ingredientId?: string | null
+      itemName: string
+      quantity: number
+      unit: string
+      reason: string
+      loggedBy: string
+      notes?: string | null
+    }) => Promise<any>
+    deleteWasteLog: (id: string) => Promise<any>
   }
   warehouse: {
     getLocations: (options?: any) => Promise<any>
@@ -1134,15 +1219,15 @@ interface API {
       updateItemStatus: (data: any) => Promise<any>
       close: (data: any) => Promise<any>
       void: (id: string) => Promise<any>
-      
+
       refund: (data: {
-      orderId: string
-      items: Array<{ id: string; quantity: number }>
-      reason: string
-      notes?: string
-      cashierId: string
-      restockItems?: boolean
-    }) => Promise<any>
+        orderId: string
+        items: Array<{ id: string; quantity: number }>
+        reason: string
+        notes?: string
+        cashierId: string
+        restockItems?: boolean
+      }) => Promise<any>
     }
     sales: {
       getAll: (opts?: any) => Promise<any>
