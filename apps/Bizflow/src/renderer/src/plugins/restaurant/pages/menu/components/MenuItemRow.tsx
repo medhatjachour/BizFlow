@@ -7,7 +7,6 @@ import {
   ToggleLeft,
   ToggleRight,
   Package,
-  Layers,
   Utensils
 } from 'lucide-react'
 import { MenuItemData } from '../types'

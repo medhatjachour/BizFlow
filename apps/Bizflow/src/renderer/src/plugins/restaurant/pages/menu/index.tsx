@@ -92,6 +92,7 @@ export default function MenuEngineeringPage() {
                   <MenuItemRow
                     key={item.id}
                     item={item}
+                    onOpenCostBreakdown={() => console.log('Open cost breakdown for', item.name)}
                     onToggle86={toggleItem86}
                     onEdit={handleOpenEdit}
                     onDelete={deleteItem}
