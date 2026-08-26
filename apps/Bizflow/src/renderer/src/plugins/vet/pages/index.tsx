@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import {  useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import {
   PawPrint,
   Users,
@@ -20,15 +20,15 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import VetStatsTab from './vet-stats'
-import VetAppointmentsTab from './components/appointments/VetAppointmentsTab'
 import VetExpensesTab from './vet-expenses'
-import VetMedicinesTab from './components/medicines/VetMedicinesTab'
+import VetMedicinesTab from './vet-medicines/VetMedicinesTab'
 import VetSalesTab, { SalesHistory } from './components/sales/VetSalesTab'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import VetStaffTab from './vet-staff'
 import VetFollowUpsTab from './vet-followups'
 import VetSessionsTab from './vet-sessions/'
 import VetOwnersTab from './vet-owners'
+import VetAppointmentsTab from './vet-appointments'
 
 type Tab =
   | 'owners'
@@ -313,6 +313,7 @@ export default function VetPage() {
   const [tab, setTab] = useState<Tab>('owners')
   const [salesCartCount, setSalesCartCount] = useState(0)
   const [pendingMainTab, setPendingMainTab] = useState<Tab | null>(null)
+  const [activePatientId, setActivePatientId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!visibleTabs.some((item) => item.key === tab)) setTab(visibleTabs[0]?.key ?? 'owners')
@@ -396,7 +397,9 @@ export default function VetPage() {
       <div className="flex-1 overflow-y-auto min-h-0">
         {tab === 'owners' && <VetOwnersTab />}
         {tab === 'sessions' && <VetSessionsTab />}
-        {tab === 'appointments' && <VetAppointmentsTab />}
+        {tab === 'appointments' && (
+          <VetAppointmentsTab onViewPet={(petId: string) => setActivePatientId(petId)} />
+        )}
         {tab === 'followups' && <VetFollowUpsTab />}
         {tab === 'stats' && <VetStatsTab onNavigate={(t) => requestMainTab(t as Tab)} />}
         {tab === 'expenses' && <VetExpensesTab />}

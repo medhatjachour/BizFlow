@@ -8,9 +8,9 @@ import { FollowUpCard } from './components/FollowUpCard'
 import { FollowUpTableView } from './components/FollowUpTableView'
 import { RescheduleFollowUpModal } from './components/RescheduleFollowUpModal'
 
-import VetAppointmentFormModal from '../components/appointments/VetAppointmentFormModal'
 import { VetSessionFormModal } from '../vet-sessions/components/VetSessionFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { VetAppointmentFormModal } from '../vet-appointments/components/VetAppointmentFormModal'
 
 export default function VetFollowUpsTab({ onViewPet }: { onViewPet?: (petId: string) => void }) {
   const { language } = useLanguage()

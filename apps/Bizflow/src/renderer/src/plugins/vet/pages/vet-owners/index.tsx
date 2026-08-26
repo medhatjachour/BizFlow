@@ -13,7 +13,7 @@ import { VetPatientFormModal } from './components/VetPatientFormModal'
 import { VetOwnerProfileModal } from './components/VetOwnerProfileModal'
 import { OwnerDeleteModal } from './components/OwnerDeleteModal'
 import { VetSessionFormModal } from '../vet-sessions/components/VetSessionFormModal'
-import VetAppointmentFormModal from '../components/appointments/VetAppointmentFormModal'
+import { VetAppointmentFormModal } from '../vet-appointments/components/VetAppointmentFormModal'
 
 export default function VetOwnersTab() {
   const toast = useToast()
