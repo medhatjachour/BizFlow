@@ -23,8 +23,7 @@ import { speciesEmoji, speciesLabel } from './components/owners/species'
 import { VetStaff } from './vet-staff/types'
 import VetStaffTab from './vet-staff'
 import VetFollowUpsTab from './vet-followups/VetFollowUpsTab'
-import VetSessionFormModal from './vet-sessions/VetSessionFormModal'
-import VetSessionsTab from './vet-sessions/VetSessionsTab'
+import VetSessionsTab from './vet-sessions/'
 
 type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales' | 'salesHistory'
 
@@ -708,13 +707,7 @@ export default function VetPage() {
         />
       )}
 
-      {showSessionForm && (
-        <VetSessionFormModal
-          preselectedPatient={preselectedPatient ?? undefined}
-          onSave={handleSessionSaved}
-          onClose={() => { setShowSessionForm(false); setPreselectedPatient(null) }}
-        />
-      )}
+
 
       {showAppointForm && (
         <VetAppointmentFormModal
