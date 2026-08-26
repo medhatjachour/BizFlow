@@ -4,9 +4,9 @@ import {
   ArrowDownToLine, TrendingUp, DollarSign, XCircle, Pencil
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import VetPeriodFilter from '../stats/VetPeriodFilter'
 import type { HistoryEvent } from './vetMedicines.types'
 import { api } from './vetMedicines.shared'
+import VetPeriodFilter from '../../vet-stats/VetPeriodFilter'
 
 /** Display an audit before/after value: dates as locale dates, blanks as a dash. */
 function formatChange(v: any): string {

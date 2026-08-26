@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import { Plus, Loader2, Pencil, Trash2, DollarSign, TrendingUp, TrendingDown, Info } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import VetPeriodFilter, { rangeForPreset } from '../stats/VetPeriodFilter'
 import DateField from '@renderer/components/DateField'
+import VetPeriodFilter, { rangeForPreset } from '../../vet-stats/VetPeriodFilter'
 
 function ExpensesHelp() {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
