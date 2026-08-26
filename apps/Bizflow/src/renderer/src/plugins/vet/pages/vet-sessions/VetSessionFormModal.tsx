@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, Loader2, Settings2, ChevronDown, ChevronUp } from 'lucide-react'
-import type { VetPatient } from '../../index'
-import type { VetStaff } from '../staff/VetStaffFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import DateField from '@renderer/components/DateField'
+import { VetPatient } from '..'
+import { VetStaff } from '../vet-staff/types'
+import { speciesEmoji } from '../components/owners/species'
 import { useVisitTypes } from './visitTypes'
 import VetVisitTypesManager from './VetVisitTypesManager'
-import { speciesEmoji } from '../owners/species'
-import DateField from '@renderer/components/DateField'
 
 interface Props {
   session?: any

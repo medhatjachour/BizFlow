@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { VisitTypeStat } from '../types'
 import { formatCurrency } from '../utils'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import { useVisitTypes, VISIT_TYPE_BAR, visitTypeLabel } from '../../components/sessions/visitTypes'
+import { useVisitTypes, VISIT_TYPE_BAR, visitTypeLabel } from '../../vet-sessions/visitTypes'
 
 export function SessionTypeComparisonCard({ visitTypes }: { visitTypes: VisitTypeStat[] }) {
   const { t } = useLanguage()

@@ -8,8 +8,8 @@ import {
 import { useToast } from '@renderer/contexts/ToastContext'
 import DateField from '@renderer/components/DateField'
 import VetAppointmentFormModal from './VetAppointmentFormModal'
-import VetSessionFormModal from '../sessions/VetSessionFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import VetSessionFormModal from '../../vet-sessions/VetSessionFormModal'
 
 const TYPE_COLORS: Record<string, string> = {
   consultation: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',

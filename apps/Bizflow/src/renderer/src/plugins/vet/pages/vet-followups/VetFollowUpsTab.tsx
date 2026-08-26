@@ -6,8 +6,8 @@ import {
   AlertTriangle, Clock, Users, Phone, Info, Loader2
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
-import VetAppointmentFormModal from '../appointments/VetAppointmentFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import VetAppointmentFormModal from '../components/appointments/VetAppointmentFormModal'
 
 const SPECIES_EMOJI: Record<string, string> = {
   dog: '🐕', cat: '🐈', bird: '🦜', rabbit: '🐇',

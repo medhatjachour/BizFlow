@@ -7,7 +7,7 @@ import VetSessionFormModal from './VetSessionFormModal'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { VISIT_TYPE_COLORS, visitTypeLabel, useVisitTypes } from './visitTypes'
 import VetVisitTypesManager from './VetVisitTypesManager'
-import VetPeriodFilter, { rangeForPreset } from '../../vet-stats/VetPeriodFilter'
+import VetPeriodFilter, { rangeForPreset } from '../vet-stats/VetPeriodFilter'
 
 function SessionHelp() {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
