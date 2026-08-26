@@ -4,7 +4,7 @@ import {
   PawPrint, Users, ClipboardList, BarChart3, CalendarClock, Bell,
   Plus, Search, Loader2, Trash2, Eye, Pencil, Phone, Calendar,
   Activity, DollarSign, AlertCircle, Info, X, ArrowDown, ArrowRight,
-  ChevronDown, ChevronUp, Mail, MapPin, Stethoscope, BadgeCheck, ShoppingCart, Receipt
+  ChevronDown, ChevronUp, Mail, MapPin, Stethoscope,  ShoppingCart, Receipt
 } from 'lucide-react'
 import { useLanguage }  from '@renderer/contexts/LanguageContext'
 import { useToast }     from '@renderer/contexts/ToastContext'
@@ -12,8 +12,6 @@ import { useAuth }      from '@renderer/contexts/AuthContext'
 import VetOwnerFormModal    from './components/owners/VetOwnerFormModal'
 import VetPatientFormModal  from './components/owners/VetPatientFormModal'
 import VetOwnerProfileModal from './components/owners/VetOwnerProfileModal'
-import VetStaffFormModal, { type VetStaff } from './components/staff/VetStaffFormModal'
-import VetStaffProfileModal from './components/staff/VetStaffProfileModal'
 import VetSessionFormModal  from './components/sessions/VetSessionFormModal'
 import VetAppointmentFormModal from './components/appointments/VetAppointmentFormModal'
 import VetSessionsTab   from './components/sessions/VetSessionsTab'
@@ -25,6 +23,8 @@ import VetMedicinesTab  from './components/medicines/VetMedicinesTab'
 import VetSalesTab, { SalesHistory } from './components/sales/VetSalesTab'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import { speciesEmoji, speciesLabel } from './components/owners/species'
+import { VetStaff } from './vet-staff/types'
+import VetStaffTab from './vet-staff'
 
 type Tab = 'owners' | 'vets' | 'sessions' | 'stats' | 'appointments' | 'followups' | 'expenses' | 'medicines' | 'sales' | 'salesHistory'
 
@@ -346,86 +346,6 @@ function OwnerCard({ owner, onEdit, onDelete, onAddPet, onViewProfile, onWalkIn,
   )
 }
 
-// ─── Staff Card ───────────────────────────────────────────────────────────────
-interface StaffCardProps {
-  staff:          VetStaff
-  onViewProfile:  () => void
-  onEdit:         () => void
-  onDelete:       () => void
-}
-
-function StaffCard({ staff, onViewProfile, onEdit, onDelete }: StaffCardProps) {
-  const initials = staff.name.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('')
-
-  return (
-    <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all">
-      <div className="flex items-start gap-3">
-        {/* Avatar */}
-        <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm">
-          {initials}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm truncate">{staff.name}</h3>
-            {staff.status === 'active' ? (
-              <span className="flex items-center gap-1 text-[10px] font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded-full">
-                <BadgeCheck className="h-3 w-3" /> Active
-              </span>
-            ) : (
-              <span className="text-[10px] font-medium bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400 px-1.5 py-0.5 rounded-full">
-                Inactive
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
-            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-              <Stethoscope className="h-3 w-3" /> Veterinarian
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-              {staff.employmentType.replace('_', '-')}
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1.5">
-            <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-              <Phone className="h-3 w-3" /> {staff.phone}
-            </span>
-            {staff.email && (
-              <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 truncate max-w-[180px]">
-                <Mail className="h-3 w-3" /> {staff.email}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Action bar */}
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
-        <button
-          onClick={onViewProfile}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/40 rounded-lg transition-colors"
-        >
-          <Eye className="h-3 w-3" /> Profile
-        </button>
-        <button
-          onClick={onEdit}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
-        >
-          <Pencil className="h-3 w-3" /> Edit
-        </button>
-        <button
-          onClick={onDelete}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-auto"
-        >
-          <Trash2 className="h-3 w-3" /> Remove
-        </button>
-      </div>
-    </div>
-  )
-}
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function VetPage() {
@@ -509,16 +429,8 @@ export default function VetPage() {
   const [profileOwner, setProfileOwner] = useState<VetOwnerWithPets | null>(null)
 
   // ── Staff (Vets) state ──────────────────────────────────────────────────
-  const [staffList,       setStaffList]       = useState<VetStaff[]>([])
-  const [staffTotal,      setStaffTotal]      = useState(0)
-  const [staffSearch,     setStaffSearch]     = useState('')
-  const [staffLoading,    setStaffLoading]    = useState(false)
-  const [showStaffForm,   setShowStaffForm]   = useState(false)
-  const [editingStaff,    setEditingStaff]    = useState<VetStaff | null>(null)
+  
   const [deleteStaff,     setDeleteStaff]     = useState<VetStaff | null>(null)
-  const [isDeletingStaff, setIsDeletingStaff] = useState(false)
-  const [profileStaff,    setProfileStaff]    = useState<VetStaff | null>(null)
-  const staffTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ── Load owners ──────────────────────────────────────────────────────────
   const loadOwners = useCallback(async (reset = false) => {
@@ -612,61 +524,6 @@ export default function VetPage() {
     setShowAppointForm(true)
   }
 
-  // ── Staff load ────────────────────────────────────────────────────────────
-  const loadStaff = useCallback(async () => {
-    setStaffLoading(true)
-    try {
-      const raw = (await window.api.vet?.staff.getAll()) as any
-      if (raw) {
-        const list: VetStaff[] = Array.isArray(raw) ? raw : (raw?.data ?? [])
-        const filtered = staffSearch
-          ? list.filter(s =>
-              s.name.toLowerCase().includes(staffSearch.toLowerCase()) ||
-              s.phone.includes(staffSearch)
-            )
-          : list
-        setStaffList(filtered)
-        setStaffTotal(filtered.length)
-      }
-    } catch (err: any) {
-      toast.error(err.message ?? 'Failed to load staff')
-    } finally {
-      setStaffLoading(false)
-    }
-  }, [staffSearch])
-
-  useEffect(() => {
-    if (tab === 'vets') {
-      if (staffTimer.current) clearTimeout(staffTimer.current)
-      staffTimer.current = setTimeout(() => loadStaff(), staffSearch ? 300 : 0)
-    }
-  }, [staffSearch, tab])
-
-  useEffect(() => {
-    if (tab === 'vets') loadStaff()
-  }, [tab])
-
-  const handleStaffSaved = (_s: VetStaff) => {
-    setShowStaffForm(false)
-    setEditingStaff(null)
-    loadStaff()
-    toast.success('Veterinarian saved')
-  }
-
-  const handleDeleteStaff = async () => {
-    if (!deleteStaff) return
-    setIsDeletingStaff(true)
-    try {
-      await window.api.vet?.staff.delete(deleteStaff.id)
-      setDeleteStaff(null)
-      loadStaff()
-      toast.success('Veterinarian removed')
-    } catch (err: any) {
-      toast.error(err.message ?? 'Failed to remove veterinarian')
-    } finally {
-      setIsDeletingStaff(false)
-    }
-  }
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950">
@@ -700,14 +557,7 @@ export default function VetPage() {
               <Plus className="h-4 w-4" /> New Owner
             </button>
           )}
-          {tab === 'vets' && (
-            <button
-              onClick={() => { setEditingStaff(null); setShowStaffForm(true) }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-sm font-medium rounded-xl shadow-sm transition-all hover:shadow-md"
-            >
-              <Plus className="h-4 w-4" /> Add Vet
-            </button>
-          )}
+        
         </div>
 
         {/* Tabs */}
@@ -817,71 +667,13 @@ export default function VetPage() {
         {tab === 'stats'        && <VetStatsTab onNavigate={(t) => requestMainTab(t as Tab)} />}
         {tab === 'expenses'     && <VetExpensesTab />}
         {tab === 'medicines'    && <VetMedicinesTab />}
+        {tab === 'vets'        && <VetStaffTab />}
         {tab === 'sales'        && <VetSalesTab onCartCountChange={setSalesCartCount} />}
         {tab === 'salesHistory' && (
           <div className="flex flex-col h-full min-h-0"><SalesHistory /></div>
         )}
 
-        {/* Vets tab */}
-        {tab === 'vets' && (
-          <div className="p-6 space-y-4 max-w-full mx-auto">
-            {staffTotal > 0 && (
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                <span className="font-semibold text-slate-900 dark:text-white">{staffTotal}</span> veterinarians
-              </p>
-            )}
-
-            {/* Search */}
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                value={staffSearch}
-                onChange={e => setStaffSearch(e.target.value)}
-                placeholder="Search by name or phone…"
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] transition-colors"
-              />
-            </div>
-
-            {staffLoading && staffList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
-                <p className="text-sm text-slate-400">Loading team…</p>
-              </div>
-            ) : staffList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                <div className="h-16 w-16 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
-                  <Stethoscope className="h-8 w-8 text-violet-400" />
-                </div>
-                <p className="font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                  {staffSearch ? 'No veterinarians match your search' : 'No veterinarians yet'}
-                </p>
-                <p className="text-sm text-slate-400 dark:text-slate-500 mb-4">
-                  {staffSearch ? 'Try a different name' : 'Add your first veterinarian here. Non-vet staff belong in Employees.'}
-                </p>
-                {!staffSearch && (
-                  <button
-                    onClick={() => { setEditingStaff(null); setShowStaffForm(true) }}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors"
-                  >
-                    <Plus className="h-4 w-4" /> Add First Vet
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid gap-4 lg:grid-cols-2">
-                {staffList.map(s => (
-                  <StaffCard
-                    key={s.id}
-                    staff={s}
-                    onViewProfile={() => setProfileStaff(s)}
-                    onEdit={() => { setEditingStaff(s); setShowStaffForm(true) }}
-                    onDelete={() => setDeleteStaff(s)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+  
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
@@ -932,57 +724,9 @@ export default function VetPage() {
         />
       )}
 
-      {showStaffForm && (
-        <VetStaffFormModal
-          staff={editingStaff}
-          onSave={handleStaffSaved}
-          onClose={() => { setShowStaffForm(false); setEditingStaff(null) }}
-        />
-      )}
 
-      {profileStaff && (
-        <VetStaffProfileModal
-          staff={profileStaff}
-          onClose={() => setProfileStaff(null)}
-          onEdit={() => { setEditingStaff(profileStaff); setProfileStaff(null); setShowStaffForm(true) }}
-        />
-      )}
 
-      {/* Delete staff confirm */}
-      {deleteStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-6 w-full max-w-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 dark:text-white">Remove Veterinarian</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">This will remove this veterinarian from the vet clinic list.</p>
-              </div>
-            </div>
-            <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
-              Remove <strong>{deleteStaff.name}</strong> from the veterinarians list?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteStaff(null)}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteStaff}
-                disabled={isDeletingStaff}
-                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-              >
-                {isDeletingStaff ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                {isDeletingStaff ? 'Removing…' : 'Remove'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+    
 
       {/* Delete owner confirm */}
       {deleteTarget && (

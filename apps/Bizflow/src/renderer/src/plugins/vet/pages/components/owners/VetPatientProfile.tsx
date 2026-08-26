@@ -7,11 +7,11 @@ import {
   Activity, User, FileText, Trash2, Upload, Eye
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
-import VetSessionFormModal from './components/sessions/VetSessionFormModal'
-import VetPatientFormModal from './components/owners/VetPatientFormModal'
-import VetAppointmentFormModal from './components/appointments/VetAppointmentFormModal'
-import { speciesEmoji } from './components/owners/species'
-import { VISIT_TYPE_COLORS, visitTypeLabel } from './components/sessions/visitTypes'
+import VetSessionFormModal from '../sessions/VetSessionFormModal'
+import VetPatientFormModal from './VetPatientFormModal'
+import VetAppointmentFormModal from '../appointments/VetAppointmentFormModal'
+import { speciesEmoji } from './species'
+import { VISIT_TYPE_COLORS, visitTypeLabel } from '../sessions/visitTypes'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface VetPrescription {
