@@ -8,12 +8,12 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import DateField from '@renderer/components/DateField'
 import { VetPatient } from '../types'
 import { VetStaff } from '../../vet-staff/types'
-import { speciesEmoji } from '../../components/owners/species'
 import { useVisitTypes } from '../hooks/useVisitTypes'
 import { VetVisitTypesManager } from './VetVisitTypesManager'
 import { VetSessionRecord, PrescriptionItem, SessionVitals } from '../types'
 import { computeSessionPaymentStatus } from '../utils'
 import { PAYMENT_STATUS_CONFIG, SESSION_PAYMENT_METHODS } from '../constants'
+import { speciesEmoji } from '../../vet-owners/species'
 
 interface Props {
   session?: VetSessionRecord | null

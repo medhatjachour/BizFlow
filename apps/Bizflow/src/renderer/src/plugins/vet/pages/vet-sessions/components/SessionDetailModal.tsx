@@ -7,7 +7,7 @@ import { VetSessionRecord, SessionVitals } from '../types'
 import { formatSessionMoney, formatSessionDate, getVisitTypeLabel } from '../utils'
 import { PAYMENT_STATUS_CONFIG } from '../constants'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import { speciesEmoji } from '../../components/owners/species'
+import { speciesEmoji } from '../../vet-owners/species'
 
 interface Props {
   session: VetSessionRecord | null

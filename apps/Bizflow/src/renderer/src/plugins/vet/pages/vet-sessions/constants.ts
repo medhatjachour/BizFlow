@@ -67,3 +67,17 @@ export const SWATCH_COLORS = [
   '#84cc16', '#f59e0b', '#ef4444', '#f97316', '#a855f7',
   '#10b981', '#ec4899', '#64748b'
 ]
+export const VISIT_TYPE_BAR: Record<string, string> = {
+  wellness_exam: 'bg-teal-500',
+  visit: 'bg-cyan-500',
+  consultation: 'bg-sky-500',
+  vaccination: 'bg-blue-500',
+  sonar: 'bg-indigo-500',
+  lab_test: 'bg-lime-500',
+  dental: 'bg-amber-500',
+  surgery: 'bg-rose-500',
+  emergency: 'bg-orange-500',
+  follow_up: 'bg-purple-500',
+  deworming: 'bg-emerald-500',
+  grooming: 'bg-pink-500'
+}

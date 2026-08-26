@@ -23,6 +23,7 @@ import CommandPalette from './components/CommandPalette'
 import { MigrationProgress } from './components/MigrationProgress'
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
 import type { Capability } from '../../shared/permissions'
+import VetPatientProfile from './plugins/vet/pages/vet-owners/'
 
 // Lazy-load ALL pages for maximum code splitting and fast initial load
 const Dashboard    = lazy(() => import('./pages/Dashboard/index'))
@@ -48,7 +49,6 @@ const Warehouse    = __PLUGIN_WAREHOUSE__ ? lazy(() => import('./plugins/warehou
 const Clinic       = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/index')) : null
 const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages')) : null
 const Vet          = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/index')) : null
-const VetPatientProfile = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/components/owners/VetPatientProfile')) : null
 const Gym          = __PLUGIN_GYM__ ? lazy(() => import('./plugins/gym/index')) : null
 const Pharmacy     = __PLUGIN_PHARMACY__ ? lazy(() => import('./plugins/pharmacy/pages/index')) : null
 const Coffee       = __PLUGIN_COFFEE__ ? lazy(() => import('./plugins/coffee/pages/index')) : null
