@@ -30,7 +30,7 @@ export function registerRecipeHandlers(prisma: any) {
       const existing = await tx.menuItemRecipe.findUnique({ where: { menuItemId: data.menuItemId } })
 
       if (existing) {
-        await tx.recipeIngredient.deleteMany({ where: { recipeId: existing.id } })
+        await tx.RecipeIngredientRestaurant.deleteMany({ where: { recipeId: existing.id } })
         await tx.menuItemRecipe.update({
           where: { id: existing.id },
           data: {
