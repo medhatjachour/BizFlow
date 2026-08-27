@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import {
   X, Search, Loader2, Settings2, ChevronDown, ChevronUp,
@@ -26,6 +25,29 @@ const GENERAL_PET_NAME = 'General Visit'
 const inputCls =
   'w-full px-3.5 py-2.5 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all'
 
+// Safe helper functions for Date inputs
+const formatToDateTimeLocal = (dateVal?: any): string => {
+  if (!dateVal) return new Date().toISOString().slice(0, 16)
+  try {
+    const d = new Date(dateVal)
+    if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 16)
+    return d.toISOString().slice(0, 16)
+  } catch {
+    return new Date().toISOString().slice(0, 16)
+  }
+}
+
+const formatToDateOnly = (dateVal?: any): string => {
+  if (!dateVal) return ''
+  try {
+    const d = new Date(dateVal)
+    if (isNaN(d.getTime())) return ''
+    return d.toISOString().slice(0, 10)
+  } catch {
+    return ''
+  }
+}
+
 export function VetSessionFormModal({ session, preselectedPatient, onSave, onClose }: Props) {
   const isEdit = Boolean(session)
   const { language } = useLanguage()
@@ -49,7 +71,7 @@ export function VetSessionFormModal({ session, preselectedPatient, onSave, onClo
   const [waived, setWaived] = useState(false)
 
   const [form, setForm] = useState({
-    visitDate: new Date().toISOString().slice(0, 16),
+    visitDate: formatToDateTimeLocal(),
     visitType: 'wellness_exam',
     vetName: '',
     chiefComplaint: '',
@@ -84,13 +106,13 @@ export function VetSessionFormModal({ session, preselectedPatient, onSave, onClo
   useEffect(() => {
     if (session) {
       setForm({
-        visitDate: session.visitDate ? session.visitDate.slice(0, 16) : new Date().toISOString().slice(0, 16),
+        visitDate: formatToDateTimeLocal(session.visitDate),
         visitType: session.visitType || 'wellness_exam',
         vetName: session.vetName || '',
         chiefComplaint: session.chiefComplaint || '',
         diagnosis: session.diagnosis || '',
         notes: session.notes || '',
-        followUpDate: session.followUpDate ? session.followUpDate.slice(0, 10) : '',
+        followUpDate: formatToDateOnly(session.followUpDate),
         status: session.status || 'completed',
         amountCharged: session.amountCharged ? String(session.amountCharged) : '',
         amountPaid: session.amountPaid ? String(session.amountPaid) : '',
@@ -98,11 +120,16 @@ export function VetSessionFormModal({ session, preselectedPatient, onSave, onClo
       })
       try {
         if (session.vetVitals) {
-          setVitals(JSON.parse(session.vetVitals))
+          const parsed = typeof session.vetVitals === 'string' ? JSON.parse(session.vetVitals) : session.vetVitals
+          setVitals(parsed)
           setShowVitals(true)
         }
       } catch {}
-      setPrescriptions(session.prescriptions?.map((r) => ({ ...r })) ?? [])
+      setPrescriptions(
+        Array.isArray(session.prescriptions)
+          ? session.prescriptions.map((r) => ({ ...r }))
+          : []
+      )
       setWaived(session.paymentStatus === 'waived')
       if (session.patient) setPatient(session.patient)
     }

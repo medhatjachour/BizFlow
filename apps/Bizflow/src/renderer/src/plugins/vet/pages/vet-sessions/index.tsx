@@ -1,7 +1,6 @@
 
 import { useState } from 'react'
 import { Activity, Plus, Loader2 } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { VetSessionRecord } from './types'
@@ -17,9 +16,8 @@ import { QuickPaymentModal } from './components/QuickPaymentModal'
 import { SessionDeleteModal } from './components/SessionDeleteModal'
 import { VetVisitTypesManager } from './components/VetVisitTypesManager'
 
-export default function VetSessionsTab({ onNavigate }: { onNavigate?: (tab: string) => void }) {
+export default function VetSessionsTab() {
   const toast = useToast()
-  const navigate = useNavigate()
   const { language } = useLanguage()
   const isAr = language === 'ar'
 
