@@ -13,7 +13,7 @@ interface Props {
 const inputCls =
   'w-full px-3.5 py-2.5 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all'
 
-export function VetOwnerFormModal({ owner, onSave, onClose }: Props) {
+export default function VetOwnerFormModal({ owner, onSave, onClose }: Props) {
   const isEdit = Boolean(owner)
   const { language } = useLanguage()
   const isAr = language === 'ar'

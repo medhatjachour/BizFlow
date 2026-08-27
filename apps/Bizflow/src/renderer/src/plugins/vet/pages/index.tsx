@@ -22,13 +22,14 @@ import { useAuth } from '@renderer/contexts/AuthContext'
 import VetStatsTab from './vet-stats'
 import VetExpensesTab from './vet-expenses'
 import VetMedicinesTab from './vet-medicines'
-import VetSalesTab, { SalesHistory } from './components/sales/VetSalesTab'
+import VetSalesTab from './vet-sales/'
 import { pluginTabCapability } from '../../../../../shared/permissions'
 import VetStaffTab from './vet-staff'
 import VetFollowUpsTab from './vet-followups'
 import VetSessionsTab from './vet-sessions/'
 import VetOwnersTab from './vet-owners'
 import VetAppointmentsTab from './vet-appointments'
+import SalesHistory  from './sales-history'
 
 type Tab =
   | 'owners'
@@ -313,7 +314,7 @@ export default function VetPage() {
   const [tab, setTab] = useState<Tab>('owners')
   const [salesCartCount, setSalesCartCount] = useState(0)
   const [pendingMainTab, setPendingMainTab] = useState<Tab | null>(null)
-  const [activePatientId, setActivePatientId] = useState<string | null>(null)
+  const [, setActivePatientId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!visibleTabs.some((item) => item.key === tab)) setTab(visibleTabs[0]?.key ?? 'owners')

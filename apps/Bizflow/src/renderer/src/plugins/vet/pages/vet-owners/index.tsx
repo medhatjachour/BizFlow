@@ -8,12 +8,12 @@ import { useVetOwners } from './hooks/useVetOwners'
 import { VetOwnersToolbar } from './components/VetOwnersToolbar'
 import { OwnerCard } from './components/OwnerCard'
 import { OwnerTableView } from './components/OwnerTableView'
-import { VetOwnerFormModal } from './components/VetOwnerFormModal'
 import { VetPatientFormModal } from './components/VetPatientFormModal'
 import { VetOwnerProfileModal } from './components/VetOwnerProfileModal'
 import { OwnerDeleteModal } from './components/OwnerDeleteModal'
 import { VetSessionFormModal } from '../vet-sessions/components/VetSessionFormModal'
 import { VetAppointmentFormModal } from '../vet-appointments/components/VetAppointmentFormModal'
+import VetOwnerFormModal from './components/VetOwnerFormModal'
 
 export default function VetOwnersTab() {
   const toast = useToast()

@@ -1,0 +1,238 @@
+import React, { useState } from 'react'
+import {
+  CreditCard,
+  Banknote,
+  ShieldCheck,
+  Coins,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  CheckCircle
+} from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { INPUT_BASE_CLS, PAYMENT_METHODS, QUICK_DISCOUNT_PERCENTAGES } from '../constants'
+import type { CustomerLite, SaleSubmitPayload } from '../types'
+import { CustomerSelector } from './CustomerSelector'
+
+interface Props {
+  cartTotals: {
+    rawSubtotal: number
+    itemDiscounts: number
+    netItemsTotal: number
+  }
+  isSubmitting: boolean
+  selectedCustomer: CustomerLite | null
+  customerSearch: string
+  customerResults: CustomerLite[]
+  customerSearching: boolean
+  customerDropdownOpen: boolean
+  onCustomerSearchChange: (q: string) => void
+  onSelectCustomer: (c: CustomerLite) => void
+  onClearCustomer: () => void
+  setCustomerDropdownOpen: (open: boolean) => void
+  onOpenNewCustomerModal: () => void
+  onSubmitSale: (payload: SaleSubmitPayload) => void
+}
+
+export const CheckoutSummary: React.FC<Props> = ({
+  cartTotals,
+  isSubmitting,
+  selectedCustomer,
+  customerSearch,
+  customerResults,
+  customerSearching,
+  customerDropdownOpen,
+  onCustomerSearchChange,
+  onSelectCustomer,
+  onClearCustomer,
+  setCustomerDropdownOpen,
+  onOpenNewCustomerModal,
+  onSubmitSale
+}) => {
+  const { t } = useLanguage()
+  const [showOptions, setShowOptions] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash')
+  const [cartDiscount, setCartDiscount] = useState<string>('')
+  const [amountPaid, setAmountPaid] = useState<string>('')
+  const [notes, setNotes] = useState<string>('')
+
+  const discountVal = Math.min(
+    cartTotals.netItemsTotal,
+    Math.max(0, parseFloat(cartDiscount) || 0)
+  )
+  const grandTotal = Math.max(0, cartTotals.netItemsTotal - discountVal)
+  const paidVal = parseFloat(amountPaid)
+  const isPartial = !isNaN(paidVal) && paidVal < grandTotal
+  const remainingBal = isPartial ? grandTotal - paidVal : 0
+
+  const handleApplyPctDiscount = (pct: number) => {
+    const calculated = (cartTotals.netItemsTotal * pct) / 100
+    setCartDiscount(calculated.toFixed(2))
+  }
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmitSale({
+      items: [], // Populated by parent
+      ownerId: selectedCustomer?.id,
+      ownerName: selectedCustomer?.name,
+      paymentMethod,
+      notes: notes || undefined,
+      cartDiscount: discountVal || undefined,
+      amountPaid: !isNaN(paidVal) && paidVal < grandTotal ? paidVal : undefined
+    })
+  }
+
+  return (
+    <form onSubmit={handleFormSubmit} className="p-4 space-y-3 bg-white dark:bg-slate-900">
+      {/* Price Summary */}
+      <div className="space-y-1 text-xs">
+        <div className="flex justify-between text-slate-500">
+          <span>Subtotal</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-300">
+            ${cartTotals.rawSubtotal.toFixed(2)}
+          </span>
+        </div>
+
+        {cartTotals.itemDiscounts > 0 && (
+          <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+            <span>Item Discounts</span>
+            <span>-${cartTotals.itemDiscounts.toFixed(2)}</span>
+          </div>
+        )}
+
+        {discountVal > 0 && (
+          <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+            <span>Cart Discount</span>
+            <span>-${discountVal.toFixed(2)}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-100 dark:border-slate-800">
+          <span>Net Payable</span>
+          <span className="text-base text-violet-600 dark:text-violet-400">
+            ${grandTotal.toFixed(2)}
+          </span>
+        </div>
+      </div>
+
+      {/* Accordion Trigger for Detailed Billing */}
+      <button
+        type="button"
+        onClick={() => setShowOptions(v => !v)}
+        className="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-xs font-bold text-slate-600 dark:text-slate-300 hover:border-violet-400 transition-colors"
+      >
+        <span>Payment & Customer Details</span>
+        {showOptions ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+      </button>
+
+      {/* Detailed Options Block */}
+      {showOptions && (
+        <div className="space-y-3 pt-1 animate-in fade-in duration-100">
+          <CustomerSelector
+            selectedCustomer={selectedCustomer}
+            search={customerSearch}
+            results={customerResults}
+            searching={customerSearching}
+            dropdownOpen={customerDropdownOpen}
+            onSearchChange={onCustomerSearchChange}
+            onSelect={onSelectCustomer}
+            onClear={onClearCustomer}
+            onOpenNewModal={onOpenNewCustomerModal}
+            setDropdownOpen={setCustomerDropdownOpen}
+          />
+
+          {/* Payment Method Selector */}
+          <div className="grid grid-cols-4 gap-1">
+            {PAYMENT_METHODS.map(pm => {
+              const isSelected = paymentMethod === pm.id
+              return (
+                <button
+                  key={pm.id}
+                  type="button"
+                  onClick={() => setPaymentMethod(pm.id)}
+                  className={`py-1.5 px-1 rounded-xl text-[10px] font-bold flex flex-col items-center gap-1 border transition-all ${
+                    isSelected
+                      ? 'border-violet-600 bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300'
+                      : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300'
+                  }`}
+                >
+                  {pm.id === 'cash' && <Banknote size={13} />}
+                  {pm.id === 'card' && <CreditCard size={13} />}
+                  {pm.id === 'insurance' && <ShieldCheck size={13} />}
+                  {pm.id === 'other' && <Coins size={13} />}
+                  <span className="capitalize">{pm.label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Cart Discount Input with Quick Percentages */}
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+              Order Discount ($)
+            </label>
+            <div className="flex gap-1.5">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                placeholder="0.00"
+                value={cartDiscount}
+                onChange={e => setCartDiscount(e.target.value)}
+                className={`${INPUT_BASE_CLS} py-1.5 text-xs`}
+              />
+              {QUICK_DISCOUNT_PERCENTAGES.map(pct => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => handleApplyPctDiscount(pct)}
+                  className="px-2 text-[10px] font-bold border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Amount Paid (for split/partial payments) */}
+          <div>
+            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+              Amount Paid ($)
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="any"
+              placeholder={`Full: $${grandTotal.toFixed(2)}`}
+              value={amountPaid}
+              onChange={e => setAmountPaid(e.target.value)}
+              className={`${INPUT_BASE_CLS} py-1.5 text-xs`}
+            />
+            {isPartial && (
+              <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-1">
+                Remaining debt: ${remainingBal.toFixed(2)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Primary Submit Button */}
+      <button
+        type="submit"
+        disabled={isSubmitting || cartTotals.netItemsTotal <= 0}
+        className="w-full py-3.5 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 disabled:opacity-40 text-white font-bold text-xs rounded-2xl shadow-lg shadow-violet-600/20 transition-all flex items-center justify-center gap-2"
+      >
+        {isSubmitting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <>
+            <CheckCircle className="h-4 w-4" />
+            <span>Complete Checkout (${grandTotal.toFixed(2)})</span>
+          </>
+        )}
+      </button>
+    </form>
+  )
+}

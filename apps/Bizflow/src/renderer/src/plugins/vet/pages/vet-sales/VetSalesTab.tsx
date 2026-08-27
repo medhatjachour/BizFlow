@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import SaleOperation from './SaleOperation'
 
 // The Sales History view lives in its own file but is re-exported here so the
-// vet pages index can keep importing `{ SalesHistory }` from this module.
-export { SalesHistory } from './SalesHistory'
+
 
 // ── Main Tab ──────────────────────────────────────────────────────────────────
 

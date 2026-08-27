@@ -17,7 +17,8 @@ import {
   inputCls, PAYMENT_METHODS, daysUntil, remainingDisplay,
 } from './vetSales.shared'
 import BatchPickerModal from './VetSaleBatchPicker'
-import VetOwnerFormModal from '../../vet-owners/'
+import VetOwnerFormModal from '../vet-owners/components/VetOwnerFormModal'
+// import VetOwnerFormModal from '../vet-owners'
 
 const api       = (window as any).api?.vet?.medicines
 const ownersApi = (window as any).api?.vet?.owners
@@ -1069,7 +1070,7 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
         />
       )}
 
-      {/* {showNewOwnerModal && (
+       {showNewOwnerModal && (
         <VetOwnerFormModal
           onSave={(owner) => {
             setSelectedCustomer({ id: owner.id, name: owner.name, phone: owner.phone })
@@ -1078,7 +1079,7 @@ export default function SaleOperation({ onSaleRecorded, onCartCountChange }: {
           }}
           onClose={() => setShowNewOwnerModal(false)}
         />
-      )} */}
+      )}  
 
       {/* ── Expanded Cart Modal ─────────────────────────────────────────────── */}
       {cartModalOpen && (
