@@ -57,3 +57,6 @@ export interface SaleSubmitPayload {
   cartDiscount?: number
   amountPaid?: number
 }
+
+export type CatalogViewMode = 'grid' | 'list'
+export type CatalogQuickFilter = 'all' | 'in_stock' | 'low_stock' | 'expiring'

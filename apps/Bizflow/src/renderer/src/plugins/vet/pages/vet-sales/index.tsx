@@ -23,18 +23,25 @@ export default function VetSalesTab({
   const toast = useToast()
   const { t } = useLanguage()
 
-  // State & Data Hooks
+  // Catalog State
   const {
     filteredMedicines,
+    medicines,
     categories,
+    categoryCounts,
     loading,
     search,
     setSearch,
     selectedCategory,
     setSelectedCategory,
+    quickFilter,
+    setQuickFilter,
+    viewMode,
+    setViewMode,
     refreshCatalog
   } = useVetCatalog()
 
+  // Cart State
   const {
     cart,
     quickAdd,
@@ -46,6 +53,7 @@ export default function VetSalesTab({
     getCommittedBatchQty
   } = useVetCart()
 
+  // Customer State
   const {
     customerSearch,
     setCustomerSearch,
@@ -58,14 +66,12 @@ export default function VetSalesTab({
     clearCustomer
   } = useCustomerSearch()
 
-  // UI Local State
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [configuringMed, setConfiguringMed] = useState<MedicineLite | null>(null)
   const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(null)
   const [showOwnerModal, setShowOwnerModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
-  // Bubble cart count changes
   useEffect(() => {
     onCartCountChange?.(cart.length)
   }, [cart.length, onCartCountChange])
@@ -81,19 +87,18 @@ export default function VetSalesTab({
     return () => window.removeEventListener('beforeunload', handler)
   }, [cart.length])
 
-  // Keyboard shortcut listener (F2: focus search)
+  // Global Keyboard Shortcuts (F2 Focus Search)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F2') {
         e.preventDefault()
-        document.querySelector<HTMLInputElement>('input[placeholder*="F2"]')?.focus()
+        document.querySelector<HTMLInputElement>('input[placeholder*="Search"]')?.focus()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Medicine Selection Workflow (Quick add if whole container, otherwise open modal)
   const handleSelectMedicine = (med: MedicineLite) => {
     const fefo = getFefoBatch(med.batches)
     const hasSubUnit = Boolean(med.subUnit && med.subUnitsPerContainer)
@@ -101,7 +106,7 @@ export default function VetSalesTab({
     if (!hasSubUnit && fefo && fefo.quantity >= 1) {
       const added = quickAdd(med, fefo)
       if (added) {
-        toast.success(`${med.name} added to cart`)
+        toast.success(`${med.name} added`)
       } else {
         toast.error('Insufficient stock in earliest batch')
       }
@@ -145,25 +150,33 @@ export default function VetSalesTab({
 
   return (
     <div className="flex-1 flex min-h-0 overflow-hidden bg-slate-100/60 dark:bg-slate-950">
-      {/* Catalog Main Panel */}
+      {/* ── Left Column: Pharmacy Catalog ─────────────────────────────── */}
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
         <CatalogToolbar
           search={search}
           onSearchChange={setSearch}
           categories={categories}
+          categoryCounts={categoryCounts}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
+          quickFilter={quickFilter}
+          onQuickFilterChange={setQuickFilter}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          totalShowing={filteredMedicines.length}
+          totalAll={medicines.length}
         />
 
         <MedicineGrid
           medicines={filteredMedicines}
           cart={cart}
           loading={loading}
+          viewMode={viewMode}
           onSelectMedicine={handleSelectMedicine}
         />
       </div>
 
-      {/* Collapsed Cart Tab Trigger */}
+      {/* ── Collapsed Cart Tab Trigger ─────────────────────────────────── */}
       {!sidebarOpen && (
         <button
           type="button"
@@ -172,17 +185,17 @@ export default function VetSalesTab({
         >
           <PanelRightOpen className="h-5 w-5 text-violet-600 dark:text-violet-400" />
           {cart.length > 0 && (
-            <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-[11px] font-black flex items-center justify-center">
+            <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-[11px] font-black flex items-center justify-center shadow-xs">
               {cart.length}
             </span>
           )}
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 [writing-mode:vertical-rl] rotate-180">
-            View Cart
+            Open Cart
           </span>
         </button>
       )}
 
-      {/* Cart & Checkout Panel */}
+      {/* ── Right Column: POS Cart & Checkout Hub ─────────────────────── */}
       {sidebarOpen && (
         <CartSidebar
           cart={cart}
@@ -214,7 +227,7 @@ export default function VetSalesTab({
         />
       )}
 
-      {/* Item Config / Batch Dispense Modal */}
+      {/* ── Modals ────────────────────────────────────────────────────── */}
       {configuringMed && (
         <ItemConfigModal
           medicine={configuringMed}
@@ -229,7 +242,6 @@ export default function VetSalesTab({
             upsertItem(item)
             setConfiguringMed(null)
             setEditingCartItem(null)
-            toast.success(`${item.medicine.name} updated`)
           }}
           onClose={() => {
             setConfiguringMed(null)
@@ -238,7 +250,6 @@ export default function VetSalesTab({
         />
       )}
 
-      {/* New Client Modal */}
       {showOwnerModal && (
         <VetOwnerFormModal
           onSave={owner => {

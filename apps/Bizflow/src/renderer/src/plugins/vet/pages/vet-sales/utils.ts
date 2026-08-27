@@ -1,15 +1,9 @@
-/**
- * Whole days from now until the given ISO date (negative = expired).
- */
 export function daysUntil(dateStr: string): number {
   const target = new Date(dateStr).getTime()
   if (isNaN(target)) return 0
   return Math.floor((target - Date.now()) / 86_400_000)
 }
 
-/**
- * Formats decimals safely to avoid floating-point artifacts.
- */
 export function roundDecimal(value: number, decimals = 4): number {
   const factor = Math.pow(10, decimals)
   return Math.round((value + Number.EPSILON) * factor) / factor
@@ -19,9 +13,6 @@ export function trimQty(n: number): string {
   return String(roundDecimal(n, 4))
 }
 
-/**
- * Returns formatted stock with fractional sub-unit hints.
- */
 export function remainingDisplay(
   qty: number,
   unit: string,
@@ -40,9 +31,6 @@ export function remainingDisplay(
   return { value: trimQty(qty), unit, secondary: null, isSub: false }
 }
 
-/**
- * Finds the FEFO (First-Expired, First-Out) eligible batch.
- */
 export function getFefoBatch(batches: import('./types').BatchLite[]): import('./types').BatchLite | null {
   return (
     [...batches]

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Plus, Check, AlertCircle } from 'lucide-react'
+import { Plus, Check, AlertCircle, Clock } from 'lucide-react'
 import { remainingDisplay, daysUntil, getFefoBatch } from '../utils'
 import type { MedicineLite } from '../types'
 
@@ -28,15 +28,15 @@ export const MedicineCard: React.FC<Props> = ({ medicine, isInCart, onClick }) =
       type="button"
       disabled={isOutOfStock}
       onClick={onClick}
-      className={`group relative w-full text-left p-2.5 rounded-xl border transition-all duration-100 flex flex-col justify-between select-none h-[76px] ${
+      className={`group relative w-full text-left p-3 rounded-2xl border transition-all duration-100 flex flex-col justify-between select-none h-[82px] ${
         isOutOfStock
           ? 'bg-slate-100/60 dark:bg-slate-900/30 border-slate-200/60 dark:border-slate-800/40 opacity-45 cursor-not-allowed'
           : isInCart
-          ? 'bg-violet-50/80 dark:bg-violet-950/30 border-violet-500/80 dark:border-violet-500/80 shadow-xs ring-1 ring-violet-500/20'
+          ? 'bg-violet-50/90 dark:bg-violet-950/30 border-violet-500 dark:border-violet-500/80 shadow-xs ring-1 ring-violet-500/20'
           : 'bg-white dark:bg-slate-800/90 border-slate-200/90 dark:border-slate-700/70 hover:border-violet-400 dark:hover:border-violet-500 hover:shadow-xs active:scale-[0.98]'
       }`}
     >
-      {/* ── Top Row: Name + Category / In-Cart Badge ──────────────────── */}
+      {/* ── Top Row: Medicine Name + Category / Status Pill ─────────────── */}
       <div className="flex items-start justify-between gap-1.5 w-full">
         <div className="min-w-0 flex-1">
           <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate leading-snug">
@@ -47,7 +47,7 @@ export const MedicineCard: React.FC<Props> = ({ medicine, isInCart, onClick }) =
           </p>
         </div>
 
-        {/* Compact Status Indicator */}
+        {/* Status Indicator Icon */}
         <div className="shrink-0 flex items-center gap-1">
           {isInCart ? (
             <span className="w-5 h-5 rounded-lg bg-violet-600 text-white flex items-center justify-center text-[10px] shadow-xs">
@@ -55,11 +55,11 @@ export const MedicineCard: React.FC<Props> = ({ medicine, isInCart, onClick }) =
             </span>
           ) : isOutOfStock ? (
             <span className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 bg-slate-200/70 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-              Empty
+              Out
             </span>
           ) : isExpiringSoon ? (
             <span className="text-[9px] font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-              <AlertCircle size={9} /> {days}d
+              <Clock size={9} /> {days}d
             </span>
           ) : (
             <div className="w-5 h-5 rounded-lg bg-slate-100 dark:bg-slate-700/60 group-hover:bg-violet-600 group-hover:text-white text-slate-400 flex items-center justify-center transition-colors">
@@ -69,9 +69,8 @@ export const MedicineCard: React.FC<Props> = ({ medicine, isInCart, onClick }) =
         </div>
       </div>
 
-      {/* ── Bottom Row: Stock Level + Price ──────────────────────────── */}
+      {/* ── Bottom Row: Live Stock + Price ───────────────────────────── */}
       <div className="flex items-baseline justify-between gap-2 w-full pt-1 border-t border-slate-100 dark:border-slate-800/80">
-        {/* Available Stock */}
         <div className="flex items-center gap-1 min-w-0">
           <span
             className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -88,7 +87,6 @@ export const MedicineCard: React.FC<Props> = ({ medicine, isInCart, onClick }) =
           </span>
         </div>
 
-        {/* Price */}
         <div className="shrink-0 text-right">
           <span className="text-xs font-black tabular-nums text-violet-600 dark:text-violet-400">
             {price > 0 ? `$${price.toFixed(2)}` : '—'}
