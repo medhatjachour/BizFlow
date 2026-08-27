@@ -1,11 +1,22 @@
-import { useState, useEffect, useRef } from 'react'
-import { X, Search, Loader2, Calendar, Clock, AlertTriangle} from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import {
+  X,
+  Search,
+  Loader2,
+  Calendar,
+  Clock,
+  AlertTriangle,
+  Users,
+  PawPrint,
+  UserCheck
+} from 'lucide-react'
 import { VetPatient } from '../../vet-owners/types'
 import { VetStaff } from '../../vet-staff/types'
 import { APPT_TYPES, STATUS_CONFIG, DURATION_PRESETS } from '../constants'
-import { toIsoDateString, buildSlotSchedule } from '../utils'
+import { buildSlotSchedule } from '../utils'
 import DateField from '@renderer/components/DateField'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { speciesEmoji } from '../../vet-owners/species'
 
 interface Props {
   appointment?: any
@@ -14,30 +25,68 @@ interface Props {
   onClose: () => void
 }
 
+const GENERAL_PET_NAME = 'General Visit'
+
 const inputCls =
   'w-full px-3.5 py-2.5 text-xs border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all'
 
-export function VetAppointmentFormModal({ appointment, preselectedPatient, onSave, onClose }: Props) {
+// Safe date helpers
+const safeDateOnly = (d?: any): string => {
+  if (!d) return new Date().toISOString().slice(0, 10)
+  try {
+    const parsed = new Date(d)
+    if (isNaN(parsed.getTime())) return new Date().toISOString().slice(0, 10)
+    return parsed.toISOString().slice(0, 10)
+  } catch {
+    return new Date().toISOString().slice(0, 10)
+  }
+}
+
+const safeTimeOnly = (d?: any): string => {
+  if (!d) return '09:00'
+  try {
+    const parsed = new Date(d)
+    if (isNaN(parsed.getTime())) return '09:00'
+    const hours = String(parsed.getHours()).padStart(2, '0')
+    const mins = String(parsed.getMinutes()).padStart(2, '0')
+    return `${hours}:${mins}`
+  } catch {
+    return '09:00'
+  }
+}
+
+export function VetAppointmentFormModal({
+  appointment,
+  preselectedPatient,
+  onSave,
+  onClose
+}: Props) {
   const isEdit = Boolean(appointment)
   const { language } = useLanguage()
   const isAr = language === 'ar'
 
+  // Patient / Owner State
   const [patient, setPatient] = useState<any | null>(preselectedPatient ?? null)
+  const [selectMode, setSelectMode] = useState<'pet' | 'owner'>('pet')
+
+  // Pet Search
   const [ptSearch, setPtSearch] = useState('')
   const [ptResults, setPtResults] = useState<any[]>([])
   const [ptSearching, setPtSearching] = useState(false)
   const ptSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const initialDateStr = appointment?.appointmentDate
-    ? appointment.appointmentDate.slice(0, 10)
-    : toIsoDateString(new Date())
+  // Owner Search
+  const [ownerSearch, setOwnerSearch] = useState('')
+  const [ownerResults, setOwnerResults] = useState<any[]>([])
+  const [ownerSearching, setOwnerSearching] = useState(false)
+  const [selectedOwner, setSelectedOwner] = useState<any | null>(null)
+  const [ownerPets, setOwnerPets] = useState<any[]>([])
+  const [ownerPetsLoading, setOwnerPetsLoading] = useState(false)
+  const ownerSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const initialTimeStr = appointment?.appointmentDate
-    ? appointment.appointmentDate.slice(11, 16)
-    : '09:00'
-
-  const [selectedDay, setSelectedDay] = useState(initialDateStr)
-  const [selectedTime, setSelectedTime] = useState(initialTimeStr)
+  // Booking Form State
+  const [selectedDay, setSelectedDay] = useState(() => safeDateOnly(appointment?.appointmentDate))
+  const [selectedTime, setSelectedTime] = useState(() => safeTimeOnly(appointment?.appointmentDate))
   const [duration, setDuration] = useState(appointment?.duration ? String(appointment.duration) : '30')
   const [type, setType] = useState(appointment?.type || 'consultation')
   const [vetName, setVetName] = useState(appointment?.vetName || '')
@@ -50,6 +99,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  // Load active vets list
   useEffect(() => {
     const loadVets = async () => {
       try {
@@ -61,6 +111,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
     loadVets()
   }, [])
 
+  // Load Day's Appointments for slot conflict checking
   useEffect(() => {
     if (!selectedDay) return
     let cancelled = false
@@ -69,7 +120,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
     const to = new Date(selectedDay + 'T23:59:59.999').toISOString()
 
     window.api.vet?.appointments
-      .getAll({ from, to, skip: 0, take: 200 })
+      ?.getAll({ from, to, skip: 0, take: 200 })
       .then((res: any) => {
         if (cancelled) return
         setDayAppts(res?.data ?? (Array.isArray(res) ? res : []))
@@ -85,28 +136,105 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
   }, [selectedDay])
 
   useEffect(() => {
-    if (appointment?.patient) setPatient(appointment.patient)
+    if (appointment?.patient) {
+      setPatient(appointment.patient)
+    }
   }, [appointment])
 
+  // Search Patients API (handles both getAll and searchLite)
   const searchPatients = (q: string) => {
     setPtSearch(q)
     if (ptSearchTimer.current) clearTimeout(ptSearchTimer.current)
-    if (!q.trim()) { setPtResults([]); return }
+    if (!q.trim()) {
+      setPtResults([])
+      return
+    }
+
     ptSearchTimer.current = setTimeout(async () => {
       setPtSearching(true)
       try {
-        const res = await window.api.vet?.patients.searchLite(q)
-        setPtResults(res ?? [])
+        const res =
+          (await window.api.vet?.patients?.getAll?.({ search: q, take: 15 })) ??
+          (await window.api.vet?.patients?.searchLite?.(q))
+        setPtResults(res?.data ?? (Array.isArray(res) ? res : []))
+      } catch {
+        setPtResults([])
       } finally {
         setPtSearching(false)
       }
     }, 250)
   }
 
+  // Search Owners API
+  const searchOwners = (q: string) => {
+    setOwnerSearch(q)
+    if (ownerSearchTimer.current) clearTimeout(ownerSearchTimer.current)
+    if (!q.trim()) {
+      setOwnerResults([])
+      return
+    }
+
+    ownerSearchTimer.current = setTimeout(async () => {
+      setOwnerSearching(true)
+      try {
+        const res =
+          (await window.api.vet?.owners?.searchLite?.(q)) ??
+          (await window.api.vet?.owners?.getAll?.({ search: q, take: 15 }))
+        setOwnerResults(Array.isArray(res) ? res : (res?.data ?? []))
+      } catch {
+        setOwnerResults([])
+      } finally {
+        setOwnerSearching(false)
+      }
+    }, 250)
+  }
+
+  const selectOwner = async (o: any) => {
+    setSelectedOwner(o)
+    setOwnerResults([])
+    setOwnerSearch('')
+    setOwnerPetsLoading(true)
+    try {
+      const res = await window.api.vet?.patients?.getAll?.({ search: o.phone || o.name, take: 50 })
+      const list = (res?.data ?? (Array.isArray(res) ? res : [])).filter(
+        (p: any) => p.owner?.id === o.id || p.ownerId === o.id
+      )
+      setOwnerPets(list)
+    } catch {
+      setOwnerPets([])
+    } finally {
+      setOwnerPetsLoading(false)
+    }
+  }
+
+  // Book directly under owner (General Visit)
+  const useGeneralBooking = async () => {
+    if (!selectedOwner) return
+    const existing = ownerPets.find((p: any) => p.name === GENERAL_PET_NAME)
+    if (existing) {
+      setPatient({ ...existing, owner: existing.owner ?? selectedOwner })
+      return
+    }
+
+    setOwnerPetsLoading(true)
+    try {
+      const created = await window.api.vet?.patients?.create?.({
+        name: GENERAL_PET_NAME,
+        species: 'other',
+        ownerId: selectedOwner.id
+      })
+      setPatient({ ...created, owner: selectedOwner })
+    } catch (e: any) {
+      setError(e.message ?? 'Failed to initialize booking for owner')
+    } finally {
+      setOwnerPetsLoading(false)
+    }
+  }
+
   const durationNum = parseInt(duration, 10) || 30
   const timeSlots = buildSlotSchedule(durationNum <= 15 ? 15 : 30)
 
-  // Slot conflict verification
+  // Slot conflict checker
   const checkSlotConflict = (slotTime: string) => {
     const slotStart = new Date(`${selectedDay}T${slotTime}:00`).getTime()
     const slotEnd = slotStart + durationNum * 60000
@@ -128,7 +256,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!patient) {
-      setError(isAr ? 'يرجى اختيار مريض / حيوان أليف' : 'Please select a patient')
+      setError(isAr ? 'يرجى اختيار مريض أو تحديد المالك' : 'Please select a patient or owner')
       return
     }
     if (!selectedDay || !selectedTime) {
@@ -152,9 +280,9 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
       }
 
       if (isEdit && appointment) {
-        await window.api.vet?.appointments.update(appointment.id, payload)
+        await window.api.vet?.appointments?.update(appointment.id, payload)
       } else {
-        await window.api.vet?.appointments.create(payload)
+        await window.api.vet?.appointments?.create(payload)
       }
       onSave()
     } catch (err: any) {
@@ -166,7 +294,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm px-4 py-6 animate-in fade-in duration-150"
       onClick={onClose}
     >
       <div
@@ -181,12 +309,24 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
             </div>
             <div>
               <h2 className="font-bold text-slate-900 dark:text-white text-sm">
-                {isEdit ? (isAr ? 'تعديل بيانات الحجز' : 'Edit Appointment') : (isAr ? 'حجز موعد عيادة جديد' : 'Book New Appointment')}
+                {isEdit
+                  ? isAr
+                    ? 'تعديل بيانات الحجز'
+                    : 'Edit Appointment'
+                  : isAr
+                  ? 'حجز موعد عيادة جديد'
+                  : 'Book New Appointment'}
               </h2>
-              <p className="text-xs text-slate-400">{isAr ? 'جدولة ومصفوفة الأوقات المتاحة' : 'Schedule time slot & doctor'}</p>
+              <p className="text-xs text-slate-400">
+                {isAr ? 'جدولة الموعد واختيار الوقت' : 'Schedule time slot & optional doctor'}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          >
             <X size={18} />
           </button>
         </div>
@@ -199,49 +339,211 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
               </div>
             )}
 
-            {/* Patient Search */}
+            {/* ── Patient / Owner Selector ─────────────────────────────────── */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                {isAr ? 'المريض' : 'Patient'} *
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {isAr ? 'المريض أو المالك' : 'Patient / Client'} *
+                </label>
+
+                {!patient && !preselectedPatient && (
+                  <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[11px] font-bold">
+                    <button
+                      type="button"
+                      onClick={() => setSelectMode('pet')}
+                      className={`px-2.5 py-0.5 rounded-md transition-all ${
+                        selectMode === 'pet'
+                          ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-xs'
+                          : 'text-slate-500'
+                      }`}
+                    >
+                      {isAr ? 'حسب الحيوان' : 'By Pet'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectMode('owner')}
+                      className={`px-2.5 py-0.5 rounded-md transition-all ${
+                        selectMode === 'owner'
+                          ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-xs'
+                          : 'text-slate-500'
+                      }`}
+                    >
+                      {isAr ? 'حسب المالك' : 'By Owner'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {patient ? (
                 <div className="flex items-center justify-between p-3 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-2xl">
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white text-xs">{patient.name}</p>
-                    <p className="text-[11px] text-slate-500 capitalize">{patient.species} {patient.owner?.name ? `• ${patient.owner.name}` : ''}</p>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-xl shrink-0">{speciesEmoji(patient.species)}</span>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                        {patient.name}{' '}
+                        <span className="text-[10px] text-slate-400 font-semibold capitalize">
+                          ({patient.species})
+                        </span>
+                      </p>
+                      {patient.owner && (
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                          {patient.owner.name} • {patient.owner.phone}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   {!preselectedPatient && (
-                    <button type="button" onClick={() => setPatient(null)} className="text-slate-400 hover:text-slate-600">
-                      <X size={15} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPatient(null)
+                        setSelectedOwner(null)
+                        setOwnerPets([])
+                      }}
+                      className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    >
+                      <X size={16} />
                     </button>
                   )}
                 </div>
-              ) : (
+              ) : selectMode === 'pet' ? (
                 <div className="relative">
-                  <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                   <input
                     value={ptSearch}
                     onChange={(e) => searchPatients(e.target.value)}
-                    placeholder={isAr ? 'ابحث باسم الحيوان الأليف...' : 'Search pet name...'}
+                    placeholder={
+                      isAr ? 'ابحث باسم الحيوان أو رقم الهاتف...' : 'Search pet name, breed, or phone…'
+                    }
                     className={`${inputCls} pl-9 rtl:pl-3 rtl:pr-9`}
                   />
-                  {ptSearching && <Loader2 className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />}
+                  {ptSearching && (
+                    <Loader2 className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+                  )}
+
                   {ptResults.length > 0 && (
-                    <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-44 overflow-y-auto text-xs">
+                    <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-48 overflow-y-auto text-xs">
                       {ptResults.map((p) => (
                         <li
                           key={p.id}
                           onMouseDown={() => {
                             setPatient(p)
                             setPtResults([])
+                            setPtSearch('')
                           }}
                           className="px-4 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/40 cursor-pointer border-b border-slate-100 dark:border-slate-700/50 last:border-0"
                         >
-                          <div className="font-bold text-slate-900 dark:text-white">{p.name}</div>
-                          <div className="text-[11px] text-slate-400 capitalize">{p.species} {p.owner?.name ? `• ${p.owner.name}` : ''}</div>
+                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span>{speciesEmoji(p.species)}</span>
+                            <span>{p.name}</span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 capitalize mt-0.5">
+                            {p.species} {p.owner?.name ? `• ${p.owner.name} (${p.owner.phone})` : ''}
+                          </div>
                         </li>
                       ))}
                     </ul>
+                  )}
+                </div>
+              ) : (
+                /* Owner Search Mode */
+                <div className="space-y-2">
+                  {!selectedOwner ? (
+                    <div className="relative">
+                      <Search className="absolute left-3 rtl:left-auto rtl:right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <input
+                        value={ownerSearch}
+                        onChange={(e) => searchOwners(e.target.value)}
+                        placeholder={
+                          isAr ? 'ابحث باسم المالك أو رقم الهاتف...' : 'Search owner name or phone…'
+                        }
+                        className={`${inputCls} pl-9 rtl:pl-3 rtl:pr-9`}
+                      />
+                      {ownerSearching && (
+                        <Loader2 className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-slate-400" />
+                      )}
+
+                      {ownerResults.length > 0 && (
+                        <ul className="absolute z-50 left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-48 overflow-y-auto text-xs">
+                          {ownerResults.map((o) => (
+                            <li
+                              key={o.id}
+                              onMouseDown={() => selectOwner(o)}
+                              className="px-4 py-2.5 hover:bg-violet-50 dark:hover:bg-violet-950/40 cursor-pointer border-b border-slate-100 dark:border-slate-700/50 last:border-0 flex items-center justify-between"
+                            >
+                              <div>
+                                <p className="font-bold text-slate-900 dark:text-white">{o.name}</p>
+                                <p className="text-[11px] text-slate-400 font-mono">{o.phone}</p>
+                              </div>
+                              <Users size={14} className="text-slate-400" />
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ) : (
+                    /* Owner Selected: Pick Pet or Book General */
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between p-2.5 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 rounded-xl">
+                        <div className="flex items-center gap-2">
+                          <UserCheck size={16} className="text-violet-600" />
+                          <div>
+                            <p className="text-xs font-bold text-slate-900 dark:text-white">
+                              {selectedOwner.name}
+                            </p>
+                            <p className="text-[10px] text-slate-400 font-mono">{selectedOwner.phone}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedOwner(null)
+                            setOwnerPets([])
+                          }}
+                          className="text-slate-400 hover:text-slate-600"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
+
+                      {ownerPetsLoading ? (
+                        <div className="py-3 flex justify-center text-slate-400">
+                          <Loader2 size={16} className="animate-spin" />
+                        </div>
+                      ) : (
+                        <>
+                          {ownerPets.length > 0 && (
+                            <div className="grid grid-cols-2 gap-2">
+                              {ownerPets.map((p) => (
+                                <button
+                                  key={p.id}
+                                  type="button"
+                                  onClick={() => setPatient({ ...p, owner: selectedOwner })}
+                                  className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-violet-500 text-left rtl:text-right bg-white dark:bg-slate-800 transition-all"
+                                >
+                                  <span className="text-base">{speciesEmoji(p.species)}</span>
+                                  <span className="text-xs font-bold truncate">{p.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Direct Booking without specific pet */}
+                          <button
+                            type="button"
+                            onClick={useGeneralBooking}
+                            className="w-full py-2 text-xs font-bold text-violet-600 dark:text-violet-400 border border-dashed border-violet-300 dark:border-violet-700 rounded-xl hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all flex items-center justify-center gap-1.5"
+                          >
+                            <PawPrint size={13} />
+                            <span>
+                              {isAr
+                                ? 'حجز عام للمالك بدون تحديد حيوان مسبقاً'
+                                : 'General booking under client name'}
+                            </span>
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -268,7 +570,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
                       onClick={() => setDuration(String(d))}
                       className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
                         durationNum === d
-                          ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                          ? 'bg-violet-600 text-white border-violet-600 shadow-xs'
                           : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                       }`}
                     >
@@ -289,7 +591,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
                 {loadingSlots && <Loader2 size={12} className="animate-spin text-slate-400" />}
               </div>
 
-              <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-40 overflow-y-auto p-1 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="grid grid-cols-6 sm:grid-cols-7 gap-1.5 max-h-36 overflow-y-auto p-1.5 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50">
                 {timeSlots.map((slot) => {
                   const { hasConflict } = checkSlotConflict(slot)
                   const isSelected = slot === selectedTime
@@ -322,7 +624,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
                 <span>
                   {isAr
                     ? `تنبيه: هذا التوقيت يتعارض مع موعد مسجل (${currentConflict.patientName || 'مريض آخر'})`
-                    : `Warning: This slot conflicts with ${currentConflict.patientName || 'another booking'}`}
+                    : `Warning: Slot conflicts with ${currentConflict.patientName || 'another booking'}`}
                 </span>
               </div>
             )}
@@ -346,7 +648,11 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                   {isAr ? 'حالة الحجز' : 'Status'}
                 </label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as any)} className={inputCls}>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as any)}
+                  className={inputCls}
+                >
                   {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
                     <option key={key} value={key}>
                       {isAr ? cfg.labelAr : cfg.labelEn}
@@ -356,13 +662,17 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
               </div>
             </div>
 
-            {/* Attending Doctor */}
+            {/* Optional Attending Doctor */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                {isAr ? 'الطبيب البيطري المعالج' : 'Attending Veterinarian'}
+                {isAr ? 'الطبيب البيطري المعالج (اختياري)' : 'Attending Veterinarian (Optional)'}
               </label>
-              <select value={vetName} onChange={(e) => setVetName(e.target.value)} className={inputCls}>
-                <option value="">{isAr ? '— اختياري / غير محدد —' : '— Optional —'}</option>
+              <select
+                value={vetName}
+                onChange={(e) => setVetName(e.target.value)}
+                className={inputCls}
+              >
+                <option value="">{isAr ? '— بدون تحديد طبيب معين —' : '— No specific doctor —'}</option>
                 {attendingVets.map((v) => (
                   <option key={v.id} value={v.name}>
                     Dr. {v.name}
@@ -391,7 +701,7 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200"
+              className="flex-1 px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 transition-colors"
             >
               {isAr ? 'إلغاء' : 'Cancel'}
             </button>
@@ -400,7 +710,13 @@ export function VetAppointmentFormModal({ appointment, preselectedPatient, onSav
               disabled={saving}
               className="flex-1 px-4 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 rounded-xl disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md shadow-violet-500/20 active:scale-95"
             >
-              {saving ? <Loader2 size={14} className="animate-spin" /> : isEdit ? (isAr ? 'حفظ التعديلات' : 'Save Changes') : (isAr ? 'تأكيد الحجز' : 'Confirm Booking')}
+              {saving ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : isEdit ? (
+                isAr ? 'حفظ التعديلات' : 'Save Changes'
+              ) : (
+                isAr ? 'تأكيد الحجز' : 'Confirm Booking'
+              )}
             </button>
           </div>
         </form>
