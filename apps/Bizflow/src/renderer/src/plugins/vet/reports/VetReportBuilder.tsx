@@ -13,8 +13,8 @@ import {
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import VetPeriodFilter, { rangeForPreset } from '../pages/components/stats/VetPeriodFilter'
 import { bi, exportReport, type ReportPayload } from './reportExport'
+import VetPeriodFilter, { rangeForPreset } from '../pages/vet-stats/VetPeriodFilter'
 
 export type ReportType = 'sessions' | 'sales' | 'medicines' | 'revenue'
 

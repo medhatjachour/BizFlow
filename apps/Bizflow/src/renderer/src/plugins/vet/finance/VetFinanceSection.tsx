@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
-import VetPeriodFilter, { rangeForPreset } from '../pages/components/stats/VetPeriodFilter'
+import VetPeriodFilter, { rangeForPreset } from '../pages/vet-stats/VetPeriodFilter'
 
 function fmt(n: number) { return (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
 const toStart = (iso?: string) => iso ? `${iso}T00:00:00.000` : undefined
