@@ -145,7 +145,7 @@ export function registerMenuHandlers(prisma: any) {
 
       // Update recipe if provided
       if (recipeIngredients) {
-        await tx.recipeIngredient.deleteMany({
+        await tx.RecipeIngredientRestaurant.deleteMany({
           where: { recipe: { menuItemId: id } }
         })
 

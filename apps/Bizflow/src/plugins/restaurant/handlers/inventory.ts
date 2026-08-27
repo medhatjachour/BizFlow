@@ -6,17 +6,6 @@ import { broadcastRestaurantEvent } from '../utils/events'
 const log = createLogger('Restaurant:Inventory')
 
 export function registerInventoryHandlers(prisma: any) {
-  ipcMain.handle('restaurant:getIngredients', async () => {
-    try {
-      return await prisma.restaurantIngredient.findMany({
-        where: { isActive: true },
-        orderBy: [{ category: 'asc' }, { name: 'asc' }]
-      })
-    } catch (err) {
-      log.error('getIngredients error', err)
-      throw err
-    }
-  })
 
   ipcMain.handle('restaurant:createIngredient', async (_e, data: {
     name: string

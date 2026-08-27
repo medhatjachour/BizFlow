@@ -12,7 +12,7 @@ const RESTAURANT_TABLES = [
   'RestaurantIngredient',
   'IngredientStockMovement',
   'MenuItemRecipe',
-  'RecipeIngredient',
+  'RecipeIngredientRestaurant',
   'RestaurantWasteLog',
   'DineInOrder',
   'DineInOrderItem',

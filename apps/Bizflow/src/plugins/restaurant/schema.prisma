@@ -103,7 +103,7 @@ model RestaurantIngredient {
   supplierName     String?
   notes            String?
   isActive         Boolean                   @default(true)
-  recipeUsages     RecipeIngredient[]
+  recipeUsages     RecipeIngredientRestaurant[]
   stockMovements   IngredientStockMovement[]
   wasteLogs        RestaurantWasteLog[]
   createdAt        DateTime                  @default(now())
@@ -136,12 +136,12 @@ model MenuItemRecipe {
   menuItem     MenuItem           @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
   yieldCount   Int                @default(1)
   prepNotes    String?
-  ingredients  RecipeIngredient[]
+  ingredients  RecipeIngredientRestaurant[]
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 }
 
-model RecipeIngredient {
+model RecipeIngredientRestaurant {
   id           String               @id @default(uuid())
   recipeId     String
   recipe       MenuItemRecipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
