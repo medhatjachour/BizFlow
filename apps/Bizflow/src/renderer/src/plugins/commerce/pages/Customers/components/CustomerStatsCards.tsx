@@ -1,6 +1,6 @@
 import { Heart, DollarSign, TrendingUp } from 'lucide-react'
 import { formatCurrency } from '@renderer/utils/formatNumber'
-import { useLanguage } from '../../../contexts/LanguageContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   totalCount: number

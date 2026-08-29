@@ -1,8 +1,3 @@
-/**
- * Plugin Selector Page
- * Allows users to select which business module/plugin to load
- */
-
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useModuleEnabled } from '../../hooks/useModuleEnabled'
@@ -38,9 +33,8 @@ export default function PluginSelector() {
   )
 
   const handleSelectPlugin = (pluginId: string) => {
-    // Route to the plugin's main page
     const routeMap: Record<string, string> = {
-      'commerce': '/sales',
+      'commerce': '/commerce',
       'bakery': '/bakery',
       'restaurant': '/restaurant',
       'warehouse': '/warehouse',
@@ -156,18 +150,15 @@ export default function PluginSelector() {
                     className="group flex min-h-36 flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 text-left text-slate-900 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                   >
                     <div>
-                      {/* Icon */}
                       <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xl dark:bg-slate-800">
                         {plugin.icon}
                       </div>
 
-                      {/* Content */}
                       <h3 className="mb-1 text-base font-bold">{plugin.name}</h3>
                       <p className="line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
                         {plugin.description || 'Manage your business operations'}
                       </p>
 
-                      {/* CTA */}
                       <div className="mt-4 flex items-center justify-between text-xs font-semibold text-primary">
                         <span>Open module</span>
                         <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

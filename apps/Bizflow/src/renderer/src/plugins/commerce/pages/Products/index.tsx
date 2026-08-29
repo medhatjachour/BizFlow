@@ -365,7 +365,7 @@ export default function Products() {
   }
 
   return (
-    <div className="p-6 mx-auto">
+    <div className="p-6 mx-full">
       {/* Actions Toolbar */}
       <div className="flex items-center justify-between mb-6">
         

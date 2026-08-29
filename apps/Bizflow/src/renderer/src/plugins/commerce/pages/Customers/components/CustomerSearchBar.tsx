@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { useLanguage } from '../../../contexts/LanguageContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   searchQuery: string

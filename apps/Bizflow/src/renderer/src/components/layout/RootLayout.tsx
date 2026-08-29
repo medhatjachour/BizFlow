@@ -8,13 +8,9 @@ import { MODULE_IDS } from '@/shared/modules'
 import {
   LayoutDashboard,
   ShoppingCart,
-  Package,
   Wallet,
   Settings,
   LogOut,
-  Store,
-  BoxIcon,
-  CreditCard,
   Users,
   UserSquare2,
   FileBarChart,
@@ -61,13 +57,7 @@ const navigation: NavItem[] = [
     icon: Users,
     roles: ['admin', 'manager']
   },
-  {
-    name: 'Customers',
-    translationKey: 'customers',
-    href: '/customers',
-    icon: UserSquare2,
-    roles: ['admin', 'manager', 'sales']
-  },
+  
   {
     name: 'Reports',
     translationKey: 'reports',
@@ -82,13 +72,7 @@ const navigation: NavItem[] = [
     icon: Wallet,
     roles: ['admin', 'manager', 'finance']
   },
-  {
-    name: 'Expenses',
-    translationKey: 'expenses',
-    href: '/expenses',
-    icon: Receipt,
-    roles: ['admin', 'manager', 'finance']
-  },
+  
   {
     name: 'Settings',
     translationKey: 'settings',
@@ -100,29 +84,29 @@ const navigation: NavItem[] = [
 ]
 
 interface RootLayoutProps {
-  children: React.ReactNode;
-  userRole: string;
+  children: React.ReactNode
+  userRole: string
 }
 
 export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const pluginRoutes = [
-    'vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'commerce', 'coffee',
-    'sales', 'products', 'pos', 'inventory', 'stores'
+    'commerce', 'vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'coffee'
   ]
-// ✅ Call useAuth at the top level
   const { logout, can } = useAuth()
-  // Theme the active module: set <body data-plugin> so the --accent CSS variable
-  // (defined in main.css) themes every control in that module automatically.
+
+  // Theme the active module
   useEffect(() => {
     const seg = location.pathname.split('/')[1] || ''
     if (pluginRoutes.includes(seg)) {
       document.body.dataset.plugin = seg
       localStorage.setItem('bizflow:lastPlugin', seg)
+    } else if (seg !== 'settings') {
+      delete document.body.dataset.plugin
     }
-    else if (seg !== 'settings') delete document.body.dataset.plugin
   }, [location.pathname])
+
   const { t } = useLanguage()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [iconBroken, setIconBroken] = useState(false)
@@ -130,6 +114,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const [iconIdx, setIconIdx] = useState(0)
   const iconSrc = ICON_CANDIDATES[iconIdx]
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   const bakeryEnabled = useModuleEnabled(MODULE_IDS.BAKERY)
   const restaurantEnabled = useModuleEnabled(MODULE_IDS.RESTAURANT)
   const warehouseEnabled = useModuleEnabled(MODULE_IDS.WAREHOUSE)
@@ -140,21 +125,20 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
   const coffeeEnabled = useModuleEnabled(MODULE_IDS.COFFEE)
 
-  // ── Commerce nav items (injected when Commerce plugin is enabled) ─────────
-  const commerceNavItems: NavItem[] = __PLUGIN_COMMERCE__ && commerceEnabled ? [
-    { name: 'Stores',    translationKey: 'stores',    href: '/stores',    icon: Store,         roles: ['admin', 'manager'], capability: 'access_commerce' },
-    { name: 'Products',  translationKey: 'products',  href: '/products',  icon: BoxIcon,       roles: ['admin', 'manager', 'inventory'], capability: 'access_commerce' },
-    { name: 'POS',       translationKey: 'pos',       href: '/pos',       icon: CreditCard,    roles: ['admin', 'manager', 'sales'], capability: 'access_commerce' },
-    { name: 'Inventory', translationKey: 'inventory', href: '/inventory', icon: Package,       roles: ['admin', 'manager', 'inventory'], capability: 'access_commerce' },
-    { name: 'Sales',     translationKey: 'sales',     href: '/sales',     icon: ShoppingCart,  roles: ['admin', 'manager', 'sales'], capability: 'access_commerce' },
-  ] : []
-
-  // Build dynamic nav — inject commerce items after Dashboard, then plugin items after Employees
   const dashboardIdx = navigation.findIndex(n => n.href === '/dashboard')
   const employeesIdx = navigation.findIndex(n => n.href === '/employees')
+
+  // Build dynamic navigation with unified Commerce plugin entry
   const navItems: NavItem[] = [
     ...navigation.slice(0, dashboardIdx + 1),
-    ...commerceNavItems,
+    ...(__PLUGIN_COMMERCE__ && commerceEnabled ? [{
+      name: 'Commerce',
+      translationKey: 'commerce',
+      href: '/commerce',
+      icon: ShoppingCart,
+      roles: ['admin', 'manager', 'sales', 'inventory', 'cashier'],
+      capability: 'access_commerce' as Capability
+    }] : []),
     ...navigation.slice(dashboardIdx + 1, employeesIdx + 1),
     ...(__PLUGIN_BAKERY__ && bakeryEnabled ? [{
       name: 'Bakery',
@@ -222,7 +206,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&
-      (n.href !== '/expenses'  || (
+      (n.href !== '/expenses' || (
         __PLUGIN_COMMERCE__ && commerceEnabled &&
         !(__PLUGIN_CLINIC__ && clinicEnabled) &&
         !(__PLUGIN_VET__ && vetEnabled)
@@ -230,9 +214,9 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
     )
   ]
 
-  const handleLogout = async () => {  
-  logout()                    // Clear state + localStorage + IPC
-  navigate('/login')          // Then navigate
+  const handleLogout = async () => {
+    logout()
+    navigate('/login')
   }
 
   if (location.pathname === '/login') {
@@ -241,13 +225,12 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
 
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
-      
       <SkipToContent />
       <KeyboardShortcutsHelp />
-      
+
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
           role="presentation"
@@ -255,7 +238,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       )}
 
       {/* Sidebar */}
-      <aside 
+      <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50
           ${sidebarOpen ? 'w-64' : 'w-20'}
@@ -293,13 +276,9 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
                 )}
               </div>
             </button>
-            {sidebarOpen && (
-              <span className="text-xl font-bold ">
-                BizFlow
-              </span>
-            )}
+            {sidebarOpen && <span className="text-xl font-bold">BizFlow</span>}
           </div>
-          
+
           {/* Desktop Toggle */}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -325,7 +304,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
           {navItems
             .filter(item => item.roles.includes(userRole) && (!item.capability || can(item.capability)))
             .map(item => {
-              const isActive = location.pathname === item.href
+              const isActive = location.pathname.startsWith(item.href)
               const currentPlugin = location.pathname.split('/')[1]
               const fallbackPlugin = pluginRoutes.includes(currentPlugin)
                 ? currentPlugin
@@ -333,6 +312,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
               const settingsHref = item.href === '/settings' && pluginRoutes.includes(fallbackPlugin)
                 ? `/settings?plugin=${fallbackPlugin}`
                 : item.href
+
               return (
                 <Link
                   key={item.name}
@@ -352,7 +332,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
                   aria-label={`Navigate to ${item.name}`}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <item.icon 
+                  <item.icon
                     className={`h-5 w-5 flex-shrink-0 ${
                       isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'
                     }`}
@@ -405,10 +385,10 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
               </div>
               <div>
                 <h1 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {t((navItems.find(item => item.href === location.pathname)?.translationKey || 'dashboard') as any)}
+                  {t((navItems.find(item => location.pathname.startsWith(item.href))?.translationKey || 'dashboard') as any)}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
-                   Management System
+                  Management System
                 </p>
               </div>
             </div>
@@ -436,10 +416,18 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
         <main id="main-content" className="flex-1 min-h-0 overflow-auto bg-slate-50 dark:bg-slate-900" tabIndex={-1}>
           {children}
         </main>
-        
-        {/* status bar */}
-        <div className='shrink-0 px-6 py-1 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700'>
-          © 2026 BizFlow. Made by <a href="https://www.linkedin.com/in/medhatjachour" target="_blank" rel="noopener noreferrer">MedhatJachour</a>
+
+        {/* Status Bar */}
+        <div className="shrink-0 px-6 py-1 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700">
+          © 2026 BizFlow. Made by{' '}
+          <a
+            href="https://www.linkedin.com/in/medhatjachour"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline text-primary"
+          >
+            MedhatJachour
+          </a>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Edit2, Trash2, Mail, Phone, Eye } from 'lucide-react'
 import { formatCurrency } from '@renderer/utils/formatNumber'
-import { useLanguage } from '../../../contexts/LanguageContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { Customer } from '../types'
 
 const TIER_GRADIENT: Record<string, string> = {

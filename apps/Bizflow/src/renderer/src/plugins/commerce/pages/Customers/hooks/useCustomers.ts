@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ipc } from '../../../utils/ipc'
-import { useToast } from '../../../contexts/ToastContext'
-import { useLanguage } from '../../../contexts/LanguageContext'
-import logger from '../../../../../shared/utils/logger'
+import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import logger from '@/shared/utils/logger'
 import type { Customer, CustomerFormData } from '../types'
+import { ipc } from '@renderer/utils/ipc'
 
 const DEFAULT_FORM: CustomerFormData = {
   name: '',

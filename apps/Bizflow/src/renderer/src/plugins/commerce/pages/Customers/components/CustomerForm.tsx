@@ -1,4 +1,4 @@
-import { useLanguage } from '../../../contexts/LanguageContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { CustomerFormData } from '../types'
 
 interface Props {

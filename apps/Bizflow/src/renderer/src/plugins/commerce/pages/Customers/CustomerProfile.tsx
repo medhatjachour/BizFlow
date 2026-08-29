@@ -17,13 +17,14 @@ import {
   Award,
   Eye
 } from 'lucide-react'
-import { ipc } from '../../utils/ipc'
-import { useToast } from '../../contexts/ToastContext'
-import { useLanguage } from '../../contexts/LanguageContext'
+
 import { formatCurrency } from '@renderer/utils/formatNumber'
-import logger from '../../../../shared/utils/logger'
+import logger from '@/shared/utils/logger'
 import type { CustomerProfile } from './types'
 import { ReceiptPreviewModal } from '@renderer/plugins/commerce/pages/Sales/components/ReceiptPreviewModal'
+import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { ipc } from '@renderer/utils/ipc'
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>()

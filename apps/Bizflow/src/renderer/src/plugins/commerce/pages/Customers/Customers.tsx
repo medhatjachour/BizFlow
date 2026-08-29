@@ -1,14 +1,14 @@
 import { Plus, Download, FileSpreadsheet, FileText, User, Heart, ShoppingCart } from 'lucide-react'
-import Modal from '../../components/ui/Modal'
-import SmartDeleteDialog from '../../components/SmartDeleteDialog'
-import { InstallmentManager } from '../../components/InstallmentManager'
 import { formatCurrency } from '@renderer/utils/formatNumber'
-import { useLanguage } from '../../contexts/LanguageContext'
 import { useCustomers } from './hooks/useCustomers'
 import { CustomerCard } from './components/CustomerCard'
 import { CustomerForm } from './components/CustomerForm'
 import { CustomerStatsCards } from './components/CustomerStatsCards'
 import { CustomerSearchBar } from './components/CustomerSearchBar'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import Modal from '@renderer/components/ui/Modal'
+import SmartDeleteDialog from '@renderer/components/SmartDeleteDialog'
+import { InstallmentManager } from '@renderer/components/InstallmentManager'
 
 export default function Customers(): JSX.Element {
   const { t } = useLanguage()

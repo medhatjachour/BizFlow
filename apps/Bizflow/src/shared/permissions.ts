@@ -60,13 +60,8 @@ export type PluginPermissionCatalog = {
 
 export const ALL_CAPABILITIES = Object.keys(CAPABILITIES) as Capability[]
 
-/**
- * Default capabilities per built-in role. `admin` is intentionally omitted —
- * it is treated as a wildcard (all capabilities) in code so it can never be
- * locked out of the very settings screen used to grant permissions.
- */
 export const DEFAULT_ROLE_CAPABILITIES: Record<string, Capability[]> = {
-  admin: [...ALL_CAPABILITIES], // wildcard, but list it for the settings UI
+  admin: [...ALL_CAPABILITIES],
   manager: [...ALL_CAPABILITIES],
   member: [],
   finance: ['access_commerce', 'view_profit', 'view_finance', 'export_data'],
@@ -119,15 +114,21 @@ export const PLUGIN_ROLE_DEFAULTS: Record<PluginId, Record<string, Capability[]>
     coffee_inventory_manager: ['access_coffee', 'coffee_products', 'coffee_inventory', 'coffee_incoming'],
     coffee_shift_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales', 'coffee_shifts', 'coffee_expenses'],
     coffee_manager: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_products', 'coffee_inventory', 'coffee_incoming', 'coffee_expenses', 'coffee_sales', 'coffee_shifts', 'coffee_customers', 'coffee_reports', 'coffee_finance'],
-    // Legacy assignment kept so existing users retain their operational access.
     coffee_staff: ['access_coffee', 'coffee_pos', 'coffee_tables', 'coffee_customers', 'coffee_sales'],
   },
 }
 
 export const PLUGIN_TAB_CAPABILITIES: Record<PluginId, Record<string, Capability>> = {
   commerce: {
-    stores: 'manage_settings', products: 'manage_inventory', pos: 'access_commerce',
-    inventory: 'manage_inventory', sales: 'access_commerce',
+    pos: 'access_commerce',
+    quicksale: 'access_commerce',
+    products: 'manage_inventory',
+    inventory: 'manage_inventory',
+    sales: 'access_commerce',
+    customers: 'manage_customers',
+    stores: 'manage_settings',
+    installments: 'access_commerce',
+    expenses: 'view_finance',
   },
   bakery: {
     overview: 'access_bakery', recipes: 'manage_inventory', production: 'manage_inventory',
@@ -170,10 +171,6 @@ export const PLUGIN_TAB_CAPABILITIES: Record<PluginId, Record<string, Capability
   },
 }
 
-/**
- * Registered permission blueprints exposed over IPC. Plugins own their entries;
- * the RBAC UI only renders the selected plugin's blueprint.
- */
 export const PLUGIN_PERMISSION_CATALOG: Partial<Record<PluginId, PluginPermissionCatalog>> = {
   coffee: {
     id: 'coffee',
@@ -199,7 +196,7 @@ export const PLUGIN_PERMISSION_CATALOG: Partial<Record<PluginId, PluginPermissio
 }
 
 export function pluginTabCapability(pluginId: PluginId, tabId: string): Capability | undefined {
-  return PLUGIN_TAB_CAPABILITIES[pluginId][tabId]
+  return PLUGIN_TAB_CAPABILITIES[pluginId]?.[tabId]
 }
 
 export function resolvePluginRoleCapabilities(
@@ -211,12 +208,10 @@ export function resolvePluginRoleCapabilities(
   )
 }
 
-/** Admin always has every capability — it can never be restricted. */
 export function isWildcardRole(role: string | undefined | null): boolean {
   return role === 'admin'
 }
 
-/** Resolve the effective capability list for a role given stored overrides. */
 export function resolveCapabilities(
   role: string | undefined | null,
   override?: Capability[] | null
