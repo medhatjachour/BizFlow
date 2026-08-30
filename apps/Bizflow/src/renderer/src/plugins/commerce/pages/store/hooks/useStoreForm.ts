@@ -5,38 +5,36 @@ import { DEFAULT_STORE_FORM } from '../constants'
 export function useStoreForm() {
   const [formData, setFormData] = useState<StoreFormData>(DEFAULT_STORE_FORM)
   const [selectedStore, setSelectedStore] = useState<Store | null>(null)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
 
   const resetForm = useCallback(() => {
     setFormData(DEFAULT_STORE_FORM)
+    setSelectedStore(null)
   }, [])
 
-  const openAddModal = useCallback(() => {
+  const openCreateModal = useCallback(() => {
     resetForm()
-    setShowAddModal(true)
+    setIsEditMode(false)
+    setIsModalOpen(true)
   }, [resetForm])
-
-  const closeAddModal = useCallback(() => {
-    setShowAddModal(false)
-  }, [])
 
   const openEditModal = useCallback((store: Store) => {
     setSelectedStore(store)
+    setIsEditMode(true)
     setFormData({
-      name: store.name,
-      location: store.location,
-      phone: store.phone,
-      hours: store.hours,
-      manager: store.manager,
-      status: store.status,
+      name: store.name || '',
+      location: store.location || '',
+      phone: store.phone || '',
+      hours: store.hours || '09:00 AM - 10:00 PM',
+      manager: store.manager || '',
+      status: (store.status?.toLowerCase() === 'inactive' ? 'inactive' : 'active')
     })
-    setShowEditModal(true)
+    setIsModalOpen(true)
   }, [])
 
-  const closeEditModal = useCallback(() => {
-    setShowEditModal(false)
-    setSelectedStore(null)
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false)
     resetForm()
   }, [resetForm])
 
@@ -51,13 +49,11 @@ export function useStoreForm() {
     formData,
     setFormData,
     selectedStore,
-    showAddModal,
-    showEditModal,
-    resetForm,
-    openAddModal,
-    closeAddModal,
+    isModalOpen,
+    isEditMode,
+    openCreateModal,
     openEditModal,
-    closeEditModal,
-    updateField,
+    closeModal,
+    updateField
   }
 }

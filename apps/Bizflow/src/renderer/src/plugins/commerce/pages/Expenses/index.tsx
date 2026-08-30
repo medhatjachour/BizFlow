@@ -1,66 +1,42 @@
-import { Plus, Download, AlertCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { useExpenses } from './hooks/useExpenses'
 import SummaryCards from './components/SummaryCards'
+import ExpenseToolbar from './components/ExpenseToolbar'
 import ExpenseFilters from './components/ExpenseFilters'
 import ExpenseCharts from './components/ExpenseCharts'
 import ExpenseTable from './components/ExpenseTable'
 import ExpenseModal from './components/ExpenseModal'
 import PayrollBreakdown from './components/PayrollBreakdown'
 
-export default function Expenses() {
+export default function ExpensesTab() {
   const s = useExpenses()
 
   if (s.loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[420px] w-full">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">{s.t('loading')}...</p>
+          <div className="w-9 h-9 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide uppercase">
+            {s.t('loading') || 'Loading expenses...'}
+          </p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 overflow-y-scroll">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
-            {s.t('expensesManagement')}
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400">{s.t('trackBusinessExpenses')}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={s.handleExport}
-            disabled={!s.apiAvailable}
-            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Download size={18} />
-            {s.t('export')}
-          </button>
-          <button
-            onClick={s.openAdd}
-            disabled={!s.apiAvailable}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <Plus size={18} />
-            {s.t('add')} {s.t('expenses')}
-          </button>
-        </div>
-      </div>
-
+    <div className="p-4 sm:p-6 w-full space-y-2 animate-in fade-in duration-200">
+      {/* Module Missing Notice */}
       {!s.apiAvailable && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/80 dark:bg-amber-950/20 p-4 text-xs font-medium text-amber-800 dark:text-amber-300">
+          <AlertCircle className="w-4 h-4 shrink-0" />
           <span>
-            Expense tracking requires the <strong>Commerce</strong> module. This module is not enabled in the current build.
-            Expense records and revenue data are unavailable.
+            {s.t('expenseOfflineWarning') || 'Expense management engine is running in local preview mode.'}
           </span>
         </div>
       )}
 
+      {/* Global Outflow KPI Cards */}
       <SummaryCards
         operationalExpenses={s.operationalExpenses}
         totalCOGS={s.totalCOGS}
@@ -71,6 +47,7 @@ export default function Expenses() {
         totalExtraShiftPay={s.totalExtraShiftPay}
         totalGrossPay={s.totalGrossPay}
         totalWithSalaries={s.totalWithSalaries}
+        taxDeductibleTotal={s.taxDeductibleTotal}
         expenseCount={s.filteredExpenses.length}
         employeeCount={s.employeeCount}
         includeCOGS={s.includeCOGS}
@@ -78,13 +55,8 @@ export default function Expenses() {
         t={s.t}
       />
 
+      {/* Calculation Toggles */}
       <ExpenseFilters
-        searchTerm={s.searchTerm}
-        setSearchTerm={s.setSearchTerm}
-        filterCategory={s.filterCategory}
-        setFilterCategory={s.setFilterCategory}
-        dateRange={s.dateRange}
-        setDateRange={s.setDateRange}
         includeCOGS={s.includeCOGS}
         setIncludeCOGS={s.setIncludeCOGS}
         includeSalaries={s.includeSalaries}
@@ -92,6 +64,7 @@ export default function Expenses() {
         t={s.t}
       />
 
+      {/* Visual Analytics */}
       <ExpenseCharts
         categoriesForCharts={s.categoriesForCharts}
         includeCOGS={s.includeCOGS}
@@ -99,24 +72,46 @@ export default function Expenses() {
         t={s.t}
       />
 
-      {/* Expense List */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-          <h3 className="font-semibold text-slate-900 dark:text-white">{s.t('expenseHistory')}</h3>
-          <span className="text-sm text-slate-500">{s.filteredExpenses.length} {s.t('expenseTransactions')}</span>
-        </div>
-        <ExpenseTable
-          expenses={s.filteredExpenses}
-          getCategoryName={s.getCategoryName}
-          getCategoryColor={s.getCategoryColor}
-          onEdit={s.openEdit}
-          onDelete={s.handleDelete}
-          t={s.t}
-        />
-      </div>
+      {/* Power Toolbar */}
+      <ExpenseToolbar
+        searchTerm={s.searchTerm}
+        setSearchTerm={s.setSearchTerm}
+        filterCategory={s.filterCategory}
+        setFilterCategory={s.setFilterCategory}
+        filterPaymentMethod={s.filterPaymentMethod}
+        setFilterPaymentMethod={s.setFilterPaymentMethod}
+        dateRange={s.dateRange}
+        setDateRange={s.setDateRange}
+        viewMode={s.viewMode}
+        setViewMode={s.setViewMode}
+        selectedCount={s.selectedIds.size}
+        totalCount={s.filteredExpenses.length}
+        onAdd={s.openAdd}
+        onExport={s.handleExport}
+        onBulkDelete={s.handleBulkDelete}
+        onRefresh={s.loadExpenses}
+        apiAvailable={s.apiAvailable}
+        t={s.t}
+      />
 
-      <PayrollBreakdown payrollDetails={s.payrollDetails} />
+      {/* Main Expense Table / Cards */}
+      <ExpenseTable
+        expenses={s.filteredExpenses}
+        selectedIds={s.selectedIds}
+        viewMode={s.viewMode}
+        getCategoryName={s.getCategoryName}
+        getCategoryConfig={s.getCategoryConfig}
+        onToggleSelectAll={s.toggleSelectAll}
+        onToggleSelectRow={s.toggleSelectRow}
+        onEdit={s.openEdit}
+        onDelete={s.handleDelete}
+        t={s.t}
+      />
 
+      {/* Staff Payroll Section */}
+      <PayrollBreakdown payrollDetails={s.payrollDetails} t={s.t} />
+
+      {/* Add / Edit Modal */}
       {s.showModal && (
         <ExpenseModal
           editingExpense={s.editingExpense}
