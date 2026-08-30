@@ -228,16 +228,16 @@ export default function CommercePage() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full min-h-0 bg-slate-100/90 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden select-none font-sans antialiased">
+    <div className="">
       {/* Top POS Command Navigation Bar */}
-      <header className="flex-shrink-0 px-3 pt-2.5 pb-1.5 w-full">
-        <div className="w-full bg-white dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800/90 rounded-xl shadow-xs backdrop-blur-md">
+      <header className="flex-shrink-0 pb-1.5 w-full">
+        <div className="w-full bg-white dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800/90  shadow-xs backdrop-blur-md">
           
           {/* Top Row: Brand, Active Context, & Cashier Controls */}
           {!isFullscreenMode && (
             <div className="px-3.5 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-500/20 shrink-0">
+                <div className="w-8 h-8  bg-emerald-600 dark:bg-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-500/20 shrink-0">
                   <ShoppingCart className="w-4 h-4" />
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
@@ -352,13 +352,8 @@ export default function CommercePage() {
       </header>
 
       {/* Main Viewport Container */}
-      <main className="flex-1 w-full min-h-0 px-3 pb-3 flex flex-col overflow-hidden">
-        <div
-          role="tabpanel"
-          id={`panel-${activeTab}`}
-          aria-labelledby={`tab-${activeTab}`}
-          className="w-full h-full min-w-0 min-h-0 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800/90 shadow-xs flex flex-col overflow-hidden relative"
-        >
+      <div className="">
+      
           {activeTab === 'pos' && <POSView />}
           {activeTab === 'quicksale' && <QuickSaleView />}
           {activeTab === 'products' && <ProductsView />}
@@ -368,8 +363,7 @@ export default function CommercePage() {
           {activeTab === 'stores' && <StoresView />}
           {activeTab === 'suppliers' && <SuppliersView />}
           {activeTab === 'expenses' && <ExpensesView />}
-        </div>
-      </main>
+      </div>
 
       {/* POS Operational Guide & Shortcuts Modal */}
       {showHowItWorks && <CommerceGuideModal onClose={() => setShowHowItWorks(false)} />}
