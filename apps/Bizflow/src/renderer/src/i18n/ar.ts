@@ -1,6 +1,7 @@
 // Arabic translations — part of the i18n dictionary.
 // Split into ./ar.part.N files for maintainability; merged here.
 // eslint-disable-next-line
+import { arPart0 } from './ar.part.0'
 import { arPart1 } from './ar.part.1'
 import { arPart2 } from './ar.part.2'
 import { arPart3 } from './ar.part.3'
@@ -12,6 +13,7 @@ import { arPart8 } from './ar.part.8'
 import { arPart9 } from './ar.part.9'
 
 export const ar = {
+  ...arPart0,
   ...arPart1,
   ...arPart2,
   ...arPart3,

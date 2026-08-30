@@ -1,6 +1,7 @@
 // English translations — part of the i18n dictionary.
 // Split into ./en.part.N files for maintainability; merged here.
 // eslint-disable-next-line
+import { enPart0 } from './en.part.0' 
 import { enPart1 } from './en.part.1'
 import { enPart2 } from './en.part.2'
 import { enPart3 } from './en.part.3'
@@ -12,6 +13,7 @@ import { enPart8 } from './en.part.8'
 import { enPart9 } from './en.part.9'
 
 export const en = {
+  ...enPart0,
   ...enPart1,
   ...enPart2,
   ...enPart3,
