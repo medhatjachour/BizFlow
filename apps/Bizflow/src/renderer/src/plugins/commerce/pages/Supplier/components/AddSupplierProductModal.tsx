@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { X, Search, Check } from 'lucide-react'
 import type { ProductResponseDTO } from '../types'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface AddSupplierProductModalProps {
   isOpen: boolean
@@ -23,6 +24,7 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
   onClose,
   onAdd
 }) => {
+  const { t } = useLanguage()
   const [search, setSearch] = useState('')
   const [selectedProductId, setSelectedProductId] = useState('')
   const [cost, setCost] = useState('')
@@ -57,10 +59,10 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
   }
 
   return (
-    <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
       <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
         <div className="px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-          <h4 className="text-xs font-bold text-slate-900 dark:text-white">Map Catalog SKU</h4>
+          <h4 className="text-xs font-bold text-slate-900 dark:text-white">{t('mapCatalogSKU') || 'Map Catalog SKU'}</h4>
           <button type="button" onClick={onClose} className="p-1 text-slate-400 hover:text-slate-600">
             <X className="w-4 h-4" />
           </button>
@@ -69,13 +71,13 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
           <div>
             <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Select Product SKU *
+              {t('selectProductSKU') || 'Select Product SKU *'}
             </label>
             <div className="relative mb-2">
               <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search master catalog..."
+                placeholder={t('searchMasterCatalog') || 'Search master catalog...'}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full ps-8 pe-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
@@ -104,7 +106,7 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
                 </button>
               ))}
               {availableProducts.length === 0 && (
-                <div className="p-3 text-center text-xs text-slate-400">No matching products</div>
+                <div className="p-3 text-center text-xs text-slate-400">{t('noMatchingProducts') || 'No matching products'}</div>
               )}
             </div>
           </div>
@@ -112,7 +114,7 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
           <div className="grid grid-cols-3 gap-2.5">
             <div>
               <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Unit Cost *
+                {t('unitCost') || 'Unit Cost *'}
               </label>
               <input
                 type="number"
@@ -126,7 +128,7 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
             </div>
             <div>
               <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Lead (Days)
+                {t('leadTimeDays') || 'Lead (Days)'}
               </label>
               <input
                 type="number"
@@ -138,7 +140,7 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
             </div>
             <div>
               <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Min Order
+                {t('minOrder') || 'Min Order'}
               </label>
               <input
                 type="number"
@@ -157,7 +159,7 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
               onChange={(e) => setIsPreferred(e.target.checked)}
               className="rounded text-indigo-600 focus:ring-indigo-500"
             />
-            <span>Set as preferred primary vendor for this item</span>
+            <span>{t('setAsPreferredPrimaryVendor') || 'Set as preferred primary vendor for this item'}</span>
           </label>
 
           <div className="pt-2 flex justify-end gap-2">
@@ -166,14 +168,14 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
               onClick={onClose}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500"
             >
-              Cancel
+              {t('cancel') || 'Cancel'}
             </button>
             <button
               type="submit"
               disabled={!selectedProductId || !cost}
               className="px-4 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold disabled:opacity-50"
             >
-              Link to Vendor
+              {t('linkToVendor') || 'Link to Vendor'}
             </button>
           </div>
         </form>

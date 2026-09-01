@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { X, Plus, Trash2, ShoppingCart, AlertCircle } from 'lucide-react'
+import { X, Plus, Trash2, ShoppingCart } from 'lucide-react'
 import { calculatePOTotal, formatCurrency } from '../utils'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { 
@@ -30,10 +30,10 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
   onClose,
   onSubmit
 }) => {
-  const { t } = useLanguage()
   const [selectedProdId, setSelectedProdId] = useState('')
   const [qty, setQty] = useState('1')
   const [cost, setCost] = useState('')
+  const { t } = useLanguage()
 
   if (!isOpen) return null
 
@@ -67,7 +67,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
     }))
   }
 
-  const { subtotal, total } = calculatePOTotal(formData.items, formData.taxAmount, formData.shippingCost)
+  const { total } = calculatePOTotal(formData.items, formData.taxAmount, formData.shippingCost)
 
   const handleProductSelectChange = (pId: string) => {
     setSelectedProdId(pId)
@@ -92,10 +92,10 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Draft Purchase Order (Restock)
+                {t('draftPurchaseOrderRestock') || 'Draft Purchase Order (Restock)'}
               </h3>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Generate restock orders with supplier price tiers and scheduled ETA.
+                {t('generateRestockOrdersDescription') || 'Generate restock orders with supplier price tiers and scheduled ETA.'}
               </p>
             </div>
           </div>
@@ -110,14 +110,20 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Target Supplier Partner *
+                {t('targetSupplierPartner') || 'Target Supplier Partner *'}
               </label>
               <select
                 value={formData.supplierId}
-                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value, items: [] })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    supplierId: e.target.value,
+                    items: formData.supplierId ? [] : formData.items
+                  })
+                }
                 className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               >
-                <option value="">Choose Supplier...</option>
+                <option value="">{t('chooseSupplier') || 'Choose Supplier...'}</option>
                 {suppliers.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -127,7 +133,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             </div>
             <div>
               <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Expected Delivery Date (ETA)
+                {t('expectedDeliveryDateETA') || 'Expected Delivery Date (ETA)'}
               </label>
               <input
                 type="date"
@@ -142,7 +148,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 space-y-2.5">
             <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Add Line Item</span>
+              <span>{t('addLineItem') || 'Add Line Item'}</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
               <div className="sm:col-span-6">
@@ -152,7 +158,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                   onChange={(e) => handleProductSelectChange(e.target.value)}
                   className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg"
                 >
-                  <option value="">Select Catalog SKU...</option>
+                  <option value="">{t('selectCatalogSKU') || 'Select Catalog SKU...'}</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name} (SKU: {p.baseSKU})
@@ -164,7 +170,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                 <input
                   type="number"
                   min="1"
-                  placeholder="Qty"
+                  placeholder={t('quantity') || 'Qty'}
                   value={qty}
                   onChange={(e) => setQty(e.target.value)}
                   className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-center"
@@ -174,7 +180,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Cost"
+                  placeholder={t('cost') || 'Cost'}
                   value={cost}
                   onChange={(e) => setCost(e.target.value)}
                   className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg font-mono text-end font-bold"
@@ -187,7 +193,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                   onClick={handleAddLineItem}
                   className="w-full py-1.5 rounded-lg bg-slate-900 dark:bg-emerald-600 text-white font-semibold hover:bg-slate-800 disabled:opacity-50"
                 >
-                  Add
+                  {t('add') || 'Add '}
                 </button>
               </div>
             </div>
@@ -199,11 +205,12 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
               <table className="w-full text-start">
                 <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th className="px-3 py-2 text-start">Product Item</th>
-                    <th className="px-3 py-2 text-center">Quantity</th>
-                    <th className="px-3 py-2 text-end">Unit Cost</th>
-                    <th className="px-3 py-2 text-end">Line Total</th>
-                    <th className="px-3 py-2 text-end"></th>
+                    <th className="px-3 py-2 text-start">
+                      {t('productItem') || 'Product Item'}</th>
+                    <th className="px-3 py-2 text-center">{t('quantity') || 'Quantity'}</th>
+                    <th className="px-3 py-2 text-end">{t('unitCost') || 'Unit Cost'}</th>
+                    <th className="px-3 py-2 text-end">{t('lineTotal') || 'Line Total'}</th>
+                    <th className="px-3 py-2 text-end">{t('actions') || 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -237,18 +244,18 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           {/* Tax, Shipping & Notes */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div>
-              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Notes</label>
+              <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('notes') || 'Notes'}</label>
               <textarea
                 rows={2}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Shipping instructions, dock number, order references..."
+                placeholder={t('shippingInstructionsPlaceholder') || 'Shipping instructions, dock number, order references...'}
                 className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-slate-500">Tax ($):</span>
+                <span className="text-slate-500">{t('tax') || 'Tax ($):'}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -258,7 +265,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                 />
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span className="text-slate-500">Freight Shipping ($):</span>
+                <span className="text-slate-500">{t('freightShipping') || 'Freight Shipping ($):'}</span>
                 <input
                   type="number"
                   step="0.01"
@@ -268,7 +275,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                 />
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800 font-bold text-sm">
-                <span>Grand Total:</span>
+                <span>{t('grandTotal') || 'Grand Total:'}</span>
                 <span className="font-mono text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(total)}
                 </span>
@@ -284,7 +291,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-800"
           >
-            Cancel
+            {t('cancel') || 'Cancel'}
           </button>
           <button
             type="button"
@@ -292,7 +299,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             onClick={onSubmit}
             className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50"
           >
-            Create Purchase Order
+            {t('createPurchaseOrder') || 'Create Purchase Order'}   
           </button>
         </div>
       </div>

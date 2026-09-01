@@ -44,10 +44,11 @@ export const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  {supplier.name} — Catalog Items
+                  {supplier.name} — {t('catalogItems') || 'Catalog Items'}
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Manage negotiated purchase unit costs, lead times, and preferred vendor mappings.
+                  
+                  {t('manageNegotiatedPurchaseUnitCosts') || 'Manage negotiated purchase unit costs, lead times, and preferred vendor mappings.'}
                 </p>
               </div>
             </div>
@@ -58,7 +59,7 @@ export const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold transition-all shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Link Product</span>
+                <span>{t('linkProduct') || 'Link Product'}</span>
               </button>
               <button
                 type="button"
@@ -75,14 +76,14 @@ export const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
             {loading ? (
               <div className="py-12 flex flex-col items-center justify-center gap-2">
                 <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                <span className="text-xs text-slate-400">Retrieving linked SKUs...</span>
+                <span className="text-xs text-slate-400">{t('retrievingLinkedSKUs') || 'Retrieving linked SKUs...'}</span>
               </div>
             ) : products.length === 0 ? (
               <div className="py-12 text-center">
                 <Package className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto mb-2" />
-                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">No SKUs mapped yet</h4>
+                <h4 className="text-xs font-semibold text-slate-800 dark:text-slate-200">{t('noSKUsMappedYet') || 'No SKUs mapped yet'}</h4>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto">
-                  Attach products that this supplier supplies to establish automated purchase order costs.
+                  {t('attachProductsToEstablishCosts') || 'Attach products that this supplier supplies to establish automated purchase order costs.'}
                 </p>
               </div>
             ) : (
@@ -90,11 +91,11 @@ export const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
                 <table className="w-full text-xs text-start">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
-                      <th className="px-3.5 py-2.5 text-start">Product / SKU</th>
-                      <th className="px-3.5 py-2.5 text-end">Negotiated Cost</th>
-                      <th className="px-3.5 py-2.5 text-center">Lead Time</th>
-                      <th className="px-3.5 py-2.5 text-center">Min Qty</th>
-                      <th className="px-3.5 py-2.5 text-end">Action</th>
+                      <th className="px-3.5 py-2.5 text-start">{t('productSKU') || 'Product / SKU'}</th>
+                      <th className="px-3.5 py-2.5 text-end">{t('negotiatedCost') || 'Negotiated Cost'}</th>
+                      <th className="px-3.5 py-2.5 text-center">{t('leadTime') || 'Lead Time'}</th>
+                      <th className="px-3.5 py-2.5 text-center">{t('minQty') || 'Min Qty'}</th>
+                      <th className="px-3.5 py-2.5 text-end">{t('action') || 'Action'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -105,7 +106,7 @@ export const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
                             <span>{sp.productName}</span>
                             {sp.isPreferred && (
                               <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/60 font-bold">
-                                <Star className="w-2.5 h-2.5 fill-current" /> PREFERRED
+                                <Star className="w-2.5 h-2.5 fill-current" /> {t('preferred') || 'PREFERRED'}
                               </span>
                             )}
                           </div>
@@ -146,7 +147,7 @@ export const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
               onClick={onClose}
               className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 text-white dark:bg-slate-800 hover:bg-slate-800 transition-colors"
             >
-              Done
+              {t('confirm') || 'Done'}
             </button>
           </div>
         </div>

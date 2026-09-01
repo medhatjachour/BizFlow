@@ -13,7 +13,7 @@ import type {
 } from '@/shared/dtos/purchase-order.dto'
 import type { ProductResponseDTO } from '@/shared/dtos/product.dto'
 
-export type SupplierTab = 'suppliers' | 'purchase-orders'
+export type SupplierTab = 'suppliers' | 'purchase-orders' | 'reorders'
 
 export interface SupplierFormData {
   name: string
@@ -94,4 +94,23 @@ export type {
   UpdatePurchaseOrderDTO,
   PurchaseOrderSummaryDTO,
   ProductResponseDTO
+}
+
+export interface PrefilledPurchaseOrder {
+  productId: string
+  variantId: string
+  productName: string
+  variantName: string
+  suggestedQty: number
+  supplierInfo?: {
+    supplierId?: string
+    supplierName: string
+    cost: number
+    leadTime: number
+  }
+}
+
+export interface PurchaseOrdersProps {
+  prefilledData?: PrefilledPurchaseOrder | null
+  onClearPrefilled?: () => void
 }

@@ -39,7 +39,7 @@ export const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
             <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by PO# or Supplier Name..."
+              placeholder={t('searchSuppliersPlaceholder') || 'Search by PO# or Supplier Name...'}
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
               className="w-full ps-9 pe-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
@@ -51,18 +51,18 @@ export const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
             onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value as any }))}
             className="px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="all">All Statuses</option>
-            <option value="draft">Drafts Only</option>
-            <option value="ordered">Ordered (In Transit)</option>
-            <option value="received">Received (Reconciled)</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="all">{t('allStatus') || 'All Statuses'}</option>
+            <option value="draft">{t('draft') || 'Drafts Only'}</option>
+            <option value="ordered">{t('ordered') || 'Ordered (In Transit)'}</option>
+            <option value="received">{t('received') || 'Received (Reconciled)'}</option>
+            <option value="cancelled">{t('cancelled') || 'Cancelled'}</option>
           </select>
 
           <button
             type="button"
             onClick={onRefresh}
             className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
-            title="Refresh Invoices"
+            title={t('refresh') || 'Refresh Invoices'}
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -71,10 +71,10 @@ export const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
         <button
           type="button"
           onClick={onOpenCreatePO}
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold shadow-xs shadow-emerald-600/20 transition-all shrink-0"
+          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold shadow-xs shadow-emerald-600/20 transition-all shrink-0"
         >
           <Plus className="w-4 h-4" />
-          <span>New Purchase Order</span>
+          <span>{t('newPurchaseOrder') || 'New Purchase Order'}</span>
         </button>
       </div>
 
@@ -84,13 +84,13 @@ export const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
           <table className="w-full text-start text-xs border-collapse">
             <thead>
               <tr className="bg-slate-50/90 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
-                <th className="px-4 py-3 text-start">PO Identifier</th>
-                <th className="px-4 py-3 text-start">Supplier Partner</th>
-                <th className="px-4 py-3 text-center">Status</th>
-                <th className="px-4 py-3 text-start">Created</th>
-                <th className="px-4 py-3 text-start">Expected ETA</th>
-                <th className="px-4 py-3 text-end">Total Amount</th>
-                <th className="px-4 py-3 text-end">Actions</th>
+                <th className="px-4 py-3 text-start">{t('poIdentifier') || 'PO Identifier'}</th>
+                <th className="px-4 py-3 text-start">{t('supplierPartner') || 'Supplier Partner'}</th>
+                <th className="px-4 py-3 text-center">{t('status') || 'Status'}</th>
+                <th className="px-4 py-3 text-start">{t('created') || 'Created'}</th>
+                <th className="px-4 py-3 text-start">{t('expectedETA') || 'Expected ETA'}</th>
+                <th className="px-4 py-3 text-end">{t('totalAmount') || 'Total Amount'}</th>
+                <th className="px-4 py-3 text-end">{t('actions') || 'Actions'}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
@@ -135,7 +135,7 @@ export const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
                               title="Mark as ordered / In Transit"
                             >
                               <Truck className="w-3 h-3" />
-                              <span>Dispatch</span>
+                              <span>{t('dispatch') || 'Dispatch'}</span>
                             </button>
                             <button
                               type="button"
@@ -151,10 +151,10 @@ export const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
                             type="button"
                             onClick={() => onReceivePO(po)}
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 text-white text-[11px] font-semibold hover:bg-emerald-500 shadow-2xs transition-all active:scale-95"
-                            title="Reconcile and accept inventory"
+                            title={t('reconcileAndAcceptInventory') || 'Reconcile and accept inventory'}
                           >
                             <CheckCircle2 className="w-3 h-3" />
-                            <span>Receive Order</span>
+                            <span>{t('receiveOrder') || 'Receive Order'}</span>
                           </button>
                         )}
                       </div>
@@ -166,7 +166,7 @@ export const PurchaseOrdersTable: React.FC<PurchaseOrdersTableProps> = ({
           </table>
           {orders.length === 0 && !loading && (
             <div className="py-12 text-center text-slate-400 text-xs">
-              No purchase orders found matching the filter criteria.
+              {t('noPurchaseOrdersFound') || 'No purchase orders found matching the filter criteria.'}
             </div>
           )}
         </div>
