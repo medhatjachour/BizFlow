@@ -13,7 +13,7 @@
  */
 
 import { useState, useMemo, lazy, Suspense } from 'react'
-import { Search, Filter, Download, Plus, RefreshCw, Package, AlertTriangle, TrendingUp, History, Users, ShoppingCart, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Search, Filter, Download, Plus, RefreshCw, Package, AlertTriangle, TrendingUp, History, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useBackendSearch, useFilterMetadata } from '@renderer/hooks/useBackendSearch'
 import { useDebounce } from '@renderer/hooks/useDebounce'
@@ -30,9 +30,6 @@ import * as XLSX from 'xlsx'
 // Lazy load heavy components - only load when tabs are clicked
 const ProductAnalytics = lazy(() => import('./components/ProductAnalytics'))
 const StockHistory = lazy(() => import('./components/StockHistory'))
-const ReorderAlerts = lazy(() => import('./components/ReorderAlerts'))
-const Suppliers = lazy(() => import('./components/Suppliers'))
-const PurchaseOrders = lazy(() => import('./components/PurchaseOrders'))
 
 import type { InventoryFilters as Filters, InventorySortOptions } from './types'
 import InventoryFilters from './components/InventoryFilters'
@@ -44,25 +41,12 @@ import logger from '@/shared/utils/logger'
 
 const ITEMS_PER_PAGE = 50
 
-type TabType = 'products' | 'analytics' | 'history' | 'reorder' | 'suppliers' | 'purchase-orders'
+type TabType = 'products' | 'analytics' | 'history' 
 
-interface PrefilledPurchaseOrder {
-  productId: string
-  variantId: string
-  productName: string
-  variantName: string
-  suggestedQty: number
-  supplierInfo?: {
-    supplierId?: string
-    supplierName: string
-    cost: number
-    leadTime: number
-  }
-}
+
 
 export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<TabType>('products')
-  const [prefilledPurchaseOrder, setPrefilledPurchaseOrder] = useState<PrefilledPurchaseOrder | null>(null)
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [showMetrics, setShowMetrics] = useState(true)
@@ -96,11 +80,6 @@ export default function InventoryPage() {
   // Extract category names from metadata
   const categories = filterMetadata?.categories?.map((c: any) => c.name) || []
   
-  // Handler for creating purchase order from reorder alert
-  const handleCreatePurchaseOrderFromAlert = (alertData: PrefilledPurchaseOrder) => {
-    setPrefilledPurchaseOrder(alertData)
-    setActiveTab('purchase-orders')
-  }
   
   // Filter state
   const [filters, setFilters] = useState<Filters>({
@@ -452,39 +431,7 @@ export default function InventoryPage() {
             <History size={18} />
             {t('inventoryHistory')}
           </button>
-          <button
-            onClick={() => setActiveTab('reorder')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
-              activeTab === 'reorder'
-                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
-            }`}
-          >
-            <AlertTriangle size={18} />
-            {t('inventoryReorder')}
-          </button>
-          <button
-            onClick={() => setActiveTab('suppliers')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
-              activeTab === 'suppliers'
-                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
-            }`}
-          >
-            <Users size={18} />
-            {t('inventorySuppliers')}
-          </button>
-          <button
-            onClick={() => setActiveTab('purchase-orders')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
-              activeTab === 'purchase-orders'
-                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
-            }`}
-          >
-            <ShoppingCart size={18} />
-            Purchase Orders
-          </button>
+        
         </div>
 
         {/* Search and Filters - Only show for products tab */}
@@ -613,47 +560,7 @@ export default function InventoryPage() {
           </div>
         )}
 
-        {activeTab === 'reorder' && (
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
-            <Suspense fallback={
-              <div className="text-center">
-                <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-400">Loading Reorder Alerts...</p>
-              </div>
-            }>
-              <ReorderAlerts onCreatePurchaseOrder={handleCreatePurchaseOrderFromAlert} />
-            </Suspense>
-          </div>
-        )}
-
-        {activeTab === 'suppliers' && (
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
-            <Suspense fallback={
-              <div className="text-center">
-                <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-400">Loading Suppliers...</p>
-              </div>
-            }>
-              <Suppliers />
-            </Suspense>
-          </div>
-        )}
-
-        {activeTab === 'purchase-orders' && (
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
-            <Suspense fallback={
-              <div className="text-center">
-                <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-slate-600 dark:text-slate-400">Loading Purchase Orders...</p>
-              </div>
-            }>
-              <PurchaseOrders 
-                prefilledData={prefilledPurchaseOrder}
-                onClearPrefilled={() => setPrefilledPurchaseOrder(null)}
-              />
-            </Suspense>
-          </div>
-        )}
+  
       </div>
 
       {/* Item Detail Drawer */}
