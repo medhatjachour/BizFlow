@@ -5,6 +5,7 @@
 
 import { useEffect } from 'react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   currentPage: number
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange }: Props) {
+  const { t } = useLanguage()
   const startItem = (currentPage - 1) * itemsPerPage + 1
   const endItem = Math.min(currentPage * itemsPerPage, totalItems)
 
@@ -74,56 +76,56 @@ export default function Pagination({ currentPage, totalPages, totalItems, itemsP
 
   if (totalPages <= 1) {
     return (
-      <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-        <div className="text-sm text-slate-600 dark:text-slate-400">
-          Showing {totalItems} {totalItems === 1 ? 'item' : 'items'}
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div className="text-[11px] text-slate-500 dark:text-slate-400">
+          {t('inventoryUiShowing')} {totalItems} {t(totalItems === 1 ? 'inventoryUiItem' : 'inventoryUiItems')}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex items-center justify-between px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <div className="flex items-center justify-between gap-3 px-4 py-2 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       {/* Items info */}
-      <div className="text-sm text-slate-600 dark:text-slate-400">
-        Showing <span className="font-medium text-slate-900 dark:text-white">{startItem}</span> to{' '}
-        <span className="font-medium text-slate-900 dark:text-white">{endItem}</span> of{' '}
-        <span className="font-medium text-slate-900 dark:text-white">{totalItems}</span> items
+      <div className="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+        {t('inventoryUiShowing')} <span className="font-medium text-slate-900 dark:text-white">{startItem}</span> {t('inventoryUiTo')}{' '}
+        <span className="font-medium text-slate-900 dark:text-white">{endItem}</span> {t('inventoryUiOf')}{' '}
+        <span className="font-medium text-slate-900 dark:text-white">{totalItems}</span> {t('inventoryUiItems')}
       </div>
 
       {/* Pagination controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between sm:justify-end gap-1 w-full sm:w-auto">
         {/* First page */}
         <button
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
-          className="p-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="First page"
+          className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 inline-flex items-center justify-center transition-colors"
+          title={t('inventoryUiFirstPage')}
         >
-          <ChevronsLeft size={18} />
+          <ChevronsLeft size={14} />
         </button>
 
         {/* Previous page */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Previous page"
+          className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 inline-flex items-center justify-center transition-colors"
+          title={t('inventoryUiPreviousPage')}
         >
-          <ChevronLeft size={18} />
+          <ChevronLeft size={14} />
         </button>
 
         {/* Page numbers */}
-        <div className="flex items-center gap-1">
+        <div className="hidden md:flex items-center gap-1">
           {getPageNumbers().map((page, index) => (
             typeof page === 'number' ? (
               <button
                 key={`page-${page}`}
                 onClick={() => onPageChange(page)}
-                className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`min-w-8 h-8 px-2 rounded-md text-[11px] font-bold transition-colors ${
                   currentPage === page
-                    ? 'bg-primary text-white'
-                    : 'border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'
+                    ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+                    : 'border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
                 }`}
               >
                 {page}
@@ -136,24 +138,28 @@ export default function Pagination({ currentPage, totalPages, totalItems, itemsP
           ))}
         </div>
 
+        <span className="md:hidden text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+          {t('inventoryUiPage')} {currentPage} {t('inventoryUiOf')} {totalPages}
+        </span>
+
         {/* Next page */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Next page"
+          className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 inline-flex items-center justify-center transition-colors"
+          title={t('inventoryUiNextPage')}
         >
-          <ChevronRight size={18} />
+          <ChevronRight size={14} />
         </button>
 
         {/* Last page */}
         <button
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}
-          className="p-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          title="Last page"
+          className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 inline-flex items-center justify-center transition-colors"
+          title={t('inventoryUiLastPage')}
         >
-          <ChevronsRight size={18} />
+          <ChevronsRight size={14} />
         </button>
       </div>
     </div>

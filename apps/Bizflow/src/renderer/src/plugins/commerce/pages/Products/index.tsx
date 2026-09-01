@@ -239,7 +239,7 @@ export default function Products() {
     }
   }, [toast])
 
-  const handleEdit = useCallback(async (product: Product) => {
+  const handleEdit = useCallback(async (product: Pick<Product, 'id'>) => {
     // Fetch full product details with images
     try {
       const fullProduct = await ipc.products.getById(product.id)
@@ -250,6 +250,28 @@ export default function Products() {
       toast.error('Failed to load product details')
     }
   }, [toast])
+
+  useEffect(() => {
+    const pendingAction = sessionStorage.getItem('bizflow:commerce:product-action')
+    if (!pendingAction) return
+
+    sessionStorage.removeItem('bizflow:commerce:product-action')
+
+    try {
+      const action = JSON.parse(pendingAction) as {
+        mode: 'create' | 'edit'
+        productId?: string
+      }
+
+      if (action.mode === 'create') {
+        setShowAddModal(true)
+      } else if (action.mode === 'edit' && action.productId) {
+        void handleEdit({ id: action.productId })
+      }
+    } catch (error) {
+      logger.warn('Ignored invalid pending product action:', error)
+    }
+  }, [handleEdit])
 
   const handleDelete = useCallback(async (product: Product) => {
     try {

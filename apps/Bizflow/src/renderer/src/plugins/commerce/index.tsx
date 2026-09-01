@@ -198,6 +198,18 @@ export default function CommercePage() {
     sessionStorage.setItem('bizflow:commerce:tab', tabId)
   }
 
+  useEffect(() => {
+    const handleRequestedTab = (event: Event) => {
+      const tabId = (event as CustomEvent<CommerceTab>).detail
+      if (visibleTabs.some((tab) => tab.id === tabId)) {
+        handleTabChange(tabId)
+      }
+    }
+
+    window.addEventListener('bizflow:commerce:open-tab', handleRequestedTab)
+    return () => window.removeEventListener('bizflow:commerce:open-tab', handleRequestedTab)
+  }, [visibleTabs])
+
   // Keyboard Shortcuts Navigation: Alt + 1..9 & Modal F1
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

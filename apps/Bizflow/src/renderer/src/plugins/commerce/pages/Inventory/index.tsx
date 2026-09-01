@@ -12,9 +12,8 @@
  * - Toast notifications
  */
 
-import { useState, useMemo, lazy, Suspense } from 'react'
+import { useState, useMemo } from 'react'
 import { Search, Filter, Download, Plus, RefreshCw, Package, AlertTriangle, TrendingUp, History, ChevronRight, ChevronLeft } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { useBackendSearch, useFilterMetadata } from '@renderer/hooks/useBackendSearch'
 import { useDebounce } from '@renderer/hooks/useDebounce'
 import useKeyboardShortcuts from '@renderer/hooks/useKeyboardShortcuts'
@@ -25,11 +24,9 @@ import { useAuth } from '@renderer/contexts/AuthContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import InventoryTable from './components/InventoryTable'
 import Pagination from './components/Pagination'
+import ProductAnalytics from '@renderer/plugins/commerce/pages/Inventory/components/ProductAnalytics'
+import StockHistory from '@renderer/plugins/commerce/pages/Inventory/components/StockHistory'
 import * as XLSX from 'xlsx'
-
-// Lazy load heavy components - only load when tabs are clicked
-const ProductAnalytics = lazy(() => import('./components/ProductAnalytics'))
-const StockHistory = lazy(() => import('./components/StockHistory'))
 
 import type { InventoryFilters as Filters, InventorySortOptions } from './types'
 import InventoryFilters from './components/InventoryFilters'
@@ -51,7 +48,6 @@ export default function InventoryPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [showMetrics, setShowMetrics] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const navigate = useNavigate()
   const { user } = useAuth()
   const { t } = useLanguage()
   const [isExporting, setIsExporting] = useState(false)
@@ -220,7 +216,13 @@ export default function InventoryPage() {
   }
 
   const handleAddItem = () => {
-    navigate('/products?create=true')
+    sessionStorage.setItem(
+      'bizflow:commerce:product-action',
+      JSON.stringify({ mode: 'create' })
+    )
+    window.dispatchEvent(
+      new CustomEvent('bizflow:commerce:open-tab', { detail: 'products' })
+    )
   }
   
   /**
@@ -313,20 +315,26 @@ export default function InventoryPage() {
     }
   ])
 
+  const activeFilterCount =
+    filters.categories.length +
+    filters.stockStatus.length +
+    (filters.storeId ? 1 : 0) +
+    (filters.priceRange.min > 0 || filters.priceRange.max < Infinity ? 1 : 0)
+
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center p-6" role="alert" aria-live="assertive">
         <div className="text-center">
           <AlertTriangle className="mx-auto mb-4 text-error" size={48} aria-hidden="true" />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Error Loading Inventory</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{t('inventoryUiErrorLoading')}</h2>
           <p className="text-slate-600 dark:text-slate-400 mb-4">{error}</p>
           <button 
             onClick={refetch} 
             className="btn-primary"
-            aria-label="Retry loading inventory"
+            aria-label={t('inventoryUiRetryLoading')}
           >
             <RefreshCw size={18} aria-hidden="true" />
-            Retry
+            {t('inventoryUiRetry')}
           </button>
         </div>
       </div>
@@ -334,141 +342,135 @@ export default function InventoryPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg" aria-hidden="true">
-              <Package className="text-primary" size={24} />
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-100/70 dark:bg-slate-950">
+      <header className="shrink-0 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="px-4 lg:px-6 pt-4 pb-3 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 shrink-0 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center shadow-sm" aria-hidden="true">
+              <Package size={20} />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('inventoryManagement')}</h1>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                {t('inventoryTrackStock')}
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-bold text-slate-950 dark:text-white">{t('inventoryManagement')}</h1>
+                {metrics && (metrics.lowStockCount > 0 || metrics.outOfStockCount > 0) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800 text-[10px] font-bold">
+                    <AlertTriangle size={11} />
+                    {metrics.lowStockCount + metrics.outOfStockCount} {t('inventoryUiAlerts')}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t('inventoryTrackStock')}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700 border-y xl:border-y-0 border-slate-200 dark:border-slate-800 xl:min-w-[430px]">
+            <div className="px-4 py-1 xl:py-0">
+              <p className="text-[10px] font-semibold uppercase text-slate-400">{t('inventoryUiCatalog')}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">{totalCount.toLocaleString()} {t('inventoryUiItems')}</p>
+            </div>
+            <div className="px-4 py-1 xl:py-0">
+              <p className="text-[10px] font-semibold uppercase text-slate-400">{t('inventoryUiStockValue')}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                ${(metrics?.totalStockValue || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2" role="toolbar" aria-label="Inventory actions">
-            {activeTab === 'products' && (
-              <>
-                <button
-                  onClick={refetch}
-                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
-                  disabled={loading}
-                  aria-label={loading ? t('inventoryRefreshing') : t('inventoryRefreshData')}
-                  aria-busy={loading}
-                >
-                  <RefreshCw size={18} className={loading ? 'animate-spin' : ''} aria-hidden="true" />
-                  {t('inventoryRefreshData')}
-                </button>
-                <button
-                  onClick={handleExport}
-                  disabled={isExporting || items.length === 0}
-                  className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label={isExporting ? t('inventoryExporting') : `${t('inventoryExportExcel')} ${items.length}`}
-                  aria-busy={isExporting}
-                  aria-disabled={items.length === 0}
-                >
-                  {isExporting ? (
-                    <>
-                      <RefreshCw size={18} className="animate-spin" aria-hidden="true" />
-                      {t('inventoryExporting')}
-                    </>
-                  ) : (
-                    <>
-                      <Download size={18} aria-hidden="true" />
-                      {t('inventoryExportExcel')} ({items.length})
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={handleAddItem}
-                  className="btn-primary flex items-center gap-2"
-                  aria-label="Add new inventory item"
-                >
-                  <Plus size={18} aria-hidden="true" />
-                  Add Item
-                </button>
-              </>
-            )}
+            <div className="px-4 py-1 xl:py-0">
+              <p className="text-[10px] font-semibold uppercase text-slate-400">{t('inventoryUiUnitsOnHand')}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">{(metrics?.totalPieces || 0).toLocaleString()}</p>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => setActiveTab('products')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
-              activeTab === 'products'
-                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
-            }`}
-          >
-            <Package size={18} />
-            {t('inventoryProducts')}
-          </button>
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
-              activeTab === 'analytics'
-                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
-            }`}
-          >
-            <TrendingUp size={18} />
-            {t('inventoryAnalytics')}
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-medium ${
-              activeTab === 'history'
-                ? 'bg-primary text-white shadow-md transform scale-[1.02]'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-[1.01]'
-            }`}
-          >
-            <History size={18} />
-            {t('inventoryHistory')}
-          </button>
-        
+        <div className="px-4 lg:px-6 flex items-end justify-between gap-4 border-t border-slate-100 dark:border-slate-800/70">
+          <nav className="flex items-center gap-5 overflow-x-auto" aria-label={t('inventoryUiViews')}>
+            {([
+              { id: 'products', label: t('inventoryProducts'), icon: Package },
+              { id: 'analytics', label: t('inventoryAnalytics'), icon: TrendingUp },
+              { id: 'history', label: t('inventoryHistory'), icon: History }
+            ] as const).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                className={`relative inline-flex items-center gap-1.5 py-3 text-xs font-semibold whitespace-nowrap transition-colors ${
+                  activeTab === id
+                    ? 'text-slate-950 dark:text-white'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Icon size={15} />
+                {label}
+                {activeTab === id && <span className="absolute inset-x-0 bottom-0 h-0.5 bg-emerald-500" />}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {/* Search and Filters - Only show for products tab */}
         {activeTab === 'products' && (
-          <>
-            <div className="flex gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} aria-hidden="true" />
+          <div className="px-4 lg:px-6 py-3 border-t border-slate-100 dark:border-slate-800/70 bg-slate-50/70 dark:bg-slate-900/60">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-2" role="toolbar" aria-label={t('inventoryUiActions')}>
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} aria-hidden="true" />
                 <input
                   type="search"
                   placeholder={t('inventorySearchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+                  className="w-full h-9 pl-9 pr-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 transition-all"
                   aria-label={t('inventorySearchPlaceholder')}
-                  role="searchbox"
                 />
               </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 ${
-                  showFilters
-                    ? 'bg-primary text-white border-primary'
-                    : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
-                }`}
-                aria-label={showFilters ? t('inventoryHideFilters') : t('inventoryShowFilters')}
-                aria-expanded={showFilters}
-                aria-controls="inventory-filters"
-              >
-                <Filter size={18} aria-hidden="true" />
-                {t('inventoryFilters')}
-              </button>
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`h-9 px-3 rounded-lg border inline-flex items-center gap-2 text-xs font-semibold whitespace-nowrap transition-colors ${
+                    showFilters || activeFilterCount > 0
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-400'
+                  }`}
+                  aria-expanded={showFilters}
+                  aria-controls="inventory-filters"
+                >
+                  <Filter size={15} />
+                  {t('inventoryUiFilters')}
+                  {activeFilterCount > 0 && (
+                    <span className="min-w-4 h-4 px-1 rounded bg-emerald-600 text-white text-[10px] inline-flex items-center justify-center">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={refetch}
+                  disabled={loading}
+                  className="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white inline-flex items-center justify-center disabled:opacity-50"
+                  title={t('inventoryRefreshData')}
+                >
+                  <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExport}
+                  disabled={isExporting || items.length === 0}
+                  className="h-9 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-400 inline-flex items-center gap-2 text-xs font-semibold whitespace-nowrap disabled:opacity-50"
+                >
+                  {isExporting ? <RefreshCw size={15} className="animate-spin" /> : <Download size={15} />}
+                  {t('inventoryUiExport')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddItem}
+                  className="h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white inline-flex items-center gap-2 text-xs font-bold whitespace-nowrap shadow-sm"
+                >
+                  <Plus size={15} />
+                  {t('inventoryUiAddItem')}
+                </button>
+              </div>
             </div>
 
-            {/* Filters Panel */}
             {showFilters && (
-              <section id="inventory-filters" aria-label="Inventory filters">
+              <section id="inventory-filters" aria-label={t('inventoryUiFilterControls')}>
                 <InventoryFilters
                   categories={categories}
                   stores={filterMetadata?.stores}
@@ -477,16 +479,15 @@ export default function InventoryPage() {
                 />
               </section>
             )}
-          </>
+          </div>
         )}
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-slate-100/70 dark:bg-slate-950">
         {activeTab === 'products' && (
-          <div className="flex-1 flex overflow-hidden">
-            {/* Inventory Table */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex gap-3 p-3 overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex-1 overflow-hidden">
                 <InventoryTable
                   items={items}
@@ -509,20 +510,19 @@ export default function InventoryPage() {
               )}
             </div>
 
-            {/* Metrics Sidebar with toggle handle */}
-            <div className="relative flex">
-              {/* Toggle handle — always visible */}
+            <div className="relative hidden lg:flex shrink-0">
               <button
+                type="button"
                 onClick={() => setShowMetrics(!showMetrics)}
-                className={`absolute -left-3 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-6 h-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-l-md shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${showMetrics ? '' : ' hover:-translate-x-2'}`}
-                aria-label={showMetrics ? 'Hide analytics panel' : 'Show analytics panel'}
-                title={showMetrics ? 'Hide analytics panel' : 'Show analytics panel'}
+                className="absolute -left-2.5 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-5 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-l-md shadow-sm text-slate-400 hover:text-emerald-600 transition-colors"
+                aria-label={t(showMetrics ? 'inventoryUiHideInsights' : 'inventoryUiShowInsights')}
+                title={t(showMetrics ? 'inventoryUiHideInsights' : 'inventoryUiShowInsights')}
               >
-                {showMetrics ? <ChevronRight size={14} className="text-slate-500 " /> : <ChevronLeft size={14} className="text-slate-500 " />}
+                {showMetrics ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
               </button>
 
               {showMetrics && (
-                <div className="w-80 border-l border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 overflow-y-auto">
+                <div className="w-[300px] 2xl:w-80 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-y-auto shadow-sm">
                   <InventoryMetrics metrics={metrics} loading={loading} items={items} />
                 </div>
               )}
@@ -531,32 +531,14 @@ export default function InventoryPage() {
         )}
 
         {activeTab === 'analytics' && (
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
-            <Suspense fallback={
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-slate-600 dark:text-slate-400">Loading Analytics...</p>
-                </div>
-              </div>
-            }>
-              <ProductAnalytics />
-            </Suspense>
+          <div className="flex-1 overflow-y-auto p-4 lg:p-6 bg-slate-100/70 dark:bg-slate-950">
+            <ProductAnalytics />
           </div>
         )}
 
         {activeTab === 'history' && (
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
-            <Suspense fallback={
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-slate-600 dark:text-slate-400">Loading Stock History...</p>
-                </div>
-              </div>
-            }>
-              <StockHistory />
-            </Suspense>
+          <div className="flex-1 overflow-y-auto p-4 lg:p-6 bg-slate-100/70 dark:bg-slate-950">
+            <StockHistory />
           </div>
         )}
 
