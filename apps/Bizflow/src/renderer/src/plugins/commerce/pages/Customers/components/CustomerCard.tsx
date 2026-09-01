@@ -32,7 +32,7 @@ export function CustomerCard({ customer, onEdit, onDelete }: Props) {
   const icon = TIER_ICON[customer.loyaltyTier] ?? TIER_ICON.Bronze
 
   return (
-    <div className="glass-card p-6 relative overflow-hidden hover:shadow-2xl transition-all duration-300">
+    <div className="glass-card p-6 relative overflow-hidden  transition-all duration-300">
       <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${gradient} opacity-10 rounded-bl-full`} />
 
       <div className="relative">

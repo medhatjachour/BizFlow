@@ -1,4 +1,13 @@
-import { Plus, Download, FileSpreadsheet, FileText, User, Heart, ShoppingCart } from 'lucide-react'
+import {
+  Plus,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  User,
+  Heart,
+  ShoppingCart,
+  Users
+} from 'lucide-react'
 import { formatCurrency } from '@renderer/utils/formatNumber'
 import { useCustomers } from './hooks/useCustomers'
 import { CustomerCard } from './components/CustomerCard'
@@ -15,43 +24,68 @@ export default function Customers(): JSX.Element {
   const ctx = useCustomers()
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-2 space-y-6">
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r bg-clip-text">
-            {t('customerManagement')}
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">{t('manageCustomerRelationships')}</p>
-        </div>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-3.5 rounded-2xl ">
+        {/* Left: Icon + Title */}
         <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-blue-600 dark:bg-blue-500 text-white flex items-center justify-center">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+              {t('customerManagement') || 'Customer Management'}
+            </h2>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {t('manageCustomerRelationships') ||
+                'Manage customer accounts, exports, and new entries.'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
           {/* Export dropdown */}
           <div className="relative">
             <button
-              className="btn-secondary flex items-center gap-2"
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                ctx.showExportDropdown
+                  ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white '
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
               onClick={() => ctx.setShowExportDropdown(!ctx.showExportDropdown)}
-              onBlur={(e) => {
-                if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node))
-                  ctx.setShowExportDropdown(false)
-              }}
               aria-expanded={ctx.showExportDropdown}
               aria-haspopup="true"
             >
-              <Download size={20} />
-              {t('export')}
+              <Download className="w-3.5 h-3.5" />
+              <span>{t('export')}</span>
             </button>
             {ctx.showExportDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 z-10" role="menu">
-                {([
-                  { fmt: 'excel' as const, icon: <FileSpreadsheet size={18} className="text-green-600" />, label: `${t('excel')} (.xlsx)` },
-                  { fmt: 'csv'   as const, icon: <FileText        size={18} className="text-blue-600"  />, label: `${t('csv')} (.csv)`   },
-                  { fmt: 'vcf'   as const, icon: <User            size={18} className="text-purple-600"/>, label: `${t('vcard')} (.vcf)` }
-                ]).map(({ fmt, icon, label }, i, arr) => (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-lg  border border-slate-200 dark:border-slate-700 z-10 animate-fadeIn">
+                {[
+                  {
+                  fmt: 'excel' as const,
+                    icon: <FileSpreadsheet size={16} className="text-green-600" />,
+                    label: `${t('excel')} (.xlsx)`
+                  },
+                  {
+                   fmt: 'csv' as const,
+                    icon: <FileText size={16} className="text-blue-600" />,
+                    label: `${t('csv')} (.csv)`
+                  },
+                  {
+                    fmt: 'vcf' as const,
+                    icon: <User size={16} className="text-purple-600" />,
+                    label: `${t('vcard')} (.vcf)`
+                  }
+                ].map(({ fmt, icon, label }, i, arr) => (
                   <button
                     key={fmt}
-                    onClick={() => { ctx.handleExport(fmt); ctx.setShowExportDropdown(false) }}
-                    onKeyDown={(e) => { if (e.key === 'Escape') ctx.setShowExportDropdown(false) }}
-                    className={`w-full px-4 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 ${i === 0 ? 'rounded-t-lg' : ''} ${i === arr.length - 1 ? 'rounded-b-lg' : ''}`}
+                    onClick={() => {
+                      ctx.handleExport(fmt)
+                      ctx.setShowExportDropdown(false)
+                    }}
+                    className={`w-full px-4 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 transition-colors ${i === 0 ? 'rounded-t-lg' : ''} ${i === arr.length - 1 ? 'rounded-b-lg' : ''}`}
                     role="menuitem"
                   >
                     {icon}
@@ -62,9 +96,17 @@ export default function Customers(): JSX.Element {
             )}
           </div>
 
-          <button onClick={() => ctx.setShowAddModal(true)} className="btn-primary flex items-center gap-2">
-            <Plus size={20} />
-            {t('addNewCustomer')}
+          {/* Add new customer */}
+          <button
+            onClick={() => ctx.setShowAddModal(true)}
+            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ml-1 ${
+              ctx.showExportDropdown
+                ? 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                : 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white '
+            }`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{t('addNewCustomer')}</span>
           </button>
         </div>
       </div>
@@ -81,7 +123,10 @@ export default function Customers(): JSX.Element {
         searchQuery={ctx.searchQuery}
         onSearchChange={ctx.setSearchQuery}
         pageSize={ctx.pageSize}
-        onPageSizeChange={(size) => { ctx.setPageSize(size); ctx.setPage(0) }}
+        onPageSizeChange={(size) => {
+          ctx.setPageSize(size)
+          ctx.setPage(0)
+        }}
         page={ctx.page}
         totalCount={ctx.totalCount}
         totalPages={ctx.totalPages}
@@ -151,7 +196,11 @@ export default function Customers(): JSX.Element {
       {/* ── Purchase History Modal ─────────────────────────────────────── */}
       <Modal
         isOpen={ctx.showHistoryModal}
-        onClose={() => { ctx.setShowHistoryModal(false); ctx.setSelectedCustomer(null); ctx.setSelectedCustomerHistory([]) }}
+        onClose={() => {
+          ctx.setShowHistoryModal(false)
+          ctx.setSelectedCustomer(null)
+          ctx.setSelectedCustomerHistory([])
+        }}
         title={`${t('purchaseHistory')} - ${ctx.selectedCustomer?.name}`}
       >
         <div className="space-y-4">
@@ -163,26 +212,39 @@ export default function Customers(): JSX.Element {
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {ctx.selectedCustomerHistory.map((transaction: any) => (
-                <div key={transaction.id} className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600">
+                <div
+                  key={transaction.id}
+                  className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-600"
+                >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                       {new Date(transaction.createdAt).toLocaleDateString()}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${transaction.status === 'completed' ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${transaction.status === 'completed' ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}
+                    >
                       {transaction.status}
                     </span>
                   </div>
                   <div className="space-y-1 mb-3">
                     {transaction.items.map((item: any) => (
                       <div key={item.id} className="flex justify-between text-sm">
-                        <span className="text-slate-600 dark:text-slate-400">{item.quantity}x {item.product.name}</span>
-                        <span className="font-medium text-slate-900 dark:text-white">${item.total.toFixed(2)}</span>
+                        <span className="text-slate-600 dark:text-slate-400">
+                          {item.quantity}x {item.product.name}
+                        </span>
+                        <span className="font-medium text-slate-900 dark:text-white">
+                          ${item.total.toFixed(2)}
+                        </span>
                       </div>
                     ))}
                   </div>
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-600 flex justify-between items-center">
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{transaction.paymentMethod.toUpperCase()}</span>
-                    <span className="text-lg font-bold text-primary">${transaction.total.toFixed(2)}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {transaction.paymentMethod.toUpperCase()}
+                    </span>
+                    <span className="text-lg font-bold text-primary">
+                      ${transaction.total.toFixed(2)}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -196,7 +258,11 @@ export default function Customers(): JSX.Element {
               </p>
             </div>
             <button
-              onClick={() => { ctx.setShowHistoryModal(false); ctx.setSelectedCustomer(null); ctx.setSelectedCustomerHistory([]) }}
+              onClick={() => {
+                ctx.setShowHistoryModal(false)
+                ctx.setSelectedCustomer(null)
+                ctx.setSelectedCustomerHistory([])
+              }}
               className="px-6 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
             >
               {t('close')}
@@ -220,7 +286,10 @@ export default function Customers(): JSX.Element {
       {ctx.showInstallmentManager && ctx.selectedCustomerForInstallments && (
         <InstallmentManager
           isOpen={ctx.showInstallmentManager}
-          onClose={() => { ctx.setShowInstallmentManager(false); ctx.setSelectedCustomerForInstallments(null) }}
+          onClose={() => {
+            ctx.setShowInstallmentManager(false)
+            ctx.setSelectedCustomerForInstallments(null)
+          }}
           customerId={ctx.selectedCustomerForInstallments.id}
           customerName={ctx.selectedCustomerForInstallments.name}
         />

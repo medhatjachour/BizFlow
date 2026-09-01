@@ -54,9 +54,13 @@ export function CustomerSearchBar({
 
       {totalCount > 0 && (
         <div className="mt-3 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
-          <span>
-            {t('showingCustomers')} {startIndex} - {endIndex} / {totalCount}
-          </span>
+   <span>
+  {t('showingCustomers', {
+    start: startIndex,
+    end: endIndex,
+    total: totalCount
+  })}
+</span>
           <div className="flex gap-2">
             <button
               onClick={() => onPageChange(0)}
