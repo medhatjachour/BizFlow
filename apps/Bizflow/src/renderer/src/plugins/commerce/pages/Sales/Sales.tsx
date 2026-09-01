@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { RefreshCcw, Download } from 'lucide-react'
-import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useLocation } from 'react-router-dom'
 
 import { InstallmentManager } from '@renderer/components/InstallmentManager'
@@ -8,7 +6,8 @@ import type { SalesTab } from './types'
 import {
   useSalesTransactions,
   useInstallments,
-  useSalesActions
+  useSalesActions,
+  useSaleCompletion
 } from './hooks'
 import {
   StatsCards,
@@ -17,15 +16,14 @@ import {
   EmptySalesState,
   TransactionsTable,
   InstallmentsTable,
-  TransactionViewModal
+  TransactionViewModal,
+  SalesToolbar
 } from './components'
 import RefundItemsModal from './components/RefundItemsModal'
 import { ReceiptPreviewModal } from './components/ReceiptPreviewModal'
 
 export default function Sales(): JSX.Element {
   const location = useLocation()
-  const { t } = useLanguage()
-
   const [activeTab, setActiveTab] = useState<SalesTab>(() => {
     const searchParams = new URLSearchParams(location.search)
     const tabParam = searchParams.get('tab')
@@ -38,82 +36,25 @@ export default function Sales(): JSX.Element {
   const sales = useSalesTransactions()
   const installments = useInstallments(activeTab === 'installments')
   const actions = useSalesActions(sales.loadTransactions)
+  const completion = useSaleCompletion(sales.loadTransactions)
+  const pendingCount = sales.transactions.filter(
+    (transaction) => transaction.status === 'pending'
+  ).length
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-            {activeTab === 'sales' ? t('sales') : t('installments')}
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            {activeTab === 'sales'
-              ? t('salesHistory')
-              : 'Track and manage customer installment payments'}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={
-              activeTab === 'sales'
-                ? sales.loadTransactions
-                : () => installments.loadInstallments(1)
-            }
-            disabled={
-              activeTab === 'sales' ? sales.loading : installments.loading
-            }
-            className="btn-secondary flex items-center gap-2"
-          >
-            <RefreshCcw
-              size={20}
-              className={
-                (activeTab === 'sales' ? sales.loading : installments.loading)
-                  ? 'animate-spin'
-                  : ''
-              }
-            />
-            {t('refresh')}
-          </button>
-          <button
-            onClick={
-              activeTab === 'sales'
-                ? sales.handleExport
-                : installments.handleExport
-            }
-            className="btn-primary flex items-center gap-2"
-          >
-            <Download size={20} />
-            {t('export')}
-          </button>
-        </div>
-      </div>
+    <div className="h-full min-h-0 flex flex-col bg-slate-100/70 dark:bg-slate-950">
+      <SalesToolbar
+        activeTab={activeTab}
+        loading={activeTab === 'sales' ? sales.loading : installments.loading}
+        pendingCount={pendingCount}
+        defaultDelayDays={completion.defaultDelayDays}
+        onTabChange={setActiveTab}
+        onRefresh={activeTab === 'sales' ? sales.loadTransactions : () => void installments.loadInstallments(1)}
+        onExport={activeTab === 'sales' ? sales.handleExport : installments.handleExport}
+        onDefaultDelayChange={completion.updateDefaultDelay}
+      />
 
-      {/* Tabs */}
-      <div className="border-b border-slate-200 dark:border-slate-700">
-        <nav className="flex space-x-8">
-          <button
-            onClick={() => setActiveTab('sales')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'sales'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
-            }`}
-          >
-            {t('sales')}
-          </button>
-          <button
-            onClick={() => setActiveTab('installments')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'installments'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-400 dark:hover:text-slate-300'
-            }`}
-          >
-            {t('installments')}
-          </button>
-        </nav>
-      </div>
+      <main className="flex-1 min-h-0 overflow-y-auto p-3 lg:p-4 space-y-3">
 
       {/* Sales tab */}
       {activeTab === 'sales' && (
@@ -152,6 +93,9 @@ export default function Sales(): JSX.Element {
               onReceipt={actions.handleViewReceipt}
               onInstallments={actions.handleInstallmentManager}
               onPartialRefund={actions.handlePartialRefund}
+              updatingSaleIds={completion.updatingIds}
+              onComplete={completion.completeNow}
+              onReschedule={completion.reschedule}
             />
           )}
         </>
@@ -226,6 +170,7 @@ export default function Sales(): JSX.Element {
           onClose={actions.closeReceiptModal}
         />
       )}
+      </main>
     </div>
   )
 }

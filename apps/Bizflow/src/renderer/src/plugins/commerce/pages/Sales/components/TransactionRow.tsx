@@ -4,11 +4,13 @@ import {
   Receipt,
   CreditCard,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  RotateCcw
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { SaleTransaction } from '../types'
 import { formatDate, getStatusColor } from '../utils'
+import { SaleLifecycleControl } from './SaleLifecycleControl'
 
 interface TransactionRowProps {
   transaction: SaleTransaction
@@ -21,6 +23,9 @@ interface TransactionRowProps {
   onReceipt: () => void
   onInstallments: () => void
   onPartialRefund: () => void
+  updating: boolean
+  onComplete: () => void
+  onReschedule: (delayDays: number) => void
 }
 
 export function TransactionRow({
@@ -33,9 +38,12 @@ export function TransactionRow({
   onView,
   onReceipt,
   onInstallments,
-  onPartialRefund
+  onPartialRefund,
+  updating,
+  onComplete,
+  onReschedule
 }: TransactionRowProps): JSX.Element {
-  const { t } = useLanguage()
+  const { t, language, isRtl } = useLanguage()
   const totalItems = transaction.items.reduce(
     (sum, item) => sum + item.quantity,
     0
@@ -43,47 +51,47 @@ export function TransactionRow({
 
   return (
     <React.Fragment>
-      <tr className="hover:bg-gradient-to-r hover:from-slate-50 hover:to-transparent dark:hover:from-slate-800/50 dark:hover:to-transparent transition-all border-b border-slate-100 dark:border-slate-800">
-        <td className="px-6 py-4">
+      <tr className="hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10 transition-colors">
+        <td className="px-3 py-3">
           <button
             onClick={onToggleExpand}
-            className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-primary/10 transition-all"
-            title={isExpanded ? 'Collapse details' : 'Expand details'}
+            className="w-7 h-7 rounded-md text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 inline-flex items-center justify-center transition-colors"
+            title={t(isExpanded ? 'salesUiCollapseDetails' : 'salesUiExpandDetails')}
           >
-            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} className={isRtl ? 'rotate-180' : ''} />}
           </button>
         </td>
-        <td className="px-6 py-4">
-          <span className="font-mono text-sm font-semibold text-primary">
+        <td className="px-3 py-3">
+          <span className="font-mono text-[11px] font-bold text-sky-700 dark:text-sky-400">
             {transaction.id.slice(0, 8)}
           </span>
         </td>
-        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
-          {formatDate(transaction.createdAt)}
+        <td className="px-3 py-3 text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+          {formatDate(transaction.createdAt, language === 'ar' ? 'ar' : 'en-US')}
         </td>
-        <td className="px-6 py-4">
-          <div className="font-medium text-slate-900 dark:text-white">
+        <td className="px-3 py-3">
+          <div className="text-xs font-semibold text-slate-900 dark:text-white max-w-[150px] truncate">
             {transaction.customerName || t('walkInCustomer')}
           </div>
         </td>
-        <td className="px-6 py-4">
-          <span className="text-slate-900 dark:text-white">
-            {totalItems} item{totalItems !== 1 ? 's' : ''}
+        <td className="px-3 py-3 text-right">
+          <span className="text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
+            {totalItems}
           </span>
         </td>
-        <td className="px-6 py-4">
-          <span className="font-bold text-slate-900 dark:text-white">
+        <td className="px-3 py-3 text-right">
+          <span className="text-xs font-bold tabular-nums text-slate-900 dark:text-white">
             ${transaction.total.toFixed(2)}
           </span>
         </td>
-        <td className="px-6 py-4">
-          <span className="text-sm text-slate-600 dark:text-slate-400 capitalize">
-            {transaction.paymentMethod}
+        <td className="px-3 py-3">
+          <span className="text-[11px] text-slate-600 dark:text-slate-300 capitalize">
+            {t(transaction.paymentMethod)}
           </span>
         </td>
-        <td className="px-6 py-4">
+        <td className="px-3 py-3">
           <span
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${getStatusColor(
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold ${getStatusColor(
               transaction.status
             )}`}
           >
@@ -123,36 +131,40 @@ export function TransactionRow({
                 />
               </svg>
             )}
-            {transaction.status}
+            {t(transaction.status === 'partially_refunded' ? 'salesUiPartiallyRefunded' : transaction.status)}
           </span>
         </td>
-        <td className="px-6 py-4">
-          <div className="flex gap-2">
+        <td className="px-3 py-3">
+  <div className="flex items-center justify-center gap-2 flex-wrap">
+            
+            <SaleLifecycleControl
+              transaction={transaction}
+              updating={updating}
+              onComplete={onComplete}
+              onReschedule={onReschedule}
+            />
             <button
               onClick={onView}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-semibold transition-all hover:shadow-sm"
-              title="View transaction details"
+              className="w-8 h-8 bg-sky-50 dark:bg-sky-950/30 text-sky-600 hover:bg-sky-100 border border-sky-200 dark:border-sky-900 rounded-md inline-flex items-center justify-center transition-colors"
+              title={t('salesUiView')}
             >
               <Eye size={14} />
-              View
             </button>
             <button
               onClick={onReceipt}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/40 border border-green-200 dark:border-green-800 rounded-lg text-xs font-semibold transition-all hover:shadow-sm"
-              title="View receipt"
+              className="w-8 h-8 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-900 rounded-md inline-flex items-center justify-center transition-colors"
+              title={t('salesUiReceipt')}
             >
               <Receipt size={14} />
-              Receipt
             </button>
             {transaction.installments &&
               transaction.installments.length > 0 && (
                 <button
                   onClick={onInstallments}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/40 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-semibold transition-all hover:shadow-sm"
-                  title="Manage installments"
+                  className="w-8 h-8 bg-violet-50 dark:bg-violet-950/30 text-violet-600 hover:bg-violet-100 border border-violet-200 dark:border-violet-900 rounded-md inline-flex items-center justify-center transition-colors"
+                  title={t('salesUiInstallments')}
                 >
                   <CreditCard size={14} />
-                  Installments
                 </button>
               )}
             {(transaction.status === 'completed' ||
@@ -162,28 +174,15 @@ export function TransactionRow({
                   {isWithinRefundPeriod(transaction.createdAt) ? (
                     <button
                       onClick={onPartialRefund}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-800 rounded-lg text-xs font-semibold transition-all hover:shadow-sm"
+                      className="w-8 h-8 bg-rose-50 dark:bg-rose-950/30 text-rose-600 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 rounded-md inline-flex items-center justify-center transition-colors"
                       title={t('processRefund')}
                     >
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m9 14V5a2 2 0 00-2-2H6a2 2 0 00-2 2v16l4-2 4 2 4-2 4 2z"
-                        />
-                      </svg>
-                      {t('refundItems')}
+                      <RotateCcw size={14} />
                     </button>
                   ) : (
                     <div
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold cursor-not-allowed"
-                      title={`Refund period expired (${refundPeriodDays} days)`}
+                      title={t('salesUiRefundExpired', { days: refundPeriodDays })}
                     >
                       <svg
                         className="w-3.5 h-3.5"
@@ -198,7 +197,7 @@ export function TransactionRow({
                           d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                         />
                       </svg>
-                      Expired
+                      {t('salesUiExpired')}
                     </div>
                   )}
                 </>
@@ -209,14 +208,14 @@ export function TransactionRow({
       {isExpanded && (
         <tr
           key={`${transaction.id}-items`}
-          className="bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/30 dark:to-slate-800/10 border-l-4 border-primary"
+          className="bg-slate-50/80 dark:bg-slate-800/30"
         >
-          <td colSpan={9} className="px-6 py-6">
-            <div className="ml-8 space-y-3">
+          <td colSpan={9} className="px-4 py-4">
+            <div className="ms-8 space-y-3">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-1 h-5 bg-primary rounded-full" />
                 <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200 uppercase tracking-wide">
-                  Transaction Items
+                  {t('salesUiTransactionItems')}
                 </h4>
               </div>
               <div className="grid gap-2">
@@ -227,7 +226,7 @@ export function TransactionRow({
                   >
                     <div className="flex-1">
                       <div className="font-medium text-slate-900 dark:text-white">
-                        {item.product?.name || 'Unknown Product'}
+                        {item.product?.name || t('salesUiUnknownProduct')}
                       </div>
                       <div className="text-xs text-slate-500 mt-1">
                         {item.variant && (
@@ -253,14 +252,14 @@ export function TransactionRow({
                     </div>
                     <div className="flex items-center gap-6 text-sm">
                       <div className="text-slate-600 dark:text-slate-400">
-                        Qty:{' '}
+                        {t('salesUiQuantity')}:{' '}
                         <span className="font-semibold text-slate-900 dark:text-white">
                           {item.quantity}
                         </span>
                         {item.refundedQuantity != null &&
                           item.refundedQuantity > 0 && (
                             <span className="ml-2 text-red-600 dark:text-red-400 text-xs">
-                              (-{item.refundedQuantity} refunded)
+                              (-{item.refundedQuantity} {t('salesUiRefunded')})
                             </span>
                           )}
                       </div>
@@ -292,19 +291,19 @@ export function TransactionRow({
               </div>
               <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-end space-x-6 text-sm">
                 <div className="text-slate-600 dark:text-slate-400">
-                  Subtotal:{' '}
+                  {t('salesUiSubtotal')}:{' '}
                   <span className="font-semibold text-slate-900 dark:text-white">
                     ${transaction.subtotal.toFixed(2)}
                   </span>
                 </div>
                 <div className="text-slate-600 dark:text-slate-400">
-                  Tax:{' '}
+                  {t('salesUiTax')}:{' '}
                   <span className="font-semibold text-slate-900 dark:text-white">
                     ${transaction.tax.toFixed(2)}
                   </span>
                 </div>
                 <div className="text-slate-900 dark:text-white font-bold">
-                  Total: ${transaction.total.toFixed(2)}
+                  {t('salesUiTotal')}: ${transaction.total.toFixed(2)}
                 </div>
               </div>
             </div>

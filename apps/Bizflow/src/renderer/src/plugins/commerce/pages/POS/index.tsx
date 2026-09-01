@@ -224,33 +224,7 @@ export default function POS(): JSX.Element {
       {/* Main Content Area - Left Side */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* View Mode Tabs */}
-        <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 pt-4">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-slate-100 dark:bg-slate-700 text-primary font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              <Grid size={18} />
-              {t('gridView')}
-            </button>
-            <button
-              onClick={() => setViewMode('quick')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
-                viewMode === 'quick'
-                  ? 'bg-slate-100 dark:bg-slate-700 text-primary font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              <Zap size={18} />
-              {t('quickSale')}
-            </button>
-           
-          </div>
-        </div>
+       
 
         {/* Content based on view mode */}
         {viewMode === 'grid' ? (

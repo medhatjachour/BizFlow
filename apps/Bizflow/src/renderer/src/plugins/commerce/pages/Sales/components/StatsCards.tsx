@@ -10,110 +10,59 @@ interface StatsCardsProps {
 export function StatsCards({ stats }: StatsCardsProps): JSX.Element {
   const { t } = useLanguage()
 
+  const cards = [
+    {
+      label: t('salesUiFinalizedRevenue'),
+      value: formatCurrency(stats.totalRevenue),
+      detail: stats.hasData
+        ? `${Math.abs(stats.weeklyRevenueChange).toFixed(1)}% ${t('fromLastWeek')}`
+        : t('salesUiNoSalesData'),
+      icon: DollarSign,
+      tone: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40',
+      trend: stats.weeklyRevenueChange
+    },
+    {
+      label: t('salesUiCompletedSales'),
+      value: formatLargeNumber(stats.totalSales),
+      detail: `${stats.todayCount} ${t('salesUiToday')}`,
+      icon: ShoppingBag,
+      tone: 'text-sky-600 bg-sky-50 dark:bg-sky-950/40'
+    },
+    {
+      label: t('salesUiItemsSold'),
+      value: formatLargeNumber(stats.totalItems),
+      detail: t('salesUiAcrossTransactions'),
+      icon: ShoppingBag,
+      tone: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40'
+    },
+    {
+      label: t('salesUiAverageSale'),
+      value: formatCurrency(stats.avgSale),
+      detail: t('perTransaction'),
+      icon: DollarSign,
+      tone: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40'
+    }
+  ]
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div className="glass-card p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            {t('totalRevenue')}
-          </span>
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-success to-emerald-600 flex items-center justify-center">
-            <DollarSign size={20} className="text-white" />
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
+      {cards.map((card) => (
+        <div key={card.label} className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3.5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase text-slate-400 truncate">{card.label}</p>
+              <p className="mt-1 text-xl font-bold tabular-nums text-slate-950 dark:text-white">{card.value}</p>
+            </div>
+            <div className={`w-8 h-8 shrink-0 rounded-md flex items-center justify-center ${card.tone}`}>
+              <card.icon size={15} />
+            </div>
+          </div>
+          <div className={`mt-2 flex items-center gap-1 text-[10px] ${card.trend != null && card.trend < 0 ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'}`}>
+            {card.trend != null && <TrendingUp size={11} className={card.trend < 0 ? 'rotate-180' : ''} />}
+            <span className="truncate">{card.detail}</span>
           </div>
         </div>
-        <div
-          className="text-3xl font-bold text-slate-900 dark:text-white mb-1"
-          title={`$${stats.totalRevenue.toLocaleString()}`}
-        >
-          {formatCurrency(stats.totalRevenue)}
-        </div>
-        {stats.hasData ? (
-          <div
-            className={`flex items-center text-sm ${
-              stats.weeklyRevenueChange >= 0 ? 'text-success' : 'text-error'
-            }`}
-          >
-            {stats.weeklyRevenueChange >= 0 ? (
-              <TrendingUp size={16} className="mr-1" />
-            ) : (
-              <TrendingUp size={16} className="mr-1 rotate-180" />
-            )}
-            {Math.abs(stats.weeklyRevenueChange).toFixed(1)}% {t('fromLastWeek')}
-          </div>
-        ) : (
-          <div className="text-sm text-slate-400">{t('noSalesData')}</div>
-        )}
-      </div>
-
-      <div className="glass-card p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            {t('totalSales')}
-          </span>
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center">
-            <ShoppingBag size={20} className="text-white" />
-          </div>
-        </div>
-        <div
-          className="text-3xl font-bold text-slate-900 dark:text-white mb-1"
-          title={stats.totalSales.toLocaleString()}
-        >
-          {formatLargeNumber(stats.totalSales)}
-        </div>
-        {stats.hasData ? (
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            {stats.todayCount}{' '}
-            {stats.todayCount === 1 ? t('saleToday') : t('salesToday')}
-          </div>
-        ) : (
-          <div className="text-sm text-slate-400">{t('startMakingSales')}</div>
-        )}
-      </div>
-
-      <div className="glass-card p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            Items Sold
-          </span>
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary to-purple-600 flex items-center justify-center">
-            <ShoppingBag size={20} className="text-white" />
-          </div>
-        </div>
-        <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
-          {stats.totalItems}
-        </div>
-        {stats.hasData ? (
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            {t('acrossAllTransactions')}
-          </div>
-        ) : (
-          <div className="text-sm text-slate-400">{t('noItemsSold')}</div>
-        )}
-      </div>
-
-      <div className="glass-card p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
-            {t('avgSale')}
-          </span>
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent to-orange-500 flex items-center justify-center">
-            <DollarSign size={20} className="text-white" />
-          </div>
-        </div>
-        <div
-          className="text-3xl font-bold text-slate-900 dark:text-white mb-1"
-          title={`$${stats.avgSale.toLocaleString()}`}
-        >
-          {formatCurrency(stats.avgSale)}
-        </div>
-        {stats.hasData ? (
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            {t('perTransaction')}
-          </div>
-        ) : (
-          <div className="text-sm text-slate-400">{t('noSalesData')}</div>
-        )}
-      </div>
+      ))}
     </div>
   )
 }

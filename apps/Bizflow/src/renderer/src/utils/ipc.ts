@@ -276,6 +276,30 @@ const mockIPC = {
       return { success: false, message: 'Transaction not found' }
     },
     refundItems: async (_data: any) => ({ success: false, error: 'Mock implementation' }),
+    complete: async (id: string) => {
+      const transactions = JSON.parse(localStorage.getItem('saleTransactions') || '[]')
+      const transaction = transactions.find((item: any) => item.id === id)
+      if (!transaction || transaction.status !== 'pending') {
+        return { success: false, error: 'Pending sale not found' }
+      }
+      transaction.status = 'completed'
+      transaction.completedAt = new Date().toISOString()
+      localStorage.setItem('saleTransactions', JSON.stringify(transactions))
+      return { success: true, transaction }
+    },
+    rescheduleCompletion: async ({ transactionId, delayDays }: { transactionId: string; delayDays: number }) => {
+      const transactions = JSON.parse(localStorage.getItem('saleTransactions') || '[]')
+      const transaction = transactions.find((item: any) => item.id === transactionId)
+      if (!transaction || transaction.status !== 'pending') {
+        return { success: false, error: 'Pending sale not found' }
+      }
+      const scheduledFor = new Date()
+      scheduledFor.setDate(scheduledFor.getDate() + delayDays)
+      transaction.completionDelayDays = delayDays
+      transaction.completionScheduledFor = scheduledFor.toISOString()
+      localStorage.setItem('saleTransactions', JSON.stringify(transactions))
+      return { success: true, transaction }
+    },
     getByDateRange: async (data: any) => {
       const transactions = JSON.parse(localStorage.getItem('saleTransactions') || '[]')
       const start = new Date(data.startDate)
@@ -599,6 +623,9 @@ export const ipc = isElectron ? {
         quantityToRefund: number
       }>
     }) => window.electron.ipcRenderer.invoke('saleTransactions:refundItems', data),
+    complete: (id: string) => window.electron.ipcRenderer.invoke('saleTransactions:complete', id),
+    rescheduleCompletion: (data: { transactionId: string; delayDays: number }) =>
+      window.electron.ipcRenderer.invoke('saleTransactions:rescheduleCompletion', data),
     getByDateRange: (data: { startDate: Date, endDate: Date }) => window.electron.ipcRenderer.invoke('saleTransactions:getByDateRange', data)
   },
 

@@ -22,7 +22,7 @@ export function TransactionViewModal({
   onPartialRefund,
   onFullRefund
 }: TransactionViewModalProps): JSX.Element {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const totalRefunded = transaction.items.reduce((sum, item) => {
     const refunded = item.refundedQuantity || 0
@@ -30,21 +30,21 @@ export function TransactionViewModal({
   }, 0)
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="glass-card p-6 max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+      <div className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <h2 className="text-sm font-bold text-slate-900 dark:text-white">
             {t('transactionDetails')}
           </h2>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+            className="w-8 h-8 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
-            <X size={24} />
+            <X size={17} />
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className="p-5 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
@@ -63,17 +63,26 @@ export function TransactionViewModal({
                   transaction.status
                 )}`}
               >
-                {transaction.status}
+                {t(transaction.status === 'partially_refunded' ? 'salesUiPartiallyRefunded' : transaction.status)}
               </span>
             </div>
           </div>
+
+          {transaction.status === 'pending' && transaction.completionScheduledFor && (
+            <div className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-3">
+              <p className="text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400">{t('salesUiPendingCompletion')}</p>
+              <p className="mt-1 text-xs font-semibold text-amber-900 dark:text-amber-200">
+                {t('salesUiCompletes')} {new Date(transaction.completionScheduledFor).toLocaleString()}
+              </p>
+            </div>
+          )}
 
           <div>
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
               {t('dateAndTime')}
             </p>
             <p className="font-medium text-slate-900 dark:text-white">
-              {formatDate(transaction.createdAt)}
+              {formatDate(transaction.createdAt, language === 'ar' ? 'ar' : 'en-US')}
             </p>
           </div>
 

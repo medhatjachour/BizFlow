@@ -1,6 +1,14 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../utils/logger'
 import { cacheService } from '../../services/CacheService'
+import {
+  buildCompletionSchedule,
+  completeDueSales,
+  completeSale,
+  normalizeCompletionDelayDays,
+  rescheduleSale,
+  startSaleCompletionScheduler
+} from '../../services/SaleCompletionService'
 
 const log = createLogger('SaleTransactions')
 
@@ -10,6 +18,8 @@ const log = createLogger('SaleTransactions')
  */
 
 export function registerSaleTransactionHandlers(prisma: any) {
+  startSaleCompletionScheduler(prisma)
+
   /**
    * Create a new sale transaction with multiple items
    * @param items - Array of { productId, variantId, quantity, price }
@@ -32,13 +42,21 @@ export function registerSaleTransactionHandlers(prisma: any) {
 
       // Use transaction to ensure atomicity
       const result = await prisma.$transaction(async (tx: any) => {
+        const completionDelayDays = normalizeCompletionDelayDays(
+          transactionData.completionDelayDays
+        )
+        const completionScheduledFor = buildCompletionSchedule(completionDelayDays)
+
         // 1. Create the sale transaction
         const saleTransaction = await tx.saleTransaction.create({
           data: {
             userId: transactionData.userId,
             customerId: transactionData.customerId || null,
             paymentMethod: transactionData.paymentMethod || 'cash',
-            status: 'completed',
+            status: completionDelayDays === 0 ? 'completed' : 'pending',
+            completionDelayDays,
+            completionScheduledFor,
+            completedAt: completionDelayDays === 0 ? new Date() : null,
             customerName: transactionData.customerName || null,
             subtotal: transactionData.subtotal,
             tax: transactionData.tax || 0,
@@ -220,6 +238,8 @@ export function registerSaleTransactionHandlers(prisma: any) {
     try {
       if (!prisma) return []
 
+      await completeDueSales(prisma)
+
       const transactions = await prisma.saleTransaction.findMany({
         include: {
           user: {
@@ -261,6 +281,8 @@ export function registerSaleTransactionHandlers(prisma: any) {
   ipcMain.handle('saleTransactions:getById', async (_, id: string) => {
     try {
       if (!prisma) return null
+
+      await completeDueSales(prisma)
 
       const transaction = await prisma.saleTransaction.findUnique({
         where: { id },
@@ -711,6 +733,8 @@ export function registerSaleTransactionHandlers(prisma: any) {
     try {
       if (!prisma) return []
 
+      await completeDueSales(prisma)
+
       const transactions = await prisma.saleTransaction.findMany({
         where: {
           createdAt: {
@@ -751,4 +775,29 @@ export function registerSaleTransactionHandlers(prisma: any) {
       throw error
     }
   })
+
+  ipcMain.handle('saleTransactions:complete', async (_, transactionId: string) => {
+    try {
+      if (!prisma) return { success: false, error: 'Database not initialized' }
+      const transaction = await completeSale(prisma, transactionId)
+      return { success: true, transaction }
+    } catch (error) {
+      log.error('Error completing sale transaction:', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    }
+  })
+
+  ipcMain.handle(
+    'saleTransactions:rescheduleCompletion',
+    async (_, { transactionId, delayDays }) => {
+      try {
+        if (!prisma) return { success: false, error: 'Database not initialized' }
+        const transaction = await rescheduleSale(prisma, transactionId, delayDays)
+        return { success: true, transaction }
+      } catch (error) {
+        log.error('Error rescheduling sale completion:', error)
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      }
+    }
+  )
 }

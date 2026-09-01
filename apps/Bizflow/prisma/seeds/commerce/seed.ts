@@ -10,13 +10,14 @@
  *   • 60 000 sale transactions (line items, discounts, refunds)
  *   • Realistic stock movements (RESTOCK / SALE / ADJUSTMENT / RETURN / SHRINKAGE)
  *   • Receipt templates per store
+ *   • Full HR module (Employees, Attendance, Payroll, Shifts, Overtime, Leaves, Docs, Org Chart)
  *   • 4 years of CommerceExpense records (rent, utilities, salary, marketing …)
  *   • Financial transactions mirroring sales & expenses
  *
  * Usage:
  *   npx ts-node prisma/seeds/commerce/seed.ts
  *   — or —
- *   npm run prisma:seed:commerce   (add to package.json scripts)
+ *   npm run prisma:seed:commerce
  */
 
 import { PrismaClient } from '../../../src/generated/prisma'
@@ -25,6 +26,8 @@ import * as bcrypt from 'bcryptjs'
 const prisma = new PrismaClient({
   log: ['warn', 'error'],
 })
+
+const t0 = Date.now()
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -70,13 +73,13 @@ const CONFIG = {
 }
 
 const CATEGORY_DEFS = [
-  { name: 'Electronics',      icon: '💻', color: '#3B82F6', weight: 0.15 },
-  { name: 'Clothing',         icon: '👗', color: '#EC4899', weight: 0.22 },
-  { name: 'Home & Kitchen',   icon: '🏠', color: '#10B981', weight: 0.18 },
-  { name: 'Sports & Fitness', icon: '🏃', color: '#F59E0B', weight: 0.10 },
-  { name: 'Books & Stationery',icon: '📚',color: '#8B5CF6', weight: 0.08 },
-  { name: 'Food & Beverages', icon: '🍎', color: '#EF4444', weight: 0.14 },
-  { name: 'Beauty & Health',  icon: '💄', color: '#F472B6', weight: 0.13 },
+  { name: 'Electronics',       icon: '💻', color: '#3B82F6', weight: 0.15 },
+  { name: 'Clothing',          icon: '👗', color: '#EC4899', weight: 0.22 },
+  { name: 'Home & Kitchen',    icon: '🏠', color: '#10B981', weight: 0.18 },
+  { name: 'Sports & Fitness',  icon: '🏃', color: '#F59E0B', weight: 0.10 },
+  { name: 'Books & Stationery',icon: '📚', color: '#8B5CF6', weight: 0.08 },
+  { name: 'Food & Beverages',  icon: '🍎', color: '#EF4444', weight: 0.14 },
+  { name: 'Beauty & Health',   icon: '💄', color: '#F472B6', weight: 0.13 },
 ]
 
 const PRODUCT_NAMES: Record<string, string[]> = {
@@ -116,26 +119,28 @@ const EXPENSE_VENDORS: Record<string, string[]> = {
 
 const PAYMENT_METHODS = ['cash','card','bank_transfer','cheque']
 
-// Real dummy images from prisma/images/
+// Standardized safe image references (stored relative to assets/images folder or served as placeholders)
 const DUMMY_IMAGES = [
-  '0f92c10ef4fd56fdf705587500c2cd8d.webp',
-  '2b9442e8d0a8e8f00ef7bc8fbc6ea2ca.webp',
-  '73e6b45fcb2b04b726ea2d33ad95439d.webp',
+  'placeholder-product-1.webp',
+  'placeholder-product-2.webp',
+  'placeholder-product-3.webp',
+  'placeholder-product-4.webp',
+  'placeholder-product-5.webp',
 ]
 
 const EMPLOYEE_ROLES = [
-  { role: 'Store Manager',      department: 'Management', salary: 5_500, type: 'full-time' },
-  { role: 'Assistant Manager',  department: 'Management', salary: 4_000, type: 'full-time' },
-  { role: 'Cashier',            department: 'Sales',      salary: 2_500, type: 'full-time' },
-  { role: 'Cashier',            department: 'Sales',      salary: 2_500, type: 'full-time' },
-  { role: 'Sales Associate',    department: 'Sales',      salary: 2_800, type: 'full-time' },
-  { role: 'Sales Associate',    department: 'Sales',      salary: 2_800, type: 'part-time' },
-  { role: 'Stock Clerk',        department: 'Warehouse',  salary: 2_200, type: 'full-time' },
-  { role: 'Inventory Analyst',  department: 'Warehouse',  salary: 3_000, type: 'full-time' },
-  { role: 'Finance Officer',    department: 'Finance',    salary: 4_500, type: 'full-time' },
-  { role: 'IT Support',         department: 'IT',         salary: 3_800, type: 'full-time' },
-  { role: 'Security Guard',     department: 'Operations', salary: 2_000, type: 'full-time' },
-  { role: 'Cleaning Staff',     department: 'Operations', salary: 1_500, type: 'part-time' },
+  { role: 'Store Manager',      department: 'Management', salary: 5_500, type: 'full-time', isManager: true },
+  { role: 'Assistant Manager',  department: 'Management', salary: 4_000, type: 'full-time', isManager: true },
+  { role: 'Cashier',            department: 'Sales',      salary: 2_500, type: 'full-time', isManager: false },
+  { role: 'Cashier',            department: 'Sales',      salary: 2_500, type: 'full-time', isManager: false },
+  { role: 'Sales Associate',    department: 'Sales',      salary: 2_800, type: 'full-time', isManager: false },
+  { role: 'Sales Associate',    department: 'Sales',      salary: 2_800, type: 'part-time', isManager: false },
+  { role: 'Stock Clerk',        department: 'Warehouse',  salary: 2_200, type: 'full-time', isManager: false },
+  { role: 'Inventory Analyst',  department: 'Warehouse',  salary: 3_000, type: 'full-time', isManager: false },
+  { role: 'Finance Officer',    department: 'Finance',    salary: 4_500, type: 'full-time', isManager: false },
+  { role: 'IT Support',         department: 'IT',         salary: 3_800, type: 'full-time', isManager: false },
+  { role: 'Security Guard',     department: 'Operations', salary: 2_000, type: 'full-time', isManager: false },
+  { role: 'Cleaning Staff',     department: 'Operations', salary: 1_500, type: 'part-time', isManager: false },
 ]
 
 // ── main ──────────────────────────────────────────────────────────────────────
@@ -149,7 +154,7 @@ async function main() {
   await prisma.$queryRawUnsafe('PRAGMA temp_store = MEMORY;')
 
   // ── CLEAR ────────────────────────────────────────────────────────────────
-  console.log('🗑️  Clearing commerce data...')
+  console.log('🗑️  Clearing existing commerce & HR data...')
   await prisma.commerceExpense.deleteMany()
   await prisma.purchaseOrderItem.deleteMany()
   await prisma.purchaseOrder.deleteMany()
@@ -172,7 +177,9 @@ async function main() {
   await prisma.store.deleteMany()
   await prisma.financialTransaction.deleteMany()
   await prisma.emailReport.deleteMany()
-  // Employees
+  
+  // HR / Employees (clean in reverse foreign-key order)
+  await prisma.employeeLeave.deleteMany()
   await prisma.employeeOvertime.deleteMany()
   await prisma.employeeShift.deleteMany()
   await prisma.employeePayroll.deleteMany()
@@ -206,25 +213,40 @@ async function main() {
     'Sami Barakat','Dina Moussa',
   ]
   const employeeRecords: any[] = []
+  let storeManagerId: string | null = null
+
   for (let ei = 0; ei < EMPLOYEE_ROLES.length; ei++) {
     const def      = EMPLOYEE_ROLES[ei]
     const name     = EMP_NAMES[ei]
     const hireDate = randomDate(FOUR_YEARS_AGO, TWO_YEARS_AGO)
     const emp = await prisma.employee.create({ data: {
       name,
-      role:           def.role,
-      department:     def.department,
-      email:          `${name.toLowerCase().replace(/[^a-z]/g,'.')}.${ei}@store.com`,
-      phone:          `+961-70-${String(ri(100000,999999))}`,
-      salary:         def.salary,
-      salaryType:     'monthly',
-      employmentType: def.type,
-      status:         'active',
+      role:             def.role,
+      department:       def.department,
+      email:            `${name.toLowerCase().replace(/[^a-z]/g,'.')}.${ei}@store.com`,
+      phone:            `+961-70-${String(ri(100000,999999))}`,
+      address:          `${ri(10, 999)} Beirut Central District, Lebanon`,
+      nationalId:       `NID-${ri(1000000, 9999999)}`,
+      avatarUrl:        `avatars/employee-${(ei % 6) + 1}.png`,
+      salary:           def.salary,
+      salaryType:       'monthly',
+      employmentType:   def.type,
+      status:           'active',
       hireDate,
       performanceScore: rp(70, 98),
-      emergencyName:  pick(FIRST_NAMES) + ' ' + pick(LAST_NAMES),
-      emergencyPhone: `+961-71-${String(ri(100000,999999))}`,
+      annualLeaveDays:  21,
+      taxId:            `TAX-LEB-${ri(10000, 99999)}`,
+      socialInsuranceNo:`NSSF-${ri(100000, 999999)}`,
+      bankName:         'Bank Audi',
+      iban:             `LB62000200000000${String(ri(10000000, 99999999))}`,
+      emergencyName:    pick(FIRST_NAMES) + ' ' + pick(LAST_NAMES),
+      emergencyPhone:   `+961-71-${String(ri(100000,999999))}`,
+      managerId:        def.isManager ? null : storeManagerId,
     }})
+    
+    if (def.role === 'Store Manager' && !storeManagerId) {
+      storeManagerId = emp.id
+    }
     employeeRecords.push(emp)
 
     // Attendance: every working day for 4 years
@@ -241,7 +263,6 @@ async function main() {
       const checkOut = checkIn ? new Date(date.getTime() + (16 + ri(0,3)) * 3600_000) : null
       attRecords.push({ employeeId: emp.id, date, status, checkIn, checkOut })
     }
-    // Insert in chunks
     for (let i = 0; i < attRecords.length; i += 500) {
       await prisma.employeeAttendance.createMany({ data: attRecords.slice(i, i + 500) }).catch(() => {})
     }
@@ -286,7 +307,7 @@ async function main() {
       }})
     }
 
-    // Overtime: ~20 records per employee over 4 years
+    // Overtime: ~20 records per employee
     for (let o = 0; o < 20; o++) {
       await prisma.employeeOvertime.create({ data: {
         employeeId: emp.id,
@@ -299,13 +320,38 @@ async function main() {
       }})
     }
 
+    // Leaves / PTO (4–8 leave records over past 4 years)
+    const numLeaves = ri(4, 8)
+    for (let l = 0; l < numLeaves; l++) {
+      const lStart = randomDate(hireDate, NOW)
+      const lDays = ri(1, 5)
+      const lEnd = new Date(lStart.getTime() + lDays * MS_DAY)
+      await prisma.employeeLeave.create({ data: {
+        employeeId: emp.id,
+        type:       pick(['annual','sick','unpaid']),
+        startDate:  lStart,
+        endDate:    lEnd,
+        days:       lDays,
+        reason:     pick(['Annual vacation','Medical leave','Personal leave','Family emergency']),
+        status:     'approved',
+        approvedBy: uAdmin.id,
+        reviewedAt: lStart,
+      }}).catch(() => {})
+    }
+
+    // Documents
+    await prisma.employeeDocument.createMany({ data: [
+      { employeeId: emp.id, title: 'Employment Contract', type: 'contract', filename: `contracts/${emp.id}-contract.pdf` },
+      { employeeId: emp.id, title: 'National ID Copy',    type: 'id_copy',  filename: `ids/${emp.id}-id.pdf` },
+    ]}).catch(() => {})
+
     // Activity log
     await prisma.employeeActivityLog.createMany({ data: [
-      { employeeId: emp.id, action: 'hired',          details: 'Employee onboarded',              performedBy: uAdmin.id, createdAt: hireDate },
-      { employeeId: emp.id, action: 'salary_updated', details: `Base salary set to ${def.salary}`,performedBy: uAdmin.id, createdAt: hireDate },
+      { employeeId: emp.id, action: 'hired',          details: 'Employee onboarded', performedBy: uAdmin.id, createdAt: hireDate },
+      { employeeId: emp.id, action: 'salary_updated', details: `Base salary set to ${def.salary}`, performedBy: uAdmin.id, createdAt: hireDate },
     ]})
   }
-  console.log(`✅ ${employeeRecords.length} employees (attendance, payroll, shifts, overtime)\n`)
+  console.log(`✅ ${employeeRecords.length} employees (attendance, payroll, shifts, overtime, leaves, docs)\n`)
 
   // ── STORES ───────────────────────────────────────────────────────────────
   console.log('🏪 Creating stores...')
@@ -388,12 +434,14 @@ async function main() {
       for (let v = 0; v < numVariants; v++) {
         const color = hasVariants ? pick(COLORS) : 'Default'
         const size  = hasVariants ? pick(SIZES)  : 'One Size'
-        const sku   = hasVariants ? `${baseSKU}-V${v}`
-                                  : baseSKU
+        const sku   = hasVariants ? `${baseSKU}-V${v}` : baseSKU
         const price = hasVariants ? rp(basePrice * 0.8, basePrice * 1.3) : basePrice
         const cost  = rp(price * 0.45, price * 0.70)
         variantRows.push({ sku, barcode: `EAN${productIdx}V${v}`, price, cost, stock: ri(20, 300), reorderPoint: ri(10, 40), attrColor: color, attrSize: size })
       }
+
+      // Safe image reference (category slug based or clean dummy file name)
+      const imgName = `${catRecord.name.toLowerCase().replace(/[^a-z]/g, '-')}-${(productIdx % 5) + 1}.webp`
 
       const product = await prisma.product.create({
         data: {
@@ -407,7 +455,7 @@ async function main() {
           hasVariants,
           storeId:  pick(stores).id,
           createdAt,
-          images:   { create: [{ filename: DUMMY_IMAGES[productIdx % DUMMY_IMAGES.length], order: 0 }] },
+          images:   { create: [{ filename: imgName, order: 0 }] },
           variants: { create: variantRows.map(({ attrColor: _c, attrSize: _s, ...vr }) => vr) },
         },
         include: { variants: true },
@@ -454,22 +502,20 @@ async function main() {
   }
   console.log(`✅ ${productRecords.length} products\n`)
 
-  // ── PURCHASE ORDERS (3.5 years of restocking) ────────────────────────────
+  // ── PURCHASE ORDERS ──────────────────────────────────────────────────────
   console.log('📋 Creating purchase orders…')
   let poNumber = 1
   const purchaseOrders: any[] = []
 
-  // ~2 POs per month per supplier (top 5) over 3.5 years = ~420 POs
   const topSuppliers = suppliers.slice(0, 8)
   for (const supplier of topSuppliers) {
     for (let monthOffset = 42; monthOffset >= 0; monthOffset--) {
-      if (Math.random() > 0.7) continue // skip ~30% months
+      if (Math.random() > 0.7) continue
       const orderDate = new Date(NOW); orderDate.setMonth(orderDate.getMonth() - monthOffset); orderDate.setDate(ri(1,28))
       const expectedDate = new Date(orderDate.getTime() + ri(7, 21) * MS_DAY)
       const status = orderDate < daysAgo(30) ? 'received' : orderDate < daysAgo(7) ? 'ordered' : 'draft'
       const receivedDate = status === 'received' ? new Date(expectedDate.getTime() + ri(0,5) * MS_DAY) : null
 
-      // Pick 3–6 products from this supplier
       const supplierProds = productRecords.slice(0, Math.min(productRecords.length, 50))
       const poProducts = pickN(supplierProds, ri(3, 6))
 
@@ -552,10 +598,7 @@ async function main() {
   const customers = await prisma.customer.findMany()
   console.log(`✅ ${customers.length} customers\n`)
 
-  // All product variants (flat list for sale generation)
-  console.log('📦 Loading all variants for sale generation…')
   const allVariants = await prisma.productVariant.findMany({ include: { product: { select: { categoryId: true } } } })
-  console.log(`   ${allVariants.length} variants loaded\n`)
 
   // ── SALE TRANSACTIONS (60 000) ───────────────────────────────────────────
   console.log(`💰 Creating ${CONFIG.SALES.toLocaleString()} sales across 4 years…`)
@@ -579,10 +622,9 @@ async function main() {
         const saleDate      = randomDate(FOUR_YEARS_AGO, NOW)
         const customer      = pick(customers)
         const cashier       = pick([uCashier1, uCashier2, uSales1, uSales2])
-        const payMethod     = pick(PAYMENT_METHODS.slice(0, 3)) // cash/card/bank_transfer
+        const payMethod     = pick(PAYMENT_METHODS.slice(0, 3))
         const numItems      = ri(1, 4)
         const chosenVariants = pickN(allVariants, Math.min(numItems, allVariants.length))
-        const seasonal      = SEASONAL_BOOST(saleDate)
 
         const itemsData: any[] = []
         let subtotal = 0
@@ -597,7 +639,7 @@ async function main() {
                               : discountType === 'FIXED_AMOUNT' ? Math.max(0, price - discountValue)
                               : price
           const total         = rp(finalPrice * qty, finalPrice * qty)
-          const isRefunded    = Math.random() < 0.03  // 3% refund rate
+          const isRefunded    = Math.random() < 0.03
           subtotal           += total
           itemsData.push({
             productId:        variant.productId,
@@ -645,7 +687,6 @@ async function main() {
 
   // ── DEPOSITS & INSTALLMENTS ──────────────────────────────────────────────
   console.log('💳 Creating deposits & installments…')
-  // Pick ~300 high-value sales for installment treatment
   const bigSales = await prisma.saleTransaction.findMany({ where: { total: { gte: 500 } }, take: 300, orderBy: { total: 'desc' } })
   for (const sale of bigSales) {
     const plan    = pick(installmentPlans)
@@ -654,7 +695,6 @@ async function main() {
     const perInstallment = rp(remaining / plan.numberOfPayments, remaining / plan.numberOfPayments)
     const isPastSale = sale.createdAt < SIX_MONTHS_AGO
 
-    // Deposit
     await prisma.deposit.create({ data: {
       amount:     deposit,
       date:       sale.createdAt,
@@ -666,7 +706,6 @@ async function main() {
       createdAt:  sale.createdAt,
     }})
 
-    // Installments
     for (let p = 0; p < plan.numberOfPayments; p++) {
       const dueDate   = new Date(sale.createdAt.getTime() + (p + 1) * plan.intervalDays * MS_DAY)
       const isPaid    = isPastSale && dueDate < NOW
@@ -686,11 +725,10 @@ async function main() {
   }
   console.log(`✅ ${bigSales.length} installment plans created\n`)
 
-  // ── ADJUSTMENT / SHRINKAGE STOCK MOVEMENTS ───────────────────────────────
+  // ── STOCK ADJUSTMENTS ────────────────────────────────────────────────────
   console.log('📉 Creating stock adjustment & shrinkage movements…')
   const sampleVariants = pickN(allVariants, 120)
   for (const variant of sampleVariants) {
-    // 1–3 adjustments per variant over 4 years
     const adjCount = ri(1, 3)
     for (let a = 0; a < adjCount; a++) {
       const adjDate = randomDate(TWO_YEARS_AGO, NOW)
@@ -708,7 +746,6 @@ async function main() {
         createdAt:     adjDate,
       }})
     }
-    // 1 return per 4 variants
     if (Math.random() < 0.25) {
       const retDate = randomDate(ONE_YEAR_AGO, NOW)
       await prisma.stockMovement.create({ data: {
@@ -725,11 +762,10 @@ async function main() {
   }
   console.log('✅ Stock adjustments & returns\n')
 
-  // ── COMMERCE EXPENSES (4 years daily/monthly) ────────────────────────────
+  // ── COMMERCE EXPENSES ────────────────────────────────────────────────────
   console.log('💸 Creating 4 years of commerce expenses…')
   const expenseRows: any[] = []
 
-  // Fixed monthly recurring expenses (rent, insurance, fees)
   const MONTHLY_FIXED: Array<{ category: string; desc: string; vendor: string; amount: [number,number]; paymentMethod: string }> = [
     { category: 'rent',       desc: 'Monthly retail space rental — Main Branch',      vendor: 'Prime Properties LLC',     amount: [3_500, 3_500], paymentMethod: 'bank_transfer' },
     { category: 'rent',       desc: 'Monthly retail space rental — West Branch',      vendor: 'CitySpace Realty',         amount: [2_200, 2_200], paymentMethod: 'bank_transfer' },
@@ -740,7 +776,6 @@ async function main() {
     { category: 'marketing',  desc: 'Monthly social media management & ad budget',     vendor: 'SocialBoost Marketing',    amount: [600, 1_200],   paymentMethod: 'card'          },
   ]
 
-  // Monthly variable expenses
   const MONTHLY_VARIABLE: Array<{ category: string; desc: string; vendor: string; amount: [number,number]; paymentMethod: string }> = [
     { category: 'utilities',   desc: 'Electricity & power bill',                       vendor: 'Power & Light Corp',       amount: [400, 900],   paymentMethod: 'bank_transfer' },
     { category: 'utilities',   desc: 'Water & sewage bill',                            vendor: 'WaterWorks Municipal',     amount: [80,  200],   paymentMethod: 'cash'          },
@@ -750,7 +785,6 @@ async function main() {
     { category: 'maintenance', desc: 'Store cleaning & janitorial services',           vendor: 'CleanPro Janitorial',      amount: [300, 500],   paymentMethod: 'cash'          },
   ]
 
-  // Quarterly / irregular expenses
   const IRREGULAR: Array<{ category: string; desc: string; vendor: string; amount: [number,number]; paymentMethod: string; freqMonths: number }> = [
     { category: 'maintenance', desc: 'POS system maintenance & software licence',      vendor: 'TechSupport Solutions',    amount: [500,  800],   paymentMethod: 'card',          freqMonths: 3  },
     { category: 'maintenance', desc: 'HVAC service & filter replacement',              vendor: 'BuildRight Services',      amount: [300,  700],   paymentMethod: 'bank_transfer', freqMonths: 6  },
@@ -762,7 +796,6 @@ async function main() {
     { category: 'inventory',   desc: 'Emergency stock purchase — fast-moving item',    vendor: 'Global Tech Distributors', amount: [1_000, 5_000],paymentMethod: 'bank_transfer', freqMonths: 2  },
   ]
 
-  // Build monthly expense rows over 4 years (48 months)
   for (let monthsBack = 47; monthsBack >= 0; monthsBack--) {
     const monthDate = new Date(NOW); monthDate.setDate(1); monthDate.setMonth(monthDate.getMonth() - monthsBack)
 
@@ -782,7 +815,6 @@ async function main() {
     }
 
     for (const exp of MONTHLY_VARIABLE) {
-      // Skip ~10% of months (payment missed / combined)
       if (Math.random() < 0.1) continue
       expenseRows.push({
         date:          new Date(monthDate.getFullYear(), monthDate.getMonth(), ri(1, 28)),
@@ -814,7 +846,6 @@ async function main() {
       })
     }
 
-    // 1–3 one-off unplanned expenses per month
     for (let u = 0; u < ri(1, 3); u++) {
       const catKey = pick(EXPENSE_CATEGORIES)
       const vendor = pick(EXPENSE_VENDORS[catKey])
@@ -833,25 +864,16 @@ async function main() {
     }
   }
 
-  // Batch insert expenses
   const EXP_BATCH = 500
   for (let i = 0; i < expenseRows.length; i += EXP_BATCH) {
     await prisma.commerceExpense.createMany({ data: expenseRows.slice(i, i + EXP_BATCH) })
   }
   console.log(`✅ ${expenseRows.length} expense records\n`)
 
-  // ── FINANCIAL TRANSACTIONS (mirror of sales & expenses) ──────────────────
+  // ── FINANCIAL TRANSACTIONS ───────────────────────────────────────────────
   console.log('📊 Creating financial transactions…')
   const ftRows: any[] = []
 
-  // Summarise sales per month as income FT entries
-  const saleSummary = await prisma.saleTransaction.groupBy({
-    by: ['createdAt'],
-    _sum: { total: true },
-    orderBy: { createdAt: 'asc' },
-  })
-
-  // We'll create one FT per week (sampled)
   const recentSales = await prisma.saleTransaction.findMany({ take: 2_000, orderBy: { createdAt: 'desc' } })
   for (const sale of recentSales) {
     ftRows.push({
@@ -863,7 +885,6 @@ async function main() {
     })
   }
 
-  // Expense FTs
   for (const exp of expenseRows.slice(0, 1_000)) {
     ftRows.push({
       type:        'expense',
@@ -900,7 +921,6 @@ async function main() {
   console.log('═══════════════════════════════════════════════════')
 }
 
-const t0 = Date.now()
 main()
   .catch(e => { console.error('❌ Seed failed:', e); process.exit(1) })
   .finally(() => prisma.$disconnect())

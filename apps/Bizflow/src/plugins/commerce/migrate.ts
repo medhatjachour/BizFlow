@@ -26,13 +26,38 @@ export async function ensureCommerceSchema(
   const missing = await getMissingTables(prisma)
 
   if (missing.length === 0) {
+    await ensureSaleCompletionColumns(prisma)
     log.info('✅ Commerce tables already exist — no migration needed')
     return
   }
 
   log.info(`🔧 Missing commerce tables: [${missing.join(', ')}] — running db push…`)
   await runDbPush(dbUrl, cwd)
+  await ensureSaleCompletionColumns(prisma)
   log.info('✅ Commerce schema applied successfully')
+}
+
+async function ensureSaleCompletionColumns(prisma: any): Promise<void> {
+  const columns: Array<{ name: string }> = await prisma.$queryRawUnsafe(
+    `PRAGMA table_info("SaleTransaction")`
+  )
+  const existing = new Set(columns.map((column) => column.name))
+  const additions = [
+    { name: 'completionScheduledFor', sql: `ALTER TABLE "SaleTransaction" ADD COLUMN "completionScheduledFor" DATETIME` },
+    { name: 'completionDelayDays', sql: `ALTER TABLE "SaleTransaction" ADD COLUMN "completionDelayDays" INTEGER` },
+    { name: 'completedAt', sql: `ALTER TABLE "SaleTransaction" ADD COLUMN "completedAt" DATETIME` }
+  ]
+
+  for (const addition of additions) {
+    if (!existing.has(addition.name)) {
+      await prisma.$executeRawUnsafe(addition.sql)
+      log.info(`Added SaleTransaction.${addition.name}`)
+    }
+  }
+
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS "SaleTransaction_status_completionScheduledFor_idx" ON "SaleTransaction"("status", "completionScheduledFor")`
+  )
 }
 
 async function getMissingTables(prisma: any): Promise<string[]> {

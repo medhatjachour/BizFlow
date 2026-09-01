@@ -12,6 +12,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import AddCustomerModal from '../POS/components/AddCustomerModal'
 import DiscountModal from '@renderer/components/DiscountModal'
 import { ReceiptPreviewModal } from '../Sales/components/ReceiptPreviewModal'
+import { getSaleCompletionDelayDays } from '../Sales/completionSettings'
 import type { QuickSaleProps, Product, ProductVariant } from './types'
 import { getVariantLabel, getMaxDiscountPercentage, getMaxDiscountAmount } from './utils'
 import {
@@ -156,6 +157,7 @@ export default function QuickSale(_props: QuickSaleProps) {
               subtotal,
               tax,
               total,
+              completionDelayDays: getSaleCompletionDelayDays(),
             },
           }
 
@@ -227,6 +229,7 @@ export default function QuickSale(_props: QuickSaleProps) {
             subtotal,
             tax,
             total,
+            completionDelayDays: getSaleCompletionDelayDays(),
           },
         }
 
