@@ -28,7 +28,13 @@ function pemFromEnvironment(value: string | undefined): string {
   return Buffer.from(value, 'base64').toString('utf8')
 }
 
-const licensePublicKey = pemFromEnvironment(process.env.BIZFLOW_LICENSE_PUBLIC_KEY)
+function resolveLicensePublicKey(): string {
+  const fromEnvironment = pemFromEnvironment(process.env.BIZFLOW_LICENSE_PUBLIC_KEY)
+  if (fromEnvironment) return fromEnvironment
+
+  const bundledKeyPath = resolve('resources/license-public.pem')
+  return existsSync(bundledKeyPath) ? readFileSync(bundledKeyPath, 'utf8') : ''
+}
 
 // Auto-enable commerce when any dependent plugin is enabled (they reference Product, Customer etc.)
 const DEPENDS_ON_COMMERCE = ['restaurant', 'warehouse']
@@ -46,18 +52,28 @@ const pluginDefineFlags = {
   __PLUGIN_GYM__: enabledPlugins.includes('gym'),
   __PLUGIN_PHARMACY__: enabledPlugins.includes('pharmacy'),
   __PLUGIN_COFFEE__: enabledPlugins.includes('coffee'),
-  // This is intentionally embedded in the app: public keys are safe to distribute.
-  __BIZFLOW_LICENSE_PUBLIC_KEY__: licensePublicKey
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => {
+  // Development deliberately ships no verification key. Packaged builds embed
+  // only the public key, using an explicit CI value when supplied.
+  const licensePublicKey = command === 'build' ? resolveLicensePublicKey() : ''
+  if (command === 'build' && !licensePublicKey) {
+    throw new Error('A public license key is required for packaged builds')
+  }
+  const defineFlags = {
+    ...pluginDefineFlags,
+    __BIZFLOW_LICENSE_PUBLIC_KEY__: JSON.stringify(licensePublicKey)
+  }
+
+  return {
   main: {
     plugins: [externalizeDepsPlugin()],
-    define: pluginDefineFlags
+    define: defineFlags
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
-    define: pluginDefineFlags
+    define: defineFlags
   },
   renderer: {
     base: './',
@@ -76,10 +92,11 @@ export default defineConfig({
       }
     },
     /** Build-time plugin feature flags — Rollup tree-shakes disabled branches. */
-    define: pluginDefineFlags,
+    define: defineFlags,
     plugins: [react()],
     server: {
       hmr: true
     }
+  }
   }
 })

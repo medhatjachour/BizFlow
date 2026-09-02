@@ -24,6 +24,8 @@ function activationPayload(activation: Omit<LocalActivation, 'signature'>): stri
 }
 
 function signatureIsValid(activation: LocalActivation): boolean {
+  // Development builds do not embed the production public key.
+  if (!app.isPackaged) return true
   if (!__BIZFLOW_LICENSE_PUBLIC_KEY__) return false
   try {
     const { signature, ...certificate } = activation
