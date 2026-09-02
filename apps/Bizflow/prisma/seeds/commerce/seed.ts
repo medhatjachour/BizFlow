@@ -119,13 +119,22 @@ const EXPENSE_VENDORS: Record<string, string[]> = {
 
 const PAYMENT_METHODS = ['cash','card','bank_transfer','cheque']
 
-// Standardized safe image references (stored relative to assets/images folder or served as placeholders)
+// Image files bundled in prisma/images and read by ImageService in development.
 const DUMMY_IMAGES = [
-  'placeholder-product-1.webp',
-  'placeholder-product-2.webp',
-  'placeholder-product-3.webp',
-  'placeholder-product-4.webp',
-  'placeholder-product-5.webp',
+  '0931195447acb8d4b36a7c51d587eaa3.png',
+  '1a57ef70c31946e007ae923b0ec93739.webp',
+  '26a8feaf96be1a2cda1f796548825c69.webp',
+  '2b0cb0dedf4d7352cf42a6d8cede602f.webp',
+  '41412924776abccd43698678805e4eac.jpg',
+  '8154bba65ec95555c3e824a80861a00b.jpg',
+  '91dba88bf0fbfcaa1d992d5b66db12ff.png',
+  '97bc666d3d3cb9d04a864f31fc5efbfb.webp',
+  '9bb5ded7a211b840935aff5910865882.png',
+  '9e1ae6633f2b46fcc8f374edf4e87ab9.jpg',
+  'b870e60ebe3582c48f6f039542d26116.webp',
+  'e5782e8b280d30aa99849fcf73afc25e.webp',
+  'eaef7ae7d3eb405edb9a0ce4a77776cf.webp',
+  'eb1bf72c4e0ba1f7806bbd6ea2a3377a.png',
 ]
 
 const EMPLOYEE_ROLES = [
@@ -440,8 +449,8 @@ async function main() {
         variantRows.push({ sku, barcode: `EAN${productIdx}V${v}`, price, cost, stock: ri(20, 300), reorderPoint: ri(10, 40), attrColor: color, attrSize: size })
       }
 
-      // Safe image reference (category slug based or clean dummy file name)
-      const imgName = `${catRecord.name.toLowerCase().replace(/[^a-z]/g, '-')}-${(productIdx % 5) + 1}.webp`
+      // Reuse the real image files shipped in prisma/images.
+      const imgName = DUMMY_IMAGES[(productIdx - 1) % DUMMY_IMAGES.length]
 
       const product = await prisma.product.create({
         data: {
