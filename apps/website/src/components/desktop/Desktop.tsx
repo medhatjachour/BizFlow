@@ -1,161 +1,48 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
-import Image from "next/image";
-import { useSearchParams } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
-import { APPS, getApp } from "@/lib/apps";
-import { brandIconPath } from "@/lib/site";
-import type { WindowInstance } from "@/lib/types";
-import Window from "./Window";
-import Dock from "./Dock";
-import MenuBar from "./MenuBar";
+import { useSearchParams, useRouter } from "next/navigation";
+import { PLUGINS, getPlugin } from "@/lib/plugins";
+import ModuleFrame from "./ModuleFrame";
 
 export default function Desktop() {
-  const surfaceRef = useRef<HTMLDivElement>(null);
-  const [windows, setWindows] = useState<WindowInstance[]>([]);
-  const nextId = useRef(1);
-  const topZ = useRef(10);
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const requestedModuleId = searchParams.get("module");
+  const activePlugin = getPlugin(requestedModuleId ?? "") ?? PLUGINS[0];
 
-  const focus = useCallback((id: number) => {
-    setWindows((ws) => {
-      const top = (topZ.current += 1);
-      return ws.map((w) => (w.id === id ? { ...w, z: top } : w));
-    });
-  }, []);
-
-  const launch = useCallback((appId: string) => {
-    const app = getApp(appId);
-    if (!app) return;
-
-    setWindows((ws) => {
-      // Reuse any existing instance (minimized or visible) instead of duplicating.
-      const existing = ws.find((w) => w.appId === appId);
-      if (existing) {
-        const top = (topZ.current += 1);
-        return ws.map((w) =>
-          w.id === existing.id ? { ...w, minimized: false, z: top } : w
-        );
-      }
-
-      const id = nextId.current++;
-      const top = (topZ.current += 1);
-      const count = ws.length;
-      const win: WindowInstance = {
-        id,
-        appId,
-        x: 80 + count * 28,
-        y: 70 + count * 26,
-        width: app.defaultSize.width,
-        height: app.defaultSize.height,
-        z: top,
-        minimized: false,
-        maximized: false,
-      };
-      return [...ws, win];
-    });
-  }, []);
-
-  // Auto-open a module when arriving via /app?module=<id> (from the picker).
-  const moduleId = searchParams.get("module");
-  useEffect(() => {
-    if (moduleId && getApp(moduleId)) launch(moduleId);
-  }, [moduleId, launch]);
-
-  const close = useCallback((id: number) => {
-    setWindows((ws) => ws.filter((w) => w.id !== id));
-  }, []);
-
-  const minimize = useCallback((id: number) => {
-    setWindows((ws) =>
-      ws.map((w) => (w.id === id ? { ...w, minimized: true } : w))
-    );
-  }, []);
-  
-  const toggleMaximize = useCallback((id: number) => {
-    setWindows((ws) => {
-      const top = (topZ.current += 1); // Bring to front on maximize
-      return ws.map((w) =>
-        w.id === id ? { ...w, maximized: !w.maximized, z: top } : w
-      );
-    });
-  }, []);
-
-  const openAppIds = windows
-    .filter((w) => !w.minimized)
-    .map((w) => w.appId);
+  if (!activePlugin) return null;
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
-      <MenuBar />
-
-      {/* Desktop surface (window drag bounds) */}
-      <div
-        ref={surfaceRef}
-        className="absolute inset-x-0 bottom-0 top-9 overflow-hidden"
-      >
-        {/* Welcome hint when no windows are open */}
-        <AnimatePresence>
-          {windows.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="pointer-events-none absolute inset-0 grid place-items-center"
-            >
-              <div className="text-center">
-                <motion.div
-                  animate={{ y: [0, -10, 0] }}
-                  transition={{ repeat: Infinity, duration: 3 }}
-                  className="mx-auto mb-5 grid h-20 w-20 place-items-center rounded-3xl shadow-2xl shadow-biz-700/40"
+    <section className="flex h-full min-h-0 flex-col bg-[#07111f]">
+      <div className="shrink-0 border-b border-white/10 bg-[#0b1728] px-3 py-3 sm:px-5">
+        <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto">
+          <span className="shrink-0 text-sm font-semibold text-white">Try a module</span>
+          <div className="flex gap-2">
+            {PLUGINS.map((plugin) => {
+              const active = plugin.id === activePlugin.id;
+              return (
+                <button
+                  key={plugin.id}
+                  type="button"
+                  onClick={() => router.replace(`/app?module=${plugin.id}`)}
+                  className={`shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                    active
+                      ? "bg-biz-500 text-white"
+                      : "bg-white/5 text-foreground/70 hover:bg-white/10 hover:text-white"
+                  }`}
+                  aria-pressed={active}
                 >
-                  <Image
-                    src={brandIconPath}
-                    alt="BizFlow logo"
-                    width={80}
-                    height={80}
-                    className="rounded-3xl"
-                    priority
-                  />
-                </motion.div>
-                <h2 className="text-2xl font-bold">Welcome to BizFlow</h2>
-                <p className="mt-1 text-foreground/60">
-                  Pick a module from the dock to try it live.
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {windows.map((w) => {
-            if (w.minimized) return null;
-            const app = getApp(w.appId);
-            if (!app) return null;
-            const AppComponent = app.component;
-            return (
-              <Window
-                key={w.id}
-                instance={w}
-                title={app.title}
-                constraints={surfaceRef}
-                onFocus={() => focus(w.id)}
-                onClose={() => close(w.id)}
-                onMinimize={() => minimize(w.id)}
-                onToggleMaximize={() => toggleMaximize(w.id)}
-              >
-                <AppComponent />
-              </Window>
-            );
-          })}
-        </AnimatePresence>
+                  <span aria-hidden="true">{plugin.icon} </span>
+                  {plugin.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
-
-      <Dock onLaunch={launch} openAppIds={openAppIds} />
-
-      {/* Hidden, but keeps APPS referenced for clarity */}
-      <span className="sr-only">{APPS.length} apps available</span>
-    </div>
+      <div className="min-h-0 flex-1">
+        <ModuleFrame key={activePlugin.id} pluginId={activePlugin.id} />
+      </div>
+    </section>
   );
 }

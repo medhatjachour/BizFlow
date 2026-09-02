@@ -10,7 +10,6 @@ import { vetPreload } from '../plugins/vet/preload'
 import { gymPreload } from '../plugins/gym/preload'
 import { pharmacyPreload } from '../plugins/pharmacy/preload'
 import { coffeePreload } from '../plugins/coffee/preload'
-import type { PluginRoleAssignments } from '../shared/permissions'
 
 // Custom APIs for renderer
 const api = {
@@ -28,20 +27,14 @@ const api = {
     setupExists: () => ipcRenderer.invoke('auth:setupExists'),
     logout: () => ipcRenderer.invoke('auth:logout'),
     // bind the acting user in the main process and return resolved capabilities
-    bindSession: (user: { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments } | null) =>
+    bindSession: (user: { id: string; username: string; role: string } | null) =>
       ipcRenderer.invoke('permissions:bindSession', user)
   },
   permissions: {
     getRoles: () => ipcRenderer.invoke('permissions:getRoles'),
     setRole: (role: string, caps: string[]) => ipcRenderer.invoke('permissions:setRole', role, caps),
-    bindSession: (user: { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments } | null) =>
+    bindSession: (user: { id: string; username: string; role: string } | null) =>
       ipcRenderer.invoke('permissions:bindSession', user)
-  },
-  plugins: {
-    getCatalog: () => ipcRenderer.invoke('plugins:getCatalog'),
-  },
-  rbac: {
-    resolveUserPermissions: (userId: string) => ipcRenderer.invoke('rbac:resolveUserPermissions', userId),
   },
   dashboard: {
     getMetrics: () => ipcRenderer.invoke('dashboard:getMetrics'),
@@ -103,14 +96,12 @@ const api = {
       email?: string | null
       phone?: string | null
       role: string
-      pluginRoles?: PluginRoleAssignments
     }) => ipcRenderer.invoke('users:create', userData),
     update: (id: string, updateData: {
       fullName?: string | null
       email?: string | null
       phone?: string | null
       role?: string
-      pluginRoles?: PluginRoleAssignments
       isActive?: boolean
     }) => ipcRenderer.invoke('users:update', id, updateData),
     changePassword: (id: string, newPassword: string) => 
@@ -285,37 +276,6 @@ const api = {
       ipcRenderer.invoke('module:setEnabled', { moduleId, enabled }),
     relaunch: (): Promise<void> => ipcRenderer.invoke('module:relaunch'),
   },
-  license: {
-    getDeviceFingerprint: (): Promise<{
-      deviceFingerprint: string
-      deviceName: string
-      serverBaseUrl: string
-      appVersion: string
-    }> => ipcRenderer.invoke('license:getDeviceFingerprint'),
-    getActivationState: (): Promise<{
-      activated: boolean
-      checksumValid?: boolean
-      boundToCurrentDevice?: boolean
-      deviceFingerprint: string
-      deviceName: string
-      activation?: {
-        email: string
-        licenseKey: string
-        itemId: string
-        deviceFingerprint: string
-        deviceName: string
-        activatedAt: string
-      }
-    }> => ipcRenderer.invoke('license:getActivationState'),
-    activateOnline: (email: string, licenseKey: string): Promise<{
-      ok: boolean
-      error?: string
-      code?: string
-      activationState?: {
-        activated: boolean
-      }
-    }> => ipcRenderer.invoke('license:activateOnline', { email, licenseKey }),
-  },
   finance: {
     addTransaction: (data: { type: string; amount: number; description?: string; userId?: string }) =>
       ipcRenderer.invoke('finance:addTransaction', data),
@@ -323,19 +283,6 @@ const api = {
       ipcRenderer.invoke('finance:getTransactions', data),
     getStats: () =>
       ipcRenderer.invoke('finance:getStats'),
-  },
-  // ─── Export APIs ──────────────────────────────────────────────────────────
-  // Handles PDF and file exports with proper encoding
-  export: {
-    printPdf: (html: string, filename: string) =>
-      new Promise<{ success: boolean; filePath?: string; error?: string }>((resolve) => {
-        const handler = (_event: any, result: any) => {
-          ipcRenderer.off('pdf-generated', handler)
-          resolve(result)
-        }
-        ipcRenderer.on('pdf-generated', handler)
-        ipcRenderer.send('print-to-pdf', { html, filename })
-      })
   },
   // ─── Plugin APIs ──────────────────────────────────────────────────────────
   // Each plugin exposes its IPC bindings under its own namespace.

@@ -22,6 +22,13 @@ function resolveEnabledPlugins(): string[] {
 }
 
 const enabledPlugins = resolveEnabledPlugins()
+function pemFromEnvironment(value: string | undefined): string {
+  if (!value) return ''
+  if (value.includes('BEGIN')) return value.replace(/\\n/g, '\n')
+  return Buffer.from(value, 'base64').toString('utf8')
+}
+
+const licensePublicKey = pemFromEnvironment(process.env.BIZFLOW_LICENSE_PUBLIC_KEY)
 
 // Auto-enable commerce when any dependent plugin is enabled (they reference Product, Customer etc.)
 const DEPENDS_ON_COMMERCE = ['restaurant', 'warehouse']
@@ -38,7 +45,9 @@ const pluginDefineFlags = {
   __PLUGIN_VET__: enabledPlugins.includes('vet'),
   __PLUGIN_GYM__: enabledPlugins.includes('gym'),
   __PLUGIN_PHARMACY__: enabledPlugins.includes('pharmacy'),
-  __PLUGIN_COFFEE__: enabledPlugins.includes('coffee')
+  __PLUGIN_COFFEE__: enabledPlugins.includes('coffee'),
+  // This is intentionally embedded in the app: public keys are safe to distribute.
+  __BIZFLOW_LICENSE_PUBLIC_KEY__: licensePublicKey
 }
 
 export default defineConfig({

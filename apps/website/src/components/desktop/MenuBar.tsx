@@ -17,7 +17,7 @@ export default function MenuBar() {
   }, []);
 
   return (
-    <div className="glass-strong fixed inset-x-0 top-0 z-[9999] flex h-9 items-center justify-between px-4 text-sm">
+    <div className="glass-strong absolute inset-x-0 top-0 z-20 flex h-9 items-center justify-between px-4 text-sm">
       <div className="flex items-center gap-4">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <Image

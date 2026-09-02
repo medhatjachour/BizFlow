@@ -114,6 +114,12 @@ export const session = {
   defaultSession: { webRequest: { onHeadersReceived() {} } },
 };
 
+export const safeStorage = {
+  isEncryptionAvailable: () => false,
+  encryptString: (_value: string) => Buffer.alloc(0),
+  decryptString: (_value: Buffer) => "",
+};
+
 export default {
   app,
   ipcMain,
@@ -124,4 +130,5 @@ export default {
   Menu,
   nativeImage,
   session,
+  safeStorage,
 };

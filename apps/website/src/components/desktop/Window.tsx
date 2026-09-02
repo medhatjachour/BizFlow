@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { motion, useDragControls, useMotionValue } from "framer-motion";
 import type { WindowInstance } from "@/lib/types";
 
@@ -35,8 +35,17 @@ export default function Window({
     w: instance.width,
     h: instance.height,
   });
+  const [isMobile, setIsMobile] = useState(false);
 
-  const maximized = instance.maximized;
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  const maximized = instance.maximized || isMobile;
 
   const startResize = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -61,7 +70,7 @@ export default function Window({
 
   return (
     <motion.div
-      drag={!maximized}
+      drag={!maximized && !isMobile}
       dragControls={controls}
       dragListener={false}
       dragMomentum={false}
@@ -78,7 +87,7 @@ export default function Window({
         height: maximized ? "100%" : size.h,
         zIndex: instance.z,
       }}
-      className="glass-strong absolute left-0 top-0 flex flex-col overflow-hidden rounded-xl shadow-2xl shadow-black/50 ring-1 ring-white/10"
+      className="glass-strong absolute left-0 top-0 flex flex-col overflow-hidden rounded-xl shadow-2xl shadow-black/50 ring-1 ring-white/10 max-sm:inset-0 max-sm:rounded-none"
     >
       {/* Title bar */}
       <div
@@ -98,24 +107,28 @@ export default function Window({
               ×
             </span>
           </button>
-          <button
-            onClick={onMinimize}
-            className="group grid h-3.5 w-3.5 cursor-pointer place-items-center rounded-full bg-yellow-400"
-            aria-label="Minimize"
-          >
-            <span className="text-[10px] leading-none text-black/0 group-hover:text-black/70">
-              −
-            </span>
-          </button>
-          <button
-            onClick={onToggleMaximize}
-            className="group grid h-3.5 w-3.5 cursor-pointer place-items-center rounded-full bg-emerald-400"
-            aria-label="Maximize"
-          >
-            <span className="text-[10px] leading-none text-black/0 group-hover:text-black/70">
-              +
-            </span>
-          </button>
+          {!isMobile && (
+            <>
+              <button
+                onClick={onMinimize}
+                className="group grid h-3.5 w-3.5 cursor-pointer place-items-center rounded-full bg-yellow-400"
+                aria-label="Minimize"
+              >
+                <span className="text-[10px] leading-none text-black/0 group-hover:text-black/70">
+                  −
+                </span>
+              </button>
+              <button
+                onClick={onToggleMaximize}
+                className="group grid h-3.5 w-3.5 cursor-pointer place-items-center rounded-full bg-emerald-400"
+                aria-label="Maximize"
+              >
+                <span className="text-[10px] leading-none text-black/0 group-hover:text-black/70">
+                  +
+                </span>
+              </button>
+            </>
+          )}
         </div>
         <span className="pointer-events-none mx-auto select-none text-xs font-medium text-foreground/70">
           {title}
@@ -127,7 +140,7 @@ export default function Window({
       <div className="relative min-h-0 flex-1 overflow-auto">{children}</div>
 
       {/* Resize handle */}
-      {!maximized && (
+      {!maximized && !isMobile && (
         <div
           onPointerDown={startResize}
           className="absolute bottom-0 right-0 h-4 w-4 cursor-nwse-resize"

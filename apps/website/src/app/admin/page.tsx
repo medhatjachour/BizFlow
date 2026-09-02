@@ -6,6 +6,8 @@ import AdminDashboard from "@/components/admin/AdminDashboard";
 import {
   ADMIN_COOKIE,
   adminUsingDefault,
+  readCustomers,
+  readLicenses,
   readOrders,
   readRequests,
   readSupportTickets,
@@ -25,10 +27,12 @@ export default async function AdminPage() {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   if (!verifyToken(token)) redirect("/admin/login");
 
-  const [orders, requests, tickets] = await Promise.all([
+  const [orders, requests, tickets, licenses, customers] = await Promise.all([
     readOrders(),
     readRequests(),
     readSupportTickets(),
+    readLicenses(),
+    readCustomers(),
   ]);
 
   // Enrich orders with a human label from the shared catalog.
@@ -44,6 +48,8 @@ export default async function AdminPage() {
         orders={ordersView}
         requests={requests}
         tickets={tickets}
+        licenses={licenses}
+        customers={customers}
         usingDefaultPassword={adminUsingDefault}
       />
     </>

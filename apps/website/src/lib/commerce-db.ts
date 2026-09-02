@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
+import { recordAccountActivity } from "@/lib/account-auth";
 import { getPurchasable } from "@/lib/payments";
 
 function normalizeEmail(email: string): string {
@@ -81,6 +82,10 @@ export async function recordPaidOrder(params: {
       }),
     },
   });
+
+  if (customer) {
+    await recordAccountActivity(customer.id, "purchase", `Purchased ${getPurchasable(params.itemId)?.label ?? params.itemId}`);
+  }
 }
 
 export interface CustomerOrderView {
@@ -177,6 +182,8 @@ export async function createSupportTicket(params: {
     },
   });
 
+  await recordAccountActivity(customer.id, "support_ticket", `Opened support ticket ${ticket.publicId}: ${params.subject}`);
+
   return ticket;
 }
 
@@ -259,6 +266,10 @@ export async function activateLicenseForDevice(params: {
       deviceActivatedAt: license.deviceActivatedAt ?? new Date(),
     },
   });
+
+  if (activatedNow) {
+    await recordAccountActivity(license.customerId, "device_activation", `Activated ${license.order.itemId} on ${deviceName ?? "a device"}`);
+  }
 
   return {
     ok: true,

@@ -130,6 +130,29 @@ export interface AdminSupportTicket {
   messages: AdminSupportMessage[];
 }
 
+export interface AdminLicense {
+  id: string;
+  key: string;
+  status: "ACTIVE" | "REVOKED" | "EXPIRED";
+  deviceName: string | null;
+  deviceActivatedAt: string | null;
+  customer: { id: string; email: string; fullName: string | null; status: string };
+  order: { itemId: string; amountTotal: number; currency: string; fulfilledAt: string; paymentStatus: string };
+}
+
+export interface AdminCustomer {
+  id: string;
+  email: string;
+  fullName: string | null;
+  status: string;
+  role: string;
+  createdAt: string;
+  emailVerifiedAt: string | null;
+  hasPassword: boolean;
+  oauthProviders: string[];
+  counts: { orders: number; licenses: number; supportTickets: number; sessions: number };
+}
+
 // ── Stores ────────────────────────────────────────────────────────────────
 
 async function readArray<T>(file: string): Promise<T[]> {
@@ -182,6 +205,81 @@ export async function readSupportTickets(): Promise<AdminSupportTicket[]> {
       createdAt: m.createdAt.toISOString(),
     })),
   }));
+}
+
+export async function readLicenses(): Promise<AdminLicense[]> {
+  const rows = await prisma.license.findMany({
+    include: { customer: true, order: true },
+    orderBy: { issuedAt: "desc" },
+  });
+
+  return rows.map((license) => ({
+    id: license.id,
+    key: license.key,
+    status: license.status,
+    deviceName: license.deviceName,
+    deviceActivatedAt: license.deviceActivatedAt?.toISOString() ?? null,
+    customer: {
+      id: license.customer.id,
+      email: license.customer.email,
+      fullName: license.customer.fullName,
+      status: license.customer.status,
+    },
+    order: {
+      itemId: license.order.itemId,
+      amountTotal: license.order.amountTotal,
+      currency: license.order.currency,
+      fulfilledAt: license.order.fulfilledAt.toISOString(),
+      paymentStatus: license.order.paymentStatus,
+    },
+  }));
+}
+
+export async function readCustomers(): Promise<AdminCustomer[]> {
+  const rows = await prisma.customer.findMany({
+    include: {
+      credentials: { select: { id: true } },
+      oauthIdentities: { select: { provider: true } },
+      _count: { select: { orders: true, licenses: true, supportTickets: true, sessions: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return rows.map((customer) => ({
+    id: customer.id,
+    email: customer.email,
+    fullName: customer.fullName,
+    status: customer.status,
+    role: customer.role,
+    createdAt: customer.createdAt.toISOString(),
+    emailVerifiedAt: customer.emailVerifiedAt?.toISOString() ?? null,
+    hasPassword: customer.credentials !== null,
+    oauthProviders: [...new Set(customer.oauthIdentities.map((identity) => identity.provider))],
+    counts: {
+      orders: customer._count.orders,
+      licenses: customer._count.licenses,
+      supportTickets: customer._count.supportTickets,
+      sessions: customer._count.sessions,
+    },
+  }));
+}
+
+export async function updateLicenseAccess(params: {
+  id: string;
+  action: "revoke" | "reactivate" | "unlock_device";
+}): Promise<boolean> {
+  const license = await prisma.license.findUnique({ where: { id: params.id }, select: { id: true } });
+  if (!license) return false;
+
+  if (params.action === "revoke") {
+    await prisma.license.update({ where: { id: params.id }, data: { status: "REVOKED", revokedAt: new Date(), revokedReason: "Revoked by administrator" } });
+  } else if (params.action === "reactivate") {
+    await prisma.license.update({ where: { id: params.id }, data: { status: "ACTIVE", revokedAt: null, revokedReason: null } });
+  } else {
+    await prisma.license.update({ where: { id: params.id }, data: { deviceFingerprint: null, deviceName: null, deviceActivatedAt: null } });
+  }
+
+  return true;
 }
 
 export async function setSupportTicketStatus(publicId: string, status: TicketStatus): Promise<boolean> {

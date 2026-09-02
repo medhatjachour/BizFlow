@@ -4,6 +4,8 @@ import path from "node:path";
 import { estimate, type EstimateInput } from "@/lib/pricing";
 import { requestsEmailTarget, sendRequestEmail } from "@/lib/request-mail";
 import { dataDir } from "@/lib/data-dir";
+import { cookies } from "next/headers";
+import { ACCOUNT_COOKIE, getAccountFromToken, recordAccountActivity } from "@/lib/account-auth";
 
 /**
  * Receives a guest request (module update, new custom plugin, or full suite),
@@ -75,6 +77,12 @@ export async function POST(request: Request) {
     details,
     quote,
   };
+
+  const accountToken = (await cookies()).get(ACCOUNT_COOKIE)?.value;
+  const account = accountToken ? await getAccountFromToken(accountToken) : null;
+  if (account && account.customer.email === body.email.trim().toLowerCase()) {
+    await recordAccountActivity(account.customer.id, "custom_request", `Submitted ${input.type} request ${ref}`);
+  }
 
   let notified = false;
   let notifyReason: string | undefined;

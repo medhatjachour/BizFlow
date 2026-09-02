@@ -167,8 +167,12 @@ Copy `.env.example` to `.env.local` and adjust as needed:
 | --- | --- |
 | `NEXT_PUBLIC_BIZFLOW_URL` | Where the workspace embeds the live BizFlow app (default `http://localhost:5180/`) |
 | `NEXT_PUBLIC_SITE_URL` | This site's origin (Stripe return URLs) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional Google Sign-In; configure the callback as `/api/account/google` at your site's exact public origin |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Enable real payments (see Stripe doc) |
+| `LICENSE_SIGNING_PRIVATE_KEY` | Ed25519 private PEM used only by the server to sign desktop activation certificates |
 | `NEXT_PUBLIC_DL_<MODULE>` | Optional per-module download URLs |
+
+For desktop releases, set `BIZFLOW_LICENSE_PUBLIC_KEY` to the matching Ed25519 public PEM while building the Electron app. Either PEM may instead be base64-encoded, which is convenient for `.env` files. Do not commit either environment file or the private key. Generate a pair with `openssl genpkey -algorithm Ed25519 -out license-private.pem` and `openssl pkey -in license-private.pem -pubout -out license-public.pem`.
 
 ---
 

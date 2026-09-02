@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type {
+  AdminCustomer,
+  AdminLicense,
   AdminSupportTicket,
   CustomRequest,
   Order,
@@ -19,6 +21,8 @@ interface Props {
   orders: OrderView[];
   requests: CustomRequest[];
   tickets: AdminSupportTicket[];
+  licenses: AdminLicense[];
+  customers: AdminCustomer[];
   usingDefaultPassword: boolean;
 }
 
@@ -60,9 +64,9 @@ const fmtDate = (iso?: string) =>
 const statusOf = (r: CustomRequest): RequestStatus => r.status ?? "new";
 const DASHBOARD_RENDER_TS = Date.now();
 
-type Tab = "overview" | "orders" | "requests" | "tickets" | "pricing";
+type Tab = "overview" | "users" | "orders" | "access" | "requests" | "tickets" | "pricing";
 
-export default function AdminDashboard({ orders, requests, tickets, usingDefaultPassword }: Props) {
+export default function AdminDashboard({ orders, requests, tickets, licenses, customers, usingDefaultPassword }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("overview");
 
@@ -128,7 +132,9 @@ export default function AdminDashboard({ orders, requests, tickets, usingDefault
 
   const tabs: { id: Tab; label: string; badge?: number }[] = [
     { id: "overview", label: "Overview" },
+    { id: "users", label: "Users", badge: customers.length || undefined },
     { id: "orders", label: "Licenses & orders", badge: orders.length || undefined },
+    { id: "access", label: "Access control", badge: licenses.filter((license) => license.status === "ACTIVE").length || undefined },
     { id: "requests", label: "Custom requests", badge: metrics.pending || undefined },
     { id: "tickets", label: "Support tickets", badge: metrics.openTickets || undefined },
     { id: "pricing", label: "Pricing" },
@@ -210,13 +216,137 @@ export default function AdminDashboard({ orders, requests, tickets, usingDefault
           className="mt-6"
         >
           {tab === "overview" && <Overview metrics={metrics} orders={orders} requests={requests} tickets={tickets} />}
+          {tab === "users" && <UsersPanel customers={customers} />}
           {tab === "orders" && <OrdersPanel orders={orders} />}
+          {tab === "access" && <AccessPanel licenses={licenses} />}
           {tab === "requests" && <RequestsPanel requests={requests} />}
           {tab === "tickets" && <TicketsPanel tickets={tickets} />}
           {tab === "pricing" && <PricingPanel />}
         </motion.div>
       </AnimatePresence>
     </main>
+  );
+}
+
+function UsersPanel({ customers }: { customers: AdminCustomer[] }) {
+  const [query, setQuery] = useState("");
+  const rows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return customers;
+    return customers.filter((customer) =>
+      [customer.email, customer.fullName ?? "", customer.status, customer.role, ...customer.oauthProviders]
+        .some((value) => value.toLowerCase().includes(needle))
+    );
+  }, [customers, query]);
+
+  return (
+    <section className="glass-strong rounded-2xl p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-black tracking-tight">Customer accounts</h2>
+          <p className="mt-1 text-sm text-foreground/55">Account profile, authentication, and linked business activity.</p>
+        </div>
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, email, role..." className="w-72 max-w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400" />
+      </div>
+      {rows.length === 0 ? <Empty text="No customer accounts match this search." /> : (
+        <div className="mt-5 space-y-3">
+          {rows.map((customer) => (
+            <article key={customer.id} className="grid gap-4 rounded-xl border border-white/10 bg-white/5 p-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-semibold">{customer.fullName || customer.email}</h3>
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${customer.status === "ACTIVE" ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-300" : "border-amber-400/30 bg-amber-500/15 text-amber-300"}`}>{customer.status}</span>
+                  <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-semibold text-foreground/65">{customer.role}</span>
+                </div>
+                <p className="mt-1 text-sm text-foreground/65">{customer.email}</p>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground/50">
+                  <span>Joined {fmtDate(customer.createdAt)}</span>
+                  <span>{customer.emailVerifiedAt ? `Verified ${fmtDate(customer.emailVerifiedAt)}` : "Email unverified"}</span>
+                  <span>Sign-in: {[customer.hasPassword ? "password" : null, ...customer.oauthProviders].filter(Boolean).join(", ") || "none"}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-foreground/60 lg:text-right">
+                <span>{customer.counts.orders} orders</span>
+                <span>{customer.counts.licenses} licenses</span>
+                <span>{customer.counts.supportTickets} tickets</span>
+                <span>{customer.counts.sessions} sessions</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AccessPanel({ licenses }: { licenses: AdminLicense[] }) {
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const rows = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return licenses;
+    return licenses.filter((license) =>
+      [license.customer.email, license.customer.fullName ?? "", license.key, license.order.itemId, license.deviceName ?? ""]
+        .some((value) => value.toLowerCase().includes(needle))
+    );
+  }, [licenses, query]);
+
+  async function applyAction(id: string, action: "revoke" | "reactivate" | "unlock_device") {
+    setBusy(id);
+    setMessage(null);
+    try {
+      const response = await fetch(withBasePath("/api/admin/licenses"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action }),
+      });
+      if (!response.ok) throw new Error("Could not update license access");
+      setMessage(action === "unlock_device" ? "Device binding cleared." : "License access updated.");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not update license access");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <section className="glass-strong rounded-2xl p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-black tracking-tight">Customer access control</h2>
+          <p className="mt-1 text-sm text-foreground/55">Manage product entitlements and release a device binding when a customer changes hardware.</p>
+        </div>
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search customer, key, device..." className="w-72 max-w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400" />
+      </div>
+      {message ? <p className="mt-4 text-sm text-foreground/70">{message}</p> : null}
+      {rows.length === 0 ? <Empty text="No licenses match this search." /> : (
+        <div className="mt-5 space-y-3">
+          {rows.map((license) => {
+            const active = license.status === "ACTIVE";
+            return (
+              <article key={license.id} className="grid gap-4 rounded-xl border border-white/10 bg-white/5 p-4 lg:grid-cols-[minmax(0,1fr)_auto]">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold">{license.customer.fullName || license.customer.email}</h3>
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${active ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-300" : "border-rose-400/30 bg-rose-500/15 text-rose-300"}`}>{license.status}</span>
+                    <span className="text-xs text-foreground/50">{license.order.itemId}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-foreground/65">{license.customer.email} · {license.deviceName ? `Bound to ${license.deviceName}` : "No device bound"}</p>
+                  <p className="mt-2 break-all font-mono text-xs text-foreground/45">{license.key}</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                  {license.deviceName ? <button disabled={busy === license.id} onClick={() => applyAction(license.id, "unlock_device")} className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold transition hover:bg-white/10 disabled:opacity-50">Release device</button> : null}
+                  {active ? <button disabled={busy === license.id} onClick={() => applyAction(license.id, "revoke")} className="rounded-lg border border-rose-400/30 px-3 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/10 disabled:opacity-50">Revoke</button> : <button disabled={busy === license.id} onClick={() => applyAction(license.id, "reactivate")} className="rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/30 disabled:opacity-50">Reactivate</button>}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 
