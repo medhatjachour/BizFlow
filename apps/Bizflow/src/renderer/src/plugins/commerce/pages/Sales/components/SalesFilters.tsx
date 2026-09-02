@@ -32,7 +32,7 @@ export function SalesFilters({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        <div className="h-9 p-1 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1 overflow-x-auto">
+        <div className="overflow-hidden h-9 p-1 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-1 overflow-x-auto">
           <CalendarDays size={13} className="mx-1 text-slate-400 shrink-0" />
           {([
             ['all', t('salesUiAllTime')],
