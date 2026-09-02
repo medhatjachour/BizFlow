@@ -2,6 +2,7 @@
 // Auto-split from a single large object for maintainability; merged in ./en.
 // eslint-disable-next-line
 export const enPart0 = {
+  commerceTitle:'Commerce',
     // suppliers
   purchaseOrders: 'Purchase Orders',
   suppliersAndVendors: 'Suppliers and Vendors',

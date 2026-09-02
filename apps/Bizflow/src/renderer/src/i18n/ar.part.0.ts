@@ -2,6 +2,7 @@
 // Auto-split from a single large object for maintainability; merged in ./ar.
 // eslint-disable-next-line
 export const arPart0 = {
+  commerceTitle:'التجارة',
     // suppliers
   purchaseOrders: 'أوامر الشراء',
   suppliersAndVendors: 'الموردون والبائعون',
