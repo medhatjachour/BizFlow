@@ -1,3 +1,9 @@
+/**
+ * Plugin Selector Page
+ * Allows users to select which business module/plugin to load
+ */
+
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useModuleEnabled } from '../../hooks/useModuleEnabled'
@@ -54,6 +60,13 @@ export default function PluginSelector() {
   const handleOpenSettings = () => {
     navigate('/settings')
   }
+
+  useEffect(() => {
+    const requestedPluginId = new URLSearchParams(window.location.search).get('only')
+    if (requestedPluginId && enabledPlugins.some(plugin => plugin.id === requestedPluginId)) {
+      handleSelectPlugin(requestedPluginId)
+    }
+  }, [enabledPlugins])
 
   const lastPluginId = localStorage.getItem('bizflow:lastPlugin')
   const lastPlugin = enabledPlugins.find(plugin => plugin.id === lastPluginId) ?? enabledPlugins[0]

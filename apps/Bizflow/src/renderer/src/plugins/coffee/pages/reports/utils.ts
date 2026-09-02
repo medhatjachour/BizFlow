@@ -333,31 +333,157 @@ export async function exportToExcel(data: ReturnType<typeof buildExportData>, fi
 }
 
 export async function exportToPdf(data: ReturnType<typeof buildExportData>, filename: string) {
-  try {
-    // Generate HTML report that supports Arabic with proper UTF-8 encoding
-    const htmlContent = generatePdfHtml(data)
-    
-    // Use Electron's print-to-PDF feature via preload API
-    // This uses Chromium's rendering which has native Arabic support
-    const api = (window as any).api
-    
-    if (!api?.export?.printPdf) {
-      throw new Error('PDF export API not available')
-    }
-    
-    // Send request to main process and wait for response
-    const result = await api.export.printPdf(htmlContent, filename)
-    
-    if (result.success) {
-      console.log(`✓ PDF generated successfully: ${result.filePath}`)
-      return
-    } else {
-      throw new Error(result.error || 'Unknown PDF generation error')
-    }
-  } catch (error) {
-    console.error('PDF export error:', error)
-    throw error
+  const jsPDF = (await import('jspdf')).default
+  const autoTable = (await import('jspdf-autotable')).default
+
+  const doc = new jsPDF('p', 'mm', 'a4')
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const margin = 14
+
+  // ─────────────────────────────────────────────────────────────────
+  // ARABIC FONT SUPPORT INSTRUCTION:
+  // jsPDF default fonts don't support Arabic. To fix the garbled text,
+  // you must load an Arabic font (like Amiri or Cairo) as base64.
+  //
+  // 1. Find a .ttf font file.
+  // 2. Convert it to base64 (you can use online tools).
+  // 3. Add it to jsPDF like this:
+  //
+  // doc.addFileToVFS('Amiri-Regular.ttf', 'YOUR_BASE64_STRING_HERE');
+  // doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+  // doc.setFont('Amiri');
+  //
+  // For now, we proceed with the default font.
+  // ─────────────────────────────────────────────────────────────────
+
+  // Header
+  doc.setFillColor(16, 185, 129)
+  doc.rect(0, 0, pageWidth, 30, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(20)
+  doc.setFont('helvetica', 'bold')
+  doc.text(data.meta.title, margin, 18)
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Generated: ${new Date(data.meta.generatedAt).toLocaleString()}`, margin, 25)
+
+  // Date Range
+  doc.setTextColor(0, 0, 0)
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Date Range: ${data.meta.dateRangeLabel}`, margin, 40)
+
+  // Summary Table
+  autoTable(doc, {
+    startY: 45,
+    head: [['Metric', 'Value']],
+    body: data.summary.map(s => [s.metric, formatCurrency(s.value)]),
+    theme: 'striped',
+    headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+    styles: { fontSize: 9 },
+    margin: { left: margin, right: margin },
+  })
+
+  // Top Products
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [['Product', 'Category', 'Qty', 'Revenue', 'Profit', 'Margin %']],
+    body: data.topProducts.map(p => [
+      p.Product,
+      p.Category,
+      p.Quantity,
+      formatCurrency(p.Revenue),
+      formatCurrency(p['Gross Profit']),
+      formatPercent(p['Margin %']),
+    ]),
+    theme: 'striped',
+    headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+    styles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
+  })
+
+  // Categories
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [['Category', 'Qty', 'Revenue', 'Profit', 'Margin %']],
+    body: data.categories.map(c => [
+      c.Category,
+      c.Quantity,
+      formatCurrency(c.Revenue),
+      formatCurrency(c['Gross Profit']),
+      formatPercent(c['Margin %']),
+    ]),
+    theme: 'striped',
+    headStyles: { fillColor: [139, 92, 246], textColor: 255 },
+    styles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
+  })
+
+  // Customers
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [['Customer', 'Orders', 'Spent', 'Delivery', 'Last Visit']],
+    body: data.customers.map(c => [
+      c.Customer,
+      c.Orders,
+      formatCurrency(c.Spent),
+      c['Delivery Orders'],
+      c['Last Visit'],
+    ]),
+    theme: 'striped',
+    headStyles: { fillColor: [168, 85, 247], textColor: 255 },
+    styles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
+  })
+
+  // Cashiers
+  autoTable(doc, {
+    startY: (doc as any).lastAutoTable.finalY + 10,
+    head: [['Cashier', 'Orders', 'Revenue', 'Avg Order']],
+    body: data.cashiers.map(c => [
+      c.Cashier,
+      c.Orders,
+      formatCurrency(c.Revenue),
+      formatCurrency(c['Avg Order Value']),
+    ]),
+    theme: 'striped',
+    headStyles: { fillColor: [245, 158, 11], textColor: 255 },
+    styles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
+  })
+
+  // Expenses
+  if (data.expenses.length > 0) {
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 10,
+      head: [['Expense Category', 'Total', 'Count', '% of Total']],
+      body: data.expenses.map(e => [
+        e.Category,
+        formatCurrency(e.Total),
+        e.Count,
+        formatPercent(e['Percentage %']),
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [239, 68, 68], textColor: 255 },
+      styles: { fontSize: 8 },
+      margin: { left: margin, right: margin },
+    })
   }
+
+  // Footer with page numbers
+  const pageCount = doc.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(128, 128, 128)
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      pageWidth - margin - 20,
+      doc.internal.pageSize.getHeight() - 10
+    )
+  }
+
+  doc.save(filename)
 }
 
 export function printReport() {
@@ -379,332 +505,4 @@ export function generateFilename(format: ExportFormat, from: string, to: string)
   const rangeStr = from && to ? `${from}_to_${to}` : 'all_time'
   const ext = format === 'excel' ? 'xlsx' : format
   return `coffee-report_${rangeStr}_${dateStr}.${ext}`
-}
-
-// Generate HTML content for PDF with full Arabic support
-function generatePdfHtml(data: ReturnType<typeof buildExportData>): string {
-  const tableRowsStyles = `
-    background-color: #f9fafb;
-  `
-  const tableHeaderStyles = `
-    background-color: #10b981;
-    color: white;
-    font-weight: bold;
-    text-align: center;
-  `
-
-  return `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${data.meta.title}</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    html, body {
-      width: 100%;
-      height: 100%;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      direction: rtl;
-      text-align: right;
-    }
-    
-    @page {
-      size: A4;
-      margin: 14mm;
-    }
-    
-    @media print {
-      body {
-        margin: 0;
-        padding: 14mm;
-      }
-    }
-    
-    .header {
-      background-color: #10b981;
-      color: white;
-      padding: 20px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    
-    .header h1 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-    
-    .header .meta {
-      font-size: 12px;
-      opacity: 0.95;
-    }
-    
-    .date-range {
-      font-size: 14px;
-      font-weight: bold;
-      color: #333;
-      margin-bottom: 15px;
-    }
-    
-    .section {
-      margin-bottom: 25px;
-      page-break-inside: avoid;
-    }
-    
-    .section-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #1f2937;
-      margin-bottom: 12px;
-      border-bottom: 2px solid #e5e7eb;
-      padding-bottom: 8px;
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-    
-    table th {
-      ${tableHeaderStyles}
-      padding: 12px;
-      border: 1px solid #e5e7eb;
-    }
-    
-    table td {
-      ${tableRowsStyles}
-      padding: 10px 12px;
-      border: 1px solid #e5e7eb;
-    }
-    
-    table tbody tr:nth-child(even) {
-      background-color: #f3f4f6;
-    }
-    
-    table tbody tr:hover {
-      background-color: #e5e7eb;
-    }
-    
-    .number {
-      text-align: left;
-    }
-    
-    .footer {
-      text-align: center;
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 30px;
-      padding-top: 15px;
-      border-top: 1px solid #e5e7eb;
-    }
-    
-    @media print {
-      .no-print {
-        display: none;
-      }
-      
-      body {
-        font-size: 11px;
-      }
-      
-      table {
-        font-size: 10px;
-      }
-      
-      table th {
-        padding: 8px;
-      }
-      
-      table td {
-        padding: 7px 8px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>${data.meta.title}</h1>
-    <div class="meta">
-      <p>التاريخ: ${new Date(data.meta.generatedAt).toLocaleString('ar-EG')}</p>
-    </div>
-  </div>
-  
-  <div class="date-range">
-    النطاق الزمني: ${data.meta.dateRangeLabel}
-  </div>
-  
-  <!-- Summary Section -->
-  <div class="section">
-    <div class="section-title">الملخص</div>
-    <table>
-      <thead>
-        <tr>
-          <th>القيمة</th>
-          <th>المقياس</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.summary.map(s => `
-          <tr>
-            <td class="number">${s.value}</td>
-            <td>${s.metric}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  
-  <!-- Top Products Section -->
-  <div class="section">
-    <div class="section-title">أفضل المنتجات</div>
-    <table>
-      <thead>
-        <tr>
-          <th>نسبة الهامش %</th>
-          <th>الربح الإجمالي</th>
-          <th>تكلفة البضاعة المباعة</th>
-          <th>الإيرادات</th>
-          <th>الكمية</th>
-          <th>الفئة</th>
-          <th>المنتج</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.topProducts.map(p => `
-          <tr>
-            <td class="number">${formatPercent(p['Margin %'])}</td>
-            <td class="number">${formatCurrency(p['Gross Profit'])}</td>
-            <td class="number">${formatCurrency(p.COGS)}</td>
-            <td class="number">${formatCurrency(p.Revenue)}</td>
-            <td class="number">${p.Quantity}</td>
-            <td>${p.Category}</td>
-            <td>${p.Product}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  
-  <!-- Categories Section -->
-  <div class="section">
-    <div class="section-title">أداء الفئات</div>
-    <table>
-      <thead>
-        <tr>
-          <th>نسبة الهامش %</th>
-          <th>الربح الإجمالي</th>
-          <th>تكلفة البضاعة المباعة</th>
-          <th>الإيرادات</th>
-          <th>الكمية</th>
-          <th>الفئة</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.categories.map(c => `
-          <tr>
-            <td class="number">${formatPercent(c['Margin %'])}</td>
-            <td class="number">${formatCurrency(c['Gross Profit'])}</td>
-            <td class="number">${formatCurrency(c.COGS)}</td>
-            <td class="number">${formatCurrency(c.Revenue)}</td>
-            <td class="number">${c.Quantity}</td>
-            <td>${c.Category}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  
-  <!-- Top Customers Section -->
-  <div class="section">
-    <div class="section-title">أفضل العملاء</div>
-    <table>
-      <thead>
-        <tr>
-          <th>آخر زيارة</th>
-          <th>طلبات التسليم</th>
-          <th>المبلغ المنفق</th>
-          <th>عدد الطلبات</th>
-          <th>اسم العميل</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.customers.map(c => `
-          <tr>
-            <td>${c['Last Visit']}</td>
-            <td class="number">${c['Delivery Orders']}</td>
-            <td class="number">${formatCurrency(c.Spent)}</td>
-            <td class="number">${c.Orders}</td>
-            <td>${c.Customer}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  
-  <!-- Cashiers Section -->
-  <div class="section">
-    <div class="section-title">الصرافين</div>
-    <table>
-      <thead>
-        <tr>
-          <th>متوسط قيمة الطلب</th>
-          <th>الإيرادات</th>
-          <th>عدد الطلبات</th>
-          <th>اسم الصراف</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.cashiers.map(c => `
-          <tr>
-            <td class="number">${formatCurrency(c['Avg Order Value'])}</td>
-            <td class="number">${formatCurrency(c.Revenue)}</td>
-            <td class="number">${c.Orders}</td>
-            <td>${c.Cashier}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  
-  <!-- Expenses Section -->
-  ${data.expenses.length > 0 ? `
-  <div class="section">
-    <div class="section-title">المصروفات حسب الفئة</div>
-    <table>
-      <thead>
-        <tr>
-          <th>النسبة المئوية %</th>
-          <th>العدد</th>
-          <th>الإجمالي</th>
-          <th>فئة المصروفات</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.expenses.map(e => `
-          <tr>
-            <td class="number">${formatPercent(e['Percentage %'])}</td>
-            <td class="number">${e.Count}</td>
-            <td class="number">${formatCurrency(e.Total)}</td>
-            <td>${e.Category}</td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  </div>
-  ` : ''}
-  
-  <div class="footer">
-    <p>تم إنشاء هذا التقرير بواسطة نظام إدارة المقهى BizFlow</p>
-  </div>
-</body>
-</html>
-  `.trim()
 }

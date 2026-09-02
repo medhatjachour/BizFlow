@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/download", label: "Download" },
   { href: "/account/login", label: "Account" },
   { href: "/support", label: "Support" },
+  { href: "/legal/privacy", label: "Privacy" },
   { href: "/status", label: "Status" },
   { href: "#request", label: "Custom" },
 ];

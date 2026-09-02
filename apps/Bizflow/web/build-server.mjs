@@ -43,6 +43,7 @@ const buildOptions = {
     __PLUGIN_VET__: "true",
     __PLUGIN_GYM__: "true",
     __PLUGIN_PHARMACY__: "true",
+    __BIZFLOW_LICENSE_PUBLIC_KEY__: '""',
   },
   // Loaded at runtime from node_modules (native or heavy, not needed to bundle).
   external: [

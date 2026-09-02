@@ -24,6 +24,22 @@ function nowPlusDays(days: number): Date {
   return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 }
 
+export async function createAccountSession(customerId: string): Promise<string> {
+  const token = crypto.randomBytes(32).toString("hex");
+  await prisma.customerSession.create({
+    data: {
+      customerId,
+      tokenHash: hashToken(token),
+      expiresAt: nowPlusDays(SESSION_DAYS),
+    },
+  });
+  return token;
+}
+
+export async function recordAccountActivity(customerId: string, action: string, summary: string) {
+  await prisma.accountActivity.create({ data: { customerId, action, summary } });
+}
+
 function parsePasswordHash(stored: string): { salt: string; hash: string } | null {
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return null;
@@ -124,14 +140,7 @@ export async function loginAccount(params: { email: string; password: string }) 
     data: { failedCount: 0, lockedUntil: null },
   });
 
-  const token = crypto.randomBytes(32).toString("hex");
-  await prisma.customerSession.create({
-    data: {
-      customerId: customer.id,
-      tokenHash: hashToken(token),
-      expiresAt: nowPlusDays(SESSION_DAYS),
-    },
-  });
+  const token = await createAccountSession(customer.id);
 
   return {
     token,
@@ -143,6 +152,31 @@ export async function loginAccount(params: { email: string; password: string }) 
       status: customer.status,
     },
   };
+}
+
+export async function loginWithGoogleProfile(params: { subject: string; email: string; fullName?: string }) {
+  const email = normalizeEmail(params.email);
+  const identity = await prisma.oAuthIdentity.findUnique({
+    where: { provider_providerAccountId: { provider: "google", providerAccountId: params.subject } },
+    include: { customer: true },
+  });
+
+  const customer =
+    identity?.customer ??
+    (await prisma.customer.upsert({
+      where: { email },
+      create: { email, fullName: params.fullName?.trim() || null, emailVerifiedAt: new Date(), status: "ACTIVE" },
+      update: { emailVerifiedAt: new Date(), fullName: params.fullName?.trim() || undefined },
+    }));
+
+  if (!identity) {
+    await prisma.oAuthIdentity.create({
+      data: { customerId: customer.id, provider: "google", providerAccountId: params.subject },
+    });
+  }
+
+  const token = await createAccountSession(customer.id);
+  return { token, customer };
 }
 
 export async function logoutAccount(token: string) {

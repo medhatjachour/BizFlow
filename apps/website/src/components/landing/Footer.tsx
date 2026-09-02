@@ -75,6 +75,9 @@ export default function Footer() {
           <Link href="/legal/terms" className="transition hover:text-foreground">
             Terms
           </Link>
+          <Link href="/legal/privacy" className="transition hover:text-foreground">
+            Privacy
+          </Link>
         </div>
       </div>
     </footer>

@@ -14,9 +14,9 @@ export default function Dock({ onLaunch, openAppIds }: DockProps) {
       initial={{ y: 80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
-      className="pointer-events-auto fixed bottom-4 left-1/2 z-[9999] -translate-x-1/2"
+      className="pointer-events-auto fixed bottom-3 left-1/2 z-30 w-[calc(100%-1.5rem)] max-w-max -translate-x-1/2 sm:bottom-4 sm:w-auto"
     >
-      <div className="glass-strong flex items-end gap-2 rounded-2xl px-3 py-2 shadow-2xl shadow-black/50">
+      <div className="glass-strong no-scrollbar flex max-w-full items-end gap-2 overflow-x-auto rounded-xl px-2 py-2 shadow-2xl shadow-black/50 sm:rounded-2xl sm:px-3">
         {APPS.map((app) => (
           <button
             key={app.id}
@@ -27,7 +27,7 @@ export default function Dock({ onLaunch, openAppIds }: DockProps) {
             <motion.span
               whileHover={{ y: -10, scale: 1.18 }}
               transition={{ type: "spring", stiffness: 400, damping: 18 }}
-              className={`grid h-12 w-12 place-items-center rounded-xl bg-gradient-to-br text-black shadow-lg ${app.accent}`}
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-gradient-to-br text-black shadow-lg sm:h-12 sm:w-12 sm:rounded-xl ${app.accent}`}
             >
               {app.icon}
             </motion.span>

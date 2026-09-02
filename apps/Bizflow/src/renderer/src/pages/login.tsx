@@ -213,7 +213,6 @@ export default function Login() {
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">BizFlow</h1>
             </div>
           </div>
-
           {/* Welcome Text */}
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">

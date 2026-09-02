@@ -6,8 +6,9 @@ services:
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_BASE_PATH: ""
-        NEXT_PUBLIC_SITE_URL: https://bizflow.medhatjachour.tech
+        NEXT_PUBLIC_SITE_URL: https://www.bizflow.medhatjachour.tech
         ADMIN_PASSWORD: build-validation-only
+        LICENSE_SECRET: build-validation-only
     container_name: bizflow-app
     ports:
       - "3000:3000"    # Nebula website
@@ -26,9 +27,13 @@ services:
       BIZFLOW_DATA_DIR: /data/bizflow
       BRIDGE_PORT: 8787
       NEXT_PUBLIC_BASE_PATH: ""
-      NEXT_PUBLIC_SITE_URL: https://bizflow.medhatjachour.tech
-      NEXTAUTH_URL: https://bizflow.medhatjachour.tech
+      NEXT_PUBLIC_SITE_URL: https://www.bizflow.medhatjachour.tech
+      NEXTAUTH_URL: https://www.bizflow.medhatjachour.tech
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set in .env}
+      LICENSE_SECRET: ${LICENSE_SECRET:?LICENSE_SECRET must be set in .env}
+      LICENSE_SIGNING_PRIVATE_KEY: ${LICENSE_SIGNING_PRIVATE_KEY:?LICENSE_SIGNING_PRIVATE_KEY must be set in .env}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       REQUEST_MAIL_TO: medhatjachour8@gmail.com
       REQUEST_MAIL_FROM: ${REQUEST_MAIL_FROM:-medhatjachour8@gmail.com}
       SMTP_HOST: ${SMTP_HOST:-}

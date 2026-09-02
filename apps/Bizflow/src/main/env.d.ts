@@ -11,3 +11,4 @@ declare const __PLUGIN_VET__: boolean
 declare const __PLUGIN_GYM__: boolean
 declare const __PLUGIN_PHARMACY__: boolean
 declare const __PLUGIN_COFFEE__: boolean
+declare const __BIZFLOW_LICENSE_PUBLIC_KEY__: string

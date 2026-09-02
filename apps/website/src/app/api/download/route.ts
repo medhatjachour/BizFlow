@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { resolveDownload } from "@/lib/build";
 import { OSES, type OSId } from "@/lib/downloads";
+import { ACCOUNT_COOKIE, getAccountFromToken, recordAccountActivity } from "@/lib/account-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,11 @@ export async function POST(request: Request) {
   const os = typeof body.os === "string" ? body.os : null;
   if (!isOS(os)) {
     return NextResponse.json({ error: "Invalid os" }, { status: 400 });
+  }
+  const accountToken = (await cookies()).get(ACCOUNT_COOKIE)?.value;
+  const account = accountToken ? await getAccountFromToken(accountToken) : null;
+  if (account) {
+    await recordAccountActivity(account.customer.id, "download", `Requested ${moduleId} download for ${os}`);
   }
   const result = await resolveDownload(moduleId, os, { triggerBuild: true });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });

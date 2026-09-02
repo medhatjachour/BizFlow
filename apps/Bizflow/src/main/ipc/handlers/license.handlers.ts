@@ -1,4 +1,4 @@
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, safeStorage } from 'electron'
 import crypto from 'node:crypto'
 import os from 'node:os'
 
@@ -9,30 +9,33 @@ const log = createLogger('License')
 const ACTIVATION_SETTINGS_KEY = 'licenseActivation'
 
 interface LocalActivation {
+  version: 1
   email: string
   licenseKey: string
   itemId: string
   deviceFingerprint: string
   deviceName: string
-  activatedAt: string
-  checksum: string
+  issuedAt: string
+  signature: string
 }
 
-function checksumFor(data: Omit<LocalActivation, 'checksum'>): string {
-  return crypto
-    .createHash('sha256')
-    .update(
-      [
-        data.email.trim().toLowerCase(),
-        data.licenseKey.trim().toUpperCase(),
-        data.itemId,
-        data.deviceFingerprint,
-        data.deviceName,
-        data.activatedAt,
-        'bizflow-license-activation-v1',
-      ].join('|')
+function activationPayload(activation: Omit<LocalActivation, 'signature'>): string {
+  return JSON.stringify(activation)
+}
+
+function signatureIsValid(activation: LocalActivation): boolean {
+  if (!__BIZFLOW_LICENSE_PUBLIC_KEY__) return false
+  try {
+    const { signature, ...certificate } = activation
+    return crypto.verify(
+      null,
+      Buffer.from(activationPayload(certificate)),
+      __BIZFLOW_LICENSE_PUBLIC_KEY__,
+      Buffer.from(signature, 'base64')
     )
-    .digest('hex')
+  } catch {
+    return false
+  }
 }
 
 function getDeviceFingerprint(): string {
@@ -61,33 +64,36 @@ function getLicenseServerBaseUrl(): string {
 function readActivation(): LocalActivation | null {
   const settings = readSettings() as Record<string, unknown>
   const raw = settings[ACTIVATION_SETTINGS_KEY]
-  if (!raw || typeof raw !== 'object') return null
+  if (typeof raw !== 'string' || !safeStorage.isEncryptionAvailable()) return null
 
-  const rec = raw as Partial<LocalActivation>
-  if (!rec.email || !rec.licenseKey || !rec.deviceFingerprint || !rec.activatedAt || !rec.itemId || !rec.checksum) {
+  let rec: Partial<LocalActivation>
+  try {
+    rec = JSON.parse(safeStorage.decryptString(Buffer.from(raw, 'base64'))) as Partial<LocalActivation>
+  } catch {
     return null
   }
 
+  if (rec.version !== 1 || !rec.email || !rec.licenseKey || !rec.deviceFingerprint || !rec.issuedAt || !rec.itemId || !rec.signature) return null
+
   return {
+    version: 1,
     email: rec.email,
     licenseKey: rec.licenseKey,
     itemId: rec.itemId,
     deviceFingerprint: rec.deviceFingerprint,
     deviceName: rec.deviceName ?? 'Unknown device',
-    activatedAt: rec.activatedAt,
-    checksum: rec.checksum,
+    issuedAt: rec.issuedAt,
+    signature: rec.signature,
   }
 }
 
-function writeActivation(activation: Omit<LocalActivation, 'checksum'>): void {
-  const full: LocalActivation = {
-    ...activation,
-    checksum: checksumFor(activation),
-  }
+function writeActivation(activation: LocalActivation): boolean {
+  if (!safeStorage.isEncryptionAvailable() || !signatureIsValid(activation)) return false
 
   const settings = readSettings() as Record<string, unknown>
-  settings[ACTIVATION_SETTINGS_KEY] = full
+  settings[ACTIVATION_SETTINGS_KEY] = safeStorage.encryptString(JSON.stringify(activation)).toString('base64')
   writeSettings(settings)
+  return true
 }
 
 function getActivationState() {
@@ -102,21 +108,12 @@ function getActivationState() {
     }
   }
 
-  const expectedChecksum = checksumFor({
-    email: activation.email,
-    licenseKey: activation.licenseKey,
-    itemId: activation.itemId,
-    deviceFingerprint: activation.deviceFingerprint,
-    deviceName: activation.deviceName,
-    activatedAt: activation.activatedAt,
-  })
-
-  const checksumValid = activation.checksum === expectedChecksum
+  const signatureValid = signatureIsValid(activation)
   const boundToCurrentDevice = activation.deviceFingerprint === currentFingerprint
 
   return {
-    activated: checksumValid && boundToCurrentDevice,
-    checksumValid,
+    activated: signatureValid && boundToCurrentDevice,
+    signatureValid,
     boundToCurrentDevice,
     deviceFingerprint: currentFingerprint,
     deviceName: getDeviceName(),
@@ -126,7 +123,7 @@ function getActivationState() {
       itemId: activation.itemId,
       deviceFingerprint: activation.deviceFingerprint,
       deviceName: activation.deviceName,
-      activatedAt: activation.activatedAt,
+      issuedAt: activation.issuedAt,
     },
   }
 }
@@ -172,15 +169,13 @@ export function registerLicenseHandlers(): void {
         })
 
         const data = (await res.json().catch(() => ({}))) as {
-          activation?: {
-            itemId: string
-            activatedAt: string
-          }
+          activation?: Omit<LocalActivation, 'signature'>
+          signature?: string
           error?: string
           code?: string
         }
 
-        if (!res.ok || !data.activation) {
+        if (!res.ok || !data.activation || !data.signature) {
           return {
             ok: false,
             error: data.error ?? 'Activation failed',
@@ -188,14 +183,10 @@ export function registerLicenseHandlers(): void {
           }
         }
 
-        writeActivation({
-          email,
-          licenseKey,
-          itemId: data.activation.itemId,
-          deviceFingerprint,
-          deviceName,
-          activatedAt: data.activation.activatedAt,
-        })
+        const activation: LocalActivation = { ...data.activation, signature: data.signature }
+        if (!writeActivation(activation)) {
+          return { ok: false, error: 'Secure license activation is unavailable. Contact support.' }
+        }
 
         return {
           ok: true,
