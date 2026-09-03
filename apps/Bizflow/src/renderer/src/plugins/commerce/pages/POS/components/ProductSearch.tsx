@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Search, Filter, X, ChevronDown, RefreshCcw } from 'lucide-react'
+import { Search, Filter, X, ChevronDown, RefreshCcw, Package, Plus } from 'lucide-react'
 import { useBackendSearch, useFilterMetadata } from '@renderer/hooks/useBackendSearch'
 import { useDisplaySettings } from '@renderer/contexts/DisplaySettingsContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
@@ -15,11 +15,12 @@ import type { Product, ProductVariant } from '../types'
 type Props = {
   onAddToCart: (product: Product, variant?: ProductVariant) => void
   cartOpen?: boolean
+  view: 'grid' | 'table'
 }
 
 type SortOption = 'name' | 'price-low' | 'price-high' | 'stock-low' | 'stock-high'
 
-export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonly<Props>) {
+export default function ProductSearch({ onAddToCart, cartOpen = false, view }: Readonly<Props>) {
   const { t } = useLanguage()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -188,18 +189,18 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
   }
 
   return (
-    <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+    <div className="flex-1 space-y-4 overflow-y-auto p-3">
       {/* Compact Search Bar with Inline Filters */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-        <div className="flex flex-wrap gap-3">
+      <div className="rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Search Input */}
-          <div className="flex-1 min-w-[300px] relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder={t('searchProductsEnter')}
-              className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary transition-all"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 ps-9 pe-3 text-xs text-slate-900 placeholder-slate-400 transition-all focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700/80 dark:bg-slate-800/60 dark:text-slate-100"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyPress}
@@ -213,13 +214,13 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
           </div>
 
           {/* Quick Filters - Inline */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-wrap gap-2">
             {/* Category Dropdown */}
             <div className="relative">
               <select
                 value={selectedCategoryIds[0] || ''}
                 onChange={(e) => setSelectedCategoryIds(e.target.value ? [e.target.value] : [])}
-                className="pl-3 pr-8 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm font-medium hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer min-w-[140px]"
+                className="min-w-[130px] appearance-none rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-8 text-xs text-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700/80 dark:bg-slate-800/60 dark:text-slate-200"
               >
                 <option value="">📁 {t('allCategories')}</option>
                 {filterOptions.categories.map(cat => (
@@ -234,7 +235,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
               <select
                 value={stockFilter}
                 onChange={(e) => setStockFilter(e.target.value as 'all' | 'in-stock' | 'low-stock')}
-                className="pl-3 pr-8 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm font-medium hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer min-w-[130px]"
+                className="min-w-[120px] appearance-none rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-8 text-xs text-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700/80 dark:bg-slate-800/60 dark:text-slate-200"
               >
                 <option value="all">📦 {t('allStock')}</option>
                 <option value="in-stock">✅ {t('inStock')}</option>
@@ -248,7 +249,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="pl-3 pr-8 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm font-medium hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer min-w-[130px]"
+                className="min-w-[120px] appearance-none rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-8 text-xs text-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700/80 dark:bg-slate-800/60 dark:text-slate-200"
               >
                 <option value="name">🔤 {t('nameSortOption')}</option>
                 <option value="price-low">💰 {t('priceLow')}</option>
@@ -264,8 +265,8 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
               onClick={() => setShowFilters(!showFilters)}
               className={
                 showFilters || hasActiveFilters
-                  ? 'px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 text-sm font-medium bg-primary text-white border-primary shadow-md'
-                  : 'px-4 py-2.5 rounded-lg border transition-all flex items-center gap-2 text-sm font-medium border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  ? 'flex items-center gap-1.5 rounded-lg border border-primary bg-primary px-3 py-1.5 text-xs font-medium text-white transition-all'
+                  : 'flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-all hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
               }
             >
               <Filter size={16} />
@@ -279,7 +280,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
             {(hasActiveFilters || searchQuery) && (
               <button 
                 onClick={clearAllFilters}
-                className="px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all flex items-center gap-2 text-sm font-medium"
+                className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition-all hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30"
               >
                 <X size={16} />
                 {t('clear')}
@@ -290,7 +291,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
             <button 
               onClick={() => refetch()}
               disabled={loading}
-              className="px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               title={t('refreshProducts')}
             >
               <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
@@ -301,7 +302,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
 
         {/* Advanced Filters - Dropdown Panel */}
         {showFilters && (
-          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2 duration-200">
+          <div className="mt-3 border-t border-slate-200 pt-3 animate-in slide-in-from-top-2 duration-200 dark:border-slate-700">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {/* Store Filter */}
               {filterMetadata?.stores && filterMetadata.stores.length > 0 && (
@@ -359,8 +360,8 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
         )}
 
         {/* Results Summary */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-          <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
+        <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 dark:border-slate-700">
+          <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span className="font-semibold text-slate-900 dark:text-white">{totalCount}</span>
             {totalCount === 1 ? 'product' : 'products'}
             {hasActiveFilters && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">filtered</span>}
@@ -389,8 +390,7 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
         </div>
       </div>
 
-      {/* Responsive Product Grid - Adapts to cart visibility */}
-      <div className={
+      {view === 'grid' ? <div className={
         cartOpen 
           ? 'grid gap-4 grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
           : 'grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6'
@@ -506,7 +506,33 @@ export default function ProductSearch({ onAddToCart, cartOpen = false }: Readonl
             </div>
           ))
         )}
-      </div>
+      </div> : (
+        <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+          {loading ? (
+            <div className="flex items-center justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+          ) : products.length === 0 ? (
+            <div className="py-16 text-center"><Package className="mx-auto mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" /><p className="text-sm text-slate-500 dark:text-slate-400">No products match this search.</p></div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[680px] border-collapse text-left text-xs">
+                <thead className="border-b border-slate-200/80 bg-slate-50/90 font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800/60 dark:text-slate-400">
+                  <tr><th className="px-4 py-3">Product</th><th className="px-3 py-3">Category</th><th className="px-3 py-3">Price</th><th className="px-3 py-3">Available</th><th className="px-3 py-3 text-right">Add</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                  {paginatedProducts.map(product => {
+                    const outOfStock = product.totalStock === 0
+                    return <tr key={product.id} className="group transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40">
+                      <td className="px-4 py-3"><div className="flex items-center gap-2.5"><div className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">{product.images?.[0] ? <img src={product.images[0].imageData} alt="" className="h-full w-full object-cover" /> : <Package className="h-4 w-4 text-slate-400" />}</div><div><p className="font-semibold text-slate-900 dark:text-white">{product.name}</p><p className="mt-0.5 font-mono text-[10px] text-slate-500">{product.hasVariants ? `${product.variants.length} options` : 'Standard item'}</p></div></div></td>
+                      <td className="px-3 py-3 text-slate-600 dark:text-slate-300">{product.category || 'Uncategorized'}</td><td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">${product.basePrice.toFixed(2)}</td><td className="px-3 py-3"><span className={outOfStock ? 'font-medium text-red-600 dark:text-red-400' : 'font-medium text-emerald-600 dark:text-emerald-400'}>{outOfStock ? 'Out of stock' : product.totalStock}</span></td>
+                      <td className="px-3 py-3 text-right"><button type="button" disabled={outOfStock} onClick={() => product.hasVariants ? openVariantModal(product) : onAddToCart(product)} className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-2.5 text-xs font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-slate-200 dark:disabled:bg-slate-700"><Plus className="h-3.5 w-3.5" />{product.hasVariants ? 'Options' : 'Add'}</button></td>
+                    </tr>
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Variant Selection Modal */}
       {showVariantModal && selectedProduct && (
