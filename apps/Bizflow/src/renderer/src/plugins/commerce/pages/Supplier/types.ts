@@ -96,19 +96,7 @@ export type {
   ProductResponseDTO
 }
 
-export interface PrefilledPurchaseOrder {
-  productId: string
-  variantId: string
-  productName: string
-  variantName: string
-  suggestedQty: number
-  supplierInfo?: {
-    supplierId?: string
-    supplierName: string
-    cost: number
-    leadTime: number
-  }
-}
+
 
 export interface PurchaseOrdersProps {
   prefilledData?: PrefilledPurchaseOrder | null

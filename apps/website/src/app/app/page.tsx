@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
 import AuroraBackground from "@/components/AuroraBackground";
 import Desktop from "@/components/desktop/Desktop";
 

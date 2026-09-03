@@ -7,6 +7,7 @@ import { readSettings, writeSettings } from '../../utils/module-settings'
 
 const log = createLogger('License')
 const ACTIVATION_SETTINGS_KEY = 'licenseActivation'
+const REVALIDATION_INTERVAL_MS = 24 * 60 * 60 * 1000
 
 interface LocalActivation {
   version: 1
@@ -98,6 +99,38 @@ function writeActivation(activation: LocalActivation): boolean {
   return true
 }
 
+function clearActivation(): void {
+  const settings = readSettings() as Record<string, unknown>
+  delete settings[ACTIVATION_SETTINGS_KEY]
+  writeSettings(settings)
+}
+
+async function validateActivationOnline(): Promise<{ valid: boolean; checked: boolean }> {
+  if (!app.isPackaged) return { valid: true, checked: false }
+
+  const activation = readActivation()
+  if (!activation || !signatureIsValid(activation)) return { valid: false, checked: false }
+
+  try {
+    const response = await fetch(`${getLicenseServerBaseUrl()}/api/license/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: activation.email,
+        licenseKey: activation.licenseKey,
+        deviceFingerprint: activation.deviceFingerprint,
+      }),
+    })
+    const data = (await response.json().catch(() => ({}))) as { valid?: boolean }
+    if (response.ok && data.valid === true) return { valid: true, checked: true }
+    if (response.ok && data.valid === false) clearActivation()
+    return { valid: false, checked: true }
+  } catch (error) {
+    log.warn('Online license revalidation unavailable; retaining offline activation', error)
+    return { valid: true, checked: false }
+  }
+}
+
 function getActivationState() {
   const currentFingerprint = getDeviceFingerprint()
   const activation = readActivation()
@@ -143,6 +176,8 @@ export function registerLicenseHandlers(): void {
   ipcMain.handle('license:getActivationState', async () => {
     return getActivationState()
   })
+
+  ipcMain.handle('license:validateOnline', async () => validateActivationOnline())
 
   ipcMain.handle(
     'license:activateOnline',
@@ -203,4 +238,9 @@ export function registerLicenseHandlers(): void {
       }
     }
   )
+
+  if (app.isPackaged) {
+    void validateActivationOnline()
+    setInterval(() => void validateActivationOnline(), REVALIDATION_INTERVAL_MS).unref()
+  }
 }

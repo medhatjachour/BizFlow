@@ -106,6 +106,7 @@ async function refreshCustomerTotals(
 }
 
 export function startSaleCompletionScheduler(prisma: any): void {
+  if (!prisma) return
   if (completionTimer) return
 
   const sweep = () => {

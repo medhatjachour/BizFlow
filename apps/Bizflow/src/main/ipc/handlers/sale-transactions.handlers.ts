@@ -18,7 +18,7 @@ const log = createLogger('SaleTransactions')
  */
 
 export function registerSaleTransactionHandlers(prisma: any) {
-  startSaleCompletionScheduler(prisma)
+   if (prisma) startSaleCompletionScheduler(prisma)
 
   /**
    * Create a new sale transaction with multiple items

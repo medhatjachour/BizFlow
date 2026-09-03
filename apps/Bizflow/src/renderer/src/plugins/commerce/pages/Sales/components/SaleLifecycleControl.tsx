@@ -36,7 +36,7 @@ export function SaleLifecycleControl({
       </div>
       <div className="flex items-center gap-1.5">
         <select
-          value={transaction.completionDelayDays || 7}
+          value={transaction.completionDelayDays ?? 7}
           onChange={(event) => onReschedule(Number(event.target.value))}
           disabled={updating}
           className="h-7 min-w-0 flex-1 rounded-md border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 px-2 text-[10px] font-semibold text-slate-700 dark:text-slate-200 outline-none focus:border-amber-500 disabled:opacity-50"
