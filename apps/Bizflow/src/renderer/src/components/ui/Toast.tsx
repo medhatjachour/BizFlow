@@ -39,17 +39,24 @@ export default function Toast({ id, type, message, duration = 5000, onClose }: T
   }
 
   return (
-    <div className={`flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg ${getStyles()} animate-slide-in-right`}>
-      <div className="flex-shrink-0 mt-0.5">
-        {getIcon()}
-      </div>
-      <p className="flex-1 text-sm font-medium text-white">{message}</p>
-      <button
-        onClick={() => onClose(id)}
-        className="flex-shrink-0 hover:opacity-70 transition-opacity"
-      >
-        <X size={18} />
-      </button>
-    </div>
+    <div
+  className={`flex items-start gap-3 p-4 rounded-xl border backdrop-blur-sm shadow-lg 
+              bg-white text-slate-900 border-slate-200 
+              dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700 
+              ${getStyles()} animate-slide-in-right`}
+>
+  <div className="flex-shrink-0 mt-0.5">
+    {getIcon()}
+  </div>
+  <p className="flex-1 text-sm font-medium">{message}</p>
+  <button
+    onClick={() => onClose(id)}
+    className="flex-shrink-0 hover:opacity-70 transition-opacity text-slate-500 dark:text-slate-400"
+    aria-label="Close"
+  >
+    <X size={18} />
+  </button>
+</div>
+
   )
 }

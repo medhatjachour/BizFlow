@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { PLUGINS, getPlugin } from "@/lib/plugins";
 import ModuleFrame from "./ModuleFrame";
 
@@ -16,7 +17,9 @@ export default function Desktop() {
     <section className="flex h-full min-h-0 flex-col bg-[#07111f]">
       <div className="shrink-0 border-b border-white/10 bg-[#0b1728] px-3 py-3 sm:px-5">
         <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto">
-          <span className="shrink-0 text-sm font-semibold text-white">Try a module</span>
+         <Link href="/" className="text-lg font-semibold text-white transition hover:text-biz-200">
+            BizFlow
+          </Link>
           <div className="flex gap-2">
             {PLUGINS.map((plugin) => {
               const active = plugin.id === activePlugin.id;

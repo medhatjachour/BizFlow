@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustStock }: Props) {
-  const { t } = useLanguage()
+  const { t, isRtl } = useLanguage()
   const { canEdit } = useAuth()
   const [stockHistory, setStockHistory] = useState<StockMovement[]>([])
   const [loadingHistory, setLoadingHistory] = useState(false)
@@ -99,8 +99,13 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
   }
 
   const handleEdit = () => {
-    // Navigate to products page with edit mode
-    window.location.hash = `/products?edit=${item.id}`
+    sessionStorage.setItem(
+      'bizflow:commerce:product-action',
+      JSON.stringify({ mode: 'edit', productId: item.id })
+    )
+    window.dispatchEvent(
+      new CustomEvent('bizflow:commerce:open-tab', { detail: 'products' })
+    )
     onClose()
   }
 
@@ -113,7 +118,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
 
   return (
     <div 
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-start justify-end animate-in fade-in duration-200"
+      className={`fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-50 flex items-stretch ${isRtl ? 'justify-start' : 'justify-end'} animate-in fade-in duration-150`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="drawer-title"
@@ -128,47 +133,53 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
     >
       {/* Drawer */}
       <div 
-        className="w-full max-w-2xl h-full bg-white dark:bg-slate-800 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300"
+        className={`w-full max-w-2xl h-full bg-white dark:bg-slate-900 shadow-2xl overflow-y-auto border-slate-200 dark:border-slate-800 ${isRtl ? 'border-r animate-in slide-in-from-left' : 'border-l animate-in slide-in-from-right'} duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-gradient-to-r from-primary to-secondary p-6 text-white z-10">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <h2 id="drawer-title" className="text-2xl font-bold mb-1">{item.name}</h2>
-              <p className="text-white/80 text-sm">SKU: {item.baseSKU}</p>
+        <div className="sticky top-0 bg-slate-950 dark:bg-slate-950 px-5 py-4 text-white z-10 border-b border-white/10">
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 shrink-0 rounded-lg bg-emerald-500/15 border border-emerald-400/20 flex items-center justify-center text-emerald-400">
+                <Package size={18} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase text-emerald-400">{t('inventoryUiInventoryRecord')}</p>
+                <h2 id="drawer-title" className="text-base font-bold truncate">{item.name}</h2>
+                <p className="text-slate-400 text-[11px] font-mono">{item.baseSKU}</p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              aria-label="Close item details"
+              className="w-8 h-8 inline-flex items-center justify-center hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+              aria-label={t('inventoryUiCloseDetails')}
             >
-              <X size={24} aria-hidden="true" />
+              <X size={18} aria-hidden="true" />
             </button>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2" role="toolbar" aria-label="Item actions">
+          <div className="flex items-center gap-2" role="toolbar" aria-label={t('inventoryUiItemActions')}>
             <button
               onClick={handleRefresh}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 text-sm"
+              className="h-8 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors flex items-center gap-1.5 text-xs text-slate-200"
               aria-label={`Refresh ${item.name}`}
             >
-              <RefreshCw size={16} aria-hidden="true" />
+              <RefreshCw size={14} aria-hidden="true" />
               {t('refresh')}
             </button>
             {canEdit && (
               <button
                 onClick={handleEdit}
-                className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2 text-sm"
+                className="h-8 px-3 bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-bold text-white"
                 aria-label={`Edit ${item.name}`}
               >
-                <Edit size={16} aria-hidden="true" />
+                <Edit size={14} aria-hidden="true" />
                 {t('edit')}
               </button>
             )}
             {!canEdit && (
-              <output className="px-4 py-2 bg-white/10 rounded-lg text-sm text-white/60 italic">
+              <output className="h-8 px-3 inline-flex items-center bg-white/5 border border-white/10 rounded-lg text-[11px] text-slate-400">
                 {t('viewOnly')} • {t('noEditPermissions')}
               </output>
             )}
@@ -176,15 +187,15 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-5 space-y-6">
           {/* Images */}
           <div>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
               <ImageIcon size={16} />
-              Product Images {item.images?.length > 0 && `(${item.images.length})`}
+              {t('inventoryUiProductImages')} {item.images?.length > 0 && `(${item.images.length})`}
             </h3>
             {item.images && item.images.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {item.images.map((image, index) => {
                   const imageId = image.id?.toString() || `img-${index}`
                   const hasError = imageErrors.has(imageId)
@@ -200,7 +211,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
                         <div className="w-full h-full flex flex-col items-center justify-center bg-slate-200 dark:bg-slate-800">
                           <AlertCircle className="text-slate-400 mb-2" size={32} />
                           <p className="text-xs text-slate-500 dark:text-slate-400 text-center px-2">
-                            Failed to load
+                            {t('inventoryUiFailedToLoad')}
                           </p>
                         </div>
                       ) : (
@@ -226,7 +237,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
                           {!isLoading && (
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                               <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium bg-black/60 px-2 py-1 rounded">
-                                Image {index + 1}
+                                {t('inventoryUiImage')} {index + 1}
                               </span>
                             </div>
                           )}
@@ -239,37 +250,37 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
             ) : (
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-8 text-center border-2 border-dashed border-slate-300 dark:border-slate-700">
                 <ImageIcon className="mx-auto mb-2 text-slate-400" size={32} />
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">No images available</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Add images in the product edit page</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">{t('inventoryUiNoImages')}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{t('inventoryUiNoImagesDescription')}</p>
               </div>
             )}
           </div>
 
           {/* Basic Info */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Basic Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Category</p>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">{item.category || 'Uncategorized'}</p>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">{t('inventoryUiBasicInformation')}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('Category')}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">{item.category || t('uncategorized')}</p>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Base Price</p>
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('inventoryUiBasePrice')}</p>
                 <p className="text-sm font-bold text-primary">${item.basePrice.toFixed(2)}</p>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Base Cost</p>
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('inventoryUiBaseCost')}</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">${item.baseCost.toFixed(2)}</p>
               </div>
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Stock</p>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">{item.totalStock} units</p>
+              <div className="bg-slate-50 dark:bg-slate-800/60 rounded-lg p-3 border border-slate-100 dark:border-slate-800">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('inventoryUiTotalStock')}</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">{item.totalStock} {t('inventoryUiUnits')}</p>
               </div>
             </div>
 
             {item.description && (
               <div className="mt-4 bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Description</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t('inventoryUiDescription')}</p>
                 <p className="text-sm text-slate-700 dark:text-slate-300">{item.description}</p>
               </div>
             )}
@@ -277,28 +288,28 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
 
           {/* Financial Summary */}
           <div>
-            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Financial Summary</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">{t('inventoryUiFinancialSummary')}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-sky-50 dark:bg-sky-950/30 rounded-lg p-3 border border-sky-200 dark:border-sky-900">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign size={16} className="text-blue-600" />
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Stock Value</p>
+                  <p className="text-xs text-sky-600 dark:text-sky-400 font-medium">{t('inventoryUiStockValue')}</p>
                 </div>
-                <p className="text-lg font-bold text-blue-700 dark:text-blue-300">${item.stockValue.toFixed(2)}</p>
+                <p className="text-base font-bold text-sky-700 dark:text-sky-300">${item.stockValue.toFixed(2)}</p>
               </div>
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3 border border-emerald-200 dark:border-emerald-900">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign size={16} className="text-success" />
-                  <p className="text-xs text-success font-medium">Retail Value</p>
+                  <p className="text-xs text-success font-medium">{t('inventoryUiRetailValue')}</p>
                 </div>
-                <p className="text-lg font-bold text-green-700 dark:text-green-300">${item.retailValue.toFixed(2)}</p>
+                <p className="text-base font-bold text-emerald-700 dark:text-emerald-300">${item.retailValue.toFixed(2)}</p>
               </div>
-              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+              <div className="bg-violet-50 dark:bg-violet-950/30 rounded-lg p-3 border border-violet-200 dark:border-violet-900">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign size={16} className="text-purple-600" />
-                  <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">Potential Profit</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">{t('inventoryUiPotentialProfit')}</p>
                 </div>
-                <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                <p className="text-base font-bold text-violet-700 dark:text-violet-300">
                   ${(item.retailValue - item.stockValue).toFixed(2)}
                 </p>
               </div>
@@ -308,7 +319,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
           {/* Variants */}
           <div>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
-              Variants ({item.variantCount})
+              {t('inventoryUiVariantsTitle')} ({item.variantCount})
             </h3>
             {item.hasVariants && item.variants.length > 0 ? (
               <div className="space-y-2">
@@ -328,7 +339,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
                           ? 'bg-accent/20 text-accent'
                           : 'bg-success/20 text-success'
                       }`}>
-                        {variant.stock} in stock
+                        {variant.stock} {t('inventoryUiInStock')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
@@ -395,13 +406,13 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
             ) : stockHistory.length > 0 ? (
               <div className="space-y-3">
                 {/* Summary Stats */}
-                <div className="grid grid-cols-5 gap-2 mb-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
                   {[
-                    { type: 'RESTOCK', label: 'Restocks', color: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' },
-                    { type: 'SALE', label: 'Sales', color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
-                    { type: 'ADJUSTMENT', label: 'Adjustments', color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' },
-                    { type: 'SHRINKAGE', label: 'Shrinkage', color: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' },
-                    { type: 'RETURN', label: 'Returns', color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' }
+                    { type: 'RESTOCK', label: t('inventoryUiRestocks'), color: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' },
+                    { type: 'SALE', label: t('inventoryUiSales'), color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800' },
+                    { type: 'ADJUSTMENT', label: t('inventoryUiAdjustments'), color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800' },
+                    { type: 'SHRINKAGE', label: t('inventoryUiShrinkage'), color: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' },
+                    { type: 'RETURN', label: t('inventoryUiReturns'), color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800' }
                   ].map(stat => {
                     const count = stockHistory.filter((m: any) => m.type === stat.type).length
                     const total = stockHistory
@@ -412,7 +423,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
                       <div key={stat.type} className={`rounded-lg p-2 border ${stat.color}`}>
                         <p className="text-xs font-medium mb-0.5">{stat.label}</p>
                         <p className="text-lg font-bold">{count}</p>
-                        <p className="text-xs opacity-75">{total} units</p>
+                        <p className="text-xs opacity-75">{total} {t('inventoryUiUnits')}</p>
                       </div>
                     )
                   })}
@@ -536,23 +547,23 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
               <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 rounded-xl p-12 text-center border-2 border-dashed border-slate-300 dark:border-slate-700">
                 <History className="mx-auto mb-4 text-slate-400" size={48} />
                 <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                  No Movement History Yet
+                  {t('inventoryUiNoMovementYet')}
                 </h4>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                  Stock movements will appear here when you:
+                  {t('inventoryUiMovementWillAppearWhen')}
                 </p>
                 <div className="inline-flex flex-col items-start gap-2 text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                    <span>Make sales transactions</span>
+                    <span>{t('inventoryUiSalesTransactions')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span>Restock inventory</span>
+                    <span>{t('inventoryUiRestockInventory')}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                    <span>Make stock adjustments</span>
+                    <span>{t('inventoryUiStockAdjustments')}</span>
                   </div>
                 </div>
               </div>
@@ -563,13 +574,13 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-2 mb-3">
               <Calendar size={16} className="text-slate-600 dark:text-slate-400" />
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Timeline</h3>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t('inventoryUiTimeline')}</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                  Created Date
+                  {t('inventoryUiCreatedDate')}
                 </p>
                 <p className="text-sm text-slate-900 dark:text-white font-semibold">
                   {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', {
@@ -589,7 +600,7 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                  Last Updated
+                  {t('inventoryUiLastUpdated')}
                 </p>
                 <p className="text-sm text-slate-900 dark:text-white font-semibold">
                   {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('en-US', {
@@ -612,18 +623,18 @@ export default function ItemDetailDrawer({ item, onClose, onRefresh, onAdjustSto
             <div className="mt-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">
-                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Product ID</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">{t('inventoryUiProductId')}</p>
                   <p className="text-xs text-slate-700 dark:text-slate-300 font-mono break-all">{item.id}</p>
                 </div>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(item.id)
-                    alert('✅ Product ID copied to clipboard')
+                    alert(t('inventoryUiCopied'))
                   }}
                   className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
-                  title="Copy ID"
+                  title={t('inventoryUiCopy')}
                 >
-                  Copy
+                  {t('inventoryUiCopy')}
                 </button>
               </div>
             </div>

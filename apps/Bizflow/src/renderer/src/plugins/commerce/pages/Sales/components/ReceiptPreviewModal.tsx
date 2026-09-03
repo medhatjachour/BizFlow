@@ -52,6 +52,8 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
     printBrowser: 'طباعة (متصفح)',
     printThermal: 'طباعة (حراري)',
     printing: 'جارِ الطباعة...',
+    loading: 'جارٍ تحميل الإيصال...',
+    toggleLanguage: 'تبديل لغة الإيصال',
   } : {
     receiptPreview: 'Receipt Preview',
     tel: 'Tel',
@@ -88,6 +90,8 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
     printBrowser: 'Print (Browser)',
     printThermal: 'Print (Thermal)',
     printing: 'Printing...',
+    loading: 'Loading receipt...',
+    toggleLanguage: 'Toggle receipt language',
   }
 
   // Load settings on mount
@@ -246,7 +250,7 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
       <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-center mt-4 text-slate-600 dark:text-slate-400">Loading receipt...</p>
+          <p className="text-center mt-4 text-slate-600 dark:text-slate-400">{receiptLang === 'ar' ? 'جارٍ تحميل الإيصال...' : 'Loading receipt...'}</p>
         </div>
       </div>
     )
@@ -266,7 +270,7 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
                 localStorage.setItem('receiptLanguage', newLang)
               }}
               className="px-2.5 py-1 text-xs font-bold bg-slate-100 dark:bg-slate-700 hover:bg-primary/10 dark:hover:bg-primary/20 text-slate-700 dark:text-slate-200 rounded border border-slate-300 dark:border-slate-600 transition-colors"
-              title="Toggle receipt language"
+              title={L.toggleLanguage}
             >
               {receiptLang === 'en' ? 'عربي' : 'EN'}
             </button>

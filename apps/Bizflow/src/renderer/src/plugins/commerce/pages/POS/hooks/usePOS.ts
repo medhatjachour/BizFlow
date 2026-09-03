@@ -7,6 +7,7 @@ import { ipc } from '@renderer/utils/ipc'
 import { useDisplaySettings } from '@renderer/contexts/DisplaySettingsContext'
 import type { Product, Customer, CartItem, PaymentMethod } from '../types'
 import type { DiscountData } from '@renderer/components/DiscountModal'
+import { getSaleCompletionDelayDays } from '../../Sales/completionSettings'
 import logger from '@/shared/utils/logger'
 
 export function usePOS() {
@@ -265,7 +266,8 @@ export function usePOS() {
           customerName: finalCustomerName,
           subtotal: subtotal,
           tax: tax,
-          total: total
+          total: total,
+          completionDelayDays: getSaleCompletionDelayDays()
         }
       })
       
@@ -464,7 +466,8 @@ export function usePOS() {
           customerName: finalCustomerName,
           subtotal: subtotalCalc,
           tax: taxCalc,
-          total: totalCalc
+          total: totalCalc,
+          completionDelayDays: getSaleCompletionDelayDays()
         }
       })
       

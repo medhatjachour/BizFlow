@@ -3,6 +3,8 @@ import { translations, Language } from '../i18n/translations'
 
 interface LanguageContextType {
   language: Language
+  isRtl: boolean
+  isRTL: boolean
   setLanguage: (lang: Language) => void
   t: (key: string, params?: Record<string, any>) => string
 }
@@ -43,7 +45,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return translation
   }
 
-  const contextValue = { language, setLanguage, t }
+  const isRtl = language === 'ar'
+  const contextValue: LanguageContextType = {
+    language,
+    isRtl,
+    isRTL: isRtl,
+    setLanguage,
+    t
+  }
 
   return (
     <LanguageContext.Provider value={contextValue}>

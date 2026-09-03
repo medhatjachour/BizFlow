@@ -170,6 +170,17 @@ export default function ProductForm({
     setFormData({ ...formData, storeId: store.id })
     onStoreCreated?.(store)
   }
+
+  const applyVariantPreset = (attributes: { name: string; values: string[] }[]) => {
+    setBatchMode(true)
+    setBatchVariant({
+      ...batchVariant,
+      attributes,
+      baseSKU: batchVariant.baseSKU || formData.baseSKU,
+      price: batchVariant.price || formData.basePrice,
+      stock: batchVariant.stock || formData.baseStock
+    })
+  }
   
   return (
     <div className="space-y-6">
@@ -404,7 +415,8 @@ export default function ProductForm({
 
       {/* Variants Toggle */}
       <div className="border-t border-slate-200 dark:border-slate-700 pt-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className={`rounded-lg border p-4 transition-colors ${formData.hasVariants ? 'border-primary/30 bg-primary/5 dark:bg-primary/10' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'}`}>
+        <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white">{t('productVariants')}</h3>
             <p className="text-sm text-slate-600 dark:text-slate-400">{t('addVariantOptions')}</p>
@@ -413,45 +425,54 @@ export default function ProductForm({
             <input
               type="checkbox"
               checked={formData.hasVariants}
-              onChange={(e) => setFormData({ ...formData, hasVariants: e.target.checked })}
+              onChange={(e) => {
+                setFormData({ ...formData, hasVariants: e.target.checked })
+                if (e.target.checked) setBatchMode(true)
+              }}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary"></div>
           </label>
         </div>
+        {!formData.hasVariants && <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Turn this on only when this product has options that need separate stock, price, SKU, or barcode values.</p>}
+        </div>
 
         {formData.hasVariants && (
-          <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-            {/* Mode Toggle */}
-            <div className="flex items-center gap-4 mb-4">
+          <div className="mt-4 space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+            <div>
+              <div className="inline-flex rounded-lg bg-slate-200 p-1 dark:bg-slate-700">
               <button
+                type="button"
                 onClick={() => setBatchMode(false)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
                   !batchMode
-                    ? 'bg-primary text-white'
-                    : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600'
+                    ? 'bg-white text-primary shadow-sm dark:bg-slate-800'
+                    : 'text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white'
                 }`}
+                aria-pressed={!batchMode}
               >
                 {t('singleVariant')}
               </button>
               <button
+                type="button"
                 onClick={() => setBatchMode(true)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`rounded-md px-3 py-2 text-sm font-semibold transition-colors ${
                   batchMode
-                    ? 'bg-primary text-white'
-                    : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600'
+                    ? 'bg-white text-primary shadow-sm dark:bg-slate-800'
+                    : 'text-slate-600 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white'
                 }`}
+                aria-pressed={batchMode}
               >
                 {t('batchVariants')}
               </button>
-              <span className="text-sm text-slate-600 dark:text-slate-400">
-                {batchMode ? t('createMultipleVariants') : t('addOneVariant')}
-              </span>
+              </div>
+              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{batchMode ? 'Choose a preset, add values, then generate all combinations.' : 'Use this only when you need one special option combination.'}</p>
             </div>
 
             {/* Single Variant Mode */}
             {!batchMode && (
               <div className="space-y-3">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">1. Describe this variant</p>
                 {/* Current attributes list */}
                 {newVariant.attributes.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -470,7 +491,7 @@ export default function ProductForm({
                   </div>
                 )}
                 {/* Add attribute row */}
-                <div className="flex gap-2">
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                   <input
                     type="text"
                     value={attrNameInput}
@@ -513,8 +534,9 @@ export default function ProductForm({
                     <Plus size={18} />
                   </button>
                 </div>
-                {/* SKU, barcode, price, stock + add button */}
-                <div className="grid grid-cols-5 gap-3">
+                <details className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+                  <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-200">Inventory and pricing</summary>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <input
                     type="text"
                     value={newVariant.sku}
@@ -545,14 +567,16 @@ export default function ProductForm({
                     className="input-field"
                     placeholder={t('stock')}
                   />
-                  <button
-                    onClick={onAddVariant}
-                    className="btn-primary flex items-center justify-center gap-2"
-                  >
-                    <Plus size={18} />
-                    {t('add')}
-                  </button>
-                </div>
+                  </div>
+                </details>
+                <button
+                  type="button"
+                  onClick={onAddVariant}
+                  className="btn-primary flex min-h-10 w-full items-center justify-center gap-2 sm:w-auto sm:px-5"
+                >
+                  <Plus size={18} />
+                  {t('add')} {t('singleVariant')}
+                </button>
               </div>
             )}
 
@@ -561,9 +585,31 @@ export default function ProductForm({
               <div className="space-y-4">
                 {/* Dynamic Attributes Section */}
                 <div className="bg-white dark:bg-slate-700 p-4 rounded-lg">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-                    Attributes
-                  </label>
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">1. Add options</label>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">For example, add Color and Size. Then add values under each option.</p>
+                  </div>
+
+                  {batchVariant.attributes.length === 0 && (
+                    <div className="mb-4 grid gap-2 sm:grid-cols-2">
+                      <button type="button" onClick={() => applyVariantPreset([{ name: 'Color', values: [] }, { name: 'Size', values: [] }])} className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-left transition hover:bg-primary/10">
+                        <span className="block text-sm font-semibold text-slate-900 dark:text-white">Color & Size</span>
+                        <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">For clothing, shoes, and similar products</span>
+                      </button>
+                      <button type="button" onClick={() => applyVariantPreset([{ name: 'Color', values: [] }])} className="rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-primary/40 dark:border-slate-600 dark:bg-slate-800">
+                        <span className="block text-sm font-semibold text-slate-900 dark:text-white">Color only</span>
+                        <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">For finishes, flavors, and colors</span>
+                      </button>
+                      <button type="button" onClick={() => applyVariantPreset([{ name: 'Size', values: [] }])} className="rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-primary/40 dark:border-slate-600 dark:bg-slate-800">
+                        <span className="block text-sm font-semibold text-slate-900 dark:text-white">Size only</span>
+                        <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">For quantities, dimensions, and sizes</span>
+                      </button>
+                      <button type="button" onClick={() => applyVariantPreset([])} className="rounded-lg border border-slate-200 bg-white p-3 text-left transition hover:border-primary/40 dark:border-slate-600 dark:bg-slate-800">
+                        <span className="block text-sm font-semibold text-slate-900 dark:text-white">Custom options</span>
+                        <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">Start with your own option name</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Existing attribute definitions */}
                   {batchVariant.attributes.map((attr) => (
@@ -625,11 +671,10 @@ export default function ProductForm({
                 </div>
 
                 {/* Common Fields */}
-                <div className="bg-white dark:bg-slate-700 p-4 rounded-lg">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                    {t('commonSettings')}
-                  </label>
-                  <div className="grid grid-cols-4 gap-3">
+                <details className="bg-white dark:bg-slate-700 p-4 rounded-lg">
+                  <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">Optional: change shared SKU, price, or stock</summary>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">These start with the product values. Change them only when every variant needs a different default.</p>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <div>
                       <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">
                         {t('baseSKURequired')}
@@ -682,17 +727,17 @@ export default function ProductForm({
                       />
                     </div>
                   </div>
-                </div>
+                </details>
 
                 {/* Preview */}
                 {batchVariant.attributes.length > 0 && batchVariant.attributes.every(a => a.values.length > 0) && (
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
-                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-1">
+                  <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-primary mb-1">
                       {t('willCreateVariants', {
                         count: batchVariant.attributes.reduce((acc, a) => acc * a.values.length, 1)
                       })} variants
                     </p>
-                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
                       {batchVariant.attributes.map(a => `${a.name}: [${a.values.join(', ')}]`).join(' × ')}
                     </p>
                   </div>
@@ -700,6 +745,7 @@ export default function ProductForm({
 
                 {/* Generate Button */}
                 <button
+                  type="button"
                   onClick={onGenerateBatchVariants}
                   className="w-full btn-primary flex items-center justify-center gap-2 py-3"
                 >

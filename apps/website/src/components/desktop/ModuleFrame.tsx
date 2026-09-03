@@ -36,12 +36,7 @@ export default function ModuleFrame({ pluginId }: { pluginId: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href="/app"
-            className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs font-semibold text-foreground/70 transition hover:border-white/30 hover:text-white"
-          >
-            All modules
-          </Link>
+          
           <Link
             href={downloadPageUrlFor(plugin.id)}
             className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-biz-400 to-biz-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:scale-[1.03]"
@@ -60,27 +55,7 @@ export default function ModuleFrame({ pluginId }: { pluginId: string }) {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-black/30 px-2 py-1.5 text-[11px]">
-        <span className="text-foreground/50">Quick install:</span>
-        <Link
-          href={downloadPageUrlFor(plugin.id, { os: "windows", autoStart: true })}
-          className="rounded-md bg-white/10 px-2 py-1 hover:bg-white/20"
-        >
-          Windows
-        </Link>
-        <Link
-          href={downloadPageUrlFor(plugin.id, { os: "mac", autoStart: true })}
-          className="rounded-md bg-white/10 px-2 py-1 hover:bg-white/20"
-        >
-          macOS
-        </Link>
-        <Link
-          href={downloadPageUrlFor(plugin.id, { os: "linux", autoStart: true })}
-          className="rounded-md bg-white/10 px-2 py-1 hover:bg-white/20"
-        >
-          Linux
-        </Link>
-      </div>
+     
 
       {/* Live app */}
       <div className="relative min-h-0 flex-1">

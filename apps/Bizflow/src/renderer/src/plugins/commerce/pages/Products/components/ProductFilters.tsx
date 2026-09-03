@@ -30,22 +30,22 @@ function ProductFilters({
   const { t } = useLanguage()
   
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 mb-6">
+    <div className="flex flex-col items-stretch justify-between gap-2.5 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center">
       {/* Search Bar */}
-      <div className="flex gap-3 mb-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+      <div className="flex flex-1 flex-wrap items-center gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder={t('searchProductsByNameOrSKU')}
             value={filters.searchQuery}
             onChange={(e) => onFiltersChange({ searchQuery: e.target.value })}
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary"
+            className="w-full ps-9 pe-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-900 placeholder-slate-400 transition-all focus:outline-none focus:ring-2 focus:ring-primary dark:border-slate-700/80 dark:bg-slate-800/60 dark:text-slate-100"
           />
         </div>
         <button
           onClick={onToggleAdvanced}
-          className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-2"
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${showAdvanced ? 'border-primary bg-primary text-white' : 'border-slate-200 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'}`}
         >
           <Filter className="w-4 h-4" />
           {t('filters')}
@@ -53,7 +53,7 @@ function ProductFilters({
         {(filters.category || filters.store || filters.stockStatus) && (
           <button
             onClick={onClearFilters}
-            className="px-4 py-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors flex items-center gap-2"
+            className="flex items-center gap-1.5 rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-500/20"
           >
             <X className="w-4 h-4" />
             {t('clearFilters')}
@@ -63,7 +63,7 @@ function ProductFilters({
 
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-1 gap-3 border-t border-slate-200 pt-3 dark:border-slate-700 md:grid-cols-3">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
               {t('category')}

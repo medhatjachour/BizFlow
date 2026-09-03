@@ -19,9 +19,9 @@ export function isWithinRefundPeriod(
   return daysDifference <= refundPeriodDays
 }
 
-export function formatDate(dateStr: string): string {
+export function formatDate(dateStr: string, locale = 'en-US'): string {
   const date = new Date(dateStr)
-  return date.toLocaleString('en-US', {
+  return date.toLocaleString(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -214,7 +214,7 @@ export function computeSalesStats(
     revenueChange,
     salesChange,
     weeklyRevenueChange,
-    hasData: dateFilteredTransactions.length > 0
+    hasData: activeTransactions.length > 0
   }
 }
 

@@ -21,6 +21,7 @@ import ProductFilters from './components/ProductFilters'
 import ProductGrid from './components/ProductGrid'
 import type { Product, ProductFilters as Filters } from './types'
 import logger from '@/shared/utils/logger'
+import ProductTable from './components/ProductTable'
 
 export default function Products() {
   const { t } = useLanguage()
@@ -47,6 +48,7 @@ export default function Products() {
 
   // Filter states
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  const [productView, setProductView] = useState<'grid' | 'table'>('grid')
   const [filters, setFilters] = useState<Filters>({
     searchQuery: '',
     category: '',
@@ -239,7 +241,7 @@ export default function Products() {
     }
   }, [toast])
 
-  const handleEdit = useCallback(async (product: Product) => {
+  const handleEdit = useCallback(async (product: Pick<Product, 'id'>) => {
     // Fetch full product details with images
     try {
       const fullProduct = await ipc.products.getById(product.id)
@@ -250,6 +252,28 @@ export default function Products() {
       toast.error('Failed to load product details')
     }
   }, [toast])
+
+  useEffect(() => {
+    const pendingAction = sessionStorage.getItem('bizflow:commerce:product-action')
+    if (!pendingAction) return
+
+    sessionStorage.removeItem('bizflow:commerce:product-action')
+
+    try {
+      const action = JSON.parse(pendingAction) as {
+        mode: 'create' | 'edit'
+        productId?: string
+      }
+
+      if (action.mode === 'create') {
+        setShowAddModal(true)
+      } else if (action.mode === 'edit' && action.productId) {
+        void handleEdit({ id: action.productId })
+      }
+    } catch (error) {
+      logger.warn('Ignored invalid pending product action:', error)
+    }
+  }, [handleEdit])
 
   const handleDelete = useCallback(async (product: Product) => {
     try {
@@ -365,19 +389,17 @@ export default function Products() {
   }
 
   return (
-    <div className="p-6 mx-auto">
-      {/* Actions Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        
-        <ProductActions
+    <div className="w-full space-y-4 pb-12 animate-in fade-in duration-150">
+      <ProductActions
           onAdd={() => setShowAddModal(true)}
           onImport={handleImport}
           onExport={handleExport}
           onScan={handleScan}
           onRefresh={refetch}
           productsCount={totalCount}
-        />
-      </div>
+          view={productView}
+          onViewChange={setProductView}
+      />
 
       {/* Filters */}
       <ProductFilters
@@ -390,13 +412,11 @@ export default function Products() {
         onToggleAdvanced={() => setShowAdvancedFilters(!showAdvancedFilters)}
       />
 
-      {/* Products Grid */}
-      <ProductGrid
-        products={productsWithStock}
-        onView={handleView}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      {productView === 'grid' ? (
+        <ProductGrid products={productsWithStock} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
+      ) : (
+        <ProductTable products={productsWithStock} onView={handleView} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (

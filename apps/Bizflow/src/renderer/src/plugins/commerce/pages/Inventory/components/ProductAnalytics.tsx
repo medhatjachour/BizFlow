@@ -1,5 +1,14 @@
-import { useState, useEffect } from 'react'
-import { TrendingUp, DollarSign, Package, ShoppingCart, Calendar } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  AlertTriangle,
+  BarChart3,
+  CalendarDays,
+  DollarSign,
+  Package,
+  ShoppingCart,
+  TrendingUp,
+  Trophy
+} from 'lucide-react'
 import { formatLargeNumber, formatCurrency } from '@renderer/utils/formatNumber'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import logger from '@/shared/utils/logger'
@@ -14,13 +23,6 @@ type TopProduct = {
   avgUnitsPerTransaction: number
 }
 
-type CategoryPerformance = {
-  category: string
-  revenue: number
-  unitsSold: number
-  percentage: number
-}
-
 type OverallStats = {
   totalUnitsSold: number
   totalRevenue: number
@@ -29,292 +31,208 @@ type OverallStats = {
   avgOrderValue: number
 }
 
+type CategoryPerformance = {
+  category: string
+  revenue: number
+  unitsSold: number
+}
+
+const EMPTY_STATS: OverallStats = {
+  totalUnitsSold: 0,
+  totalRevenue: 0,
+  totalTransactions: 0,
+  uniqueProducts: 0,
+  avgOrderValue: 0
+}
+
+const PERIODS = [
+  { value: '7', labelKey: 'inventoryUiSevenDays' },
+  { value: '30', labelKey: 'inventoryUiThirtyDays' },
+  { value: '90', labelKey: 'inventoryUiNinetyDays' },
+  { value: '365', labelKey: 'inventoryUiOneYear' }
+] as const
+
 export default function ProductAnalytics() {
   const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [topProducts, setTopProducts] = useState<TopProduct[]>([])
-  const [overallStats, setOverallStats] = useState<OverallStats>({
-    totalUnitsSold: 0,
-    totalRevenue: 0,
-    totalTransactions: 0,
-    uniqueProducts: 0,
-    avgOrderValue: 0
-  })
+  const [overallStats, setOverallStats] = useState<OverallStats>(EMPTY_STATS)
   const [timeRange, setTimeRange] = useState('30')
 
   useEffect(() => {
-    loadAnalytics()
+    void loadAnalytics()
   }, [timeRange])
 
   const loadAnalytics = async () => {
     try {
       setLoading(true)
+      setError(null)
       const endDate = new Date()
       const startDate = new Date()
-      startDate.setDate(startDate.getDate() - parseInt(timeRange))
+      startDate.setDate(startDate.getDate() - Number(timeRange))
+      const dateParams = { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
 
-      const dateParams = {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      }
-
-      // Load both products and overall stats in parallel
       const [products, stats] = await Promise.all([
-        (window as any).api?.analytics?.getTopSellingProducts({
-          limit: 20,
-          ...dateParams
-        }),
+        (window as any).api?.analytics?.getTopSellingProducts({ limit: 20, ...dateParams }),
         (window as any).api?.analytics?.getOverallStats(dateParams)
       ])
-      
+
       setTopProducts(products || [])
-      setOverallStats(stats || {
-        totalUnitsSold: 0,
-        totalRevenue: 0,
-        totalTransactions: 0,
-        uniqueProducts: 0,
-        avgOrderValue: 0
-      })
-    } catch (error) {
-      logger.error('Error loading analytics:', error)
+      setOverallStats(stats || EMPTY_STATS)
+    } catch (loadError) {
+      logger.error('Error loading analytics:', loadError)
       setTopProducts([])
-      setOverallStats({
-        totalUnitsSold: 0,
-        totalRevenue: 0,
-        totalTransactions: 0,
-        uniqueProducts: 0,
-        avgOrderValue: 0
-      })
+      setOverallStats(EMPTY_STATS)
+      setError(t('inventoryUiAnalyticsLoadError'))
     } finally {
       setLoading(false)
     }
   }
 
-  // Calculate category performance from top products (for visualization only)
-  const categoryPerformance: CategoryPerformance[] = topProducts.reduce((acc, product) => {
-    const existing = acc.find(c => c.category === product.category)
-    if (existing) {
-      existing.revenue += product.revenue
-      existing.unitsSold += product.unitsSold
-    } else {
-      acc.push({
-        category: product.category,
-        revenue: product.revenue,
-        unitsSold: product.unitsSold,
-        percentage: 0
-      })
-    }
-    return acc
-  }, [] as CategoryPerformance[])
+  const categoryPerformance = useMemo(() => {
+    return topProducts
+      .reduce((categories, product) => {
+        const categoryName = product.category || 'Uncategorized'
+        const existing = categories.find((category) => category.category === categoryName)
+        if (existing) {
+          existing.revenue += product.revenue
+          existing.unitsSold += product.unitsSold
+        } else {
+          categories.push({
+            category: categoryName,
+            revenue: product.revenue,
+            unitsSold: product.unitsSold
+          })
+        }
+        return categories
+      }, [] as CategoryPerformance[])
+      .sort((a, b) => b.revenue - a.revenue)
+  }, [topProducts])
 
-  // Calculate percentages based on OVERALL revenue, not just top products
-  categoryPerformance.forEach(c => {
-    c.percentage = overallStats.totalRevenue > 0 ? (c.revenue / overallStats.totalRevenue) * 100 : 0
-  })
-  categoryPerformance.sort((a, b) => b.revenue - a.revenue)
+  const leadingProduct = topProducts[0]
+  const largestCategoryRevenue = Math.max(categoryPerformance[0]?.revenue || 0, 1)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('salesAnalytics')}</h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            {t('performanceInsights')}
-          </p>
+    <div className="max-w-[1600px] mx-auto space-y-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-900 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+            <BarChart3 size={18} />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-950 dark:text-white">{t('salesAnalytics')}</h2>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">{t('inventoryUiSalesDescription')}</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Calendar size={18} className="text-slate-400" />
-          {['7', '30', '90', '365'].map((days) => (
+        <div className="inline-flex self-start lg:self-auto items-center gap-1 p-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900" aria-label={t('inventoryUiAnalyticsPeriod')}>
+          <CalendarDays size={14} className="mx-1.5 text-slate-400" />
+          {PERIODS.map((period) => (
             <button
-              key={days}
-              onClick={() => setTimeRange(days)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                timeRange === days
-                  ? 'bg-primary text-white shadow-md'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+              key={period.value}
+              type="button"
+              onClick={() => setTimeRange(period.value)}
+              className={`h-7 px-2.5 rounded-md text-[10px] font-bold transition-colors ${
+                timeRange === period.value
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              {days === '365' ? t('oneYear') : `${days} ${t('sevenDays').replace('7', '').trim()}`}
+              {t(period.labelKey)}
             </button>
           ))}
         </div>
       </div>
 
-      {loading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-slate-600 dark:text-slate-400">{t('loadingAnalytics')}</p>
+      {error && (
+        <div className="flex items-center justify-between gap-4 rounded-lg border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/30 px-4 py-3">
+          <div className="flex items-center gap-2 text-xs text-rose-700 dark:text-rose-300"><AlertTriangle size={15} />{error}</div>
+          <button type="button" onClick={() => void loadAnalytics()} className="text-[11px] font-bold text-rose-700 dark:text-rose-300">{t('inventoryUiRetry')}</button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="space-y-4 animate-pulse">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+            {[1, 2, 3, 4, 5].map((item) => <div key={item} className="h-24 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />)}
           </div>
+          <div className="h-72 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" />
         </div>
-      )}
-
-      {!loading && topProducts.length === 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-12 text-center border border-slate-200 dark:border-slate-700">
-          <TrendingUp size={64} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-          <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-            {t('noSalesDataAvailable')}
-          </h3>
-          <p className="text-slate-600 dark:text-slate-400">
-            {t('salesAnalyticsWillAppear')}
-          </p>
+      ) : topProducts.length === 0 && !error ? (
+        <div className="min-h-72 flex flex-col items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center px-6">
+          <div className="w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3"><TrendingUp size={22} className="text-slate-400" /></div>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">{t('noSalesDataAvailable')}</h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{t('salesAnalyticsWillAppear')}</p>
         </div>
-      )}
-
-      {!loading && topProducts.length > 0 && (
+      ) : topProducts.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-blue-500 dark:bg-blue-600 rounded-lg">
-                  <DollarSign size={24} className="text-white" />
-                </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+            {[
+              { label: t('inventoryUiRevenue'), value: formatCurrency(overallStats.totalRevenue), icon: DollarSign, color: 'text-sky-600 bg-sky-50 dark:bg-sky-950/40' },
+              { label: t('inventoryUiUnitsSold'), value: formatLargeNumber(overallStats.totalUnitsSold), icon: Package, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40' },
+              { label: t('inventoryUiTransactions'), value: formatLargeNumber(overallStats.totalTransactions), icon: ShoppingCart, color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40' },
+              { label: t('inventoryUiAverageOrder'), value: formatCurrency(overallStats.avgOrderValue), icon: TrendingUp, color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40' },
+              { label: t('inventoryUiProductsSold'), value: formatLargeNumber(overallStats.uniqueProducts), icon: BarChart3, color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/40' }
+            ].map((metric) => (
+              <div key={metric.label} className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
+                <div className={`w-7 h-7 rounded-md flex items-center justify-center mb-3 ${metric.color}`}><metric.icon size={14} /></div>
+                <p className="text-lg font-bold text-slate-950 dark:text-white tabular-nums">{metric.value}</p>
+                <p className="text-[10px] font-semibold uppercase text-slate-400">{metric.label}</p>
               </div>
-              <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1" title={`$${overallStats.totalRevenue.toLocaleString()}`}>
-                {formatCurrency(overallStats.totalRevenue)}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">{t('totalRevenueLabel')}</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/10 rounded-xl p-6 border border-green-200 dark:border-green-800">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-green-500 dark:bg-green-600 rounded-lg">
-                  <Package size={24} className="text-white" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1" title={overallStats.totalUnitsSold.toLocaleString()}>
-                {formatLargeNumber(overallStats.totalUnitsSold)}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">{t('unitsSoldLabel')}</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-900/10 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-purple-500 dark:bg-purple-600 rounded-lg">
-                  <ShoppingCart size={24} className="text-white" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1" title={overallStats.totalTransactions.toLocaleString()}>
-                {formatLargeNumber(overallStats.totalTransactions)}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">{t('transactionsLabel')}</div>
-            </div>
-
-            <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-900/10 rounded-xl p-6 border border-amber-200 dark:border-amber-800">
-              <div className="flex items-center justify-between mb-2">
-                <div className="p-2 bg-amber-500 dark:bg-amber-600 rounded-lg">
-                  <TrendingUp size={24} className="text-white" />
-                </div>
-              </div>
-              <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1" title={`$${overallStats.avgOrderValue.toLocaleString()}`}>
-                {formatCurrency(overallStats.avgOrderValue)}
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">{t('avgOrderValueLabel')}</div>
-            </div>
+            ))}
           </div>
 
-          {categoryPerformance.length > 0 && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-              <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('categoryPerformance')}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('revenueDistributionByCategory')}</p>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {categoryPerformance.slice(0, 5).map((cat, index) => (
-                    <div key={cat.category}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl font-bold text-slate-300 dark:text-slate-600">#{index + 1}</span>
-                          <div>
-                            <div className="font-semibold text-slate-900 dark:text-white">{cat.category}</div>
-                            <div className="text-sm text-slate-500 dark:text-slate-400">
-                              {formatLargeNumber(cat.unitsSold)} units
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-lg text-slate-900 dark:text-white" title={`$${cat.revenue.toLocaleString()}`}>
-                            {formatCurrency(cat.revenue)}
-                          </div>
-                          <div className="text-sm text-slate-500 dark:text-slate-400">
-                            {cat.percentage.toFixed(1)}%
-                          </div>
-                        </div>
-                      </div>
-                      <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
-                          style={{ width: `${cat.percentage}%` }}
-                        />
-                      </div>
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-3">
+            <section className="xl:col-span-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800"><h3 className="text-xs font-bold text-slate-900 dark:text-white">{t('inventoryUiCategoryMix')}</h3><p className="text-[10px] text-slate-500">{t('inventoryUiCategoryMixDescription')}</p></div>
+              <div className="p-4 space-y-3.5">
+                {categoryPerformance.slice(0, 6).map((category, index) => (
+                  <div key={category.category}>
+                    <div className="flex items-center justify-between gap-4 mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0"><span className="w-5 text-[10px] font-bold text-slate-300">{String(index + 1).padStart(2, '0')}</span><span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">{category.category}</span></div>
+                      <div className="text-right whitespace-nowrap"><span className="text-[11px] font-bold text-slate-900 dark:text-white">{formatCurrency(category.revenue)}</span><span className="ml-2 text-[9px] text-slate-400">{formatLargeNumber(category.unitsSold)} {t('inventoryUiUnits')}</span></div>
                     </div>
-                  ))}
-                </div>
+                    <div className="ml-7 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden"><div className="h-full rounded-full bg-sky-500" style={{ width: `${Math.max((category.revenue / largestCategoryRevenue) * 100, 2)}%` }} /></div>
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
+            </section>
 
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">{t('topSellingProducts')}</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t('bestPerformersInPeriod')}</p>
-            </div>
-            
+            {leadingProduct && (
+              <section className="xl:col-span-2 rounded-lg border border-slate-800 bg-slate-950 text-white p-4 flex flex-col justify-between min-h-56">
+                <div><div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase text-amber-400">{t('inventoryUiPeriodLeader')}</span><Trophy size={17} className="text-amber-400" /></div><h3 className="mt-5 text-lg font-bold leading-tight">{leadingProduct.productName}</h3><p className="mt-1 text-[11px] text-slate-400">{leadingProduct.category || t('uncategorized')}</p></div>
+                <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-white/10">
+                  <div><p className="text-base font-bold">{formatLargeNumber(leadingProduct.unitsSold)}</p><p className="text-[9px] text-slate-400">{t('inventoryUiUnits')}</p></div>
+                  <div><p className="text-base font-bold text-emerald-400">{formatCurrency(leadingProduct.revenue)}</p><p className="text-[9px] text-slate-400">{t('inventoryUiRevenue')}</p></div>
+                  <div><p className="text-base font-bold">{leadingProduct.transactions}</p><p className="text-[9px] text-slate-400">{t('inventoryUiOrders')}</p></div>
+                </div>
+              </section>
+            )}
+          </div>
+
+          <section className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between"><div><h3 className="text-xs font-bold text-slate-900 dark:text-white">{t('inventoryUiProductRanking')}</h3><p className="text-[10px] text-slate-500">{t('inventoryUiProductRankingDescription')}</p></div><span className="text-[10px] font-semibold text-slate-400">{t('inventoryUiTop')} {Math.min(topProducts.length, 10)}</span></div>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 dark:bg-slate-700/50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('rankColumn')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('productColumn')}</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('unitsSoldColumn')}</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('revenueColumn')}</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('transactionsColumn')}</th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('avgUnitsPerOrder')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+              <table className="w-full min-w-[760px] text-left">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800"><tr className="text-[9px] uppercase text-slate-500"><th className="px-4 py-2.5 w-14">{t('inventoryUiRank')}</th><th className="px-4 py-2.5">{t('Product')}</th><th className="px-4 py-2.5 text-right">{t('inventoryUiUnits')}</th><th className="px-4 py-2.5 text-right">{t('inventoryUiRevenue')}</th><th className="px-4 py-2.5 text-right">{t('inventoryUiOrders')}</th><th className="px-4 py-2.5 text-right">{t('inventoryUiUnitsPerOrder')}</th></tr></thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {topProducts.slice(0, 10).map((product, index) => (
-                    <tr key={product.productId} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl font-bold text-slate-300 dark:text-slate-600">#{index + 1}</span>
-                          {index === 0 && (
-                            <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-semibold rounded-full">{t('topBadge')}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-semibold text-slate-900 dark:text-white">{product.productName}</div>
-                        <div className="text-sm text-slate-500 dark:text-slate-400">{product.category}</div>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-lg font-semibold text-slate-900 dark:text-white" title={product.unitsSold.toLocaleString()}>
-                          {formatLargeNumber(product.unitsSold)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center gap-1 text-lg font-bold text-green-600 dark:text-green-400" title={`$${product.revenue.toLocaleString()}`}>
-                          {formatCurrency(product.revenue)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className="text-slate-900 dark:text-white font-medium" title={product.transactions.toLocaleString()}>
-                          {formatLargeNumber(product.transactions)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center text-slate-600 dark:text-slate-400 font-medium">
-                        {product.avgUnitsPerTransaction.toFixed(1)}
-                      </td>
+                    <tr key={product.productId} className="hover:bg-sky-50/40 dark:hover:bg-sky-950/10 transition-colors">
+                      <td className="px-4 py-3 text-xs font-bold text-slate-400">#{index + 1}</td>
+                      <td className="px-4 py-3"><p className="text-xs font-bold text-slate-900 dark:text-white">{product.productName}</p><p className="text-[10px] text-slate-400">{product.category || t('uncategorized')}</p></td>
+                      <td className="px-4 py-3 text-right text-xs font-semibold tabular-nums">{formatLargeNumber(product.unitsSold)}</td>
+                      <td className="px-4 py-3 text-right text-xs font-bold tabular-nums text-emerald-700 dark:text-emerald-400">{formatCurrency(product.revenue)}</td>
+                      <td className="px-4 py-3 text-right text-xs tabular-nums text-slate-600 dark:text-slate-300">{formatLargeNumber(product.transactions)}</td>
+                      <td className="px-4 py-3 text-right text-xs tabular-nums text-slate-600 dark:text-slate-300">{product.avgUnitsPerTransaction.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </section>
         </>
-      )}
+      ) : null}
     </div>
   )
 }

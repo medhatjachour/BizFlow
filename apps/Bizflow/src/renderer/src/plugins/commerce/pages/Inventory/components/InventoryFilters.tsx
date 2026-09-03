@@ -3,7 +3,8 @@
  * Advanced filtering controls - Redesigned to match POS and Products
  */
 
-import { X, ChevronDown } from 'lucide-react'
+import { ChevronDown, RotateCcw } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { InventoryFilters } from '../types'
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function InventoryFilters({ categories, stores, filters, onFiltersChange }: Props) {
+  const { t } = useLanguage()
   const updateFilter = (key: keyof InventoryFilters, value: any) => {
     onFiltersChange({ ...filters, [key]: value })
   }
@@ -29,7 +31,7 @@ export default function InventoryFilters({ categories, stores, filters, onFilter
     })
   }
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.categories.length > 0 ||
     filters.stockStatus.length > 0 ||
     filters.storeId ||
@@ -39,135 +41,138 @@ export default function InventoryFilters({ categories, stores, filters, onFilter
     filters.stockRange.max < Infinity
 
   return (
-    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 animate-in slide-in-from-top-2 duration-200">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Advanced Filters</h3>
-        {hasActiveFilters && (
-          <button
-            onClick={clearFilters}
-            className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
-          >
-            <X size={14} />
-            Clear All
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Category Dropdown - Single Select */}
-        <div>
-          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-            Category
-          </label>
-          <div className="relative">
-            <select
-              value={filters.categories[0] || ''}
-              onChange={(e) => updateFilter('categories', e.target.value ? [e.target.value] : [])}
-              className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
-            >
-              <option value="">All Categories</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-          </div>
-        </div>
-
-        {/* Store Dropdown */}
-        {stores && stores.length > 0 && (
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-              Store
+    <div className="mt-3 pt-3 border-t border-slate-200/80 dark:border-slate-700 animate-in slide-in-from-top-1 fade-in duration-150">
+      <div className="flex justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
+          <div className="xl:col-span-2">
+            <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">
+              {t('Category')}
             </label>
             <div className="relative">
               <select
-                value={filters.storeId || ''}
-                onChange={(e) => updateFilter('storeId', e.target.value || undefined)}
-                className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
+                value={filters.categories[0] || ''}
+                onChange={(e) => updateFilter('categories', e.target.value ? [e.target.value] : [])}
+                className="w-full h-9 pl-3 pr-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 appearance-none cursor-pointer"
               >
-                <option value="">All Stores</option>
-                {stores.map(store => (
-                  <option key={store.id} value={store.id}>{store.name}</option>
+                <option value="">{t('inventoryUiAllCategories')}</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+              <ChevronDown
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                size={14}
+              />
             </div>
           </div>
+
+          {stores && stores.length > 0 && (
+            <div className="xl:col-span-2">
+              <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">
+                {t('inventoryUiStore')}
+              </label>
+              <div className="relative">
+                <select
+                  value={filters.storeId || ''}
+                  onChange={(e) => updateFilter('storeId', e.target.value || undefined)}
+                  className="w-full h-9 pl-3 pr-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white text-xs outline-none hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 appearance-none cursor-pointer"
+                >
+                  <option value="">{t('inventoryUiAllStores')}</option>
+                  {stores.map((store) => (
+                    <option key={store.id} value={store.id}>
+                      {store.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  size={14}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="md:col-span-2 xl:col-span-4">
+            <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">
+              {t('inventoryUiStockStatus')}
+            </label>
+            <div className="h-9 p-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center gap-1 overflow-x-auto">
+              {(
+                [
+                  { value: '', label: t('inventoryUiAll') },
+                  { value: 'out', label: t('inventoryUiOut') },
+                  { value: 'low', label: t('inventoryUiLow') },
+                  { value: 'normal', label: t('inventoryUiHealthy') },
+                  { value: 'high', label: t('inventoryUiHigh') }
+                ] as const
+              ).map((option) => {
+                const selected = (filters.stockStatus[0] || '') === option.value
+                return (
+                  <button
+                    key={option.value || 'all'}
+                    type="button"
+                    onClick={() => updateFilter('stockStatus', option.value ? [option.value] : [])}
+                    className={`h-7 flex-1 min-w-max px-2 rounded-md text-[10px] font-bold transition-colors ${
+                      selected
+                        ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-sm'
+                        : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="xl:col-span-2">
+            <label className="block text-[10px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5">
+              {t('UnitPrice')}
+            </label>
+            <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/10">
+              <input
+                type="number"
+                placeholder={t('inventoryUiMinimum')}
+                value={filters.priceRange.min || ''}
+                onChange={(e) =>
+                  updateFilter('priceRange', {
+                    ...filters.priceRange,
+                    min: Number(e.target.value) || 0
+                  })
+                }
+                className="w-1/2 h-9 px-2.5 bg-transparent text-xs outline-none"
+                min="0"
+              />
+              <span className="text-slate-300">–</span>
+              <input
+                type="number"
+                placeholder={t('inventoryUiMaximum')}
+                value={filters.priceRange.max === Infinity ? '' : filters.priceRange.max}
+                onChange={(e) =>
+                  updateFilter('priceRange', {
+                    ...filters.priceRange,
+                    max: Number(e.target.value) || Infinity
+                  })
+                }
+                className="w-1/2 h-9 px-2.5 bg-transparent text-xs outline-none"
+                min="0"
+              />
+            </div>
+          </div>
+        </div>
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="h-7 px-2.5 min-w-max rounded-md inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+          >
+            <RotateCcw size={12} />
+            {t('inventoryUiResetFilters')}
+
+          </button>
         )}
-
-        {/* Stock Status Dropdown - Single Select */}
-        <div>
-          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-            Stock Status
-          </label>
-          <div className="relative">
-            <select
-              value={filters.stockStatus[0] || ''}
-              onChange={(e) => updateFilter('stockStatus', e.target.value ? [e.target.value as 'out' | 'low' | 'normal' | 'high'] : [])}
-              className="w-full pl-3 pr-8 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm hover:border-primary focus:ring-2 focus:ring-primary transition-all appearance-none cursor-pointer"
-            >
-              <option value="">All Stock Levels</option>
-              <option value="high">High Stock</option>
-              <option value="normal">Normal Stock</option>
-              <option value="low">Low Stock</option>
-              <option value="out">Out of Stock</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
-          </div>
-        </div>
-
-        {/* Price Range Filter */}
-        <div>
-          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-            Price Range: ${filters.priceRange.min} - ${filters.priceRange.max === Infinity ? '∞' : filters.priceRange.max}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              placeholder="Min"
-              value={filters.priceRange.min || ''}
-              onChange={(e) => updateFilter('priceRange', { ...filters.priceRange, min: Number(e.target.value) || 0 })}
-              className="w-20 px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary transition-all"
-              min="0"
-            />
-            <span className="text-slate-400 text-sm">—</span>
-            <input
-              type="number"
-              placeholder="Max"
-              value={filters.priceRange.max === Infinity ? '' : filters.priceRange.max}
-              onChange={(e) => updateFilter('priceRange', { ...filters.priceRange, max: Number(e.target.value) || Infinity })}
-              className="w-20 px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary transition-all"
-              min="0"
-            />
-          </div>
-        </div>
-
-        {/* Stock Quantity Range Filter */}
-        <div>
-          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
-            Stock Quantity: {filters.stockRange.min} - {filters.stockRange.max === Infinity ? '∞' : filters.stockRange.max}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              placeholder="Min"
-              value={filters.stockRange.min || ''}
-              onChange={(e) => updateFilter('stockRange', { ...filters.stockRange, min: Number(e.target.value) || 0 })}
-              className="w-20 px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary transition-all"
-              min="0"
-            />
-            <span className="text-slate-400 text-sm">—</span>
-            <input
-              type="number"
-              placeholder="Max"
-              value={filters.stockRange.max === Infinity ? '' : filters.stockRange.max}
-              onChange={(e) => updateFilter('stockRange', { ...filters.stockRange, max: Number(e.target.value) || Infinity })}
-              className="w-20 px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary transition-all"
-              min="0"
-            />
-          </div>
-        </div>
       </div>
     </div>
   )

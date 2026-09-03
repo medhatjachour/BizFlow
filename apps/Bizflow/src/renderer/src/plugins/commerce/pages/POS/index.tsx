@@ -11,9 +11,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Grid, Zap } from 'lucide-react'
+import { Grid2X2, List, ShoppingCart as ShoppingCartIcon } from 'lucide-react'
 import ProductSearch from './components/ProductSearch'
-import QuickSale from '../QuickSale/QuickSale'
 import ShoppingCart from './components/ShoppingCart'
 import SuccessModal from './components/SuccessModal'
 import AddCustomerModal from './components/AddCustomerModal'
@@ -28,7 +27,7 @@ import type { Customer } from './types'
 import logger from '@/shared/utils/logger'
 import { ReceiptPreviewModal } from '../Sales/components/ReceiptPreviewModal'
 
-type ViewMode = 'grid' | 'quick'
+type ProductView = 'grid' | 'table'
 
 export default function POS(): JSX.Element {
   const {
@@ -47,7 +46,6 @@ export default function POS(): JSX.Element {
     removeFromCart,
     clearCart,
     completeSale,
-    completeSaleFromQuickView,
     setPaymentMethod,
     refreshCustomers,
     canApplyDiscount,
@@ -66,7 +64,7 @@ export default function POS(): JSX.Element {
 
   const [cartOpen, setCartOpen] = useState(false)
   const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [productView, setProductView] = useState<ProductView>('grid')
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false)
   const [isCompletingSale, setIsCompletingSale] = useState(false)
   
@@ -120,14 +118,14 @@ export default function POS(): JSX.Element {
       }
 
       // Auto-open cart in grid view if closed
-      if (viewMode === 'grid' && !cartOpen) {
+      if (!cartOpen) {
         setCartOpen(true)
       }
     } catch (error) {
       logger.error('Error scanning barcode:', error)
       toast.error('Failed to add product')
     }
-  }, [addToCart, toast, viewMode, cartOpen, setCartOpen])
+  }, [addToCart, toast, cartOpen, setCartOpen])
 
   // Enable barcode scanner
   useBarcodeScanner({
@@ -213,7 +211,7 @@ export default function POS(): JSX.Element {
   }
 
   return (
-    <div className=" flex bg-slate-50 h-full dark:bg-slate-900 relative">
+    <div className="relative flex h-[calc(100dvh-12rem)] min-h-0 overflow-hidden bg-slate-50 dark:bg-slate-900">
       <SuccessModal show={showSuccess} total={total} paymentMethod={paymentMethod} />
       <AddCustomerModal 
         show={showAddCustomerModal} 
@@ -222,64 +220,41 @@ export default function POS(): JSX.Element {
       />
 
       {/* Main Content Area - Left Side */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* View Mode Tabs */}
-        <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 pt-4">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-slate-100 dark:bg-slate-700 text-primary font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              <Grid size={18} />
-              {t('gridView')}
-            </button>
-            <button
-              onClick={() => setViewMode('quick')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-t-lg transition-colors ${
-                viewMode === 'quick'
-                  ? 'bg-slate-100 dark:bg-slate-700 text-primary font-semibold'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'
-              }`}
-            >
-              <Zap size={18} />
-              {t('quickSale')}
-            </button>
-           
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="m-3 mb-0 flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-white shadow-xs shadow-primary/20">
+              <ShoppingCartIcon className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">{t('pos')}</h1>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">{totalItems} {t('items')} <span className="mx-1">·</span> ${total.toFixed(2)} current order</p>
+            </div>
           </div>
-        </div>
+          <div className="inline-flex rounded-lg border border-slate-200/60 bg-slate-100 p-0.5 dark:border-slate-700/60 dark:bg-slate-800/90">
+            <button type="button" onClick={() => setProductView('grid')} className={`grid h-7 w-7 place-items-center rounded-md transition-all ${productView === 'grid' ? 'bg-white text-primary shadow-2xs dark:bg-slate-900' : 'text-slate-500 dark:text-slate-400'}`} title="Grid view" aria-label="Grid view"><Grid2X2 className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => setProductView('table')} className={`grid h-7 w-7 place-items-center rounded-md transition-all ${productView === 'table' ? 'bg-white text-primary shadow-2xs dark:bg-slate-900' : 'text-slate-500 dark:text-slate-400'}`} title="Table view" aria-label="Table view"><List className="h-3.5 w-3.5" /></button>
+          </div>
+        </header>
 
-        {/* Content based on view mode */}
-        {viewMode === 'grid' ? (
-          <ProductSearch 
-            onAddToCart={addToCart}
-            cartOpen={cartOpen}
-          />
-        ) : (
-          <QuickSale onCompleteSale={completeSaleFromQuickView} />
-        )}
+        <ProductSearch onAddToCart={addToCart} cartOpen={cartOpen} view={productView} />
       </div>
 
-      {/* Backdrop Overlay (visible when cart is open) - Only in Grid View */}
-      {cartOpen && viewMode === 'grid' && (
+      {cartOpen && (
         <div 
           role="button"
           tabIndex={0}
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300 lg:hidden"
+          className="absolute inset-0 z-20 bg-black/20 backdrop-blur-sm transition-opacity duration-300 lg:hidden"
           onClick={() => setCartOpen(false)}
           onKeyDown={(e) => e.key === 'Escape' && setCartOpen(false)}
           aria-label={t('closeCartOverlay')}
         />
       )}
 
-      {/* Floating Cart Toggle Button (when closed) - Only in Grid View */}
-      {!cartOpen && viewMode === 'grid' && (
+      {!cartOpen && (
         <button
           onClick={() => setCartOpen(true)}
-          className={`fixed bottom-6 z-50 group ${language === 'ar' ? 'left-6' : 'right-6'}`}
+          className={`absolute bottom-4 z-10 group ${language === 'ar' ? 'left-4' : 'right-4'}`}
           aria-label={t('openShoppingCart')}
         >
           <div className="relative">
@@ -309,25 +284,17 @@ export default function POS(): JSX.Element {
         </button>
       )}
 
-      {/* Cart Sidebar Panel - Right Side with Fixed Sections - Only in Grid View */}
-      {viewMode === 'grid' && (
+      {cartOpen && (
         <div 
           className={`
-            fixed lg:relative top-0 min-h-full  overflow-y-scroll z-10
-            w-full sm:w-[420px] lg:w-[380px] xl:w-[420px] 2xl:w-[480px]
+            absolute inset-y-0 z-30 overflow-hidden
+            w-full sm:w-[420px] lg:static lg:flex lg:h-full lg:w-[380px] lg:shrink-0 xl:w-[420px] 2xl:w-[480px]
             bg-white dark:bg-slate-800 
             shadow-2xl lg:shadow-none
-            transform transition-all duration-300 ease-out
             flex flex-col
             ${language === 'ar' 
               ? 'left-0 border-r border-slate-200 dark:border-slate-700' 
               : 'right-0 border-l border-slate-200 dark:border-slate-700'
-            }
-            ${cartOpen 
-              ? 'translate-x-0' 
-              : language === 'ar' 
-                ? '-translate-x-full lg:hidden' 
-                : 'translate-x-full lg:hidden'
             }
           `}
         >
@@ -358,7 +325,7 @@ export default function POS(): JSX.Element {
         </div>
 
         {/* Main Content Area - Scrollable with fixed sections */}
-        <div className="flex-1 flex flex-col overflow-scroll">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Cart Items - Takes full space now */}
           <div className="flex-1 overflow-auto">
             <ShoppingCart

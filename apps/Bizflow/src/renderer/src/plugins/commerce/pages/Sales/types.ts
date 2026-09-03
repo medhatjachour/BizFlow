@@ -49,6 +49,9 @@ export type SaleTransaction = {
   userId: string
   paymentMethod: string
   status: 'completed' | 'pending' | 'partially_refunded' | 'refunded'
+  completionScheduledFor?: string | null
+  completionDelayDays?: number | null
+  completedAt?: string | null
   customerName?: string | null
   subtotal: number
   tax: number

@@ -1,4 +1,3 @@
-import { Calendar, Users } from 'lucide-react'
 import Pagination from '@renderer/components/Pagination'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { SaleTransaction } from '../types'
@@ -22,6 +21,9 @@ interface TransactionsTableProps {
   onReceipt: (t: SaleTransaction) => void
   onInstallments: (t: SaleTransaction) => void
   onPartialRefund: (t: SaleTransaction) => void
+  updatingSaleIds: Set<string>
+  onComplete: (id: string) => void
+  onReschedule: (id: string, delayDays: number) => void
 }
 
 export function TransactionsTable({
@@ -40,61 +42,60 @@ export function TransactionsTable({
   onView,
   onReceipt,
   onInstallments,
-  onPartialRefund
+  onPartialRefund,
+  updatingSaleIds,
+  onComplete,
+  onReschedule
 }: TransactionsTableProps): JSX.Element {
   const { t } = useLanguage()
 
   return (
-    <div className="glass-card overflow-hidden">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-          Recent Transactions
-        </h2>
+    <section className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xs font-bold text-slate-900 dark:text-white">{t('salesUiRecentTransactions')}</h2>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400">{t('salesUiRecentTransactionsDescription')}</p>
+        </div>
+        <span className="text-[10px] font-semibold text-slate-400">{filteredTransactions.length} {t(filteredTransactions.length === 1 ? 'salesUiTransaction' : 'salesUiTransactions')}</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50 border-b-2 border-primary/20">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider w-12" />
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                {t('saleId')}
+        <table className="w-full min-w-[1120px] text-left">
+          <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+            <tr className="text-[9px] font-bold text-slate-500 uppercase">
+              <th className="px-3 py-2.5 w-10" />
+              <th className="px-3 py-2.5">
+                {t('salesUiSaleId')}
               </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                <div className="flex items-center gap-2">
-                  <Calendar size={16} />
-                  {t('saleDate')}
-                </div>
+              <th className="px-3 py-2.5">
+                {t('salesUiDate')}
               </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                <div className="flex items-center gap-2">
-                  <Users size={16} />
-                  {t('customer')}
-                </div>
+              <th className="px-3 py-2.5">
+                {t('salesUiCustomer')}
               </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                {t('itemCount')}
+              <th className="px-3 py-2.5 text-right">
+                {t('salesUiItems')}
               </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                {t('totalAmount')}
+              <th className="px-3 py-2.5 text-right">
+                {t('salesUiTotal')}
               </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                {t('payment')}
+              <th className="px-3 py-2.5">
+                {t('salesUiPayment')}
               </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                {t('status')}
+              <th className="px-3 py-2.5">
+                {t('salesUiStatus')}
               </th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                {t('actions')}
+              <th className="px-3 py-2.5 min-w-[300px]">
+                {t('salesUiActions')}
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center">
+                <td colSpan={9} className="px-6 py-16 text-center">
                   <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
-                    <p className="text-slate-600 dark:text-slate-400">
+                    <div className="animate-spin rounded-full h-7 w-7 border-2 border-slate-200 border-t-emerald-500 mb-3" />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {t('loading')}...
                     </p>
                   </div>
@@ -102,11 +103,11 @@ export function TransactionsTable({
               </tr>
             ) : filteredTransactions.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center">
-                  <p className="text-slate-600 dark:text-slate-400">
+                <td colSpan={9} className="px-6 py-16 text-center">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {transactions.length === 0
-                      ? 'No transactions yet. Complete a sale in the POS to see it here!'
-                      : 'No transactions match your search or filter criteria.'}
+                      ? t('salesUiNoTransactions')
+                      : t('salesUiNoMatches')}
                   </p>
                 </td>
               </tr>
@@ -124,6 +125,9 @@ export function TransactionsTable({
                   onReceipt={() => onReceipt(transaction)}
                   onInstallments={() => onInstallments(transaction)}
                   onPartialRefund={() => onPartialRefund(transaction)}
+                  updating={updatingSaleIds.has(transaction.id)}
+                  onComplete={() => onComplete(transaction.id)}
+                  onReschedule={(delayDays) => onReschedule(transaction.id, delayDays)}
                 />
               ))
             )}
@@ -139,6 +143,6 @@ export function TransactionsTable({
         itemsPerPage={ITEMS_PER_PAGE}
         itemName="transactions"
       />
-    </div>
+    </section>
   )
 }

@@ -36,6 +36,8 @@ interface API {
       transactionId: string
       items: Array<{ saleItemId: string; quantityToRefund: number }>
     }) => Promise<any>
+    complete: (id: string) => Promise<any>
+    rescheduleCompletion: (data: { transactionId: string; delayDays: number }) => Promise<any>
     getByDateRange: (data: { startDate: string; endDate: string }) => Promise<any>
   }
   inventory: {

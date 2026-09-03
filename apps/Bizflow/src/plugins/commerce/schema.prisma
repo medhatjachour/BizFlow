@@ -205,6 +205,9 @@ model SaleTransaction {
   customerId    String?    // Optional: Link to Customer for tracking
   paymentMethod String     @default("cash") // cash or card
   status        String     @default("completed") // completed, pending, partially_refunded, refunded
+  completionScheduledFor DateTime?
+  completionDelayDays Int?
+  completedAt   DateTime?
   customerName  String?    // Optional customer name (kept for backward compatibility)
   subtotal      Float      // Sum of all items before tax
   tax           Float      @default(0) // Tax amount
@@ -221,6 +224,7 @@ model SaleTransaction {
   @@index([userId])
   @@index([customerId])
   @@index([status])
+  @@index([status, completionScheduledFor])
   @@index([paymentMethod])
   @@index([createdAt, status])
   @@index([userId, createdAt])

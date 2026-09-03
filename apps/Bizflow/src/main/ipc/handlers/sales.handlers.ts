@@ -7,6 +7,10 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../utils/logger'
 import { cacheService } from '../../services/CacheService'
+import {
+  buildCompletionSchedule,
+  normalizeCompletionDelayDays
+} from '../../services/SaleCompletionService'
 
 const log = createLogger('Sales')
 
@@ -16,6 +20,7 @@ export function registerSalesHandlers(prisma: any) {
     try {
       log.warn('sales:create is deprecated - use sale-transactions:create instead')
       const { productId, variantId, userId, quantity, price, total, paymentMethod } = saleData
+      const completionDelayDays = normalizeCompletionDelayDays(saleData.completionDelayDays)
       
       if (prisma) {
         // Redirect to new SaleTransaction system
@@ -30,7 +35,10 @@ export function registerSalesHandlers(prisma: any) {
               discount: 0,
               total,
               paymentMethod,
-              status: 'completed'
+              status: completionDelayDays === 0 ? 'completed' : 'pending',
+              completionDelayDays,
+              completionScheduledFor: buildCompletionSchedule(completionDelayDays),
+              completedAt: completionDelayDays === 0 ? new Date() : null
             }
           })
           
@@ -66,7 +74,16 @@ export function registerSalesHandlers(prisma: any) {
       }
       
       // Mock fallback
-      return { success: true, sale: { id: 's_mock', ...saleData, status: 'completed' } }
+      return {
+        success: true,
+        sale: {
+          id: 's_mock',
+          ...saleData,
+          status: completionDelayDays === 0 ? 'completed' : 'pending',
+          completionDelayDays,
+          completionScheduledFor: buildCompletionSchedule(completionDelayDays).toISOString()
+        }
+      }
     } catch (error) {
       log.error('Error creating sale:', error)
       throw error
