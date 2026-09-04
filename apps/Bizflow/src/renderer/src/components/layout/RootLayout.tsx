@@ -131,14 +131,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   // Build dynamic navigation with unified Commerce plugin entry
   const navItems: NavItem[] = [
     ...navigation.slice(0, dashboardIdx + 1),
-    ...(__PLUGIN_COMMERCE__ && commerceEnabled ? [{
-      name: 'Commerce',
-      translationKey: 'commerce',
-      href: '/commerce',
-      icon: ShoppingCart,
-      roles: ['admin', 'manager', 'sales', 'inventory', 'cashier'],
-      capability: 'access_commerce' as Capability
-    }] : []),
+    
     ...navigation.slice(dashboardIdx + 1, employeesIdx + 1),
     ...(__PLUGIN_BAKERY__ && bakeryEnabled ? [{
       name: 'Bakery',
@@ -147,6 +140,14 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       icon: ChefHat,
       roles: ['admin', 'manager', 'bakery_staff'],
       capability: 'access_bakery' as Capability
+    }] : []),
+    ...(__PLUGIN_COMMERCE__ && commerceEnabled ? [{
+      name: 'Commerce',
+      translationKey: 'commerce',
+      href: '/commerce',
+      icon: ShoppingCart,
+      roles: ['admin', 'manager', 'sales', 'inventory', 'cashier'],
+      capability: 'access_commerce' as Capability
     }] : []),
     ...(__PLUGIN_RESTAURANT__ && restaurantEnabled ? [{
       name: 'Restaurant',

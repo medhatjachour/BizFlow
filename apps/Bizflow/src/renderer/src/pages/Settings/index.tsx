@@ -67,15 +67,28 @@ const VALID_PLUGINS: PluginId[] = [
 
 // Tab visibility configuration per plugin
 const PLUGIN_TAB_CONFIG: Record<PluginId, SettingsTab[]> = {
-  clinic: ['general', 'users', 'notifications', 'email', 'backup'],
-  vet: ['general', 'users', 'notifications', 'email', 'backup'],
-  gym: ['general', 'users', 'payments', 'notifications', 'email', 'backup'],
-  bakery: ['general', 'display', 'categories', 'users', 'payments', 'tax', 'backup', 'archive'],
-  commerce: ['general', 'display', 'categories', 'users', 'payments', 'tax', 'notifications', 'email', 'backup', 'archive'],
-  restaurant: ['general', 'display', 'categories', 'users', 'payments', 'tax', 'notifications', 'email', 'backup', 'archive'],
-  warehouse: ['general', 'categories', 'users', 'notifications', 'backup', 'archive'],
-  pharmacy: ['general', 'display', 'categories', 'users', 'payments', 'tax', 'backup', 'archive'],
-  coffee: ['general', 'display', 'categories', 'users', 'payments', 'tax', 'notifications', 'backup', 'archive']
+    commerce: [
+    'general',
+    'display',
+    'categories',
+    'users',
+    'payments',
+    'tax',
+    'notifications',
+    'email',
+    'backup',
+    'archive',
+    'modules'
+  ],
+  clinic: ['general', 'users', 'backup'],
+  vet: ['general', 'users', 'backup'],
+  gym: ['general', 'users', 'backup'],
+  bakery: ['users', 'user', 'backup'],
+
+  restaurant: ['general', 'users', 'tax', 'backup'],
+  warehouse: ['general', 'users', 'backup'],
+  pharmacy: ['general', 'categories', 'tax', 'backup'],
+  coffee: ['general', 'users', 'tax', 'backup']
 }
 
 function resolveBundledSinglePlugin(): PluginId | null {
@@ -131,7 +144,8 @@ export default function Settings() {
   const pluginContext = useMemo<PluginId | null>(() => {
     const requested = searchParams.get('plugin')
     const active = typeof document !== 'undefined' ? document.body.dataset.plugin : null
-    const last = typeof localStorage !== 'undefined' ? localStorage.getItem('bizflow:lastPlugin') : null
+    const last =
+      typeof localStorage !== 'undefined' ? localStorage.getItem('bizflow:lastPlugin') : null
     const singleBundled = resolveBundledSinglePlugin()
 
     const candidate = [requested, active, last, singleBundled].find(
@@ -148,7 +162,7 @@ export default function Settings() {
       { id: 'display' as SettingsTab, name: t('display'), icon: Monitor },
       { id: 'categories' as SettingsTab, name: t('categories'), icon: Tag },
       { id: 'users' as SettingsTab, name: t('userManagement'), icon: Users },
-     
+
       { id: 'tax' as SettingsTab, name: t('taxReceipt'), icon: Receipt },
       { id: 'notifications' as SettingsTab, name: t('notifications'), icon: Bell },
       { id: 'email' as SettingsTab, name: 'Email Reports', icon: Mail },
@@ -196,10 +210,10 @@ export default function Settings() {
         const timer = setTimeout(() => setSaveSuccess(false), 3000)
         return () => clearTimeout(timer)
       }
-    return(false)
+      return false
     } catch (error) {
       logger.error('Failed to save settings:', error)
-      return(false)
+      return false
     }
   }
 
@@ -265,18 +279,18 @@ export default function Settings() {
           </nav>
         </aside>
 
-          {/* Content Area */}
-          <main className="flex-1 min-w-0 w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 lg:p-8">
-            <div className="space-y-6">
-              {activeTab === 'general' && (
-  <GeneralSettings
-    theme={theme}
-    onThemeChange={(newTheme) => setTheme(newTheme as Parameters<typeof setTheme>[0])}
-    actualTheme={actualTheme}
-    language={language}
-    onLanguageChange={setLanguage}
-  />
-)}
+        {/* Content Area */}
+        <main className="flex-1 min-w-0 w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 lg:p-8">
+          <div className="space-y-6">
+            {activeTab === 'general' && (
+              <GeneralSettings
+                theme={theme}
+                onThemeChange={(newTheme) => setTheme(newTheme as Parameters<typeof setTheme>[0])}
+                actualTheme={actualTheme}
+                language={language}
+                onLanguageChange={setLanguage}
+              />
+            )}
 
             {activeTab === 'display' && (
               <DisplaySettings settings={displaySettings} onChange={handleDisplaySettingsChange} />
@@ -294,8 +308,6 @@ export default function Settings() {
                 </div>
               </div>
             )}
-
-        
 
             {activeTab === 'tax' && (
               <TaxReceiptSettings settings={taxReceiptSettings} onChange={setTaxReceiptSettings} />
