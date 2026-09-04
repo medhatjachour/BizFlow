@@ -1,344 +1,534 @@
 /**
  * Email Settings Panel
- * Configure daily email reports
+ * Configure automated business email reports with full Arabic (RTL) & English (LTR) support
  */
 
-import { useState, useEffect } from 'react'
-import { Mail, Send, Eye, TestTube, Clock, CheckCircle, XCircle } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  Mail,
+  Send,
+  Eye,
+  TestTube,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  Save,
+  TrendingUp,
+  AlertTriangle,
+  FileText,
+  Calendar,
+  DollarSign,
+  Package
+} from 'lucide-react'
+import { useLanguage } from '../../contexts/LanguageContext'
 import logger from '../../../../shared/utils/logger'
 
 interface EmailSettingsData {
-  userId: string
+  userId?: string
   email: string
   frequency: 'daily' | 'weekly' | 'monthly'
   enabled: boolean
 }
 
-type Props = {
+interface ReportPreviewData {
+  totalSales: number
+  totalRevenue: number
+  totalProfit: number
+  topProducts: Array<{ name: string; quantity: number; revenue: number }>
+  lowStockAlerts: Array<{ name: string; currentStock: number }>
+}
+
+interface EmailSettingsProps {
   onSave?: () => void
 }
 
-export default function EmailSettings({ onSave }: Props) {
+
+
+export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) {
+  const { t, language } = useLanguage()
+  const isAr = language === 'ar'
+
+  // Text dictionary helper for complete English/Arabic localization
+  const i18n = {
+    title: t('emailReports') || (isAr ? 'تقارير البريد الإلكتروني' : 'Email Reports'),
+    subtitle: isAr
+      ? 'احصل على تقارير أعمال تلقائية يتم تسليمها مباشرة إلى بريدك الإلكتروني.'
+      : 'Get automated business performance reports delivered straight to your inbox.',
+    enableTitle: isAr ? 'تفعيل التقارير الآلية' : 'Enable Automated Reports',
+    enableDesc: isAr
+      ? 'إرسال ملخصات المبيعات والأرباح والتنبيهات تلقائياً'
+      : 'Automatically receive sales, revenue, and inventory alert summaries',
+    configTitle: isAr ? 'إعدادات البريد والمواعيد' : 'Email & Delivery Configuration',
+    emailLabel: isAr ? 'البريد الإلكتروني للمستلم' : 'Recipient Email Address',
+    emailPlaceholder: isAr ? 'name@business.com' : 'name@business.com',
+    freqLabel: isAr ? 'تكرار إرسال التقرير' : 'Report Frequency',
+    freqDaily: isAr ? 'يومياً (موصى به)' : 'Daily (Recommended)',
+    freqWeekly: isAr ? 'أسبوعياً' : 'Weekly',
+    freqMonthly: isAr ? 'شهرياً' : 'Monthly',
+    actionsTitle: isAr ? 'الإجراءات والاختبار' : 'Actions & Testing',
+    btnTest: isAr ? 'إرسال بريد تجريبي' : 'Send Test Email',
+    btnPreview: isAr ? 'معاينة التقرير' : 'Preview Report',
+    btnSendNow: isAr ? 'إرسال التقرير الآن' : 'Send Report Now',
+    btnSave: t('saveSettings') || (isAr ? 'حفظ الإعدادات' : 'Save Settings'),
+    testing: isAr ? 'جاري الإرسال التجريبي…' : 'Sending test…',
+    previewing: isAr ? 'جاري التحميل…' : 'Generating preview…',
+    sendingNow: isAr ? 'جاري إرسال التقرير…' : 'Sending report…',
+    saving: isAr ? 'جاري الحفظ…' : 'Saving…',
+    scheduleTitle: isAr ? 'الجدول الزمني للتقارير' : 'Automated Schedule',
+    scheduleDesc: isAr
+      ? 'يتم إرسال التقرير اليومي تلقائياً في نهاية اليوم عند الساعة 11:00 مساءً لإبقائك على اطلاع دائم.'
+      : 'Reports are automatically scheduled and dispatched at 11:00 PM to summarize the day’s activities.',
+    previewTitle: isAr ? 'معاينة التقرير الفعلي' : 'Live Report Preview',
+    previewNotice: isAr
+      ? 'هذه المعاينة توضح بيانات اليوم الحالية. سيتم إرسال التقرير الفعلي في الموعد المجدول.'
+      : 'This preview shows current live data for today. The scheduled report will be generated at delivery time.',
+    statSales: isAr ? 'إجمالي المبيعات' : 'Total Sales',
+    statRevenue: isAr ? 'إجمالي الإيرادات' : 'Total Revenue',
+    statProfit: isAr ? 'صافي الأرباح' : 'Net Profit',
+    topProductsTitle: isAr ? 'المنتجات الأكثر مبيعاً' : 'Top Selling Products',
+    soldCount: isAr ? 'تم بيع' : 'sold',
+    lowStockTitle: isAr ? 'تنبيهات نقص المخزون' : 'Low Stock Alerts',
+    remaining: isAr ? 'متبقي' : 'remaining',
+    testSuccess: isAr ? 'تم إرسال البريد التجريبي بنجاح! تحقق من صندوق الوارد.' : 'Test email sent successfully! Check your inbox.',
+    saveSuccess: isAr ? 'تم حفظ إعدادات البريد بنجاح!' : 'Email settings saved successfully!',
+    sendSuccess: isAr ? 'تم إرسال التقرير بنجاح!' : 'Report sent successfully!',
+    errorEmailRequired: isAr ? 'يرجى إدخال عنوان بريد إلكتروني صالح أولاً.' : 'Please enter a valid email address first.',
+    errorGeneric: isAr ? 'حدث خطأ أثناء تنفيذ العملية.' : 'An error occurred while processing your request.'
+  }
+
+  // Component States
   const [settings, setSettings] = useState<EmailSettingsData>({
-    userId: '',
+    userId: 'default-user',
     email: '',
     frequency: 'daily',
     enabled: false
   })
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [testing, setTesting] = useState(false)
-  const [preview, setPreview] = useState<any>(null)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  // Load current settings on mount
-  useEffect(() => {
-    loadSettings()
-  }, [])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [isTesting, setIsTesting] = useState(false)
+  const [isSendingNow, setIsSendingNow] = useState(false)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [preview, setPreview] = useState<ReportPreviewData | null>(null)
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const loadSettings = async () => {
-    setLoading(true)
+  // Safe IPC invoker supporting window.api or window.electron
+  const invokeIPC = async (channel: string, ...args: any[]) => {
+    
+    if (window.electron?.ipcRenderer?.invoke) {
+      return await window.electron.ipcRenderer.invoke(channel, ...args)
+    }
+    throw new Error('Electron IPC bridge is unavailable')
+  }
+
+  // Load Settings
+  const loadSettings = useCallback(async () => {
+    setIsLoading(true)
     try {
-      const result = await window.electron.ipcRenderer.invoke('email:getConfig', 'default-user')
-      if (result.success && result.config) {
-        setSettings(result.config)
+      const result = await invokeIPC('email:getConfig', 'default-user')
+      if (result?.success && result.config) {
+        setSettings({
+          userId: result.config.userId || 'default-user',
+          email: result.config.email || '',
+          frequency: result.config.frequency || 'daily',
+          enabled: Boolean(result.config.enabled)
+        })
       }
     } catch (error) {
       logger.error('Failed to load email settings:', error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }
+  }, [])
 
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
+
+  // Auto-dismiss alert
+  useEffect(() => {
+    if (!feedback) return
+    const timer = setTimeout(() => setFeedback(null), 5000)
+    return () => clearTimeout(timer)
+  }, [feedback])
+
+  // Save Settings
   const handleSave = async () => {
-    setSaving(true)
-    setMessage(null)
+    setIsSaving(true)
+    setFeedback(null)
 
     try {
-      const result = await window.electron.ipcRenderer.invoke('email:configure', settings)
-      if (result.success) {
-        setMessage({ type: 'success', text: 'Email settings saved successfully!' })
+      const result = await invokeIPC('email:configure', settings)
+      if (result?.success) {
+        setFeedback({ type: 'success', text: i18n.saveSuccess })
         onSave?.()
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to save settings' })
+        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to save email settings:', error)
-      setMessage({ type: 'error', text: 'Failed to save email settings' })
+      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
     } finally {
-      setSaving(false)
+      setIsSaving(false)
     }
   }
 
+  // Test Email
   const handleTestEmail = async () => {
-    if (!settings.email) {
-      setMessage({ type: 'error', text: 'Please enter an email address first' })
+    if (!settings.email.trim()) {
+      setFeedback({ type: 'error', text: i18n.errorEmailRequired })
       return
     }
 
-    setTesting(true)
-    setMessage(null)
+    setIsTesting(true)
+    setFeedback(null)
 
     try {
-      const result = await window.electron.ipcRenderer.invoke('email:testSend', settings.email)
-      if (result.success) {
-        setMessage({ type: 'success', text: 'Test email sent successfully! Check your inbox.' })
+      const result = await invokeIPC('email:testSend', settings.email.trim())
+      if (result?.success) {
+        setFeedback({ type: 'success', text: i18n.testSuccess })
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to send test email' })
+        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to send test email:', error)
-      setMessage({ type: 'error', text: 'Failed to send test email' })
+      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
     } finally {
-      setTesting(false)
+      setIsTesting(false)
     }
   }
 
+  // Live Report Preview
   const handlePreview = async () => {
-    setLoading(true)
+    setIsPreviewLoading(true)
+    setFeedback(null)
+
     try {
-      const result = await window.electron.ipcRenderer.invoke('email:generatePreview', 'default-user')
-      if (result.success) {
+      const result = await invokeIPC('email:generatePreview', 'default-user')
+      if (result?.success && result.data) {
         setPreview(result.data)
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to generate preview' })
+        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to generate preview:', error)
-      setMessage({ type: 'error', text: 'Failed to generate preview' })
+      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
     } finally {
-      setLoading(false)
+      setIsPreviewLoading(false)
     }
   }
 
+  // Send Report Now
   const handleSendNow = async () => {
-    setLoading(true)
-    setMessage(null)
+    if (!settings.email.trim()) {
+      setFeedback({ type: 'error', text: i18n.errorEmailRequired })
+      return
+    }
+
+    setIsSendingNow(true)
+    setFeedback(null)
 
     try {
-      const result = await window.electron.ipcRenderer.invoke('email:sendReport', 'default-user')
-      if (result.success) {
-        setMessage({ type: 'success', text: 'Daily report sent successfully!' })
+      const result = await invokeIPC('email:sendReport', 'default-user')
+      if (result?.success) {
+        setFeedback({ type: 'success', text: i18n.sendSuccess })
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to send report' })
+        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to send report:', error)
-      setMessage({ type: 'error', text: 'Failed to send report' })
+      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
     } finally {
-      setLoading(false)
+      setIsSendingNow(false)
     }
   }
 
-  if (loading && !settings.userId) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+        <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+        <p className="text-sm font-medium">{i18n.previewing}</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
-          Daily Email Reports
+        <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+          <Mail className="w-5 h-5 text-primary" />
+          <span>{i18n.title}</span>
         </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-          Get automated daily business reports delivered to your email every morning at 11 PM.
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+          {i18n.subtitle}
         </p>
       </div>
 
-      {/* Status Message */}
-      {message && (
-        <div className={`p-4 rounded-lg flex items-center gap-3 ${
-          message.type === 'success'
-            ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
-            : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
-        }`}>
-          {message.type === 'success' ? (
-            <CheckCircle size={20} />
+      {/* Alert / Feedback Notification */}
+      {feedback && (
+        <div
+          role="alert"
+          className={`flex items-start gap-3 p-4 rounded-xl border transition-all animate-in fade-in slide-in-from-top-2 ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+              : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
+          }`}
+        >
+          {feedback.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
           ) : (
-            <XCircle size={20} />
+            <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
           )}
-          <span>{message.text}</span>
+          <span className="text-sm font-medium flex-1">{feedback.text}</span>
         </div>
       )}
 
-      {/* Enable/Disable Toggle */}
-      <div className="glass-card p-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-primary/20 text-primary rounded-lg flex items-center justify-center">
-            <Mail size={24} />
+      {/* Master Enable/Disable Toggle */}
+      <div className="flex items-center justify-between p-5 rounded-2xl border border-primary/20 bg-primary/[0.03] dark:bg-primary/[0.05] transition-colors">
+        <div className="flex items-center gap-4 min-w-0 me-4">
+          <div className="p-3 rounded-xl bg-primary/10 text-primary flex-shrink-0">
+            <Mail className="w-6 h-6" />
           </div>
-          <div>
-            <div className="font-semibold text-slate-900 dark:text-white">Enable Daily Reports</div>
-            <div className="text-sm text-slate-600 dark:text-slate-400">
-              Receive automated business reports via email
+          <div className="min-w-0">
+            <div className="font-semibold text-slate-900 dark:text-white text-base">
+              {i18n.enableTitle}
+            </div>
+            <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              {i18n.enableDesc}
             </div>
           </div>
         </div>
+
+        {/* RTL-Aware Master Switch */}
         <button
-          onClick={() => setSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
-          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            settings.enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'
+          type="button"
+          role="switch"
+          aria-checked={settings.enabled}
+          aria-label={i18n.enableTitle}
+          onClick={() => setSettings((prev) => ({ ...prev, enabled: !prev.enabled }))}
+          className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
+            settings.enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
           }`}
         >
           <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              settings.enabled ? 'translate-x-6' : 'translate-x-1'
+            className={`pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+              settings.enabled ? 'ltr:translate-x-5 rtl:-translate-x-5' : 'translate-x-0'
             }`}
           />
         </button>
       </div>
 
-      {/* Email Configuration */}
-      <div className="glass-card p-6 space-y-4">
-        <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Email Configuration</h4>
+      {/* Email Configuration Card */}
+      <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 space-y-5">
+        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary" />
+          {i18n.configTitle}
+        </h4>
 
-        {/* Email Address */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Email Address
-          </label>
-          <input
-            type="email"
-            value={settings.email}
-            onChange={(e) => setSettings(prev => ({ ...prev, email: e.target.value }))}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="your-email@example.com"
-          />
-        </div>
-
-        {/* Frequency */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            Report Frequency
-          </label>
-          <select
-            value={settings.frequency}
-            onChange={(e) => setSettings(prev => ({ ...prev, frequency: e.target.value as 'daily' | 'weekly' | 'monthly' }))}
-            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="daily">Daily (Recommended)</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="glass-card p-6">
-        <h4 className="font-semibold text-slate-900 dark:text-white mb-4">Actions</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <button
-            onClick={handleTestEmail}
-            disabled={testing || !settings.email}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <TestTube size={18} />
-            {testing ? 'Sending...' : 'Send Test Email'}
-          </button>
-
-          <button
-            onClick={handlePreview}
-            disabled={loading}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Eye size={18} />
-            {loading ? 'Loading...' : 'Preview Report'}
-          </button>
-
-          <button
-            onClick={handleSendNow}
-            disabled={loading || !settings.enabled}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Send size={18} />
-            {loading ? 'Sending...' : 'Send Report Now'}
-          </button>
-
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <CheckCircle size={18} />
-            {saving ? 'Saving...' : 'Save Settings'}
-          </button>
-        </div>
-      </div>
-
-      {/* Report Preview */}
-      {preview && (
-        <div className="glass-card p-6">
-          <h4 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Eye size={18} />
-            Report Preview
-          </h4>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">{preview.totalSales}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">Total Sales</div>
-              </div>
-              <div className="text-center p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <div className="text-2xl font-bold text-slate-900 dark:text-white">${preview.totalRevenue.toFixed(2)}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">Revenue</div>
-              </div>
-              <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">${preview.totalProfit.toFixed(2)}</div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">Profit</div>
-              </div>
-            </div>
-
-            {preview.topProducts.length > 0 && (
-              <div>
-                <h5 className="font-medium text-slate-900 dark:text-white mb-2">Top Products</h5>
-                <div className="space-y-2">
-                  {preview.topProducts.slice(0, 3).map((product: any, index: number) => (
-                    <div key={index} className="flex justify-between text-sm">
-                      <span>{product.name}</span>
-                      <span className="text-slate-600 dark:text-slate-400">
-                        {product.quantity} sold • ${product.revenue.toFixed(2)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {preview.lowStockAlerts.length > 0 && (
-              <div>
-                <h5 className="font-medium text-amber-600 dark:text-amber-400 mb-2">⚠️ Low Stock Alerts</h5>
-                <div className="space-y-1">
-                  {preview.lowStockAlerts.slice(0, 3).map((alert: any, index: number) => (
-                    <div key={index} className="text-sm text-amber-700 dark:text-amber-300">
-                      {alert.name}: {alert.currentStock} remaining
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="text-xs text-slate-500 dark:text-slate-400 pt-4 border-t">
-              This preview shows today's data. The actual report will be sent at 11:00 PM daily.
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Email Address */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              {i18n.emailLabel} <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                dir="ltr"
+                value={settings.email}
+                onChange={(e) => setSettings((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder={i18n.emailPlaceholder}
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-start"
+              />
             </div>
           </div>
+
+          {/* Frequency */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              {i18n.freqLabel}
+            </label>
+            <div className="relative">
+              <select
+                value={settings.frequency}
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    frequency: e.target.value as 'daily' | 'weekly' | 'monthly'
+                  }))
+                }
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              >
+                <option value="daily">{i18n.freqDaily}</option>
+                <option value="weekly">{i18n.freqWeekly}</option>
+                <option value="monthly">{i18n.freqMonthly}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Controls */}
+      <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 space-y-4">
+        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-primary" />
+          {i18n.actionsTitle}
+        </h4>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Test Email */}
+          <button
+            type="button"
+            onClick={handleTestEmail}
+            disabled={isTesting || !settings.email.trim()}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isTesting ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <TestTube className="w-4 h-4 text-blue-500" />}
+            <span>{isTesting ? i18n.testing : i18n.btnTest}</span>
+          </button>
+
+          {/* Preview Report */}
+          <button
+            type="button"
+            onClick={handlePreview}
+            disabled={isPreviewLoading}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium text-sm transition-all disabled:opacity-50"
+          >
+            {isPreviewLoading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Eye className="w-4 h-4 text-slate-500" />}
+            <span>{isPreviewLoading ? i18n.previewing : i18n.btnPreview}</span>
+          </button>
+
+          {/* Send Now */}
+          <button
+            type="button"
+            onClick={handleSendNow}
+            disabled={isSendingNow || !settings.enabled || !settings.email.trim()}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSendingNow ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            <span>{isSendingNow ? i18n.sendingNow : i18n.btnSendNow}</span>
+          </button>
+
+          {/* Save Settings */}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 font-medium text-sm transition-all shadow-sm active:scale-95 disabled:opacity-50"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            <span>{isSaving ? i18n.saving : i18n.btnSave}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Live Preview Panel */}
+      {preview && (
+        <div className="p-6 rounded-2xl border border-primary/20 bg-white dark:bg-slate-800 shadow-sm space-y-6 animate-in fade-in duration-200">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4">
+            <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-base">
+              <Eye className="w-5 h-5 text-primary" />
+              <span>{i18n.previewTitle}</span>
+            </h4>
+            <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+              Live Data
+            </span>
+          </div>
+
+          {/* KPI Metrics */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 text-start">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wider">{i18n.statSales}</span>
+                <TrendingUp className="w-4 h-4 text-blue-500" />
+              </div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                {preview.totalSales || 0}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 text-start">
+              <div className="flex items-center justify-between text-slate-500 mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wider">{i18n.statRevenue}</span>
+                <DollarSign className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div className="text-2xl font-bold text-slate-900 dark:text-white">
+                ${(preview.totalRevenue || 0).toFixed(2)}
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-start">
+              <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wider">{i18n.statProfit}</span>
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                ${(preview.totalProfit || 0).toFixed(2)}
+              </div>
+            </div>
+          </div>
+
+          {/* Top Products */}
+          {Array.isArray(preview.topProducts) && preview.topProducts.length > 0 && (
+            <div className="space-y-3">
+              <h5 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-primary" />
+                {i18n.topProductsTitle}
+              </h5>
+              <div className="divide-y divide-slate-100 dark:divide-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden">
+                {preview.topProducts.slice(0, 3).map((product, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 text-sm">
+                    <span className="font-medium text-slate-800 dark:text-slate-200">{product.name}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {product.quantity} {i18n.soldCount} • ${(product.revenue || 0).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Low Stock Alerts */}
+          {Array.isArray(preview.lowStockAlerts) && preview.lowStockAlerts.length > 0 && (
+            <div className="space-y-2">
+              <h5 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {i18n.lowStockTitle}
+              </h5>
+              <div className="space-y-1.5">
+                {preview.lowStockAlerts.slice(0, 3).map((alert, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300"
+                  >
+                    <span className="font-semibold">{alert.name}</span>
+                    <span>{alert.currentStock} {i18n.remaining}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-700">
+            {i18n.previewNotice}
+          </p>
         </div>
       )}
 
-      {/* Schedule Info */}
-      <div className="glass-card p-4 flex items-center gap-4">
-        <div className="w-10 h-10 bg-primary/20 text-primary rounded-lg flex items-center justify-center">
-          <Clock size={20} />
+      {/* Schedule Info Card */}
+      <div className="flex items-start gap-3.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/70">
+        <div className="p-2.5 rounded-xl bg-primary/10 text-primary flex-shrink-0 mt-0.5">
+          <Clock className="w-5 h-5" />
         </div>
-        <div className="flex-1">
-          <div className="font-medium text-slate-900 dark:text-white">Daily Schedule</div>
-          <div className="text-sm text-slate-600 dark:text-slate-400">
-            Reports are automatically sent at 11:00 PM every day to keep you informed overnight.
+        <div className="text-xs leading-relaxed space-y-0.5">
+          <div className="font-semibold text-slate-900 dark:text-white text-sm">
+            {i18n.scheduleTitle}
           </div>
+          <p className="text-slate-500 dark:text-slate-400">
+            {i18n.scheduleDesc}
+          </p>
         </div>
       </div>
     </div>
