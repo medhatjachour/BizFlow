@@ -1,11 +1,23 @@
 /**
  * Category Settings Component
- * Manage product categories for the application
- * Now connected to database via IPC
+ * Enterprise-grade category management with search, inline editing, and modal confirmations
  */
 
-import { useState, useEffect } from 'react'
-import { Plus, X, Edit2, Check, Tag, Loader2, AlertCircle } from 'lucide-react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import {
+  Plus,
+  Trash2,
+  Edit3,
+  Check,
+  X,
+  Tag,
+  Loader2,
+  AlertCircle,
+  Search,
+  CheckCircle2,
+  Info,
+  Layers
+} from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import logger from '../../../../shared/utils/logger'
 
@@ -16,346 +28,501 @@ interface Category {
   icon?: string
   color?: string
   productCount?: number
+  createdAt?: string
 }
+
 
 export default function CategorySettings() {
   const { t } = useLanguage()
+
+  // State Management
   const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [newCategory, setNewCategory] = useState('')
-  const [newDescription, setNewDescription] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Create form state
+  const [formName, setFormName] = useState('')
+  const [formDesc, setFormDesc] = useState('')
+
+  // Inline editing state
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
-  const [editDescription, setEditDescription] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  const [editDesc, setEditDesc] = useState('')
 
-  // Load categories from database
-  useEffect(() => {
-    loadCategories()
+  // Delete modal state
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null)
+
+  // Notifications
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  const showFeedback = useCallback((type: 'success' | 'error', message: string) => {
+    setFeedback({ type, message })
   }, [])
 
-  const loadCategories = async () => {
+  // Auto-dismiss notification after 4s with cleanup
+  useEffect(() => {
+    if (!feedback) return
+    const timer = setTimeout(() => setFeedback(null), 4000)
+    return () => clearTimeout(timer)
+  }, [feedback])
+
+  // Fetch categories from Electron DB
+  const loadCategories = useCallback(async () => {
     try {
-      setLoading(true)
-      setError(null)
-      const ipc = (window as any).api
-      const result = await ipc.categories.getAll()
-      
+      setIsLoading(true)
+      const api = window.api?.categories
+      if (!api) {
+        throw new Error('Categories API bridge is not available')
+      }
+
+      const result = await api.getAll()
       if (result.success) {
         setCategories(result.categories || [])
       } else {
-        setError(result.message || t('failedToLoadCategories'))
+        showFeedback('error', result.message || t('failedToLoadCategories'))
       }
     } catch (err: any) {
-      setError(err.message || t('failedToLoadCategories'))
       logger.error('Error loading categories:', err)
+      showFeedback('error', err?.message || t('failedToLoadCategories'))
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
-  }
+  }, [t, showFeedback])
 
-  const showSuccess = (message: string) => {
-    setSuccess(message)
-    setTimeout(() => setSuccess(null), 3000)
-  }
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
 
-  const handleAdd = async () => {
-    if (!newCategory.trim()) return
+  // Filtered categories
+  const filteredCategories = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return categories
+    return categories.filter(
+      (c) =>
+        c.name.toLowerCase().includes(query) ||
+        (c.description && c.description.toLowerCase().includes(query))
+    )
+  }, [categories, searchQuery])
+
+  // Handle Add Category
+  const handleAdd = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    const trimmedName = formName.trim()
+    if (!trimmedName || isSubmitting) return
 
     try {
-      setError(null)
-      const ipc = (window as any).api
-      const result = await ipc.categories.create({
-        name: newCategory.trim(),
-        description: newDescription.trim() || undefined
+      setIsSubmitting(true)
+      const api = window.api?.categories
+      if (!api) throw new Error('API not available')
+
+      const result = await api.create({
+        name: trimmedName,
+        description: formDesc.trim() || undefined
       })
 
       if (result.success) {
-        showSuccess(t('categoryAddedSuccess'))
-        setNewCategory('')
-        setNewDescription('')
+        showFeedback('success', t('categoryAddedSuccess'))
+        setFormName('')
+        setFormDesc('')
         await loadCategories()
       } else {
-        setError(result.message || t('failedToAddCategory'))
+        showFeedback('error', result.message || t('failedToAddCategory'))
       }
     } catch (err: any) {
-      setError(err.message || t('failedToAddCategory'))
       logger.error('Error adding category:', err)
+      showFeedback('error', err?.message || t('failedToAddCategory'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const handleDelete = async (id: string, name: string, productCount: number) => {
-    if (productCount > 0) {
-      setError(`${t('cannotDeleteCategory')} "${name}" - ${productCount} ${t('productsCount')}. ${t('reassignProductsFirst')}`)
-      setTimeout(() => setError(null), 5000)
-      return
-    }
-
-    if (!confirm(`⚠️ ${t('confirmDeleteCategory')} "${name}" ${t('category')}?\n\n${t('thisActionCannotBeUndone')}`)) return
-
-    try {
-      setError(null)
-      const ipc = (window as any).api
-      const result = await ipc.categories.delete(id)
-
-      if (result.success) {
-        showSuccess(`${t('categoryDeletedSuccess')} "${name}"`)
-        await loadCategories()
-      } else {
-        setError(result.message || t('failedToDeleteCategory'))
-      }
-    } catch (err: any) {
-      setError(err.message || t('failedToDeleteCategory'))
-      logger.error('Error deleting category:', err)
-    }
-  }
-
-  const handleEdit = (category: Category) => {
+  // Handle Inline Edit Start
+  const startEdit = (category: Category) => {
     setEditingId(category.id)
     setEditName(category.name)
-    setEditDescription(category.description || '')
+    setEditDesc(category.description || '')
   }
 
+  const cancelEdit = () => {
+    setEditingId(null)
+    setEditName('')
+    setEditDesc('')
+  }
+
+  // Handle Inline Edit Save
   const handleSaveEdit = async () => {
-    if (!editName.trim() || !editingId) return
+    const trimmedName = editName.trim()
+    if (!trimmedName || !editingId || isSubmitting) return
 
     try {
-      setError(null)
-      const ipc = (window as any).api
-      const result = await ipc.categories.update({
+      setIsSubmitting(true)
+      const api = window.api?.categories
+      if (!api) throw new Error('API not available')
+
+      const result = await api.update({
         id: editingId,
         categoryData: {
-          name: editName.trim(),
-          description: editDescription.trim() || undefined
+          name: trimmedName,
+          description: editDesc.trim() || undefined
         }
       })
 
       if (result.success) {
-        showSuccess(t('categoryUpdatedSuccess'))
-        setEditingId(null)
-        setEditName('')
-        setEditDescription('')
+        showFeedback('success', t('categoryUpdatedSuccess'))
+        cancelEdit()
         await loadCategories()
       } else {
-        setError(result.message || t('failedToUpdateCategory'))
+        showFeedback('error', result.message || t('failedToUpdateCategory'))
       }
     } catch (err: any) {
-      setError(err.message || t('failedToUpdateCategory'))
       logger.error('Error updating category:', err)
+      showFeedback('error', err?.message || t('failedToUpdateCategory'))
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const handleCancelEdit = () => {
-    setEditingId(null)
-    setEditName('')
-    setEditDescription('')
-  }
+  // Handle Delete Confirmation
+  const confirmDelete = async () => {
+    if (!deletingCategory || isSubmitting) return
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <span className="ml-3 text-slate-600 dark:text-slate-400">{t('loadingCategories')}</span>
-      </div>
-    )
+    if ((deletingCategory.productCount || 0) > 0) {
+      showFeedback(
+        'error',
+        `${t('cannotDeleteCategory')} "${deletingCategory.name}" - ${deletingCategory.productCount} ${t('productsCount')}. ${t('reassignProductsFirst')}`
+      )
+      setDeletingCategory(null)
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      const api = window.api?.categories
+      if (!api) throw new Error('API not available')
+
+      const result = await api.delete(deletingCategory.id)
+      if (result.success) {
+        showFeedback('success', `${t('categoryDeletedSuccess')} "${deletingCategory.name}"`)
+        setDeletingCategory(null)
+        await loadCategories()
+      } else {
+        showFeedback('error', result.message || t('failedToDeleteCategory'))
+      }
+    } catch (err: any) {
+      logger.error('Error deleting category:', err)
+      showFeedback('error', err?.message || t('failedToDeleteCategory'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-          {t('productCategories')}
-        </h3>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          {t('productCategoriesDesc')}
-        </p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+            <Layers className="w-5 h-5 text-primary" />
+            {t('productCategories')}
+          </h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            {t('productCategoriesDesc')}
+          </p>
+        </div>
       </div>
 
-      {/* Success Message */}
-      {success && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
-          <div className="flex gap-3">
-            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-            <p className="text-sm text-emerald-700 dark:text-emerald-300">{success}</p>
-          </div>
+      {/* Feedback Alert Toast */}
+      {feedback && (
+        <div
+          role="alert"
+          className={`flex items-start gap-3 p-4 rounded-xl border transition-all animate-in fade-in slide-in-from-top-2 ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+              : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
+          }`}
+        >
+          {feedback.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+          ) : (
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+          )}
+          <p className="text-sm font-medium flex-1">{feedback.message}</p>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <div className="flex gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Add New Category */}
-      <div className="glass-card p-6 space-y-4">
-        <h4 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
-          <Plus className="w-5 h-5 text-primary" />
+      {/* Add New Category Panel */}
+      <form
+        onSubmit={handleAdd}
+        className="p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40 space-y-4"
+      >
+        <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+          <Plus className="w-4 h-4 text-primary" />
           {t('addNewCategory')}
         </h4>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              {t('categoryName')} *
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+              {t('categoryName')} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+              required
+              value={formName}
+              onChange={(e) => setFormName(e.target.value)}
               placeholder={t('categoryNamePlaceholder')}
-              className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               {t('categoryDescription')}
             </label>
             <input
               type="text"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAdd()}
+              value={formDesc}
+              onChange={(e) => setFormDesc(e.target.value)}
               placeholder={t('categoryDescPlaceholder')}
-              className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm"
             />
           </div>
         </div>
 
-        <button
-          onClick={handleAdd}
-          disabled={!newCategory.trim()}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          {t('addCategory')}
-        </button>
-      </div>
+        <div className="flex justify-end pt-1">
+          <button
+            type="submit"
+            disabled={!formName.trim() || isSubmitting}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-white font-medium text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {t('addCategory')}
+          </button>
+        </div>
+      </form>
 
-      {/* Categories List */}
-      <div className="glass-card p-6">
-        <h4 className="font-medium text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Tag className="w-5 h-5 text-primary" />
-          {t('categories')} ({categories.length})
-        </h4>
+      {/* Categories List Section */}
+      <div className="space-y-4">
+        {/* Search and Counts Bar */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+            <Tag className="w-4 h-4 text-primary" />
+            <span>{t('categories')}</span>
+            <span className="px-2 py-0.5 text-xs rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+              {categories.length}
+            </span>
+          </div>
 
-        {categories.length === 0 ? (
-          <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-            <Tag className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>{t('noCategoriesYet')}. {t('addFirstCategory')}.</p>
+          {/* Search Input */}
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 start-3 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`${t('search')}…`}
+              className="w-full ps-9 pe-4 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+        </div>
+
+        {/* Category Rows */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
+            <p className="text-sm">{t('loadingCategories')}…</p>
+          </div>
+        ) : filteredCategories.length === 0 ? (
+          <div className="text-center py-12 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-8">
+            <Tag className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
+            <p className="text-slate-600 dark:text-slate-400 font-medium">
+              {searchQuery ? t('noResultsFound') : t('noCategoriesYet')}
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              {searchQuery ? t('tryDifferentSearch') : t('addFirstCategory')}
+            </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {categories.map((category) => (
-              <div
-                key={category.id}
-                className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                {editingId === category.id ? (
-                  // Edit Mode
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 mr-4">
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="px-3 py-1.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                      placeholder="Category name"
-                      autoFocus
-                    />
-                    <input
-                      type="text"
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      className="px-3 py-1.5 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
-                      placeholder={t('categoryDescription')}
-                    />
-                  </div>
-                ) : (
-                  // View Mode
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h5 className="font-semibold text-slate-900 dark:text-white">
-                        {category.name}
-                      </h5>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary/10 text-primary">
-                        {category.productCount || 0} {t('productsCount')}
-                      </span>
+          <div className="grid grid-cols-1 gap-2.5">
+            {filteredCategories.map((category) => {
+              const isEditing = editingId === category.id
+              const hasProducts = (category.productCount || 0) > 0
+
+              return (
+                <div
+                  key={category.id}
+                  className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-4 rounded-xl border transition-all ${
+                    isEditing
+                      ? 'border-primary/50 bg-primary/[0.02] shadow-sm'
+                      : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
+                >
+                  {isEditing ? (
+                    /* Inline Edit Mode */
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 me-0 sm:me-4 mb-3 sm:mb-0">
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit()
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                        autoFocus
+                        placeholder={t('categoryName')}
+                        className="px-3 py-1.5 text-sm rounded-lg border border-primary dark:border-primary bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none"
+                      />
+                      <input
+                        type="text"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveEdit()
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                        placeholder={t('categoryDescription')}
+                        className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none"
+                      />
                     </div>
-                    {category.description && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        {category.description}
-                      </p>
+                  ) : (
+                    /* View Mode */
+                    <div className="flex-1 min-w-0 me-4">
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className="font-semibold text-slate-900 dark:text-white text-sm">
+                          {category.name}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                          {category.productCount || 0} {t('productsCount')}
+                        </span>
+                      </div>
+                      {category.description && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
+                          {category.description}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 self-end sm:self-center">
+                    {isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleSaveEdit}
+                          disabled={!editName.trim() || isSubmitting}
+                          aria-label={t('save')}
+                          className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-lg transition-colors"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          aria-label={t('cancel')}
+                          className="p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(category)}
+                          aria-label={t('edit')}
+                          className="p-2 text-slate-500 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingCategory(category)}
+                          aria-label={t('delete')}
+                          className={`p-2 rounded-lg transition-colors ${
+                            hasProducts
+                              ? 'text-slate-300 dark:text-slate-600 hover:bg-transparent cursor-not-allowed'
+                              : 'text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50'
+                          }`}
+                          title={hasProducts ? t('reassignProductsFirst') : t('delete')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  {editingId === category.id ? (
-                    <>
-                      <button
-                        onClick={handleSaveEdit}
-                        className="p-2 text-emerald-600 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                        title={t('save')}
-                      >
-                        <Check className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="p-2 text-slate-600 hover:bg-slate-500/10 rounded-lg transition-colors"
-                        title={t('cancel')}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handleEdit(category)}
-                        className="p-2 text-blue-600 hover:bg-blue-500/10 rounded-lg transition-colors"
-                        title={t('edit')}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(category.id, category.name, category.productCount || 0)}
-                        className="p-2 text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
-                        title={t('delete')}
-                        disabled={(category.productCount || 0) > 0}
-                      >
-                        <X className={`w-4 h-4 ${(category.productCount || 0) > 0 ? 'opacity-50' : ''}`} />
-                      </button>
-                    </>
-                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
 
-      {/* Info Note */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <div className="flex gap-3">
-          <Tag className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <div className="flex-1 text-sm">
-            <p className="font-medium text-blue-900 dark:text-blue-200 mb-1">
-              About Categories
-            </p>
-            <p className="text-blue-700 dark:text-blue-300">
-              Categories are stored in the database and available throughout the app. 
-              They appear in dropdowns when adding/editing products, in filter menus, and in reports.
-              Categories with products cannot be deleted until the products are reassigned.
-            </p>
-          </div>
+      {/* Info Card */}
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-800/80">
+        <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+        <div className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed space-y-1">
+          <p className="font-semibold text-blue-900 dark:text-blue-200">
+            {t('aboutCategories') || 'About Categories'}
+          </p>
+          <p>
+            {t('aboutCategoriesDesc') ||
+              'Categories are synced directly with your database and automatically available in POS filters, product management, and reporting. Categories associated with active products cannot be removed until their products are reassigned.'}
+          </p>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deletingCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="p-2.5 rounded-xl bg-rose-500/10">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                {t('confirmDeleteCategory')}
+              </h3>
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              {t('confirmDeleteCategoryDesc') || 'Are you sure you want to delete the category'}{' '}
+              <strong className="text-slate-900 dark:text-white font-semibold">
+                "{deletingCategory.name}"
+              </strong>
+              ? {t('thisActionCannotBeUndone')}.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingCategory(null)}
+                disabled={isSubmitting}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-rose-600 text-white hover:bg-rose-700 transition-colors shadow-sm"
+              >
+                {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                {t('delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
