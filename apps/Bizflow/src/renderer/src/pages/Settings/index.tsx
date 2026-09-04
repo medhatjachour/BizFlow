@@ -107,7 +107,7 @@ export default function Settings() {
   const singleBundledPlugin = bundledPlugins.length === 1 ? bundledPlugins[0] : null
   const pluginContext = ([requestedPlugin, activePlugin, lastPlugin, singleBundledPlugin]
     .find((value): value is PluginId => !!value && pluginRoutes.includes(value as PluginId)) ?? null)
-  const pluginTabs: SettingsTab[] = ['general', 'users', 'backup']
+  const pluginTabs: SettingsTab[] = [ "general", "display", "categories", "store", "user", "users", "payments", "tax", "notifications", "email", "security", "backup", "archive", "modules" ]
   const tabs = pluginContext
     ? allTabs.filter(tab => pluginTabs.includes(tab.id))
     : clinicEnabled || vetEnabled || bakeryEnabled

@@ -17,9 +17,14 @@ export const brandIconPath = withBasePath("/brand/bizflow-icon.png");
 
 export const siteConfig = {
   name: "BizFlow",
-  title: "BizFlow — Run your whole business in one beautiful app",
+  title: "BizFlow POS, Inventory & Business Management Software",
   description:
-    "BizFlow is a modern business management system: POS, inventory, finance, and specialized modules for bakeries, restaurants, clinics, vets and gyms. Try any module in your browser, then download the desktop build — one-time pricing, no subscriptions.",
+    "BizFlow is offline-first POS, inventory, finance, and business management software for retail shops, restaurants, bakeries, clinics, pharmacies, gyms, warehouses, and service teams. Try modules in your browser, then download the desktop app with one-time pricing.",
   url: siteUrl,
-  ogImageAlt: "BizFlow — one app to run your whole business",
+  ogImageAlt: "BizFlow POS and business management software modules",
+  founder: "Medhat Jachour",
+  sameAs: [
+    "https://github.com/medhatjachour/BizFlow",
+    "https://www.linkedin.com/in/medhatjachour/",
+  ],
 } as const;
