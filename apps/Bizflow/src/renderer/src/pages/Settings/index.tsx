@@ -31,7 +31,7 @@ import DisplaySettings from './DisplaySettings'
 import CategorySettings from './CategorySettings'
 import UserManagementSettings from './userMangement'
 import RolePermissionsSettings from './RolePermissionsSettings'
-import PaymentMethodsSettings from './PaymentMethodsSettings'
+
 import TaxReceiptSettings from './TaxReceiptSettings'
 import NotificationsSettings from './NotificationsSettings'
 import BackupSettings from './BackupSettings'
@@ -150,7 +150,7 @@ export default function Settings() {
       { id: 'display' as SettingsTab, name: t('display'), icon: Monitor },
       { id: 'categories' as SettingsTab, name: t('categories'), icon: Tag },
       { id: 'users' as SettingsTab, name: t('userManagement'), icon: Users },
-      { id: 'payments' as SettingsTab, name: t('payments'), icon: CreditCard },
+     
       { id: 'tax' as SettingsTab, name: t('taxReceipt'), icon: Receipt },
       { id: 'notifications' as SettingsTab, name: t('notifications'), icon: Bell },
       { id: 'email' as SettingsTab, name: 'Email Reports', icon: Mail },
@@ -295,9 +295,7 @@ export default function Settings() {
               </div>
             )}
 
-            {activeTab === 'payments' && (
-              <PaymentMethodsSettings settings={paymentMethods} onChange={setPaymentMethods} />
-            )}
+        
 
             {activeTab === 'tax' && (
               <TaxReceiptSettings settings={taxReceiptSettings} onChange={setTaxReceiptSettings} />
