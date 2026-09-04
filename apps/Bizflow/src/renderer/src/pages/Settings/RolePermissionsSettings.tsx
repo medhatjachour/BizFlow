@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react'
-import { Shield, Loader2, Lock, RotateCcw, ListChecks, Check } from 'lucide-react'
+import { Shield, Loader2, Lock, RotateCcw, ListChecks, Check, ShieldCheck, Info } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import {
@@ -120,7 +120,12 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
   }
 
   if (loading) {
-    return <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div>
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+        <p className="text-xs font-medium">Loading permissions…</p>
+      </div>
+    )
   }
 
   // Plugin roles are assignments on individual users, not global kernel roles.
@@ -135,23 +140,38 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
   const enabledCount = wildcard ? ALL_CAPABILITIES.length : (info?.capabilities.length ?? 0)
 
   return (
-    <div className="space-y-5 min-w-0">
-      <div className="flex items-center gap-2">
-        <div className="h-9 w-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
-          <Shield className="h-5 w-5 text-blue-500" />
+    <div className="space-y-6 min-w-0">
+      {/* Header */}
+      <div className="flex items-start gap-3.5">
+        <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0 mt-0.5 shadow-sm">
+          <Shield className="h-5 w-5" />
         </div>
-        <div>
-          <h3 className="font-semibold text-slate-900 dark:text-white">{pluginId ? 'Plugin Role Permissions' : 'Kernel Role Permissions'}</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            {pluginId ? 'Choose a plugin role, then switch its capabilities on or off. Changes save instantly.' : 'Choose a kernel role, then switch its shared capabilities on or off. Changes save instantly. Admin always has full access.'}
-            {!editable && ' (read-only — needs the “Manage settings” permission)'}
+        <div className="min-w-0">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span>{pluginId ? 'Plugin Role Permissions' : 'Kernel Role Permissions'}</span>
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+            {pluginId
+              ? 'Choose a plugin role, then switch its capabilities on or off. Changes save instantly.'
+              : 'Choose a kernel role, then switch its shared capabilities on or off. Admin always has full access.'}
+            {!editable && (
+              <span className="font-semibold text-amber-600 dark:text-amber-400 ms-1">
+                (read-only — needs the “Manage settings” permission)
+              </span>
+            )}
           </p>
         </div>
       </div>
 
-      {!pluginId && <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-900/10 px-4 py-3 text-xs text-blue-700 dark:text-blue-300">
-        Plugin roles are assigned separately for each user. Open User Management from a plugin to manage access for that plugin; those assignments do not appear as global kernel roles here.
-      </div>}
+      {/* Info notice for kernel roles */}
+      {!pluginId && (
+        <div className="rounded-2xl border border-blue-200/70 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-950/20 p-4 text-xs text-blue-800 dark:text-blue-300 leading-relaxed flex items-start gap-3">
+          <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <span>
+            Plugin roles are assigned separately for each user. Open User Management from a plugin to manage access for that plugin; those assignments do not appear as global kernel roles here.
+          </span>
+        </div>
+      )}
 
       {/* Role selector pills */}
       <div className="flex flex-wrap gap-2">
@@ -159,15 +179,29 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
           const r = roles[role]
           const count = r.isWildcard ? ALL_CAPABILITIES.length : r.capabilities.length
           const isSel = role === activeRole
+
           return (
-            <button key={role} type="button" onClick={() => setSelected(role)}
-              className={`group inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium border transition-all
-                ${isSel
-                  ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700'}`}>
-              {r.isWildcard && <Lock size={12} className={isSel ? 'text-white/90' : 'text-red-500'} />}
-              {roleLabel(role)}
-              <span className={`text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${isSel ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>
+            <button
+              key={role}
+              type="button"
+              onClick={() => setSelected(role)}
+              className={`group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs sm:text-sm font-semibold border transition-all select-none ${
+                isSel
+                  ? 'bg-primary border-primary text-white shadow-sm ring-2 ring-primary/20'
+                  : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-primary/50'
+              }`}
+            >
+              {r.isWildcard && (
+                <Lock size={12} className={isSel ? 'text-white' : 'text-rose-500'} />
+              )}
+              <span>{roleLabel(role)}</span>
+              <span
+                className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${
+                  isSel
+                    ? 'bg-white/20 text-white'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                }`}
+              >
                 {count}/{ALL_CAPABILITIES.length}
               </span>
             </button>
@@ -175,42 +209,77 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
         })}
       </div>
 
-      {/* Selected role detail */}
+      {/* Selected role detail card */}
       {info && (
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 overflow-hidden min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-800 dark:text-slate-100">{roleLabel(activeRole)}</span>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden min-w-0">
+          {/* Card action header */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 dark:border-slate-700/80 bg-slate-50/70 dark:bg-slate-900/40">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-bold text-slate-900 dark:text-white text-sm">
+                {roleLabel(activeRole)}
+              </span>
+
               {wildcard ? (
-                <span className="text-[10px] inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300"><Lock size={10} /> full access</span>
+                <span className="text-[10px] inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-300 font-semibold">
+                  <Lock size={10} /> full access
+                </span>
               ) : info.isDefault ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">default</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-medium">
+                  default
+                </span>
               ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300">customised</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                  customised
+                </span>
               )}
-              <span className="text-xs text-slate-400">· {enabledCount} of {ALL_CAPABILITIES.length} enabled</span>
+
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                · {enabledCount} of {ALL_CAPABILITIES.length} enabled
+              </span>
             </div>
+
+            {/* Right side tools */}
             <div className="flex items-center gap-3">
-              {savingRole === activeRole && <Loader2 size={14} className="animate-spin text-blue-500" />}
+              {savingRole === activeRole && (
+                <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Saving…</span>
+                </div>
+              )}
+
               {editable && !wildcard && (
-                <>
-                  <button onClick={() => persist(activeRole, [...ALL_CAPABILITIES])}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline">
-                    <ListChecks size={12} /> Enable all
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => persist(activeRole, [...ALL_CAPABILITIES])}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline transition-all"
+                  >
+                    <ListChecks size={13} /> Enable all
                   </button>
-                  <button onClick={() => persist(activeRole, [])}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                    <RotateCcw size={12} /> Clear all
+                  <button
+                    type="button"
+                    onClick={() => persist(activeRole, [])}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all"
+                  >
+                    <RotateCcw size={13} /> Clear all
                   </button>
-                </>
+                </div>
               )}
             </div>
           </div>
 
+          {/* Card Body */}
           {wildcard ? (
-            <div className="px-5 py-8 text-center">
-              <Lock className="h-6 w-6 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-              <p className="text-sm text-slate-500 dark:text-slate-400">The <b>Admin</b> role always has every permission and can’t be limited.</p>
+            <div className="px-6 py-14 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 mx-auto flex items-center justify-center">
+                <Lock className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                Admin Role is Protected
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                The <b>Admin</b> role always has every permission and can’t be limited or restricted.
+              </p>
             </div>
           ) : (
             <div className="min-w-0">
@@ -224,35 +293,72 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                     PLUGIN_ACCESS_CAPABILITIES[pluginId!],
                   ])])}
                 />
-              ) : <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {visibleGroups.map(([group, caps]) => (
-                  <div key={group} className="px-5 py-3">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{group}</p>
-                    <div className="space-y-1">
-                      {caps.map(cap => {
-                        const on = info.capabilities.includes(cap)
-                        return (
-                          <div key={cap}
-                            className={`flex items-center justify-between gap-3 rounded-lg px-2.5 py-2 transition-colors ${editable ? 'hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer' : ''}`}
-                            onClick={() => editable && toggle(activeRole, cap)}>
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <span className={`h-5 w-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                                {on && <Check size={12} className="text-white" strokeWidth={3} />}
+              ) : (
+                <div className="divide-y divide-slate-100 dark:divide-slate-700/80">
+                  {visibleGroups.map(([group, caps]) => (
+                    <div key={group} className="px-5 py-4 space-y-2.5">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        {group}
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {caps.map(cap => {
+                          const on = info.capabilities.includes(cap)
+                          return (
+                            <div
+                              key={cap}
+                              onClick={() => editable && toggle(activeRole, cap)}
+                              className={`flex items-center justify-between gap-3 p-3 rounded-xl border transition-all ${
+                                on
+                                  ? 'border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20'
+                                  : 'border-slate-200/80 dark:border-slate-700/60 bg-white dark:bg-slate-800/40 hover:border-slate-300'
+                              } ${editable ? 'cursor-pointer select-none' : 'opacity-75 cursor-default'}`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span
+                                  className={`h-4 w-4 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                                    on
+                                      ? 'bg-emerald-500 text-white'
+                                      : 'bg-slate-200 dark:bg-slate-700 text-transparent'
+                                  }`}
+                                >
+                                  <Check size={10} strokeWidth={3} />
+                                </span>
+                                <span
+                                  className={`text-xs font-semibold truncate ${
+                                    on
+                                      ? 'text-slate-900 dark:text-slate-100'
+                                      : 'text-slate-500 dark:text-slate-400'
+                                  }`}
+                                >
+                                  {CAPABILITIES[cap].label}
+                                </span>
+                              </div>
+
+                              {/* RTL/LTR Aware Toggle Switch */}
+                              <span
+                                role="switch"
+                                aria-checked={on}
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full shrink-0 transition-colors ${
+                                  on ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
+                                } ${editable ? '' : 'opacity-60'}`}
+                              >
+                                <span
+                                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                                    on
+                                      ? 'ltr:translate-x-4 rtl:-translate-x-4'
+                                      : 'translate-x-0.5'
+                                  }`}
+                                />
                               </span>
-                              <span className={`text-sm break-words ${on ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>{CAPABILITIES[cap].label}</span>
                             </div>
-                            {/* toggle switch */}
-                            <span role="switch" aria-checked={on}
-                              className={`relative inline-flex h-5 w-9 items-center rounded-full shrink-0 transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'} ${editable ? '' : 'opacity-60'}`}>
-                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${on ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                            </span>
-                          </div>
-                        )
-                      })}
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>}
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
