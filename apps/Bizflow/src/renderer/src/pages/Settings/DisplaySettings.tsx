@@ -3,7 +3,6 @@
  * Controls image display preferences for products and POS (Full LTR/RTL Support)
  */
 
-import React from 'react'
 import { Image, ShoppingCart, Package } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 

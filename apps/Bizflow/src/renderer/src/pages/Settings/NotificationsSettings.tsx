@@ -3,7 +3,6 @@
  * Configures application-wide and alert-specific notification preferences (Full LTR/RTL Support)
  */
 
-import React from 'react'
 import {
   Bell,
   Package,

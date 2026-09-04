@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useLayoutEffect, useRef } from 'react'
-import { Shield, Loader2, Lock, RotateCcw, ListChecks, Check, ShieldCheck, Info } from 'lucide-react'
+import { Shield, Loader2, Lock, RotateCcw, ListChecks, Check, Info } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
 import {

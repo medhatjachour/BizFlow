@@ -3,7 +3,7 @@
  * Configure automated business email reports with full Arabic (RTL) & English (LTR) support
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import  { useState, useEffect, useCallback } from 'react'
 import {
   Mail,
   Send,

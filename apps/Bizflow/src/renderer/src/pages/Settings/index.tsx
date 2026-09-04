@@ -8,7 +8,6 @@ import { useSearchParams } from 'react-router-dom'
 import {
   Settings as SettingsIcon,
   Bell,
-  CreditCard,
   Receipt,
   Database,
   Save,
@@ -114,8 +113,7 @@ export default function Settings() {
     setTaxReceiptSettings,
     notificationSettings,
     setNotificationSettings,
-    paymentMethods,
-    setPaymentMethods,
+
     backupSettings,
     setBackupSettings,
     displaySettings,
@@ -198,8 +196,10 @@ export default function Settings() {
         const timer = setTimeout(() => setSaveSuccess(false), 3000)
         return () => clearTimeout(timer)
       }
+    return(false)
     } catch (error) {
       logger.error('Failed to save settings:', error)
+      return(false)
     }
   }
 
