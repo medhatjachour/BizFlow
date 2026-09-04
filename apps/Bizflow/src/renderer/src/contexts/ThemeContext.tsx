@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 
-type Theme = 'light' | 'dark' | 'auto'
+type Theme = 'light' | 'dark' | 'system'
 
 interface ThemeContextType {
   theme: Theme
@@ -12,23 +12,24 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('theme') as Theme
-    return stored || 'light'
+    const stored = localStorage.getItem('theme')
+    if (stored === 'auto') return 'system'
+    return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light'
   })
 
   const [actualTheme, setActualTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
-    // Listen for system theme changes when in auto mode
+    // Listen for system theme changes when in system mode
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     
     const updateTheme = () => {
       let resolvedTheme: 'light' | 'dark' = 'light'
       
-      if (theme === 'auto') {
+      if (theme === 'system') {
         resolvedTheme = mediaQuery.matches ? 'dark' : 'light'
       } else {
-        resolvedTheme = theme as 'light' | 'dark'
+        resolvedTheme = theme
       }
       
       setActualTheme(resolvedTheme)
