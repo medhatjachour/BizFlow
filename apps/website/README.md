@@ -1,9 +1,22 @@
-# BizFlow on the Web
+# BizFlow Website and Live Browser Demo
+
+BizFlow's website is the public search, answer-engine, and generative-engine surface for the product. It explains BizFlow as offline-first POS, inventory, finance, and business management software for retail shops, restaurants, bakeries, clinics, pharmacies, gyms, warehouses, and service teams.
+
+The website supports the full customer journey: discover a module, try the real app in the browser, buy a one-time license, download the desktop installer, activate with a signed license certificate, and return later through the account or buyer portal.
 
 This project takes **BizFlow** — a Windows **Electron + Prisma** desktop business
 app — and makes it **run inside a normal browser tab**: no Electron, no Docker,
 no streaming. It also ships a marketing site where visitors can **try any module
 live, buy it, or request a custom one**.
+
+## Search and AI Visibility Surfaces
+
+- Landing page with product positioning and answer-focused FAQ content.
+- Plugin detail pages for each business module.
+- `sitemap.xml` for discoverable public pages.
+- `robots.txt` that allows public content and blocks private app/admin/API surfaces.
+- `llms.txt` with concise product facts for AI crawlers and retrieval engines.
+- Schema.org `Organization`, `SoftwareApplication`, `FAQPage`, and `BreadcrumbList` structured data.
 
 The headline achievement: we run the *real* desktop app's code on the web by
 swapping its transport (Electron IPC → HTTP) — **without rewriting any of its

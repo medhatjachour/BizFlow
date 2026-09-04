@@ -1,15 +1,21 @@
-# BizFlow
+# BizFlow Desktop App
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/github/package-json/v/medhatjachour/electron-app)](package.json)
 
-> A modern business management desktop app for retail, bakeries, and more — runs fully offline on Windows, macOS, and Linux.
+> Offline-first POS, inventory, finance, and business management software for retail shops, restaurants, bakeries, clinics, pharmacies, warehouses, gyms, and service businesses.
+
+BizFlow is a modular Electron desktop app that helps small businesses run sales, stock, customers, employees, finance, reports, and specialized industry workflows from one local-first system. It works on Windows, macOS, and Linux, uses local SQLite data storage, supports barcode-ready POS, and is sold with one-time license keys rather than monthly SaaS subscriptions.
+
+## Short Answer
+
+BizFlow is offline POS and business management software. It is best for business owners who want a downloadable desktop app, local data ownership, no subscription lock-in, live browser demos before purchase, and modules for retail, restaurant, bakery, clinic, veterinary, pharmacy, warehouse, coffee shop, and gym operations.
 
 ---
 
 ## 📥 Download
 
-**Windows**: [Download Latest Release](https://github.com/medhatjachour/electron-app/releases/latest) (`.exe` installer)
+**Windows**: [Download Latest Release](https://github.com/medhatjachour/BizFlow/releases/latest) (`.exe` installer)
 
 *macOS and Linux builds available from source*
 
@@ -167,7 +173,7 @@
 
 ## ✨ What it does
 
-BizFlow is an all-in-one desktop POS and business management system. Everything runs locally — no internet required, no monthly subscription, your data stays on your machine.
+BizFlow is an all-in-one desktop POS and business management system. Business data runs locally in SQLite, so daily work does not depend on a cloud server. Online services are used for website demos, customer accounts, downloads, support, and signed license activation.
 
 ### Core features
 
@@ -181,6 +187,19 @@ BizFlow is an all-in-one desktop POS and business management system. Everything 
 - **Employees** — records, roles, and salary tracking
 - **Multi-store** — manage multiple store locations
 - **Bilingual** — full Arabic and English UI with RTL support
+- **License activation** — customer-specific license keys with signed activation certificates and device binding
+- **Backups** — local database backups with restore support
+
+### Search-friendly use cases
+
+- Offline POS software for retail stores
+- Restaurant management software with tables and reservations
+- Bakery production and recipe management software
+- Clinic and patient record management software
+- Pharmacy POS with batch and expiry tracking
+- Warehouse inventory and stock transfer software
+- Gym membership and subscription management software
+- One-time payment business management software
 
 ---
 
@@ -213,8 +232,8 @@ Plugins can be **enabled or disabled** from Settings → Modules. When a plugin 
 ### Install & run
 
 ```bash
-git clone https://github.com/medhatjachour/electron-app.git
-cd electron-app
+git clone https://github.com/medhatjachour/BizFlow.git
+cd BizFlow/apps/Bizflow
 npm install
 npm run dev
 ```
@@ -245,6 +264,8 @@ npm run build:linux  # Linux .AppImage / .deb
 - Passwords hashed with bcrypt
 - Renderer process sandboxed (no direct Node.js access)
 - IPC-only communication between UI and backend
+- Signed license activation certificates verified with an embedded public key
+- One-device license binding with online revocation checks for packaged builds
 
 ---
 

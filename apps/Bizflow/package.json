@@ -1,10 +1,22 @@
 {
   "name": "bizflow",
   "version": "1.0.0",
-  "description": "BizFlow - Modern Business Management System with AI-powered insights",
+  "description": "Offline-first POS, inventory, finance, and business management desktop software for retail, restaurant, bakery, clinic, pharmacy, warehouse, coffee, and gym workflows.",
   "main": "./out/main/index.js",
   "author": "BizFlow Team",
-  "homepage": "https://github.com/medhatjachour/electron-app",
+  "homepage": "https://github.com/medhatjachour/BizFlow",
+  "keywords": [
+    "offline pos software",
+    "desktop pos",
+    "inventory management",
+    "restaurant management software",
+    "bakery software",
+    "clinic software",
+    "pharmacy pos",
+    "warehouse management",
+    "electron",
+    "sqlite"
+  ],
   "scripts": {
     "web:setup": "node scripts/merge-schemas.js --all && prisma generate --schema=prisma/merged.prisma && npx prisma db push --schema=prisma/merged.prisma --accept-data-loss --skip-generate",
     "web:server": "node web/build-server.mjs",
