@@ -74,15 +74,15 @@ export default function PharmacyPage() {
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto">
-        {tab === 'dashboard' && can('access_pharmacy') && <PharmacyDashboard onNavigate={(t) => setTab(t as Tab)} />}
-        {tab === 'pos' && can('access_pharmacy') && <PharmacyPOS />}
-        {tab === 'products' && can('manage_inventory') && <PharmacyProducts />}
-        {tab === 'inventory' && can('manage_inventory') && <PharmacyInventory />}
-        {tab === 'sales' && can('access_pharmacy') && <PharmacySales />}
-        {tab === 'customers' && can('manage_customers') && <PharmacyCustomers />}
-        {tab === 'suppliers' && can('manage_purchasing') && <PharmacySuppliers />}
-        {tab === 'orders' && can('manage_purchasing') && <PharmacyPurchaseOrders />}
-        {tab === 'reports' && can('view_finance') && <PharmacyReports />}
+        {tab === 'dashboard' && can(pluginTabCapability('pharmacy', 'dashboard')!) && <PharmacyDashboard onNavigate={(t) => setTab(t as Tab)} />}
+        {tab === 'pos' && can(pluginTabCapability('pharmacy', 'pos')!) && <PharmacyPOS />}
+        {tab === 'products' && can(pluginTabCapability('pharmacy', 'products')!) && <PharmacyProducts />}
+        {tab === 'inventory' && can(pluginTabCapability('pharmacy', 'inventory')!) && <PharmacyInventory />}
+        {tab === 'sales' && can(pluginTabCapability('pharmacy', 'sales')!) && <PharmacySales />}
+        {tab === 'customers' && can(pluginTabCapability('pharmacy', 'customers')!) && <PharmacyCustomers />}
+        {tab === 'suppliers' && can(pluginTabCapability('pharmacy', 'suppliers')!) && <PharmacySuppliers />}
+        {tab === 'orders' && can(pluginTabCapability('pharmacy', 'orders')!) && <PharmacyPurchaseOrders />}
+        {tab === 'reports' && can(pluginTabCapability('pharmacy', 'reports')!) && <PharmacyReports />}
       </div>
     </div>
   )

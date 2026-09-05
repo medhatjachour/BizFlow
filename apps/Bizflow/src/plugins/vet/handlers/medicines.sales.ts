@@ -32,7 +32,7 @@ export function registerVetMedicineSalesHandlers(prisma: any) {
         throw new Error('Unit price must be a non-negative number')
       }
       const discount = data.discount ?? 0
-      if (discount > 0) requireCap('give_discount')
+      if (discount > 0) requireCap('vet_discount')
       if (!Number.isFinite(discount) || discount < 0) {
         throw new Error('Discount must be a non-negative number')
       }
@@ -82,7 +82,7 @@ export function registerVetMedicineSalesHandlers(prisma: any) {
   }) => {
     try {
       if (!data.items || data.items.length === 0) throw new Error('No items in cart')
-      if ((Number(data.cartDiscount) || 0) > 0 || data.items.some(it => (Number(it.discount) || 0) > 0)) requireCap('give_discount')
+      if ((Number(data.cartDiscount) || 0) > 0 || data.items.some(it => (Number(it.discount) || 0) > 0)) requireCap('vet_discount')
 
       // One receipt id ties every line item of this checkout together so the
       // sales history can show them grouped as a single transaction.
@@ -295,7 +295,7 @@ export function registerVetMedicineSalesHandlers(prisma: any) {
     quantity?: number; reason?: string
   }) => {
     try {
-      requireCap('issue_refund')
+      requireCap('vet_refund')
       const sale = await prisma.vetMedicineSale.findUnique({ where: { id } })
       if (!sale) throw new Error('Sale not found')
       const alreadyRefunded = sale.refundedQty ?? 0
@@ -343,7 +343,7 @@ export function registerVetMedicineSalesHandlers(prisma: any) {
     reason?: string
   }) => {
     try {
-      requireCap('issue_refund')
+      requireCap('vet_refund')
       if (!groupKey) throw new Error('groupKey is required')
       const lines = await prisma.vetMedicineSale.findMany({
         where: { OR: [{ saleGroupId: groupKey }, { id: groupKey }] }

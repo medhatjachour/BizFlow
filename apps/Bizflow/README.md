@@ -205,7 +205,7 @@ BizFlow is an all-in-one desktop POS and business management system. Business da
 
 ## 🧩 Microkernel / Plugin Architecture
 
-BizFlow is built on a **microkernel** design — the core app is lean and stable, and business-specific features are loaded as isolated plugins. Eight business verticals ship today:
+BizFlow is built on a **microkernel** design — the core app is lean and stable, and business-specific features are loaded as isolated plugins. Nine business verticals ship today:
 
 | Plugin | Status | What it adds |
 |--------|--------|-------------|
@@ -217,8 +217,43 @@ BizFlow is built on a **microkernel** design — the core app is lean and stable
 | 🐾 **Vet Clinic** | ✅ Active | Pet patients with owner records, vet sessions, medicine inventory (batches/FEFO), appointments, clinical stats |
 | 🏋️ **Gym** | ✅ Active | Coaches, trainees, subscription plans with freeze, walk-in sessions, financials |
 | 💊 **Pharmacy** | ✅ Active | Medicine catalogue, batch & expiry tracking (FEFO), POS, refunds, suppliers & purchase orders |
+| ☕ **Coffee Shop** | ✅ Active | Fast POS, tables, incoming and transit stock receipts, shifts, customers, reports, finance |
 
 Plugins can be **enabled or disabled** from Settings → Modules. When a plugin is off, its pages and database tables are completely inactive. Each plugin is fully self-contained — its backend logic, UI pages, IPC bridge, and database schema all live inside `src/plugins/<name>/`.
+
+### Plugin reference
+
+The tables below describe the shipped UI and backend surface. IPC functions are grouped by their public channel namespace; function lists are representative operational calls, not an alternative public API contract. The source of truth is the plugin handler code, route pages, and `src/shared/permissions.ts`.
+
+| Plugin | Tabs and pages | Operations and representative functions | Features |
+| --- | --- | --- | --- |
+| **Commerce** | POS, Quick Sale, Products, Inventory, Sales, Customers, Stores, Installments, Expenses | `products`: catalog, variants, search, create/update/delete, bulk edits; `sales`: create, history, refund, daily summary; `inventory`: metrics, low/out-of-stock, barcode search, adjustments; `categories`, `stores`, `suppliers`, `purchase-orders`, `stock-movements`, `deposits`, `installments`, `receipts`, `barcode` | Retail POS; barcode and variant selling; inventory and reorder visibility; customer credit; deposits and installments; suppliers, purchasing, refunds, receipts, reports. |
+| **Bakery** | Overview, Recipes, Production, Sales, Pantry, Waste, Schedule, Profit & Loss, Expenses | `bakery`: recipe CRUD; production-batch creation/history; sales and summaries; pantry upsert, adjustment, bulk restock; waste logs and summary; schedule CRUD and completion; analytics and expenses | Ingredient-costed recipes; production batches with expiry; pantry thresholds; waste tracking; schedules that create batches; sales linked to batches; profit/loss analytics. |
+| **Restaurant** | Overview, Tables, Menu, Orders/POS, Kitchen Display System, Reservations, Inventory, Recipes, Shifts, Sales, Waste | `restaurant`: table CRUD, positioning, transfer and merge; menu items, modifiers and 86 toggle; open orders, items, courses, split checks, discount, payment and close; KDS ticket/item bump; shifts and Z-report; ingredients, recipes, waste, reservations | Visual floor plan; dine-in ordering; course firing; KDS; check splitting; modifiers; reservations; inventory/BOM; 86 availability; shift cash reconciliation; real-time floor events. |
+| **Warehouse** | Overview, Operations Board, Locations, Inventory, Transfers | `warehouse`: location CRUD; stock upsert, adjustment, low-stock and movement/audit queries; transfer CRUD and status changes; order creation, stage advancement, processing and journey board; overview | Zone/aisle/shelf/bin hierarchy; location-level stock; lot, batch, serial and expiry fields; quarantine/damage flags; transfers; inbound/outbound journey board; movement audit trail. |
+| **Clinic** | Patients, Sessions, Statistics, Appointments, Follow-ups, Doctors, Materials, Expenses | `clinic:patients`, `clinic:sessions`, `clinic:appointments`, `clinic:checkResults`, `clinic:stats`, `clinic:expenses`, `clinic:staff`, `clinic:doctors`, `clinic:materials`: list, search, create/update/delete and domain summaries | Patient folders; clinical sessions, vitals and dental chart; prescriptions; lab/check-result files; appointments and reminders; doctor profiles and salary records; materials inventory; clinic financial statistics. |
+| **Vet Clinic** | Owners, Patients, Sessions, Appointments, Follow-ups, Medicines, Sales, Sales History, Staff, Statistics, Expenses | `vet:owners`, `vet:patients`, `vet:sessions`, `vet:appointments`, `vet:checkResults`, `vet:expenses`, `vet:staff`, `vet:stats`, `vet:medicines`, `vet:catalogue`, `vet:visitTypes`, `vet:reports` | Owner and pet records; species, breed, microchip and weight data; clinical visits; prescription lifecycle; conflict-checked appointments; follow-ups; medicine catalogue; visit and owner settlement; staff payroll and reports. |
+| **Gym** | Attendance, Trainees, Coaches, Plans, Subscriptions, Walk-ins, Lockers, Programs | `gym:coaches`, `gym:trainees`, `gym:plans`, `gym:subscriptions`, `gym:sessions`, `gym:expenses`, `gym:stats`, `gym:alerts`, `gym:measurements`, `gym:goals`, `gym:shifts`, `gym:lockers`, `gym:programs` | Membership plans and amenities; subscriptions with freeze/unfreeze; attendance and walk-ins; coach sessions; trainee measurements and goals; expiry alerts; lockers; training program assignment; revenue and churn metrics. |
+| **Pharmacy** | Dashboard, POS, Products, Inventory, Sales, Customers, Suppliers, Purchase Orders, Reports | `pharmacy:products`, `pharmacy:batches`, `pharmacy:sales`, `pharmacy:suppliers`, `pharmacy:purchaseOrders`, `pharmacy:stats`, `pharmacy:customers`: CRUD, sale/payment/refund, batch adjustment/disposal, receiving, settlement and analytics | Medicine and generic-name catalogue; FEFO batch/expiry control; base and sub-unit selling; POS; expiry alerts and disposal; suppliers and receiving; customer credit; sales refunds and inventory analytics. |
+| **Coffee Shop** | POS, Tables, Products, Inventory, Incoming Stock, Transit Stock, Expenses, Sales, Shifts, Customers, Reports, Finance | `coffee:categories`, `coffee:products`, `coffee:inventory`, `coffee:incomingReceipts`, `coffee:transitReceipts`, `coffee:expenses`, `coffee:tables`, `coffee:orders`, `coffee:sales`, `coffee:shifts`, `coffee:customers`, `coffee:reports`, `coffee:finance` | One-click POS; dine-in, takeaway and delivery orders; table history; product images and availability; simple stock movements; supplier and inter-location receipts; optional-restock refunds; cash reconciliation; daily analytics. |
+
+### Permissions by plugin
+
+Settings → Users → **Plugin Role Permissions** presents the pages below as a permission matrix. `access_*` grants entry to a plugin; shared capabilities protect sensitive data and operations across plugins. Admin is always full access. Plugin roles are assigned per user and can be customised.
+
+| Plugin | Page capability gates | Sensitive action gates | Default plugin roles |
+| --- | --- | --- | --- |
+| **Commerce** | POS/Quick Sale/Sales/Installments: `access_commerce`; Products/Inventory: `manage_inventory`; Customers: `manage_customers`; Stores: `manage_settings`; Expenses: `view_finance` | `give_discount`, `issue_refund`, `void_sale` | `sales`, `inventory`, `finance` |
+| **Bakery** | Overview/Sales: `access_bakery`; Recipes/Production/Pantry/Waste/Schedule: `manage_inventory`; P&L: `view_profit`; Expenses: `view_finance` | Shared inventory protection | `bakery_staff` |
+| **Restaurant** | Overview/Tables/Orders: `access_restaurant`; Reservations: `manage_customers`; Menu: `manage_inventory` | `give_discount`, `void_sale` | `restaurant_staff` |
+| **Warehouse** | Overview/Operations: `access_warehouse`; Locations/Inventory/Transfers: `manage_inventory` | Shared inventory protection | `warehouse_staff` |
+| **Clinic** | Patients/Sessions: `access_clinic`; Appointments/Follow-ups: `manage_customers`; Doctors: `manage_staff`; Materials: `manage_inventory`; Stats/Expenses: `view_finance` | Shared data and inventory protection | `clinic_staff` |
+| **Vet Clinic** | Owners/Sessions/Sales/Sales History: `access_vet`; Appointments/Follow-ups: `manage_customers`; Vets: `manage_staff`; Medicines: `manage_inventory`; Stats/Expenses: `view_finance` | `issue_refund` | `vet_staff` |
+| **Gym** | Attendance/Trainees/Walk-ins: `access_gym`; Coaches: `manage_staff`; Subscriptions: `manage_customers`; Plans/Lockers/Programs: `manage_settings` | Shared customer and staff protection | `gym_staff` |
+| **Pharmacy** | Dashboard/POS/Sales: `access_pharmacy`; Products/Inventory: `manage_inventory`; Customers: `manage_customers`; Suppliers/Orders: `manage_purchasing`; Reports: `view_finance` | `give_discount`, `issue_refund` | `pharmacy_staff` |
+| **Coffee Shop** | Each page has its own capability: `coffee_pos`, `coffee_tables`, `coffee_products`, `coffee_inventory`, `coffee_incoming`, `coffee_expenses`, `coffee_sales`, `coffee_shifts`, `coffee_customers`, `coffee_reports`, `coffee_finance` | `give_discount`, `issue_refund`, `void_sale` | `coffee_cashier`, `coffee_inventory_manager`, `coffee_shift_manager`, `coffee_manager` |
+
+Shared capabilities are `view_profit`, `view_finance`, `manage_inventory`, `manage_purchasing`, `manage_customers`, `manage_staff`, `manage_users`, `manage_settings`, and `export_data`. The main-process permission guard also blocks plugin IPC namespaces and refund/return/void channels after a user session is bound.
 
 ---
 

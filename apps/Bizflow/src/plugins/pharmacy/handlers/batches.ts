@@ -124,7 +124,7 @@ export function registerPharmacyBatchHandlers(prisma: any): void {
     mode: 'add' | 'remove' | 'set'; amount: number; unit?: 'base' | 'sub'; reason?: string
   }) => {
     try {
-      requireCap('manage_inventory')
+      requireCap('pharmacy_inventory')
       const batch = await prisma.pharmacyBatch.findUnique({ where: { id } })
       if (!batch) throw new Error('Batch not found')
 

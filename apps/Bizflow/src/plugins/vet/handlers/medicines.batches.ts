@@ -182,7 +182,7 @@ export function registerVetMedicineBatchHandlers(prisma: any) {
     mode: 'add' | 'remove' | 'set'; amount: number; unit?: 'container' | 'sub'; reason?: string
   }) => {
     try {
-      requireCap('manage_inventory')
+      requireCap('vet_medicines')
       const batch = await prisma.vetMedicineBatch.findUnique({ where: { id: batchId } })
       if (!batch) throw new Error('Batch not found')
 

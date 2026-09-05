@@ -299,11 +299,11 @@ export default function Settings() {
             {activeTab === 'categories' && <CategorySettings />}
 
             {activeTab === 'users' && (
-              <div className="min-w-0 grid grid-cols-1 2xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-8 items-start">
+              <div className="min-w-0 space-y-8">
                 <div className="min-w-0">
                   <UserManagementSettings pluginId={pluginContext} />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 border-t border-slate-200 pt-8 dark:border-slate-700">
                   <RolePermissionsSettings pluginId={pluginContext} />
                 </div>
               </div>

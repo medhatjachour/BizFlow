@@ -1,7 +1,35 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { PluginRoleAssignments } from '../shared/permissions'
+import type { Capability, PluginPermissionCatalog, PluginRoleAssignments, Scope } from '../shared/permissions'
+
+export interface ManagedRole {
+  key: string
+  label: string
+  scope: Scope
+  description: string | null
+  capabilities: Capability[]
+  isBuiltIn: boolean
+  isSystem: boolean
+  isDefault: boolean
+  isWildcard: boolean
+  userCount?: number
+}
 
 interface API {
+  permissions: {
+    getRoles: () => Promise<Record<string, { capabilities: Capability[]; isDefault: boolean; isWildcard: boolean }>>
+    setRole: (role: string, capabilities: Capability[]) => Promise<{ success: boolean; capabilities: Capability[] }>
+    bindSession: (user: { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments } | null) => Promise<{ capabilities: Capability[]; isWildcard: boolean }>
+  }
+  roles: {
+    list: (scope?: Scope) => Promise<ManagedRole[]>
+    create: (input: { key?: string; label: string; scope: Scope; description?: string; capabilities?: Capability[] }) => Promise<ManagedRole>
+    update: (key: string, patch: { label?: string; description?: string | null; capabilities?: Capability[] }) => Promise<ManagedRole>
+    remove: (key: string) => Promise<{ success: boolean }>
+    reset: (key: string) => Promise<ManagedRole>
+  }
+  plugins: {
+    getCatalog: () => Promise<PluginPermissionCatalog[]>
+  }
   auth: {
     login: (username: string, password: string) => Promise<any>
     setupExists: () => Promise<boolean>

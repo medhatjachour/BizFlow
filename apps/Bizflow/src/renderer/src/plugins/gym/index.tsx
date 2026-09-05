@@ -215,14 +215,14 @@ export default function GymPage() {
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-6">
-        {tab === 'attendance'    && <AttendanceTab />}
-        {tab === 'trainees'      && <TraineesTab />}
-        {tab === 'coaches'       && <CoachesTab />}
-        {tab === 'subscriptions' && <SubscriptionsTab />}
-        {tab === 'walkins'       && <WalkInsTab />}
-        {tab === 'plans'         && <PlansTab />}
-        {tab === 'lockers'       && <LockersTab />}
-        {tab === 'programs'      && <ProgramsTab />}
+        {tab === 'attendance'    && can(pluginTabCapability('gym', 'attendance')!) && <AttendanceTab />}
+        {tab === 'trainees'      && can(pluginTabCapability('gym', 'trainees')!) && <TraineesTab />}
+        {tab === 'coaches'       && can(pluginTabCapability('gym', 'coaches')!) && <CoachesTab />}
+        {tab === 'subscriptions' && can(pluginTabCapability('gym', 'subscriptions')!) && <SubscriptionsTab />}
+        {tab === 'walkins'       && can(pluginTabCapability('gym', 'walkins')!) && <WalkInsTab />}
+        {tab === 'plans'         && can(pluginTabCapability('gym', 'plans')!) && <PlansTab />}
+        {tab === 'lockers'       && can(pluginTabCapability('gym', 'lockers')!) && <LockersTab />}
+        {tab === 'programs'      && can(pluginTabCapability('gym', 'programs')!) && <ProgramsTab />}
       </div>
 
       {showJourney && <GymJourneyModal onClose={() => setShowJourney(false)} />}

@@ -16,7 +16,7 @@ export default function PharmacyPOS() {
   const toast = useToast()
   const { t } = useLanguage()
   const { can } = useAuth()
-  const canDiscount = can('give_discount')
+  const canDiscount = can('pharmacy_discount')
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const [autoThermalPrint, setAutoThermalPrint] = useState(true)

@@ -1,90 +1,170 @@
-import { Check, Eye, Pencil, ShieldCheck } from 'lucide-react'
-import type { Capability, PluginPermissionCatalog } from '../../../../shared/permissions'
+import { useMemo, useState } from 'react'
+import { Check, Eye, Pencil, ShieldCheck, Search, Ban } from 'lucide-react'
+import {
+  presetCapabilities,
+  type Capability,
+  type PermissionPreset,
+  type PluginPermissionCatalog,
+  type Scope,
+} from '../../../../shared/permissions'
 
 type Props = {
   catalog: PluginPermissionCatalog
+  scope: Scope
   capabilities: Capability[]
   disabled?: boolean
   onChange: (capabilities: Capability[]) => void
 }
 
-const PRESETS: Array<{ id: 'viewer' | 'editor' | 'admin'; label: string; Icon: typeof Eye }> = [
-  { id: 'viewer', label: 'Viewer', Icon: Eye },
-  { id: 'editor', label: 'Editor', Icon: Pencil },
-  { id: 'admin', label: 'Admin', Icon: ShieldCheck },
+const PRESETS: Array<{ id: PermissionPreset; label: string; Icon: typeof Eye; hint: string }> = [
+  { id: 'none',   label: 'None',   Icon: Ban,         hint: 'Revoke everything in this section' },
+  { id: 'viewer', label: 'Viewer', Icon: Eye,         hint: 'Read-only pages only' },
+  { id: 'editor', label: 'Editor', Icon: Pencil,      hint: 'All pages, no sensitive actions' },
+  { id: 'admin',  label: 'Admin',  Icon: ShieldCheck, hint: 'All pages and sensitive actions' },
 ]
 
-export default function PermissionMatrix({ catalog, capabilities, disabled = false, onChange }: Props) {
-  const pages = catalog.entries.filter(entry => entry.kind === 'page')
-  const actions = catalog.entries.filter(entry => entry.kind === 'action')
-  const selected = new Set(capabilities)
+export default function PermissionMatrix({ catalog, scope, capabilities, disabled = false, onChange }: Props) {
+  const [query, setQuery] = useState('')
+  const selected = useMemo(() => new Set(capabilities), [capabilities])
 
-  function update(capability: Capability, enabled: boolean) {
-    const next = new Set(capabilities)
+  const pages = useMemo(() => {
+    const actions = catalog.entries.filter(entry => entry.kind === 'action')
+    return catalog.entries
+      .filter(entry => entry.kind === 'page')
+      .map(page => ({ ...page, actions: actions.filter(action => action.parentId === page.id) }))
+  }, [catalog])
+
+  const visiblePages = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (!needle) return pages
+    return pages.filter(page =>
+      page.label.toLowerCase().includes(needle) ||
+      page.actions.some(action => action.label.toLowerCase().includes(needle))
+    )
+  }, [pages, query])
+
+  const grantedPages = pages.filter(page => selected.has(page.capability)).length
+
+  function apply(next: Iterable<Capability>) {
+    onChange([...new Set(next)])
+  }
+
+  function toggleAction(capability: Capability, enabled: boolean) {
+    const next = new Set(selected)
     if (enabled) next.add(capability)
     else next.delete(capability)
-    onChange([...next])
+    apply(next)
   }
 
-  function updatePage(pageId: string, capability: Capability, enabled: boolean) {
-    const next = new Set(capabilities)
-    if (enabled) next.add(capability)
-    else {
-      next.delete(capability)
-      actions.filter(action => action.parentId === pageId).forEach(action => next.delete(action.capability))
+  /** Turning a page off also revokes its actions — they cannot apply without it. */
+  function togglePage(page: (typeof pages)[number], enabled: boolean) {
+    const next = new Set(selected)
+    if (enabled) {
+      next.add(page.capability)
+    } else {
+      next.delete(page.capability)
+      page.actions.forEach(action => next.delete(action.capability))
     }
-    onChange([...next])
-  }
-
-  function applyPreset(preset: 'viewer' | 'editor' | 'admin') {
-    const pageCapabilities = pages.map(page => page.capability)
-    const actionCapabilities = actions.map(action => action.capability)
-    const catalogCapabilities = catalog.entries.map(entry => entry.capability)
-    const preserved = capabilities.filter(capability => !catalogCapabilities.includes(capability))
-    const next = preset === 'viewer'
-      ? pageCapabilities.filter(capability => capability === 'coffee_sales' || capability === 'coffee_reports')
-      : preset === 'editor'
-        ? pageCapabilities
-        : [...pageCapabilities, ...actionCapabilities]
-    onChange([...new Set([...preserved, ...next])])
+    apply(next)
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
-      <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/40 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h4 className="text-sm font-semibold text-slate-900 dark:text-white">{catalog.label} access</h4>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Pages control visibility. Actions are available only when their parent page is enabled.</p>
+    <div className="flex flex-col">
+      <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-5 py-3.5 dark:border-slate-700 dark:bg-slate-900/40 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{catalog.label} permissions</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {grantedPages} of {pages.length} pages enabled · sensitive actions require their page
+          </p>
         </div>
-        <div className="flex items-center gap-1">
-          {PRESETS.map(({ id, label, Icon }) => (
-            <button key={id} type="button" disabled={disabled} onClick={() => applyPreset(id)} className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-white hover:text-slate-900 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">
-              <Icon className="h-3.5 w-3.5" />{label}
-            </button>
-          ))}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+            <input
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+              placeholder="Filter permissions…"
+              className="h-8 w-44 rounded-lg border border-slate-200 bg-white ps-8 pe-2 text-xs text-slate-700 outline-none transition focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            />
+          </div>
+          <div className="flex items-center gap-1 rounded-xl bg-white p-1 shadow-sm dark:bg-slate-800">
+            {PRESETS.map(({ id, label, Icon, hint }) => (
+              <button
+                key={id}
+                type="button"
+                title={hint}
+                disabled={disabled}
+                onClick={() => apply(presetCapabilities(scope, id))}
+                className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-primary/10 hover:text-primary disabled:opacity-40 dark:text-slate-300"
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="divide-y divide-slate-100 dark:divide-slate-800">
-        {pages.map(page => {
+
+      <div className="divide-y divide-slate-100 dark:divide-slate-700/70">
+        {visiblePages.map(page => {
           const enabled = selected.has(page.capability)
-          const pageActions = actions.filter(action => action.parentId === page.id)
           return (
-            <div key={page.id} className="px-4 py-3">
-              <label className="flex cursor-pointer items-center justify-between gap-3">
-                <span>
-                  <span className="block text-sm font-medium text-slate-800 dark:text-slate-100">{page.label}</span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Page</span>
+            <div key={page.id} className="px-5 py-3.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">{page.label}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    {page.viewer ? 'Read-only page' : 'Page access'}
+                    {page.actions.length > 0 && ` · ${page.actions.length} sensitive action${page.actions.length === 1 ? '' : 's'}`}
+                  </span>
                 </span>
-                <input type="checkbox" checked={enabled} disabled={disabled} onChange={event => updatePage(page.id, page.capability, event.target.checked)} className="sr-only" />
-                <span className={`flex h-5 w-5 items-center justify-center rounded border ${enabled ? 'border-primary bg-primary text-white' : 'border-slate-300 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
-                  {enabled && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
-                </span>
-              </label>
-              {pageActions.length > 0 && (
-                <div className={`mt-2 grid grid-cols-1 gap-1 border-l-2 pl-3 sm:grid-cols-3 ${enabled ? 'border-primary/40' : 'border-slate-200 opacity-45 dark:border-slate-700'}`}>
-                  {pageActions.map(action => (
-                    <label key={action.id} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                      <input type="checkbox" checked={selected.has(action.capability)} disabled={disabled || !enabled} onChange={event => update(action.capability, event.target.checked)} className="h-3.5 w-3.5 rounded border-slate-300 text-primary" />
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  aria-label={`Allow ${page.label}`}
+                  disabled={disabled}
+                  onClick={() => togglePage(page, !enabled)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                    enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      enabled ? 'ltr:translate-x-4 rtl:-translate-x-4' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {page.actions.length > 0 && (
+                <div
+                  className={`mt-2.5 grid grid-cols-1 gap-1.5 border-s-2 ps-3 sm:grid-cols-2 ${
+                    enabled ? 'border-primary/40' : 'border-slate-200 opacity-45 dark:border-slate-700'
+                  }`}
+                >
+                  {page.actions.map(action => (
+                    <label
+                      key={action.id}
+                      className="flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300"
+                    >
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={selected.has(action.capability)}
+                        disabled={disabled || !enabled}
+                        onChange={event => toggleAction(action.capability, event.target.checked)}
+                      />
+                      <span
+                        className={`flex h-4 w-4 items-center justify-center rounded transition-colors ${
+                          selected.has(action.capability)
+                            ? 'bg-primary text-white'
+                            : 'bg-slate-200 text-transparent dark:bg-slate-700'
+                        }`}
+                      >
+                        <Check size={10} strokeWidth={3} />
+                      </span>
                       {action.label}
                     </label>
                   ))}
@@ -93,6 +173,12 @@ export default function PermissionMatrix({ catalog, capabilities, disabled = fal
             </div>
           )
         })}
+
+        {visiblePages.length === 0 && (
+          <p className="px-5 py-10 text-center text-xs text-slate-500 dark:text-slate-400">
+            No permissions match “{query}”.
+          </p>
+        )}
       </div>
     </div>
   )

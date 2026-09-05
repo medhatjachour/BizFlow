@@ -36,6 +36,18 @@ const api = {
     bindSession: (user: { id: string; username: string; role: string } | null) =>
       ipcRenderer.invoke('permissions:bindSession', user)
   },
+  roles: {
+    list: (scope?: string) => ipcRenderer.invoke('roles:list', scope),
+    create: (input: { key?: string; label: string; scope: string; description?: string; capabilities?: string[] }) =>
+      ipcRenderer.invoke('roles:create', input),
+    update: (key: string, patch: { label?: string; description?: string | null; capabilities?: string[] }) =>
+      ipcRenderer.invoke('roles:update', key, patch),
+    remove: (key: string) => ipcRenderer.invoke('roles:delete', key),
+    reset: (key: string) => ipcRenderer.invoke('roles:reset', key)
+  },
+  plugins: {
+    getCatalog: () => ipcRenderer.invoke('plugins:getCatalog')
+  },
   dashboard: {
     getMetrics: () => ipcRenderer.invoke('dashboard:getMetrics'),
     getSalesChart: (opts: { startDate: string; endDate: string }) => ipcRenderer.invoke('dashboard:getSalesChart', opts),

@@ -256,15 +256,15 @@ export default function BakeryPage() {
 
       {/* Tab content */}
       <div className="flex-1 overflow-auto p-6">
-        {active === 'overview'   && can('access_bakery') && <DailyOverviewTab onEndOfDay={() => setShowEOD(true)} />}
-        {active === 'recipes'    && can('manage_inventory') && <RecipesTab />}
-        {active === 'production' && can('manage_inventory') && <ProductionTab />}
-        {active === 'sales'      && can('access_bakery') && <SalesTab />}
-        {active === 'pantry'     && can('manage_inventory') && <PantryTab />}
-        {active === 'waste'      && can('manage_inventory') && <WasteTab />}
-        {active === 'schedule'  && can('manage_inventory') && <ScheduleTab />}
-        {active === 'pnl'       && can('view_profit') && <ProfitLossTab />}
-        {active === 'expenses'  && can('view_finance') && <BakeryExpensesTab />}
+        {active === 'overview'   && can(pluginTabCapability('bakery', 'overview')!) && <DailyOverviewTab onEndOfDay={() => setShowEOD(true)} />}
+        {active === 'recipes'    && can(pluginTabCapability('bakery', 'recipes')!) && <RecipesTab />}
+        {active === 'production' && can(pluginTabCapability('bakery', 'production')!) && <ProductionTab />}
+        {active === 'sales'      && can(pluginTabCapability('bakery', 'sales')!) && <SalesTab />}
+        {active === 'pantry'     && can(pluginTabCapability('bakery', 'pantry')!) && <PantryTab />}
+        {active === 'waste'      && can(pluginTabCapability('bakery', 'waste')!) && <WasteTab />}
+        {active === 'schedule'   && can(pluginTabCapability('bakery', 'schedule')!) && <ScheduleTab />}
+        {active === 'pnl'        && can(pluginTabCapability('bakery', 'pnl')!) && <ProfitLossTab />}
+        {active === 'expenses'   && can(pluginTabCapability('bakery', 'expenses')!) && <BakeryExpensesTab />}
       </div>
     </div>
   )

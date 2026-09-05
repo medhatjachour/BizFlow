@@ -161,12 +161,11 @@ function InfoTooltip({ text }: { text: string }) {
 
 export default function ClinicPage() {
   const { t } = useLanguage()
-  const { user, can } = useAuth()
+  const { can } = useAuth()
   const [activeTab, setActiveTab] = useState<ClinicTab>('patients')
   const [overdueCount, setOverdueCount] = useState(0)
   const [showJourney, setShowJourney] = useState(false)
   const [dentistMode, setDentistMode] = useState(() => localStorage.getItem('clinicDentistMode') === 'true')
-  const isClinicStaff = user?.role === 'clinic_staff'
 
   function toggleDentistMode() {
     const next = !dentistMode
@@ -202,7 +201,7 @@ export default function ClinicPage() {
   ]
 
   const staffTabs: ClinicTab[] = ['patients', 'sessions', 'appointments', 'followups']
-  const tabs = isClinicStaff ? allTabs.filter(t => staffTabs.includes(t.key)) : allTabs
+  const tabs = allTabs
   const visibleTabs = tabs.filter(tab => can(pluginTabCapability('clinic', tab.key)!))
 
   useEffect(() => {
@@ -274,14 +273,14 @@ export default function ClinicPage() {
 
       {/* Tab Panels */}
       <div className="flex-1 min-h-0">
-        {activeTab === 'patients' && can('manage_customers') && <PatientsTab />}
-        {activeTab === 'sessions' && can('manage_customers') && <SessionsTab />}
-        {activeTab === 'stats' && can('view_finance') && !isClinicStaff && <StatsTab />}
-        {activeTab === 'appointments' && can('manage_customers') && <AppointmentsTab />}
-        {activeTab === 'followups' && can('manage_customers') && <FollowUpsTab />}
-        {activeTab === 'doctors' && can('manage_staff') && !isClinicStaff && <DoctorsTab />}
-        {activeTab === 'expenses' && can('view_finance') && !isClinicStaff && <ExpensesTab />}
-        {activeTab === 'materials' && can('manage_inventory') && !isClinicStaff && <MaterialsTab />}
+        {activeTab === 'patients' && can(pluginTabCapability('clinic', 'patients')!) && <PatientsTab />}
+        {activeTab === 'sessions' && can(pluginTabCapability('clinic', 'sessions')!) && <SessionsTab />}
+        {activeTab === 'stats' && can(pluginTabCapability('clinic', 'stats')!) && <StatsTab />}
+        {activeTab === 'appointments' && can(pluginTabCapability('clinic', 'appointments')!) && <AppointmentsTab />}
+        {activeTab === 'followups' && can(pluginTabCapability('clinic', 'followups')!) && <FollowUpsTab />}
+        {activeTab === 'doctors' && can(pluginTabCapability('clinic', 'doctors')!) && <DoctorsTab />}
+        {activeTab === 'expenses' && can(pluginTabCapability('clinic', 'expenses')!) && <ExpensesTab />}
+        {activeTab === 'materials' && can(pluginTabCapability('clinic', 'materials')!) && <MaterialsTab />}
       </div>
     </div>
   )
