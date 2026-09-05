@@ -126,6 +126,10 @@ for how it works and how to tune limits.
 
 ---
 
+# update rough vps
+```
+ ssh -o BatchMode=yes medhat@168.231.107.207 "cd ~/bizflow && git reset --hard origin/main && git clean -fd && git pull origin main && docker compose up -d --build && docker compose ps"
+```
 ## Notes
 
 - Each app keeps its **own git history** (`apps/bizflow/.git`, `apps/nebula/.git`).
