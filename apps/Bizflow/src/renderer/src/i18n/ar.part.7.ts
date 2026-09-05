@@ -129,6 +129,9 @@ export const arPart7 = {
     gymEndDate: 'تاريخ الانتهاء (اختياري)',
     // Attendance
     gymQuickCheckIn: 'تسجيل حضور سريع',
+    gymQuickCheckInDescription: 'ابحث عن الأعضاء أو سجّل زيارات مدفوعة سريعة',
+    gymMemberWalkIns: 'زيارات الأعضاء',
+    gymGuestWalkIns: 'زيارات الضيوف',
     gymDailyCheckIns: 'حضور اليوم',
     gymSearchMember: 'ابحث عن عضو بالاسم أو الهاتف…',
     gymCheckIn: 'تسجيل الحضور',
@@ -160,6 +163,8 @@ export const arPart7 = {
     gymNoTrainees: 'لا متدربين بعد',
     gymNoTraineesMatch: 'لا متدربين يطابقون البحث',
     gymAddFirstMember: 'أضف أول عضو في الجيم',
+    gymFilterNoSub: 'لا اشتراك',
+    
     gymTraineeName: 'الاسم',
     gymTraineePhone: 'الهاتف',
     gymTraineeEmail: 'البريد',

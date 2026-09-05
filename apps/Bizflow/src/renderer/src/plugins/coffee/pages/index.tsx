@@ -26,7 +26,6 @@ import {
   ChevronRight,
   Layers,
   UtensilsCrossed,
-  CheckCircle2,
   TrendingUp
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'

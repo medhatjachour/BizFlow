@@ -53,7 +53,8 @@ export function QuickCheckInCard(props: QuickCheckInCardProps) {
             <h2 className="text-sm font-bold text-slate-900 dark:text-white">
               {t('gymQuickCheckIn') || 'Express Check-In'}
             </h2>
-            <p className="text-[11px] text-slate-400">Search members or register quick paid visits</p>
+            <p className="text-[11px] text-slate-400">
+              {t('gymQuickCheckInDescription') || 'Search members or register quick paid visits'}</p>
           </div>
         </div>
       </div>

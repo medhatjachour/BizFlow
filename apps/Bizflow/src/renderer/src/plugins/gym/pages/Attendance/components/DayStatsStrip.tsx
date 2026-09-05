@@ -22,13 +22,13 @@ export function DayStatsStrip({ sessions }: DayStatsStripProps) {
       color: 'emerald'
     },
     {
-      label: 'Member Walk-ins',
+      label: t('gymMemberWalkIns') || 'Member Walk-ins',
       value: totalMemberWalkins,
       icon: Users,
       color: 'blue'
     },
     {
-      label: 'Guest Walk-ins',
+      label: t('gymGuestWalkIns') || 'Guest Walk-ins',
       value: totalAnonWalkins,
       icon: Footprints,
       color: 'teal'

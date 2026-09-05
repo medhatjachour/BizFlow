@@ -129,6 +129,9 @@ export const enPart7 = {
     gymEndDate: 'End Date (optional)',
     // Attendance
     gymQuickCheckIn: 'Quick Check-in',
+    gymQuickCheckInDescription: 'Search members or register quick paid visits',
+    gymMemberWalkIns: 'Member Walk-ins',
+    gymGuestWalkIns: 'Guest Walk-ins',
     gymDailyCheckIns: 'check-ins today',
     gymSearchMember: 'Search member by name or phone…',
     gymCheckIn: 'Check In',
@@ -161,6 +164,7 @@ export const enPart7 = {
     gymNoTraineesMatch: 'No trainees match your search',
     gymAddFirstMember: 'Add your first gym member',
     gymTraineeName: 'Name',
+    gymFilterNoSub: 'No Subscription',
     gymTraineePhone: 'Phone',
     gymTraineeEmail: 'Email',
     gymTraineeSubscription: 'Subscription',

@@ -77,7 +77,8 @@ export default function CoachesTab() {
           </p>
           {!searchInput && (
             <p className="text-xs text-slate-400 mt-1">
-              Click "Add Coach" to enroll personal trainers and gym staff.
+              {t('gymNoCoaches') || 'No coaches enrolled yet'}.{' '}
+              {t('gymAddCoach') || 'Click "Add Coach" to enroll personal trainers and gym staff.'}
             </p>
           )}
         </div>

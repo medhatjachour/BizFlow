@@ -35,7 +35,10 @@ export function SessionList({ sessions, loading, isToday, onDeleteSession }: Ses
             {isToday ? t('gymNoCheckInsToday') || 'No check-ins logged today yet' : t('gymNoCheckInsDay') || 'No check-ins on this date'}
           </p>
           {isToday && (
-            <p className="text-xs text-slate-400 mt-0.5">Use the Express Check-In box above to register visits.</p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {t('gymQuickCheckInDescription') || 'Search members or register quick paid visits'}.{' '}
+              {t('gymUseQuickCheckin') || 'Use the Express Check-In box above to register visits.'}
+            </p>
           )}
         </div>
       ) : (

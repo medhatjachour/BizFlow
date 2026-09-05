@@ -219,7 +219,7 @@ export function TraineeFormModal({ isOpen, onClose, onSaved, initial }: TraineeF
           <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
               <ShieldAlert size={14} className="text-amber-500" />
-              <span>Emergency Contact Info</span>
+              <span>{t('gymEmergencyContact') || 'Emergency Contact Info'}</span>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               <input
@@ -240,7 +240,7 @@ export function TraineeFormModal({ isOpen, onClose, onSaved, initial }: TraineeF
 
           {/* Medical Notes */}
           <div>
-            <label className={labelCls}>{t('gymNotes') || 'Health & Medical Notes'}</label>
+            <label className={labelCls}>{t('gymHealthNotes') || 'Health & Medical Notes'}</label>
             <textarea
               className={inputCls}
               rows={2}
