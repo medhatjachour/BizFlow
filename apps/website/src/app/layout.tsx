@@ -35,6 +35,13 @@ export const metadata: Metadata = {
     "gym management",
     "try in browser",
     "offline desktop app",
+    "offline POS software",
+    "one-time POS software",
+    "restaurant management software",
+    "bakery management software",
+    "clinic management software",
+    "pharmacy POS software",
+    "warehouse inventory software",
   ],
   authors: [{ name: "BizFlow" }],
   creator: "BizFlow",
@@ -79,14 +86,29 @@ export default function RootLayout({
 }>) {
   const organizationSchema = {
     "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteUrl}/#organization`,
+        name: siteConfig.name,
+        url: siteUrl,
+        founder: { "@type": "Person", name: siteConfig.founder },
+        sameAs: siteConfig.sameAs,
+      },
+      {
     "@type": "SoftwareApplication",
+        "@id": `${siteUrl}/#software`,
     name: siteConfig.name,
+        alternateName: "BizFlow Business Management System",
     applicationCategory: "BusinessApplication",
     operatingSystem: "Windows, macOS, Linux",
     description: siteConfig.description,
     url: siteUrl,
     image: `${siteUrl}${withBasePath("/opengraph-image")}`,
-    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+        creator: { "@id": `${siteUrl}/#organization` },
+        offers: { "@type": "Offer", price: "100", priceCurrency: "USD", availability: "https://schema.org/InStock" },
+      },
+    ],
   };
 
   return (

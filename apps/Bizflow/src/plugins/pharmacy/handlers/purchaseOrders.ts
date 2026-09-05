@@ -114,7 +114,7 @@ export function registerPharmacyPurchaseOrderHandlers(prisma: any): void {
   // Receive a PO → turn each line into stock (a new batch) for its product.
   ipcMain.handle('pharmacy:purchaseOrders:receive', async (_e, id: string) => {
     try {
-      requireCap('manage_inventory')
+      requireCap('pharmacy_orders')
       return await prisma.$transaction(async (tx: any) => {
         const po = await tx.pharmacyPurchaseOrder.findUnique({ where: { id }, include: { items: true } })
         if (!po) throw new Error('Purchase order not found')

@@ -6,6 +6,7 @@ import Features from "@/components/landing/Features";
 import WhatsNew from "@/components/landing/WhatsNew";
 import Showcase from "@/components/landing/Showcase";
 import Pricing from "@/components/landing/Pricing";
+import AnswerEngineContent from "@/components/landing/AnswerEngineContent";
 import RequestForm from "@/components/landing/RequestForm";
 import Footer from "@/components/landing/Footer";
 
@@ -20,6 +21,7 @@ export default function Home() {
         <Features />
         <WhatsNew />
         <Showcase />
+        <AnswerEngineContent />
         <Pricing />
         <RequestForm />
         <Footer />

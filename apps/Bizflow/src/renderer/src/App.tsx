@@ -434,6 +434,11 @@ function RootLayoutWrapper({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 const PLUGIN_ROUTE_CAPABILITIES: Record<string, Capability> = {
+  dashboard: 'view_dashboard',
+  reports: 'view_reports',
+  finance: 'view_finance',
+  employees: 'manage_staff',
+  settings: 'manage_settings',
   commerce: 'access_commerce',
   products: 'access_commerce',
   pos: 'access_commerce',

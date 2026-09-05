@@ -48,14 +48,16 @@ const navigation: NavItem[] = [
     translationKey: 'dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
-    roles: ['admin', 'manager', 'sales', 'inventory', 'finance']
+    roles: ['admin', 'manager', 'sales', 'inventory', 'finance'],
+    capability: 'view_dashboard'
   },
   {
     name: 'Employees',
     translationKey: 'employees',
     href: '/employees',
     icon: Users,
-    roles: ['admin', 'manager']
+    roles: ['admin', 'manager'],
+    capability: 'manage_staff'
   },
   
   {
@@ -63,14 +65,16 @@ const navigation: NavItem[] = [
     translationKey: 'reports',
     href: '/reports',
     icon: FileBarChart,
-    roles: ['admin', 'manager', 'finance']
+    roles: ['admin', 'manager', 'finance'],
+    capability: 'view_reports'
   },
   {
     name: 'Finance',
     translationKey: 'finance',
     href: '/finance',
     icon: Wallet,
-    roles: ['admin', 'manager', 'finance']
+    roles: ['admin', 'manager', 'finance'],
+    capability: 'view_finance'
   },
   
   {
@@ -131,14 +135,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   // Build dynamic navigation with unified Commerce plugin entry
   const navItems: NavItem[] = [
     ...navigation.slice(0, dashboardIdx + 1),
-    ...(__PLUGIN_COMMERCE__ && commerceEnabled ? [{
-      name: 'Commerce',
-      translationKey: 'commerce',
-      href: '/commerce',
-      icon: ShoppingCart,
-      roles: ['admin', 'manager', 'sales', 'inventory', 'cashier'],
-      capability: 'access_commerce' as Capability
-    }] : []),
+    
     ...navigation.slice(dashboardIdx + 1, employeesIdx + 1),
     ...(__PLUGIN_BAKERY__ && bakeryEnabled ? [{
       name: 'Bakery',
@@ -147,6 +144,14 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       icon: ChefHat,
       roles: ['admin', 'manager', 'bakery_staff'],
       capability: 'access_bakery' as Capability
+    }] : []),
+    ...(__PLUGIN_COMMERCE__ && commerceEnabled ? [{
+      name: 'Commerce',
+      translationKey: 'commerce',
+      href: '/commerce',
+      icon: ShoppingCart,
+      roles: ['admin', 'manager', 'sales', 'inventory', 'cashier'],
+      capability: 'access_commerce' as Capability
     }] : []),
     ...(__PLUGIN_RESTAURANT__ && restaurantEnabled ? [{
       name: 'Restaurant',
@@ -302,7 +307,9 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-3 overflow-y-auto" aria-label="Main navigation">
           {navItems
-            .filter(item => item.roles.includes(userRole) && (!item.capability || can(item.capability)))
+            // Capability is authoritative; the legacy role list only covers
+            // entries that never got one, so custom roles aren't locked out.
+            .filter(item => (item.capability ? can(item.capability) : item.roles.includes(userRole)))
             .map(item => {
               const isActive = location.pathname.startsWith(item.href)
               const currentPlugin = location.pathname.split('/')[1]

@@ -21,7 +21,7 @@ export function registerPharmacySaleHandlers(prisma: any): void {
       if (!Array.isArray(data?.items) || data.items.length === 0) {
         throw new Error('Cart is empty')
       }
-      if ((Number(data?.discount) || 0) > 0) requireCap('give_discount')
+      if ((Number(data?.discount) || 0) > 0) requireCap('pharmacy_discount')
 
       return await prisma.$transaction(async (tx: any) => {
         const lineRows: any[] = []
@@ -205,7 +205,7 @@ export function registerPharmacySaleHandlers(prisma: any): void {
   // ─── Refund a whole sale (restock all batches) ────────────────────────────
   ipcMain.handle('pharmacy:sales:refund', async (_e, id: string, data?: { reason?: string }) => {
     try {
-      requireCap('issue_refund')
+      requireCap('pharmacy_refund')
       return await prisma.$transaction(async (tx: any) => {
         const sale = await tx.pharmacySale.findUnique({ where: { id }, include: { items: { include: { product: { select: { subUnitsPerContainer: true } } } } } })
         if (!sale) throw new Error('Sale not found')
@@ -248,7 +248,7 @@ export function registerPharmacySaleHandlers(prisma: any): void {
   // ─── Refund a single line item (partial) ──────────────────────────────────
   ipcMain.handle('pharmacy:sales:refundItem', async (_e, itemId: string, data?: { quantity?: number; reason?: string }) => {
     try {
-      requireCap('issue_refund')
+      requireCap('pharmacy_refund')
       return await prisma.$transaction(async (tx: any) => {
         const item = await tx.pharmacySaleItem.findUnique({ where: { id: itemId }, include: { sale: { include: { items: true } }, product: { select: { subUnitsPerContainer: true } } } })
         if (!item) throw new Error('Sale item not found')

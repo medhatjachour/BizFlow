@@ -13,22 +13,53 @@
 
 import { ipcMain } from 'electron'
 import { requireCap } from './session'
-import type { Capability } from '../../../shared/permissions'
+import {
+  PLUGIN_REGISTRY,
+  PLUGIN_ACCESS_CAPABILITIES,
+  ALL_CAPABILITIES,
+  type Capability,
+} from '../../../shared/permissions'
 
-const RULES: Array<{ test: RegExp; cap: Capability }> = [
-  { test: /^users:/i,                   cap: 'manage_users' },
-  { test: /^auth:create$/i,             cap: 'manage_users' },
-  { test: /^bakery:/i,                  cap: 'access_bakery' },
-  { test: /^restaurant:/i,              cap: 'access_restaurant' },
-  { test: /^warehouse:/i,               cap: 'access_warehouse' },
-  { test: /^clinic:/i,                  cap: 'access_clinic' },
-  { test: /^vet:/i,                     cap: 'access_vet' },
-  { test: /^gym:/i,                     cap: 'access_gym' },
-  { test: /^pharmacy:/i,                cap: 'access_pharmacy' },
-  { test: /^coffee:/i,                  cap: 'access_coffee' },
-  { test: /refund|return/i,            cap: 'issue_refund' },
-  { test: /void|cancelsale|cancelorder/i, cap: 'void_sale' },
-]
+type Rule = { test: RegExp; cap: Capability }
+
+function capIfDeclared(candidate: string): Capability | undefined {
+  return ALL_CAPABILITIES.includes(candidate as Capability) ? (candidate as Capability) : undefined
+}
+
+/**
+ * Ordered most-specific first: a plugin's sensitive actions resolve to that
+ * plugin's own capability, and anything else under its channel prefix falls
+ * back to plugin access. Commerce ships unprefixed channels, so it also backs
+ * the generic tail rules.
+ */
+function buildRules(): Rule[] {
+  const rules: Rule[] = [
+    { test: /^users:/i, cap: 'manage_users' },
+    { test: /^auth:create$/i, cap: 'manage_users' },
+    // Reading roles is needed to assign them in user management; only the
+    // mutating channels require settings access.
+    { test: /^roles:(create|update|delete|reset)$/i, cap: 'manage_settings' },
+  ]
+
+  for (const plugin of PLUGIN_REGISTRY) {
+    const scoped = (suffix: string) => capIfDeclared(`${plugin.id}_${suffix}`)
+    const refund = scoped('refund')
+    const voided = scoped('void_sale') ?? scoped('void_order')
+
+    if (refund) rules.push({ test: new RegExp(`^${plugin.id}:.*(refund|return)`, 'i'), cap: refund })
+    if (voided) rules.push({ test: new RegExp(`^${plugin.id}:.*(void|cancelsale|cancelorder)`, 'i'), cap: voided })
+    rules.push({ test: new RegExp(`^${plugin.id}:`, 'i'), cap: PLUGIN_ACCESS_CAPABILITIES[plugin.id] })
+  }
+
+  rules.push(
+    { test: /refund|return/i, cap: 'commerce_refund' },
+    { test: /void|cancelsale|cancelorder/i, cap: 'commerce_void_sale' }
+  )
+  return rules
+}
+
+const RULES = buildRules()
+
 
 let installed = false
 

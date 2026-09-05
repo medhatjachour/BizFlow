@@ -9,11 +9,11 @@
 
 import {
   ALL_CAPABILITIES,
-  resolveCapabilities,
   isWildcardRole,
   type PluginRoleAssignments,
   type Capability,
 } from '../../../shared/permissions'
+import { roleCapabilities } from '../../services/roleStore'
 
 export interface CurrentUser {
   id: string
@@ -33,23 +33,20 @@ export function getCurrentUser(): CurrentUser | null {
   return currentUser
 }
 
-/** Read a role's stored override (JSON array) or null when using defaults. */
+/** Read a role's stored capabilities, or null when the role is unknown. */
 export async function loadRoleOverride(prisma: any, role: string): Promise<Capability[] | null> {
   try {
-    const row = await prisma?.rolePermission?.findUnique({ where: { role } })
-    if (!row) return null
-    const arr = JSON.parse(row.capabilities)
-    return Array.isArray(arr) ? arr.filter((c: any) => ALL_CAPABILITIES.includes(c)) : null
+    const capabilities = await roleCapabilities(prisma, role)
+    return capabilities.length ? capabilities : null
   } catch {
     return null
   }
 }
 
-/** Effective capabilities for a role (admin = all; else override or defaults). */
+/** Effective capabilities for a role (admin = all; otherwise whatever is stored). */
 export async function resolveUserCapabilities(prisma: any, role: string): Promise<Capability[]> {
   if (isWildcardRole(role)) return [...ALL_CAPABILITIES]
-  const override = await loadRoleOverride(prisma, role)
-  return resolveCapabilities(role, override)
+  return roleCapabilities(prisma, role)
 }
 
 /** Bind the acting user and return their resolved capabilities. */
@@ -70,6 +67,17 @@ export async function bindUser(
     pluginRoles: u.pluginRoles ?? {},
   })
   return capabilities
+}
+
+/** Re-resolve the acting user's capabilities after a role edit. */
+export async function refreshCurrentUser(prisma: any): Promise<Capability[]> {
+  if (!currentUser) return []
+  return bindUser(prisma, {
+    id: currentUser.id,
+    username: currentUser.username,
+    role: currentUser.role,
+    pluginRoles: currentUser.pluginRoles,
+  })
 }
 
 export function userCan(cap: Capability): boolean {

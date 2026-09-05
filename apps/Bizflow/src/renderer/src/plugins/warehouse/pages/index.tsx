@@ -90,11 +90,11 @@ export default function WarehousePage() {
       {showHowItWorks && <HowItWorksModal onClose={() => setShowHowItWorks(false)} />}
 
       <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
-        {activeTab === 'overview' && <OverviewTab onNavigate={setActiveTab} />}
-        {activeTab === 'operations' && <OperationsTab />}
-        {activeTab === 'locations' && <LocationsTab />}
-        {activeTab === 'inventory' && <InventoryTab />}
-        {activeTab === 'transfers' && <TransfersTab />}
+        {activeTab === 'overview' && can(pluginTabCapability('warehouse', 'overview')!) && <OverviewTab onNavigate={setActiveTab} />}
+        {activeTab === 'operations' && can(pluginTabCapability('warehouse', 'operations')!) && <OperationsTab />}
+        {activeTab === 'locations' && can(pluginTabCapability('warehouse', 'locations')!) && <LocationsTab />}
+        {activeTab === 'inventory' && can(pluginTabCapability('warehouse', 'inventory')!) && <InventoryTab />}
+        {activeTab === 'transfers' && can(pluginTabCapability('warehouse', 'transfers')!) && <TransfersTab />}
       </div>
     </div>
   )

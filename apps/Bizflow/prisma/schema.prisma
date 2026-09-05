@@ -43,11 +43,29 @@ model User {
   @@index([deactivatedBy])
 }
 
-// Role-based permissions — capability overrides per role (JSON array of keys).
-// Absent row = use built-in defaults from src/shared/permissions.ts.
-model RolePermission {
-  role         String   @id           // 'admin' | 'manager' | 'sales' | 'cashier' | custom
+// Roles are first-class: every assignable role has a row here, seeded from the
+// built-in definitions in src/shared/permissions.ts and editable by admins.
+// `scope` is 'kernel' or a plugin id, and a role may only hold capabilities
+// belonging to its own scope.
+model Role {
+  key          String   @id            // 'admin' | 'coffee_cashier' | custom key
+  label        String                  // human-readable name shown in the UI
+  scope        String   @default("kernel") // 'kernel' | plugin id
+  description  String?
   capabilities String   @default("[]") // JSON-encoded Capability[]
+  isBuiltIn    Boolean  @default(false) // ships with the app; cannot be deleted
+  isSystem     Boolean  @default(false) // always full access; cannot be edited
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([scope])
+}
+
+// Legacy capability overrides, superseded by Role. Kept so existing databases
+// can be migrated on first launch; no longer written to.
+model RolePermission {
+  role         String   @id
+  capabilities String   @default("[]")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

@@ -287,10 +287,8 @@ function JourneyModal({ onClose }: { onClose: () => void }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function VetPage() {
   const { t } = useLanguage()
-  const { user, can } = useAuth()
+  const { can } = useAuth()
   const location = useLocation()
-
-  const isVetStaff = user?.role === 'vet_staff'
 
   const allTabs: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: 'owners', label: t('vetOwners') || 'Owners', icon: Users },
@@ -301,12 +299,8 @@ export default function VetPage() {
     { key: 'medicines' as Tab, label: t('vetMedStore') || 'Medicine Store', icon: Activity },
     { key: 'sales' as Tab, label: t('vetSalesTab') || 'Sales', icon: ShoppingCart },
     { key: 'salesHistory' as Tab, label: t('vetSalesHistory') || 'Sales History', icon: Receipt },
-    ...(!isVetStaff
-      ? [
-          { key: 'stats' as Tab, label: t('vetStats') || 'Statistics', icon: BarChart3 },
-          { key: 'expenses' as Tab, label: t('vetExpenses') || 'Expenses', icon: DollarSign }
-        ]
-      : [])
+    { key: 'stats' as Tab, label: t('vetStats') || 'Statistics', icon: BarChart3 },
+    { key: 'expenses' as Tab, label: t('vetExpenses') || 'Expenses', icon: DollarSign }
   ]
 
   const visibleTabs = allTabs.filter((item) => can(pluginTabCapability('vet', item.key)!))
@@ -396,17 +390,17 @@ export default function VetPage() {
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {tab === 'owners' && <VetOwnersTab />}
-        {tab === 'sessions' && <VetSessionsTab />}
+        {tab === 'owners' && can(pluginTabCapability('vet', 'owners')!) && <VetOwnersTab />}
+        {tab === 'sessions' && can(pluginTabCapability('vet', 'sessions')!) && <VetSessionsTab />}
         {tab === 'appointments' && (
           <VetAppointmentsTab onViewPet={(petId: string) => setActivePatientId(petId)} />
         )}
-        {tab === 'followups' && <VetFollowUpsTab />}
-        {tab === 'stats' && <VetStatsTab onNavigate={(t) => requestMainTab(t as Tab)} />}
-        {tab === 'expenses' && <VetExpensesTab />}
-        {tab === 'medicines' && <VetMedicinesTab />}
-        {tab === 'vets' && <VetStaffTab />}
-        {tab === 'sales' && <VetSalesTab onCartCountChange={setSalesCartCount} />}
+        {tab === 'followups' && can(pluginTabCapability('vet', 'followups')!) && <VetFollowUpsTab />}
+        {tab === 'stats' && can(pluginTabCapability('vet', 'stats')!) && <VetStatsTab onNavigate={(t) => requestMainTab(t as Tab)} />}
+        {tab === 'expenses' && can(pluginTabCapability('vet', 'expenses')!) && <VetExpensesTab />}
+        {tab === 'medicines' && can(pluginTabCapability('vet', 'medicines')!) && <VetMedicinesTab />}
+        {tab === 'vets' && can(pluginTabCapability('vet', 'vets')!) && <VetStaffTab />}
+        {tab === 'sales' && can(pluginTabCapability('vet', 'sales')!) && <VetSalesTab onCartCountChange={setSalesCartCount} />}
         {tab === 'salesHistory' && (
           <div className="flex flex-col h-full min-h-0">
             <SalesHistory />

@@ -158,16 +158,16 @@ function RestaurantPageContent() {
 
       {/* Tab Content Viewport */}
       <div className="flex-1 overflow-auto p-6">
-        {activeTab === 'overview'     && <OverviewAndKdsPage onNavigate={(v) => setCurrentView(v as any)} />}
-        {activeTab === 'tables'       && <TablesTab />}
-        {activeTab === 'orders'       && <OrdersTab />}
-        {activeTab === 'sales'        && <SalesHistoryTab />}
-        {activeTab === 'reservations' && <ReservationsTab onNavigateToFloor={() => setCurrentView('floor')} />}
-        {activeTab === 'menu'         && <MenuTab />}
-        {activeTab === 'inventory'    && <RestaurantInventoryPage />}
-        {activeTab === 'recipes'      && <RecipesPage />}
-        {activeTab === 'shifts'       && <StaffShiftsPage />}
-        {activeTab === 'waste'        && <KitchenWasteLogPage />}
+        {activeTab === 'overview'     && can(pluginTabCapability('restaurant', 'overview')!) && <OverviewAndKdsPage onNavigate={(v) => setCurrentView(v as any)} />}
+        {activeTab === 'tables'       && can(pluginTabCapability('restaurant', 'tables')!) && <TablesTab />}
+        {activeTab === 'orders'       && can(pluginTabCapability('restaurant', 'orders')!) && <OrdersTab />}
+        {activeTab === 'sales'        && can(pluginTabCapability('restaurant', 'sales')!) && <SalesHistoryTab />}
+        {activeTab === 'reservations' && can(pluginTabCapability('restaurant', 'reservations')!) && <ReservationsTab onNavigateToFloor={() => setCurrentView('floor')} />}
+        {activeTab === 'menu'         && can(pluginTabCapability('restaurant', 'menu')!) && <MenuTab />}
+        {activeTab === 'inventory'    && can(pluginTabCapability('restaurant', 'inventory')!) && <RestaurantInventoryPage />}
+        {activeTab === 'recipes'      && can(pluginTabCapability('restaurant', 'recipes')!) && <RecipesPage />}
+        {activeTab === 'shifts'       && can(pluginTabCapability('restaurant', 'shifts')!) && <StaffShiftsPage />}
+        {activeTab === 'waste'        && can(pluginTabCapability('restaurant', 'waste')!) && <KitchenWasteLogPage />}
       </div>
     </div>
   )

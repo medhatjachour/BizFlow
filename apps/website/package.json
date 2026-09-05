@@ -2,6 +2,15 @@
   "name": "nebula",
   "version": "0.1.0",
   "private": true,
+  "description": "BizFlow marketing website, live browser demo, downloads, account portal, licensing, and SEO/AEO/GEO content surfaces.",
+  "keywords": [
+    "BizFlow",
+    "POS software",
+    "business management software",
+    "live browser demo",
+    "answer engine optimization",
+    "generative engine optimization"
+  ],
   "scripts": {
     "dev": "next dev",
     "prebuild": "prisma generate --schema=prisma/schema.prisma",

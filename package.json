@@ -2,7 +2,19 @@
   "name": "bizflow-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo for BizFlow (desktop app + web port) and Nebula (marketing site / in-browser workspace).",
+  "description": "BizFlow offline-first POS, inventory, finance, and business management software with desktop app, live browser demos, and one-time licensing.",
+  "keywords": [
+    "offline pos software",
+    "business management software",
+    "inventory management",
+    "restaurant pos",
+    "bakery management",
+    "clinic management",
+    "pharmacy pos",
+    "warehouse inventory",
+    "electron desktop app",
+    "one-time license"
+  ],
   "workspaces": [
     "apps/Bizflow",
     "apps/website"
