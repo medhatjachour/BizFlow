@@ -9,7 +9,6 @@ import {
   Store,
   WalletCards,
   CreditCard,
-  Info,
   X,
   Sparkles,
   Keyboard,
@@ -18,8 +17,7 @@ import {
   Minimize2,
   ChevronRight,
   HelpCircle,
-  Clock,
-  Layers
+ 
 } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useAuth } from '@renderer/contexts/AuthContext'

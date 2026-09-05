@@ -401,22 +401,6 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {pluginRoutes.includes(location.pathname.split('/')[1]) && (
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700 sm:px-3"
-                title="Switch business module"
-              >
-                <Grid2X2 size={16} aria-hidden="true" />
-                <span className="hidden sm:inline">Switch module</span>
-              </button>
-            )}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-semibold">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              {t('live')}
-            </div>
-          </div>
         </header>
 
         {/* Main Content Area */}

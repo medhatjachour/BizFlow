@@ -17,7 +17,17 @@ export const enPart9 = {
   cfCustomers: 'Customers',
   cfReports: 'Reports',
   cfFinance: 'Finance',
-
+  cfProductsCategoriesSetup: 'Products & Categories Setup',
+  cfProductsCategoriesSetupDesc: 'Create menu categories (hot drinks, pastries, juices) and define product items, pricing, recipes, and rates.',
+  cfUpdateStockRawIngredients: 'Update Stock & Raw Ingredients',
+  cfUpdateStockRawIngredientsDesc: 'Manage raw materials (milk, coffee beans, syrup, cups) in inventory and record supplier purchases via incoming stock.',
+  cfOpenCashierShift: 'Open Cashier Shift',
+  cfOpenCashierShiftDesc: 'Cashiers must open a daily register shift with the starting cash balance float before taking orders.',
+  cfSellViaPOSOrFloorTables: 'Sell via POS or Floor Tables',
+  cfSellViaPOSOrFloorTablesDesc: 'Use Quick POS for takeaway counter sales or Table Layout for dine-in orders, table transfers, and split bills.',
+  cfSalesAuditExpensesEndOfShift: 'Sales Audit, Expenses & End of Shift',
+  cfSalesAuditExpensesEndOfShiftDesc: 'Log daily petty cash/expenses, review live sales transactions, close cashier shifts with cash reconciliation, and check analytics.',
+  
   // ── POS View ──
   cfQuickCategory: 'Quick Category',
   cfSearch: 'Search products...',

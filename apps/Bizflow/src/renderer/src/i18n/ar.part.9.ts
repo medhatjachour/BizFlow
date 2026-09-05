@@ -17,7 +17,16 @@ export const arPart9 = {
   cfCustomers: 'العملاء',
   cfReports: 'التقارير',
   cfFinance: 'المالية',
-
+  cfProductsCategoriesSetup: 'إعداد المنتجات والفئات',
+  cfProductsCategoriesSetupDesc: 'قم بإنشاء فئات القائمة (المشروبات الساخنة، المعجنات، العصائر) وتحديد عناصر المنتج، التسعير، الوصفات، والمعدلات.',
+  cfUpdateStockRawIngredients: 'تحديث المخزون والمكونات الخام',
+  cfUpdateStockRawIngredientsDesc: 'قم بإدارة المواد الخام (الحليب، حبوب القهوة، الشراب، الأكواب) في المخزون وتسجيل مشتريات الموردين عبر الواردات.',
+  cfOpenCashierShift: 'فتح وردية الكاشير',
+  cfOpenCashierShiftDesc: 'يجب على الكاشير فتح وردية يومية مع رصيد النقدية الابتدائي قبل أخذ الطلبات.',
+  cfSellViaPOSOrFloorTables: 'البيع عبر نقطة البيع أو الطاولات',
+  cfSellViaPOSOrFloorTablesDesc: 'استخدم نقطة البيع السريعة لمبيعات الكاونتر أو تخطيط الطاولات للطلبات داخل المطعم، نقل الطاولات، والفواتير المقسمة.',
+  cfSalesAuditExpensesEndOfShift: 'تدقيق المبيعات، المصروفات ونهاية الوردية',
+  cfSalesAuditExpensesEndOfShiftDesc: 'سجل المصروفات اليومية، راجع معاملات المبيعات الحية، أغلق ورديات الكاشير مع تسوية النقدية، وتحقق من التحليلات.',
   // ── POS View ──
   cfQuickCategory: 'فئة سريعة',
   cfSearch: 'ابحث عن المنتجات...',
