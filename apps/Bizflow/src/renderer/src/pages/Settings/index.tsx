@@ -83,7 +83,7 @@ const PLUGIN_TAB_CONFIG: Record<PluginId, SettingsTab[]> = {
   clinic: ['general', 'users', 'backup'],
   vet: ['general', 'users', 'backup'],
   gym: ['general', 'users', 'backup'],
-  bakery: ['users', 'user', 'backup'],
+  bakery: ['general', 'user', 'backup'],
 
   restaurant: ['general', 'users', 'tax', 'backup'],
   warehouse: ['general', 'users', 'backup'],
