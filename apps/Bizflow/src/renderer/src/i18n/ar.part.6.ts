@@ -64,6 +64,15 @@ export const arPart6 = {
     descAmountRequired: 'الوصف والمبلغ مطلوبان',
     amountMustBePositive: 'يجب أن يكون المبلغ أكبر من صفر',
     failedLoadExpenses: 'فشل تحميل مصروفات العيادة',
+    clinicJourneyStep1Title: 'الخطوة 1: تسجيل دخول المريض وملف طبي',
+    clinicJourneyStep1Desc: 'إنشاء نموذج تسجيل دخول المريض وملف طبي جديد للعيادة، وإنشاء جلسة أو موعد',
+    clinicJourneyStep2Title: 'الخطوة 2: الفحص السريري',
+    clinicJourneyStep2Desc: 'إجراء فحص سريري للمريض وتحديث الملف الطبي وفقاً لذلك',
+    clinicJourneyStep3Title: 'الخطوة 3: التشخيص وخطة العلاج',
+    clinicJourneyStep3Desc: 'تسجيل التشخيص وإنشاء خطة علاج للمريض',
+    clinicJourneyStep4Title: 'الخطوة 4: المتابعة',
+    clinicJourneyStep4Desc: 'جدولة وإدارة مواعيد المتابعة للمريض',
+
 
     // Clinic — Reports
     clinicReportsTitle: 'تقارير العيادة',

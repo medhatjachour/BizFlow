@@ -64,6 +64,14 @@ export const enPart6 = {
     descAmountRequired: 'Description and amount are required',
     amountMustBePositive: 'Amount must be a positive number',
     failedLoadExpenses: 'Failed to load clinic expenses',
+    clinicJourneyStep1Title: 'Step 1 Patient Intake & Medical File Registration',
+    clinicJourneyStep1Desc: 'Create a new patient intake and medical file for the clinic create a session or an appointment',
+    clinicJourneyStep2Title: 'Step 2 Clinical Examination',
+    clinicJourneyStep2Desc: 'Conduct a clinical examination for the patient and update the medical file accordingly',
+    clinicJourneyStep3Title: 'Step 3 Diagnosis & Treatment Plan',
+    clinicJourneyStep3Desc: 'Record the diagnosis and create a treatment plan for the patient',
+    clinicJourneyStep4Title: 'Step 4 Follow-up',
+    clinicJourneyStep4Desc: 'Schedule and manage follow-up appointments for the patient',
 
     // Clinic — Reports
     clinicReportsTitle: 'Clinic Reports',
