@@ -253,4 +253,15 @@ export const enPart8 = {
     phTotalCharged: 'Charged',
     phTotalOutstanding: 'Outstanding',
     phTotalPaid: 'Paid',
+
+    // how it works 
+    phHowStep1Title:'Define Drug Master & Active Ingredients',
+    phHowStep1Desc:'Register medications with brand names, generic formulations, dosage strengths, therapeutic classes, barcodes, and reorder thresholds',
+    phHowStep2Title:'Procurement & Batch Expiry Intake',
+    phHowStep2Desc:'Receive supplier purchase orders, record manufacturer Lot/Batch numbers, manufacturing & expiration dates, and unit cost prices',
+    phHowStep3Title:'Dispensary POS & Prescription Checkout',
+    phHowStep3Desc:'Process sales at the dispensary, handle prescription checkouts, and manage customer transactions',
+    phHowStep4Title:'Audits, Expiry Quarantine & Margin Analytics',
+    phHowStep4Desc:'Conduct regular audits, quarantine expired stock, and analyze profit margins for informed decision-making'
+    
 }
