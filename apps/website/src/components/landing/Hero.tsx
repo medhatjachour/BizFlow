@@ -29,43 +29,46 @@ export default function Hero() {
         animate="show"
         className="flex max-w-4xl flex-col items-center"
       >
+        {/* Try-Before-You-Buy Badge */}
         <motion.span
           variants={item}
-          className="glass mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-foreground/80"
+          className="glass mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-foreground/90 shadow-sm"
         >
-          <span className="h-2 w-2 animate-pulse rounded-full bg-biz-300" />
-          Try every module live in your browser — no install
+          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+          Test live in your browser before downloading or buying a license
         </motion.span>
 
+        {/* Main Headline */}
         <motion.h1
           variants={item}
           className="text-balance text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl md:text-7xl"
         >
-          Run your whole business
+          Business management,
           <br />
-          <span className="text-gradient">in one beautiful app</span>
+          <span className="text-gradient">built & customized for your field.</span>
         </motion.h1>
 
+        {/* Value Proposition Body */}
         <motion.p
           variants={item}
           className="mt-6 max-w-2xl text-pretty text-lg text-foreground/70 sm:text-xl"
         >
-          BizFlow is a modern business management system — POS, inventory,
-          finance and specialized modules for bakeries, restaurants, clinics and
-          more. Try any module in your browser, then download the desktop build
-          you need.
+          BizFlow is a modular, offline-first management system for <strong className="font-semibold text-foreground">Retail, Bakery, Restaurant, Pharmacy, Clinic, Vet, Gym & Warehouse</strong>. 
+          Launch the full app right in your browser with real data, check estimated license pricing, or request custom features tailored directly to your business.
         </motion.p>
 
+        {/* Action Buttons */}
         <motion.div
           variants={item}
-          className="mt-10 flex flex-col items-center gap-4 sm:flex-row"
+          className="mt-10 flex w-full flex-col items-center justify-center gap-4 sm:w-auto sm:flex-row"
         >
-          <a
-            href="#plugins"
-            className="group relative inline-flex items-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-biz-400 to-biz-600 px-7 py-3.5 text-base font-semibold text-white shadow-[0_0_30px_rgba(5,121,203,0.45)] transition hover:scale-[1.03]"
+          {/* Primary: Try Live Demo */}
+          <Link
+            href="/app"
+            className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-biz-400 to-biz-600 px-8 py-4 text-base font-semibold text-white shadow-[0_0_30px_rgba(5,121,203,0.45)] transition hover:scale-[1.03] active:scale-[0.98] sm:w-auto"
           >
             <span className="absolute inset-0 -translate-x-full bg-white/30 transition group-hover:translate-x-full" />
-            Explore modules
+            Try free in browser
             <svg
               width="18"
               height="18"
@@ -81,13 +84,48 @@ export default function Hero() {
                 strokeLinejoin="round"
               />
             </svg>
-          </a>
-          <Link
-            href="/app"
-            className="glass rounded-2xl px-7 py-3.5 text-base font-semibold text-foreground transition hover:bg-white/10"
-          >
-            Open the live demo
           </Link>
+
+          {/* Secondary: See Pricing & Modules */}
+          <a
+            href="#plugins"
+            className="glass inline-flex w-full items-center justify-center gap-2 rounded-2xl px-7 py-4 text-base font-semibold text-foreground transition hover:bg-white/10 active:scale-[0.98] sm:w-auto"
+          >
+            <span>Modules & Pricing</span>
+          </a>
+
+          {/* Tertiary / Custom Modifications */}
+          <Link
+            href="#request"
+            className="inline-flex w-full items-center justify-center text-sm font-medium text-foreground/70 transition hover:text-biz-300 sm:w-auto sm:px-3"
+          >
+            Need custom features? →
+          </Link>
+        </motion.div>
+
+        {/* 3 Core Trust Guarantees */}
+        <motion.div
+          variants={item}
+          className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-foreground/60"
+        >
+          <div className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Zero install required to test
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-biz-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Transparent one-time license pricing
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Custom fields & workflows upon request
+          </div>
         </motion.div>
       </motion.div>
 
@@ -96,22 +134,28 @@ export default function Hero() {
         initial={{ y: 60, opacity: 0, rotateX: 12 }}
         animate={{ y: 0, opacity: 1, rotateX: 0 }}
         transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-        className="mt-16 w-full max-w-4xl [perspective:1200px]"
+        className="mt-14 w-full max-w-4xl [perspective:1200px]"
       >
         <div className="glass-strong animate-float-slow overflow-hidden rounded-2xl shadow-2xl shadow-biz-700/30">
-          <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-            <span className="h-3 w-3 rounded-full bg-biz-600" />
-            <span className="h-3 w-3 rounded-full bg-yellow-400" />
-            <span className="h-3 w-3 rounded-full bg-emerald-400" />
-            <span className="ml-3 text-xs text-foreground/50">
-              bizflow://workspace
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-biz-600" />
+              <span className="h-3 w-3 rounded-full bg-yellow-400" />
+              <span className="h-3 w-3 rounded-full bg-emerald-400" />
+              <span className="ml-3 text-xs text-foreground/50">
+                bizflow://live-demo • try online with full demo data
+              </span>
+            </div>
+            <span className="hidden rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400 sm:inline-block">
+              Interactive Preview Ready
             </span>
           </div>
+
           <div className="grid grid-cols-3 gap-4 bg-[radial-gradient(circle_at_30%_20%,rgba(5,121,203,0.28),transparent_60%)] p-6 sm:grid-cols-4">
             {PLUGINS.map((p, i) => (
               <div
                 key={p.id}
-                className="glass flex aspect-square flex-col items-center justify-center gap-2 rounded-xl text-center"
+                className="glass flex aspect-square flex-col items-center justify-center gap-2 rounded-xl text-center transition hover:scale-105"
                 style={{ animationDelay: `${i * 0.2}s` }}
               >
                 <div
@@ -119,15 +163,18 @@ export default function Hero() {
                 >
                   {p.icon}
                 </div>
-                <span className="text-[10px] text-foreground/70">{p.name}</span>
+                <span className="text-[11px] font-medium text-foreground/80">{p.name}</span>
               </div>
             ))}
-            <div className="glass flex aspect-square flex-col items-center justify-center gap-2 rounded-xl text-center">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-lg">
-                ＋
+            <Link
+              href="/support"
+              className="glass flex aspect-square flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 text-center transition hover:scale-105 hover:border-biz-400"
+            >
+              <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-lg text-biz-300">
+                ⚙️
               </div>
-              <span className="text-[10px] text-foreground/70">More</span>
-            </div>
+              <span className="text-[11px] font-medium text-foreground/80">Custom Mod</span>
+            </Link>
           </div>
         </div>
       </motion.div>

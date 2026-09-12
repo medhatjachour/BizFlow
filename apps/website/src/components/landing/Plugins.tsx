@@ -45,7 +45,7 @@ export default function Plugins() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.5, delay: i * 0.06 }}
-            className={`glass glow-card relative flex flex-col rounded-2xl p-6 ${
+            className={`glass glow-card relative flex h-full flex-col rounded-2xl p-6 ${
               p.popular ? "ring-1 ring-biz-400/60" : ""
             }`}
           >
@@ -116,8 +116,8 @@ export default function Plugins() {
               Best for {p.bestFor}.
             </p>
 
-            {/* Price + CTAs */}
-            <div className="mt-5 border-t border-white/10 pt-5">
+            {/* Price + CTAs (Pinned to bottom with mt-auto) */}
+            <div className="mt-auto border-t border-white/10 pt-5">
               <div className="mb-3 flex items-baseline gap-1.5">
                 <span className="text-2xl font-black">${prices.modules[p.id] ?? p.price}</span>
                 <span className="text-xs text-foreground/50">
@@ -127,7 +127,7 @@ export default function Plugins() {
               <div className="flex gap-2">
                 <Link
                   href={`/app?module=${p.id}`}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:scale-[1.02]"
+                  className="inline-flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-biz-500/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-biz-500/35 hover:brightness-105 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-biz-400 focus-visible:ring-offset-2"
                 >
                   Try free
                 </Link>

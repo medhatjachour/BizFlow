@@ -2010,184 +2010,6 @@ var require_bcryptjs = __commonJS({
   }
 });
 
-// src/shared/permissions.ts
-function isWildcardRole(role) {
-  return role === "admin";
-}
-function resolveCapabilities(role, override) {
-  if (isWildcardRole(role))
-    return [...ALL_CAPABILITIES];
-  if (override && override.length >= 0 && Array.isArray(override))
-    return override;
-  return DEFAULT_ROLE_CAPABILITIES[role ?? ""] ?? [];
-}
-var CAPABILITIES, ALL_CAPABILITIES, DEFAULT_ROLE_CAPABILITIES, PLUGIN_PERMISSION_CATALOG;
-var init_permissions = __esm({
-  "src/shared/permissions.ts"() {
-    CAPABILITIES = {
-      access_commerce: { label: "Access the Commerce plugin", group: "Plugin Access" },
-      access_bakery: { label: "Access the Bakery plugin", group: "Plugin Access" },
-      access_restaurant: { label: "Access the Restaurant plugin", group: "Plugin Access" },
-      access_warehouse: { label: "Access the Warehouse plugin", group: "Plugin Access" },
-      access_clinic: { label: "Access the Clinic plugin", group: "Plugin Access" },
-      access_vet: { label: "Access the Vet Clinic plugin", group: "Plugin Access" },
-      access_gym: { label: "Access the Gym plugin", group: "Plugin Access" },
-      access_pharmacy: { label: "Access the Pharmacy plugin", group: "Plugin Access" },
-      access_coffee: { label: "Access the Coffee Shop plugin", group: "Coffee Shop" },
-      coffee_pos: { label: "Use the Coffee Shop POS", group: "Coffee Shop" },
-      coffee_tables: { label: "Manage Coffee Shop tables", group: "Coffee Shop" },
-      coffee_products: { label: "Manage Coffee Shop products", group: "Coffee Shop" },
-      coffee_inventory: { label: "Manage Coffee Shop inventory", group: "Coffee Shop" },
-      coffee_incoming: { label: "Manage Coffee Shop incoming stock", group: "Coffee Shop" },
-      coffee_expenses: { label: "Manage Coffee Shop expenses", group: "Coffee Shop" },
-      coffee_sales: { label: "View Coffee Shop sales", group: "Coffee Shop" },
-      coffee_shifts: { label: "Manage Coffee Shop shifts", group: "Coffee Shop" },
-      coffee_customers: { label: "Manage Coffee Shop customers", group: "Coffee Shop" },
-      coffee_reports: { label: "View Coffee Shop reports", group: "Coffee Shop" },
-      coffee_finance: { label: "View Coffee Shop finance", group: "Coffee Shop" },
-      view_profit: { label: "View profit, COGS & margins", group: "Visibility" },
-      view_finance: { label: "View finance & reports", group: "Visibility" },
-      give_discount: { label: "Give discounts on sales", group: "Sales" },
-      issue_refund: { label: "Issue refunds", group: "Sales" },
-      void_sale: { label: "Void / delete sales", group: "Sales" },
-      manage_inventory: { label: "Add / edit inventory & batches", group: "Operations" },
-      manage_purchasing: { label: "Manage suppliers & purchase orders", group: "Operations" },
-      manage_customers: { label: "Manage customers & credit", group: "Operations" },
-      manage_staff: { label: "Manage staff & salaries", group: "Administration" },
-      manage_users: { label: "Manage user accounts", group: "Administration" },
-      manage_settings: { label: "Manage settings & permissions", group: "Administration" },
-      export_data: { label: "Export / print reports", group: "Administration" }
-    };
-    ALL_CAPABILITIES = Object.keys(CAPABILITIES);
-    DEFAULT_ROLE_CAPABILITIES = {
-      admin: [...ALL_CAPABILITIES],
-      manager: [...ALL_CAPABILITIES],
-      member: [],
-      finance: ["access_commerce", "view_profit", "view_finance", "export_data"],
-      inventory: ["access_commerce", "manage_inventory", "manage_purchasing"],
-      sales: ["access_commerce", "give_discount", "manage_customers"],
-      cashier: ["access_commerce"],
-      coffee_staff: [
-        "access_coffee",
-        "coffee_pos",
-        "coffee_tables",
-        "coffee_customers",
-        "coffee_sales"
-      ],
-      coffee_cashier: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_customers", "coffee_sales"],
-      coffee_inventory_manager: ["access_coffee", "coffee_products", "coffee_inventory", "coffee_incoming"],
-      coffee_shift_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_customers", "coffee_sales", "coffee_shifts", "coffee_expenses"],
-      coffee_manager: ["access_coffee", "coffee_pos", "coffee_tables", "coffee_products", "coffee_inventory", "coffee_incoming", "coffee_expenses", "coffee_sales", "coffee_shifts", "coffee_customers", "coffee_reports", "coffee_finance"],
-      bakery_staff: ["access_bakery"],
-      restaurant_staff: ["access_restaurant"],
-      warehouse_staff: ["access_warehouse"],
-      clinic_staff: ["access_clinic"],
-      vet_staff: ["access_vet"],
-      gym_staff: ["access_gym"],
-      pharmacy_staff: ["access_pharmacy"]
-    };
-    PLUGIN_PERMISSION_CATALOG = {
-      coffee: {
-        id: "coffee",
-        label: "Coffee Shop",
-        isPrimary: true,
-        entries: [
-          { id: "pos", label: "Point of Sale", capability: "coffee_pos", kind: "page" },
-          { id: "tables", label: "Tables", capability: "coffee_tables", kind: "page" },
-          { id: "products", label: "Products", capability: "coffee_products", kind: "page" },
-          { id: "inventory", label: "Inventory", capability: "coffee_inventory", kind: "page" },
-          { id: "incoming", label: "Incoming Stock", capability: "coffee_incoming", kind: "page" },
-          { id: "expenses", label: "Expenses", capability: "coffee_expenses", kind: "page" },
-          { id: "sales", label: "Sales", capability: "coffee_sales", kind: "page" },
-          { id: "shifts", label: "Shifts", capability: "coffee_shifts", kind: "page" },
-          { id: "customers", label: "Customers", capability: "coffee_customers", kind: "page" },
-          { id: "reports", label: "Reports", capability: "coffee_reports", kind: "page" },
-          { id: "finance", label: "Finance", capability: "coffee_finance", kind: "page" },
-          { id: "void-sale", label: "Void sales", capability: "void_sale", kind: "action", parentId: "pos" },
-          { id: "refund", label: "Issue refunds", capability: "issue_refund", kind: "action", parentId: "sales" },
-          { id: "discount", label: "Give discounts", capability: "give_discount", kind: "action", parentId: "pos" }
-        ]
-      }
-    };
-  }
-});
-
-// src/main/ipc/handlers/session.ts
-var session_exports = {};
-__export(session_exports, {
-  bindUser: () => bindUser,
-  getCurrentUser: () => getCurrentUser,
-  loadRoleOverride: () => loadRoleOverride,
-  requireCap: () => requireCap,
-  resolveUserCapabilities: () => resolveUserCapabilities,
-  setCurrentUser: () => setCurrentUser,
-  userCan: () => userCan
-});
-function setCurrentUser(u) {
-  currentUser = u;
-}
-function getCurrentUser() {
-  return currentUser;
-}
-async function loadRoleOverride(prisma2, role) {
-  try {
-    const row = await prisma2?.rolePermission?.findUnique({ where: { role } });
-    if (!row)
-      return null;
-    const arr = JSON.parse(row.capabilities);
-    return Array.isArray(arr) ? arr.filter((c) => ALL_CAPABILITIES.includes(c)) : null;
-  } catch {
-    return null;
-  }
-}
-async function resolveUserCapabilities(prisma2, role) {
-  if (isWildcardRole(role))
-    return [...ALL_CAPABILITIES];
-  const override = await loadRoleOverride(prisma2, role);
-  return resolveCapabilities(role, override);
-}
-async function bindUser(prisma2, u) {
-  const globalCapabilities = await resolveUserCapabilities(prisma2, u.role);
-  const pluginCapabilities = (await Promise.all(
-    Object.values(u.pluginRoles ?? {}).map((pluginRole) => resolveUserCapabilities(prisma2, pluginRole))
-  )).flat();
-  const capabilities = [.../* @__PURE__ */ new Set([...globalCapabilities, ...pluginCapabilities])];
-  setCurrentUser({
-    id: u.id,
-    username: u.username,
-    role: u.role,
-    capabilities,
-    pluginRoles: u.pluginRoles ?? {}
-  });
-  return capabilities;
-}
-function userCan(cap) {
-  if (!currentUser)
-    return false;
-  if (isWildcardRole(currentUser.role))
-    return true;
-  return currentUser.capabilities.includes(cap);
-}
-function requireCap(cap) {
-  if (!currentUser)
-    return;
-  if (isWildcardRole(currentUser.role))
-    return;
-  if (!currentUser.capabilities.includes(cap)) {
-    const err = new Error(`Permission denied \u2014 this action requires the "${cap}" permission.`);
-    err.code = "EPERM_CAP";
-    err.capability = cap;
-    throw err;
-  }
-}
-var currentUser;
-var init_session = __esm({
-  "src/main/ipc/handlers/session.ts"() {
-    init_permissions();
-    currentUser = null;
-  }
-});
-
 // web/server.ts
 var import_node_http = __toESM(require("node:http"));
 var import_node_path7 = __toESM(require("node:path"));
@@ -2402,25 +2224,746 @@ function createLogger(namespace) {
   };
 }
 
+// src/shared/permissions.ts
+var KERNEL_CAPABILITIES = {
+  view_dashboard: { label: "View the dashboard", group: "Core" },
+  view_reports: { label: "View reports", group: "Core" },
+  view_finance: { label: "View finance", group: "Core" },
+  view_profit: { label: "View profit, COGS & margins", group: "Visibility" },
+  manage_staff: { label: "Manage staff & salaries", group: "Administration" },
+  manage_users: { label: "Manage user accounts", group: "Administration" },
+  manage_settings: { label: "Manage settings & permissions", group: "Administration" },
+  export_data: { label: "Export / print reports", group: "Administration" }
+};
+var PLUGIN_REGISTRY = [
+  {
+    id: "commerce",
+    label: "Commerce",
+    access: "access_commerce",
+    entries: [
+      { id: "pos", label: "Point of Sale", capability: "commerce_pos", kind: "page" },
+      { id: "quicksale", label: "Quick Sale", capability: "commerce_quicksale", kind: "page" },
+      { id: "products", label: "Products", capability: "commerce_products", kind: "page" },
+      { id: "inventory", label: "Inventory", capability: "commerce_inventory", kind: "page" },
+      { id: "sales", label: "Sales history", capability: "commerce_sales", kind: "page", viewer: true },
+      { id: "customers", label: "Customers", capability: "commerce_customers", kind: "page" },
+      { id: "stores", label: "Stores", capability: "commerce_stores", kind: "page" },
+      { id: "suppliers", label: "Suppliers & purchase orders", capability: "commerce_suppliers", kind: "page" },
+      { id: "installments", label: "Installments", capability: "commerce_installments", kind: "page" },
+      { id: "expenses", label: "Expenses", capability: "commerce_expenses", kind: "page" },
+      { id: "discount", label: "Give discounts", capability: "commerce_discount", kind: "action", parentId: "pos" },
+      { id: "refund", label: "Issue refunds", capability: "commerce_refund", kind: "action", parentId: "sales" },
+      { id: "void-sale", label: "Void sales", capability: "commerce_void_sale", kind: "action", parentId: "sales" }
+    ]
+  },
+  {
+    id: "bakery",
+    label: "Bakery",
+    access: "access_bakery",
+    entries: [
+      { id: "overview", label: "Overview", capability: "bakery_overview", kind: "page", viewer: true },
+      { id: "recipes", label: "Recipes", capability: "bakery_recipes", kind: "page" },
+      { id: "production", label: "Production batches", capability: "bakery_production", kind: "page" },
+      { id: "sales", label: "Sales", capability: "bakery_sales", kind: "page", viewer: true },
+      { id: "pantry", label: "Pantry", capability: "bakery_pantry", kind: "page" },
+      { id: "waste", label: "Waste", capability: "bakery_waste", kind: "page" },
+      { id: "schedule", label: "Production schedule", capability: "bakery_schedule", kind: "page" },
+      { id: "pnl", label: "Profit and loss", capability: "bakery_pnl", kind: "page", viewer: true },
+      { id: "expenses", label: "Expenses", capability: "bakery_expenses", kind: "page" }
+    ]
+  },
+  {
+    id: "restaurant",
+    label: "Restaurant",
+    access: "access_restaurant",
+    entries: [
+      { id: "overview", label: "Overview", capability: "restaurant_overview", kind: "page", viewer: true },
+      { id: "tables", label: "Tables", capability: "restaurant_tables", kind: "page" },
+      { id: "orders", label: "Orders and POS", capability: "restaurant_orders", kind: "page" },
+      { id: "sales", label: "Sales history", capability: "restaurant_sales", kind: "page", viewer: true },
+      { id: "reservations", label: "Reservations", capability: "restaurant_reservations", kind: "page" },
+      { id: "menu", label: "Menu", capability: "restaurant_menu", kind: "page" },
+      { id: "inventory", label: "Inventory", capability: "restaurant_inventory", kind: "page" },
+      { id: "recipes", label: "Recipes", capability: "restaurant_recipes", kind: "page" },
+      { id: "shifts", label: "Shifts", capability: "restaurant_shifts", kind: "page" },
+      { id: "waste", label: "Waste", capability: "restaurant_waste", kind: "page" },
+      { id: "discount", label: "Apply order discounts", capability: "restaurant_discount", kind: "action", parentId: "orders" },
+      { id: "void-order", label: "Void or cancel orders", capability: "restaurant_void_order", kind: "action", parentId: "orders" }
+    ]
+  },
+  {
+    id: "warehouse",
+    label: "Warehouse",
+    access: "access_warehouse",
+    entries: [
+      { id: "overview", label: "Overview", capability: "warehouse_overview", kind: "page", viewer: true },
+      { id: "operations", label: "Operations board", capability: "warehouse_operations", kind: "page" },
+      { id: "locations", label: "Locations", capability: "warehouse_locations", kind: "page" },
+      { id: "inventory", label: "Inventory", capability: "warehouse_inventory", kind: "page" },
+      { id: "transfers", label: "Stock transfers", capability: "warehouse_transfers", kind: "page" }
+    ]
+  },
+  {
+    id: "clinic",
+    label: "Clinic",
+    access: "access_clinic",
+    entries: [
+      { id: "patients", label: "Patients", capability: "clinic_patients", kind: "page" },
+      { id: "sessions", label: "Sessions and prescriptions", capability: "clinic_sessions", kind: "page" },
+      { id: "appointments", label: "Appointments", capability: "clinic_appointments", kind: "page" },
+      { id: "followups", label: "Follow-ups", capability: "clinic_followups", kind: "page" },
+      { id: "doctors", label: "Doctors and staff", capability: "clinic_doctors", kind: "page" },
+      { id: "materials", label: "Materials inventory", capability: "clinic_materials", kind: "page" },
+      { id: "stats", label: "Clinical statistics", capability: "clinic_stats", kind: "page", viewer: true },
+      { id: "expenses", label: "Expenses", capability: "clinic_expenses", kind: "page" }
+    ]
+  },
+  {
+    id: "vet",
+    label: "Vet Clinic",
+    access: "access_vet",
+    entries: [
+      { id: "owners", label: "Owners and patients", capability: "vet_owners", kind: "page" },
+      { id: "sessions", label: "Visits and prescriptions", capability: "vet_sessions", kind: "page" },
+      { id: "appointments", label: "Appointments", capability: "vet_appointments", kind: "page" },
+      { id: "followups", label: "Follow-ups", capability: "vet_followups", kind: "page" },
+      { id: "medicines", label: "Medicine inventory", capability: "vet_medicines", kind: "page" },
+      { id: "vets", label: "Veterinarians and staff", capability: "vet_vets", kind: "page" },
+      { id: "sales", label: "Sales", capability: "vet_sales", kind: "page" },
+      { id: "salesHistory", label: "Sales history", capability: "vet_sales_history", kind: "page", viewer: true },
+      { id: "stats", label: "Statistics", capability: "vet_stats", kind: "page", viewer: true },
+      { id: "expenses", label: "Expenses", capability: "vet_expenses", kind: "page" },
+      { id: "discount", label: "Give discounts", capability: "vet_discount", kind: "action", parentId: "sales" },
+      { id: "refund", label: "Issue refunds", capability: "vet_refund", kind: "action", parentId: "salesHistory" }
+    ]
+  },
+  {
+    id: "gym",
+    label: "Gym",
+    access: "access_gym",
+    entries: [
+      { id: "attendance", label: "Attendance", capability: "gym_attendance", kind: "page", viewer: true },
+      { id: "trainees", label: "Trainees", capability: "gym_trainees", kind: "page" },
+      { id: "walkins", label: "Walk-ins", capability: "gym_walkins", kind: "page" },
+      { id: "coaches", label: "Coaches", capability: "gym_coaches", kind: "page" },
+      { id: "subscriptions", label: "Subscriptions", capability: "gym_subscriptions", kind: "page" },
+      { id: "plans", label: "Membership plans", capability: "gym_plans", kind: "page" },
+      { id: "lockers", label: "Lockers", capability: "gym_lockers", kind: "page" },
+      { id: "programs", label: "Training programs", capability: "gym_programs", kind: "page" }
+    ]
+  },
+  {
+    id: "pharmacy",
+    label: "Pharmacy",
+    access: "access_pharmacy",
+    entries: [
+      { id: "dashboard", label: "Dashboard", capability: "pharmacy_dashboard", kind: "page", viewer: true },
+      { id: "pos", label: "Point of Sale", capability: "pharmacy_pos", kind: "page" },
+      { id: "products", label: "Products", capability: "pharmacy_products", kind: "page" },
+      { id: "inventory", label: "Batches and inventory", capability: "pharmacy_inventory", kind: "page" },
+      { id: "sales", label: "Sales history", capability: "pharmacy_sales", kind: "page", viewer: true },
+      { id: "customers", label: "Customers", capability: "pharmacy_customers", kind: "page" },
+      { id: "suppliers", label: "Suppliers", capability: "pharmacy_suppliers", kind: "page" },
+      { id: "orders", label: "Purchase orders", capability: "pharmacy_orders", kind: "page" },
+      { id: "reports", label: "Reports and analytics", capability: "pharmacy_reports", kind: "page", viewer: true },
+      { id: "discount", label: "Give discounts", capability: "pharmacy_discount", kind: "action", parentId: "pos" },
+      { id: "refund", label: "Issue refunds", capability: "pharmacy_refund", kind: "action", parentId: "sales" }
+    ]
+  },
+  {
+    id: "coffee",
+    label: "Coffee Shop",
+    access: "access_coffee",
+    entries: [
+      { id: "pos", label: "Point of Sale", capability: "coffee_pos", kind: "page" },
+      { id: "tables", label: "Tables", capability: "coffee_tables", kind: "page" },
+      { id: "products", label: "Products", capability: "coffee_products", kind: "page" },
+      { id: "inventory", label: "Inventory", capability: "coffee_inventory", kind: "page" },
+      { id: "incoming", label: "Incoming stock", capability: "coffee_incoming", kind: "page" },
+      { id: "expenses", label: "Expenses", capability: "coffee_expenses", kind: "page" },
+      { id: "sales", label: "Sales", capability: "coffee_sales", kind: "page", viewer: true },
+      { id: "shifts", label: "Shifts", capability: "coffee_shifts", kind: "page" },
+      { id: "customers", label: "Customers", capability: "coffee_customers", kind: "page" },
+      { id: "reports", label: "Reports", capability: "coffee_reports", kind: "page", viewer: true },
+      { id: "finance", label: "Finance", capability: "coffee_finance", kind: "page" },
+      { id: "discount", label: "Give discounts", capability: "coffee_discount", kind: "action", parentId: "pos" },
+      { id: "void-sale", label: "Void sales", capability: "coffee_void_sale", kind: "action", parentId: "pos" },
+      { id: "refund", label: "Issue refunds", capability: "coffee_refund", kind: "action", parentId: "sales" }
+    ]
+  }
+];
+var ALL_PLUGIN_IDS = PLUGIN_REGISTRY.map((plugin) => plugin.id);
+var PLUGIN_ACCESS_CAPABILITIES = Object.fromEntries(
+  PLUGIN_REGISTRY.map((plugin) => [plugin.id, plugin.access])
+);
+var PLUGIN_TAB_CAPABILITIES = Object.fromEntries(
+  PLUGIN_REGISTRY.map((plugin) => [
+    plugin.id,
+    Object.fromEntries(
+      plugin.entries.filter((entry) => entry.kind === "page").map((entry) => [entry.id, entry.capability])
+    )
+  ])
+);
+var CAPABILITIES = {
+  ...Object.fromEntries(
+    Object.entries(KERNEL_CAPABILITIES).map(([capability, meta]) => [capability, { ...meta, scope: "kernel" }])
+  ),
+  ...Object.fromEntries(
+    PLUGIN_REGISTRY.flatMap((plugin) => [
+      [plugin.access, { label: `Access the ${plugin.label} plugin`, group: "Plugin Access", scope: plugin.id }],
+      ...plugin.entries.map((entry) => [entry.capability, { label: entry.label, group: plugin.label, scope: plugin.id }])
+    ])
+  )
+};
+var ALL_CAPABILITIES = Object.keys(CAPABILITIES);
+var KERNEL_CAPABILITY_KEYS = Object.keys(KERNEL_CAPABILITIES);
+function isPluginId(value) {
+  return ALL_PLUGIN_IDS.includes(value);
+}
+function capabilitiesForScope(scope) {
+  return ALL_CAPABILITIES.filter((capability) => CAPABILITIES[capability].scope === scope);
+}
+var KERNEL_PERMISSION_CATALOG = {
+  id: "kernel",
+  label: "Core",
+  isPrimary: true,
+  entries: [
+    { id: "dashboard", label: "Dashboard", capability: "view_dashboard", kind: "page", viewer: true },
+    { id: "reports", label: "Reports", capability: "view_reports", kind: "page", viewer: true },
+    { id: "finance", label: "Finance", capability: "view_finance", kind: "page" },
+    { id: "employees", label: "Employees & payroll", capability: "manage_staff", kind: "page" },
+    { id: "settings", label: "Settings", capability: "manage_settings", kind: "page" },
+    { id: "users", label: "User management", capability: "manage_users", kind: "page" },
+    { id: "profit", label: "View profit, COGS & margins", capability: "view_profit", kind: "action", parentId: "reports" },
+    { id: "export", label: "Export / print reports", capability: "export_data", kind: "action", parentId: "reports" }
+  ]
+};
+var PLUGIN_PERMISSION_CATALOG = Object.fromEntries(
+  PLUGIN_REGISTRY.map((plugin) => [
+    plugin.id,
+    {
+      id: plugin.id,
+      label: plugin.label,
+      isPrimary: true,
+      accessCapability: plugin.access,
+      entries: plugin.entries.map((entry) => ({ ...entry }))
+    }
+  ])
+);
+function catalogForScope(scope) {
+  return scope === "kernel" ? KERNEL_PERMISSION_CATALOG : PLUGIN_PERMISSION_CATALOG[scope];
+}
+function pluginCaps(pluginId, entryIds) {
+  const entries = PLUGIN_PERMISSION_CATALOG[pluginId].entries;
+  const picked = entryIds ? entries.filter((entry) => entryIds.includes(entry.id)) : entries;
+  return [PLUGIN_ACCESS_CAPABILITIES[pluginId], ...picked.map((entry) => entry.capability)];
+}
+var STAFF_ENTRIES = {
+  commerce: ["pos", "quicksale", "sales", "customers"],
+  bakery: ["overview", "production", "sales", "pantry", "waste"],
+  restaurant: ["overview", "tables", "orders", "sales", "reservations"],
+  warehouse: ["overview", "operations", "inventory"],
+  clinic: ["patients", "sessions", "appointments", "followups"],
+  vet: ["owners", "sessions", "appointments", "followups", "sales", "salesHistory"],
+  gym: ["attendance", "trainees", "walkins", "subscriptions"],
+  pharmacy: ["dashboard", "pos", "sales", "customers"],
+  coffee: ["pos", "tables", "sales", "customers"]
+};
+var EXTRA_PLUGIN_ROLES = {
+  commerce: [
+    { key: "commerce_cashier", label: "Cashier", entries: ["pos", "quicksale", "sales"] },
+    { key: "commerce_inventory", label: "Inventory Manager", entries: ["products", "inventory", "suppliers"] },
+    { key: "commerce_finance", label: "Finance", entries: ["sales", "expenses", "installments"] }
+  ],
+  coffee: [
+    { key: "coffee_cashier", label: "Cashier", entries: STAFF_ENTRIES.coffee },
+    { key: "coffee_inventory_manager", label: "Inventory Manager", entries: ["products", "inventory", "incoming"] },
+    { key: "coffee_shift_manager", label: "Shift Manager", entries: [...STAFF_ENTRIES.coffee, "shifts", "expenses"] }
+  ],
+  pharmacy: [
+    { key: "pharmacy_cashier", label: "Cashier", entries: ["dashboard", "pos", "sales"] },
+    { key: "pharmacy_inventory_manager", label: "Inventory Manager", entries: ["products", "inventory", "suppliers", "orders"] }
+  ]
+};
+var PLUGIN_ROLE_DEFINITIONS = PLUGIN_REGISTRY.flatMap((plugin) => [
+  {
+    key: `${plugin.id}_manager`,
+    label: `${plugin.label} Manager`,
+    scope: plugin.id,
+    description: `Full access to every ${plugin.label} page and action.`,
+    capabilities: pluginCaps(plugin.id),
+    isBuiltIn: true
+  },
+  {
+    key: `${plugin.id}_staff`,
+    label: `${plugin.label} Staff`,
+    scope: plugin.id,
+    description: `Day-to-day ${plugin.label} operations, without sensitive actions.`,
+    capabilities: pluginCaps(plugin.id, STAFF_ENTRIES[plugin.id]),
+    isBuiltIn: true
+  },
+  ...(EXTRA_PLUGIN_ROLES[plugin.id] ?? []).map((role) => ({
+    key: role.key,
+    label: role.label,
+    scope: plugin.id,
+    capabilities: pluginCaps(plugin.id, role.entries),
+    isBuiltIn: true
+  }))
+]);
+var KERNEL_ROLE_DEFINITIONS = [
+  {
+    key: "admin",
+    label: "Admin",
+    scope: "kernel",
+    description: "Unrestricted access. Cannot be limited.",
+    capabilities: [...ALL_CAPABILITIES],
+    isBuiltIn: true,
+    isSystem: true
+  },
+  {
+    key: "manager",
+    label: "Manager",
+    scope: "kernel",
+    description: "Full access to core pages and every installed plugin.",
+    capabilities: [...ALL_CAPABILITIES],
+    isBuiltIn: true
+  },
+  {
+    key: "member",
+    label: "Member",
+    scope: "kernel",
+    description: "Signs in with no access until a plugin role is assigned.",
+    capabilities: ["view_dashboard"],
+    isBuiltIn: true
+  },
+  {
+    key: "finance",
+    label: "Finance",
+    scope: "kernel",
+    description: "Finance, reports and profit visibility.",
+    capabilities: ["view_dashboard", "view_reports", "view_finance", "view_profit", "export_data"],
+    isBuiltIn: true
+  },
+  {
+    key: "supervisor",
+    label: "Supervisor",
+    scope: "kernel",
+    description: "Reports plus staff administration.",
+    capabilities: ["view_dashboard", "view_reports", "manage_staff", "export_data"],
+    isBuiltIn: true
+  },
+  // Retained so databases created before plugin-scoped roles keep working;
+  // new installs should use the equivalent commerce_* plugin roles.
+  {
+    key: "sales",
+    label: "Sales (legacy)",
+    scope: "kernel",
+    description: "Legacy commerce sales role.",
+    capabilities: ["view_dashboard", ...pluginCaps("commerce", ["pos", "quicksale", "sales", "customers"])],
+    isBuiltIn: true
+  },
+  {
+    key: "inventory",
+    label: "Inventory (legacy)",
+    scope: "kernel",
+    description: "Legacy commerce inventory role.",
+    capabilities: ["view_dashboard", ...pluginCaps("commerce", ["products", "inventory", "suppliers"])],
+    isBuiltIn: true
+  },
+  {
+    key: "cashier",
+    label: "Cashier (legacy)",
+    scope: "kernel",
+    description: "Legacy commerce cashier role.",
+    capabilities: ["view_dashboard", ...pluginCaps("commerce", ["pos", "quicksale", "sales"])],
+    isBuiltIn: true
+  }
+];
+var ROLE_DEFINITIONS = [...KERNEL_ROLE_DEFINITIONS, ...PLUGIN_ROLE_DEFINITIONS];
+var ROLE_DEFINITION_MAP = Object.fromEntries(
+  ROLE_DEFINITIONS.map((role) => [role.key, role])
+);
+var KERNEL_ROLE_KEYS = KERNEL_ROLE_DEFINITIONS.map((role) => role.key);
+var DEFAULT_ROLE_CAPABILITIES = Object.fromEntries(
+  ROLE_DEFINITIONS.map((role) => [role.key, role.capabilities])
+);
+var PLUGIN_ROLE_DEFAULTS = Object.fromEntries(
+  PLUGIN_REGISTRY.map((plugin) => [
+    plugin.id,
+    Object.fromEntries(
+      PLUGIN_ROLE_DEFINITIONS.filter((role) => role.scope === plugin.id).map((role) => [role.key, role.capabilities])
+    )
+  ])
+);
+function roleLabel(key) {
+  return ROLE_DEFINITION_MAP[key]?.label ?? key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+function scopeOfRole(role) {
+  const declared = ROLE_DEFINITION_MAP[role];
+  if (declared)
+    return declared.scope;
+  const owner = PLUGIN_REGISTRY.find((plugin) => role.startsWith(`${plugin.id}_`));
+  return owner ? owner.id : "kernel";
+}
+function isWildcardRole(role) {
+  return role === "admin";
+}
+function sanitiseCapabilities(scope, capabilities) {
+  const allowed = new Set(scope === "kernel" ? ALL_CAPABILITIES : capabilitiesForScope(scope));
+  const next = new Set(capabilities.filter((capability) => allowed.has(capability)));
+  if (scope !== "kernel" && next.size > 0)
+    next.add(PLUGIN_ACCESS_CAPABILITIES[scope]);
+  return [...next];
+}
+function presetCapabilities(scope, preset) {
+  const catalog = catalogForScope(scope);
+  const pages = catalog.entries.filter((entry) => entry.kind === "page");
+  const actions = catalog.entries.filter((entry) => entry.kind === "action");
+  const access = scope === "kernel" ? [] : [PLUGIN_ACCESS_CAPABILITIES[scope]];
+  switch (preset) {
+    case "none":
+      return [];
+    case "viewer":
+      return [...access, ...pages.filter((page) => page.viewer).map((page) => page.capability)];
+    case "editor":
+      return [...access, ...pages.map((page) => page.capability)];
+    case "admin":
+      return [...access, ...pages.map((page) => page.capability), ...actions.map((action) => action.capability)];
+  }
+}
+
+// src/main/services/roleStore.ts
+var log2 = createLogger("RoleStore");
+var bootstrapped = false;
+function parseCapabilities(raw) {
+  if (typeof raw !== "string")
+    return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((c) => ALL_CAPABILITIES.includes(c)) : [];
+  } catch {
+    return [];
+  }
+}
+function normaliseScope(raw) {
+  return typeof raw === "string" && (raw === "kernel" || isPluginId(raw)) ? raw : "kernel";
+}
+function sameSet(a, b) {
+  if (a.length !== b.length)
+    return false;
+  const set = new Set(a);
+  return b.every((value) => set.has(value));
+}
+function toStoredRole(row) {
+  const scope = normaliseScope(row.scope);
+  const capabilities = parseCapabilities(row.capabilities);
+  const shipped = ROLE_DEFINITIONS.find((role) => role.key === row.key);
+  return {
+    key: row.key,
+    label: row.label || roleLabel(row.key),
+    scope,
+    description: row.description ?? null,
+    capabilities,
+    isBuiltIn: Boolean(row.isBuiltIn),
+    isSystem: Boolean(row.isSystem),
+    isDefault: shipped ? sameSet(shipped.capabilities, capabilities) : false,
+    isWildcard: isWildcardRole(row.key)
+  };
+}
+async function ensureTable(prisma2) {
+  await prisma2.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "Role" (
+      "key"          TEXT PRIMARY KEY NOT NULL,
+      "label"        TEXT NOT NULL,
+      "scope"        TEXT NOT NULL DEFAULT 'kernel',
+      "description"  TEXT,
+      "capabilities" TEXT NOT NULL DEFAULT '[]',
+      "isBuiltIn"    BOOLEAN NOT NULL DEFAULT false,
+      "isSystem"     BOOLEAN NOT NULL DEFAULT false,
+      "createdAt"    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt"    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await prisma2.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "Role_scope_idx" ON "Role"("scope")`);
+}
+async function importLegacyOverrides(prisma2) {
+  try {
+    const rows = await prisma2.rolePermission.findMany();
+    return Object.fromEntries(rows.map((row) => [row.role, parseCapabilities(row.capabilities)]));
+  } catch {
+    return {};
+  }
+}
+async function bootstrapRoles(prisma2, force = false) {
+  if (bootstrapped && !force)
+    return;
+  try {
+    await ensureTable(prisma2);
+    const legacy = await importLegacyOverrides(prisma2);
+    const existing = await prisma2.role.findMany({ select: { key: true } });
+    const known = new Set(existing.map((row) => row.key));
+    for (const definition of ROLE_DEFINITIONS) {
+      if (known.has(definition.key))
+        continue;
+      const override = legacy[definition.key];
+      const capabilities = override?.length ? sanitiseCapabilities(definition.scope, override) : definition.capabilities;
+      await prisma2.role.create({
+        data: {
+          key: definition.key,
+          label: definition.label,
+          scope: definition.scope,
+          description: definition.description ?? null,
+          capabilities: JSON.stringify(definition.isSystem ? ALL_CAPABILITIES : capabilities),
+          isBuiltIn: true,
+          isSystem: Boolean(definition.isSystem)
+        }
+      });
+    }
+    for (const [key, capabilities] of Object.entries(legacy)) {
+      if (known.has(key) || ROLE_DEFINITIONS.some((role) => role.key === key))
+        continue;
+      const scope = scopeOfRole(key);
+      await prisma2.role.create({
+        data: {
+          key,
+          label: roleLabel(key),
+          scope,
+          capabilities: JSON.stringify(sanitiseCapabilities(scope, capabilities)),
+          isBuiltIn: false,
+          isSystem: false
+        }
+      });
+      known.add(key);
+    }
+    for (const key of await referencedRoleKeys(prisma2)) {
+      if (known.has(key) || ROLE_DEFINITIONS.some((role) => role.key === key))
+        continue;
+      const scope = scopeOfRole(key);
+      await prisma2.role.create({
+        data: {
+          key,
+          label: roleLabel(key),
+          scope,
+          description: "Imported from an existing user account.",
+          capabilities: JSON.stringify(sanitiseCapabilities(scope, presetCapabilities(scope, "viewer"))),
+          isBuiltIn: false,
+          isSystem: false
+        }
+      });
+      known.add(key);
+    }
+    bootstrapped = true;
+  } catch (err) {
+    log2.error("bootstrap failed", err);
+  }
+}
+async function referencedRoleKeys(prisma2) {
+  try {
+    const users = await prisma2.user.findMany({ select: { role: true, pluginRoles: true } });
+    const keys = /* @__PURE__ */ new Set();
+    for (const user of users) {
+      if (user.role)
+        keys.add(user.role);
+      try {
+        Object.values(JSON.parse(user.pluginRoles || "{}")).forEach((role) => role && keys.add(role));
+      } catch {
+      }
+    }
+    return [...keys];
+  } catch {
+    return [];
+  }
+}
+async function listRoles(prisma2, scope) {
+  await bootstrapRoles(prisma2);
+  const rows = await prisma2.role.findMany({
+    where: scope ? { scope } : void 0,
+    orderBy: [{ scope: "asc" }, { key: "asc" }]
+  });
+  return rows.map(toStoredRole);
+}
+async function getRole(prisma2, key) {
+  await bootstrapRoles(prisma2);
+  const row = await prisma2.role.findUnique({ where: { key } });
+  return row ? toStoredRole(row) : null;
+}
+async function roleCapabilities(prisma2, key) {
+  if (isWildcardRole(key))
+    return [...ALL_CAPABILITIES];
+  const role = await getRole(prisma2, key).catch(() => null);
+  if (role)
+    return role.capabilities;
+  const shipped = ROLE_DEFINITIONS.find((definition) => definition.key === key);
+  return shipped ? [...shipped.capabilities] : [];
+}
+var KEY_PATTERN = /^[a-z][a-z0-9_]{1,48}$/;
+function normaliseRoleKey(scope, label, requested) {
+  const base = (requested || label).trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const prefixed = scope !== "kernel" && !base.startsWith(`${scope}_`) ? `${scope}_${base}` : base;
+  return prefixed.slice(0, 48);
+}
+async function createRole(prisma2, input) {
+  await bootstrapRoles(prisma2);
+  const label = input.label?.trim();
+  if (!label)
+    throw new Error("A role name is required.");
+  const key = normaliseRoleKey(input.scope, label, input.key);
+  if (!KEY_PATTERN.test(key)) {
+    throw new Error("Role name must contain at least two letters or numbers.");
+  }
+  if (await prisma2.role.findUnique({ where: { key } })) {
+    throw new Error(`A role named "${label}" already exists.`);
+  }
+  const row = await prisma2.role.create({
+    data: {
+      key,
+      label,
+      scope: input.scope,
+      description: input.description ?? null,
+      capabilities: JSON.stringify(sanitiseCapabilities(input.scope, input.capabilities)),
+      isBuiltIn: false,
+      isSystem: false
+    }
+  });
+  return toStoredRole(row);
+}
+async function updateRole(prisma2, key, patch) {
+  await bootstrapRoles(prisma2);
+  const current = await prisma2.role.findUnique({ where: { key } });
+  if (!current)
+    throw new Error(`Role "${key}" no longer exists.`);
+  if (current.isSystem)
+    throw new Error("The Admin role always has full access and cannot be edited.");
+  const scope = normaliseScope(current.scope);
+  const data = {};
+  if (patch.label !== void 0) {
+    const label = patch.label.trim();
+    if (!label)
+      throw new Error("A role name is required.");
+    data.label = label;
+  }
+  if (patch.description !== void 0)
+    data.description = patch.description;
+  if (patch.capabilities !== void 0) {
+    data.capabilities = JSON.stringify(sanitiseCapabilities(scope, patch.capabilities));
+  }
+  const row = await prisma2.role.update({ where: { key }, data });
+  return toStoredRole(row);
+}
+async function deleteRole(prisma2, key) {
+  await bootstrapRoles(prisma2);
+  const role = await prisma2.role.findUnique({ where: { key } });
+  if (!role)
+    return { success: true };
+  if (role.isSystem)
+    throw new Error("The Admin role cannot be deleted.");
+  if (role.isBuiltIn)
+    throw new Error("Built-in roles cannot be deleted \u2014 clear their permissions instead.");
+  const inUse = await countRoleUsage(prisma2, key);
+  if (inUse > 0) {
+    throw new Error(`${inUse} user${inUse === 1 ? " is" : "s are"} still assigned this role.`);
+  }
+  await prisma2.role.delete({ where: { key } });
+  return { success: true };
+}
+async function countRoleUsage(prisma2, key) {
+  const direct = await prisma2.user.count({ where: { role: key } });
+  const scope = scopeOfRole(key);
+  if (scope === "kernel")
+    return direct;
+  const candidates = await prisma2.user.findMany({ select: { pluginRoles: true } });
+  const assigned = candidates.filter((user) => {
+    try {
+      return JSON.parse(user.pluginRoles || "{}")?.[scope] === key;
+    } catch {
+      return false;
+    }
+  }).length;
+  return direct + assigned;
+}
+async function resetRole(prisma2, key) {
+  const definition = ROLE_DEFINITIONS.find((role) => role.key === key);
+  if (!definition)
+    throw new Error("Only built-in roles can be reset to defaults.");
+  return updateRole(prisma2, key, { capabilities: definition.capabilities });
+}
+
+// src/main/ipc/handlers/session.ts
+var currentUser = null;
+function setCurrentUser(u) {
+  currentUser = u;
+}
+function getCurrentUser() {
+  return currentUser;
+}
+async function resolveUserCapabilities(prisma2, role) {
+  if (isWildcardRole(role))
+    return [...ALL_CAPABILITIES];
+  return roleCapabilities(prisma2, role);
+}
+async function bindUser(prisma2, u) {
+  const globalCapabilities = await resolveUserCapabilities(prisma2, u.role);
+  const pluginCapabilities = (await Promise.all(
+    Object.values(u.pluginRoles ?? {}).map((pluginRole) => resolveUserCapabilities(prisma2, pluginRole))
+  )).flat();
+  const capabilities = [.../* @__PURE__ */ new Set([...globalCapabilities, ...pluginCapabilities])];
+  setCurrentUser({
+    id: u.id,
+    username: u.username,
+    role: u.role,
+    capabilities,
+    pluginRoles: u.pluginRoles ?? {}
+  });
+  return capabilities;
+}
+async function refreshCurrentUser(prisma2) {
+  if (!currentUser)
+    return [];
+  return bindUser(prisma2, {
+    id: currentUser.id,
+    username: currentUser.username,
+    role: currentUser.role,
+    pluginRoles: currentUser.pluginRoles
+  });
+}
+function userCan(cap) {
+  if (!currentUser)
+    return false;
+  if (isWildcardRole(currentUser.role))
+    return true;
+  return currentUser.capabilities.includes(cap);
+}
+function requireCap(cap) {
+  if (!currentUser)
+    return;
+  if (isWildcardRole(currentUser.role))
+    return;
+  if (!currentUser.capabilities.includes(cap)) {
+    const err = new Error(`Permission denied \u2014 this action requires the "${cap}" permission.`);
+    err.code = "EPERM_CAP";
+    err.capability = cap;
+    throw err;
+  }
+}
+
 // src/main/ipc/handlers/auth.handlers.ts
-init_session();
-var log2 = createLogger("Auth");
+var log3 = createLogger("Auth");
 function registerAuthHandlers(prisma2) {
   ipcMain.handle("auth:login", async (_, { username, password }) => {
     try {
       if (prisma2) {
         const user = await prisma2.user.findUnique({ where: { username } });
         if (!user) {
-          log2.info(`\u274C Login failed: User '${username}' not found`);
+          log3.info(`\u274C Login failed: User '${username}' not found`);
           return { success: false, message: "Invalid username or password" };
         }
         const isValid = await import_bcryptjs.default.compare(password, user.passwordHash);
         if (!isValid) {
-          log2.info(`\u274C Login failed: Invalid password for user '${username}'`);
+          log3.info(`\u274C Login failed: Invalid password for user '${username}'`);
           return { success: false, message: "Invalid username or password" };
         }
         if (!user.isActive) {
-          log2.info(`\u274C Login failed: User '${username}' is inactive`);
+          log3.info(`\u274C Login failed: User '${username}' is inactive`);
           return { success: false, message: "Account is inactive. Contact administrator." };
         }
         await prisma2.user.update({
@@ -2428,14 +2971,14 @@ function registerAuthHandlers(prisma2) {
           data: { lastLogin: /* @__PURE__ */ new Date() }
         });
         const pluginRoles = parsePluginRoles(user.pluginRoles);
-        log2.info(`\u2705 Login successful: ${user.username} (${user.role}) - ID: ${user.id}`);
+        log3.info(`\u2705 Login successful: ${user.username} (${user.role}) - ID: ${user.id}`);
         const capabilities = await bindUser(prisma2, { id: user.id, username: user.username, role: user.role, pluginRoles });
         return { success: true, user: { id: user.id, username: user.username, role: user.role, pluginRoles }, capabilities };
       }
-      log2.warn("\u26A0\uFE0F Using mock login - database not available");
+      log3.warn("\u26A0\uFE0F Using mock login - database not available");
       return { success: true, user: { id: "1", username, role: "admin" } };
     } catch (error) {
-      log2.error("\u274C Login error:", error);
+      log3.error("\u274C Login error:", error);
       return { success: false, message: "An error occurred during login" };
     }
   });
@@ -2446,7 +2989,7 @@ function registerAuthHandlers(prisma2) {
       const u = await prisma2.user.findUnique({ where: { username: "setup" }, select: { id: true, isActive: true } });
       return !!(u && u.isActive);
     } catch (error) {
-      log2.error("setupExists error:", error);
+      log3.error("setupExists error:", error);
       return false;
     }
   });
@@ -2465,7 +3008,7 @@ function registerAuthHandlers(prisma2) {
       const user = await prisma2.user.create({ data: { username, passwordHash, role } });
       return { success: true, user: { id: user.id, username: user.username, role: user.role } };
     } catch (error) {
-      log2.error("\u274C Create user error:", error);
+      log3.error("\u274C Create user error:", error);
       return { success: false, message: "Failed to create user" };
     }
   });
@@ -2489,7 +3032,7 @@ function parsePluginRoles(raw) {
 init_electron_node();
 
 // src/main/services/CacheService.ts
-var log3 = createLogger("Cache");
+var log4 = createLogger("Cache");
 var CacheService = class _CacheService {
   static instance;
   cache = /* @__PURE__ */ new Map();
@@ -2499,7 +3042,7 @@ var CacheService = class _CacheService {
   // Prevent memory bloat
   constructor() {
     setInterval(() => this.cleanup(), 60 * 1e3);
-    log3.debug("CacheService initialised (max entries: 100, default TTL: 60s)");
+    log4.debug("CacheService initialised (max entries: 100, default TTL: 60s)");
   }
   /**
    * Get singleton instance
@@ -2517,15 +3060,15 @@ var CacheService = class _CacheService {
   get(key) {
     const entry = this.cache.get(key);
     if (!entry) {
-      log3.debug("Cache miss", { key });
+      log4.debug("Cache miss", { key });
       return null;
     }
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key);
-      log3.debug("Cache expired", { key });
+      log4.debug("Cache expired", { key });
       return null;
     }
-    log3.debug("Cache hit", { key });
+    log4.debug("Cache hit", { key });
     return entry.data;
   }
   /**
@@ -2533,7 +3076,7 @@ var CacheService = class _CacheService {
    */
   set(key, data, ttl) {
     if (this.cache.size >= this.MAX_ENTRIES && !this.cache.has(key)) {
-      log3.warn("Cache full, evicting oldest entry", { size: this.cache.size });
+      log4.warn("Cache full, evicting oldest entry", { size: this.cache.size });
       this.evictOldest();
     }
     this.cache.set(key, {
@@ -2541,7 +3084,7 @@ var CacheService = class _CacheService {
       timestamp: Date.now(),
       ttl: ttl || this.DEFAULT_TTL
     });
-    log3.debug("Cache set", { key, ttlMs: ttl || this.DEFAULT_TTL });
+    log4.debug("Cache set", { key, ttlMs: ttl || this.DEFAULT_TTL });
   }
   /**
    * Check if key exists and is not expired
@@ -2574,7 +3117,7 @@ var CacheService = class _CacheService {
         deleted++;
       }
     }
-    log3.debug("Cache invalidated by pattern", { pattern, deleted });
+    log4.debug("Cache invalidated by pattern", { pattern, deleted });
   }
   /**
    * Get or compute cached value
@@ -2602,7 +3145,7 @@ var CacheService = class _CacheService {
       }
     }
     if (deleted > 0)
-      log3.debug("Cache cleanup", { deleted, remaining: this.cache.size });
+      log4.debug("Cache cleanup", { deleted, remaining: this.cache.size });
   }
   /**
    * Evict oldest entry when max size reached
@@ -2645,7 +3188,7 @@ var CacheKeys = {
 };
 
 // src/main/ipc/handlers/dashboard.handlers.ts
-var log4 = createLogger("Dashboard");
+var log5 = createLogger("Dashboard");
 function registerDashboardHandlers(prisma2) {
   ipcMain.handle("dashboard:getMetrics", async () => {
     try {
@@ -2674,7 +3217,7 @@ function registerDashboardHandlers(prisma2) {
       }
       return { sales: 0, orders: 0, profit: 0 };
     } catch (error) {
-      log4.error("Error fetching dashboard metrics:", error);
+      log5.error("Error fetching dashboard metrics:", error);
       throw error;
     }
   });
@@ -2700,7 +3243,7 @@ function registerDashboardHandlers(prisma2) {
         count: Number(r.count)
       }));
     } catch (error) {
-      log4.error("Error fetching sales chart data:", error);
+      log5.error("Error fetching sales chart data:", error);
       return [];
     }
   });
@@ -2731,7 +3274,7 @@ function registerDashboardHandlers(prisma2) {
         quantity: Number(r.quantity)
       }));
     } catch (error) {
-      log4.error("Error fetching top products:", error);
+      log5.error("Error fetching top products:", error);
       return [];
     }
   });
@@ -2755,7 +3298,7 @@ function registerDashboardHandlers(prisma2) {
       });
       return transactions.map((t) => ({ ...t, itemCount: t._count.items, _count: void 0 }));
     } catch (error) {
-      log4.error("Error fetching recent activity:", error);
+      log5.error("Error fetching recent activity:", error);
       return [];
     }
   });
@@ -2773,7 +3316,7 @@ function registerDashboardHandlers(prisma2) {
       });
       return { total: result._sum.total ?? 0, count: result._count ?? 0 };
     } catch (error) {
-      log4.error("Error fetching day stats:", error);
+      log5.error("Error fetching day stats:", error);
       return { total: 0, count: 0 };
     }
   });
@@ -2781,7 +3324,7 @@ function registerDashboardHandlers(prisma2) {
 
 // src/main/ipc/handlers/finance.handlers.ts
 init_electron_node();
-var log5 = createLogger("Finance");
+var log6 = createLogger("Finance");
 function registerFinanceHandlers(prisma2) {
   ipcMain.handle("finance:addTransaction", async (_, { type, amount, description, userId }) => {
     try {
@@ -2793,7 +3336,7 @@ function registerFinanceHandlers(prisma2) {
       }
       return { success: true, transaction: { id: "t_mock", type, amount, description, userId } };
     } catch (error) {
-      log5.error("Error adding transaction:", error);
+      log6.error("Error adding transaction:", error);
       throw error;
     }
   });
@@ -2814,7 +3357,7 @@ function registerFinanceHandlers(prisma2) {
       }
       return [];
     } catch (error) {
-      log5.error("Error fetching transactions:", error);
+      log6.error("Error fetching transactions:", error);
       throw error;
     }
   });
@@ -2842,7 +3385,7 @@ function registerFinanceHandlers(prisma2) {
         transactionCount: 0
       };
     } catch (error) {
-      log5.error("Error fetching finance stats:", error);
+      log6.error("Error fetching finance stats:", error);
       throw error;
     }
   });
@@ -2861,7 +3404,7 @@ function registerFinanceHandlers(prisma2) {
       }
       return { success: true, transaction: { id, ...data } };
     } catch (error) {
-      log5.error("Error updating transaction:", error);
+      log6.error("Error updating transaction:", error);
       throw error;
     }
   });
@@ -2875,7 +3418,7 @@ function registerFinanceHandlers(prisma2) {
       }
       return { success: true };
     } catch (error) {
-      log5.error("Error deleting transaction:", error);
+      log6.error("Error deleting transaction:", error);
       throw error;
     }
   });
@@ -2885,7 +3428,7 @@ function registerFinanceHandlers(prisma2) {
 init_electron_node();
 var import_node_fs3 = __toESM(require("node:fs"));
 var import_node_path4 = __toESM(require("node:path"));
-var log6 = createLogger("Employees");
+var log7 = createLogger("Employees");
 function employeeDocsDir() {
   const dir = import_node_path4.default.join(app.getPath("userData"), "employee-documents");
   import_node_fs3.default.mkdirSync(dir, { recursive: true });
@@ -2907,10 +3450,10 @@ async function ensureEmployeeColumns(prisma2) {
     const cols = await prisma2.$queryRawUnsafe(`PRAGMA table_info("Employee")`);
     if (!cols.some((c) => c.name === "managerId")) {
       await prisma2.$executeRawUnsafe(`ALTER TABLE "Employee" ADD COLUMN "managerId" TEXT`);
-      log6.info("\u2705 Employee.managerId column added");
+      log7.info("\u2705 Employee.managerId column added");
     }
   } catch (err) {
-    log6.warn("managerId column migration skipped:", err);
+    log7.warn("managerId column migration skipped:", err);
   }
 }
 async function wouldCreateCycle(prisma2, id, managerId) {
@@ -2971,7 +3514,7 @@ function registerEmployeesHandlers(prisma2) {
         return { ...rest, todayAttendance: attendance?.[0] ?? null };
       });
     } catch (error) {
-      log6.error("Error fetching employees:", error);
+      log7.error("Error fetching employees:", error);
       throw error;
     }
   });
@@ -2991,7 +3534,7 @@ function registerEmployeesHandlers(prisma2) {
         leaveBalance: computeLeaveBalance(emp)
       };
     } catch (error) {
-      log6.error("Error fetching employee:", error);
+      log7.error("Error fetching employee:", error);
       throw error;
     }
   });
@@ -3013,7 +3556,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, employee };
     } catch (error) {
-      log6.error("Error creating employee:", error);
+      log7.error("Error creating employee:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3044,7 +3587,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, employee };
     } catch (error) {
-      log6.error("Error updating employee:", error);
+      log7.error("Error updating employee:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3055,7 +3598,7 @@ function registerEmployeesHandlers(prisma2) {
       await prisma2.employee.delete({ where: { id } });
       return { success: true };
     } catch (error) {
-      log6.error("Error deleting employee:", error);
+      log7.error("Error deleting employee:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3080,7 +3623,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, record };
     } catch (error) {
-      log6.error("Error upserting attendance:", error);
+      log7.error("Error upserting attendance:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3096,7 +3639,7 @@ function registerEmployeesHandlers(prisma2) {
         orderBy: { date: "asc" }
       });
     } catch (error) {
-      log6.error("Error fetching attendance range:", error);
+      log7.error("Error fetching attendance range:", error);
       return [];
     }
   });
@@ -3142,7 +3685,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, record };
     } catch (error) {
-      log6.error("Error checking in:", error);
+      log7.error("Error checking in:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3175,7 +3718,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, record };
     } catch (error) {
-      log6.error("Error checking out:", error);
+      log7.error("Error checking out:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3285,7 +3828,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, record };
     } catch (error) {
-      log6.error("Error upserting payroll:", error);
+      log7.error("Error upserting payroll:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3314,7 +3857,7 @@ function registerEmployeesHandlers(prisma2) {
         netPay: grossPay
       };
     } catch (error) {
-      log6.error("Error computing payroll:", error);
+      log7.error("Error computing payroll:", error);
       return null;
     }
   });
@@ -3328,7 +3871,7 @@ function registerEmployeesHandlers(prisma2) {
         orderBy: [{ month: "desc" }, { employee: { name: "asc" } }]
       });
     } catch (error) {
-      log6.error("Error fetching payroll:", error);
+      log7.error("Error fetching payroll:", error);
       return [];
     }
   });
@@ -3350,7 +3893,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, record };
     } catch (error) {
-      log6.error("Error marking payroll as paid:", error);
+      log7.error("Error marking payroll as paid:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3424,7 +3967,7 @@ function registerEmployeesHandlers(prisma2) {
       }), {});
       return { employees, totals };
     } catch (error) {
-      log6.error("Error fetching payroll summary:", error);
+      log7.error("Error fetching payroll summary:", error);
       return { employees: [], totals: {} };
     }
   });
@@ -3437,7 +3980,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, log: log_ };
     } catch (error) {
-      log6.error("Error adding activity log:", error);
+      log7.error("Error adding activity log:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3467,7 +4010,7 @@ function registerEmployeesHandlers(prisma2) {
         include: { _count: { select: { attendance: true, activityLogs: true } } }
       });
     } catch (error) {
-      log6.error("Error searching employees:", error);
+      log7.error("Error searching employees:", error);
       return [];
     }
   });
@@ -3502,7 +4045,7 @@ function registerEmployeesHandlers(prisma2) {
         payrollThisMonth: payrollThisMonth._sum.netPay ?? 0
       };
     } catch (error) {
-      log6.error("Error fetching employee stats:", error);
+      log7.error("Error fetching employee stats:", error);
       return null;
     }
   });
@@ -3520,7 +4063,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, shift };
     } catch (error) {
-      log6.error("Error adding shift:", error);
+      log7.error("Error adding shift:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3533,7 +4076,7 @@ function registerEmployeesHandlers(prisma2) {
         orderBy: { date: "desc" }
       });
     } catch (error) {
-      log6.error("Error fetching shifts:", error);
+      log7.error("Error fetching shifts:", error);
       return [];
     }
   });
@@ -3550,7 +4093,7 @@ function registerEmployeesHandlers(prisma2) {
       }
       return { success: true };
     } catch (error) {
-      log6.error("Error deleting shift:", error);
+      log7.error("Error deleting shift:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3568,7 +4111,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, overtime: ot };
     } catch (error) {
-      log6.error("Error adding overtime:", error);
+      log7.error("Error adding overtime:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3585,7 +4128,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, overtime: ot };
     } catch (error) {
-      log6.error("Error approving overtime:", error);
+      log7.error("Error approving overtime:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3596,7 +4139,7 @@ function registerEmployeesHandlers(prisma2) {
       await prisma2.employeeOvertime.delete({ where: { id } });
       return { success: true };
     } catch (error) {
-      log6.error("Error deleting overtime:", error);
+      log7.error("Error deleting overtime:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3624,7 +4167,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, leave: record };
     } catch (error) {
-      log6.error("Error adding leave:", error);
+      log7.error("Error adding leave:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3660,7 +4203,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, leave };
     } catch (error) {
-      log6.error("Error updating leave status:", error);
+      log7.error("Error updating leave status:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3671,7 +4214,7 @@ function registerEmployeesHandlers(prisma2) {
       await prisma2.employeeLeave.delete({ where: { id } });
       return { success: true };
     } catch (error) {
-      log6.error("Error deleting leave:", error);
+      log7.error("Error deleting leave:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3710,7 +4253,7 @@ function registerEmployeesHandlers(prisma2) {
       });
       return { success: true, document: record };
     } catch (error) {
-      log6.error("Error adding document:", error);
+      log7.error("Error adding document:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3729,7 +4272,7 @@ function registerEmployeesHandlers(prisma2) {
         return { success: false, message: err };
       return { success: true };
     } catch (error) {
-      log6.error("Error opening document:", error);
+      log7.error("Error opening document:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3749,7 +4292,7 @@ function registerEmployeesHandlers(prisma2) {
       await prisma2.employeeDocument.delete({ where: { id } });
       return { success: true };
     } catch (error) {
-      log6.error("Error deleting document:", error);
+      log7.error("Error deleting document:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3758,7 +4301,7 @@ function registerEmployeesHandlers(prisma2) {
 // src/main/ipc/handlers/customers.handlers.ts
 init_electron_node();
 var XLSX = __toESM(require("xlsx"));
-var log7 = createLogger("Customers");
+var log8 = createLogger("Customers");
 function registerCustomersHandlers(prisma2) {
   async function recalculateCustomerTotalSpent(customerId) {
     if (!prisma2)
@@ -3780,7 +4323,7 @@ function registerCustomersHandlers(prisma2) {
         data: { totalSpent }
       });
     } catch (error) {
-      log7.error("Error recalculating customer totalSpent:", error);
+      log8.error("Error recalculating customer totalSpent:", error);
     }
   }
   ipcMain.handle("customers:getCount", async () => {
@@ -3789,7 +4332,7 @@ function registerCustomersHandlers(prisma2) {
         return 0;
       return await prisma2.customer.count();
     } catch (error) {
-      log7.error("Error counting customers:", error);
+      log8.error("Error counting customers:", error);
       return 0;
     }
   });
@@ -3853,7 +4396,7 @@ function registerCustomersHandlers(prisma2) {
       }
       return { customers: [], totalCount: 0, hasMore: false };
     } catch (error) {
-      log7.error("Error fetching customers:", error);
+      log8.error("Error fetching customers:", error);
       throw error;
     }
   });
@@ -3879,7 +4422,7 @@ function registerCustomersHandlers(prisma2) {
       }
       return { success: false, message: "Database not available" };
     } catch (error) {
-      log7.error("Error creating customer:", error);
+      log8.error("Error creating customer:", error);
       if (error.code === "P2002") {
         return { success: false, message: "A customer with this phone number already exists" };
       }
@@ -3910,7 +4453,7 @@ function registerCustomersHandlers(prisma2) {
       }
       return { success: false, message: "Database not available" };
     } catch (error) {
-      log7.error("Error updating customer:", error);
+      log8.error("Error updating customer:", error);
       if (error.code === "P2002") {
         return { success: false, message: "A customer with this phone number already exists" };
       }
@@ -3925,7 +4468,7 @@ function registerCustomersHandlers(prisma2) {
       }
       return { success: false, message: "Database not available" };
     } catch (error) {
-      log7.error("Error deleting customer:", error);
+      log8.error("Error deleting customer:", error);
       return { success: false, message: error.message };
     }
   });
@@ -3956,7 +4499,7 @@ function registerCustomersHandlers(prisma2) {
       }
       return [];
     } catch (error) {
-      log7.error("Error fetching purchase history:", error);
+      log8.error("Error fetching purchase history:", error);
       throw error;
     }
   });
@@ -4088,7 +4631,7 @@ function registerCustomersHandlers(prisma2) {
         categorySpending
       };
     } catch (error) {
-      log7.error("Error fetching customer profile:", error);
+      log8.error("Error fetching customer profile:", error);
       throw error;
     }
   });
@@ -4097,7 +4640,7 @@ function registerCustomersHandlers(prisma2) {
       await recalculateCustomerTotalSpent(customerId);
       return { success: true };
     } catch (error) {
-      log7.error("Error recalculating totalSpent:", error);
+      log8.error("Error recalculating totalSpent:", error);
       return { success: false, message: error.message };
     }
   });
@@ -4231,7 +4774,7 @@ function registerCustomersHandlers(prisma2) {
         return { success: false, message: "Invalid export format" };
       }
     } catch (error) {
-      log7.error("Error exporting customers:", error);
+      log8.error("Error exporting customers:", error);
       return { success: false, message: error.message };
     }
   });
@@ -4241,7 +4784,7 @@ function registerCustomersHandlers(prisma2) {
 init_electron_node();
 
 // src/main/services/InventoryService.ts
-var log8 = createLogger("Inventory");
+var log9 = createLogger("Inventory");
 var InventoryService = class _InventoryService {
   static instance;
   prisma;
@@ -4495,15 +5038,15 @@ var InventoryService = class _InventoryService {
    * Update stock for a variant
    */
   async updateVariantStock(variantId, newStock) {
-    log8.info(`Updating variant stock: variantId=${variantId} newStock=${newStock}`);
+    log9.info(`Updating variant stock: variantId=${variantId} newStock=${newStock}`);
     try {
       await this.prisma.productVariant.update({
         where: { id: variantId },
         data: { stock: newStock }
       });
-      log8.debug(`Stock updated: variantId=${variantId} -> ${newStock}`);
+      log9.debug(`Stock updated: variantId=${variantId} -> ${newStock}`);
     } catch (error) {
-      log8.error(`Failed to update stock for variantId=${variantId}:`, error);
+      log9.error(`Failed to update stock for variantId=${variantId}:`, error);
       throw error;
     }
   }
@@ -4538,7 +5081,7 @@ var InventoryService = class _InventoryService {
 };
 
 // src/main/services/PredictionService.ts
-var log9 = createLogger("Predictions");
+var log10 = createLogger("Predictions");
 var PredictionService = class {
   constructor(prisma2) {
     this.prisma = prisma2;
@@ -4662,7 +5205,7 @@ var PredictionService = class {
         growthRate
       };
     } catch (error) {
-      log9.error("Error forecasting revenue:", error);
+      log10.error("Error forecasting revenue:", error);
       throw error;
     }
   }
@@ -4744,7 +5287,7 @@ var PredictionService = class {
         recommendation
       };
     } catch (error) {
-      log9.error("Error projecting cash flow:", error);
+      log10.error("Error projecting cash flow:", error);
       throw error;
     }
   }
@@ -4923,7 +5466,7 @@ var PredictionService = class {
       });
       return insights.slice(0, limit);
     } catch (error) {
-      log9.error("Error generating product insights:", error);
+      log10.error("Error generating product insights:", error);
       throw error;
     }
   }
@@ -5074,7 +5617,7 @@ var PredictionService = class {
         recommendations
       };
     } catch (error) {
-      log9.error("Error calculating financial health:", error);
+      log10.error("Error calculating financial health:", error);
       throw error;
     }
   }
@@ -5135,7 +5678,7 @@ var fs5 = __toESM(require("fs"));
 var path6 = __toESM(require("path"));
 var crypto = __toESM(require("crypto"));
 init_electron_node();
-var log10 = createLogger("Image");
+var log11 = createLogger("Image");
 var ImageService = class {
   imagesDir;
   constructor() {
@@ -5182,7 +5725,7 @@ var ImageService = class {
       fs5.writeFileSync(filePath, buffer);
       return filename;
     } catch (error) {
-      log10.error("[ImageService] Failed to save image:", error);
+      log11.error("[ImageService] Failed to save image:", error);
       throw new Error("Failed to save image");
     }
   }
@@ -5195,7 +5738,7 @@ var ImageService = class {
     try {
       const filePath = path6.join(this.imagesDir, filename);
       if (!fs5.existsSync(filePath)) {
-        log10.warn(`[ImageService] Image not found: ${filename}`);
+        log11.warn(`[ImageService] Image not found: ${filename}`);
         return null;
       }
       const buffer = fs5.readFileSync(filePath);
@@ -5204,7 +5747,7 @@ var ImageService = class {
       const mimeType = this.getMimeTypeFromExtension(ext);
       return `data:${mimeType};base64,${base64}`;
     } catch (error) {
-      log10.error(`[ImageService] Failed to read image ${filename}:`, error);
+      log11.error(`[ImageService] Failed to read image ${filename}:`, error);
       return null;
     }
   }
@@ -5228,7 +5771,7 @@ var ImageService = class {
         fs5.unlinkSync(filePath);
       }
     } catch (error) {
-      log10.error(`[ImageService] Failed to delete image ${filename}:`, error);
+      log11.error(`[ImageService] Failed to delete image ${filename}:`, error);
       throw error;
     }
   }
@@ -5251,7 +5794,7 @@ var ImageService = class {
       }
       return deletedCount;
     } catch (error) {
-      log10.error("[ImageService] Cleanup failed:", error);
+      log11.error("[ImageService] Cleanup failed:", error);
       throw error;
     }
   }
@@ -5270,7 +5813,7 @@ var ImageService = class {
       }
       return totalSize;
     } catch (error) {
-      log10.error("[ImageService] Failed to get disk usage:", error);
+      log11.error("[ImageService] Failed to get disk usage:", error);
       return 0;
     }
   }
@@ -5320,12 +5863,12 @@ function getImageService() {
 }
 
 // src/main/ipc/handlers/search.handlers.ts
-var log11 = createLogger("Search");
+var log12 = createLogger("Search");
 function registerSearchHandlers(prisma2) {
   ipcMain.handle("search:products", async (_, options) => {
     try {
       if (!prisma2) {
-        log11.warn("[search:products] Prisma not initialized - returning empty results");
+        log12.warn("[search:products] Prisma not initialized - returning empty results");
         return {
           items: [],
           totalCount: 0,
@@ -5343,7 +5886,7 @@ function registerSearchHandlers(prisma2) {
       } = options;
       const where = buildWhereClause(filters);
       if (process.env.NODE_ENV === "development" && filters.query) {
-        log11.info("[search:products] Searching for:", filters.query.substring(0, 20));
+        log12.info("[search:products] Searching for:", filters.query.substring(0, 20));
       }
       const [products, totalCount] = await Promise.all([
         prisma2.product.findMany({
@@ -5420,7 +5963,7 @@ function registerSearchHandlers(prisma2) {
         hasMore: pagination.page < totalPages
       };
     } catch (error) {
-      log11.error("Error in search:products:", error);
+      log12.error("Error in search:products:", error);
       throw error;
     }
   });
@@ -5540,7 +6083,7 @@ function registerSearchHandlers(prisma2) {
         metrics
       };
     } catch (error) {
-      log11.error("Error in search:inventory:", error);
+      log12.error("Error in search:inventory:", error);
       throw error;
     }
   });
@@ -5603,7 +6146,7 @@ function registerSearchHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log11.error("Error getting filter metadata:", error);
+      log12.error("Error getting filter metadata:", error);
       throw error;
     }
   });
@@ -5691,7 +6234,7 @@ function registerSearchHandlers(prisma2) {
         hasMore: pagination.page < totalPages
       };
     } catch (error) {
-      log11.error("Error searching sales:", error);
+      log12.error("Error searching sales:", error);
       throw error;
     }
   });
@@ -5923,7 +6466,7 @@ function registerSearchHandlers(prisma2) {
         salesByCategory
       };
     } catch (error) {
-      log11.error("Error fetching finance data:", error);
+      log12.error("Error fetching finance data:", error);
       throw error;
     }
   });
@@ -5939,7 +6482,7 @@ function registerSearchHandlers(prisma2) {
       );
       return forecast;
     } catch (error) {
-      log11.error("Error forecasting revenue:", error);
+      log12.error("Error forecasting revenue:", error);
       throw error;
     }
   });
@@ -5952,7 +6495,7 @@ function registerSearchHandlers(prisma2) {
       const projection = await predictionService.projectCashFlow(options.days || 30);
       return projection;
     } catch (error) {
-      log11.error("Error projecting cash flow:", error);
+      log12.error("Error projecting cash flow:", error);
       throw error;
     }
   });
@@ -5965,7 +6508,7 @@ function registerSearchHandlers(prisma2) {
       const insights = await predictionService.generateProductInsights(options.limit || 10);
       return insights;
     } catch (error) {
-      log11.error("Error generating product insights:", error);
+      log12.error("Error generating product insights:", error);
       throw error;
     }
   });
@@ -5978,7 +6521,7 @@ function registerSearchHandlers(prisma2) {
       const health = await predictionService.calculateFinancialHealth();
       return health;
     } catch (error) {
-      log11.error("Error calculating financial health:", error);
+      log12.error("Error calculating financial health:", error);
       throw error;
     }
   });
@@ -6113,8 +6656,7 @@ function enrichProduct(product) {
 // src/main/ipc/handlers/user.handlers.ts
 init_electron_node();
 var bcrypt2 = __toESM(require_bcryptjs());
-init_session();
-var log12 = createLogger("Users");
+var log13 = createLogger("Users");
 function registerUserHandlers(prisma2) {
   ipcMain.handle("users:getAll", async () => {
     try {
@@ -6139,7 +6681,7 @@ function registerUserHandlers(prisma2) {
       });
       return { success: true, data: users.map((user) => ({ ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) })) };
     } catch (error) {
-      log12.error("[Users] Failed to get users:", error);
+      log13.error("[Users] Failed to get users:", error);
       return { success: false, error: "Failed to load users" };
     }
   });
@@ -6167,7 +6709,7 @@ function registerUserHandlers(prisma2) {
       }
       return { success: true, data: { ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) } };
     } catch (error) {
-      log12.error("[Users] Failed to get user:", error);
+      log13.error("[Users] Failed to get user:", error);
       return { success: false, error: "Failed to load user" };
     }
   });
@@ -6214,7 +6756,7 @@ function registerUserHandlers(prisma2) {
       });
       return { success: true, data: { ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) } };
     } catch (error) {
-      log12.error("[Users] Failed to create user:", error);
+      log13.error("[Users] Failed to create user:", error);
       return { success: false, error: "Failed to create user" };
     }
   });
@@ -6277,7 +6819,7 @@ function registerUserHandlers(prisma2) {
       }
       return { success: true, data: { ...user, pluginRoles: parsePluginRoles2(user.pluginRoles) } };
     } catch (error) {
-      log12.error("[Users] Failed to update user:", error);
+      log13.error("[Users] Failed to update user:", error);
       return { success: false, error: "Failed to update user" };
     }
   });
@@ -6297,7 +6839,7 @@ function registerUserHandlers(prisma2) {
       });
       return { success: true };
     } catch (error) {
-      log12.error("[Users] Failed to change password:", error);
+      log13.error("[Users] Failed to change password:", error);
       return { success: false, error: "Failed to change password" };
     }
   });
@@ -6334,7 +6876,7 @@ function registerUserHandlers(prisma2) {
       });
       return { success: true };
     } catch (error) {
-      log12.error("[Users] Failed to delete user:", error);
+      log13.error("[Users] Failed to delete user:", error);
       return { success: false, error: "Failed to delete user. Please try again." };
     }
   });
@@ -6346,7 +6888,7 @@ function registerUserHandlers(prisma2) {
       });
       return { success: true };
     } catch (error) {
-      log12.error("[Users] Failed to update last login:", error);
+      log13.error("[Users] Failed to update last login:", error);
       return { success: false, error: "Failed to update last login" };
     }
   });
@@ -6364,59 +6906,87 @@ function parsePluginRoles2(raw) {
 
 // src/main/ipc/handlers/permissions.handlers.ts
 init_electron_node();
-init_permissions();
-init_session();
-var log13 = createLogger("Permissions");
+var log14 = createLogger("Permissions");
+function requireSettingsAccess() {
+  if (userCan("manage_settings"))
+    return;
+  const error = new Error('Permission denied \u2014 requires "manage_settings".');
+  error.code = "EPERM_CAP";
+  throw error;
+}
+function toScope(raw) {
+  return typeof raw === "string" && (raw === "kernel" || isPluginId(raw)) ? raw : "kernel";
+}
+function parsePluginRoles3(raw) {
+  if (typeof raw !== "string")
+    return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
 function registerPermissionsHandlers(prisma2) {
-  ipcMain.handle("plugins:getCatalog", async () => Object.values(PLUGIN_PERMISSION_CATALOG));
-  ipcMain.handle("permissions:getRoles", async () => {
+  void bootstrapRoles(prisma2);
+  ipcMain.handle("plugins:getCatalog", async () => [
+    KERNEL_PERMISSION_CATALOG,
+    ...Object.values(PLUGIN_PERMISSION_CATALOG)
+  ]);
+  ipcMain.handle("roles:list", async (_e, scope) => {
     try {
-      const roles = new Set(Object.keys(DEFAULT_ROLE_CAPABILITIES));
-      try {
-        const userRoles = await prisma2.user.findMany({ select: { role: true }, distinct: ["role"] });
-        userRoles.forEach((u) => u.role && roles.add(u.role));
-        const stored = await prisma2.rolePermission.findMany({ select: { role: true } });
-        stored.forEach((r) => roles.add(r.role));
-      } catch {
-      }
-      const out = {};
-      for (const role of roles) {
-        const override = await loadRoleOverride(prisma2, role);
-        out[role] = {
-          capabilities: resolveCapabilities(role, override),
-          isDefault: override === null,
-          isWildcard: isWildcardRole(role)
-        };
-      }
-      return out;
+      const roles = await listRoles(prisma2, scope === void 0 ? void 0 : toScope(scope));
+      return await Promise.all(
+        roles.map(async (role) => ({ ...role, userCount: await countRoleUsage(prisma2, role.key) }))
+      );
     } catch (err) {
-      log13.error("getRoles", err);
+      log14.error("roles:list", err);
       throw err;
     }
   });
-  ipcMain.handle("permissions:setRole", async (_e, role, caps) => {
+  ipcMain.handle("roles:create", async (_e, input) => {
     try {
-      if (!userCan("manage_settings")) {
-        const e = new Error('Permission denied \u2014 requires "manage_settings".');
-        e.code = "EPERM_CAP";
-        throw e;
-      }
-      if (isWildcardRole(role))
-        throw new Error("The admin role always has full access and cannot be edited.");
-      const clean = Array.isArray(caps) ? caps.filter((c) => ALL_CAPABILITIES.includes(c)) : [];
-      const json = JSON.stringify(clean);
-      await prisma2.rolePermission.upsert({
-        where: { role },
-        update: { capabilities: json },
-        create: { role, capabilities: json }
+      requireSettingsAccess();
+      return await createRole(prisma2, {
+        key: input?.key ?? "",
+        label: input?.label ?? "",
+        scope: toScope(input?.scope),
+        description: input?.description ?? null,
+        capabilities: input?.capabilities ?? []
       });
-      const { getCurrentUser: getCurrentUser2 } = await Promise.resolve().then(() => (init_session(), session_exports));
-      const cur = getCurrentUser2();
-      if (cur && cur.role === role)
-        setCurrentUser({ ...cur, capabilities: clean });
-      return { success: true, capabilities: clean };
     } catch (err) {
-      log13.error("setRole", err);
+      log14.error("roles:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("roles:update", async (_e, key, patch) => {
+    try {
+      requireSettingsAccess();
+      const role = await updateRole(prisma2, key, patch ?? {});
+      await refreshCurrentUser(prisma2);
+      return role;
+    } catch (err) {
+      log14.error("roles:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("roles:delete", async (_e, key) => {
+    try {
+      requireSettingsAccess();
+      return await deleteRole(prisma2, key);
+    } catch (err) {
+      log14.error("roles:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("roles:reset", async (_e, key) => {
+    try {
+      requireSettingsAccess();
+      const role = await resetRole(prisma2, key);
+      await refreshCurrentUser(prisma2);
+      return role;
+    } catch (err) {
+      log14.error("roles:reset", err);
       throw err;
     }
   });
@@ -6429,13 +6999,16 @@ function registerPermissionsHandlers(prisma2) {
       const capabilities = await bindUser(prisma2, u);
       return { capabilities, isWildcard: isWildcardRole(u.role) };
     } catch (err) {
-      log13.error("bindSession", err);
+      log14.error("bindSession", err);
       const capabilities = u?.role ? await resolveUserCapabilities(prisma2, u.role).catch(() => []) : [];
       return { capabilities, isWildcard: isWildcardRole(u?.role) };
     }
   });
   ipcMain.handle("rbac:resolveUserPermissions", async (_e, userId) => {
-    const user = await prisma2.user.findUnique({ where: { id: userId }, select: { id: true, username: true, role: true, pluginRoles: true } });
+    const user = await prisma2.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, role: true, pluginRoles: true }
+    });
     if (!user)
       throw new Error("User not found");
     const pluginRoles = parsePluginRoles3(user.pluginRoles);
@@ -6445,27 +7018,43 @@ function registerPermissionsHandlers(prisma2) {
     ])];
     return {
       capabilities,
-      allowed: Object.fromEntries(Object.values(PLUGIN_PERMISSION_CATALOG).map((plugin) => [
-        plugin.id,
-        plugin.entries.filter((entry) => capabilities.includes(entry.capability)).map((entry) => entry.id)
-      ]))
+      allowed: Object.fromEntries(
+        [KERNEL_PERMISSION_CATALOG, ...Object.values(PLUGIN_PERMISSION_CATALOG)].map((catalog) => [
+          catalog.id,
+          catalog.entries.filter((entry) => capabilities.includes(entry.capability)).map((entry) => entry.id)
+        ])
+      )
     };
   });
-}
-function parsePluginRoles3(raw) {
-  if (!raw || typeof raw !== "string")
-    return {};
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
+  ipcMain.handle("permissions:getRoles", async () => {
+    try {
+      const roles = await listRoles(prisma2);
+      return Object.fromEntries(roles.map((role) => [role.key, {
+        capabilities: role.capabilities,
+        isDefault: role.isDefault,
+        isWildcard: role.isWildcard
+      }]));
+    } catch (err) {
+      log14.error("permissions:getRoles", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("permissions:setRole", async (_e, role, caps) => {
+    try {
+      requireSettingsAccess();
+      const updated = await updateRole(prisma2, role, { capabilities: Array.isArray(caps) ? caps : [] });
+      await refreshCurrentUser(prisma2);
+      return { success: true, capabilities: updated.capabilities };
+    } catch (err) {
+      log14.error("permissions:setRole", err);
+      throw err;
+    }
+  });
 }
 
 // src/main/ipc/handlers/reports.handlers.ts
 init_electron_node();
-var log14 = createLogger("Reports");
+var log15 = createLogger("Reports");
 function registerReportsHandlers(prisma2) {
   ipcMain.handle("reports:getSalesData", async (_, { startDate, endDate, filters }) => {
     try {
@@ -6588,7 +7177,7 @@ function registerReportsHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log14.error("[Reports] Error generating sales report:", error);
+      log15.error("[Reports] Error generating sales report:", error);
       return { success: false, error: "Failed to generate sales report" };
     }
   });
@@ -6694,7 +7283,7 @@ function registerReportsHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log14.error("[Reports] Error generating inventory report:", error);
+      log15.error("[Reports] Error generating inventory report:", error);
       return { success: false, error: "Failed to generate inventory report" };
     }
   });
@@ -6848,7 +7437,7 @@ function registerReportsHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log14.error("[Reports] Error generating financial report:", error);
+      log15.error("[Reports] Error generating financial report:", error);
       return { success: false, error: "Failed to generate financial report" };
     }
   });
@@ -6910,7 +7499,7 @@ function registerReportsHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log14.error("[Reports] Error generating customer report:", error);
+      log15.error("[Reports] Error generating customer report:", error);
       return { success: false, error: "Failed to generate customer report" };
     }
   });
@@ -6951,7 +7540,7 @@ function registerReportsHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log14.error("[Reports] Error getting quick insights:", error);
+      log15.error("[Reports] Error getting quick insights:", error);
       return { success: false, error: "Failed to get quick insights" };
     }
   });
@@ -6964,14 +7553,14 @@ var import_node_path5 = __toESM(require("node:path"));
 // src/main/database/init.ts
 var path7 = __toESM(require("node:path"));
 init_electron_node();
-var log15 = createLogger("DBInit");
+var log16 = createLogger("DBInit");
 function getDatabasePath() {
   const isDev2 = process.env.NODE_ENV === "development";
   return isDev2 ? path7.resolve(process.cwd(), "prisma", "dev.db") : path7.join(app.getPath("userData"), "database.db");
 }
 
 // src/main/database/optimization.ts
-var log16 = createLogger("DBOptimize");
+var log17 = createLogger("DBOptimize");
 var QueryCache = class {
   cache = /* @__PURE__ */ new Map();
   defaultTTL;
@@ -7026,7 +7615,7 @@ var QueryCache = class {
 };
 
 // src/main/services/StoreAnalyticsService.ts
-var log17 = createLogger("StoreAnalytics");
+var log18 = createLogger("StoreAnalytics");
 var StoreAnalyticsService = class _StoreAnalyticsService {
   static instance = null;
   prisma;
@@ -7071,7 +7660,7 @@ var StoreAnalyticsService = class _StoreAnalyticsService {
       this.cache.set(cacheKey, result, 5 * 60 * 1e3);
       return result;
     } catch (error) {
-      log17.error("Error comparing stores:", error);
+      log18.error("Error comparing stores:", error);
       throw error;
     }
   }
@@ -7150,7 +7739,7 @@ var StoreAnalyticsService = class _StoreAnalyticsService {
         averageOrderValue: Math.round(averageOrderValue * 100) / 100
       };
     } catch (error) {
-      log17.error(`Error getting metrics for store ${storeId}:`, error);
+      log18.error(`Error getting metrics for store ${storeId}:`, error);
       return {
         storeId,
         storeName,
@@ -7217,7 +7806,7 @@ var StoreAnalyticsService = class _StoreAnalyticsService {
         transactions: Number(row.transactions) || 0
       }));
     } catch (error) {
-      log17.error("Error getting store trends:", error);
+      log18.error("Error getting store trends:", error);
       return [];
     }
   }
@@ -7230,7 +7819,7 @@ var StoreAnalyticsService = class _StoreAnalyticsService {
 };
 
 // src/main/ipc/handlers/analytics.handlers.ts
-var log18 = createLogger("Analytics");
+var log19 = createLogger("Analytics");
 function initializePrisma() {
   try {
     const isDev2 = process.env.NODE_ENV === "development";
@@ -7253,7 +7842,7 @@ function initializePrisma() {
       });
     }
   } catch (error) {
-    log18.error("\u274C Failed to initialize Prisma for analytics:", error);
+    log19.error("\u274C Failed to initialize Prisma for analytics:", error);
   }
   return null;
 }
@@ -7261,7 +7850,7 @@ var prisma = null;
 function registerAnalyticsHandlers() {
   prisma = initializePrisma();
   if (!prisma) {
-    log18.warn("\u26A0\uFE0F  Analytics handlers registered but Prisma client unavailable");
+    log19.warn("\u26A0\uFE0F  Analytics handlers registered but Prisma client unavailable");
     return;
   }
   ;
@@ -7274,7 +7863,7 @@ function registerAnalyticsHandlers() {
       await prisma.$queryRawUnsafe("PRAGMA mmap_size = 268435456;");
       await prisma.$queryRawUnsafe("PRAGMA busy_timeout = 10000;");
     } catch (e) {
-      log18.error("[Analytics] Failed to apply SQLite PRAGMAs:", e);
+      log19.error("[Analytics] Failed to apply SQLite PRAGMAs:", e);
     }
   })();
   ipcMain.handle("analytics:recordStockMovement", async (_, data) => {
@@ -7326,7 +7915,7 @@ function registerAnalyticsHandlers() {
       });
       return movement;
     } catch (error) {
-      log18.error("\u274C Error recording stock movement:", error);
+      log19.error("\u274C Error recording stock movement:", error);
       throw error;
     }
   });
@@ -7363,7 +7952,7 @@ function registerAnalyticsHandlers() {
       });
       return movements;
     } catch (error) {
-      log18.error("\u274C Error fetching movement history:", error);
+      log19.error("\u274C Error fetching movement history:", error);
       throw error;
     }
   });
@@ -7417,7 +8006,7 @@ function registerAnalyticsHandlers() {
         history: stockoutHistory
       };
     } catch (error) {
-      log18.error("\u274C Error fetching stockout history:", error);
+      log19.error("\u274C Error fetching stockout history:", error);
       throw error;
     }
   });
@@ -7455,7 +8044,7 @@ function registerAnalyticsHandlers() {
         restocks
       };
     } catch (error) {
-      log18.error("\u274C Error fetching restock history:", error);
+      log19.error("\u274C Error fetching restock history:", error);
       throw error;
     }
   });
@@ -7514,7 +8103,7 @@ function registerAnalyticsHandlers() {
         turnoverRate: totalStock > 0 ? totalUnitsSold / totalStock : 0
       };
     } catch (error) {
-      log18.error("\u274C Error fetching product sales stats:", error);
+      log19.error("\u274C Error fetching product sales stats:", error);
       throw error;
     }
   });
@@ -7567,7 +8156,7 @@ function registerAnalyticsHandlers() {
       }));
       return serializedTrend;
     } catch (error) {
-      log18.error("\u274C Error fetching sales trend:", error);
+      log19.error("\u274C Error fetching sales trend:", error);
       throw error;
     }
   });
@@ -7614,7 +8203,7 @@ function registerAnalyticsHandlers() {
       }));
       return serializedProducts;
     } catch (error) {
-      log18.error("\u274C Error fetching top selling products:", error);
+      log19.error("\u274C Error fetching top selling products:", error);
       throw error;
     }
   });
@@ -7648,7 +8237,7 @@ function registerAnalyticsHandlers() {
       };
       return finalStats;
     } catch (error) {
-      log18.error("\u274C Error fetching overall stats:", error);
+      log19.error("\u274C Error fetching overall stats:", error);
       throw error;
     }
   });
@@ -7718,14 +8307,14 @@ function registerAnalyticsHandlers() {
         } : null
       }));
     } catch (error) {
-      log18.error("\u274C Error fetching all stock movements:", error);
+      log19.error("\u274C Error fetching all stock movements:", error);
       throw error;
     }
   });
   ipcMain.handle("analytics:compareStores", async (_, options) => {
     try {
       if (!prisma) {
-        log18.error("\u274C Prisma not initialized for store comparison");
+        log19.error("\u274C Prisma not initialized for store comparison");
         return { stores: [], dateRange: { startDate: /* @__PURE__ */ new Date(), endDate: /* @__PURE__ */ new Date() } };
       }
       const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
@@ -7735,14 +8324,14 @@ function registerAnalyticsHandlers() {
       const comparison = await storeAnalytics.compareStores(storeIds, start, end);
       return comparison;
     } catch (error) {
-      log18.error("\u274C Error comparing stores:", error);
+      log19.error("\u274C Error comparing stores:", error);
       throw error;
     }
   });
   ipcMain.handle("analytics:getStoreMetrics", async (_, options) => {
     try {
       if (!prisma) {
-        log18.error("\u274C Prisma not initialized for store metrics");
+        log19.error("\u274C Prisma not initialized for store metrics");
         return null;
       }
       const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
@@ -7752,14 +8341,14 @@ function registerAnalyticsHandlers() {
       const metrics = await storeAnalytics.getStoreMetrics(storeId, storeName, start, end);
       return metrics;
     } catch (error) {
-      log18.error("\u274C Error getting store metrics:", error);
+      log19.error("\u274C Error getting store metrics:", error);
       throw error;
     }
   });
   ipcMain.handle("analytics:getTopStores", async (_, options) => {
     try {
       if (!prisma) {
-        log18.error("\u274C Prisma not initialized for top stores");
+        log19.error("\u274C Prisma not initialized for top stores");
         return [];
       }
       const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
@@ -7769,14 +8358,14 @@ function registerAnalyticsHandlers() {
       const topStores = await storeAnalytics.getTopStores(limit, start, end);
       return topStores;
     } catch (error) {
-      log18.error("\u274C Error getting top stores:", error);
+      log19.error("\u274C Error getting top stores:", error);
       throw error;
     }
   });
   ipcMain.handle("analytics:getStoreTrends", async (_, options) => {
     try {
       if (!prisma) {
-        log18.error("\u274C Prisma not initialized for store trends");
+        log19.error("\u274C Prisma not initialized for store trends");
         return [];
       }
       const storeAnalytics = StoreAnalyticsService.getInstance(prisma);
@@ -7784,7 +8373,7 @@ function registerAnalyticsHandlers() {
       const trends = await storeAnalytics.getStoreTrends(storeId, interval, days);
       return trends;
     } catch (error) {
-      log18.error("\u274C Error getting store trends:", error);
+      log19.error("\u274C Error getting store trends:", error);
       throw error;
     }
   });
@@ -7797,7 +8386,7 @@ init_electron_node();
 var import_fs2 = __toESM(require("fs"));
 var import_path2 = __toESM(require("path"));
 init_electron_node();
-var log19 = createLogger("ModuleSettings");
+var log20 = createLogger("ModuleSettings");
 var SETTINGS_FILENAME = "bizflow-settings.json";
 function getSettingsPath() {
   const userData = app.getPath("userData");
@@ -7811,7 +8400,7 @@ function readSettings() {
     const raw = import_fs2.default.readFileSync(filePath, "utf8");
     return JSON.parse(raw);
   } catch (err) {
-    log19.warn("Could not read settings file:", err);
+    log20.warn("Could not read settings file:", err);
     return {};
   }
 }
@@ -7820,7 +8409,7 @@ function writeSettings(settings) {
   try {
     import_fs2.default.writeFileSync(filePath, JSON.stringify(settings, null, 2), "utf8");
   } catch (err) {
-    log19.error("Could not write settings file:", err);
+    log20.error("Could not write settings file:", err);
   }
 }
 function getEnabledModuleIds() {
@@ -7864,17 +8453,17 @@ function setModuleEnabled(moduleId, enabled) {
 }
 
 // src/main/ipc/handlers/module.handlers.ts
-var log20 = createLogger("ModuleHandlers");
+var log21 = createLogger("ModuleHandlers");
 function registerModuleHandlers() {
   ipcMain.handle("module:getEnabled", () => {
     return getEnabledModuleIds();
   });
   ipcMain.handle("module:setEnabled", (_event, { moduleId, enabled }) => {
     setModuleEnabled(moduleId, enabled);
-    log20.info(`Module "${moduleId}" ${enabled ? "enabled" : "disabled"}`);
+    log21.info(`Module "${moduleId}" ${enabled ? "enabled" : "disabled"}`);
   });
   ipcMain.handle("module:relaunch", () => {
-    log20.info("Relaunching app to apply module changes\u2026");
+    log21.info("Relaunching app to apply module changes\u2026");
     app.relaunch();
     app.exit(0);
   });
@@ -7898,7 +8487,7 @@ function registerLogHandlers() {
 init_electron_node();
 
 // src/main/services/SaleCompletionService.ts
-var log21 = createLogger("SaleCompletion");
+var log22 = createLogger("SaleCompletion");
 var COMPLETION_SWEEP_INTERVAL_MS = 15 * 60 * 1e3;
 var completionTimer = null;
 var DEFAULT_SALE_COMPLETION_DELAY_DAYS = 7;
@@ -7936,7 +8525,7 @@ async function completeDueSales(prisma2, now = /* @__PURE__ */ new Date()) {
       prisma2,
       dueSales.map((sale) => sale.customerId)
     );
-    log21.info(`Automatically completed ${result.count} pending sale(s)`);
+    log22.info(`Automatically completed ${result.count} pending sale(s)`);
     cacheService.invalidatePattern("dashboard:*");
   }
   return result.count;
@@ -7986,11 +8575,13 @@ async function refreshCustomerTotals(prisma2, customerIds) {
   );
 }
 function startSaleCompletionScheduler(prisma2) {
+  if (!prisma2)
+    return;
   if (completionTimer)
     return;
   const sweep = () => {
     completeDueSales(prisma2).catch((error) => {
-      log21.error("Scheduled sale completion sweep failed:", error);
+      log22.error("Scheduled sale completion sweep failed:", error);
     });
   };
   sweep();
@@ -7999,11 +8590,11 @@ function startSaleCompletionScheduler(prisma2) {
 }
 
 // src/main/ipc/handlers/sales.handlers.ts
-var log22 = createLogger("Sales");
+var log23 = createLogger("Sales");
 function registerSalesHandlers(prisma2) {
   ipcMain.handle("sales:create", async (_, saleData) => {
     try {
-      log22.warn("sales:create is deprecated - use sale-transactions:create instead");
+      log23.warn("sales:create is deprecated - use sale-transactions:create instead");
       const { productId, variantId, userId, quantity, price, total, paymentMethod } = saleData;
       const completionDelayDays = normalizeCompletionDelayDays(saleData.completionDelayDays);
       if (prisma2) {
@@ -8059,13 +8650,13 @@ function registerSalesHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log22.error("Error creating sale:", error);
+      log23.error("Error creating sale:", error);
       throw error;
     }
   });
   ipcMain.handle("sales:getAll", async (_, options = {}) => {
     try {
-      log22.warn("sales:getAll is deprecated - use sale-transactions:getAll instead");
+      log23.warn("sales:getAll is deprecated - use sale-transactions:getAll instead");
       if (prisma2) {
         const take = Math.min(Number(options?.take) || 100, 1e3);
         const skip = Math.max(Number(options?.skip) || 0, 0);
@@ -8095,13 +8686,13 @@ function registerSalesHandlers(prisma2) {
       }
       return [];
     } catch (error) {
-      log22.error("Error fetching sales:", error);
+      log23.error("Error fetching sales:", error);
       throw error;
     }
   });
   ipcMain.handle("sales:getByDateRange", async (_, options = {}) => {
     try {
-      log22.warn("sales:getByDateRange is deprecated - use sale-transactions:getByDateRange instead");
+      log23.warn("sales:getByDateRange is deprecated - use sale-transactions:getByDateRange instead");
       const { startDate, endDate } = options;
       if (!prisma2)
         return [];
@@ -8136,13 +8727,13 @@ function registerSalesHandlers(prisma2) {
       });
       return transactions;
     } catch (error) {
-      log22.error("Error fetching sales by date range:", error);
+      log23.error("Error fetching sales by date range:", error);
       throw error;
     }
   });
   ipcMain.handle("sales:getStats", async (_, options = {}) => {
     try {
-      log22.warn("sales:getStats is deprecated - use analytics:getOverallStats instead");
+      log23.warn("sales:getStats is deprecated - use analytics:getOverallStats instead");
       if (!prisma2)
         return null;
       const { startDate, endDate } = options;
@@ -8170,13 +8761,13 @@ function registerSalesHandlers(prisma2) {
         totalRevenue: revenue._sum.total || 0
       };
     } catch (error) {
-      log22.error("Error fetching sales stats:", error);
+      log23.error("Error fetching sales stats:", error);
       throw error;
     }
   });
   ipcMain.handle("sales:refund", async (_, saleId) => {
     try {
-      log22.warn("sales:refund is deprecated - use sale-transactions:refund instead");
+      log23.warn("sales:refund is deprecated - use sale-transactions:refund instead");
       if (prisma2) {
         const transaction = await prisma2.saleTransaction.update({
           where: { id: saleId },
@@ -8229,7 +8820,7 @@ function registerSalesHandlers(prisma2) {
       }
       return { success: false, message: "Database not available" };
     } catch (error) {
-      log22.error("Error refunding sale:", error);
+      log23.error("Error refunding sale:", error);
       throw error;
     }
   });
@@ -8237,9 +8828,10 @@ function registerSalesHandlers(prisma2) {
 
 // src/main/ipc/handlers/sale-transactions.handlers.ts
 init_electron_node();
-var log23 = createLogger("SaleTransactions");
+var log24 = createLogger("SaleTransactions");
 function registerSaleTransactionHandlers(prisma2) {
-  startSaleCompletionScheduler(prisma2);
+  if (prisma2)
+    startSaleCompletionScheduler(prisma2);
   ipcMain.handle("saleTransactions:create", async (_, { items, transactionData }) => {
     try {
       if (!prisma2) {
@@ -8401,13 +8993,13 @@ function registerSaleTransactionHandlers(prisma2) {
             data: { totalSpent: customerTotal._sum.total || 0 }
           });
         } catch (error) {
-          log23.error("Error updating customer totalSpent:", error);
+          log24.error("Error updating customer totalSpent:", error);
         }
       }
       cacheService.invalidatePattern("dashboard:*");
       return { success: true, transaction: transactionWithUser, items: result.items };
     } catch (error) {
-      log23.error("Error creating sale transaction:", error);
+      log24.error("Error creating sale transaction:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -8445,7 +9037,7 @@ function registerSaleTransactionHandlers(prisma2) {
       });
       return transactions;
     } catch (error) {
-      log23.error("Error fetching sale transactions:", error);
+      log24.error("Error fetching sale transactions:", error);
       throw error;
     }
   });
@@ -8499,7 +9091,7 @@ function registerSaleTransactionHandlers(prisma2) {
       });
       return transaction;
     } catch (error) {
-      log23.error("Error fetching sale transaction:", error);
+      log24.error("Error fetching sale transaction:", error);
       throw error;
     }
   });
@@ -8556,10 +9148,10 @@ function registerSaleTransactionHandlers(prisma2) {
                   }
                 });
               } else {
-                log23.error(`[REFUND-ALL] ERROR: Variant ${item.variantId} not found!`);
+                log24.error(`[REFUND-ALL] ERROR: Variant ${item.variantId} not found!`);
               }
             } else {
-              log23.warn(`[REFUND-ALL] Item ${item.id} has no variantId, searching for default variant...`);
+              log24.warn(`[REFUND-ALL] Item ${item.id} has no variantId, searching for default variant...`);
               const product = await tx.product.findUnique({
                 where: { id: item.productId },
                 include: { variants: true }
@@ -8590,7 +9182,7 @@ function registerSaleTransactionHandlers(prisma2) {
                   }
                 });
               } else {
-                log23.error(`[REFUND-ALL] ERROR: Could not find product or variants for item ${item.id}`);
+                log24.error(`[REFUND-ALL] ERROR: Could not find product or variants for item ${item.id}`);
               }
             }
             return Promise.resolve();
@@ -8612,13 +9204,13 @@ function registerSaleTransactionHandlers(prisma2) {
             data: { totalSpent: customerTotal._sum.total || 0 }
           });
         } catch (error) {
-          log23.error("Error updating customer totalSpent after refund:", error);
+          log24.error("Error updating customer totalSpent after refund:", error);
         }
       }
       cacheService.invalidatePattern("dashboard:*");
       return { success: true, transaction: result };
     } catch (error) {
-      log23.error("Error refunding transaction:", error);
+      log24.error("Error refunding transaction:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -8669,7 +9261,7 @@ function registerSaleTransactionHandlers(prisma2) {
               }
             });
             if (variant) {
-              log23.info(`[REFUND] Variant found:`, {
+              log24.info(`[REFUND] Variant found:`, {
                 id: variant.id,
                 sku: variant.sku,
                 product: variant.product.name,
@@ -8695,10 +9287,10 @@ function registerSaleTransactionHandlers(prisma2) {
                 }
               });
             } else {
-              log23.error(`[REFUND] ERROR: Variant ${saleItem.variantId} not found in database!`);
+              log24.error(`[REFUND] ERROR: Variant ${saleItem.variantId} not found in database!`);
             }
           } else {
-            log23.warn(`[REFUND] Sale item ${saleItem.id} has no variantId, searching for default variant...`);
+            log24.warn(`[REFUND] Sale item ${saleItem.id} has no variantId, searching for default variant...`);
             const product = await tx.product.findUnique({
               where: { id: saleItem.productId },
               include: { variants: true }
@@ -8729,7 +9321,7 @@ function registerSaleTransactionHandlers(prisma2) {
                 }
               });
             } else {
-              log23.error(`[REFUND] ERROR: Could not find product or variants for sale item ${saleItem.id}`);
+              log24.error(`[REFUND] ERROR: Could not find product or variants for sale item ${saleItem.id}`);
             }
           }
         }
@@ -8786,13 +9378,13 @@ function registerSaleTransactionHandlers(prisma2) {
             data: { totalSpent }
           });
         } catch (error) {
-          log23.error("Error updating customer totalSpent:", error);
+          log24.error("Error updating customer totalSpent:", error);
         }
       }
       cacheService.invalidatePattern("dashboard:*");
       return { success: true, transaction: result };
     } catch (error) {
-      log23.error("Error refunding items:", error);
+      log24.error("Error refunding items:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -8836,7 +9428,7 @@ function registerSaleTransactionHandlers(prisma2) {
       });
       return transactions;
     } catch (error) {
-      log23.error("Error fetching transactions by date range:", error);
+      log24.error("Error fetching transactions by date range:", error);
       throw error;
     }
   });
@@ -8847,7 +9439,7 @@ function registerSaleTransactionHandlers(prisma2) {
       const transaction = await completeSale(prisma2, transactionId);
       return { success: true, transaction };
     } catch (error) {
-      log23.error("Error completing sale transaction:", error);
+      log24.error("Error completing sale transaction:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -8860,7 +9452,7 @@ function registerSaleTransactionHandlers(prisma2) {
         const transaction = await rescheduleSale(prisma2, transactionId, delayDays);
         return { success: true, transaction };
       } catch (error) {
-        log23.error("Error rescheduling sale completion:", error);
+        log24.error("Error rescheduling sale completion:", error);
         return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
       }
     }
@@ -8869,14 +9461,14 @@ function registerSaleTransactionHandlers(prisma2) {
 
 // src/main/ipc/handlers/inventory.handlers.ts
 init_electron_node();
-var log24 = createLogger("Inventory");
+var log25 = createLogger("Inventory");
 function registerInventoryHandlers(prisma2) {
   const inventoryService = InventoryService.getInstance(prisma2);
   ipcMain.handle("inventory:getAll", async () => {
     try {
       return await inventoryService.getAllInventory({ includeImages: true });
     } catch (error) {
-      log24.error("Error fetching inventory:", error);
+      log25.error("Error fetching inventory:", error);
       throw error;
     }
   });
@@ -8884,7 +9476,7 @@ function registerInventoryHandlers(prisma2) {
     try {
       return await inventoryService.getInventoryMetrics();
     } catch (error) {
-      log24.error("Error fetching metrics:", error);
+      log25.error("Error fetching metrics:", error);
       throw error;
     }
   });
@@ -8892,7 +9484,7 @@ function registerInventoryHandlers(prisma2) {
     try {
       return await inventoryService.getTopStockedItems(limit);
     } catch (error) {
-      log24.error("Error fetching top stocked items:", error);
+      log25.error("Error fetching top stocked items:", error);
       throw error;
     }
   });
@@ -8900,7 +9492,7 @@ function registerInventoryHandlers(prisma2) {
     try {
       return await inventoryService.getLowStockItems(threshold);
     } catch (error) {
-      log24.error("Error fetching low stock items:", error);
+      log25.error("Error fetching low stock items:", error);
       throw error;
     }
   });
@@ -8908,7 +9500,7 @@ function registerInventoryHandlers(prisma2) {
     try {
       return await inventoryService.getOutOfStockItems();
     } catch (error) {
-      log24.error("Error fetching out of stock items:", error);
+      log25.error("Error fetching out of stock items:", error);
       throw error;
     }
   });
@@ -8916,7 +9508,7 @@ function registerInventoryHandlers(prisma2) {
     try {
       return await inventoryService.searchInventory(query);
     } catch (error) {
-      log24.error("Error searching inventory:", error);
+      log25.error("Error searching inventory:", error);
       throw error;
     }
   });
@@ -8924,7 +9516,7 @@ function registerInventoryHandlers(prisma2) {
     try {
       return await inventoryService.getStockMovementHistory(productId);
     } catch (error) {
-      log24.error("Error fetching stock history:", error);
+      log25.error("Error fetching stock history:", error);
       throw error;
     }
   });
@@ -8933,7 +9525,7 @@ function registerInventoryHandlers(prisma2) {
       await inventoryService.updateVariantStock(variantId, stock);
       return { success: true };
     } catch (error) {
-      log24.error("Error updating stock:", error);
+      log25.error("Error updating stock:", error);
       throw error;
     }
   });
@@ -8941,7 +9533,7 @@ function registerInventoryHandlers(prisma2) {
     try {
       return await inventoryService.getAllInventory();
     } catch (error) {
-      log24.error("Error fetching products:", error);
+      log25.error("Error fetching products:", error);
       throw error;
     }
   });
@@ -9041,7 +9633,7 @@ function registerInventoryHandlers(prisma2) {
       }
       return null;
     } catch (error) {
-      log24.error("Error searching by barcode:", error);
+      log25.error("Error searching by barcode:", error);
       return null;
     }
   });
@@ -9049,7 +9641,7 @@ function registerInventoryHandlers(prisma2) {
 
 // src/main/ipc/handlers/products.handlers.ts
 init_electron_node();
-var log25 = createLogger("Products");
+var log26 = createLogger("Products");
 var ATTR_INCLUDE = {
   attributeValues: {
     include: {
@@ -9169,7 +9761,7 @@ function registerProductsHandlers(prisma2) {
         hasMore: offset + limit < totalCount
       };
     } catch (error) {
-      log25.error("Error fetching products:", error);
+      log26.error("Error fetching products:", error);
       throw error;
     }
   });
@@ -9215,7 +9807,7 @@ function registerProductsHandlers(prisma2) {
       }
       return product;
     } catch (error) {
-      log25.error("Error fetching product:", error);
+      log26.error("Error fetching product:", error);
       throw error;
     }
   });
@@ -9242,7 +9834,7 @@ function registerProductsHandlers(prisma2) {
       });
       return variant;
     } catch (error) {
-      log25.error("Error fetching product variant:", error);
+      log26.error("Error fetching product variant:", error);
       throw error;
     }
   });
@@ -9295,7 +9887,7 @@ function registerProductsHandlers(prisma2) {
             const filename = await imageService.saveImage(base64Data);
             imageFilenames.push({ filename, order: idx });
           } catch (error) {
-            log25.error(`Failed to save image ${idx}:`, error);
+            log26.error(`Failed to save image ${idx}:`, error);
           }
         }
       }
@@ -9345,7 +9937,7 @@ function registerProductsHandlers(prisma2) {
       cacheService.invalidatePattern("inventory:*");
       return { success: true, product: newProduct };
     } catch (error) {
-      log25.error("Error creating product:", error);
+      log26.error("Error creating product:", error);
       if (error.code === "P2002" && error.meta?.target?.includes("barcode")) {
         return { success: false, message: "This barcode is already used by another product. Please use a unique barcode." };
       }
@@ -9429,10 +10021,10 @@ function registerProductsHandlers(prisma2) {
               const filename = await imageService.saveImage(imageData);
               imageFilenames.push({ filename, order: idx });
             } catch (error) {
-              log25.error(`Failed to save new image ${idx}:`, error);
+              log26.error(`Failed to save new image ${idx}:`, error);
             }
           } else {
-            log25.warn(`[products:update] Unrecognized image format at index ${idx}`);
+            log26.warn(`[products:update] Unrecognized image format at index ${idx}`);
           }
         }
       }
@@ -9503,14 +10095,14 @@ function registerProductsHandlers(prisma2) {
         const newFilenames = imageFilenames.map((img) => img.filename);
         const filesToDelete = existingProduct.images.filter((img) => img.filename && !newFilenames.includes(img.filename)).map((img) => img.filename);
         if (filesToDelete.length > 0) {
-          log25.info(`[products:update] Scheduling deletion of ${filesToDelete.length} unused images`);
+          log26.info(`[products:update] Scheduling deletion of ${filesToDelete.length} unused images`);
           setTimeout(async () => {
             for (const filename of filesToDelete) {
               try {
                 await imageService.deleteImage(filename);
-                log25.info(`[products:update] Deleted old image: ${filename}`);
+                log26.info(`[products:update] Deleted old image: ${filename}`);
               } catch (err) {
-                log25.error(`Failed to delete old image ${filename}:`, err);
+                log26.error(`Failed to delete old image ${filename}:`, err);
               }
             }
           }, 2e3);
@@ -9529,7 +10121,7 @@ function registerProductsHandlers(prisma2) {
       cacheService.delete(CacheKeys.productById(id));
       return { success: true, product: updated };
     } catch (error) {
-      log25.error("Error updating product:", error);
+      log26.error("Error updating product:", error);
       if (error.code === "P2002" && error.meta?.target?.includes("barcode")) {
         return { success: false, message: "This barcode is already used by another product variant. Please use a unique barcode." };
       }
@@ -9565,7 +10157,7 @@ function registerProductsHandlers(prisma2) {
             try {
               await imageService.deleteImage(image.filename);
             } catch (error) {
-              log25.error(`Failed to delete image file ${image.filename}:`, error);
+              log26.error(`Failed to delete image file ${image.filename}:`, error);
             }
           }
         }
@@ -9575,7 +10167,7 @@ function registerProductsHandlers(prisma2) {
       cacheService.delete(CacheKeys.productById(id));
       return { success: true };
     } catch (error) {
-      log25.error("Error deleting product:", error);
+      log26.error("Error deleting product:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9607,7 +10199,7 @@ function registerProductsHandlers(prisma2) {
         // Cache for 1 minute
       );
     } catch (error) {
-      log25.error("Error fetching product stats:", error);
+      log26.error("Error fetching product stats:", error);
       throw error;
     }
   });
@@ -9652,7 +10244,7 @@ function registerProductsHandlers(prisma2) {
         // Can be enhanced later
       }));
     } catch (error) {
-      log25.error("Error searching products:", error);
+      log26.error("Error searching products:", error);
       throw error;
     }
   });
@@ -9741,7 +10333,7 @@ function registerProductsHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log25.error("Error searching products with pagination:", error);
+      log26.error("Error searching products with pagination:", error);
       throw error;
     }
   });
@@ -9756,7 +10348,7 @@ function registerProductsHandlers(prisma2) {
       });
       return categories.map((c) => c.category).filter(Boolean);
     } catch (error) {
-      log25.error("Error fetching categories:", error);
+      log26.error("Error fetching categories:", error);
       throw error;
     }
   });
@@ -9790,7 +10382,7 @@ function registerProductsHandlers(prisma2) {
         message: `Successfully created ${results.length} products`
       };
     } catch (error) {
-      log25.error("Error batch creating products:", error);
+      log26.error("Error batch creating products:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9819,7 +10411,7 @@ function registerProductsHandlers(prisma2) {
         message: `Successfully updated ${results.length} products`
       };
     } catch (error) {
-      log25.error("Error batch updating products:", error);
+      log26.error("Error batch updating products:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9845,7 +10437,7 @@ function registerProductsHandlers(prisma2) {
         message: `Successfully deleted ${result.count} products`
       };
     } catch (error) {
-      log25.error("Error batch deleting products:", error);
+      log26.error("Error batch deleting products:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9853,7 +10445,7 @@ function registerProductsHandlers(prisma2) {
 
 // src/main/ipc/handlers/categories.handlers.ts
 init_electron_node();
-var log26 = createLogger("Categories");
+var log27 = createLogger("Categories");
 function registerCategoriesHandlers(prisma2) {
   ipcMain.handle("categories:getAll", async () => {
     try {
@@ -9877,7 +10469,7 @@ function registerCategoriesHandlers(prisma2) {
       }));
       return { success: true, categories: categoriesWithCount };
     } catch (error) {
-      log26.error("Error fetching categories:", error);
+      log27.error("Error fetching categories:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9905,7 +10497,7 @@ function registerCategoriesHandlers(prisma2) {
         }
       };
     } catch (error) {
-      log26.error("Error fetching category:", error);
+      log27.error("Error fetching category:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9924,7 +10516,7 @@ function registerCategoriesHandlers(prisma2) {
       });
       return { success: true, category: newCategory };
     } catch (error) {
-      log26.error("Error creating category:", error);
+      log27.error("Error creating category:", error);
       if (error.code === "P2002") {
         return { success: false, message: "A category with this name already exists" };
       }
@@ -9947,7 +10539,7 @@ function registerCategoriesHandlers(prisma2) {
       });
       return { success: true, category: updated };
     } catch (error) {
-      log26.error("Error updating category:", error);
+      log27.error("Error updating category:", error);
       if (error.code === "P2002") {
         return { success: false, message: "A category with this name already exists" };
       }
@@ -9984,7 +10576,7 @@ function registerCategoriesHandlers(prisma2) {
       });
       return { success: true, message: "Category deleted successfully" };
     } catch (error) {
-      log26.error("Error deleting category:", error);
+      log27.error("Error deleting category:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9992,7 +10584,7 @@ function registerCategoriesHandlers(prisma2) {
 
 // src/main/ipc/handlers/stores.handlers.ts
 init_electron_node();
-var log27 = createLogger("Stores");
+var log28 = createLogger("Stores");
 function registerStoresHandlers(prisma2) {
   ipcMain.handle("stores:getAll", async () => {
     try {
@@ -10001,7 +10593,7 @@ function registerStoresHandlers(prisma2) {
       }
       return [];
     } catch (error) {
-      log27.error("Error fetching stores:", error);
+      log28.error("Error fetching stores:", error);
       throw error;
     }
   });
@@ -10013,7 +10605,7 @@ function registerStoresHandlers(prisma2) {
       }
       return { success: false, message: "Database not available" };
     } catch (error) {
-      log27.error("Error creating store:", error);
+      log28.error("Error creating store:", error);
       return { success: false, message: error.message };
     }
   });
@@ -10025,7 +10617,7 @@ function registerStoresHandlers(prisma2) {
       }
       return { success: false, message: "Database not available" };
     } catch (error) {
-      log27.error("Error updating store:", error);
+      log28.error("Error updating store:", error);
       return { success: false, message: error.message };
     }
   });
@@ -10037,7 +10629,7 @@ function registerStoresHandlers(prisma2) {
       }
       return { success: false, message: "Database not available" };
     } catch (error) {
-      log27.error("Error deleting store:", error);
+      log28.error("Error deleting store:", error);
       return { success: false, message: error.message };
     }
   });
@@ -10047,14 +10639,14 @@ function registerStoresHandlers(prisma2) {
 init_electron_node();
 
 // src/main/services/DepositService.ts
-var log28 = createLogger("Deposit");
+var log29 = createLogger("Deposit");
 var DepositService = class {
   prisma;
   constructor(prisma2) {
     this.prisma = prisma2;
   }
   async createDeposit(data) {
-    log28.info(`Creating deposit: amount=${data.amount} method=${data.method} customerId=${data.customerId ?? "none"}`);
+    log29.info(`Creating deposit: amount=${data.amount} method=${data.method} customerId=${data.customerId ?? "none"}`);
     try {
       const deposit = await this.prisma.deposit.create({
         data: {
@@ -10067,10 +10659,10 @@ var DepositService = class {
           saleId: data.saleId ?? null
         }
       });
-      log28.debug(`Deposit created: id=${deposit.id}`);
+      log29.debug(`Deposit created: id=${deposit.id}`);
       return deposit;
     } catch (error) {
-      log28.error("Failed to create deposit:", error);
+      log29.error("Failed to create deposit:", error);
       throw error;
     }
   }
@@ -10090,7 +10682,7 @@ var DepositService = class {
     return this.prisma.deposit.findMany({ orderBy: { date: "desc" } });
   }
   async linkDepositsToSale(depositIds, saleId) {
-    log28.info(`Linking ${depositIds.length} deposit(s) to saleId=${saleId}`);
+    log29.info(`Linking ${depositIds.length} deposit(s) to saleId=${saleId}`);
     try {
       const result = await this.prisma.deposit.updateMany({
         where: {
@@ -10100,17 +10692,17 @@ var DepositService = class {
         },
         data: { saleId }
       });
-      log28.debug(`Linked ${result.count} deposit(s) to saleId=${saleId}`);
+      log29.debug(`Linked ${result.count} deposit(s) to saleId=${saleId}`);
       return result;
     } catch (error) {
-      log28.error(`Failed to link deposits to saleId=${saleId}:`, error);
+      log29.error(`Failed to link deposits to saleId=${saleId}:`, error);
       throw error;
     }
   }
 };
 
 // src/main/ipc/handlers/deposits.handlers.ts
-var log29 = createLogger("Deposits");
+var log30 = createLogger("Deposits");
 function registerDepositsHandlers(prisma2) {
   const depositService = new DepositService(prisma2);
   ipcMain.handle("deposits:create", async (_, data) => {
@@ -10118,7 +10710,7 @@ function registerDepositsHandlers(prisma2) {
       const deposit = await depositService.createDeposit(data);
       return { success: true, deposit };
     } catch (error) {
-      log29.error("Error creating deposit:", error);
+      log30.error("Error creating deposit:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10127,7 +10719,7 @@ function registerDepositsHandlers(prisma2) {
       const deposits = await depositService.listDeposits();
       return deposits;
     } catch (error) {
-      log29.error("Error listing deposits:", error);
+      log30.error("Error listing deposits:", error);
       return [];
     }
   });
@@ -10136,7 +10728,7 @@ function registerDepositsHandlers(prisma2) {
       const deposits = await depositService.getDepositsByCustomer(customerId);
       return deposits;
     } catch (error) {
-      log29.error("Error getting deposits by customer:", error);
+      log30.error("Error getting deposits by customer:", error);
       return [];
     }
   });
@@ -10145,7 +10737,7 @@ function registerDepositsHandlers(prisma2) {
       const deposits = await depositService.getDepositsBySale(saleId);
       return deposits;
     } catch (error) {
-      log29.error("Error getting deposits by sale:", error);
+      log30.error("Error getting deposits by sale:", error);
       return [];
     }
   });
@@ -10154,7 +10746,7 @@ function registerDepositsHandlers(prisma2) {
       const result = await depositService.linkDepositsToSale(depositIds, saleId);
       return { success: true, result };
     } catch (error) {
-      log29.error("Error linking deposits to sale:", error);
+      log30.error("Error linking deposits to sale:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10164,7 +10756,7 @@ function registerDepositsHandlers(prisma2) {
 init_electron_node();
 
 // src/main/services/InstallmentService.ts
-var log30 = createLogger("Installment");
+var log31 = createLogger("Installment");
 var InstallmentService = class {
   prisma;
   constructor(prisma2) {
@@ -10173,7 +10765,7 @@ var InstallmentService = class {
   async createInstallment(data) {
     const dueDate = data.dueDate instanceof Date ? data.dueDate : new Date(data.dueDate);
     const paidDate = data.paidDate ? data.paidDate instanceof Date ? data.paidDate : new Date(data.paidDate) : null;
-    log30.info(`Creating installment: amount=${data.amount} dueDate=${dueDate.toISOString()} customerId=${data.customerId ?? "none"}`);
+    log31.info(`Creating installment: amount=${data.amount} dueDate=${dueDate.toISOString()} customerId=${data.customerId ?? "none"}`);
     try {
       const result = await this.prisma.installment.create({
         data: {
@@ -10186,10 +10778,10 @@ var InstallmentService = class {
           saleId: data.saleId ?? null
         }
       });
-      log30.debug(`Installment created: id=${result.id}`);
+      log31.debug(`Installment created: id=${result.id}`);
       return result;
     } catch (error) {
-      log30.error("Failed to create installment:", error);
+      log31.error("Failed to create installment:", error);
       throw error;
     }
   }
@@ -10299,7 +10891,7 @@ var InstallmentService = class {
     });
   }
   async markAsPaid(installmentId, paidDate) {
-    log30.info(`Marking installment as paid: id=${installmentId}`);
+    log31.info(`Marking installment as paid: id=${installmentId}`);
     try {
       const result = await this.prisma.installment.update({
         where: { id: installmentId },
@@ -10308,15 +10900,15 @@ var InstallmentService = class {
           paidDate: paidDate ?? /* @__PURE__ */ new Date()
         }
       });
-      log30.debug(`Installment marked paid: id=${installmentId}`);
+      log31.debug(`Installment marked paid: id=${installmentId}`);
       return result;
     } catch (error) {
-      log30.error(`Failed to mark installment as paid: id=${installmentId}:`, error);
+      log31.error(`Failed to mark installment as paid: id=${installmentId}:`, error);
       throw error;
     }
   }
   async markAsOverdue(installmentId) {
-    log30.info(`Marking installment as overdue: id=${installmentId}`);
+    log31.info(`Marking installment as overdue: id=${installmentId}`);
     try {
       const result = await this.prisma.installment.update({
         where: { id: installmentId },
@@ -10324,12 +10916,12 @@ var InstallmentService = class {
       });
       return result;
     } catch (error) {
-      log30.error(`Failed to mark installment as overdue: id=${installmentId}:`, error);
+      log31.error(`Failed to mark installment as overdue: id=${installmentId}:`, error);
       throw error;
     }
   }
   async linkInstallmentsToSale(installmentIds, saleId) {
-    log30.info(`Linking ${installmentIds.length} installment(s) to saleId=${saleId}`);
+    log31.info(`Linking ${installmentIds.length} installment(s) to saleId=${saleId}`);
     try {
       const result = await this.prisma.installment.updateMany({
         where: {
@@ -10339,17 +10931,17 @@ var InstallmentService = class {
         },
         data: { saleId }
       });
-      log30.debug(`Linked ${result.count} installment(s) to saleId=${saleId}`);
+      log31.debug(`Linked ${result.count} installment(s) to saleId=${saleId}`);
       return result;
     } catch (error) {
-      log30.error(`Failed to link installments to saleId=${saleId}:`, error);
+      log31.error(`Failed to link installments to saleId=${saleId}:`, error);
       throw error;
     }
   }
 };
 
 // src/main/services/InstallmentPlanService.ts
-var log31 = createLogger("InstallmentPlan");
+var log32 = createLogger("InstallmentPlan");
 var InstallmentPlanService = class _InstallmentPlanService {
   static instance = null;
   prisma;
@@ -10403,7 +10995,7 @@ var InstallmentPlanService = class _InstallmentPlanService {
         interestAmount: Math.round(interestAmount * 100) / 100
       };
     } catch (error) {
-      log31.error("Error calculating schedule:", error);
+      log32.error("Error calculating schedule:", error);
       throw error;
     }
   }
@@ -10439,7 +11031,7 @@ var InstallmentPlanService = class _InstallmentPlanService {
         });
       }
     } catch (error) {
-      log31.error("Error creating installments:", error);
+      log32.error("Error creating installments:", error);
       throw error;
     }
   }
@@ -10454,7 +11046,7 @@ var InstallmentPlanService = class _InstallmentPlanService {
       });
       return plans;
     } catch (error) {
-      log31.error("Error fetching plans:", error);
+      log32.error("Error fetching plans:", error);
       return [];
     }
   }
@@ -10467,7 +11059,7 @@ var InstallmentPlanService = class _InstallmentPlanService {
         where: { id }
       });
     } catch (error) {
-      log31.error("Error fetching plan:", error);
+      log32.error("Error fetching plan:", error);
       return null;
     }
   }
@@ -10478,7 +11070,7 @@ var InstallmentPlanService = class _InstallmentPlanService {
     try {
       const existingPlans = await this.prisma.installmentPlan.count();
       if (existingPlans > 0) {
-        log31.info("\u2705 Installment plans already exist");
+        log32.info("\u2705 Installment plans already exist");
         return;
       }
       const defaultPlans = [
@@ -10531,9 +11123,9 @@ var InstallmentPlanService = class _InstallmentPlanService {
       for (const plan of defaultPlans) {
         await this.prisma.installmentPlan.create({ data: plan });
       }
-      log31.info("\u2705 Created default installment plans");
+      log32.info("\u2705 Created default installment plans");
     } catch (error) {
-      log31.error("Error seeding plans:", error);
+      log32.error("Error seeding plans:", error);
     }
   }
   /**
@@ -10557,7 +11149,7 @@ var InstallmentPlanService = class _InstallmentPlanService {
       const lateFee = installment.amount * lateFeeRate * daysLate;
       return Math.round(lateFee * 100) / 100;
     } catch (error) {
-      log31.error("Error calculating late fees:", error);
+      log32.error("Error calculating late fees:", error);
       return 0;
     }
   }
@@ -10580,14 +11172,14 @@ var InstallmentPlanService = class _InstallmentPlanService {
       });
       return result.count;
     } catch (error) {
-      log31.error("Error marking overdue installments:", error);
+      log32.error("Error marking overdue installments:", error);
       return 0;
     }
   }
 };
 
 // src/main/ipc/handlers/installments.handlers.ts
-var log32 = createLogger("Installments");
+var log33 = createLogger("Installments");
 function registerInstallmentsHandlers(prisma2) {
   const installmentService = new InstallmentService(prisma2);
   ipcMain.handle("installments:create", async (_, data) => {
@@ -10595,7 +11187,7 @@ function registerInstallmentsHandlers(prisma2) {
       const installment = await installmentService.createInstallment(data);
       return { success: true, installment };
     } catch (error) {
-      log32.error("Error creating installment:", error);
+      log33.error("Error creating installment:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10604,7 +11196,7 @@ function registerInstallmentsHandlers(prisma2) {
       const result = await installmentService.listInstallments(options);
       return result;
     } catch (error) {
-      log32.error("Error listing installments:", error);
+      log33.error("Error listing installments:", error);
       return { installments: [], total: 0, page: 1, limit: 50, totalPages: 0 };
     }
   });
@@ -10613,7 +11205,7 @@ function registerInstallmentsHandlers(prisma2) {
       const installments = await installmentService.getInstallmentsByCustomer(customerId);
       return installments;
     } catch (error) {
-      log32.error("Error getting installments by customer:", error);
+      log33.error("Error getting installments by customer:", error);
       return [];
     }
   });
@@ -10622,7 +11214,7 @@ function registerInstallmentsHandlers(prisma2) {
       const installments = await installmentService.getInstallmentsBySale(saleId);
       return installments;
     } catch (error) {
-      log32.error("Error getting installments by sale:", error);
+      log33.error("Error getting installments by sale:", error);
       return [];
     }
   });
@@ -10631,7 +11223,7 @@ function registerInstallmentsHandlers(prisma2) {
       const reminders = await installmentService.getUpcomingReminders(daysAhead);
       return reminders;
     } catch (error) {
-      log32.error("Error getting upcoming reminders:", error);
+      log33.error("Error getting upcoming reminders:", error);
       return [];
     }
   });
@@ -10640,7 +11232,7 @@ function registerInstallmentsHandlers(prisma2) {
       const overdue = await installmentService.getOverdueInstallments();
       return overdue;
     } catch (error) {
-      log32.error("Error getting overdue installments:", error);
+      log33.error("Error getting overdue installments:", error);
       return [];
     }
   });
@@ -10649,7 +11241,7 @@ function registerInstallmentsHandlers(prisma2) {
       const installment = await installmentService.markAsPaid(installmentId, paidDate ? new Date(paidDate) : void 0);
       return { success: true, installment };
     } catch (error) {
-      log32.error("Error marking installment as paid:", error);
+      log33.error("Error marking installment as paid:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10658,7 +11250,7 @@ function registerInstallmentsHandlers(prisma2) {
       const installment = await installmentService.markAsOverdue(installmentId);
       return { success: true, installment };
     } catch (error) {
-      log32.error("Error marking installment as overdue:", error);
+      log33.error("Error marking installment as overdue:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10667,7 +11259,7 @@ function registerInstallmentsHandlers(prisma2) {
       const result = await installmentService.linkInstallmentsToSale(installmentIds, saleId);
       return { success: true, result };
     } catch (error) {
-      log32.error("Error linking installments to sale:", error);
+      log33.error("Error linking installments to sale:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10682,7 +11274,7 @@ function registerInstallmentsHandlers(prisma2) {
       });
       return plans;
     } catch (error) {
-      log32.error("Error getting all plans:", error);
+      log33.error("Error getting all plans:", error);
       return [];
     }
   });
@@ -10691,7 +11283,7 @@ function registerInstallmentsHandlers(prisma2) {
       const plans = await planService.getActivePlans();
       return plans;
     } catch (error) {
-      log32.error("Error getting active plans:", error);
+      log33.error("Error getting active plans:", error);
       return [];
     }
   });
@@ -10702,7 +11294,7 @@ function registerInstallmentsHandlers(prisma2) {
       });
       return { success: true, plan };
     } catch (error) {
-      log32.error("Error creating plan:", error);
+      log33.error("Error creating plan:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10714,7 +11306,7 @@ function registerInstallmentsHandlers(prisma2) {
       });
       return { success: true, plan };
     } catch (error) {
-      log32.error("Error updating plan:", error);
+      log33.error("Error updating plan:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10725,7 +11317,7 @@ function registerInstallmentsHandlers(prisma2) {
       });
       return { success: true };
     } catch (error) {
-      log32.error("Error deleting plan:", error);
+      log33.error("Error deleting plan:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10742,7 +11334,7 @@ function registerInstallmentsHandlers(prisma2) {
       };
       return { success: true, schedule: serializedSchedule };
     } catch (error) {
-      log32.error("Error calculating schedule:", error);
+      log33.error("Error calculating schedule:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10751,7 +11343,7 @@ function registerInstallmentsHandlers(prisma2) {
       await planService.createInstallmentsForSale(saleId, customerId, schedule);
       return { success: true };
     } catch (error) {
-      log32.error("Error creating installments for sale:", error);
+      log33.error("Error creating installments for sale:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10760,7 +11352,7 @@ function registerInstallmentsHandlers(prisma2) {
       await planService.seedDefaultPlans();
       return { success: true };
     } catch (error) {
-      log32.error("Error seeding default plans:", error);
+      log33.error("Error seeding default plans:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10769,7 +11361,7 @@ function registerInstallmentsHandlers(prisma2) {
       const lateFee = await planService.calculateLateFees(installmentId, dailyLateFeePercent);
       return { success: true, lateFee };
     } catch (error) {
-      log32.error("Error calculating late fees:", error);
+      log33.error("Error calculating late fees:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10778,7 +11370,7 @@ function registerInstallmentsHandlers(prisma2) {
       const count = await planService.markOverdueInstallments();
       return { success: true, count };
     } catch (error) {
-      log32.error("Error marking overdue installments:", error);
+      log33.error("Error marking overdue installments:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10788,14 +11380,14 @@ function registerInstallmentsHandlers(prisma2) {
 init_electron_node();
 
 // src/main/services/ReceiptService.ts
-var log33 = createLogger("Receipt");
+var log34 = createLogger("Receipt");
 var ReceiptService = class {
   prisma;
   constructor(prisma2) {
     this.prisma = prisma2;
   }
   async generateDepositReceipt(depositId) {
-    log33.info(`Generating deposit receipt: depositId=${depositId}`);
+    log34.info(`Generating deposit receipt: depositId=${depositId}`);
     const deposit = await this.prisma.deposit.findUnique({
       where: { id: depositId },
       include: {
@@ -10812,7 +11404,7 @@ var ReceiptService = class {
       }
     });
     if (!deposit) {
-      log33.error(`Deposit not found: depositId=${depositId}`);
+      log34.error(`Deposit not found: depositId=${depositId}`);
       throw new Error("Deposit not found");
     }
     const receipt = {
@@ -10841,7 +11433,7 @@ var ReceiptService = class {
     return receipt;
   }
   async generateInstallmentReceipt(installmentId) {
-    log33.info(`Generating installment receipt: installmentId=${installmentId}`);
+    log34.info(`Generating installment receipt: installmentId=${installmentId}`);
     const installment = await this.prisma.installment.findUnique({
       where: { id: installmentId },
       include: {
@@ -10858,7 +11450,7 @@ var ReceiptService = class {
       }
     });
     if (!installment) {
-      log33.error(`Installment not found: installmentId=${installmentId}`);
+      log34.error(`Installment not found: installmentId=${installmentId}`);
       throw new Error("Installment not found");
     }
     const receipt = {
@@ -10951,7 +11543,7 @@ var ReceiptService = class {
 };
 
 // src/main/ipc/handlers/receipts.handlers.ts
-var log34 = createLogger("Receipts");
+var log35 = createLogger("Receipts");
 function registerReceiptHandlers(prisma2) {
   const receiptService = new ReceiptService(prisma2);
   ipcMain.handle("receipts:generateDeposit", async (_, depositId) => {
@@ -10959,7 +11551,7 @@ function registerReceiptHandlers(prisma2) {
       const receipt = await receiptService.generateDepositReceipt(depositId);
       return { success: true, receipt };
     } catch (error) {
-      log34.error("Error generating deposit receipt:", error);
+      log35.error("Error generating deposit receipt:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10968,7 +11560,7 @@ function registerReceiptHandlers(prisma2) {
       const receipt = await receiptService.generateInstallmentReceipt(installmentId);
       return { success: true, receipt };
     } catch (error) {
-      log34.error("Error generating installment receipt:", error);
+      log35.error("Error generating installment receipt:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10977,7 +11569,7 @@ function registerReceiptHandlers(prisma2) {
       const thermalData = receiptService.generateThermalReceipt(receipt);
       return { success: true, thermalData };
     } catch (error) {
-      log34.error("Error generating thermal receipt:", error);
+      log35.error("Error generating thermal receipt:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -10987,7 +11579,7 @@ function registerReceiptHandlers(prisma2) {
 init_electron_node();
 
 // src/main/services/ReorderAnalysisService.ts
-var log35 = createLogger("ReorderAnalysis");
+var log36 = createLogger("ReorderAnalysis");
 var ReorderAnalysisService = class {
   constructor(prisma2) {
     this.prisma = prisma2;
@@ -10996,7 +11588,7 @@ var ReorderAnalysisService = class {
    * Analyze inventory levels and generate reorder alerts
    */
   async analyzeReorderNeeds() {
-    log35.info("Starting reorder analysis");
+    log36.info("Starting reorder analysis");
     const variants = await this.prisma.productVariant.findMany({
       where: {
         product: {
@@ -11043,10 +11635,10 @@ var ReorderAnalysisService = class {
       mediumCount: alerts.filter((a) => a.priority === "MEDIUM").length,
       lowCount: alerts.filter((a) => a.priority === "LOW").length
     };
-    log35.info("Reorder analysis complete", summary);
+    log36.info("Reorder analysis complete", summary);
     if (summary.criticalCount > 0) {
       const criticalItems = alerts.filter((a) => a.priority === "CRITICAL").map((a) => `${a.productName} (stock: ${a.currentStock})`).join(", ");
-      log35.warn(`${summary.criticalCount} CRITICAL reorder alert(s): ${criticalItems}`);
+      log36.warn(`${summary.criticalCount} CRITICAL reorder alert(s): ${criticalItems}`);
     }
     return { alerts, summary };
   }
@@ -11157,7 +11749,7 @@ var ReorderAnalysisService = class {
 };
 
 // src/main/ipc/handlers/reorder.handlers.ts
-var log36 = createLogger("Reorder");
+var log37 = createLogger("Reorder");
 function setupReorderHandlers(prisma2) {
   const reorderService = new ReorderAnalysisService(prisma2);
   ipcMain.handle("reorder:getAlerts", async () => {
@@ -11165,7 +11757,7 @@ function setupReorderHandlers(prisma2) {
       const analysis = await reorderService.analyzeReorderNeeds();
       return { success: true, data: analysis };
     } catch (error) {
-      log36.error("Error getting reorder alerts:", error);
+      log37.error("Error getting reorder alerts:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -11174,7 +11766,7 @@ function setupReorderHandlers(prisma2) {
       const alerts = await reorderService.getProductReorderAlerts(productId);
       return { success: true, data: alerts };
     } catch (error) {
-      log36.error("Error getting product reorder alerts:", error);
+      log37.error("Error getting product reorder alerts:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -11183,7 +11775,7 @@ function setupReorderHandlers(prisma2) {
       const alerts = await reorderService.getAlertsByPriority(priority);
       return { success: true, data: alerts };
     } catch (error) {
-      log36.error("Error getting alerts by priority:", error);
+      log37.error("Error getting alerts by priority:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -11192,7 +11784,7 @@ function setupReorderHandlers(prisma2) {
       const alerts = await reorderService.getUrgentAlerts();
       return { success: true, data: alerts };
     } catch (error) {
-      log36.error("Error getting urgent alerts:", error);
+      log37.error("Error getting urgent alerts:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -11201,7 +11793,7 @@ function setupReorderHandlers(prisma2) {
       const analysis = await reorderService.analyzeReorderNeeds();
       return { success: true, data: analysis.summary };
     } catch (error) {
-      log36.error("Error getting reorder summary:", error);
+      log37.error("Error getting reorder summary:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -11918,7 +12510,7 @@ var EventBus = class _EventBus {
 var eventBus = EventBus.getInstance();
 
 // src/main/services/SupplierService.ts
-var log37 = createLogger("Suppliers");
+var log38 = createLogger("Suppliers");
 var SupplierServiceError = class extends Error {
   constructor(message, code) {
     super(message);
@@ -11936,7 +12528,7 @@ var SupplierService = class {
    */
   async createSupplier(dto) {
     try {
-      log37.info("Creating supplier", { name: dto.name });
+      log38.info("Creating supplier", { name: dto.name });
       this.validateSupplierData(dto);
       const existing = await this.supplierRepository.findByName(dto.name);
       if (existing) {
@@ -11944,14 +12536,14 @@ var SupplierService = class {
       }
       const createData = SupplierMapper.toCreateData(dto);
       const supplier = await this.supplierRepository.create(createData);
-      log37.info("Supplier created", { id: supplier.id, name: supplier.name });
+      log38.info("Supplier created", { id: supplier.id, name: supplier.name });
       await eventBus.emit("supplier:created", {
         supplierId: supplier.id,
         name: supplier.name
       });
       return SupplierMapper.toResponseDTO(supplier);
     } catch (error) {
-      log37.error("Failed to create supplier", { error, dto });
+      log38.error("Failed to create supplier", { error, dto });
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
         throw error;
       }
@@ -11971,7 +12563,7 @@ var SupplierService = class {
       }
       return SupplierMapper.toResponseDTO(supplier);
     } catch (error) {
-      log37.error("Failed to get supplier", { error, id });
+      log38.error("Failed to get supplier", { error, id });
       throw error;
     }
   }
@@ -12014,7 +12606,7 @@ var SupplierService = class {
         hasPrevious: result.hasPrevious
       };
     } catch (error) {
-      log37.error("Failed to query suppliers", { error, query });
+      log38.error("Failed to query suppliers", { error, query });
       throw error;
     }
   }
@@ -12023,20 +12615,20 @@ var SupplierService = class {
    */
   async updateSupplier(id, dto) {
     try {
-      log37.info("Updating supplier", { id });
+      log38.info("Updating supplier", { id });
       if (dto.email && !this.isValidEmail(dto.email)) {
         throw new SupplierServiceError("Invalid email format", "INVALID_EMAIL");
       }
       const updateData = SupplierMapper.toUpdateData(dto);
       const supplier = await this.supplierRepository.update(id, updateData);
-      log37.info("Supplier updated", { id, name: supplier.name });
+      log38.info("Supplier updated", { id, name: supplier.name });
       await eventBus.emit("supplier:updated", {
         supplierId: supplier.id,
         name: supplier.name
       });
       return SupplierMapper.toResponseDTO(supplier);
     } catch (error) {
-      log37.error("Failed to update supplier", { error, id, dto });
+      log38.error("Failed to update supplier", { error, id, dto });
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
         throw error;
       }
@@ -12050,16 +12642,16 @@ var SupplierService = class {
    */
   async deleteSupplier(id) {
     try {
-      log37.info("Deleting supplier", { id });
+      log38.info("Deleting supplier", { id });
       const supplier = await this.supplierRepository.update(id, { isActive: false });
-      log37.info("Supplier deactivated", { id, name: supplier.name });
+      log38.info("Supplier deactivated", { id, name: supplier.name });
       await eventBus.emit("supplier:deleted", {
         supplierId: supplier.id,
         name: supplier.name
       });
       return true;
     } catch (error) {
-      log37.error("Failed to delete supplier", { error, id });
+      log38.error("Failed to delete supplier", { error, id });
       if (error instanceof EntityNotFoundError) {
         throw error;
       }
@@ -12073,7 +12665,7 @@ var SupplierService = class {
    */
   async addSupplierProduct(dto) {
     try {
-      log37.info("Adding product to supplier", { supplierId: dto.supplierId, productId: dto.productId });
+      log38.info("Adding product to supplier", { supplierId: dto.supplierId, productId: dto.productId });
       if (dto.cost < 0) {
         throw new SupplierServiceError("Cost cannot be negative", "INVALID_COST");
       }
@@ -12082,7 +12674,7 @@ var SupplierService = class {
       }
       const createData = SupplierMapper.toCreateSupplierProductData(dto);
       const supplierProduct = await this.supplierRepository.addSupplierProduct(createData);
-      log37.info("Product added to supplier", {
+      log38.info("Product added to supplier", {
         supplierId: supplierProduct.supplierId,
         productId: supplierProduct.productId
       });
@@ -12092,7 +12684,7 @@ var SupplierService = class {
       });
       return SupplierMapper.toSupplierProductDTO(supplierProduct);
     } catch (error) {
-      log37.error("Failed to add supplier product", { error, dto });
+      log38.error("Failed to add supplier product", { error, dto });
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof SupplierServiceError) {
         throw error;
       }
@@ -12106,7 +12698,7 @@ var SupplierService = class {
    */
   async updateSupplierProduct(id, dto) {
     try {
-      log37.info("Updating supplier product", { id });
+      log38.info("Updating supplier product", { id });
       if (dto.cost !== void 0 && dto.cost < 0) {
         throw new SupplierServiceError("Cost cannot be negative", "INVALID_COST");
       }
@@ -12115,14 +12707,14 @@ var SupplierService = class {
       }
       const updateData = SupplierMapper.toUpdateSupplierProductData(dto);
       const supplierProduct = await this.supplierRepository.updateSupplierProduct(id, updateData);
-      log37.info("Supplier product updated", { id });
+      log38.info("Supplier product updated", { id });
       await eventBus.emit("supplier:product-updated", {
         supplierId: supplierProduct.supplierId,
         productId: supplierProduct.productId
       });
       return SupplierMapper.toSupplierProductDTO(supplierProduct);
     } catch (error) {
-      log37.error("Failed to update supplier product", { error, id, dto });
+      log38.error("Failed to update supplier product", { error, id, dto });
       if (error instanceof EntityNotFoundError || error instanceof SupplierServiceError) {
         throw error;
       }
@@ -12136,13 +12728,13 @@ var SupplierService = class {
    */
   async removeSupplierProduct(id) {
     try {
-      log37.info("Removing product from supplier", { id });
+      log38.info("Removing product from supplier", { id });
       const result = await this.supplierRepository.removeSupplierProduct(id);
-      log37.info("Product removed from supplier", { id });
+      log38.info("Product removed from supplier", { id });
       await eventBus.emit("supplier:product-removed", { supplierProductId: id });
       return result;
     } catch (error) {
-      log37.error("Failed to remove supplier product", { error, id });
+      log38.error("Failed to remove supplier product", { error, id });
       if (error instanceof EntityNotFoundError) {
         throw error;
       }
@@ -12159,7 +12751,7 @@ var SupplierService = class {
       const supplierProducts = await this.supplierRepository.findSupplierProducts(supplierId);
       return SupplierMapper.toSupplierProductDTOs(supplierProducts);
     } catch (error) {
-      log37.error("Failed to get supplier products", { error, supplierId });
+      log38.error("Failed to get supplier products", { error, supplierId });
       throw error;
     }
   }
@@ -12171,7 +12763,7 @@ var SupplierService = class {
       const suppliers = await this.supplierRepository.getPreferredSuppliersForProduct(productId);
       return SupplierMapper.toResponseDTOs(suppliers);
     } catch (error) {
-      log37.error("Failed to get preferred suppliers for product", { error, productId });
+      log38.error("Failed to get preferred suppliers for product", { error, productId });
       throw error;
     }
   }
@@ -12205,11 +12797,11 @@ var SupplierService = class {
 };
 
 // src/main/ipc/handlers/suppliers.handlers.ts
-var log38 = createLogger("Suppliers");
+var log39 = createLogger("Suppliers");
 var supplierService = null;
 function registerSupplierHandlers(prisma2) {
   if (!prisma2) {
-    log38.error("Prisma not available for supplier handlers");
+    log39.error("Prisma not available for supplier handlers");
     return;
   }
   supplierService = new SupplierService(prisma2);
@@ -12237,7 +12829,7 @@ function registerSupplierHandlers(prisma2) {
       const result = await supplierService.querySuppliers(query);
       return { success: true, data: result };
     } catch (error) {
-      log38.error("Error fetching suppliers:", error);
+      log39.error("Error fetching suppliers:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12249,7 +12841,7 @@ function registerSupplierHandlers(prisma2) {
       const supplier = await supplierService.getSupplier(id);
       return { success: true, data: supplier };
     } catch (error) {
-      log38.error("Error fetching supplier:", error);
+      log39.error("Error fetching supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12261,7 +12853,7 @@ function registerSupplierHandlers(prisma2) {
       const supplier = await supplierService.createSupplier(supplierData);
       return { success: true, data: supplier };
     } catch (error) {
-      log38.error("Error creating supplier:", error);
+      log39.error("Error creating supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12273,7 +12865,7 @@ function registerSupplierHandlers(prisma2) {
       const supplier = await supplierService.updateSupplier(id, updateData);
       return { success: true, data: supplier };
     } catch (error) {
-      log38.error("Error updating supplier:", error);
+      log39.error("Error updating supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12285,7 +12877,7 @@ function registerSupplierHandlers(prisma2) {
       const result = await supplierService.deleteSupplier(id);
       return { success: true, data: result };
     } catch (error) {
-      log38.error("Error deleting supplier:", error);
+      log39.error("Error deleting supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12297,7 +12889,7 @@ function registerSupplierHandlers(prisma2) {
       const products = await supplierService.getSupplierProducts(supplierId);
       return { success: true, data: products };
     } catch (error) {
-      log38.error("Error fetching supplier products:", error);
+      log39.error("Error fetching supplier products:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12309,7 +12901,7 @@ function registerSupplierHandlers(prisma2) {
       const supplierProduct = await supplierService.addSupplierProduct(supplierProductData);
       return { success: true, data: supplierProduct };
     } catch (error) {
-      log38.error("Error adding product to supplier:", error);
+      log39.error("Error adding product to supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12321,7 +12913,7 @@ function registerSupplierHandlers(prisma2) {
       const supplierProduct = await supplierService.addSupplierProduct(supplierProductData);
       return { success: true, data: supplierProduct };
     } catch (error) {
-      log38.error("Error adding product to supplier:", error);
+      log39.error("Error adding product to supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12333,7 +12925,7 @@ function registerSupplierHandlers(prisma2) {
       const products = await supplierService.getSupplierProducts(supplierId);
       return { success: true, data: products };
     } catch (error) {
-      log38.error("Error getting supplier products:", error);
+      log39.error("Error getting supplier products:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12345,7 +12937,7 @@ function registerSupplierHandlers(prisma2) {
       const supplierProduct = await supplierService.updateSupplierProduct(id, updateData);
       return { success: true, data: supplierProduct };
     } catch (error) {
-      log38.error("Error updating supplier product:", error);
+      log39.error("Error updating supplier product:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12357,7 +12949,7 @@ function registerSupplierHandlers(prisma2) {
       const result = await supplierService.removeSupplierProduct(id);
       return { success: true, data: result };
     } catch (error) {
-      log38.error("Error removing product from supplier:", error);
+      log39.error("Error removing product from supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12369,7 +12961,7 @@ function registerSupplierHandlers(prisma2) {
       const result = await supplierService.removeSupplierProduct(id);
       return { success: true, data: result };
     } catch (error) {
-      log38.error("Error removing product from supplier:", error);
+      log39.error("Error removing product from supplier:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12381,7 +12973,7 @@ function registerSupplierHandlers(prisma2) {
       const suppliers = await supplierService.getPreferredSuppliersForProduct(productId);
       return { success: true, data: suppliers };
     } catch (error) {
-      log38.error("Error fetching preferred suppliers for product:", error);
+      log39.error("Error fetching preferred suppliers for product:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
@@ -12393,18 +12985,18 @@ function registerSupplierHandlers(prisma2) {
       const suppliers = await supplierService.querySuppliers({ search: query });
       return { success: true, data: suppliers.data };
     } catch (error) {
-      log38.error("Error searching suppliers:", error);
+      log39.error("Error searching suppliers:", error);
       return { success: false, message: error instanceof Error ? error.message : "Unknown error" };
     }
   });
-  log38.info("Supplier IPC handlers registered");
+  log39.info("Supplier IPC handlers registered");
 }
 
 // src/main/ipc/handlers/purchase-orders.handlers.ts
 init_electron_node();
 
 // src/main/services/PurchaseOrderService.ts
-var log39 = createLogger("PurchaseOrders");
+var log40 = createLogger("PurchaseOrders");
 var PurchaseOrderService = class {
   constructor(purchaseOrderRepository, supplierService2, productService, prisma2) {
     this.purchaseOrderRepository = purchaseOrderRepository;
@@ -12413,7 +13005,7 @@ var PurchaseOrderService = class {
     this.prisma = prisma2;
   }
   async getAllPurchaseOrders(filters) {
-    log39.debug("Fetching all purchase orders", { filters });
+    log40.debug("Fetching all purchase orders", { filters });
     return this.purchaseOrderRepository.findAll(filters);
   }
   async getPurchaseOrderById(id) {
@@ -12423,10 +13015,10 @@ var PurchaseOrderService = class {
     return this.purchaseOrderRepository.findByPoNumber(poNumber);
   }
   async createPurchaseOrder(data, orderedBy) {
-    log39.info("Creating purchase order", { supplierId: data.supplierId, itemCount: data.items.length, orderedBy });
+    log40.info("Creating purchase order", { supplierId: data.supplierId, itemCount: data.items.length, orderedBy });
     const supplier = await this.supplierService.getSupplier(data.supplierId);
     if (!supplier) {
-      log39.warn("Purchase order creation failed: supplier not found", { supplierId: data.supplierId });
+      log40.warn("Purchase order creation failed: supplier not found", { supplierId: data.supplierId });
       throw new Error("Supplier not found");
     }
     for (const item of data.items) {
@@ -12453,46 +13045,46 @@ var PurchaseOrderService = class {
       }
     }
     const result = await this.purchaseOrderRepository.create(data, orderedBy);
-    log39.info("Purchase order created", { id: result.id, poNumber: result.poNumber, supplier: supplier.name });
+    log40.info("Purchase order created", { id: result.id, poNumber: result.poNumber, supplier: supplier.name });
     return result;
   }
   async updatePurchaseOrder(id, data) {
-    log39.info("Updating purchase order", { id, status: data.status });
+    log40.info("Updating purchase order", { id, status: data.status });
     const existingPO = await this.purchaseOrderRepository.findById(id);
     if (!existingPO) {
-      log39.warn("Purchase order not found for update", { id });
+      log40.warn("Purchase order not found for update", { id });
       throw new Error("Purchase order not found");
     }
     if (data.status === "received" && existingPO.status !== "received") {
       await this.receivePurchaseOrder(id, data.receivedDate);
     }
     const result = await this.purchaseOrderRepository.update(id, data);
-    log39.info("Purchase order updated", { id, newStatus: data.status });
+    log40.info("Purchase order updated", { id, newStatus: data.status });
     return result;
   }
   async deletePurchaseOrder(id) {
-    log39.info("Deleting purchase order", { id });
+    log40.info("Deleting purchase order", { id });
     const existingPO = await this.purchaseOrderRepository.findById(id);
     if (!existingPO) {
-      log39.warn("Purchase order not found for deletion", { id });
+      log40.warn("Purchase order not found for deletion", { id });
       throw new Error("Purchase order not found");
     }
     if (existingPO.status !== "draft") {
-      log39.warn("Attempted to delete non-draft purchase order", { id, status: existingPO.status });
+      log40.warn("Attempted to delete non-draft purchase order", { id, status: existingPO.status });
       throw new Error("Only draft purchase orders can be deleted");
     }
     await this.purchaseOrderRepository.delete(id);
-    log39.info("Purchase order deleted", { id });
+    log40.info("Purchase order deleted", { id });
   }
   async receivePurchaseOrder(id, receivedDate) {
-    log39.info("Receiving purchase order", { id });
+    log40.info("Receiving purchase order", { id });
     const po = await this.purchaseOrderRepository.findById(id);
     if (!po) {
-      log39.warn("Purchase order not found for receipt", { id });
+      log40.warn("Purchase order not found for receipt", { id });
       throw new Error("Purchase order not found");
     }
     if (po.status !== "ordered") {
-      log39.warn("Cannot receive purchase order in current status", { id, status: po.status });
+      log40.warn("Cannot receive purchase order in current status", { id, status: po.status });
       throw new Error("Only ordered purchase orders can be received");
     }
     await this.prisma.$transaction(async (tx) => {
@@ -12538,7 +13130,7 @@ var PurchaseOrderService = class {
       status: "received",
       receivedDate: receivedDate || /* @__PURE__ */ new Date()
     });
-    log39.info("Purchase order received and stock updated", { id, itemCount: po.items.length });
+    log40.info("Purchase order received and stock updated", { id, itemCount: po.items.length });
     return result;
   }
   async getPurchaseOrderSummary() {
@@ -12934,7 +13526,7 @@ var ProductMapper = class {
 };
 
 // src/main/services/ProductService.ts
-var log40 = createLogger("Products");
+var log41 = createLogger("Products");
 var ProductServiceError = class extends Error {
   constructor(message, code) {
     super(message);
@@ -12952,7 +13544,7 @@ var ProductService = class {
    */
   async createProduct(dto) {
     try {
-      log40.info("Creating product", { sku: dto.baseSKU });
+      log41.info("Creating product", { sku: dto.baseSKU });
       this.validateProductData(dto);
       const existing = await this.productRepository.findBySKU(dto.baseSKU);
       if (existing) {
@@ -12963,14 +13555,14 @@ var ProductService = class {
       }
       const createData = ProductMapper.toCreateData(dto);
       const product = await this.productRepository.create(createData);
-      log40.info("Product created", { id: product.id, sku: product.baseSKU });
+      log41.info("Product created", { id: product.id, sku: product.baseSKU });
       await eventBus.emit("product:created", {
         productId: product.id,
         sku: product.baseSKU
       });
       return ProductMapper.toResponseDTO(product);
     } catch (error) {
-      log40.error("Failed to create product", { error, dto });
+      log41.error("Failed to create product", { error, dto });
       if (error instanceof EntityNotFoundError || error instanceof DuplicateEntityError || error instanceof ProductServiceError) {
         throw error;
       }
@@ -12990,7 +13582,7 @@ var ProductService = class {
       }
       return ProductMapper.toResponseDTO(product);
     } catch (error) {
-      log40.error("Failed to get product", { error, id });
+      log41.error("Failed to get product", { error, id });
       throw error;
     }
   }
@@ -13005,7 +13597,7 @@ var ProductService = class {
       }
       return ProductMapper.toResponseDTO(product);
     } catch (error) {
-      log40.error("Failed to get product by SKU", { error, sku });
+      log41.error("Failed to get product by SKU", { error, sku });
       throw error;
     }
   }
@@ -13058,7 +13650,7 @@ var ProductService = class {
         hasPrevious: result.hasPrevious
       };
     } catch (error) {
-      log40.error("Failed to query products", { error, query });
+      log41.error("Failed to query products", { error, query });
       throw error;
     }
   }
@@ -13067,7 +13659,7 @@ var ProductService = class {
    */
   async updateProduct(id, dto) {
     try {
-      log40.info("Updating product", { id });
+      log41.info("Updating product", { id });
       if (dto.basePrice !== void 0 && dto.basePrice < 0) {
         throw new ProductServiceError("Price cannot be negative", "INVALID_PRICE");
       }
@@ -13082,14 +13674,14 @@ var ProductService = class {
       }
       const updateData = ProductMapper.toUpdateData(dto);
       const product = await this.productRepository.update(id, updateData);
-      log40.info("Product updated", { id });
+      log41.info("Product updated", { id });
       await eventBus.emit("product:updated", {
         productId: id,
         changes: updateData
       });
       return ProductMapper.toResponseDTO(product);
     } catch (error) {
-      log40.error("Failed to update product", { error, id, dto });
+      log41.error("Failed to update product", { error, id, dto });
       throw error;
     }
   }
@@ -13098,10 +13690,10 @@ var ProductService = class {
    */
   async deleteProduct(id) {
     try {
-      log40.info("Deleting product", { id });
+      log41.info("Deleting product", { id });
       const deleted = await this.productRepository.delete(id);
       if (deleted) {
-        log40.info("Product deleted", { id });
+        log41.info("Product deleted", { id });
         await eventBus.emit("product:deleted", {
           productId: id,
           sku: "UNKNOWN"
@@ -13110,7 +13702,7 @@ var ProductService = class {
       }
       return deleted;
     } catch (error) {
-      log40.error("Failed to delete product", { error, id });
+      log41.error("Failed to delete product", { error, id });
       throw error;
     }
   }
@@ -13119,12 +13711,12 @@ var ProductService = class {
    */
   async updateStock(dto) {
     try {
-      log40.info("Updating stock", { variantId: dto.variantId, stock: dto.stock });
+      log41.info("Updating stock", { variantId: dto.variantId, stock: dto.stock });
       if (dto.stock < 0) {
         throw new ProductServiceError("Stock cannot be negative", "INVALID_STOCK");
       }
       await this.productRepository.updateVariantStock(dto.variantId, dto.stock);
-      log40.info("Stock updated", { variantId: dto.variantId, stock: dto.stock });
+      log41.info("Stock updated", { variantId: dto.variantId, stock: dto.stock });
       await eventBus.emit("stock:updated", {
         variantId: dto.variantId,
         oldStock: 0,
@@ -13132,7 +13724,7 @@ var ProductService = class {
         newStock: dto.stock
       });
     } catch (error) {
-      log40.error("Failed to update stock", { error, dto });
+      log41.error("Failed to update stock", { error, dto });
       throw error;
     }
   }
@@ -13141,16 +13733,16 @@ var ProductService = class {
    */
   async bulkUpdateStock(dto) {
     try {
-      log40.info("Bulk updating stock", { count: dto.updates.length });
+      log41.info("Bulk updating stock", { count: dto.updates.length });
       for (const update of dto.updates) {
         if (update.stock < 0) {
           throw new ProductServiceError("Stock cannot be negative", "INVALID_STOCK");
         }
         await this.productRepository.updateVariantStock(update.variantId, update.stock);
       }
-      log40.info("Bulk stock update complete");
+      log41.info("Bulk stock update complete");
     } catch (error) {
-      log40.error("Failed to bulk update stock", { error, dto });
+      log41.error("Failed to bulk update stock", { error, dto });
       throw error;
     }
   }
@@ -13162,7 +13754,7 @@ var ProductService = class {
       const products = await this.productRepository.findLowStock(threshold);
       return ProductMapper.toResponseDTOs(products);
     } catch (error) {
-      log40.error("Failed to get low stock products", { error, threshold });
+      log41.error("Failed to get low stock products", { error, threshold });
       throw error;
     }
   }
@@ -13174,7 +13766,7 @@ var ProductService = class {
       const products = await this.productRepository.findOutOfStock();
       return ProductMapper.toResponseDTOs(products);
     } catch (error) {
-      log40.error("Failed to get out of stock products", { error });
+      log41.error("Failed to get out of stock products", { error });
       throw error;
     }
   }
@@ -13185,7 +13777,7 @@ var ProductService = class {
     try {
       return await this.productRepository.getCategories();
     } catch (error) {
-      log40.error("Failed to get categories", { error });
+      log41.error("Failed to get categories", { error });
       throw error;
     }
   }
@@ -13194,11 +13786,11 @@ var ProductService = class {
    */
   async addImage(productId, imageData, order) {
     try {
-      log40.info("Adding product image", { productId, order });
+      log41.info("Adding product image", { productId, order });
       await this.productRepository.addImage(productId, imageData, order);
-      log40.info("Product image added", { productId });
+      log41.info("Product image added", { productId });
     } catch (error) {
-      log40.error("Failed to add product image", { error, productId });
+      log41.error("Failed to add product image", { error, productId });
       throw error;
     }
   }
@@ -13207,11 +13799,11 @@ var ProductService = class {
    */
   async deleteImage(imageId) {
     try {
-      log40.info("Deleting product image", { imageId });
+      log41.info("Deleting product image", { imageId });
       await this.productRepository.deleteImage(imageId);
-      log40.info("Product image deleted", { imageId });
+      log41.info("Product image deleted", { imageId });
     } catch (error) {
-      log40.error("Failed to delete product image", { error, imageId });
+      log41.error("Failed to delete product image", { error, imageId });
       throw error;
     }
   }
@@ -13720,11 +14312,11 @@ var PurchaseOrderRepository = class {
 };
 
 // src/main/ipc/handlers/purchase-orders.handlers.ts
-var log41 = createLogger("PurchaseOrders");
+var log42 = createLogger("PurchaseOrders");
 var purchaseOrderService = null;
 function setupPurchaseOrderHandlers(prisma2) {
   if (!prisma2) {
-    log41.error("Prisma not available for purchase order handlers");
+    log42.error("Prisma not available for purchase order handlers");
     return;
   }
   const supplierService2 = new SupplierService(prisma2);
@@ -13742,7 +14334,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.getAllPurchaseOrders(filters);
     } catch (error) {
-      log41.error("Error getting purchase orders:", error);
+      log42.error("Error getting purchase orders:", error);
       throw error;
     }
   });
@@ -13752,7 +14344,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.getPurchaseOrderById(id);
     } catch (error) {
-      log41.error("Error getting purchase order by ID:", error);
+      log42.error("Error getting purchase order by ID:", error);
       throw error;
     }
   });
@@ -13762,7 +14354,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.getPurchaseOrderByPoNumber(poNumber);
     } catch (error) {
-      log41.error("Error getting purchase order by PO number:", error);
+      log42.error("Error getting purchase order by PO number:", error);
       throw error;
     }
   });
@@ -13773,7 +14365,7 @@ function setupPurchaseOrderHandlers(prisma2) {
       const userId = event.sender.session?.userId || "system";
       return await purchaseOrderService.createPurchaseOrder(data, userId);
     } catch (error) {
-      log41.error("Error creating purchase order:", error);
+      log42.error("Error creating purchase order:", error);
       throw error;
     }
   });
@@ -13783,7 +14375,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.updatePurchaseOrder(id, data);
     } catch (error) {
-      log41.error("Error updating purchase order:", error);
+      log42.error("Error updating purchase order:", error);
       throw error;
     }
   });
@@ -13794,7 +14386,7 @@ function setupPurchaseOrderHandlers(prisma2) {
       await purchaseOrderService.deletePurchaseOrder(id);
       return { success: true };
     } catch (error) {
-      log41.error("Error deleting purchase order:", error);
+      log42.error("Error deleting purchase order:", error);
       throw error;
     }
   });
@@ -13804,7 +14396,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.receivePurchaseOrder(id, receivedDate);
     } catch (error) {
-      log41.error("Error receiving purchase order:", error);
+      log42.error("Error receiving purchase order:", error);
       throw error;
     }
   });
@@ -13814,7 +14406,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.getPurchaseOrderSummary();
     } catch (error) {
-      log41.error("Error getting purchase order summary:", error);
+      log42.error("Error getting purchase order summary:", error);
       throw error;
     }
   });
@@ -13824,7 +14416,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.getOverduePurchaseOrders();
     } catch (error) {
-      log41.error("Error getting overdue purchase orders:", error);
+      log42.error("Error getting overdue purchase orders:", error);
       throw error;
     }
   });
@@ -13834,7 +14426,7 @@ function setupPurchaseOrderHandlers(prisma2) {
         throw new Error("Purchase order service not initialized");
       return await purchaseOrderService.getPendingPurchaseOrders();
     } catch (error) {
-      log41.error("Error getting pending purchase orders:", error);
+      log42.error("Error getting pending purchase orders:", error);
       throw error;
     }
   });
@@ -13850,7 +14442,7 @@ var import_util = require("util");
 var import_fs3 = require("fs");
 var path10 = __toESM(require("path"));
 var os3 = __toESM(require("os"));
-var log42 = createLogger("ThermalPrinter");
+var log43 = createLogger("ThermalPrinter");
 var execAsync = (0, import_util.promisify)(import_child_process.exec);
 var ThermalPrinterService = class {
   /**
@@ -13896,7 +14488,7 @@ var ThermalPrinterService = class {
       try {
         await import_fs3.promises.unlink(tempFile);
       } catch (e) {
-        log42.error(`Failed to delete temporary print file "${tempFile}":`, e);
+        log43.error(`Failed to delete temporary print file "${tempFile}":`, e);
       }
     }
   }
@@ -14218,9 +14810,9 @@ var ThermalPrinterService = class {
         `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${scriptFile}"`,
         { timeout: 2e4 }
       );
-      log42.info("\u{1F5A8}\uFE0F  winspool result:", stdout.trim());
+      log43.info("\u{1F5A8}\uFE0F  winspool result:", stdout.trim());
       if (stderr?.trim())
-        log42.warn("\u{1F5A8}\uFE0F  winspool stderr:", stderr.trim());
+        log43.warn("\u{1F5A8}\uFE0F  winspool stderr:", stderr.trim());
     } finally {
       try {
         await import_fs3.promises.unlink(dataFile);
@@ -14428,7 +15020,7 @@ var ThermalPrinterService = class {
       const winPrinterName = process.platform === "win32" ? settings.printerName : void 0;
       await this.formatAndPrintReceipt(printer, data, settings, winPrinterName);
     } catch (error) {
-      log42.error("\u274C Print error:", error);
+      log43.error("\u274C Print error:", error);
       throw new Error(`Failed to print: ${error.message}`);
     }
   }
@@ -14507,9 +15099,9 @@ Test Successful!
         message: "Test print sent successfully. Check printer output."
       };
     } catch (error) {
-      log42.error("\u274C Test print failed:", error);
+      log43.error("\u274C Test print failed:", error);
       const errorMessage = error.message || error.toString();
-      log42.error("Full error:", errorMessage);
+      log43.error("Full error:", errorMessage);
       return {
         success: false,
         message: `Test failed: ${errorMessage}. Check printer path, permissions, and connection.`
@@ -14556,7 +15148,7 @@ Test Successful!
         return printers;
       }
     } catch (error) {
-      log42.error("Error detecting printers:", error);
+      log43.error("Error detecting printers:", error);
       return [];
     }
   }
@@ -14599,11 +15191,11 @@ Test Successful!
         commands.push(Buffer.from([29, 107, 73]));
         commands.push(barcodeData);
         commands.push(Buffer.from([0]));
-        log42.info(`\u{1F4CB} Barcode print debug:`);
-        log42.info(`   - Text: ${barcodeText}`);
-        log42.info(`   - Length: ${barcodeData.length}`);
-        log42.info(`   - Height: ${height}, Width: ${width}`);
-        log42.info(`   - Command: GS k 73 (CODE128 Type B)`);
+        log43.info(`\u{1F4CB} Barcode print debug:`);
+        log43.info(`   - Text: ${barcodeText}`);
+        log43.info(`   - Length: ${barcodeData.length}`);
+        log43.info(`   - Height: ${height}, Width: ${width}`);
+        log43.info(`   - Command: GS k 73 (CODE128 Type B)`);
         commands.push(Buffer.from("\n\n\n\n\n\n"));
         commands.push(Buffer.from([29, 86, 0]));
         if (copy < copies - 1) {
@@ -14618,7 +15210,7 @@ Test Successful!
       }
       await execAsync(`lp -d "${safePrinterName}" -o raw "${tempFile}"`);
       setTimeout(() => {
-        import_fs3.promises.unlink(tempFile).catch((err) => log42.error("Failed to delete temp file:", err));
+        import_fs3.promises.unlink(tempFile).catch((err) => log43.error("Failed to delete temp file:", err));
       }, 5e3);
     } catch (error) {
       try {
@@ -14655,7 +15247,7 @@ Test Successful!
       }
       await execAsync(`lp -d "${safePrinterName}" -o raw "${tempFile}"`);
       setTimeout(() => {
-        import_fs3.promises.unlink(tempFile).catch((err) => log42.error("Failed to delete temp file:", err));
+        import_fs3.promises.unlink(tempFile).catch((err) => log43.error("Failed to delete temp file:", err));
       }, 5e3);
     } catch (error) {
       try {
@@ -14668,7 +15260,7 @@ Test Successful!
 };
 
 // src/main/ipc/handlers/receipt.handlers.ts
-var log43 = createLogger("Receipt");
+var log44 = createLogger("Receipt");
 function registerReceiptHandlers2() {
   ipcMain.handle("receipt:print", async (_event, data) => {
     try {
@@ -14679,17 +15271,17 @@ function registerReceiptHandlers2() {
       if (settings.printerIP && typeof settings.printerIP !== "string") {
         throw new Error("Invalid printer IP type");
       }
-      log43.info("\u{1F4C4} Receipt print requested:", {
+      log44.info("\u{1F4C4} Receipt print requested:", {
         type: settings.printerType,
         name: settings.printerName,
         items: receiptData.items?.length || 0
       });
       if (settings.printerType === "usb" && (!settings.printerName || settings.printerName === "/dev/usb/lp0")) {
-        log43.info("\u{1F50D} Auto-detecting USB printer...");
+        log44.info("\u{1F50D} Auto-detecting USB printer...");
         const printers = await ThermalPrinterService.detectUSBPrinters();
         if (printers.length > 0) {
           const detectedPrinter = printers[0];
-          log43.info("\u2705 Auto-detected:", detectedPrinter.name, "\u2192", detectedPrinter.path);
+          log44.info("\u2705 Auto-detected:", detectedPrinter.name, "\u2192", detectedPrinter.path);
           settings.printerName = detectedPrinter.path;
           await ThermalPrinterService.printReceipt(receiptData, settings);
           return {
@@ -14705,17 +15297,17 @@ function registerReceiptHandlers2() {
         }
       }
       await ThermalPrinterService.printReceipt(receiptData, settings);
-      log43.info("\u2705 Receipt printed successfully");
+      log44.info("\u2705 Receipt printed successfully");
       return { success: true };
     } catch (error) {
-      log43.error("\u274C Receipt print error:", error);
+      log44.error("\u274C Receipt print error:", error);
       if (data.settings.printerType === "usb") {
-        log43.info("\u{1F504} Print failed, attempting auto-detection...");
+        log44.info("\u{1F504} Print failed, attempting auto-detection...");
         try {
           const printers = await ThermalPrinterService.detectUSBPrinters();
           if (printers.length > 0) {
             const detectedPrinter = printers[0];
-            log43.info("\u2705 Auto-detected:", detectedPrinter.name);
+            log44.info("\u2705 Auto-detected:", detectedPrinter.name);
             data.settings.printerName = detectedPrinter.path;
             await ThermalPrinterService.printReceipt(data.receiptData, data.settings);
             return {
@@ -14725,7 +15317,7 @@ function registerReceiptHandlers2() {
             };
           }
         } catch (retryError) {
-          log43.error("\u274C Auto-detection failed:", retryError);
+          log44.error("\u274C Auto-detection failed:", retryError);
         }
       }
       return {
@@ -14739,7 +15331,7 @@ function registerReceiptHandlers2() {
       const printers = await ThermalPrinterService.detectUSBPrinters();
       return { success: true, printers };
     } catch (error) {
-      log43.error("Detect printers error:", error);
+      log44.error("Detect printers error:", error);
       return {
         success: false,
         error: error.message,
@@ -14752,7 +15344,7 @@ function registerReceiptHandlers2() {
       const result = await ThermalPrinterService.testPrinter(settings);
       return result;
     } catch (error) {
-      log43.error("Test print error:", error);
+      log44.error("Test print error:", error);
       return {
         success: false,
         message: error.message || "Test print failed"
@@ -14763,7 +15355,7 @@ function registerReceiptHandlers2() {
 
 // src/main/ipc/handlers/barcode.handlers.ts
 init_electron_node();
-var log44 = createLogger("Barcode");
+var log45 = createLogger("Barcode");
 function registerBarcodePrintHandlers() {
   ipcMain.handle("barcode:detect-printers", async () => {
     try {
@@ -14776,7 +15368,7 @@ function registerBarcodePrintHandlers() {
         }))
       };
     } catch (error) {
-      log44.error("Error detecting printers:", error);
+      log45.error("Error detecting printers:", error);
       return {
         success: false,
         message: error.message || "Failed to detect printers"
@@ -14791,7 +15383,7 @@ function registerBarcodePrintHandlers() {
         message: "Barcode printed successfully"
       };
     } catch (error) {
-      log44.error("Error printing barcode:", error);
+      log45.error("Error printing barcode:", error);
       let message = "Failed to print barcode";
       if (error.message?.includes("not found") || error.message?.includes("ENOENT")) {
         message = "Printer not found. Please check if the printer is connected and turned on.";
@@ -14816,19 +15408,19 @@ function registerBarcodePrintHandlers() {
         message: "Test page sent to printer"
       };
     } catch (error) {
-      log44.error("Error testing printer:", error);
+      log45.error("Error testing printer:", error);
       return {
         success: false,
         message: error.message || "Failed to send test page"
       };
     }
   });
-  log44.info("\u2705 Barcode print handlers registered");
+  log45.info("\u2705 Barcode print handlers registered");
 }
 
 // src/main/ipc/handlers/stock-movements.handlers.ts
 init_electron_node();
-var log45 = createLogger("StockMovements");
+var log46 = createLogger("StockMovements");
 function registerStockMovementHandlers(prisma2) {
   ipcMain.handle("stockMovements:record", async (_, data) => {
     try {
@@ -14904,7 +15496,7 @@ function registerStockMovementHandlers(prisma2) {
         data: result
       };
     } catch (error) {
-      log45.error("Error recording stock movement:", error);
+      log46.error("Error recording stock movement:", error);
       return {
         success: false,
         error: error.message
@@ -14946,7 +15538,7 @@ function registerStockMovementHandlers(prisma2) {
         movements
       };
     } catch (error) {
-      log45.error("Error getting stock movement history:", error);
+      log46.error("Error getting stock movement history:", error);
       return {
         success: false,
         error: error.message
@@ -14995,7 +15587,7 @@ function registerStockMovementHandlers(prisma2) {
         movements
       };
     } catch (error) {
-      log45.error("Error getting product stock movement history:", error);
+      log46.error("Error getting product stock movement history:", error);
       return {
         success: false,
         error: error.message
@@ -15039,7 +15631,7 @@ function registerStockMovementHandlers(prisma2) {
         movements
       };
     } catch (error) {
-      log45.error("Error getting recent stock movements:", error);
+      log46.error("Error getting recent stock movements:", error);
       return {
         success: false,
         error: error.message
@@ -15121,7 +15713,7 @@ function registerStockMovementHandlers(prisma2) {
         data: results
       };
     } catch (error) {
-      log45.error("Error recording bulk stock movements:", error);
+      log46.error("Error recording bulk stock movements:", error);
       return {
         success: false,
         error: error.message
@@ -15134,7 +15726,7 @@ function registerStockMovementHandlers(prisma2) {
 init_electron_node();
 
 // src/main/services/DeleteService.ts
-var log46 = createLogger("Delete");
+var log47 = createLogger("Delete");
 var DeleteService = class _DeleteService {
   static prisma;
   static initialize(prismaClient) {
@@ -15460,12 +16052,12 @@ var DeleteService = class _DeleteService {
           })
         );
         await Promise.all(deletePromises);
-        log46.info(`\u2705 Deleted ${deposits.length} unlinked deposits for customer ${customerId}`);
+        log47.info(`\u2705 Deleted ${deposits.length} unlinked deposits for customer ${customerId}`);
         return deposits.length;
       }
       return 0;
     } catch (error) {
-      log46.error("\u274C Error deleting unlinked deposits:", error);
+      log47.error("\u274C Error deleting unlinked deposits:", error);
       throw error;
     }
   }
@@ -15484,19 +16076,19 @@ var DeleteService = class _DeleteService {
           })
         );
         await Promise.all(deletePromises);
-        log46.info(`\u2705 Deleted ${installments.length} unlinked installments for customer ${customerId}`);
+        log47.info(`\u2705 Deleted ${installments.length} unlinked installments for customer ${customerId}`);
         return installments.length;
       }
       return 0;
     } catch (error) {
-      log46.error("\u274C Error deleting unlinked installments:", error);
+      log47.error("\u274C Error deleting unlinked installments:", error);
       throw error;
     }
   }
 };
 
 // src/main/ipc/handlers/delete.handlers.ts
-var log47 = createLogger("Delete");
+var log48 = createLogger("Delete");
 function registerDeleteHandlers(prisma2) {
   DeleteService.initialize(prisma2);
   ipcMain.handle("delete:check-customer", async (_, data) => {
@@ -15504,7 +16096,7 @@ function registerDeleteHandlers(prisma2) {
       const result = await DeleteService.checkCustomerDelete(data.customerId);
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error checking customer delete:", error);
+      log48.error("Error checking customer delete:", error);
       return {
         success: false,
         error: error.message || "Failed to check customer"
@@ -15516,7 +16108,7 @@ function registerDeleteHandlers(prisma2) {
       const result = await DeleteService.checkProductDelete(data.productId);
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error checking product delete:", error);
+      log48.error("Error checking product delete:", error);
       return {
         success: false,
         error: error.message || "Failed to check product"
@@ -15528,7 +16120,7 @@ function registerDeleteHandlers(prisma2) {
       const result = await DeleteService.checkUserDeactivate(data.userId);
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error checking user deactivate:", error);
+      log48.error("Error checking user deactivate:", error);
       return {
         success: false,
         error: error.message || "Failed to check user"
@@ -15544,7 +16136,7 @@ function registerDeleteHandlers(prisma2) {
       );
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error archiving customer:", error);
+      log48.error("Error archiving customer:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15557,7 +16149,7 @@ function registerDeleteHandlers(prisma2) {
       );
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error archiving product:", error);
+      log48.error("Error archiving product:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15569,7 +16161,7 @@ function registerDeleteHandlers(prisma2) {
       );
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error deactivating user:", error);
+      log48.error("Error deactivating user:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15578,7 +16170,7 @@ function registerDeleteHandlers(prisma2) {
       const result = await DeleteService.restoreCustomer(data.customerId);
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error restoring customer:", error);
+      log48.error("Error restoring customer:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15587,7 +16179,7 @@ function registerDeleteHandlers(prisma2) {
       const result = await DeleteService.restoreProduct(data.productId);
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error restoring product:", error);
+      log48.error("Error restoring product:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15596,7 +16188,7 @@ function registerDeleteHandlers(prisma2) {
       const result = await DeleteService.reactivateUser(data.userId);
       return { success: true, data: result };
     } catch (error) {
-      log47.error("Error reactivating user:", error);
+      log48.error("Error reactivating user:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15605,7 +16197,7 @@ function registerDeleteHandlers(prisma2) {
       await DeleteService.hardDeleteCustomer(data.customerId);
       return { success: true };
     } catch (error) {
-      log47.error("Error hard deleting customer:", error);
+      log48.error("Error hard deleting customer:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15614,7 +16206,7 @@ function registerDeleteHandlers(prisma2) {
       await DeleteService.hardDeleteProduct(data.productId);
       return { success: true };
     } catch (error) {
-      log47.error("Error hard deleting product:", error);
+      log48.error("Error hard deleting product:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15623,7 +16215,7 @@ function registerDeleteHandlers(prisma2) {
       await DeleteService.hardDeleteUser(data.userId);
       return { success: true };
     } catch (error) {
-      log47.error("Error hard deleting user:", error);
+      log48.error("Error hard deleting user:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15632,7 +16224,7 @@ function registerDeleteHandlers(prisma2) {
       const data = await DeleteService.getArchivedCustomers();
       return { success: true, data };
     } catch (error) {
-      log47.error("Error getting archived customers:", error);
+      log48.error("Error getting archived customers:", error);
       return { success: false, error: error.message, data: [] };
     }
   });
@@ -15641,7 +16233,7 @@ function registerDeleteHandlers(prisma2) {
       const data = await DeleteService.getArchivedProducts();
       return { success: true, data };
     } catch (error) {
-      log47.error("Error getting archived products:", error);
+      log48.error("Error getting archived products:", error);
       return { success: false, error: error.message, data: [] };
     }
   });
@@ -15650,7 +16242,7 @@ function registerDeleteHandlers(prisma2) {
       const data = await DeleteService.getDeactivatedUsers();
       return { success: true, data };
     } catch (error) {
-      log47.error("Error getting deactivated users:", error);
+      log48.error("Error getting deactivated users:", error);
       return { success: false, error: error.message, data: [] };
     }
   });
@@ -15659,7 +16251,7 @@ function registerDeleteHandlers(prisma2) {
       const deletedCount = await DeleteService.deleteUnlinkedDeposits(customerId);
       return { success: true, deletedCount };
     } catch (error) {
-      log47.error("Error cleaning up unlinked deposits:", error);
+      log48.error("Error cleaning up unlinked deposits:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15668,7 +16260,7 @@ function registerDeleteHandlers(prisma2) {
       const deletedCount = await DeleteService.deleteUnlinkedInstallments(customerId);
       return { success: true, deletedCount };
     } catch (error) {
-      log47.error("Error cleaning up unlinked installments:", error);
+      log48.error("Error cleaning up unlinked installments:", error);
       return { success: false, error: error.message };
     }
   });
@@ -15676,7 +16268,7 @@ function registerDeleteHandlers(prisma2) {
 
 // src/main/ipc/handlers/commerce-expenses.handlers.ts
 init_electron_node();
-var log48 = createLogger("Commerce:Expenses");
+var log49 = createLogger("Commerce:Expenses");
 function registerCommerceExpenseHandlers(prisma2) {
   ipcMain.handle("commerceExpenses:getAll", async (_e, params = {}) => {
     try {
@@ -15695,7 +16287,7 @@ function registerCommerceExpenseHandlers(prisma2) {
         orderBy: { date: "desc" }
       });
     } catch (err) {
-      log48.error("getAll", err);
+      log49.error("getAll", err);
       throw err;
     }
   });
@@ -15714,7 +16306,7 @@ function registerCommerceExpenseHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log48.error("create", err);
+      log49.error("create", err);
       throw err;
     }
   });
@@ -15726,7 +16318,7 @@ function registerCommerceExpenseHandlers(prisma2) {
         data: { ...rest, ...date ? { date: new Date(date) } : {} }
       });
     } catch (err) {
-      log48.error("update", err);
+      log49.error("update", err);
       throw err;
     }
   });
@@ -15734,7 +16326,7 @@ function registerCommerceExpenseHandlers(prisma2) {
     try {
       return await prisma2.commerceExpense.delete({ where: { id } });
     } catch (err) {
-      log48.error("delete", err);
+      log49.error("delete", err);
       throw err;
     }
   });
@@ -15763,7 +16355,7 @@ function registerCommerceHandlers(prisma2) {
 
 // src/plugins/bakery/handlers/recipes.ts
 init_electron_node();
-var log49 = createLogger("Bakery:Recipes");
+var log50 = createLogger("Bakery:Recipes");
 function registerRecipeHandlers(prisma2) {
   ipcMain.handle("bakery:getRecipes", async () => {
     try {
@@ -15779,7 +16371,7 @@ function registerRecipeHandlers(prisma2) {
         orderBy: { name: "asc" }
       });
     } catch (err) {
-      log49.error("bakery:getRecipes error", err);
+      log50.error("bakery:getRecipes error", err);
       throw err;
     }
   });
@@ -15808,7 +16400,7 @@ function registerRecipeHandlers(prisma2) {
         include: { ingredients: true }
       });
     } catch (err) {
-      log49.error("bakery:createRecipe error", err);
+      log50.error("bakery:createRecipe error", err);
       throw err;
     }
   });
@@ -15847,7 +16439,7 @@ function registerRecipeHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log49.error("bakery:updateRecipe error", err);
+      log50.error("bakery:updateRecipe error", err);
       throw err;
     }
   });
@@ -15858,7 +16450,7 @@ function registerRecipeHandlers(prisma2) {
         data: { isActive: false }
       });
     } catch (err) {
-      log49.error("bakery:deleteRecipe error", err);
+      log50.error("bakery:deleteRecipe error", err);
       throw err;
     }
   });
@@ -15881,7 +16473,7 @@ function convertQuantity(quantity, fromUnit, toUnit) {
 }
 
 // src/plugins/bakery/handlers/production.ts
-var log50 = createLogger("Bakery:Production");
+var log51 = createLogger("Bakery:Production");
 function registerProductionHandlers(prisma2) {
   ipcMain.handle("bakery:getProductionBatches", async (_e, options = {}) => {
     try {
@@ -15926,7 +16518,7 @@ function registerProductionHandlers(prisma2) {
       });
       return { data: enriched, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log50.error("bakery:getProductionBatches error", err);
+      log51.error("bakery:getProductionBatches error", err);
       throw err;
     }
   });
@@ -15986,7 +16578,7 @@ function registerProductionHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log50.error("bakery:createProductionBatch error", err);
+      log51.error("bakery:createProductionBatch error", err);
       throw err;
     }
   });
@@ -15994,7 +16586,7 @@ function registerProductionHandlers(prisma2) {
     try {
       return await prisma2.productionBatch.delete({ where: { id } });
     } catch (err) {
-      log50.error("bakery:deleteProductionBatch error", err);
+      log51.error("bakery:deleteProductionBatch error", err);
       throw err;
     }
   });
@@ -16025,7 +16617,7 @@ function registerProductionHandlers(prisma2) {
         unitsAvailable: Math.max(0, b.unitsProduced - b.sales.reduce((s, sale) => s + sale.quantity, 0))
       })).filter((b) => b.unitsAvailable > 0);
     } catch (err) {
-      log50.error("bakery:getSellableBatches error", err);
+      log51.error("bakery:getSellableBatches error", err);
       throw err;
     }
   });
@@ -16077,7 +16669,7 @@ function registerProductionHandlers(prisma2) {
         };
       });
     } catch (err) {
-      log50.error("bakery:getAvailableBatches error", err);
+      log51.error("bakery:getAvailableBatches error", err);
       throw err;
     }
   });
@@ -16085,7 +16677,7 @@ function registerProductionHandlers(prisma2) {
 
 // src/plugins/bakery/handlers/pantry.ts
 init_electron_node();
-var log51 = createLogger("Bakery:Pantry");
+var log52 = createLogger("Bakery:Pantry");
 function registerPantryHandlers(prisma2) {
   ipcMain.handle("bakery:getPantry", async () => {
     try {
@@ -16094,7 +16686,7 @@ function registerPantryHandlers(prisma2) {
         orderBy: { name: "asc" }
       });
     } catch (err) {
-      log51.error("bakery:getPantry error", err);
+      log52.error("bakery:getPantry error", err);
       throw err;
     }
   });
@@ -16118,7 +16710,7 @@ function registerPantryHandlers(prisma2) {
     } catch (err) {
       if (err?.code === "P2002")
         throw new Error("DUPLICATE_NAME");
-      log51.error("bakery:upsertPantryIngredient error", err);
+      log52.error("bakery:upsertPantryIngredient error", err);
       throw err;
     }
   });
@@ -16129,7 +16721,7 @@ function registerPantryHandlers(prisma2) {
         data: { currentStock: { increment: data.adjustment } }
       });
     } catch (err) {
-      log51.error("bakery:adjustPantryStock error", err);
+      log52.error("bakery:adjustPantryStock error", err);
       throw err;
     }
   });
@@ -16137,7 +16729,7 @@ function registerPantryHandlers(prisma2) {
     try {
       return await prisma2.pantryIngredient.delete({ where: { id } });
     } catch (err) {
-      log51.error("bakery:deletePantryIngredient error", err);
+      log52.error("bakery:deletePantryIngredient error", err);
       throw err;
     }
   });
@@ -16156,7 +16748,7 @@ function registerPantryHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log51.error("bakery:markPantryReordered error", err);
+      log52.error("bakery:markPantryReordered error", err);
       throw err;
     }
   });
@@ -16180,7 +16772,7 @@ function registerPantryHandlers(prisma2) {
       }
       return results;
     } catch (err) {
-      log51.error("bakery:bulkRestock error", err);
+      log52.error("bakery:bulkRestock error", err);
       throw err;
     }
   });
@@ -16188,7 +16780,7 @@ function registerPantryHandlers(prisma2) {
 
 // src/plugins/bakery/handlers/waste.ts
 init_electron_node();
-var log52 = createLogger("Bakery:Waste");
+var log53 = createLogger("Bakery:Waste");
 function registerWasteHandlers(prisma2) {
   ipcMain.handle("bakery:getWasteLogs", async (_e, options = {}) => {
     try {
@@ -16222,7 +16814,7 @@ function registerWasteHandlers(prisma2) {
       ]);
       return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log52.error("bakery:getWasteLogs error", err);
+      log53.error("bakery:getWasteLogs error", err);
       throw err;
     }
   });
@@ -16263,7 +16855,7 @@ function registerWasteHandlers(prisma2) {
         return wasteLog;
       });
     } catch (err) {
-      log52.error("bakery:createWasteLog error", err);
+      log53.error("bakery:createWasteLog error", err);
       throw err;
     }
   });
@@ -16271,7 +16863,7 @@ function registerWasteHandlers(prisma2) {
     try {
       return await prisma2.wasteLog.delete({ where: { id } });
     } catch (err) {
-      log52.error("bakery:deleteWasteLog error", err);
+      log53.error("bakery:deleteWasteLog error", err);
       throw err;
     }
   });
@@ -16300,7 +16892,7 @@ function registerWasteHandlers(prisma2) {
         byWasteType
       };
     } catch (err) {
-      log52.error("bakery:getWasteSummary error", err);
+      log53.error("bakery:getWasteSummary error", err);
       throw err;
     }
   });
@@ -16308,7 +16900,7 @@ function registerWasteHandlers(prisma2) {
 
 // src/plugins/bakery/handlers/schedule.ts
 init_electron_node();
-var log53 = createLogger("Bakery:Schedule");
+var log54 = createLogger("Bakery:Schedule");
 function registerScheduleHandlers(prisma2) {
   ipcMain.handle("bakery:getSchedule", async (_e, options = {}) => {
     try {
@@ -16340,7 +16932,7 @@ function registerScheduleHandlers(prisma2) {
       ]);
       return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log53.error("bakery:getSchedule error", err);
+      log54.error("bakery:getSchedule error", err);
       throw err;
     }
   });
@@ -16357,7 +16949,7 @@ function registerScheduleHandlers(prisma2) {
         include: { recipe: { select: { id: true, name: true, yieldQty: true, yieldUnit: true } } }
       });
     } catch (err) {
-      log53.error("bakery:createScheduleItem error", err);
+      log54.error("bakery:createScheduleItem error", err);
       throw err;
     }
   });
@@ -16373,7 +16965,7 @@ function registerScheduleHandlers(prisma2) {
         include: { recipe: { select: { id: true, name: true } } }
       });
     } catch (err) {
-      log53.error("bakery:updateScheduleItem error", err);
+      log54.error("bakery:updateScheduleItem error", err);
       throw err;
     }
   });
@@ -16447,7 +17039,7 @@ function registerScheduleHandlers(prisma2) {
         return { schedule: updatedSchedule, batch };
       });
     } catch (err) {
-      log53.error("bakery:completeScheduleAndCreateBatch error", err);
+      log54.error("bakery:completeScheduleAndCreateBatch error", err);
       throw err;
     }
   });
@@ -16455,7 +17047,7 @@ function registerScheduleHandlers(prisma2) {
     try {
       return await prisma2.productionSchedule.delete({ where: { id } });
     } catch (err) {
-      log53.error("bakery:deleteScheduleItem error", err);
+      log54.error("bakery:deleteScheduleItem error", err);
       throw err;
     }
   });
@@ -16463,7 +17055,7 @@ function registerScheduleHandlers(prisma2) {
 
 // src/plugins/bakery/handlers/analytics.profitLoss.ts
 init_electron_node();
-var log54 = createLogger("Bakery:Analytics");
+var log55 = createLogger("Bakery:Analytics");
 function registerBakeryProfitLossHandlers(prisma2) {
   ipcMain.handle("bakery:getProfitLoss", async (_e, options = {}) => {
     try {
@@ -16542,7 +17134,7 @@ function registerBakeryProfitLossHandlers(prisma2) {
       );
       return { rows, totals: { ...totals, totalWasteCost } };
     } catch (err) {
-      log54.error("bakery:getProfitLoss error", err);
+      log55.error("bakery:getProfitLoss error", err);
       throw err;
     }
   });
@@ -16608,7 +17200,7 @@ function registerBakeryProfitLossHandlers(prisma2) {
         }).filter((s) => s.data.some((d) => d.cost > 0 || d.revenue > 0))
       };
     } catch (err) {
-      log54.error("bakery:getProfitLossTrend error", err);
+      log55.error("bakery:getProfitLossTrend error", err);
       throw err;
     }
   });
@@ -16616,7 +17208,7 @@ function registerBakeryProfitLossHandlers(prisma2) {
 
 // src/plugins/bakery/handlers/analytics.production.ts
 init_electron_node();
-var log55 = createLogger("Bakery:Analytics");
+var log56 = createLogger("Bakery:Analytics");
 function registerBakeryProductionHandlers(prisma2) {
   ipcMain.handle("bakery:getExpiringBatches", async (_e, daysAhead = 7) => {
     try {
@@ -16627,7 +17219,7 @@ function registerBakeryProductionHandlers(prisma2) {
         orderBy: { expiresAt: "asc" }
       });
     } catch (err) {
-      log55.error("bakery:getExpiringBatches error", err);
+      log56.error("bakery:getExpiringBatches error", err);
       throw err;
     }
   });
@@ -16665,7 +17257,7 @@ function registerBakeryProductionHandlers(prisma2) {
       });
       return { requirements, recipeName: recipe.name };
     } catch (err) {
-      log55.error("bakery:getProductionRequirements error", err);
+      log56.error("bakery:getProductionRequirements error", err);
       throw err;
     }
   });
@@ -16709,7 +17301,7 @@ function registerBakeryProductionHandlers(prisma2) {
         return { ...entry, unitsSold, estimatedWaste };
       });
     } catch (err) {
-      log55.error("bakery:getEndOfDaySuggestion error", err);
+      log56.error("bakery:getEndOfDaySuggestion error", err);
       throw err;
     }
   });
@@ -16717,7 +17309,7 @@ function registerBakeryProductionHandlers(prisma2) {
 
 // src/plugins/bakery/handlers/analytics.overview.ts
 init_electron_node();
-var log56 = createLogger("Bakery:Analytics");
+var log57 = createLogger("Bakery:Analytics");
 function registerBakeryOverviewHandlers(prisma2) {
   ipcMain.handle("bakery:getDailyOverview", async () => {
     try {
@@ -16829,7 +17421,7 @@ function registerBakeryOverviewHandlers(prisma2) {
         todayProductionCost
       };
     } catch (err) {
-      log56.error("bakery:getDailyOverview error", err);
+      log57.error("bakery:getDailyOverview error", err);
       throw err;
     }
   });
@@ -16844,7 +17436,7 @@ function registerAnalyticsHandlers2(prisma2) {
 
 // src/plugins/bakery/handlers/sales.ts
 init_electron_node();
-var log57 = createLogger("Bakery:Sales");
+var log58 = createLogger("Bakery:Sales");
 function registerSalesHandlers2(prisma2) {
   ipcMain.handle("bakery:getSales", async (_e, options = {}) => {
     try {
@@ -16876,7 +17468,7 @@ function registerSalesHandlers2(prisma2) {
       ]);
       return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log57.error("bakery:getSales error", err);
+      log58.error("bakery:getSales error", err);
       throw err;
     }
   });
@@ -16924,7 +17516,7 @@ function registerSalesHandlers2(prisma2) {
       });
       return sale;
     } catch (err) {
-      log57.error("bakery:createSale error", err);
+      log58.error("bakery:createSale error", err);
       throw err;
     }
   });
@@ -16932,7 +17524,7 @@ function registerSalesHandlers2(prisma2) {
     try {
       return await prisma2.bakerySale.delete({ where: { id } });
     } catch (err) {
-      log57.error("bakery:deleteSale error", err);
+      log58.error("bakery:deleteSale error", err);
       throw err;
     }
   });
@@ -16979,7 +17571,7 @@ function registerSalesHandlers2(prisma2) {
         byRecipe: enrichedByRecipe
       };
     } catch (err) {
-      log57.error("bakery:getSalesSummary error", err);
+      log58.error("bakery:getSalesSummary error", err);
       throw err;
     }
   });
@@ -17055,7 +17647,7 @@ function registerSalesHandlers2(prisma2) {
         };
       });
     } catch (err) {
-      log57.error("bakery:getInventoryStatus error", err);
+      log58.error("bakery:getInventoryStatus error", err);
       throw err;
     }
   });
@@ -17063,7 +17655,7 @@ function registerSalesHandlers2(prisma2) {
 
 // src/plugins/bakery/handlers/expenses.ts
 init_electron_node();
-var log58 = createLogger("Bakery:Expenses");
+var log59 = createLogger("Bakery:Expenses");
 function registerBakeryExpenseHandlers(prisma2) {
   ipcMain.handle("bakery:expenses:getAll", async (_e, options = {}) => {
     try {
@@ -17086,7 +17678,7 @@ function registerBakeryExpenseHandlers(prisma2) {
       ]);
       return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log58.error("bakery:expenses:getAll error", err);
+      log59.error("bakery:expenses:getAll error", err);
       throw err;
     }
   });
@@ -17105,7 +17697,7 @@ function registerBakeryExpenseHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log58.error("bakery:expenses:create error", err);
+      log59.error("bakery:expenses:create error", err);
       throw err;
     }
   });
@@ -17125,7 +17717,7 @@ function registerBakeryExpenseHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log58.error("bakery:expenses:update error", err);
+      log59.error("bakery:expenses:update error", err);
       throw err;
     }
   });
@@ -17133,7 +17725,7 @@ function registerBakeryExpenseHandlers(prisma2) {
     try {
       return await prisma2.bakeryExpense.delete({ where: { id } });
     } catch (err) {
-      log58.error("bakery:expenses:delete error", err);
+      log59.error("bakery:expenses:delete error", err);
       throw err;
     }
   });
@@ -17162,7 +17754,7 @@ function registerBakeryExpenseHandlers(prisma2) {
         byCategory
       };
     } catch (err) {
-      log58.error("bakery:expenses:getSummary error", err);
+      log59.error("bakery:expenses:getSummary error", err);
       throw err;
     }
   });
@@ -17182,7 +17774,7 @@ function registerBakeryHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/products.ts
 init_electron_node();
-var log59 = createLogger("Coffee:Products");
+var log60 = createLogger("Coffee:Products");
 var UNITS = {
   piece: { decimals: 0 },
   kg: { decimals: 3 },
@@ -17203,7 +17795,7 @@ function registerProductHandlers(prisma2) {
         orderBy: [{ displayOrder: "asc" }, { name: "asc" }]
       });
     } catch (err) {
-      log59.error("categories:getAll", err);
+      log60.error("categories:getAll", err);
       throw err;
     }
   });
@@ -17211,7 +17803,7 @@ function registerProductHandlers(prisma2) {
     try {
       return await prisma2.coffeeCategory.create({ data });
     } catch (err) {
-      log59.error("categories:create", err);
+      log60.error("categories:create", err);
       throw err;
     }
   });
@@ -17220,7 +17812,7 @@ function registerProductHandlers(prisma2) {
       const { id, ...rest } = data;
       return await prisma2.coffeeCategory.update({ where: { id }, data: rest });
     } catch (err) {
-      log59.error("categories:update", err);
+      log60.error("categories:update", err);
       throw err;
     }
   });
@@ -17228,7 +17820,7 @@ function registerProductHandlers(prisma2) {
     try {
       return await prisma2.coffeeCategory.delete({ where: { id } });
     } catch (err) {
-      log59.error("categories:delete", err);
+      log60.error("categories:delete", err);
       throw err;
     }
   });
@@ -17253,7 +17845,7 @@ function registerProductHandlers(prisma2) {
         needsReorder: p.stock <= p.reorderPoint
       }));
     } catch (err) {
-      log59.error("products:getAll", err);
+      log60.error("products:getAll", err);
       throw err;
     }
   });
@@ -17267,7 +17859,7 @@ function registerProductHandlers(prisma2) {
         return null;
       return { ...product, needsReorder: product.stock <= product.reorderPoint };
     } catch (err) {
-      log59.error("products:getById", err);
+      log60.error("products:getById", err);
       throw err;
     }
   });
@@ -17298,7 +17890,7 @@ function registerProductHandlers(prisma2) {
       }
       return product;
     } catch (err) {
-      log59.error("products:create", err);
+      log60.error("products:create", err);
       throw err;
     }
   });
@@ -17316,7 +17908,7 @@ function registerProductHandlers(prisma2) {
       });
       return { ...product, needsReorder: product.stock <= product.reorderPoint };
     } catch (err) {
-      log59.error("products:update", err);
+      log60.error("products:update", err);
       throw err;
     }
   });
@@ -17324,7 +17916,7 @@ function registerProductHandlers(prisma2) {
     try {
       return await prisma2.coffeeProduct.delete({ where: { id } });
     } catch (err) {
-      log59.error("products:delete", err);
+      log60.error("products:delete", err);
       throw err;
     }
   });
@@ -17332,7 +17924,7 @@ function registerProductHandlers(prisma2) {
     try {
       return await prisma2.coffeeProduct.update({ where: { id }, data: { isAvailable } });
     } catch (err) {
-      log59.error("products:toggleAvailability", err);
+      log60.error("products:toggleAvailability", err);
       throw err;
     }
   });
@@ -17344,7 +17936,7 @@ function registerProductHandlers(prisma2) {
         take: 100
       });
     } catch (err) {
-      log59.error("inventory:getMovements", err);
+      log60.error("inventory:getMovements", err);
       throw err;
     }
   });
@@ -17371,7 +17963,7 @@ function registerProductHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log59.error("inventory:adjust", err);
+      log60.error("inventory:adjust", err);
       throw err;
     }
   });
@@ -17379,7 +17971,7 @@ function registerProductHandlers(prisma2) {
     try {
       return await getImageService().saveImage(base64Data);
     } catch (err) {
-      log59.error("products:saveImage", err);
+      log60.error("products:saveImage", err);
       throw err;
     }
   });
@@ -17387,7 +17979,7 @@ function registerProductHandlers(prisma2) {
     try {
       return await getImageService().getImageDataUrl(filename);
     } catch (err) {
-      log59.error("products:loadImage", err);
+      log60.error("products:loadImage", err);
       return null;
     }
   });
@@ -17395,7 +17987,7 @@ function registerProductHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/tables.ts
 init_electron_node();
-var log60 = createLogger("Coffee:Tables");
+var log61 = createLogger("Coffee:Tables");
 function registerTableHandlers(prisma2) {
   ipcMain.handle("coffee:tables:getAll", async () => {
     try {
@@ -17425,7 +18017,7 @@ function registerTableHandlers(prisma2) {
         orderBy: { number: "asc" }
       });
     } catch (err) {
-      log60.error("tables:getAll", err);
+      log61.error("tables:getAll", err);
       throw err;
     }
   });
@@ -17433,7 +18025,7 @@ function registerTableHandlers(prisma2) {
     try {
       return await prisma2.coffeeTable.create({ data });
     } catch (err) {
-      log60.error("tables:create", err);
+      log61.error("tables:create", err);
       throw err;
     }
   });
@@ -17442,7 +18034,7 @@ function registerTableHandlers(prisma2) {
       const { id, ...rest } = data;
       return await prisma2.coffeeTable.update({ where: { id }, data: rest });
     } catch (err) {
-      log60.error("tables:update", err);
+      log61.error("tables:update", err);
       throw err;
     }
   });
@@ -17450,7 +18042,7 @@ function registerTableHandlers(prisma2) {
     try {
       return await prisma2.coffeeTable.update({ where: { id }, data: { isActive: false } });
     } catch (err) {
-      log60.error("tables:delete", err);
+      log61.error("tables:delete", err);
       throw err;
     }
   });
@@ -17474,7 +18066,7 @@ function registerTableHandlers(prisma2) {
       ]);
       return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log60.error("tables:getHistory", err);
+      log61.error("tables:getHistory", err);
       throw err;
     }
   });
@@ -17482,7 +18074,7 @@ function registerTableHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/orders.ts
 init_electron_node();
-var log61 = createLogger("Coffee:Orders");
+var log62 = createLogger("Coffee:Orders");
 var UNITS2 = {
   piece: { decimals: 0 },
   kg: { decimals: 3 },
@@ -17567,7 +18159,7 @@ function registerOrderHandlers(prisma2) {
         ]);
         return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       } catch (err) {
-        log61.error("orders:getAll", err);
+        log62.error("orders:getAll", err);
         throw err;
       }
     }
@@ -17586,7 +18178,7 @@ function registerOrderHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log61.error("orders:getById", err);
+      log62.error("orders:getById", err);
       throw err;
     }
   });
@@ -17651,7 +18243,7 @@ function registerOrderHandlers(prisma2) {
           });
         });
       } catch (err) {
-        log61.error("orders:create", err);
+        log62.error("orders:create", err);
         throw err;
       }
     }
@@ -17677,7 +18269,7 @@ function registerOrderHandlers(prisma2) {
         await recalcTotals(prisma2, data.orderId);
         return item;
       } catch (err) {
-        log61.error("orders:addItem", err);
+        log62.error("orders:addItem", err);
         throw err;
       }
     }
@@ -17688,7 +18280,7 @@ function registerOrderHandlers(prisma2) {
       await recalcTotals(prisma2, item.orderId);
       return item;
     } catch (err) {
-      log61.error("orders:removeItem", err);
+      log62.error("orders:removeItem", err);
       throw err;
     }
   });
@@ -17701,7 +18293,7 @@ function registerOrderHandlers(prisma2) {
           data: { status: data.status }
         });
       } catch (err) {
-        log61.error("orders:updateItemStatus", err);
+        log62.error("orders:updateItemStatus", err);
         throw err;
       }
     }
@@ -17774,7 +18366,7 @@ function registerOrderHandlers(prisma2) {
           return closed;
         });
       } catch (err) {
-        log61.error("orders:close", err);
+        log62.error("orders:close", err);
         throw err;
       }
     }
@@ -17795,7 +18387,7 @@ function registerOrderHandlers(prisma2) {
         return order;
       });
     } catch (err) {
-      log61.error("orders:void", err);
+      log62.error("orders:void", err);
       throw err;
     }
   });
@@ -17879,7 +18471,7 @@ function registerOrderHandlers(prisma2) {
         return updatedOrder;
       });
     } catch (err) {
-      log61.error("orders:refund", err);
+      log62.error("orders:refund", err);
       throw err;
     }
   });
@@ -17887,7 +18479,7 @@ function registerOrderHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/sales.ts
 init_electron_node();
-var log62 = createLogger("Coffee:Sales");
+var log63 = createLogger("Coffee:Sales");
 function registerSalesHandlers3(prisma2) {
   ipcMain.handle("coffee:sales:getAll", async (_e, opts) => {
     try {
@@ -17926,7 +18518,7 @@ function registerSalesHandlers3(prisma2) {
       ]);
       return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log62.error("sales:getAll", err);
+      log63.error("sales:getAll", err);
       throw err;
     }
   });
@@ -17964,7 +18556,7 @@ function registerSalesHandlers3(prisma2) {
       summary.avgOrderValue = summary.totalOrders > 0 ? summary.totalRevenue / summary.totalOrders : 0;
       return summary;
     } catch (err) {
-      log62.error("sales:getSummary", err);
+      log63.error("sales:getSummary", err);
       throw err;
     }
   });
@@ -17972,7 +18564,7 @@ function registerSalesHandlers3(prisma2) {
 
 // src/plugins/coffee/handlers/shifts.ts
 init_electron_node();
-var log63 = createLogger("Coffee:Shifts");
+var log64 = createLogger("Coffee:Shifts");
 function withDateRange(field, opts) {
   if (!opts?.startDate && !opts?.endDate)
     return {};
@@ -18029,7 +18621,7 @@ function registerShiftHandlers(prisma2) {
         expenseCount: expenseSummary._count
       };
     } catch (err) {
-      log63.error("shifts:getActive", err);
+      log64.error("shifts:getActive", err);
       throw err;
     }
   });
@@ -18104,7 +18696,7 @@ function registerShiftHandlers(prisma2) {
         totalPages: Math.ceil(total / pageSize)
       };
     } catch (err) {
-      log63.error("shifts:getHistory", err);
+      log64.error("shifts:getHistory", err);
       throw err;
     }
   });
@@ -18178,7 +18770,7 @@ function registerShiftHandlers(prisma2) {
         topCashiers: Array.from(cashierMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5)
       };
     } catch (err) {
-      log63.error("shifts:getSummary", err);
+      log64.error("shifts:getSummary", err);
       throw err;
     }
   });
@@ -18203,7 +18795,7 @@ function registerShiftHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log63.error("shifts:getDetails", err);
+      log64.error("shifts:getDetails", err);
       throw err;
     }
   });
@@ -18222,7 +18814,7 @@ function registerShiftHandlers(prisma2) {
         include: { cashier: { select: { id: true, username: true, fullName: true } } }
       });
     } catch (err) {
-      log63.error("shifts:open", err);
+      log64.error("shifts:open", err);
       throw err;
     }
   });
@@ -18242,7 +18834,7 @@ function registerShiftHandlers(prisma2) {
         include: { cashier: { select: { id: true, username: true, fullName: true } } }
       });
     } catch (err) {
-      log63.error("shifts:close", err);
+      log64.error("shifts:close", err);
       throw err;
     }
   });
@@ -18250,7 +18842,7 @@ function registerShiftHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/overview.ts
 init_electron_node();
-var log64 = createLogger("Coffee:Overview");
+var log65 = createLogger("Coffee:Overview");
 function registerOverviewHandlers(prisma2) {
   ipcMain.handle("coffee:getOverview", async () => {
     try {
@@ -18309,7 +18901,7 @@ function registerOverviewHandlers(prisma2) {
         inventory: { lowStock, totalProducts }
       };
     } catch (err) {
-      log64.error("getOverview", err);
+      log65.error("getOverview", err);
       throw err;
     }
   });
@@ -18317,7 +18909,7 @@ function registerOverviewHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/customers.ts
 init_electron_node();
-var log65 = createLogger("Coffee:Customers");
+var log66 = createLogger("Coffee:Customers");
 function registerCustomerHandlers(prisma2) {
   ipcMain.handle("coffee:customers:getAll", async (_e, opts) => {
     try {
@@ -18343,7 +18935,7 @@ function registerCustomerHandlers(prisma2) {
       ]);
       return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log65.error("customers:getAll", err);
+      log66.error("customers:getAll", err);
       throw err;
     }
   });
@@ -18372,7 +18964,7 @@ function registerCustomerHandlers(prisma2) {
         visitCount
       };
     } catch (err) {
-      log65.error("customers:getById", err);
+      log66.error("customers:getById", err);
       throw err;
     }
   });
@@ -18380,7 +18972,7 @@ function registerCustomerHandlers(prisma2) {
     try {
       return await prisma2.coffeeCustomer.create({ data });
     } catch (err) {
-      log65.error("customers:create", err);
+      log66.error("customers:create", err);
       throw err;
     }
   });
@@ -18389,7 +18981,7 @@ function registerCustomerHandlers(prisma2) {
       const { id, ...rest } = data;
       return await prisma2.coffeeCustomer.update({ where: { id }, data: rest });
     } catch (err) {
-      log65.error("customers:update", err);
+      log66.error("customers:update", err);
       throw err;
     }
   });
@@ -18398,7 +18990,7 @@ function registerCustomerHandlers(prisma2) {
       await prisma2.coffeeOrder.updateMany({ where: { customerId: id }, data: { customerId: null } });
       return await prisma2.coffeeCustomer.delete({ where: { id } });
     } catch (err) {
-      log65.error("customers:delete", err);
+      log66.error("customers:delete", err);
       throw err;
     }
   });
@@ -18415,7 +19007,7 @@ function registerCustomerHandlers(prisma2) {
         take: 10
       });
     } catch (err) {
-      log65.error("customers:search", err);
+      log66.error("customers:search", err);
       throw err;
     }
   });
@@ -18423,7 +19015,7 @@ function registerCustomerHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/reports.ts
 init_electron_node();
-var log66 = createLogger("Coffee:Reports");
+var log67 = createLogger("Coffee:Reports");
 function withDateRange2(field, opts) {
   const where = {};
   if (opts?.startDate || opts?.endDate) {
@@ -18584,7 +19176,7 @@ function registerReportHandlers(prisma2) {
         worstDay
       };
     } catch (err) {
-      log66.error("reports:getOverview", err);
+      log67.error("reports:getOverview", err);
       throw err;
     }
   });
@@ -18608,7 +19200,7 @@ function registerReportHandlers(prisma2) {
       }
       return Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date));
     } catch (err) {
-      log66.error("reports:getDailyTrend", err);
+      log67.error("reports:getDailyTrend", err);
       throw err;
     }
   });
@@ -18651,7 +19243,7 @@ function registerReportHandlers(prisma2) {
       }
       return Array.from(byProduct.values()).sort((a, b) => b.revenue - a.revenue).slice(0, opts?.limit ?? 20);
     } catch (err) {
-      log66.error("reports:getTopProducts", err);
+      log67.error("reports:getTopProducts", err);
       throw err;
     }
   });
@@ -18686,7 +19278,7 @@ function registerReportHandlers(prisma2) {
       }
       return Array.from(byCategory.values()).sort((a, b) => b.revenue - a.revenue).slice(0, opts?.limit ?? 20);
     } catch (err) {
-      log66.error("reports:getCategoryPerformance", err);
+      log67.error("reports:getCategoryPerformance", err);
       throw err;
     }
   });
@@ -18736,7 +19328,7 @@ function registerReportHandlers(prisma2) {
         repeatRatePct: byCustomer.size > 0 ? repeatCustomers / byCustomer.size * 100 : 0
       };
     } catch (err) {
-      log66.error("reports:getCustomerInsights", err);
+      log67.error("reports:getCustomerInsights", err);
       throw err;
     }
   });
@@ -18744,7 +19336,7 @@ function registerReportHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/finance.ts
 init_electron_node();
-var log67 = createLogger("Coffee:Finance");
+var log68 = createLogger("Coffee:Finance");
 function withDateRange3(field, opts) {
   const where = {};
   if (opts?.startDate || opts?.endDate) {
@@ -18868,7 +19460,7 @@ function registerFinanceHandlers2(prisma2) {
         }
       };
     } catch (err) {
-      log67.error("finance:getOverview", err);
+      log68.error("finance:getOverview", err);
       throw err;
     }
   });
@@ -18914,7 +19506,7 @@ function registerFinanceHandlers2(prisma2) {
         totalPages: Math.ceil(total / pageSize)
       };
     } catch (err) {
-      log67.error("finance:getTransactions", err);
+      log68.error("finance:getTransactions", err);
       throw err;
     }
   });
@@ -18922,7 +19514,7 @@ function registerFinanceHandlers2(prisma2) {
 
 // src/plugins/coffee/handlers/incomingReceipts.ts
 init_electron_node();
-var log68 = createLogger("Coffee:IncomingReceipts");
+var log69 = createLogger("Coffee:IncomingReceipts");
 function withDateRange4(field, opts) {
   const where = {};
   if (opts?.startDate || opts?.endDate) {
@@ -18984,7 +19576,7 @@ function registerIncomingReceiptHandlers(prisma2) {
       ]);
       return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log68.error("incomingReceipts:getAll", err);
+      log69.error("incomingReceipts:getAll", err);
       throw err;
     }
   });
@@ -19032,7 +19624,7 @@ function registerIncomingReceiptHandlers(prisma2) {
         topCategories: Array.from(byCategory.values()).sort((a, b) => b.totalCost - a.totalCost).slice(0, 6)
       };
     } catch (err) {
-      log68.error("incomingReceipts:getSummary", err);
+      log69.error("incomingReceipts:getSummary", err);
       throw err;
     }
   });
@@ -19119,7 +19711,7 @@ function registerIncomingReceiptHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log68.error("incomingReceipts:create", err);
+      log69.error("incomingReceipts:create", err);
       throw err;
     }
   });
@@ -19127,7 +19719,7 @@ function registerIncomingReceiptHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/expenses.ts
 init_electron_node();
-var log69 = createLogger("Coffee:Expenses");
+var log70 = createLogger("Coffee:Expenses");
 function withDateRange5(field, opts) {
   const where = {};
   if (opts?.startDate || opts?.endDate) {
@@ -19177,7 +19769,7 @@ function registerExpenseHandlers(prisma2) {
       ]);
       return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log69.error("expenses:getAll", err);
+      log70.error("expenses:getAll", err);
       throw err;
     }
   });
@@ -19211,7 +19803,7 @@ function registerExpenseHandlers(prisma2) {
         byPaymentMethod: Array.from(byPaymentMap.entries()).map(([paymentMethod, total]) => ({ paymentMethod, total })).sort((a, b) => b.total - a.total)
       };
     } catch (err) {
-      log69.error("expenses:getSummary", err);
+      log70.error("expenses:getSummary", err);
       throw err;
     }
   });
@@ -19234,7 +19826,7 @@ function registerExpenseHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log69.error("expenses:create", err);
+      log70.error("expenses:create", err);
       throw err;
     }
   });
@@ -19249,7 +19841,7 @@ function registerExpenseHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log69.error("expenses:update", err);
+      log70.error("expenses:update", err);
       throw err;
     }
   });
@@ -19257,7 +19849,7 @@ function registerExpenseHandlers(prisma2) {
     try {
       return await prisma2.coffeeExpense.delete({ where: { id } });
     } catch (err) {
-      log69.error("expenses:delete", err);
+      log70.error("expenses:delete", err);
       throw err;
     }
   });
@@ -19265,7 +19857,7 @@ function registerExpenseHandlers(prisma2) {
 
 // src/plugins/coffee/handlers/transitReceipts.ts
 init_electron_node();
-var log70 = createLogger("Coffee:TransitReceipts");
+var log71 = createLogger("Coffee:TransitReceipts");
 function withDateRange6(field, opts) {
   const where = {};
   if (opts?.startDate || opts?.endDate) {
@@ -19318,7 +19910,7 @@ function registerTransitReceiptHandlers(prisma2) {
       ]);
       return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
     } catch (err) {
-      log70.error("transitReceipts:getAll", err);
+      log71.error("transitReceipts:getAll", err);
       throw err;
     }
   });
@@ -19359,7 +19951,7 @@ function registerTransitReceiptHandlers(prisma2) {
         pendingCount: statusCounts.received + statusCounts.in_transit
       };
     } catch (err) {
-      log70.error("transitReceipts:getSummary", err);
+      log71.error("transitReceipts:getSummary", err);
       throw err;
     }
   });
@@ -19415,7 +20007,7 @@ function registerTransitReceiptHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log70.error("transitReceipts:create", err);
+      log71.error("transitReceipts:create", err);
       throw err;
     }
   });
@@ -19430,7 +20022,7 @@ function registerTransitReceiptHandlers(prisma2) {
         include: { items: true }
       });
     } catch (err) {
-      log70.error("transitReceipts:updateStatus", err);
+      log71.error("transitReceipts:updateStatus", err);
       throw err;
     }
   });
@@ -19438,7 +20030,7 @@ function registerTransitReceiptHandlers(prisma2) {
     try {
       return await prisma2.coffeeTransitReceipt.delete({ where: { id } });
     } catch (err) {
-      log70.error("transitReceipts:delete", err);
+      log71.error("transitReceipts:delete", err);
       throw err;
     }
   });
@@ -19539,7 +20131,7 @@ function broadcastRestaurantEvent(event, payload) {
 }
 
 // src/plugins/restaurant/handlers/orders.ts
-var log71 = createLogger("Restaurant:Orders");
+var log72 = createLogger("Restaurant:Orders");
 async function recalcOrderTotalsInTx(tx, orderId) {
   const order = await tx.dineInOrder.findUnique({
     where: { id: orderId },
@@ -19664,7 +20256,7 @@ function registerOrderHandlers2(prisma2) {
         orderBy: { openedAt: "desc" }
       });
     } catch (err) {
-      log71.error("getOrders error", err);
+      log72.error("getOrders error", err);
       throw err;
     }
   });
@@ -19686,7 +20278,7 @@ function registerOrderHandlers2(prisma2) {
         }
       });
     } catch (err) {
-      log71.error("getOrder error", err);
+      log72.error("getOrder error", err);
       throw err;
     }
   });
@@ -19942,7 +20534,7 @@ function registerOrderHandlers2(prisma2) {
 }
 
 // src/plugins/restaurant/handlers/tables.ts
-var log72 = createLogger("Restaurant:Tables");
+var log73 = createLogger("Restaurant:Tables");
 function registerTableHandlers2(prisma2) {
   ipcMain.handle("restaurant:getTables", async () => {
     try {
@@ -19970,7 +20562,7 @@ function registerTableHandlers2(prisma2) {
         orderBy: [{ section: "asc" }, { number: "asc" }]
       });
     } catch (err) {
-      log72.error("getTables error", err);
+      log73.error("getTables error", err);
       throw err;
     }
   });
@@ -19991,7 +20583,7 @@ function registerTableHandlers2(prisma2) {
       broadcastRestaurantEvent("table:updated", table);
       return table;
     } catch (err) {
-      log72.error("createTable error", err);
+      log73.error("createTable error", err);
       throw err;
     }
   });
@@ -20010,7 +20602,7 @@ function registerTableHandlers2(prisma2) {
       broadcastRestaurantEvent("table:updated", table);
       return table;
     } catch (err) {
-      log72.error("updateTable error", err);
+      log73.error("updateTable error", err);
       throw err;
     }
   });
@@ -20023,7 +20615,7 @@ function registerTableHandlers2(prisma2) {
       broadcastRestaurantEvent("table:updated", table);
       return table;
     } catch (err) {
-      log72.error("updateTablePosition error", err);
+      log73.error("updateTablePosition error", err);
       throw err;
     }
   });
@@ -20092,7 +20684,7 @@ function registerTableHandlers2(prisma2) {
       broadcastRestaurantEvent("table:updated", table);
       return table;
     } catch (err) {
-      log72.error("deleteTable error", err);
+      log73.error("deleteTable error", err);
       throw err;
     }
   });
@@ -20100,7 +20692,7 @@ function registerTableHandlers2(prisma2) {
 
 // src/plugins/restaurant/handlers/menu.ts
 init_electron_node();
-var log73 = createLogger("Restaurant:Menu");
+var log74 = createLogger("Restaurant:Menu");
 function registerMenuHandlers(prisma2) {
   ipcMain.handle("restaurant:getMenuItems", async () => {
     try {
@@ -20120,7 +20712,7 @@ function registerMenuHandlers(prisma2) {
         orderBy: [{ category: "asc" }, { displayOrder: "asc" }, { name: "asc" }]
       });
     } catch (err) {
-      log73.error("getMenuItems error", err);
+      log74.error("getMenuItems error", err);
       throw err;
     }
   });
@@ -20268,7 +20860,7 @@ function registerMenuHandlers(prisma2) {
         data: { isAvailable: !item.isAvailable }
       });
     } catch (err) {
-      log73.error("toggleItem86 error", err);
+      log74.error("toggleItem86 error", err);
       throw err;
     }
   });
@@ -20276,7 +20868,7 @@ function registerMenuHandlers(prisma2) {
     try {
       return await prisma2.menuItem.delete({ where: { id } });
     } catch (err) {
-      log73.error("deleteMenuItem error", err);
+      log74.error("deleteMenuItem error", err);
       throw err;
     }
   });
@@ -20284,7 +20876,7 @@ function registerMenuHandlers(prisma2) {
 
 // src/plugins/restaurant/handlers/kds.ts
 init_electron_node();
-var log74 = createLogger("Restaurant:KDS");
+var log75 = createLogger("Restaurant:KDS");
 function registerKdsHandlers(prisma2) {
   ipcMain.handle("restaurant:getKdsActiveTickets", async (_e, station) => {
     try {
@@ -20309,7 +20901,7 @@ function registerKdsHandlers(prisma2) {
         orderBy: { openedAt: "asc" }
       });
     } catch (err) {
-      log74.error("getKdsActiveTickets error", err);
+      log75.error("getKdsActiveTickets error", err);
       throw err;
     }
   });
@@ -20338,7 +20930,7 @@ function registerKdsHandlers(prisma2) {
       broadcastRestaurantEvent("kds:item_bumped", updated);
       return updated;
     } catch (err) {
-      log74.error("bumpKdsItem error", err);
+      log75.error("bumpKdsItem error", err);
       throw err;
     }
   });
@@ -20356,7 +20948,7 @@ function registerKdsHandlers(prisma2) {
       broadcastRestaurantEvent("kds:ticket_bumped", { orderId, status: targetStatus });
       return { success: true, orderId, status: targetStatus };
     } catch (err) {
-      log74.error("bumpKdsTicket error", err);
+      log75.error("bumpKdsTicket error", err);
       throw err;
     }
   });
@@ -20364,7 +20956,7 @@ function registerKdsHandlers(prisma2) {
 
 // src/plugins/restaurant/handlers/reservations.ts
 init_electron_node();
-var log75 = createLogger("Restaurant:Reservations");
+var log76 = createLogger("Restaurant:Reservations");
 function registerReservationHandlers(prisma2) {
   ipcMain.handle("restaurant:getReservations", async (_e, options) => {
     try {
@@ -20387,7 +20979,7 @@ function registerReservationHandlers(prisma2) {
         orderBy: { date: "asc" }
       });
     } catch (err) {
-      log75.error("getReservations error", err);
+      log76.error("getReservations error", err);
       throw err;
     }
   });
@@ -20408,7 +21000,7 @@ function registerReservationHandlers(prisma2) {
         include: { table: true }
       });
     } catch (err) {
-      log75.error("createReservation error", err);
+      log76.error("createReservation error", err);
       throw err;
     }
   });
@@ -20428,7 +21020,7 @@ function registerReservationHandlers(prisma2) {
         include: { table: true }
       });
     } catch (err) {
-      log75.error("updateReservation error", err);
+      log76.error("updateReservation error", err);
       throw err;
     }
   });
@@ -20459,7 +21051,7 @@ function registerReservationHandlers(prisma2) {
         include: { table: true, items: true }
       });
     } catch (err) {
-      log75.error("seatReservation error", err);
+      log76.error("seatReservation error", err);
       throw err;
     }
   });
@@ -20467,7 +21059,7 @@ function registerReservationHandlers(prisma2) {
     try {
       return await prisma2.tableReservation.delete({ where: { id } });
     } catch (err) {
-      log75.error("deleteReservation error", err);
+      log76.error("deleteReservation error", err);
       throw err;
     }
   });
@@ -20475,7 +21067,7 @@ function registerReservationHandlers(prisma2) {
 
 // src/plugins/restaurant/handlers/shifts.ts
 init_electron_node();
-var log76 = createLogger("Restaurant:Shifts");
+var log77 = createLogger("Restaurant:Shifts");
 function registerShiftHandlers2(prisma2) {
   ipcMain.handle("restaurant:getActiveShift", async (_e, serverId) => {
     try {
@@ -20487,7 +21079,7 @@ function registerShiftHandlers2(prisma2) {
         orderBy: { openedAt: "desc" }
       });
     } catch (err) {
-      log76.error("getActiveShift error", err);
+      log77.error("getActiveShift error", err);
       throw err;
     }
   });
@@ -20511,7 +21103,7 @@ function registerShiftHandlers2(prisma2) {
         take: options?.limit || 50
       });
     } catch (err) {
-      log76.error("getShiftHistory error", err);
+      log77.error("getShiftHistory error", err);
       throw err;
     }
   });
@@ -20534,7 +21126,7 @@ function registerShiftHandlers2(prisma2) {
       broadcastRestaurantEvent("shift:changed", shift);
       return shift;
     } catch (err) {
-      log76.error("openShift error", err);
+      log77.error("openShift error", err);
       throw err;
     }
   });
@@ -20630,7 +21222,7 @@ function registerShiftHandlers2(prisma2) {
         categoryRevenue
       };
     } catch (err) {
-      log76.error("getZReportData error", err);
+      log77.error("getZReportData error", err);
       throw err;
     }
   });
@@ -20638,7 +21230,7 @@ function registerShiftHandlers2(prisma2) {
 
 // src/plugins/restaurant/handlers/overview.ts
 init_electron_node();
-var log77 = createLogger("Restaurant:Overview");
+var log78 = createLogger("Restaurant:Overview");
 function registerOverviewHandlers2(prisma2) {
   ipcMain.handle("restaurant:getOverview", async () => {
     try {
@@ -20682,7 +21274,7 @@ function registerOverviewHandlers2(prisma2) {
         activeKdsTickets
       };
     } catch (err) {
-      log77.error("getOverview error", err);
+      log78.error("getOverview error", err);
       throw err;
     }
   });
@@ -20723,7 +21315,7 @@ function registerOverviewHandlers2(prisma2) {
         topItems: Object.values(topItemsMap).sort((a, b) => b.revenue - a.revenue).slice(0, 10)
       };
     } catch (err) {
-      log77.error("getReportsData error", err);
+      log78.error("getReportsData error", err);
       throw err;
     }
   });
@@ -20731,7 +21323,7 @@ function registerOverviewHandlers2(prisma2) {
 
 // src/plugins/restaurant/handlers/inventory.ts
 init_electron_node();
-var log78 = createLogger("Restaurant:Inventory");
+var log79 = createLogger("Restaurant:Inventory");
 function registerInventoryHandlers2(prisma2) {
   ipcMain.handle("restaurant:createIngredient", async (_e, data) => {
     return await prisma2.$transaction(async (tx) => {
@@ -20807,7 +21399,7 @@ function registerInventoryHandlers2(prisma2) {
         take: 100
       });
     } catch (err) {
-      log78.error("getStockMovements error", err);
+      log79.error("getStockMovements error", err);
       throw err;
     }
   });
@@ -20827,7 +21419,7 @@ function registerInventoryHandlers2(prisma2) {
         orderBy: [{ category: "asc" }, { name: "asc" }]
       });
     } catch (err) {
-      log78.error("getIngredients error", err);
+      log79.error("getIngredients error", err);
       throw err;
     }
   });
@@ -20838,7 +21430,7 @@ function registerInventoryHandlers2(prisma2) {
         data: { isActive: false }
       });
     } catch (err) {
-      log78.error("deleteIngredient error", err);
+      log79.error("deleteIngredient error", err);
       throw err;
     }
   });
@@ -20846,7 +21438,7 @@ function registerInventoryHandlers2(prisma2) {
 
 // src/plugins/restaurant/handlers/recipes.ts
 init_electron_node();
-var log79 = createLogger("Restaurant:Recipes");
+var log80 = createLogger("Restaurant:Recipes");
 function registerRecipeHandlers2(prisma2) {
   ipcMain.handle("restaurant:getRecipes", async () => {
     try {
@@ -20858,7 +21450,7 @@ function registerRecipeHandlers2(prisma2) {
         orderBy: { createdAt: "desc" }
       });
     } catch (err) {
-      log79.error("getRecipes error", err);
+      log80.error("getRecipes error", err);
       throw err;
     }
   });
@@ -20922,7 +21514,7 @@ function registerRecipeHandlers2(prisma2) {
     try {
       return await prisma2.menuItemRecipe.delete({ where: { id: recipeId } });
     } catch (err) {
-      log79.error("deleteRecipe error", err);
+      log80.error("deleteRecipe error", err);
       throw err;
     }
   });
@@ -20930,7 +21522,7 @@ function registerRecipeHandlers2(prisma2) {
 
 // src/plugins/restaurant/handlers/waste.ts
 init_electron_node();
-var log80 = createLogger("Restaurant:Waste");
+var log81 = createLogger("Restaurant:Waste");
 function registerWasteHandlers2(prisma2) {
   ipcMain.handle("restaurant:getWasteLogs", async (_e, options) => {
     try {
@@ -20950,7 +21542,7 @@ function registerWasteHandlers2(prisma2) {
         orderBy: { createdAt: "desc" }
       });
     } catch (err) {
-      log80.error("getWasteLogs error", err);
+      log81.error("getWasteLogs error", err);
       throw err;
     }
   });
@@ -20971,19 +21563,19 @@ function registerWasteHandlers2(prisma2) {
       let totalLoss = 0;
       const reasonBreakdown = {};
       const itemBreakdown = {};
-      logs.forEach((log132) => {
-        totalLoss += log132.costLoss;
-        if (!reasonBreakdown[log132.reason]) {
-          reasonBreakdown[log132.reason] = { count: 0, totalCost: 0 };
+      logs.forEach((log133) => {
+        totalLoss += log133.costLoss;
+        if (!reasonBreakdown[log133.reason]) {
+          reasonBreakdown[log133.reason] = { count: 0, totalCost: 0 };
         }
-        reasonBreakdown[log132.reason].count += 1;
-        reasonBreakdown[log132.reason].totalCost = roundMoney(reasonBreakdown[log132.reason].totalCost + log132.costLoss);
-        const key = log132.itemName;
+        reasonBreakdown[log133.reason].count += 1;
+        reasonBreakdown[log133.reason].totalCost = roundMoney(reasonBreakdown[log133.reason].totalCost + log133.costLoss);
+        const key = log133.itemName;
         if (!itemBreakdown[key]) {
-          itemBreakdown[key] = { name: key, quantity: 0, unit: log132.unit, totalCost: 0 };
+          itemBreakdown[key] = { name: key, quantity: 0, unit: log133.unit, totalCost: 0 };
         }
-        itemBreakdown[key].quantity += log132.quantity;
-        itemBreakdown[key].totalCost = roundMoney(itemBreakdown[key].totalCost + log132.costLoss);
+        itemBreakdown[key].quantity += log133.quantity;
+        itemBreakdown[key].totalCost = roundMoney(itemBreakdown[key].totalCost + log133.costLoss);
       });
       const topLossItems = Object.values(itemBreakdown).sort((a, b) => b.totalCost - a.totalCost).slice(0, 5);
       return {
@@ -20993,7 +21585,7 @@ function registerWasteHandlers2(prisma2) {
         topLossItems
       };
     } catch (err) {
-      log80.error("getWasteAnalytics error", err);
+      log81.error("getWasteAnalytics error", err);
       throw err;
     }
   });
@@ -21043,7 +21635,7 @@ function registerWasteHandlers2(prisma2) {
     try {
       return await prisma2.restaurantWasteLog.delete({ where: { id } });
     } catch (err) {
-      log80.error("deleteWasteLog error", err);
+      log81.error("deleteWasteLog error", err);
       throw err;
     }
   });
@@ -21065,7 +21657,7 @@ function registerRestaurantHandlers(prisma2) {
 
 // src/plugins/warehouse/handlers/locations.ts
 init_electron_node();
-var log81 = createLogger("Warehouse:Locations");
+var log82 = createLogger("Warehouse:Locations");
 function registerLocationHandlers(prisma2) {
   ipcMain.handle("warehouse:getLocations", async () => {
     try {
@@ -21078,7 +21670,7 @@ function registerLocationHandlers(prisma2) {
         orderBy: [{ type: "asc" }, { name: "asc" }]
       });
     } catch (err) {
-      log81.error("getLocations error", err);
+      log82.error("getLocations error", err);
       throw err;
     }
   });
@@ -21086,7 +21678,7 @@ function registerLocationHandlers(prisma2) {
     try {
       return await prisma2.warehouseLocation.create({ data: { ...data, parentId: data.parentId || null } });
     } catch (err) {
-      log81.error("createLocation error", err);
+      log82.error("createLocation error", err);
       throw err;
     }
   });
@@ -21095,7 +21687,7 @@ function registerLocationHandlers(prisma2) {
       const { id, ...rest } = data;
       return await prisma2.warehouseLocation.update({ where: { id }, data: rest });
     } catch (err) {
-      log81.error("updateLocation error", err);
+      log82.error("updateLocation error", err);
       throw err;
     }
   });
@@ -21103,7 +21695,7 @@ function registerLocationHandlers(prisma2) {
     try {
       return await prisma2.warehouseLocation.update({ where: { id }, data: { isActive: false } });
     } catch (err) {
-      log81.error("deleteLocation error", err);
+      log82.error("deleteLocation error", err);
       throw err;
     }
   });
@@ -21152,7 +21744,7 @@ async function writeWarehouseMovement(prisma2, data) {
 }
 
 // src/plugins/warehouse/handlers/stock.ts
-var log82 = createLogger("Warehouse:Stock");
+var log83 = createLogger("Warehouse:Stock");
 function registerStockHandlers(prisma2) {
   ipcMain.handle("warehouse:getStock", async (_e, options) => {
     try {
@@ -21179,7 +21771,7 @@ function registerStockHandlers(prisma2) {
         orderBy: [{ location: { name: "asc" } }, { productName: "asc" }]
       });
     } catch (err) {
-      log82.error("getStock error", err);
+      log83.error("getStock error", err);
       throw err;
     }
   });
@@ -21246,7 +21838,7 @@ function registerStockHandlers(prisma2) {
       });
       return row;
     } catch (err) {
-      log82.error("upsertStock error", err);
+      log83.error("upsertStock error", err);
       throw err;
     }
   });
@@ -21287,7 +21879,7 @@ function registerStockHandlers(prisma2) {
       });
       return updated;
     } catch (err) {
-      log82.error("adjustStock error", err);
+      log83.error("adjustStock error", err);
       throw err;
     }
   });
@@ -21303,7 +21895,7 @@ function registerStockHandlers(prisma2) {
       });
       return deleted;
     } catch (err) {
-      log82.error("deleteStock error", err);
+      log83.error("deleteStock error", err);
       throw err;
     }
   });
@@ -21324,7 +21916,7 @@ function registerStockHandlers(prisma2) {
       });
       return rows.filter((r) => Number(r.quantity) <= Number(r.minQuantity));
     } catch (err) {
-      log82.error("getLowStock error", err);
+      log83.error("getLowStock error", err);
       throw err;
     }
   });
@@ -21351,7 +21943,7 @@ function registerStockHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + data.length < total };
     } catch (err) {
-      log82.error("getMovements error", err);
+      log83.error("getMovements error", err);
       throw err;
     }
   });
@@ -21377,7 +21969,7 @@ function registerStockHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + data.length < total };
     } catch (err) {
-      log82.error("getAuditLogs error", err);
+      log83.error("getAuditLogs error", err);
       throw err;
     }
   });
@@ -21385,7 +21977,7 @@ function registerStockHandlers(prisma2) {
 
 // src/plugins/warehouse/handlers/transfers.ts
 init_electron_node();
-var log83 = createLogger("Warehouse:Transfers");
+var log84 = createLogger("Warehouse:Transfers");
 function registerTransferHandlers(prisma2) {
   ipcMain.handle("warehouse:getTransfers", async (_e, options) => {
     try {
@@ -21401,7 +21993,7 @@ function registerTransferHandlers(prisma2) {
         orderBy: { transferDate: "desc" }
       });
     } catch (err) {
-      log83.error("getTransfers error", err);
+      log84.error("getTransfers error", err);
       throw err;
     }
   });
@@ -21427,7 +22019,7 @@ function registerTransferHandlers(prisma2) {
       });
       return row;
     } catch (err) {
-      log83.error("createTransfer error", err);
+      log84.error("createTransfer error", err);
       throw err;
     }
   });
@@ -21536,7 +22128,7 @@ function registerTransferHandlers(prisma2) {
         return updated;
       });
     } catch (err) {
-      log83.error("updateTransferStatus error", err);
+      log84.error("updateTransferStatus error", err);
       throw err;
     }
   });
@@ -21544,7 +22136,7 @@ function registerTransferHandlers(prisma2) {
     try {
       return await prisma2.stockTransfer.delete({ where: { id } });
     } catch (err) {
-      log83.error("deleteTransfer error", err);
+      log84.error("deleteTransfer error", err);
       throw err;
     }
   });
@@ -21552,7 +22144,7 @@ function registerTransferHandlers(prisma2) {
 
 // src/plugins/warehouse/handlers/overview.ts
 init_electron_node();
-var log84 = createLogger("Warehouse:Overview");
+var log85 = createLogger("Warehouse:Overview");
 function registerWarehouseOverviewHandlers(prisma2) {
   ipcMain.handle("warehouse:getOverview", async () => {
     try {
@@ -21594,7 +22186,7 @@ function registerWarehouseOverviewHandlers(prisma2) {
         recentMovements
       };
     } catch (err) {
-      log84.error("getOverview error", err);
+      log85.error("getOverview error", err);
       throw err;
     }
   });
@@ -21602,7 +22194,7 @@ function registerWarehouseOverviewHandlers(prisma2) {
 
 // src/plugins/warehouse/handlers/operations.queries.ts
 init_electron_node();
-var log85 = createLogger("Warehouse:Operations");
+var log86 = createLogger("Warehouse:Operations");
 function registerWarehouseOrderQueryHandlers(prisma2) {
   ipcMain.handle("warehouse:getOrders", async (_e, params) => {
     try {
@@ -21642,7 +22234,7 @@ function registerWarehouseOrderQueryHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + data.length < total };
     } catch (err) {
-      log85.error("getOrders error", err);
+      log86.error("getOrders error", err);
       throw err;
     }
   });
@@ -21659,7 +22251,7 @@ function registerWarehouseOrderQueryHandlers(prisma2) {
       ]);
       return { activeOrders, receiving, qc, putaway, picking, packing, shipping };
     } catch (err) {
-      log85.error("getJourneyBoard error", err);
+      log86.error("getJourneyBoard error", err);
       throw err;
     }
   });
@@ -21709,7 +22301,7 @@ function makeOrderNumber(orderType) {
 }
 
 // src/plugins/warehouse/handlers/operations.lifecycle.ts
-var log86 = createLogger("Warehouse:Operations");
+var log87 = createLogger("Warehouse:Operations");
 function registerWarehouseOrderLifecycleHandlers(prisma2) {
   ipcMain.handle("warehouse:createOrder", async (_e, data) => {
     try {
@@ -21756,7 +22348,7 @@ function registerWarehouseOrderLifecycleHandlers(prisma2) {
       });
       return row;
     } catch (err) {
-      log86.error("createOrder error", err);
+      log87.error("createOrder error", err);
       throw err;
     }
   });
@@ -21781,7 +22373,7 @@ function registerWarehouseOrderLifecycleHandlers(prisma2) {
       });
       return row;
     } catch (err) {
-      log86.error("updateOrderStatus error", err);
+      log87.error("updateOrderStatus error", err);
       throw err;
     }
   });
@@ -21807,7 +22399,7 @@ function registerWarehouseOrderLifecycleHandlers(prisma2) {
       });
       return updated;
     } catch (err) {
-      log86.error("advanceOrderStage error", err);
+      log87.error("advanceOrderStage error", err);
       throw err;
     }
   });
@@ -21909,7 +22501,7 @@ function registerWarehouseOrderLifecycleHandlers(prisma2) {
         return updated;
       });
     } catch (err) {
-      log86.error("processOrder error", err);
+      log87.error("processOrder error", err);
       throw err;
     }
   });
@@ -22429,7 +23021,7 @@ function registerStatsHandlers(prisma2) {
 init_electron_node();
 var fs8 = __toESM(require("fs"));
 var path11 = __toESM(require("path"));
-var log87 = createLogger("ClinicCheckResults");
+var log88 = createLogger("ClinicCheckResults");
 function getCheckResultsDir() {
   const isDev2 = process.env.NODE_ENV === "development";
   const base = isDev2 ? path11.resolve(process.cwd(), "prisma", "clinic-results") : path11.join(app.getPath("userData"), "clinic-results");
@@ -22479,7 +23071,7 @@ function registerCheckResultHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log87.error("Failed to copy check result file:", err);
+      log88.error("Failed to copy check result file:", err);
       throw new Error("Failed to save file");
     }
   });
@@ -22518,7 +23110,7 @@ function registerCheckResultHandlers(prisma2) {
         fs8.unlinkSync(result.filePath);
       }
     } catch (err) {
-      log87.warn("Could not delete file from disk:", err);
+      log88.warn("Could not delete file from disk:", err);
     }
     await prisma2.clinicCheckResult.delete({ where: { id } });
     return true;
@@ -22527,7 +23119,7 @@ function registerCheckResultHandlers(prisma2) {
 
 // src/plugins/clinic/handlers/appointments.ts
 init_electron_node();
-var log88 = createLogger("Clinic:Appointments");
+var log89 = createLogger("Clinic:Appointments");
 function parseWorkingHours(raw) {
   if (!raw)
     return null;
@@ -22577,7 +23169,7 @@ function registerAppointmentHandlers(prisma2) {
         hasMore: skip + take < total
       };
     } catch (err) {
-      log88.error("getAll error", err);
+      log89.error("getAll error", err);
       throw err;
     }
   });
@@ -22593,7 +23185,7 @@ function registerAppointmentHandlers(prisma2) {
         orderBy: { appointmentDate: "asc" }
       });
     } catch (err) {
-      log88.error("getToday error", err);
+      log89.error("getToday error", err);
       throw err;
     }
   });
@@ -22608,7 +23200,7 @@ function registerAppointmentHandlers(prisma2) {
         orderBy: { appointmentDate: "asc" }
       });
     } catch (err) {
-      log88.error("getUpcoming error", err);
+      log89.error("getUpcoming error", err);
       throw err;
     }
   });
@@ -22635,7 +23227,7 @@ function registerAppointmentHandlers(prisma2) {
       ]);
       return { today: todayFU, overdue: overdueFU };
     } catch (err) {
-      log88.error("getFollowUpReminders error", err);
+      log89.error("getFollowUpReminders error", err);
       throw err;
     }
   });
@@ -22690,7 +23282,7 @@ function registerAppointmentHandlers(prisma2) {
       ]);
       return [...overdue, ...dueToday, ...upcoming];
     } catch (err) {
-      log88.error("getAllFollowUps error", err);
+      log89.error("getAllFollowUps error", err);
       throw err;
     }
   });
@@ -22701,7 +23293,7 @@ function registerAppointmentHandlers(prisma2) {
         data: { followUpDate: null }
       });
     } catch (err) {
-      log88.error("clearFollowUp error", err);
+      log89.error("clearFollowUp error", err);
       throw err;
     }
   });
@@ -22748,7 +23340,7 @@ function registerAppointmentHandlers(prisma2) {
         include: { patient: { select: { id: true, name: true, phone: true } } }
       });
     } catch (err) {
-      log88.error("create error", err);
+      log89.error("create error", err);
       throw err;
     }
   });
@@ -22763,7 +23355,7 @@ function registerAppointmentHandlers(prisma2) {
         include: { patient: { select: { id: true, name: true, phone: true } } }
       });
     } catch (err) {
-      log88.error("update error", err);
+      log89.error("update error", err);
       throw err;
     }
   });
@@ -22772,7 +23364,7 @@ function registerAppointmentHandlers(prisma2) {
       await prisma2.clinicAppointment.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log88.error("delete error", err);
+      log89.error("delete error", err);
       throw err;
     }
   });
@@ -22783,7 +23375,7 @@ init_electron_node();
 var path12 = __toESM(require("path"));
 var fs9 = __toESM(require("fs"));
 var os4 = __toESM(require("os"));
-var log89 = createLogger("Clinic:PDF");
+var log90 = createLogger("Clinic:PDF");
 function esc(s) {
   if (!s)
     return "\u2013";
@@ -22970,7 +23562,7 @@ function registerClinicPdfHandlers() {
       shell.openPath(filePath);
       return { filePath, success: true };
     } catch (err) {
-      log89.error("exportPdf error:", err);
+      log90.error("exportPdf error:", err);
       throw err;
     }
   });
@@ -22978,7 +23570,7 @@ function registerClinicPdfHandlers() {
 
 // src/plugins/clinic/handlers/expenses.ts
 init_electron_node();
-var log90 = createLogger("Clinic:Expenses");
+var log91 = createLogger("Clinic:Expenses");
 function getPeriodRange(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -23050,7 +23642,7 @@ function registerExpenseHandlers2(prisma2) {
       }
       return await prisma2.clinicExpense.findMany({ where, orderBy: { date: "desc" } });
     } catch (error) {
-      log90.error("Error fetching expenses:", error);
+      log91.error("Error fetching expenses:", error);
       throw error;
     }
   });
@@ -23102,7 +23694,7 @@ function registerExpenseHandlers2(prisma2) {
       const netIncome = revenue - totalExpenses;
       return { revenue, totalExpenses, totalSalaries, netIncome, outstanding, byCategory };
     } catch (error) {
-      log90.error("Error building expense summary:", error);
+      log91.error("Error building expense summary:", error);
       throw error;
     }
   });
@@ -23128,7 +23720,7 @@ function registerExpenseHandlers2(prisma2) {
       }
       return labels.map((label) => ({ label, total: totals[label] ?? 0 }));
     } catch (error) {
-      log90.error("Error building expense breakdown:", error);
+      log91.error("Error building expense breakdown:", error);
       throw error;
     }
   });
@@ -23138,7 +23730,7 @@ function registerExpenseHandlers2(prisma2) {
         throw new Error("Database not available");
       return await prisma2.clinicExpense.create({ data });
     } catch (error) {
-      log90.error("Error creating expense:", error);
+      log91.error("Error creating expense:", error);
       throw error;
     }
   });
@@ -23148,7 +23740,7 @@ function registerExpenseHandlers2(prisma2) {
         throw new Error("Database not available");
       return await prisma2.clinicExpense.update({ where: { id }, data });
     } catch (error) {
-      log90.error("Error updating expense:", error);
+      log91.error("Error updating expense:", error);
       throw error;
     }
   });
@@ -23159,7 +23751,7 @@ function registerExpenseHandlers2(prisma2) {
       await prisma2.clinicExpense.delete({ where: { id } });
       return { success: true };
     } catch (error) {
-      log90.error("Error deleting expense:", error);
+      log91.error("Error deleting expense:", error);
       throw error;
     }
   });
@@ -23167,7 +23759,7 @@ function registerExpenseHandlers2(prisma2) {
 
 // src/plugins/clinic/handlers/staff.ts
 init_electron_node();
-var log91 = createLogger("Clinic:Staff");
+var log92 = createLogger("Clinic:Staff");
 function computeNetPay(staff, params) {
   const {
     regularHours = 0,
@@ -23227,7 +23819,7 @@ function registerClinicStaffHandlers(prisma2) {
       }
       return staffList;
     } catch (error) {
-      log91.error("Error fetching staff:", error);
+      log92.error("Error fetching staff:", error);
       throw error;
     }
   });
@@ -23237,7 +23829,7 @@ function registerClinicStaffHandlers(prisma2) {
         throw new Error("Database not available");
       return await prisma2.clinicStaff.create({ data });
     } catch (error) {
-      log91.error("Error creating staff:", error);
+      log92.error("Error creating staff:", error);
       throw error;
     }
   });
@@ -23247,7 +23839,7 @@ function registerClinicStaffHandlers(prisma2) {
         throw new Error("Database not available");
       return await prisma2.clinicStaff.update({ where: { id }, data });
     } catch (error) {
-      log91.error("Error updating staff:", error);
+      log92.error("Error updating staff:", error);
       throw error;
     }
   });
@@ -23258,7 +23850,7 @@ function registerClinicStaffHandlers(prisma2) {
       await prisma2.clinicStaff.delete({ where: { id } });
       return { success: true };
     } catch (error) {
-      log91.error("Error deleting staff:", error);
+      log92.error("Error deleting staff:", error);
       throw error;
     }
   });
@@ -23279,7 +23871,7 @@ function registerClinicStaffHandlers(prisma2) {
         orderBy: [{ year: "desc" }, { month: "desc" }]
       });
     } catch (error) {
-      log91.error("Error fetching salary records:", error);
+      log92.error("Error fetching salary records:", error);
       throw error;
     }
   });
@@ -23301,7 +23893,7 @@ function registerClinicStaffHandlers(prisma2) {
         create: { staffId, month, year, ...rest }
       });
     } catch (error) {
-      log91.error("Error upserting salary record:", error);
+      log92.error("Error upserting salary record:", error);
       throw error;
     }
   });
@@ -23314,7 +23906,7 @@ function registerClinicStaffHandlers(prisma2) {
         throw new Error(`Staff ${staffId} not found`);
       return computeNetPay(staff, params);
     } catch (error) {
-      log91.error("Error computing salary:", error);
+      log92.error("Error computing salary:", error);
       throw error;
     }
   });
@@ -23327,7 +23919,7 @@ function registerClinicStaffHandlers(prisma2) {
         data: { status: "paid", paidDate: /* @__PURE__ */ new Date() }
       });
     } catch (error) {
-      log91.error("Error marking salary paid:", error);
+      log92.error("Error marking salary paid:", error);
       throw error;
     }
   });
@@ -23338,7 +23930,7 @@ function registerClinicStaffHandlers(prisma2) {
       await prisma2.clinicSalaryRecord.delete({ where: { id } });
       return { success: true };
     } catch (error) {
-      log91.error("Error deleting salary record:", error);
+      log92.error("Error deleting salary record:", error);
       throw error;
     }
   });
@@ -23375,7 +23967,7 @@ function registerClinicStaffHandlers(prisma2) {
         totalPending: Math.round(b.totalPending * 100) / 100
       }));
     } catch (error) {
-      log91.error("Error building salary summary:", error);
+      log92.error("Error building salary summary:", error);
       throw error;
     }
   });
@@ -23383,7 +23975,7 @@ function registerClinicStaffHandlers(prisma2) {
 
 // src/plugins/clinic/handlers/doctors.ts
 init_electron_node();
-var log92 = createLogger("Clinic:Doctors");
+var log93 = createLogger("Clinic:Doctors");
 var DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 function parseWorkingHours2(raw) {
   if (!raw)
@@ -23476,7 +24068,7 @@ function registerClinicDoctorHandlers(prisma2) {
         };
       });
     } catch (err) {
-      log92.error("list error", err);
+      log93.error("list error", err);
       throw err;
     }
   });
@@ -23490,7 +24082,7 @@ function registerClinicDoctorHandlers(prisma2) {
       ]);
       return { success: true };
     } catch (err) {
-      log92.error("setDefault error", err);
+      log93.error("setDefault error", err);
       throw err;
     }
   });
@@ -23501,7 +24093,7 @@ function registerClinicDoctorHandlers(prisma2) {
       const value = workingHours == null ? null : typeof workingHours === "string" ? workingHours : JSON.stringify(workingHours);
       return await prisma2.clinicStaff.update({ where: { id }, data: { workingHours: value } });
     } catch (err) {
-      log92.error("availability:set error", err);
+      log93.error("availability:set error", err);
       throw err;
     }
   });
@@ -23568,7 +24160,7 @@ function registerClinicDoctorHandlers(prisma2) {
         recentSessions
       };
     } catch (err) {
-      log92.error("getProfile error", err);
+      log93.error("getProfile error", err);
       throw err;
     }
   });
@@ -24154,7 +24746,7 @@ init_electron_node();
 
 // src/plugins/vet/handlers/owners.ts
 init_electron_node();
-var log93 = createLogger("Vet:Owners");
+var log94 = createLogger("Vet:Owners");
 function registerOwnerHandlers(prisma2) {
   ipcMain.handle("vet:owners:getAll", async (_e, params) => {
     try {
@@ -24183,7 +24775,7 @@ function registerOwnerHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log93.error("getAll", err);
+      log94.error("getAll", err);
       throw err;
     }
   });
@@ -24213,7 +24805,7 @@ function registerOwnerHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log93.error("getById", err);
+      log94.error("getById", err);
       throw err;
     }
   });
@@ -24221,7 +24813,7 @@ function registerOwnerHandlers(prisma2) {
     try {
       return await prisma2.vetOwner.create({ data });
     } catch (err) {
-      log93.error("create", err);
+      log94.error("create", err);
       throw err;
     }
   });
@@ -24229,7 +24821,7 @@ function registerOwnerHandlers(prisma2) {
     try {
       return await prisma2.vetOwner.update({ where: { id }, data });
     } catch (err) {
-      log93.error("update", err);
+      log94.error("update", err);
       throw err;
     }
   });
@@ -24237,7 +24829,7 @@ function registerOwnerHandlers(prisma2) {
     try {
       return await prisma2.vetOwner.delete({ where: { id } });
     } catch (err) {
-      log93.error("delete", err);
+      log94.error("delete", err);
       throw err;
     }
   });
@@ -24281,7 +24873,7 @@ function registerOwnerHandlers(prisma2) {
         totalOutstanding: sessionsOutstanding + salesOutstanding
       };
     } catch (err) {
-      log93.error("getFinance", err);
+      log94.error("getFinance", err);
       throw err;
     }
   });
@@ -24289,7 +24881,7 @@ function registerOwnerHandlers(prisma2) {
 
 // src/plugins/vet/handlers/patients.ts
 init_electron_node();
-var log94 = createLogger("Vet:Patients");
+var log95 = createLogger("Vet:Patients");
 function registerVetPatientHandlers(prisma2) {
   ipcMain.handle("vet:patients:getAll", async (_e, params) => {
     try {
@@ -24351,7 +24943,7 @@ function registerVetPatientHandlers(prisma2) {
       }));
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log94.error("getAll", err);
+      log95.error("getAll", err);
       throw err;
     }
   });
@@ -24388,7 +24980,7 @@ function registerVetPatientHandlers(prisma2) {
       }));
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log94.error("getDebtors", err);
+      log95.error("getDebtors", err);
       throw err;
     }
   });
@@ -24416,7 +25008,7 @@ function registerVetPatientHandlers(prisma2) {
       const totalPaid = Number(rows[0]?.tp) || 0;
       return { ...patient, finance: { totalCharged, totalPaid, outstanding: totalCharged - totalPaid } };
     } catch (err) {
-      log94.error("getById", err);
+      log95.error("getById", err);
       throw err;
     }
   });
@@ -24424,7 +25016,7 @@ function registerVetPatientHandlers(prisma2) {
     try {
       return await prisma2.vetPatient.create({ data, include: { owner: { select: { id: true, name: true } } } });
     } catch (err) {
-      log94.error("create", err);
+      log95.error("create", err);
       throw err;
     }
   });
@@ -24432,7 +25024,7 @@ function registerVetPatientHandlers(prisma2) {
     try {
       return await prisma2.vetPatient.update({ where: { id }, data, include: { owner: { select: { id: true, name: true } } } });
     } catch (err) {
-      log94.error("update", err);
+      log95.error("update", err);
       throw err;
     }
   });
@@ -24440,7 +25032,7 @@ function registerVetPatientHandlers(prisma2) {
     try {
       return await prisma2.vetPatient.delete({ where: { id } });
     } catch (err) {
-      log94.error("delete", err);
+      log95.error("delete", err);
       throw err;
     }
   });
@@ -24448,7 +25040,7 @@ function registerVetPatientHandlers(prisma2) {
 
 // src/plugins/vet/handlers/sessions.ts
 init_electron_node();
-var log95 = createLogger("Vet:Sessions");
+var log96 = createLogger("Vet:Sessions");
 function registerVetSessionHandlers(prisma2) {
   ipcMain.handle("vet:sessions:getRecent", async (_e, params) => {
     try {
@@ -24503,7 +25095,7 @@ function registerVetSessionHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log95.error("getRecent", err);
+      log96.error("getRecent", err);
       throw err;
     }
   });
@@ -24521,7 +25113,7 @@ function registerVetSessionHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log95.error("create", err);
+      log96.error("create", err);
       throw err;
     }
   });
@@ -24537,7 +25129,7 @@ function registerVetSessionHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log95.error("update", err);
+      log96.error("update", err);
       throw err;
     }
   });
@@ -24545,7 +25137,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetSession.delete({ where: { id } });
     } catch (err) {
-      log95.error("delete", err);
+      log96.error("delete", err);
       throw err;
     }
   });
@@ -24571,7 +25163,7 @@ function registerVetSessionHandlers(prisma2) {
         data: { amountPaid: newPaid, paymentStatus: status }
       });
     } catch (err) {
-      log95.error("settlePayment", err);
+      log96.error("settlePayment", err);
       throw err;
     }
   });
@@ -24607,7 +25199,7 @@ function registerVetSessionHandlers(prisma2) {
       });
       return { applied: Math.round(applied * 100) / 100, settledCount };
     } catch (err) {
-      log95.error("settleOwner", err);
+      log96.error("settleOwner", err);
       throw err;
     }
   });
@@ -24615,7 +25207,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetPrescription.create({ data: { ...data, sessionId } });
     } catch (err) {
-      log95.error("addPrescription", err);
+      log96.error("addPrescription", err);
       throw err;
     }
   });
@@ -24623,7 +25215,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetPrescription.update({ where: { id }, data });
     } catch (err) {
-      log95.error("updatePrescription", err);
+      log96.error("updatePrescription", err);
       throw err;
     }
   });
@@ -24634,7 +25226,7 @@ function registerVetSessionHandlers(prisma2) {
         data: { isActive: false, stoppedAt: /* @__PURE__ */ new Date(), stopReason: reason }
       });
     } catch (err) {
-      log95.error("stopPrescription", err);
+      log96.error("stopPrescription", err);
       throw err;
     }
   });
@@ -24642,7 +25234,7 @@ function registerVetSessionHandlers(prisma2) {
     try {
       return await prisma2.vetPrescription.delete({ where: { id } });
     } catch (err) {
-      log95.error("deletePrescription", err);
+      log96.error("deletePrescription", err);
       throw err;
     }
   });
@@ -24676,7 +25268,7 @@ function registerVetSessionHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log95.error("getFollowUps", err);
+      log96.error("getFollowUps", err);
       throw err;
     }
   });
@@ -24684,7 +25276,7 @@ function registerVetSessionHandlers(prisma2) {
 
 // src/plugins/vet/handlers/appointments.ts
 init_electron_node();
-var log96 = createLogger("Vet:Appointments");
+var log97 = createLogger("Vet:Appointments");
 function registerVetAppointmentHandlers(prisma2) {
   ipcMain.handle("vet:appointments:getAll", async (_e, params) => {
     try {
@@ -24729,7 +25321,7 @@ function registerVetAppointmentHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log96.error("getAll", err);
+      log97.error("getAll", err);
       throw err;
     }
   });
@@ -24755,7 +25347,7 @@ function registerVetAppointmentHandlers(prisma2) {
       });
       return { available: conflicts.length === 0, conflicts };
     } catch (err) {
-      log96.error("checkSlot", err);
+      log97.error("checkSlot", err);
       throw err;
     }
   });
@@ -24766,7 +25358,7 @@ function registerVetAppointmentHandlers(prisma2) {
         include: { patient: { select: { id: true, name: true, species: true } } }
       });
     } catch (err) {
-      log96.error("create", err);
+      log97.error("create", err);
       throw err;
     }
   });
@@ -24778,7 +25370,7 @@ function registerVetAppointmentHandlers(prisma2) {
         include: { patient: { select: { id: true, name: true, species: true } } }
       });
     } catch (err) {
-      log96.error("update", err);
+      log97.error("update", err);
       throw err;
     }
   });
@@ -24786,7 +25378,7 @@ function registerVetAppointmentHandlers(prisma2) {
     try {
       return await prisma2.vetAppointment.delete({ where: { id } });
     } catch (err) {
-      log96.error("delete", err);
+      log97.error("delete", err);
       throw err;
     }
   });
@@ -24797,7 +25389,7 @@ init_electron_node();
 init_electron_node();
 var import_node_path6 = __toESM(require("node:path"));
 var import_node_fs4 = __toESM(require("node:fs"));
-var log97 = createLogger("Vet:CheckResults");
+var log98 = createLogger("Vet:CheckResults");
 function getResultsDir() {
   const dir = import_node_path6.default.join(app.getPath("userData"), "vet-results");
   if (!import_node_fs4.default.existsSync(dir))
@@ -24821,7 +25413,7 @@ function registerVetCheckResultHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log97.error("getAll", err);
+      log98.error("getAll", err);
       throw err;
     }
   });
@@ -24847,7 +25439,7 @@ function registerVetCheckResultHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log97.error("create", err);
+      log98.error("create", err);
       throw err;
     }
   });
@@ -24861,7 +25453,7 @@ function registerVetCheckResultHandlers(prisma2) {
       }
       return await prisma2.vetCheckResult.delete({ where: { id } });
     } catch (err) {
-      log97.error("delete", err);
+      log98.error("delete", err);
       throw err;
     }
   });
@@ -24874,7 +25466,7 @@ function registerVetCheckResultHandlers(prisma2) {
       await shell2.openPath(record.filePath);
       return true;
     } catch (err) {
-      log97.error("openFile", err);
+      log98.error("openFile", err);
       throw err;
     }
   });
@@ -24882,7 +25474,7 @@ function registerVetCheckResultHandlers(prisma2) {
 
 // src/plugins/vet/handlers/expenses.ts
 init_electron_node();
-var log98 = createLogger("Vet:Expenses");
+var log99 = createLogger("Vet:Expenses");
 function getPeriodRange2(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -24938,7 +25530,7 @@ function registerVetExpenseHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log98.error("getAll", err);
+      log99.error("getAll", err);
       throw err;
     }
   });
@@ -24982,7 +25574,7 @@ function registerVetExpenseHandlers(prisma2) {
         byCategory
       };
     } catch (err) {
-      log98.error("summary", err);
+      log99.error("summary", err);
       throw err;
     }
   });
@@ -24990,7 +25582,7 @@ function registerVetExpenseHandlers(prisma2) {
     try {
       return await prisma2.vetExpense.create({ data });
     } catch (err) {
-      log98.error("create", err);
+      log99.error("create", err);
       throw err;
     }
   });
@@ -24998,7 +25590,7 @@ function registerVetExpenseHandlers(prisma2) {
     try {
       return await prisma2.vetExpense.update({ where: { id }, data });
     } catch (err) {
-      log98.error("update", err);
+      log99.error("update", err);
       throw err;
     }
   });
@@ -25006,7 +25598,7 @@ function registerVetExpenseHandlers(prisma2) {
     try {
       return await prisma2.vetExpense.delete({ where: { id } });
     } catch (err) {
-      log98.error("delete", err);
+      log99.error("delete", err);
       throw err;
     }
   });
@@ -25014,7 +25606,7 @@ function registerVetExpenseHandlers(prisma2) {
 
 // src/plugins/vet/handlers/staff.ts
 init_electron_node();
-var log99 = createLogger("Vet:Staff");
+var log100 = createLogger("Vet:Staff");
 function registerVetStaffHandlers(prisma2) {
   ipcMain.handle("vet:staff:getAll", async (_e, params) => {
     try {
@@ -25041,7 +25633,7 @@ function registerVetStaffHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log99.error("getAll", err);
+      log100.error("getAll", err);
       throw err;
     }
   });
@@ -25052,7 +25644,7 @@ function registerVetStaffHandlers(prisma2) {
         include: { salaryRecords: { orderBy: [{ year: "desc" }, { month: "desc" }] } }
       });
     } catch (err) {
-      log99.error("getById", err);
+      log100.error("getById", err);
       throw err;
     }
   });
@@ -25060,7 +25652,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetStaff.create({ data });
     } catch (err) {
-      log99.error("create", err);
+      log100.error("create", err);
       throw err;
     }
   });
@@ -25068,7 +25660,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetStaff.update({ where: { id }, data });
     } catch (err) {
-      log99.error("update", err);
+      log100.error("update", err);
       throw err;
     }
   });
@@ -25076,7 +25668,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetStaff.delete({ where: { id } });
     } catch (err) {
-      log99.error("delete", err);
+      log100.error("delete", err);
       throw err;
     }
   });
@@ -25087,7 +25679,7 @@ function registerVetStaffHandlers(prisma2) {
         orderBy: [{ year: "desc" }, { month: "desc" }]
       });
     } catch (err) {
-      log99.error("salary:getRecords", err);
+      log100.error("salary:getRecords", err);
       throw err;
     }
   });
@@ -25101,7 +25693,7 @@ function registerVetStaffHandlers(prisma2) {
         create: { staffId, month, year, ...rest, netPay }
       });
     } catch (err) {
-      log99.error("salary:upsert", err);
+      log100.error("salary:upsert", err);
       throw err;
     }
   });
@@ -25109,7 +25701,7 @@ function registerVetStaffHandlers(prisma2) {
     try {
       return await prisma2.vetSalaryRecord.delete({ where: { id } });
     } catch (err) {
-      log99.error("salary:delete", err);
+      log100.error("salary:delete", err);
       throw err;
     }
   });
@@ -25138,7 +25730,7 @@ function saleNetRevenue(sale) {
 }
 
 // src/plugins/vet/handlers/stats.overview.ts
-var log100 = createLogger("Vet:Stats:Overview");
+var log101 = createLogger("Vet:Stats:Overview");
 function registerVetStatsOverviewHandlers(prisma2) {
   ipcMain.handle("vet:stats:overview", async (_e, period) => {
     try {
@@ -25209,7 +25801,7 @@ function registerVetStatsOverviewHandlers(prisma2) {
         medicineSales: Number(medSaleRows[0]?.saleCount) || 0
       };
     } catch (err) {
-      log100.error("overview", err);
+      log101.error("overview", err);
       throw err;
     }
   });
@@ -25217,7 +25809,7 @@ function registerVetStatsOverviewHandlers(prisma2) {
 
 // src/plugins/vet/handlers/stats.clinical.ts
 init_electron_node();
-var log101 = createLogger("Vet:Stats:Clinical");
+var log102 = createLogger("Vet:Stats:Clinical");
 function registerVetStatsClinicalHandlers(prisma2) {
   ipcMain.handle("vet:stats:topDiagnoses", async (_e, params) => {
     try {
@@ -25233,7 +25825,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
       `, from, limit);
       return rows.map((r) => ({ diagnosis: r.diagnosis, count: Number(r.cnt) }));
     } catch (err) {
-      log101.error("topDiagnoses", err);
+      log102.error("topDiagnoses", err);
       throw err;
     }
   });
@@ -25263,7 +25855,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
         };
       });
     } catch (err) {
-      log101.error("visitTrend", err);
+      log102.error("visitTrend", err);
       throw err;
     }
   });
@@ -25274,7 +25866,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
       `);
       return rows.map((r) => ({ species: r.species, count: Number(r.cnt) }));
     } catch (err) {
-      log101.error("speciesBreakdown", err);
+      log102.error("speciesBreakdown", err);
       throw err;
     }
   });
@@ -25299,7 +25891,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
         sessions: Number(r.sessions) || 0
       }));
     } catch (err) {
-      log101.error("monthlyTrend", err);
+      log102.error("monthlyTrend", err);
       throw err;
     }
   });
@@ -25307,7 +25899,7 @@ function registerVetStatsClinicalHandlers(prisma2) {
 
 // src/plugins/vet/handlers/stats.sales.ts
 init_electron_node();
-var log102 = createLogger("Vet:Stats:Sales");
+var log103 = createLogger("Vet:Stats:Sales");
 function registerVetStatsSalesHandlers(prisma2) {
   ipcMain.handle("vet:stats:profitAnalysis", async (_e, params) => {
     try {
@@ -25412,7 +26004,7 @@ function registerVetStatsSalesHandlers(prisma2) {
         })
       };
     } catch (err) {
-      log102.error("profitAnalysis", err);
+      log103.error("profitAnalysis", err);
       throw err;
     }
   });
@@ -25476,7 +26068,7 @@ function registerVetStatsSalesHandlers(prisma2) {
         }
       };
     } catch (err) {
-      log102.error("salesBreakdown", err);
+      log103.error("salesBreakdown", err);
       throw err;
     }
   });
@@ -25484,7 +26076,7 @@ function registerVetStatsSalesHandlers(prisma2) {
 
 // src/plugins/vet/handlers/stats.inventory.ts
 init_electron_node();
-var log103 = createLogger("Vet:Stats:Inventory");
+var log104 = createLogger("Vet:Stats:Inventory");
 function registerVetStatsInventoryHandlers(prisma2) {
   ipcMain.handle("vet:stats:inventoryTurnover", async (_e, params) => {
     try {
@@ -25576,7 +26168,7 @@ function registerVetStatsInventoryHandlers(prisma2) {
         items: items.sort((a, b) => b.turnover - a.turnover)
       };
     } catch (err) {
-      log103.error("inventoryTurnover", err);
+      log104.error("inventoryTurnover", err);
       throw err;
     }
   });
@@ -25592,7 +26184,7 @@ function registerVetStatsHandlers(prisma2) {
 
 // src/plugins/vet/handlers/medicines.catalog.ts
 init_electron_node();
-var log104 = createLogger("Vet:Medicines");
+var log105 = createLogger("Vet:Medicines");
 function registerVetMedicineCatalogHandlers(prisma2) {
   ipcMain.handle("vet:medicines:getAll", async (_e, params) => {
     try {
@@ -25661,7 +26253,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
       });
       return { data: enriched, total, hasMore: skip + take < total };
     } catch (err) {
-      log104.error("getAll", err);
+      log105.error("getAll", err);
       throw err;
     }
   });
@@ -25669,7 +26261,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
     try {
       return await prisma2.vetMedicine.create({ data });
     } catch (err) {
-      log104.error("create", err);
+      log105.error("create", err);
       throw err;
     }
   });
@@ -25677,7 +26269,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
     try {
       return await prisma2.vetMedicine.update({ where: { id }, data });
     } catch (err) {
-      log104.error("update", err);
+      log105.error("update", err);
       throw err;
     }
   });
@@ -25686,7 +26278,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
       await prisma2.vetMedicine.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log104.error("delete", err);
+      log105.error("delete", err);
       throw err;
     }
   });
@@ -25694,8 +26286,7 @@ function registerVetMedicineCatalogHandlers(prisma2) {
 
 // src/plugins/vet/handlers/medicines.batches.ts
 init_electron_node();
-init_session();
-var log105 = createLogger("Vet:Medicines");
+var log106 = createLogger("Vet:Medicines");
 var AUDIT_FIELDS = [
   { key: "quantity", label: "Quantity", type: "num" },
   { key: "costPerUnit", label: "Cost/unit", type: "num" },
@@ -25732,7 +26323,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
         // FEFO — First Expired, First Out
       });
     } catch (err) {
-      log105.error("getBatches", err);
+      log106.error("getBatches", err);
       throw err;
     }
   });
@@ -25749,7 +26340,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log105.error("addBatch", err);
+      log106.error("addBatch", err);
       throw err;
     }
   });
@@ -25784,11 +26375,11 @@ function registerVetMedicineBatchHandlers(prisma2) {
           });
         }
       } catch (auditErr) {
-        log105.warn("updateBatch audit skipped", auditErr);
+        log106.warn("updateBatch audit skipped", auditErr);
       }
       return updated;
     } catch (err) {
-      log105.error("updateBatch", err);
+      log106.error("updateBatch", err);
       throw err;
     }
   });
@@ -25797,7 +26388,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
       await prisma2.vetMedicineBatch.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log105.error("deleteBatch", err);
+      log106.error("deleteBatch", err);
       throw err;
     }
   });
@@ -25844,13 +26435,13 @@ function registerVetMedicineBatchHandlers(prisma2) {
       ]);
       return { batch: updatedBatch, expense, lossAmount };
     } catch (err) {
-      log105.error("disposeBatch", err);
+      log106.error("disposeBatch", err);
       throw err;
     }
   });
   ipcMain.handle("vet:medicines:adjustBatchStock", async (_e, batchId, data) => {
     try {
-      requireCap("manage_inventory");
+      requireCap("vet_medicines");
       const batch = await prisma2.vetMedicineBatch.findUnique({ where: { id: batchId } });
       if (!batch)
         throw new Error("Batch not found");
@@ -25904,11 +26495,11 @@ function registerVetMedicineBatchHandlers(prisma2) {
           }
         });
       } catch (auditErr) {
-        log105.warn("adjustBatchStock audit skipped", auditErr);
+        log106.warn("adjustBatchStock audit skipped", auditErr);
       }
       return { batch: updated, from: current, to: next };
     } catch (err) {
-      log105.error("adjustBatchStock", err);
+      log106.error("adjustBatchStock", err);
       throw err;
     }
   });
@@ -25916,8 +26507,7 @@ function registerVetMedicineBatchHandlers(prisma2) {
 
 // src/plugins/vet/handlers/medicines.sales.ts
 init_electron_node();
-init_session();
-var log106 = createLogger("Vet:Medicines");
+var log107 = createLogger("Vet:Medicines");
 function registerVetMedicineSalesHandlers(prisma2) {
   ipcMain.handle("vet:medicines:sell", async (_e, data) => {
     try {
@@ -25937,7 +26527,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       }
       const discount = data.discount ?? 0;
       if (discount > 0)
-        requireCap("give_discount");
+        requireCap("vet_discount");
       if (!Number.isFinite(discount) || discount < 0) {
         throw new Error("Discount must be a non-negative number");
       }
@@ -25971,7 +26561,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       ]);
       return sale;
     } catch (err) {
-      log106.error("sell", err);
+      log107.error("sell", err);
       throw err;
     }
   });
@@ -25980,7 +26570,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       if (!data.items || data.items.length === 0)
         throw new Error("No items in cart");
       if ((Number(data.cartDiscount) || 0) > 0 || data.items.some((it) => (Number(it.discount) || 0) > 0))
-        requireCap("give_discount");
+        requireCap("vet_discount");
       const saleGroupId = globalThis.crypto?.randomUUID?.() ?? `grp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       const saleDate = data.saleDate ? new Date(data.saleDate) : /* @__PURE__ */ new Date();
       const grossCart = data.items.reduce((s, it) => s + Math.max(0, it.quantity * it.unitPrice - (it.discount ?? 0)), 0);
@@ -26050,7 +26640,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { count: sales.length, saleGroupId, sales };
     } catch (err) {
-      log106.error("sellCombo", err);
+      log107.error("sellCombo", err);
       throw err;
     }
   });
@@ -26070,7 +26660,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
         data: { amountPaid: validAmount, paymentStatus: status }
       });
     } catch (err) {
-      log106.error("updateSalePayment", err);
+      log107.error("updateSalePayment", err);
       throw err;
     }
   });
@@ -26107,7 +26697,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { applied: Math.round(applied * 100) / 100, settledCount };
     } catch (err) {
-      log106.error("settleOwnerSales", err);
+      log107.error("settleOwnerSales", err);
       throw err;
     }
   });
@@ -26171,13 +26761,13 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return updated;
     } catch (err) {
-      log106.error("updateSale", err);
+      log107.error("updateSale", err);
       throw err;
     }
   });
   ipcMain.handle("vet:medicines:refundSale", async (_e, id, data) => {
     try {
-      requireCap("issue_refund");
+      requireCap("vet_refund");
       const sale = await prisma2.vetMedicineSale.findUnique({ where: { id } });
       if (!sale)
         throw new Error("Sale not found");
@@ -26215,13 +26805,13 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { sale: result, refundAmount, restockedQty: restockContainers };
     } catch (err) {
-      log106.error("refundSale", err);
+      log107.error("refundSale", err);
       throw err;
     }
   });
   ipcMain.handle("vet:medicines:refundSaleGroup", async (_e, groupKey, data) => {
     try {
-      requireCap("issue_refund");
+      requireCap("vet_refund");
       if (!groupKey)
         throw new Error("groupKey is required");
       const lines = await prisma2.vetMedicineSale.findMany({
@@ -26258,7 +26848,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
       });
       return { count: lines.length, totalRefund };
     } catch (err) {
-      log106.error("refundSaleGroup", err);
+      log107.error("refundSaleGroup", err);
       throw err;
     }
   });
@@ -26266,7 +26856,7 @@ function registerVetMedicineSalesHandlers(prisma2) {
 
 // src/plugins/vet/handlers/medicines.queries.ts
 init_electron_node();
-var log107 = createLogger("Vet:Medicines");
+var log108 = createLogger("Vet:Medicines");
 function registerVetMedicineQueryHandlers(prisma2) {
   ipcMain.handle("vet:medicines:getSales", async (_e, params) => {
     try {
@@ -26321,7 +26911,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
       });
       return { data: enriched, total, hasMore: skip + take < total };
     } catch (err) {
-      log107.error("getSales", err);
+      log108.error("getSales", err);
       throw err;
     }
   });
@@ -26442,7 +27032,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
       });
       return { data: groups, total, hasMore: skip + take < total };
     } catch (err) {
-      log107.error("getSaleGroups", err);
+      log108.error("getSaleGroups", err);
       throw err;
     }
   });
@@ -26556,7 +27146,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
       };
       return { medicine, events: filtered, summary };
     } catch (err) {
-      log107.error("getHistory", err);
+      log108.error("getHistory", err);
       throw err;
     }
   });
@@ -26623,7 +27213,7 @@ function registerVetMedicineQueryHandlers(prisma2) {
         }))
       };
     } catch (err) {
-      log107.error("getSummary", err);
+      log108.error("getSummary", err);
       throw err;
     }
   });
@@ -26639,7 +27229,7 @@ function registerVetMedicineHandlers(prisma2) {
 
 // src/plugins/vet/handlers/catalogue.ts
 init_electron_node();
-var log108 = createLogger("Vet:Catalogue");
+var log109 = createLogger("Vet:Catalogue");
 var DEFAULT_CATEGORIES = [
   { name: "general", color: "#64748b" },
   { name: "antibiotic", color: "#8b5cf6" },
@@ -26700,7 +27290,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await ensureCategoriesSeeded();
       return await prisma2.vetMedicineCategory.findMany({ orderBy: { name: "asc" } });
     } catch (err) {
-      log108.error("categories:getAll", err);
+      log109.error("categories:getAll", err);
       throw err;
     }
   });
@@ -26714,7 +27304,7 @@ function registerVetCatalogueHandlers(prisma2) {
         throw new Error("Category already exists");
       return await prisma2.vetMedicineCategory.create({ data: { name, color: data.color ?? "#8b5cf6" } });
     } catch (err) {
-      log108.error("categories:create", err);
+      log109.error("categories:create", err);
       throw err;
     }
   });
@@ -26738,7 +27328,7 @@ function registerVetCatalogueHandlers(prisma2) {
       }
       return await prisma2.vetMedicineCategory.update({ where: { id }, data: patch });
     } catch (err) {
-      log108.error("categories:update", err);
+      log109.error("categories:update", err);
       throw err;
     }
   });
@@ -26756,7 +27346,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await prisma2.vetMedicineCategory.delete({ where: { id } });
       return { success: true, reassigned: reassigned.count };
     } catch (err) {
-      log108.error("categories:delete", err);
+      log109.error("categories:delete", err);
       throw err;
     }
   });
@@ -26765,7 +27355,7 @@ function registerVetCatalogueHandlers(prisma2) {
       const count = await prisma2.vetMedicine.count({ where: { category: name } });
       return { count };
     } catch (err) {
-      log108.error("categories:getUsageCount", err);
+      log109.error("categories:getUsageCount", err);
       throw err;
     }
   });
@@ -26774,7 +27364,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await ensureUnitsSeeded();
       return await prisma2.vetMedicineUnit.findMany({ orderBy: { name: "asc" } });
     } catch (err) {
-      log108.error("units:getAll", err);
+      log109.error("units:getAll", err);
       throw err;
     }
   });
@@ -26788,7 +27378,7 @@ function registerVetCatalogueHandlers(prisma2) {
         throw new Error("Unit already exists");
       return await prisma2.vetMedicineUnit.create({ data: { name } });
     } catch (err) {
-      log108.error("units:create", err);
+      log109.error("units:create", err);
       throw err;
     }
   });
@@ -26797,7 +27387,7 @@ function registerVetCatalogueHandlers(prisma2) {
       await prisma2.vetMedicineUnit.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log108.error("units:delete", err);
+      log109.error("units:delete", err);
       throw err;
     }
   });
@@ -26805,7 +27395,7 @@ function registerVetCatalogueHandlers(prisma2) {
 
 // src/plugins/vet/handlers/visitTypes.ts
 init_electron_node();
-var log109 = createLogger("Vet:VisitTypes");
+var log110 = createLogger("Vet:VisitTypes");
 var DEFAULT_VISIT_TYPES = [
   { name: "wellness_exam", color: "#14b8a6" },
   { name: "visit", color: "#06b6d4" },
@@ -26848,7 +27438,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       await ensureSeeded();
       return await prisma2.vetVisitType.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] });
     } catch (err) {
-      log109.error("visitTypes:getAll", err);
+      log110.error("visitTypes:getAll", err);
       throw err;
     }
   });
@@ -26865,7 +27455,7 @@ function registerVetVisitTypeHandlers(prisma2) {
         data: { name, color: data.color ?? "#6366f1", sortOrder: (max._max.sortOrder ?? -1) + 1 }
       });
     } catch (err) {
-      log109.error("visitTypes:create", err);
+      log110.error("visitTypes:create", err);
       throw err;
     }
   });
@@ -26891,7 +27481,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       }
       return await prisma2.vetVisitType.update({ where: { id }, data: patch });
     } catch (err) {
-      log109.error("visitTypes:update", err);
+      log110.error("visitTypes:update", err);
       throw err;
     }
   });
@@ -26904,7 +27494,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       await prisma2.vetVisitType.delete({ where: { id } });
       return { success: true, affectedSessions: count };
     } catch (err) {
-      log109.error("visitTypes:delete", err);
+      log110.error("visitTypes:delete", err);
       throw err;
     }
   });
@@ -26913,7 +27503,7 @@ function registerVetVisitTypeHandlers(prisma2) {
       const count = await prisma2.vetSession.count({ where: { visitType: name } });
       return { count };
     } catch (err) {
-      log109.error("visitTypes:getUsageCount", err);
+      log110.error("visitTypes:getUsageCount", err);
       throw err;
     }
   });
@@ -26925,7 +27515,7 @@ var path14 = __toESM(require("path"));
 var fs11 = __toESM(require("fs"));
 var os5 = __toESM(require("os"));
 var XLSX2 = __toESM(require("xlsx"));
-var log110 = createLogger("Vet:Reports");
+var log111 = createLogger("Vet:Reports");
 var esc2 = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 var money = (v, cur = "") => {
   const n = Number(v);
@@ -27027,7 +27617,7 @@ function registerVetReportExportHandlers() {
       shell.openPath(filePath);
       return { success: true, filePath };
     } catch (err) {
-      log110.error("exportPdf", err);
+      log111.error("exportPdf", err);
       throw err;
     }
   });
@@ -27088,7 +27678,7 @@ function registerVetReportExportHandlers() {
       shell.openPath(filePath);
       return { success: true, filePath };
     } catch (err) {
-      log110.error("exportExcel", err);
+      log111.error("exportExcel", err);
       throw err;
     }
   });
@@ -27112,7 +27702,7 @@ function registerVetHandlers(prisma2) {
 
 // src/plugins/gym/handlers/coaches.ts
 init_electron_node();
-var log111 = createLogger("Gym:Coaches");
+var log112 = createLogger("Gym:Coaches");
 function registerGymCoachHandlers(prisma2) {
   ipcMain.handle("gym:coaches:getAll", async (_e, params) => {
     try {
@@ -27134,7 +27724,7 @@ function registerGymCoachHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log111.error("getAll", err);
+      log112.error("getAll", err);
       throw err;
     }
   });
@@ -27150,7 +27740,7 @@ function registerGymCoachHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log111.error("getById", err);
+      log112.error("getById", err);
       throw err;
     }
   });
@@ -27164,7 +27754,7 @@ function registerGymCoachHandlers(prisma2) {
       }
       return prisma2.gymCoach.create({ data });
     } catch (err) {
-      log111.error("create", err);
+      log112.error("create", err);
       throw err;
     }
   });
@@ -27174,7 +27764,7 @@ function registerGymCoachHandlers(prisma2) {
         data = { ...data, hireDate: new Date(data.hireDate) };
       return prisma2.gymCoach.update({ where: { id }, data });
     } catch (err) {
-      log111.error("update", err);
+      log112.error("update", err);
       throw err;
     }
   });
@@ -27183,7 +27773,7 @@ function registerGymCoachHandlers(prisma2) {
       await prisma2.gymCoach.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log111.error("delete", err);
+      log112.error("delete", err);
       throw err;
     }
   });
@@ -27220,7 +27810,7 @@ function registerGymCoachHandlers(prisma2) {
       ).length;
       return { sessionsToday, sessionsWeek, sessionsMonth, activeTrainees, uniqueTrainees, totalRevenue, expiringSoon, subscriptions };
     } catch (err) {
-      log111.error("getStats", err);
+      log112.error("getStats", err);
       throw err;
     }
   });
@@ -27228,7 +27818,7 @@ function registerGymCoachHandlers(prisma2) {
 
 // src/plugins/gym/handlers/trainees.ts
 init_electron_node();
-var log112 = createLogger("Gym:Trainees");
+var log113 = createLogger("Gym:Trainees");
 function registerGymTraineeHandlers(prisma2) {
   ipcMain.handle("gym:trainees:getAll", async (_e, params) => {
     try {
@@ -27263,7 +27853,7 @@ function registerGymTraineeHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log112.error("getAll", err);
+      log113.error("getAll", err);
       throw err;
     }
   });
@@ -27284,7 +27874,7 @@ function registerGymTraineeHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log112.error("getById", err);
+      log113.error("getById", err);
       throw err;
     }
   });
@@ -27302,7 +27892,7 @@ function registerGymTraineeHandlers(prisma2) {
         take: 10
       });
     } catch (err) {
-      log112.error("searchLite", err);
+      log113.error("searchLite", err);
       throw err;
     }
   });
@@ -27310,7 +27900,7 @@ function registerGymTraineeHandlers(prisma2) {
     try {
       return prisma2.gymTrainee.create({ data });
     } catch (err) {
-      log112.error("create", err);
+      log113.error("create", err);
       throw err;
     }
   });
@@ -27318,7 +27908,7 @@ function registerGymTraineeHandlers(prisma2) {
     try {
       return prisma2.gymTrainee.update({ where: { id }, data });
     } catch (err) {
-      log112.error("update", err);
+      log113.error("update", err);
       throw err;
     }
   });
@@ -27327,7 +27917,7 @@ function registerGymTraineeHandlers(prisma2) {
       await prisma2.gymTrainee.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log112.error("delete", err);
+      log113.error("delete", err);
       throw err;
     }
   });
@@ -27335,13 +27925,13 @@ function registerGymTraineeHandlers(prisma2) {
 
 // src/plugins/gym/handlers/plans.ts
 init_electron_node();
-var log113 = createLogger("Gym:Plans");
+var log114 = createLogger("Gym:Plans");
 function registerGymPlanHandlers(prisma2) {
   ipcMain.handle("gym:plans:getAll", async () => {
     try {
       return prisma2.gymPlan.findMany({ orderBy: { price: "asc" } });
     } catch (err) {
-      log113.error("getAll", err);
+      log114.error("getAll", err);
       throw err;
     }
   });
@@ -27349,7 +27939,7 @@ function registerGymPlanHandlers(prisma2) {
     try {
       return prisma2.gymPlan.create({ data });
     } catch (err) {
-      log113.error("create", err);
+      log114.error("create", err);
       throw err;
     }
   });
@@ -27357,7 +27947,7 @@ function registerGymPlanHandlers(prisma2) {
     try {
       return prisma2.gymPlan.update({ where: { id }, data });
     } catch (err) {
-      log113.error("update", err);
+      log114.error("update", err);
       throw err;
     }
   });
@@ -27366,7 +27956,7 @@ function registerGymPlanHandlers(prisma2) {
       await prisma2.gymPlan.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log113.error("delete", err);
+      log114.error("delete", err);
       throw err;
     }
   });
@@ -27374,7 +27964,7 @@ function registerGymPlanHandlers(prisma2) {
 
 // src/plugins/gym/handlers/subscriptions.ts
 init_electron_node();
-var log114 = createLogger("Gym:Subscriptions");
+var log115 = createLogger("Gym:Subscriptions");
 var INCLUDE = {
   trainee: { select: { id: true, name: true, phone: true } },
   plan: true,
@@ -27397,7 +27987,7 @@ function registerGymSubscriptionHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log114.error("getAll", err);
+      log115.error("getAll", err);
       throw err;
     }
   });
@@ -27405,7 +27995,7 @@ function registerGymSubscriptionHandlers(prisma2) {
     try {
       return prisma2.gymSubscription.findUnique({ where: { id }, include: INCLUDE });
     } catch (err) {
-      log114.error("getById", err);
+      log115.error("getById", err);
       throw err;
     }
   });
@@ -27430,7 +28020,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         include: INCLUDE
       });
     } catch (err) {
-      log114.error("create", err);
+      log115.error("create", err);
       throw err;
     }
   });
@@ -27442,7 +28032,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         data = { ...data, endDate: new Date(data.endDate) };
       return prisma2.gymSubscription.update({ where: { id }, data, include: INCLUDE });
     } catch (err) {
-      log114.error("update", err);
+      log115.error("update", err);
       throw err;
     }
   });
@@ -27451,7 +28041,7 @@ function registerGymSubscriptionHandlers(prisma2) {
       await prisma2.gymSubscription.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log114.error("delete", err);
+      log115.error("delete", err);
       throw err;
     }
   });
@@ -27487,7 +28077,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         })
       ]);
     } catch (err) {
-      log114.error("freeze", err);
+      log115.error("freeze", err);
       throw err;
     }
   });
@@ -27504,7 +28094,7 @@ function registerGymSubscriptionHandlers(prisma2) {
         include: INCLUDE
       });
     } catch (err) {
-      log114.error("unfreeze", err);
+      log115.error("unfreeze", err);
       throw err;
     }
   });
@@ -27512,7 +28102,7 @@ function registerGymSubscriptionHandlers(prisma2) {
 
 // src/plugins/gym/handlers/sessions.ts
 init_electron_node();
-var log115 = createLogger("Gym:Sessions");
+var log116 = createLogger("Gym:Sessions");
 function getPeriodRange3(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -27575,7 +28165,7 @@ function registerGymSessionHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log115.error("getAll", err);
+      log116.error("getAll", err);
       throw err;
     }
   });
@@ -27589,7 +28179,7 @@ function registerGymSessionHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log115.error("create", err);
+      log116.error("create", err);
       throw err;
     }
   });
@@ -27598,7 +28188,7 @@ function registerGymSessionHandlers(prisma2) {
       await prisma2.gymWalkSession.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log115.error("delete", err);
+      log116.error("delete", err);
       throw err;
     }
   });
@@ -27624,7 +28214,7 @@ function registerGymSessionHandlers(prisma2) {
       }
       return byDay;
     } catch (err) {
-      log115.error("getCalendar", err);
+      log116.error("getCalendar", err);
       throw err;
     }
   });
@@ -27632,7 +28222,7 @@ function registerGymSessionHandlers(prisma2) {
 
 // src/plugins/gym/handlers/expenses.ts
 init_electron_node();
-var log116 = createLogger("Gym:Expenses");
+var log117 = createLogger("Gym:Expenses");
 function getPeriodRange4(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -27679,7 +28269,7 @@ function registerGymExpenseHandlers(prisma2) {
       ]);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log116.error("getAll", err);
+      log117.error("getAll", err);
       throw err;
     }
   });
@@ -27697,7 +28287,7 @@ function registerGymExpenseHandlers(prisma2) {
       const byCategory = Object.entries(catMap).map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total);
       return { totalExpenses, byCategory };
     } catch (err) {
-      log116.error("summary", err);
+      log117.error("summary", err);
       throw err;
     }
   });
@@ -27705,7 +28295,7 @@ function registerGymExpenseHandlers(prisma2) {
     try {
       return prisma2.gymExpense.create({ data: { ...data, date: new Date(data.date) } });
     } catch (err) {
-      log116.error("create", err);
+      log117.error("create", err);
       throw err;
     }
   });
@@ -27713,7 +28303,7 @@ function registerGymExpenseHandlers(prisma2) {
     try {
       return prisma2.gymExpense.update({ where: { id }, data: { ...data, date: data.date ? new Date(data.date) : void 0 } });
     } catch (err) {
-      log116.error("update", err);
+      log117.error("update", err);
       throw err;
     }
   });
@@ -27722,7 +28312,7 @@ function registerGymExpenseHandlers(prisma2) {
       await prisma2.gymExpense.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log116.error("delete", err);
+      log117.error("delete", err);
       throw err;
     }
   });
@@ -27730,7 +28320,7 @@ function registerGymExpenseHandlers(prisma2) {
 
 // src/plugins/gym/handlers/stats.ts
 init_electron_node();
-var log117 = createLogger("Gym:Stats");
+var log118 = createLogger("Gym:Stats");
 function getPeriodRange5(period) {
   const now = /* @__PURE__ */ new Date();
   const start = new Date(now);
@@ -27843,7 +28433,7 @@ function registerGymStatsHandlers(prisma2) {
         anonymousWalkInsToday
       };
     } catch (err) {
-      log117.error("overview", err);
+      log118.error("overview", err);
       throw err;
     }
   });
@@ -27851,7 +28441,7 @@ function registerGymStatsHandlers(prisma2) {
 
 // src/plugins/gym/handlers/alerts.ts
 init_electron_node();
-var log118 = createLogger("Gym:Alerts");
+var log119 = createLogger("Gym:Alerts");
 function registerGymAlertHandlers(prisma2) {
   ipcMain.handle("gym:alerts:atRisk", async (_e, thresholdDays = 14) => {
     try {
@@ -27890,7 +28480,7 @@ function registerGymAlertHandlers(prisma2) {
       results.sort((a, b) => b.daysSince - a.daysSince);
       return results;
     } catch (err) {
-      log118.error("atRisk", err);
+      log119.error("atRisk", err);
       throw err;
     }
   });
@@ -27898,7 +28488,7 @@ function registerGymAlertHandlers(prisma2) {
 
 // src/plugins/gym/handlers/measurements.ts
 init_electron_node();
-var log119 = createLogger("Gym:Measurements");
+var log120 = createLogger("Gym:Measurements");
 function registerGymMeasurementHandlers(prisma2) {
   ipcMain.handle("gym:measurements:getAll", async (_e, traineeId) => {
     try {
@@ -27907,7 +28497,7 @@ function registerGymMeasurementHandlers(prisma2) {
         orderBy: { date: "desc" }
       });
     } catch (err) {
-      log119.error("getAll", err);
+      log120.error("getAll", err);
       throw err;
     }
   });
@@ -27917,7 +28507,7 @@ function registerGymMeasurementHandlers(prisma2) {
         data: { ...data, date: data.date ? new Date(data.date) : /* @__PURE__ */ new Date() }
       });
     } catch (err) {
-      log119.error("create", err);
+      log120.error("create", err);
       throw err;
     }
   });
@@ -27927,7 +28517,7 @@ function registerGymMeasurementHandlers(prisma2) {
         data = { ...data, date: new Date(data.date) };
       return prisma2.gymMeasurement.update({ where: { id }, data });
     } catch (err) {
-      log119.error("update", err);
+      log120.error("update", err);
       throw err;
     }
   });
@@ -27936,7 +28526,7 @@ function registerGymMeasurementHandlers(prisma2) {
       await prisma2.gymMeasurement.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log119.error("delete", err);
+      log120.error("delete", err);
       throw err;
     }
   });
@@ -27944,7 +28534,7 @@ function registerGymMeasurementHandlers(prisma2) {
 
 // src/plugins/gym/handlers/goals.ts
 init_electron_node();
-var log120 = createLogger("Gym:Goals");
+var log121 = createLogger("Gym:Goals");
 function registerGymGoalHandlers(prisma2) {
   ipcMain.handle("gym:goals:getAll", async (_e, traineeId) => {
     try {
@@ -27953,7 +28543,7 @@ function registerGymGoalHandlers(prisma2) {
         orderBy: [{ status: "asc" }, { createdAt: "desc" }]
       });
     } catch (err) {
-      log120.error("getAll", err);
+      log121.error("getAll", err);
       throw err;
     }
   });
@@ -27963,7 +28553,7 @@ function registerGymGoalHandlers(prisma2) {
         data = { ...data, deadline: new Date(data.deadline) };
       return prisma2.gymGoal.create({ data });
     } catch (err) {
-      log120.error("create", err);
+      log121.error("create", err);
       throw err;
     }
   });
@@ -27973,7 +28563,7 @@ function registerGymGoalHandlers(prisma2) {
         data = { ...data, deadline: new Date(data.deadline) };
       return prisma2.gymGoal.update({ where: { id }, data });
     } catch (err) {
-      log120.error("update", err);
+      log121.error("update", err);
       throw err;
     }
   });
@@ -27982,7 +28572,7 @@ function registerGymGoalHandlers(prisma2) {
       await prisma2.gymGoal.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log120.error("delete", err);
+      log121.error("delete", err);
       throw err;
     }
   });
@@ -27990,7 +28580,7 @@ function registerGymGoalHandlers(prisma2) {
     try {
       return prisma2.gymGoal.update({ where: { id }, data: { status: "achieved" } });
     } catch (err) {
-      log120.error("markAchieved", err);
+      log121.error("markAchieved", err);
       throw err;
     }
   });
@@ -27998,7 +28588,7 @@ function registerGymGoalHandlers(prisma2) {
 
 // src/plugins/gym/handlers/shifts.ts
 init_electron_node();
-var log121 = createLogger("Gym:Shifts");
+var log122 = createLogger("Gym:Shifts");
 function registerGymShiftHandlers(prisma2) {
   ipcMain.handle("gym:shifts:getAll", async (_e, params) => {
     try {
@@ -28017,7 +28607,7 @@ function registerGymShiftHandlers(prisma2) {
         orderBy: [{ date: "asc" }, { startTime: "asc" }]
       });
     } catch (err) {
-      log121.error("getAll", err);
+      log122.error("getAll", err);
       throw err;
     }
   });
@@ -28028,7 +28618,7 @@ function registerGymShiftHandlers(prisma2) {
         include: { coach: { select: { id: true, name: true } } }
       });
     } catch (err) {
-      log121.error("create", err);
+      log122.error("create", err);
       throw err;
     }
   });
@@ -28042,7 +28632,7 @@ function registerGymShiftHandlers(prisma2) {
         include: { coach: { select: { id: true, name: true } } }
       });
     } catch (err) {
-      log121.error("update", err);
+      log122.error("update", err);
       throw err;
     }
   });
@@ -28051,7 +28641,7 @@ function registerGymShiftHandlers(prisma2) {
       await prisma2.gymShift.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log121.error("delete", err);
+      log122.error("delete", err);
       throw err;
     }
   });
@@ -28059,7 +28649,7 @@ function registerGymShiftHandlers(prisma2) {
 
 // src/plugins/gym/handlers/lockers.ts
 init_electron_node();
-var log122 = createLogger("Gym:Lockers");
+var log123 = createLogger("Gym:Lockers");
 var INCLUDE2 = {
   assignments: {
     where: { isActive: true },
@@ -28078,7 +28668,7 @@ function registerGymLockerHandlers(prisma2) {
         orderBy: [{ zone: "asc" }, { number: "asc" }]
       });
     } catch (err) {
-      log122.error("getAll", err);
+      log123.error("getAll", err);
       throw err;
     }
   });
@@ -28086,7 +28676,7 @@ function registerGymLockerHandlers(prisma2) {
     try {
       return prisma2.gymLocker.create({ data, include: INCLUDE2 });
     } catch (err) {
-      log122.error("create", err);
+      log123.error("create", err);
       throw err;
     }
   });
@@ -28094,7 +28684,7 @@ function registerGymLockerHandlers(prisma2) {
     try {
       return prisma2.gymLocker.update({ where: { id }, data, include: INCLUDE2 });
     } catch (err) {
-      log122.error("update", err);
+      log123.error("update", err);
       throw err;
     }
   });
@@ -28103,7 +28693,7 @@ function registerGymLockerHandlers(prisma2) {
       await prisma2.gymLocker.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log122.error("delete", err);
+      log123.error("delete", err);
       throw err;
     }
   });
@@ -28125,7 +28715,7 @@ function registerGymLockerHandlers(prisma2) {
       });
       return prisma2.gymLocker.findUnique({ where: { id: lockerId }, include: INCLUDE2 });
     } catch (err) {
-      log122.error("assign", err);
+      log123.error("assign", err);
       throw err;
     }
   });
@@ -28137,7 +28727,7 @@ function registerGymLockerHandlers(prisma2) {
       });
       return prisma2.gymLocker.findUnique({ where: { id: lockerId }, include: INCLUDE2 });
     } catch (err) {
-      log122.error("unassign", err);
+      log123.error("unassign", err);
       throw err;
     }
   });
@@ -28145,7 +28735,7 @@ function registerGymLockerHandlers(prisma2) {
 
 // src/plugins/gym/handlers/programs.ts
 init_electron_node();
-var log123 = createLogger("Gym:Programs");
+var log124 = createLogger("Gym:Programs");
 var DAY_INCLUDE = { exercises: { orderBy: { order: "asc" } } };
 var FULL_INCLUDE = {
   coach: { select: { id: true, name: true } },
@@ -28172,7 +28762,7 @@ function registerGymProgramHandlers(prisma2) {
         orderBy: { createdAt: "desc" }
       });
     } catch (err) {
-      log123.error("getAll", err);
+      log124.error("getAll", err);
       throw err;
     }
   });
@@ -28180,7 +28770,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgram.findUnique({ where: { id }, include: FULL_INCLUDE });
     } catch (err) {
-      log123.error("getById", err);
+      log124.error("getById", err);
       throw err;
     }
   });
@@ -28189,7 +28779,7 @@ function registerGymProgramHandlers(prisma2) {
       const { days: _d, assignments: _a, ...rest } = data;
       return prisma2.gymProgram.create({ data: rest, include: FULL_INCLUDE });
     } catch (err) {
-      log123.error("create", err);
+      log124.error("create", err);
       throw err;
     }
   });
@@ -28198,7 +28788,7 @@ function registerGymProgramHandlers(prisma2) {
       const { days: _d, assignments: _a, coach: _c, ...rest } = data;
       return prisma2.gymProgram.update({ where: { id }, data: rest, include: FULL_INCLUDE });
     } catch (err) {
-      log123.error("update", err);
+      log124.error("update", err);
       throw err;
     }
   });
@@ -28207,7 +28797,7 @@ function registerGymProgramHandlers(prisma2) {
       await prisma2.gymProgram.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log123.error("delete", err);
+      log124.error("delete", err);
       throw err;
     }
   });
@@ -28215,7 +28805,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgramDay.create({ data: { ...data, programId }, include: DAY_INCLUDE });
     } catch (err) {
-      log123.error("addDay", err);
+      log124.error("addDay", err);
       throw err;
     }
   });
@@ -28224,7 +28814,7 @@ function registerGymProgramHandlers(prisma2) {
       const { exercises: _e2, ...rest } = data;
       return prisma2.gymProgramDay.update({ where: { id }, data: rest, include: DAY_INCLUDE });
     } catch (err) {
-      log123.error("updateDay", err);
+      log124.error("updateDay", err);
       throw err;
     }
   });
@@ -28233,7 +28823,7 @@ function registerGymProgramHandlers(prisma2) {
       await prisma2.gymProgramDay.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log123.error("deleteDay", err);
+      log124.error("deleteDay", err);
       throw err;
     }
   });
@@ -28241,7 +28831,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgramExercise.create({ data: { ...data, dayId } });
     } catch (err) {
-      log123.error("addExercise", err);
+      log124.error("addExercise", err);
       throw err;
     }
   });
@@ -28249,7 +28839,7 @@ function registerGymProgramHandlers(prisma2) {
     try {
       return prisma2.gymProgramExercise.update({ where: { id }, data });
     } catch (err) {
-      log123.error("updateExercise", err);
+      log124.error("updateExercise", err);
       throw err;
     }
   });
@@ -28258,7 +28848,7 @@ function registerGymProgramHandlers(prisma2) {
       await prisma2.gymProgramExercise.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log123.error("deleteExercise", err);
+      log124.error("deleteExercise", err);
       throw err;
     }
   });
@@ -28279,7 +28869,7 @@ function registerGymProgramHandlers(prisma2) {
         include: { trainee: { select: { id: true, name: true } }, program: { select: { id: true, name: true } } }
       });
     } catch (err) {
-      log123.error("assign", err);
+      log124.error("assign", err);
       throw err;
     }
   });
@@ -28291,7 +28881,7 @@ function registerGymProgramHandlers(prisma2) {
       });
       return { success: true };
     } catch (err) {
-      log123.error("unassign", err);
+      log124.error("unassign", err);
       throw err;
     }
   });
@@ -28303,7 +28893,7 @@ function registerGymProgramHandlers(prisma2) {
         orderBy: { createdAt: "desc" }
       });
     } catch (err) {
-      log123.error("getAssignments", err);
+      log124.error("getAssignments", err);
       throw err;
     }
   });
@@ -28328,7 +28918,7 @@ function registerGymHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/products.ts
 init_electron_node();
-var log124 = createLogger("Pharmacy:Products");
+var log125 = createLogger("Pharmacy:Products");
 var DEFAULT_CATEGORIES2 = [
   "general",
   "antibiotic",
@@ -28417,7 +29007,7 @@ function registerPharmacyProductHandlers(prisma2) {
       const data = enriched.slice(skip, skip + take);
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log124.error("products:getAll", err);
+      log125.error("products:getAll", err);
       throw err;
     }
   });
@@ -28428,7 +29018,7 @@ function registerPharmacyProductHandlers(prisma2) {
         include: { batches: { orderBy: { expiryDate: "asc" } } }
       });
     } catch (err) {
-      log124.error("products:getById", err);
+      log125.error("products:getById", err);
       throw err;
     }
   });
@@ -28454,7 +29044,7 @@ function registerPharmacyProductHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log124.error("products:create", err);
+      log125.error("products:create", err);
       throw err;
     }
   });
@@ -28487,7 +29077,7 @@ function registerPharmacyProductHandlers(prisma2) {
         patch.isActive = !!data.isActive;
       return await prisma2.pharmacyProduct.update({ where: { id }, data: patch });
     } catch (err) {
-      log124.error("products:update", err);
+      log125.error("products:update", err);
       throw err;
     }
   });
@@ -28501,7 +29091,7 @@ function registerPharmacyProductHandlers(prisma2) {
       await prisma2.pharmacyProduct.delete({ where: { id } });
       return { success: true, softDeleted: false };
     } catch (err) {
-      log124.error("products:delete", err);
+      log125.error("products:delete", err);
       throw err;
     }
   });
@@ -28514,7 +29104,7 @@ function registerPharmacyProductHandlers(prisma2) {
       const used = rows.map((r) => r.category).filter(Boolean);
       return Array.from(/* @__PURE__ */ new Set([...DEFAULT_CATEGORIES2, ...used])).sort();
     } catch (err) {
-      log124.error("products:getCategories", err);
+      log125.error("products:getCategories", err);
       throw err;
     }
   });
@@ -28629,7 +29219,7 @@ function registerPharmacyProductHandlers(prisma2) {
         }
       };
     } catch (err) {
-      log124.error("products:getHistory", err);
+      log125.error("products:getHistory", err);
       throw err;
     }
   });
@@ -28637,8 +29227,7 @@ function registerPharmacyProductHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/batches.ts
 init_electron_node();
-init_session();
-var log125 = createLogger("Pharmacy:Batches");
+var log126 = createLogger("Pharmacy:Batches");
 var AUDIT_FIELDS2 = [
   { key: "quantity", label: "Quantity", type: "num" },
   { key: "costPerUnit", label: "Cost/unit", type: "num" },
@@ -28673,7 +29262,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         orderBy: { expiryDate: "asc" }
       });
     } catch (err) {
-      log125.error("batches:getByProduct", err);
+      log126.error("batches:getByProduct", err);
       throw err;
     }
   });
@@ -28701,7 +29290,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log125.error("batches:add", err);
+      log126.error("batches:add", err);
       throw err;
     }
   });
@@ -28739,11 +29328,11 @@ function registerPharmacyBatchHandlers(prisma2) {
           });
         }
       } catch (auditErr) {
-        log125.warn("batches:update audit skipped", auditErr);
+        log126.warn("batches:update audit skipped", auditErr);
       }
       return updated;
     } catch (err) {
-      log125.error("batches:update", err);
+      log126.error("batches:update", err);
       throw err;
     }
   });
@@ -28755,13 +29344,13 @@ function registerPharmacyBatchHandlers(prisma2) {
       await prisma2.pharmacyBatch.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log125.error("batches:delete", err);
+      log126.error("batches:delete", err);
       throw err;
     }
   });
   ipcMain.handle("pharmacy:batches:adjust", async (_e, id, data) => {
     try {
-      requireCap("manage_inventory");
+      requireCap("pharmacy_inventory");
       const batch = await prisma2.pharmacyBatch.findUnique({ where: { id } });
       if (!batch)
         throw new Error("Batch not found");
@@ -28815,11 +29404,11 @@ function registerPharmacyBatchHandlers(prisma2) {
           }
         });
       } catch (auditErr) {
-        log125.warn("batches:adjust audit skipped", auditErr);
+        log126.warn("batches:adjust audit skipped", auditErr);
       }
       return { batch: updated, from: current, to: next };
     } catch (err) {
-      log125.error("batches:adjust", err);
+      log126.error("batches:adjust", err);
       throw err;
     }
   });
@@ -28844,7 +29433,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log125.error("batches:dispose", err);
+      log126.error("batches:dispose", err);
       throw err;
     }
   });
@@ -28869,7 +29458,7 @@ function registerPharmacyBatchHandlers(prisma2) {
         };
       }).filter((b) => params?.includeExpired === false ? !b.isExpired : true);
     } catch (err) {
-      log125.error("batches:getExpiring", err);
+      log126.error("batches:getExpiring", err);
       throw err;
     }
   });
@@ -28877,8 +29466,7 @@ function registerPharmacyBatchHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/sales.ts
 init_electron_node();
-init_session();
-var log126 = createLogger("Pharmacy:Sales");
+var log127 = createLogger("Pharmacy:Sales");
 function paymentStatusFor(total, paid) {
   if (paid >= total - 5e-3)
     return "paid";
@@ -28893,7 +29481,7 @@ function registerPharmacySaleHandlers(prisma2) {
         throw new Error("Cart is empty");
       }
       if ((Number(data?.discount) || 0) > 0)
-        requireCap("give_discount");
+        requireCap("pharmacy_discount");
       return await prisma2.$transaction(async (tx) => {
         const lineRows = [];
         let subtotal = 0;
@@ -28996,7 +29584,7 @@ function registerPharmacySaleHandlers(prisma2) {
         return sale;
       });
     } catch (err) {
-      log126.error("sales:create", err);
+      log127.error("sales:create", err);
       throw err;
     }
   });
@@ -29038,7 +29626,7 @@ function registerPharmacySaleHandlers(prisma2) {
       });
       return { data, total, hasMore: skip + take < total };
     } catch (err) {
-      log126.error("sales:getAll", err);
+      log127.error("sales:getAll", err);
       throw err;
     }
   });
@@ -29049,7 +29637,7 @@ function registerPharmacySaleHandlers(prisma2) {
         include: { items: { include: { batch: { select: { batchNumber: true, expiryDate: true } } } } }
       });
     } catch (err) {
-      log126.error("sales:getById", err);
+      log127.error("sales:getById", err);
       throw err;
     }
   });
@@ -29073,13 +29661,13 @@ function registerPharmacySaleHandlers(prisma2) {
         data: { amountPaid: newPaid, paymentStatus: paymentStatusFor(net, newPaid) }
       });
     } catch (err) {
-      log126.error("sales:updatePayment", err);
+      log127.error("sales:updatePayment", err);
       throw err;
     }
   });
   ipcMain.handle("pharmacy:sales:refund", async (_e, id, data) => {
     try {
-      requireCap("issue_refund");
+      requireCap("pharmacy_refund");
       return await prisma2.$transaction(async (tx) => {
         const sale = await tx.pharmacySale.findUnique({ where: { id }, include: { items: { include: { product: { select: { subUnitsPerContainer: true } } } } } });
         if (!sale)
@@ -29116,13 +29704,13 @@ function registerPharmacySaleHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log126.error("sales:refund", err);
+      log127.error("sales:refund", err);
       throw err;
     }
   });
   ipcMain.handle("pharmacy:sales:refundItem", async (_e, itemId, data) => {
     try {
-      requireCap("issue_refund");
+      requireCap("pharmacy_refund");
       return await prisma2.$transaction(async (tx) => {
         const item = await tx.pharmacySaleItem.findUnique({ where: { id: itemId }, include: { sale: { include: { items: true } }, product: { select: { subUnitsPerContainer: true } } } });
         if (!item)
@@ -29155,7 +29743,7 @@ function registerPharmacySaleHandlers(prisma2) {
         });
       });
     } catch (err) {
-      log126.error("sales:refundItem", err);
+      log127.error("sales:refundItem", err);
       throw err;
     }
   });
@@ -29163,7 +29751,7 @@ function registerPharmacySaleHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/suppliers.ts
 init_electron_node();
-var log127 = createLogger("Pharmacy:Suppliers");
+var log128 = createLogger("Pharmacy:Suppliers");
 function registerPharmacySupplierHandlers(prisma2) {
   ipcMain.handle("pharmacy:suppliers:getAll", async (_e, params) => {
     try {
@@ -29179,7 +29767,7 @@ function registerPharmacySupplierHandlers(prisma2) {
       });
       return rows.map((s) => ({ ...s, orderCount: s._count.orders, batchCount: s._count.batches, _count: void 0 }));
     } catch (err) {
-      log127.error("suppliers:getAll", err);
+      log128.error("suppliers:getAll", err);
       throw err;
     }
   });
@@ -29187,7 +29775,7 @@ function registerPharmacySupplierHandlers(prisma2) {
     try {
       return await prisma2.pharmacySupplier.findUnique({ where: { id } });
     } catch (err) {
-      log127.error("suppliers:getById", err);
+      log128.error("suppliers:getById", err);
       throw err;
     }
   });
@@ -29206,7 +29794,7 @@ function registerPharmacySupplierHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log127.error("suppliers:create", err);
+      log128.error("suppliers:create", err);
       throw err;
     }
   });
@@ -29221,7 +29809,7 @@ function registerPharmacySupplierHandlers(prisma2) {
         throw new Error("Supplier name is required");
       return await prisma2.pharmacySupplier.update({ where: { id }, data: patch });
     } catch (err) {
-      log127.error("suppliers:update", err);
+      log128.error("suppliers:update", err);
       throw err;
     }
   });
@@ -29230,7 +29818,7 @@ function registerPharmacySupplierHandlers(prisma2) {
       await prisma2.pharmacySupplier.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log127.error("suppliers:delete", err);
+      log128.error("suppliers:delete", err);
       throw err;
     }
   });
@@ -29238,8 +29826,7 @@ function registerPharmacySupplierHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/purchaseOrders.ts
 init_electron_node();
-init_session();
-var log128 = createLogger("Pharmacy:PurchaseOrders");
+var log129 = createLogger("Pharmacy:PurchaseOrders");
 function computeTotal(items) {
   return Math.round(items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.costPerUnit) || 0), 0) * 100) / 100;
 }
@@ -29272,7 +29859,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
       });
       return { data: data.map((o) => ({ ...o, itemCount: o._count.items, _count: void 0 })), total, hasMore: skip + take < total };
     } catch (err) {
-      log128.error("purchaseOrders:getAll", err);
+      log129.error("purchaseOrders:getAll", err);
       throw err;
     }
   });
@@ -29283,7 +29870,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
         include: { supplier: true, items: { orderBy: { createdAt: "asc" } } }
       });
     } catch (err) {
-      log128.error("purchaseOrders:getById", err);
+      log129.error("purchaseOrders:getById", err);
       throw err;
     }
   });
@@ -29316,7 +29903,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
         include: { items: true, supplier: true }
       });
     } catch (err) {
-      log128.error("purchaseOrders:create", err);
+      log129.error("purchaseOrders:create", err);
       throw err;
     }
   });
@@ -29352,13 +29939,13 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
       }
       return await prisma2.pharmacyPurchaseOrder.update({ where: { id }, data: patch, include: { items: true, supplier: true } });
     } catch (err) {
-      log128.error("purchaseOrders:update", err);
+      log129.error("purchaseOrders:update", err);
       throw err;
     }
   });
   ipcMain.handle("pharmacy:purchaseOrders:receive", async (_e, id) => {
     try {
-      requireCap("manage_inventory");
+      requireCap("pharmacy_orders");
       return await prisma2.$transaction(async (tx) => {
         const po = await tx.pharmacyPurchaseOrder.findUnique({ where: { id }, include: { items: true } });
         if (!po)
@@ -29394,7 +29981,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
         return { ...updated, createdBatches };
       });
     } catch (err) {
-      log128.error("purchaseOrders:receive", err);
+      log129.error("purchaseOrders:receive", err);
       throw err;
     }
   });
@@ -29403,7 +29990,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
       await prisma2.pharmacyPurchaseOrder.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log128.error("purchaseOrders:delete", err);
+      log129.error("purchaseOrders:delete", err);
       throw err;
     }
   });
@@ -29411,7 +29998,7 @@ function registerPharmacyPurchaseOrderHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/stats.ts
 init_electron_node();
-var log129 = createLogger("Pharmacy:Stats");
+var log130 = createLogger("Pharmacy:Stats");
 function startOfPeriod(period) {
   const now = /* @__PURE__ */ new Date();
   const d = new Date(now);
@@ -29565,7 +30152,7 @@ function registerPharmacyStatsHandlers(prisma2) {
         sales: periodSales
       };
     } catch (err) {
-      log129.error("stats:overview", err);
+      log130.error("stats:overview", err);
       throw err;
     }
   });
@@ -29577,7 +30164,7 @@ function registerPharmacyStatsHandlers(prisma2) {
       const outstanding = await outstandingTotal(prisma2);
       return { ...agg, outstanding };
     } catch (err) {
-      log129.error("stats:salesSummary", err);
+      log130.error("stats:salesSummary", err);
       throw err;
     }
   });
@@ -29611,7 +30198,7 @@ function registerPharmacyStatsHandlers(prisma2) {
         byCategory: Object.entries(byCategory).map(([category, v]) => ({ category, value: Math.round(v.value * 100) / 100, count: v.count })).sort((a, b) => b.value - a.value)
       };
     } catch (err) {
-      log129.error("stats:inventory", err);
+      log130.error("stats:inventory", err);
       throw err;
     }
   });
@@ -29673,7 +30260,7 @@ function registerPharmacyStatsHandlers(prisma2) {
         expired: Number(batchRows[0]?.expired) || 0
       };
     } catch (err) {
-      log129.error("stats:cashflow", err);
+      log130.error("stats:cashflow", err);
       throw err;
     }
   });
@@ -29681,7 +30268,7 @@ function registerPharmacyStatsHandlers(prisma2) {
 
 // src/plugins/pharmacy/handlers/customers.ts
 init_electron_node();
-var log130 = createLogger("Pharmacy:Customers");
+var log131 = createLogger("Pharmacy:Customers");
 function outstandingOf(sale) {
   if (sale.status === "refunded")
     return 0;
@@ -29721,7 +30308,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         };
       });
     } catch (err) {
-      log130.error("customers:getAll", err);
+      log131.error("customers:getAll", err);
       throw err;
     }
   });
@@ -29736,7 +30323,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         select: { id: true, name: true, phone: true, defaultDiscount: true }
       });
     } catch (err) {
-      log130.error("customers:searchLite", err);
+      log131.error("customers:searchLite", err);
       throw err;
     }
   });
@@ -29772,7 +30359,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         sales
       };
     } catch (err) {
-      log130.error("customers:profile", err);
+      log131.error("customers:profile", err);
       throw err;
     }
   });
@@ -29792,7 +30379,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         }
       });
     } catch (err) {
-      log130.error("customers:create", err);
+      log131.error("customers:create", err);
       throw err;
     }
   });
@@ -29808,7 +30395,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         patch.defaultDiscount = Number(data.defaultDiscount) || 0;
       return await prisma2.pharmacyCustomer.update({ where: { id }, data: patch });
     } catch (err) {
-      log130.error("customers:update", err);
+      log131.error("customers:update", err);
       throw err;
     }
   });
@@ -29818,7 +30405,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
       await prisma2.pharmacyCustomer.delete({ where: { id } });
       return { success: true };
     } catch (err) {
-      log130.error("customers:delete", err);
+      log131.error("customers:delete", err);
       throw err;
     }
   });
@@ -29853,7 +30440,7 @@ function registerPharmacyCustomerHandlers(prisma2) {
         return { applied: Math.round(applied * 100) / 100, settledCount };
       });
     } catch (err) {
-      log130.error("customers:settle", err);
+      log131.error("customers:settle", err);
       throw err;
     }
   });
@@ -29872,16 +30459,16 @@ function registerPharmacyHandlers(prisma2) {
 
 // src/main/database/seed-production.ts
 var import_bcryptjs2 = __toESM(require_bcryptjs());
-var log131 = createLogger("DBSeed");
+var log132 = createLogger("DBSeed");
 async function seedProductionDatabase(prisma2) {
-  log131.info("[DB Seed] \u{1F331} Starting first-run database seeding (minimal)...");
+  log132.info("[DB Seed] \u{1F331} Starting first-run database seeding (minimal)...");
   try {
     const userCount = await prisma2.user.count();
     if (userCount > 0) {
-      log131.info("[DB Seed] \u2139\uFE0F Database already seeded, skipping...");
+      log132.info("[DB Seed] \u2139\uFE0F Database already seeded, skipping...");
       return;
     }
-    log131.info("[DB Seed] Creating default setup admin user (minimal seed)...");
+    log132.info("[DB Seed] Creating default setup admin user (minimal seed)...");
     const adminUser = await prisma2.user.create({
       data: {
         username: "setup",
@@ -29892,12 +30479,12 @@ async function seedProductionDatabase(prisma2) {
         isActive: true
       }
     });
-    log131.info("[DB Seed] \u2705 Created default setup admin user:", adminUser.username);
-    log131.info("[DB Seed] \u{1F389} Minimal first-run seeding completed!");
-    log131.info('[DB Seed] \u{1F4DD} Login with username: "setup", password: "setup123"');
-    log131.info("[DB Seed] \u26A0\uFE0F  IMPORTANT: Use this account ONLY to create your permanent admin, then delete it!");
+    log132.info("[DB Seed] \u2705 Created default setup admin user:", adminUser.username);
+    log132.info("[DB Seed] \u{1F389} Minimal first-run seeding completed!");
+    log132.info('[DB Seed] \u{1F4DD} Login with username: "setup", password: "setup123"');
+    log132.info("[DB Seed] \u26A0\uFE0F  IMPORTANT: Use this account ONLY to create your permanent admin, then delete it!");
   } catch (error) {
-    log131.error("[DB Seed] \u274C Error seeding database:", error);
+    log132.error("[DB Seed] \u274C Error seeding database:", error);
     throw error;
   }
 }
