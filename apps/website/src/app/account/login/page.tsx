@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import Feedback from "@/components/Feedback";
 import { withBasePath } from "@/lib/site";
 
 export default function AccountLoginPage() {
@@ -191,8 +192,43 @@ export default function AccountLoginPage() {
           {submitting ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
         </button>
 
-        {resetMessage ? <p role="status" className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">{resetMessage}</p> : null}
-        {error ? <p role="alert" className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-200">{error}</p> : null}
+        {resetMessage ? (
+          <Feedback
+            tone="success"
+            title="Password reset requested"
+            message={`If an account exists for ${email}, a reset link is on its way.`}
+            nextSteps={[
+              "Open the link in that email to choose a new password.",
+              "The link is time-limited. If it has expired, just request another.",
+              "Nothing after a few minutes? Check spam, and make sure you used the address you signed up with.",
+            ]}
+          />
+        ) : null}
+
+        {error ? (
+          <Feedback
+            tone="error"
+            title={
+              mode === "register"
+                ? "We couldn't create your account"
+                : "We couldn't sign you in"
+            }
+            message={error}
+            nextSteps={
+              mode === "register"
+                ? [
+                    "That email may already have an account — try signing in instead.",
+                    "Passwords need to meet the minimum length shown on the field.",
+                    "Still stuck? Email medhatjachour8@gmail.com and we'll sort the account out for you.",
+                  ]
+                : [
+                    "Check the email address and password for typos.",
+                    "Use the reset link above if you can't remember your password.",
+                    "Still locked out? Email medhatjachour8@gmail.com from the address on the account.",
+                  ]
+            }
+          />
+        ) : null}
       </form>
       <p className="mt-6 text-center text-xs leading-5 text-foreground/45">By continuing, you acknowledge BizFlow&apos;s <a href={withBasePath("/legal/privacy")} className="font-semibold text-biz-200 underline underline-offset-2">Privacy Policy</a>.</p>
       </section>

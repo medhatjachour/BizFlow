@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AuroraBackground from "@/components/AuroraBackground";
+import Feedback from "@/components/Feedback";
 import { withBasePath } from "@/lib/site";
 
 export default function PortalLoginPage() {
@@ -77,9 +78,16 @@ export default function PortalLoginPage() {
             </label>
 
             {error && (
-              <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
-                {error}
-              </p>
+              <Feedback
+                tone="error"
+                title="We couldn't open your portal"
+                message={error}
+                nextSteps={[
+                  "Check the email and licence key match your purchase confirmation. The dashes in the key matter.",
+                  "Keys look like BIZ-XXXXX-XXXXX-XXXXX-XXXXX.",
+                  "Lost your key? Email medhatjachour8@gmail.com and we'll resend it.",
+                ]}
+              />
             )}
 
             <button

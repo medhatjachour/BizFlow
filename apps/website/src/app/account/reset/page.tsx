@@ -5,6 +5,7 @@ import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import Feedback from "@/components/Feedback";
 import { withBasePath } from "@/lib/site";
 
 export default function AccountResetPage() {
@@ -111,8 +112,31 @@ function AccountResetForm() {
           {submitting ? "Updating..." : "Reset password"}
         </button>
 
-        {message ? <p className="text-sm text-emerald-300">{message}</p> : null}
-        {error ? <p className="text-sm text-rose-300">{error}</p> : null}
+        {message ? (
+          <Feedback
+            tone="success"
+            title="Password updated"
+            message={message}
+            nextSteps={[
+              "You'll be taken to the sign-in page in a moment.",
+              "Sign in with the new password you just chose.",
+              "If it doesn't work, request a fresh reset link — links expire.",
+            ]}
+          />
+        ) : null}
+
+        {error ? (
+          <Feedback
+            tone="error"
+            title="We couldn't reset your password"
+            message={error}
+            nextSteps={[
+              "Reset links are time-limited. If yours is old, request a new one from the sign-in page.",
+              "Make sure both password fields match exactly.",
+              "Still stuck? Email medhatjachour8@gmail.com and we'll help you back in.",
+            ]}
+          />
+        ) : null}
       </form>
 
       <p className="mt-4 text-sm text-foreground/65">
