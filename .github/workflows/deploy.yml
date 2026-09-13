@@ -62,7 +62,22 @@ jobs:
       - name: Add VPS host key
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H 168.231.107.207 >> ~/.ssh/known_hosts
+          # `ssh-keyscan` has no retry and its failure aborts the entire deploy
+          # before anything happens (observed as a transient failure that skipped
+          # every later step). Retry, then fall back to trust-on-first-use for
+          # this run so a flaky keyscan cannot block a deploy.
+          for attempt in 1 2 3 4 5; do
+            if ssh-keyscan -T 10 -H 168.231.107.207 >> ~/.ssh/known_hosts 2>/dev/null; then
+              echo "captured the host key on attempt $attempt"
+              exit 0
+            fi
+            echo "ssh-keyscan attempt $attempt failed; retrying in 5s"
+            sleep 5
+          done
+          echo "WARNING: could not capture the host key after 5 attempts."
+          echo "Falling back to StrictHostKeyChecking=accept-new for this run."
+          printf 'Host 168.231.107.207\n  StrictHostKeyChecking accept-new\n' >> ~/.ssh/config
+          chmod 600 ~/.ssh/config
 
       - name: Write deploy SSH key
         run: |
