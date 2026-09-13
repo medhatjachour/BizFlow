@@ -1,7 +1,36 @@
 import { resolve } from 'path'
 import { readFileSync, existsSync } from 'fs'
+import { createHash } from 'crypto'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+
+/**
+ * SHA-256 of the DER-encoded public key that the production license server signs
+ * activation certificates with.
+ *
+ * A wrong key here is catastrophic and silent: the app verifies every activation
+ * certificate with it, so a mismatch makes `activateOnline` fail for every
+ * customer in the field while the build itself succeeds. That exact bug shipped
+ * once (the bundled PEM was one byte off the server's key), so a packaged build
+ * now refuses to proceed unless the key matches this fingerprint.
+ *
+ * If you rotate the signing key pair, update this constant in the same commit.
+ * Print the current value with:
+ *   node -e "const{createHash}=require('crypto');const fs=require('fs');\
+ *   const b=Buffer.from(fs.readFileSync('resources/license-public.pem','utf8')\
+ *   .replace(/-----[^-]+-----/g,'').replace(/\s/g,''),'base64');\
+ *   console.log(createHash('sha256').update(b).digest('hex'))"
+ */
+const EXPECTED_LICENSE_KEY_FINGERPRINT =
+  '2bd4d4e8dcd00f2d7519b0bc2edd42eb6590b76df29cf285a64a43e580a95c21'
+
+function licenseKeyFingerprint(pem: string): string {
+  const der = Buffer.from(
+    pem.replace(/-----[^-]+-----/g, '').replace(/\s/g, ''),
+    'base64'
+  )
+  return createHash('sha256').update(der).digest('hex')
+}
 
 /**
  * Determine which plugins should be bundled at build time.
@@ -58,8 +87,25 @@ export default defineConfig(({ command }) => {
   // Development deliberately ships no verification key. Packaged builds embed
   // only the public key, using an explicit CI value when supplied.
   const licensePublicKey = command === 'build' ? resolveLicensePublicKey() : ''
-  if (command === 'build' && !licensePublicKey) {
-    throw new Error('A public license key is required for packaged builds')
+  if (command === 'build') {
+    if (!licensePublicKey) {
+      throw new Error('A public license key is required for packaged builds')
+    }
+
+    const actualFingerprint = licenseKeyFingerprint(licensePublicKey)
+    if (actualFingerprint !== EXPECTED_LICENSE_KEY_FINGERPRINT) {
+      throw new Error(
+        [
+          'License public key does not match the production signing key.',
+          `  expected fingerprint: ${EXPECTED_LICENSE_KEY_FINGERPRINT}`,
+          `  actual fingerprint:   ${actualFingerprint}`,
+          'A build shipped with this key would reject every activation.',
+          'Fix: set BIZFLOW_LICENSE_PUBLIC_KEY to the production public key, or restore',
+          'resources/license-public.pem. If the signing key was rotated deliberately,',
+          'update EXPECTED_LICENSE_KEY_FINGERPRINT in electron.vite.config.ts.',
+        ].join('\n')
+      )
+    }
   }
   const defineFlags = {
     ...pluginDefineFlags,

@@ -10,10 +10,16 @@ services:
         ADMIN_PASSWORD: build-validation-only
         LICENSE_SECRET: build-validation-only
     container_name: bizflow-app
+    # Bind to loopback ONLY. nginx reaches these over the compose network by
+    # service name (bizflow-app:3000 / :5180 / :8787), so publishing them on
+    # 0.0.0.0 was never required — and it exposed the whole Next.js app (admin
+    # login, all /api routes incl. license activation) plus the HTTP bridge over
+    # plain HTTP with no TLS, bypassing nginx, HSTS and its security headers.
+    # Keep loopback so `ssh -L` still works for debugging.
     ports:
-      - "3000:3000"    # Nebula website
-      - "5180:5180"    # BizFlow web UI
-      - "8787:8787"    # HTTP bridge (IPC handlers)
+      - "127.0.0.1:3000:3000"   # Nebula website
+      - "127.0.0.1:5180:5180"   # BizFlow web UI
+      - "127.0.0.1:8787:8787"   # HTTP bridge (IPC handlers)
     volumes:
       # Persistent database volume
       - bizflow-data:/data/bizflow
