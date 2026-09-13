@@ -35,12 +35,19 @@ jobs:
         working-directory: apps/website
         run: npm run lint
 
-      - name: Build website (with build-time placeholder password)
+      - name: Build website (with build-time placeholder secrets)
         working-directory: apps/website
         env:
+          # `lib/admin.ts` and `lib/license.ts` deliberately throw when these are
+          # unset while NODE_ENV=production, which `next build` sets. The Dockerfile
+          # passes the same placeholders. None of this is used at runtime - the real
+          # values come from the server's .env.
           ADMIN_PASSWORD: build-validation-only
+          LICENSE_SECRET: build-validation-only
           NEXT_PUBLIC_BASE_PATH: ""
-          NEXT_PUBLIC_SITE_URL: https://bizflow.medhatjachour.tech
+          # Must be the canonical, DNS-resolvable host (the bare `bizflow.` subdomain
+          # has no A record).
+          NEXT_PUBLIC_SITE_URL: https://www.bizflow.medhatjachour.tech
         run: npm run build
 
   # ── 2) Deploy to VPS ──────────────────────────────────────────────────────
