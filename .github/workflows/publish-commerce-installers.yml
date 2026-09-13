@@ -131,17 +131,30 @@ jobs:
           cache: npm
           cache-dependency-path: apps/Bizflow/package-lock.json
 
-      # Every macOS matrix job failed on this step while the identical command
-      # passed on Windows and Linux. GitHub does not serve Actions logs without
-      # repo access, so this step is written to be both resilient and
-      # self-explaining: it retries with a plain install, and dumps the npm
-      # debug log so the next failure names its own cause instead of hiding it.
+      # Every macOS matrix job failed here while the identical command passed on
+      # Windows and Linux. The log says npm ci thinks the lock file is missing
+      # every single dependency - but the committed lock file contains all of
+      # them, at the exact versions it lists as absent (verified: fsevents,
+      # @esbuild/darwin-arm64, electron, and the rest). So the runner is not
+      # reading this lock file. The step therefore prints the working directory
+      # and the lock file fingerprint before installing, which settles that on
+      # the next failure, and falls back to a plain install so the build can
+      # still ship in the meantime.
       - name: Install dependencies
         shell: bash
+        working-directory: apps/Bizflow
         run: |
-          echo "node=$(node --version) npm=$(npm --version)"
-          echo "platform=$(uname -s) arch=$(uname -m)"
+          echo "cwd       = $(pwd)"
+          echo "node      = $(node --version)  npm = $(npm --version)"
+          echo "platform  = $(uname -s) $(uname -m)"
           df -h . | tail -n 1
+
+          if [ ! -f package-lock.json ]; then
+            echo "::error::package-lock.json is not present in $(pwd)"
+          else
+            echo "lock file = $(wc -c < package-lock.json) bytes, md5 $(md5 -q package-lock.json 2>/dev/null || md5sum package-lock.json | cut -d' ' -f1)"
+            echo "lock name = $(node -e 'const l=require("./package-lock.json"); console.log(l.name, l.version, "entries=" + Object.keys(l.packages || {}).length)')"
+          fi
 
           if npm ci --ignore-scripts --no-audit --no-fund; then
             echo "npm ci completed"
