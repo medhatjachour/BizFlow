@@ -51,7 +51,9 @@ export default function LicensePanel({
         </button>
       </div>
       <p className="mt-2 text-xs text-foreground/50">
-        Keep this safe — enter it in BizFlow under Settings → License to activate.
+        Keep this safe. BizFlow starts with a 14-day free trial; when that ends the app
+        asks you to activate. Paste this key together with the email you bought with and
+        the device unlocks immediately.
       </p>
 
       {/* OS picker */}

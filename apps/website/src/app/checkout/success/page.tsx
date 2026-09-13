@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import AuroraBackground from "@/components/AuroraBackground";
+import Feedback from "@/components/Feedback";
 import { getStripe } from "@/lib/stripe";
 import { getPurchasable } from "@/lib/payments";
 import { licenseKeyFor } from "@/lib/license";
@@ -79,6 +80,29 @@ export default async function CheckoutSuccessPage({
               A receipt and your download details will be sent to {email}.
             </p>
           )}
+
+          {/* The customer has just handed over money. Tell them the whole
+              sequence, so nothing about it is a guess. */}
+          <div className="mt-6 text-left">
+            <Feedback
+              tone="success"
+              title="You're all set"
+              message="Nothing else is needed from you right now. Here is the whole sequence, start to finish."
+              referenceId={session_id}
+              referenceLabel="Order reference"
+              nextSteps={[
+                email
+                  ? `Check ${email} for your receipt and licence key. If it hasn't arrived in a few minutes, look in spam.`
+                  : "Check your inbox for the receipt and your licence key — look in spam if it hasn't arrived in a few minutes.",
+                "Download the installer for your computer below and run it.",
+                "Open BizFlow. Your first 14 days run as a free trial, so you can start working right away.",
+                licenseKey
+                  ? "When the trial ends, BizFlow shows an activation screen. Enter the email you bought with and this key — it unlocks on the spot."
+                  : "When the trial ends, BizFlow shows an activation screen where you enter your purchase email and licence key.",
+              ]}
+              actions={[{ label: "Get help", variant: "secondary", href: "/support" }]}
+            />
+          </div>
 
           {licenseKey && modules.length > 0 && (
             <LicensePanel licenseKey={licenseKey} modules={modules} />

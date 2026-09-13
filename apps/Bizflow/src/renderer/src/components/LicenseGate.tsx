@@ -89,7 +89,10 @@ export function useLicenseState(): { state: LicenseState; refresh: () => Promise
 function TrialBadge({ state }: { state: LicenseState }) {
   if (state.status === 'trial' && state.trialDaysLeft != null) {
     return (
-      <div className="pointer-events-none fixed bottom-4 right-4 z-50 rounded-full border border-sky-400/40 bg-sky-500/15 px-3 py-1.5 text-xs font-semibold text-sky-200 shadow-lg backdrop-blur">
+      <div
+        data-tour="trial-badge"
+        className="pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full border border-sky-400/40 bg-sky-500/15 px-3 py-1.5 text-xs font-semibold text-sky-200 shadow-lg backdrop-blur"
+      >
         Free trial · {state.trialDaysLeft} day{state.trialDaysLeft === 1 ? '' : 's'} left
       </div>
     )
@@ -97,7 +100,7 @@ function TrialBadge({ state }: { state: LicenseState }) {
 
   if (state.status === 'grace' && state.graceDaysLeft != null) {
     return (
-      <div className="pointer-events-none fixed bottom-4 right-4 z-50 rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 shadow-lg backdrop-blur">
+      <div className="pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full border border-amber-400/50 bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-100 shadow-lg backdrop-blur">
         Revalidation overdue · {state.graceDaysLeft} day{state.graceDaysLeft === 1 ? '' : 's'} left
       </div>
     )

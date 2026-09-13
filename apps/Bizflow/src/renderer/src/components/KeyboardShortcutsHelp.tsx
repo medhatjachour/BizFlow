@@ -32,10 +32,11 @@ export default function KeyboardShortcutsHelp() {
 
   return (
     <>
-      {/* Trigger Button */}
+      {/* Trigger Button — positioning is owned by the launcher column in
+          HelpCentre so the help and shortcuts buttons stay aligned. */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110 z-40"
+        className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
         aria-label="Show keyboard shortcuts"
         title="Keyboard Shortcuts (Ctrl+K for command palette)"
       >

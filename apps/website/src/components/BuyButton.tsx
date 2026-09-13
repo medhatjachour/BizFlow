@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { track } from "@/lib/analytics";
 import Link from "next/link";
+import Feedback from "@/components/Feedback";
+import { track } from "@/lib/analytics";
 import { withBasePath } from "@/lib/site";
 
 interface BuyButtonProps {
@@ -33,17 +34,20 @@ export default function BuyButton({
 }: BuyButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState<"consent" | "checkout">("checkout");
   const [paymentUnavailable, setPaymentUnavailable] = useState(false);
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
 
   const onClick = async () => {
     if (requirePolicyConsent && !acceptedPolicies) {
-      setError("Please accept Terms, Privacy, and Refund Policy first.");
+      setErrorKind("consent");
+      setError("Please accept the Terms, Privacy Policy and Refund Policy first.");
       return;
     }
 
     setLoading(true);
     setError(null);
+    setErrorKind("checkout");
     track("checkout_start", { item });
     try {
       const res = await fetch(withBasePath("/api/checkout"), {
@@ -107,17 +111,47 @@ export default function BuyButton({
         className={className}
         aria-busy={loading}
       >
-        {loading ? "Starting…" : error ?? label}
+        {loading ? "Starting…" : label}
       </button>
 
+      {error && errorKind === "consent" ? (
+        <Feedback
+          tone="warning"
+          title="One box left to tick"
+          message="Agree to the policies above, then press the button again."
+          nextSteps={[
+            "The policies are short — they cover licensing, your data, and refunds.",
+            "You only need to accept once per visit.",
+          ]}
+        />
+      ) : null}
+
+      {error && errorKind === "checkout" ? (
+        <Feedback
+          tone="error"
+          title="Checkout didn't start"
+          message={error}
+          nextSteps={[
+            "Try again — if a card payment was in progress, give it a few seconds first.",
+            "Your card has not been charged.",
+            "Still stuck? Contact us and we'll invoice you directly and issue the licence manually.",
+          ]}
+          actions={[{ label: "Contact us", variant: "secondary", href: "/support" }]}
+        />
+      ) : null}
+
       {paymentUnavailable ? (
-        <p className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-          Card checkout is being set up.{" "}
-          <Link className="font-semibold underline" href={withBasePath("/support")}>
-            Contact us to buy {label}
-          </Link>{" "}
-          and we&apos;ll send your license right away.
-        </p>
+        <Feedback
+          tone="info"
+          title="Card checkout isn't open just yet"
+          message={`We're still finishing the payment setup. Nothing is lost — tell us you want ${label} and we'll sort it out by hand.`}
+          nextSteps={[
+            `Send us a message saying you want ${label}, with your business name.`,
+            "We reply with a payment link (card or bank transfer) and your licence key.",
+            "You get the desktop download link and activation steps straight after payment.",
+          ]}
+          actions={[{ label: `Contact us to buy ${label}`, href: "/support" }]}
+        />
       ) : null}
     </div>
   );

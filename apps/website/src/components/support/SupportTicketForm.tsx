@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Feedback from "@/components/Feedback";
 import { withBasePath } from "@/lib/site";
 
 type CreateTicketResponse = {
@@ -12,6 +13,20 @@ type CreateTicketResponse = {
     createdAt: string;
   };
   error?: string;
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  general: "General",
+  billing: "Billing",
+  installation: "Installation",
+  bug: "Bug",
+  refund: "Refund",
+};
+
+const PRIORITY_LABELS: Record<string, string> = {
+  normal: "Normal",
+  high: "High",
+  urgent: "Urgent",
 };
 
 export default function SupportTicketForm() {
@@ -83,11 +98,11 @@ export default function SupportTicketForm() {
             onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2"
           >
-            <option value="general">General</option>
-            <option value="billing">Billing</option>
-            <option value="installation">Installation</option>
-            <option value="bug">Bug</option>
-            <option value="refund">Refund</option>
+            {Object.entries(CATEGORY_LABELS).map(([value, text]) => (
+              <option key={value} value={value}>
+                {text}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -98,9 +113,11 @@ export default function SupportTicketForm() {
             onChange={(e) => setPriority(e.target.value)}
             className="w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2"
           >
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
+            {Object.entries(PRIORITY_LABELS).map(([value, text]) => (
+              <option key={value} value={value}>
+                {text}
+              </option>
+            ))}
           </select>
         </label>
       </div>
@@ -118,25 +135,75 @@ export default function SupportTicketForm() {
         />
       </label>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-      >
-        {submitting ? "Creating ticket..." : "Create support ticket"}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {submitting ? "Creating ticket..." : "Create support ticket"}
+        </button>
+        <p className="text-xs text-foreground/50">
+          You&apos;ll get a ticket ID straight away and a copy by email.
+        </p>
+      </div>
 
       {result ? (
-        <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-sm">
-          {result.ok && result.ticket ? (
-            <p>
-              Ticket created: <strong>{result.ticket.publicId}</strong> ({result.ticket.status})
-            </p>
-          ) : (
-            <p className="text-rose-300">{result.error ?? "Could not create ticket"}</p>
-          )}
-          <p className="mt-1 text-xs text-foreground/60">Request ID: {result.requestId}</p>
-        </div>
+        result.ok && result.ticket ? (
+          <Feedback
+            tone="success"
+            title={`Ticket ${result.ticket.publicId} created`}
+            message={
+              <>
+                We&apos;ve logged your request. A confirmation is on its way to{" "}
+                <span className="font-medium text-foreground/90">{email}</span>.
+              </>
+            }
+            referenceId={result.ticket.publicId}
+            referenceLabel="Ticket ID"
+            details={[
+              { label: "Status", value: result.ticket.status },
+              { label: "Priority", value: PRIORITY_LABELS[priority] ?? priority },
+              { label: "Category", value: CATEGORY_LABELS[category] ?? category },
+              { label: "Request ID", value: result.requestId },
+            ]}
+            nextSteps={[
+              `A confirmation email is sent to ${email} — check spam if it hasn't arrived within a few minutes.`,
+              priority === "urgent"
+                ? "Urgent tickets are picked up the same working day."
+                : "We usually reply within one business day (Mon–Fri).",
+              "Keep your ticket ID — you'll need it to check progress or add more detail.",
+            ]}
+            actions={[
+              { label: "Track this ticket", href: "/support/status" },
+              {
+                label: "Send another ticket",
+                variant: "secondary",
+                onClick: () => setResult(null),
+              },
+            ]}
+          />
+        ) : (
+          <Feedback
+            tone="error"
+            title="We couldn't create your ticket"
+            message={
+              <>
+                {result.error ?? "Something went wrong on our side."} Your message is still
+                in the form above — nothing was lost.
+              </>
+            }
+            referenceId={result.requestId !== "n/a" ? result.requestId : undefined}
+            referenceLabel="Request ID"
+            nextSteps={[
+              "Try again in a moment — most failures here are short-lived network blips.",
+              "If it keeps failing, email medhatjachour8@gmail.com and we'll open the ticket for you.",
+            ]}
+            actions={[
+              { label: "Retry", variant: "secondary", onClick: () => setResult(null) },
+            ]}
+          />
+        )
       ) : null}
     </form>
   );

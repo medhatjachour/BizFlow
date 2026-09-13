@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Feedback from "@/components/Feedback";
 import { track } from "@/lib/analytics";
 import { withBasePath } from "@/lib/site";
 
@@ -174,15 +175,53 @@ export default function DownloadButton({
         )}
         {label}
       </button>
-      {message && (
-        <p
-          className={`text-xs ${
-            phase === "error" ? "text-rose-300" : "text-foreground/55"
-          }`}
-        >
-          {message}
-        </p>
-      )}
+      {phase === "working" && message ? (
+        <p className="text-xs text-foreground/55">{message}</p>
+      ) : null}
+
+      {phase === "building" && message ? (
+        <Feedback
+          tone="info"
+          title="Building your download"
+          message={message}
+          nextSteps={[
+            "This usually takes 2–10 minutes the first time.",
+            "Keep this tab open — the download starts on its own when it's ready.",
+            `You'll get the ${os} build of ${productName}.`,
+          ]}
+        />
+      ) : null}
+
+      {phase === "ready" ? (
+        <Feedback
+          tone="success"
+          title="Your download is starting"
+          message={`${productName} for ${os} is on its way to your Downloads folder.`}
+          nextSteps={[
+            "Open the file and follow the installer — it takes about a minute.",
+            "First launch starts a 14-day free trial. No licence key needed yet.",
+            "When the trial ends, activate with the key from your purchase email.",
+          ]}
+          actions={[{ label: "Get help", variant: "secondary", href: "/support" }]}
+        />
+      ) : null}
+
+      {phase === "error" && message ? (
+        <Feedback
+          tone="error"
+          title="The download didn't start"
+          message={message}
+          nextSteps={[
+            "Try again — a fresh click usually works.",
+            "You can also grab the latest release from our GitHub releases page.",
+            "Still stuck? Contact us and we'll send the installer to you directly.",
+          ]}
+          actions={[
+            { label: "Try again", onClick: onClick },
+            { label: "Get help", variant: "secondary", href: "/support" },
+          ]}
+        />
+      ) : null}
     </div>
   );
 }

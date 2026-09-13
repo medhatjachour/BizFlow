@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Feedback from "@/components/Feedback";
 import { PLUGINS } from "@/lib/plugins";
 import {
   estimate,
@@ -159,37 +160,47 @@ export default function RequestForm() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="glass-strong rounded-3xl p-10 text-center"
+          className="space-y-6"
         >
-          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-emerald-400 to-biz-500 text-3xl">
-            ✓
+          <div className="glass-strong rounded-3xl p-8 text-center">
+            <h2 className="text-3xl font-black">Request received</h2>
+            <p className="mt-3 text-foreground/70">
+              Thanks! Based on what you described, this is the ballpark:
+            </p>
+            <p className="mt-4 text-4xl font-black text-gradient">{result.range}</p>
+            <p className="mt-2 text-xs text-foreground/50">
+              An estimate, not a final quote — we confirm the scope before we start.
+            </p>
           </div>
-          <h2 className="text-3xl font-black">Request received</h2>
-          <p className="mt-3 text-foreground/70">
-            Thanks! Your reference is{" "}
-            <span className="font-mono font-semibold text-biz-300">
-              {result.ref}
-            </span>
-            . Our estimate for your request is:
-          </p>
-          <p className="mt-4 text-4xl font-black text-gradient">
-            {result.range}
-          </p>
-          <p className="mt-3 text-sm text-foreground/50">
-            {notify?.sent
-              ? `Sent to ${notify.target}. We will reply to ${email}.`
-              : `Saved your request. SMTP is not configured yet, so email delivery is pending.`}
-          </p>
-          <button
-            onClick={() => {
-              setStatus("idle");
-              setResult(null);
-              setNotify(null);
-            }}
-            className="mt-8 glass rounded-xl px-6 py-3 text-sm font-semibold transition hover:bg-white/10"
-          >
-            Send another request
-          </button>
+
+          <Feedback
+            tone="success"
+            title="Your brief is with us"
+            message={
+              notify?.sent
+                ? `A copy went to ${notify.target}.`
+                : "Saved to our dashboard. Email delivery is pending until SMTP is configured."
+            }
+            referenceId={result.ref}
+            referenceLabel="Request reference"
+            nextSteps={[
+              "We read your brief and confirm the exact scope — usually within one business day.",
+              `We email ${email} a fixed quote with a delivery date.`,
+              "Once you approve, we build it and send your download link and licence.",
+            ]}
+            actions={[
+              { label: "Talk to us now", href: "/support" },
+              {
+                label: "Send another request",
+                variant: "secondary",
+                onClick: () => {
+                  setStatus("idle");
+                  setResult(null);
+                  setNotify(null);
+                },
+              },
+            ]}
+          />
         </motion.div>
       </section>
     );
@@ -457,7 +468,17 @@ export default function RequestForm() {
             />
           </div>
 
-          {error && <p className="text-sm text-rose-400">{error}</p>}
+          {status === "error" && error ? (
+            <Feedback
+              tone="error"
+              title="We couldn't send your request"
+              message={`${error} Your details are still filled in — just press the button again.`}
+              nextSteps={[
+                "Try once more — most failures here are short-lived network issues.",
+                "If it keeps failing, email medhatjachour8@gmail.com with what you need.",
+              ]}
+            />
+          ) : null}
 
           <button
             type="submit"
@@ -466,6 +487,9 @@ export default function RequestForm() {
           >
             {status === "sending" ? "Sending…" : "Get my estimate"}
           </button>
+          <p className="text-center text-xs text-foreground/45">
+            Free, no obligation. You get an estimate now and a fixed quote by email.
+          </p>
         </form>
 
         {/* Live estimate */}

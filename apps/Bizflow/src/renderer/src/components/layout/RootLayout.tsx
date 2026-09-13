@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 import SkipToContent from '../ui/SkipToContent'
-import KeyboardShortcutsHelp from '../KeyboardShortcutsHelp'
+import HelpCentre from '../HelpCentre'
 import { useModuleEnabled } from '../../hooks/useModuleEnabled'
 import { MODULE_IDS } from '@/shared/modules'
 import {
@@ -12,9 +12,7 @@ import {
   Settings,
   LogOut,
   Users,
-  UserSquare2,
   FileBarChart,
-  Receipt,
   Menu,
   X,
   ChevronLeft,
@@ -26,8 +24,7 @@ import {
   PawPrint,
   Dumbbell,
   Pill,
-  Coffee,
-  Grid2X2
+  Coffee
 } from 'lucide-react'
 import LocalIcon from '../../assets/icon.png'
 import { useAuth } from '@renderer/contexts/AuthContext'
@@ -231,7 +228,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
       <SkipToContent />
-      <KeyboardShortcutsHelp />
+      <HelpCentre />
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
@@ -305,7 +302,11 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-3 overflow-y-auto" aria-label="Main navigation">
+        <nav
+          data-tour="sidebar-nav"
+          className="flex-1 space-y-1 p-3 overflow-y-auto"
+          aria-label="Main navigation"
+        >
           {navItems
             // Capability is authoritative; the legacy role list only covers
             // entries that never got one, so custom roles aren't locked out.
