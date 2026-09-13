@@ -607,3 +607,52 @@ EOF
 
 **Certificate renewal hook** — see section 20.
 
+## 25) Docker Disk Housekeeping
+
+Docker keeps a copy of every layer it has ever built. That growth is invisible to a plain `df`
+check until the filesystem is nearly full, and this host demonstrated the trap: build cache reached
+**15.2 GB** and disk usage went from 12% to 24% in a single afternoon of deploys.
+
+`scripts/health-check.sh` now watches Docker's own footprint separately. It fails when Docker holds
+more than `BIZFLOW_DOCKER_MAX_GB` (default 30) and includes the fix in the alert:
+
+```
+[health]   - Docker is holding 22GB on disk (threshold 30GB, 2GB reclaimable)
+             -- run: docker builder prune -af && docker image prune -f
+```
+
+Reclaim it manually:
+
+```bash
+docker builder prune -af        # build cache only
+docker image prune -f           # dangling (untagged) images only
+```
+
+On this host that took the disk from 23 GB to 7.6 GB used (24% → 8%).
+
+**Do not use `docker system prune -a`.** It deletes the `bizflow-bizflow-app:previous` rollback tag
+(see section 22) and the staging image, which removes the ability to roll back a bad deploy.
+`builder prune -af` and `image prune -f` are safe: they leave every tagged image alone.
+
+There is deliberately no cron entry for this. Pruning on a schedule can evict cache that the next
+deploy needs to reuse, and a healthy host only needs it every few weeks. Let the alert tell you when.
+
+## 26) CI: Why The Installer Workflow Keeps Failing
+
+`Publish Desktop Installers` (`publish-commerce-installers.yml`) builds ten modules on Windows, macOS
+and Linux. Two things to know:
+
+**The macOS jobs fail at `npm ci`.** All ten `mac (*)` jobs fail on "Install dependencies" in every
+run, while the identical command passes on Windows and Linux. The step is now hardened: it retries
+with `npm install`, and prints `uname`, the npm registry and the npm debug log before retrying, so the
+next failure states its own cause. GitHub does **not** serve Actions logs without repo access — if you
+need the raw error, sign in and open the job in the browser.
+
+**The run was cancelled by every push.** `concurrency.cancel-in-progress` was `true` for
+`publish-desktop-installers`, and because the mac matrix builds ten modules one at a time
+(`max-parallel: 1`) after waiting on the Windows matrix, no run ever survived long enough to finish.
+It is now `false`: runs queue instead of being killed.
+
+`max-parallel: 1` is intentional on all three jobs — the Windows matrix passes with it, and it avoids
+concurrent writes to the same `downloads-latest` release.
+

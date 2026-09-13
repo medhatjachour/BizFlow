@@ -14,7 +14,11 @@ permissions:
 
 concurrency:
   group: publish-desktop-installers
-  cancel-in-progress: true
+  # Every push to main used to cancel the run in flight. Because the mac matrix
+  # builds ten modules one at a time (max-parallel: 1) and waits on windows
+  # first, the run never survived long enough to finish - which is why the
+  # history is mostly cancelled. Queue instead of cancelling.
+  cancel-in-progress: false
 
 jobs:
   windows:
@@ -96,6 +100,7 @@ jobs:
   mac:
     runs-on: macos-latest
     needs: windows
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       max-parallel: 1
@@ -126,8 +131,34 @@ jobs:
           cache: npm
           cache-dependency-path: apps/Bizflow/package-lock.json
 
+      # Every macOS matrix job failed on this step while the identical command
+      # passed on Windows and Linux. GitHub does not serve Actions logs without
+      # repo access, so this step is written to be both resilient and
+      # self-explaining: it retries with a plain install, and dumps the npm
+      # debug log so the next failure names its own cause instead of hiding it.
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        shell: bash
+        run: |
+          echo "node=$(node --version) npm=$(npm --version)"
+          echo "platform=$(uname -s) arch=$(uname -m)"
+          df -h . | tail -n 1
+
+          if npm ci --ignore-scripts --no-audit --no-fund; then
+            echo "npm ci completed"
+            exit 0
+          fi
+
+          echo "::warning::npm ci failed - collecting diagnostics and retrying with npm install"
+          npm config get registry || true
+          npm ping || true
+          ls -la "$HOME/.npm/_logs" 2>/dev/null || true
+          for f in "$HOME"/.npm/_logs/*debug-0.log; do
+            [ -f "$f" ] || continue
+            echo "----- $f (last 60 lines) -----"
+            tail -n 60 "$f"
+          done
+
+          npm install --ignore-scripts --no-audit --no-fund
 
       - name: Build app (commerce)
         run: npm run build

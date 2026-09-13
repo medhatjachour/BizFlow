@@ -73,6 +73,49 @@ elif [ "${BIZFLOW_HEALTH_VERBOSE:-0}" = "1" ]; then
   log "OK   disk / at ${used_pct}%"
 fi
 
+# Docker keeps its own copy of everything it has ever built, and that was
+# invisible to the check above until the filesystem itself filled up: a build
+# cache that grows on every deploy took this host from 12% to 22% in one
+# afternoon. Watch Docker's own footprint separately so it is caught while there
+# is still room to do something about it.
+if command -v docker >/dev/null 2>&1; then
+  # Docker reports sizes as "1.324GB" / "414.2MB"; turn one into bytes.
+  bytes_of() {
+    awk -v v="$1" 'BEGIN{
+      n = v; sub(/[A-Za-z].*/, "", n)
+      u = v; sub(/^[0-9.]+/, "", u)
+      m = 1
+      if      (u == "kB") m = 1000
+      else if (u == "MB") m = 1000000
+      else if (u == "GB") m = 1000000000
+      else if (u == "TB") m = 1000000000000
+      printf "%.0f", n * m
+    }'
+  }
+
+  docker_total=0
+  docker_reclaim=0
+  while IFS='|' read -r size reclaim; do
+    [ -n "$size" ] || continue
+    b="$(bytes_of "$size")"
+    r="$(bytes_of "${reclaim%% *}")"
+    docker_total=$(( docker_total + ${b:-0} ))
+    docker_reclaim=$(( docker_reclaim + ${r:-0} ))
+  done <<EOF
+$(docker system df --format '{{.Size}}|{{.Reclaimable}}' 2>/dev/null)
+EOF
+
+  DOCKER_MAX_GB="${BIZFLOW_DOCKER_MAX_GB:-30}"
+  docker_total_gb=$(( docker_total / 1000000000 ))
+  docker_reclaim_gb=$(( docker_reclaim / 1000000000 ))
+
+  if [ "$docker_total" -gt 0 ] && [ "$docker_total_gb" -ge "$DOCKER_MAX_GB" ]; then
+    failures+=("Docker is holding ${docker_total_gb}GB on disk (threshold ${DOCKER_MAX_GB}GB, ${docker_reclaim_gb}GB reclaimable) -- run: docker builder prune -af && docker image prune -f")
+  elif [ "${BIZFLOW_HEALTH_VERBOSE:-0}" = "1" ]; then
+    log "OK   docker footprint ${docker_total_gb}GB (${docker_reclaim_gb}GB reclaimable)"
+  fi
+fi
+
 CERT_WARN_DAYS="${BIZFLOW_CERT_WARN_DAYS:-21}"
 SSL_DIR="${BIZFLOW_SSL_DIR:-./ssl}"
 for cert in "$SSL_DIR"/*-cert.pem "$SSL_DIR"/cert.pem; do
