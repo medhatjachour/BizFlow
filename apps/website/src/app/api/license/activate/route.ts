@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { activateLicenseForDevice } from "@/lib/commerce-db";
-import { signActivationCertificate } from "@/lib/license";
+import { licenseExpiryFrom, signActivationCertificate } from "@/lib/license";
 import { logEvent, requestIdFromHeaders } from "@/lib/observability";
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -110,15 +110,19 @@ export async function POST(request: Request) {
     deviceName: result.deviceName,
   });
 
-  const issuedAt = new Date().toISOString();
+  const now = new Date();
+  const issuedAt = now.toISOString();
+  const expiresAt = licenseExpiryFrom(now);
   const activation = {
-    version: 1 as const,
+    version: 2 as const,
     email,
     licenseKey,
     itemId: result.itemId,
     deviceFingerprint: result.deviceFingerprint,
     deviceName: result.deviceName ?? deviceName,
     issuedAt,
+    expiresAt,
+    lastValidatedAt: issuedAt,
   };
 
   try {

@@ -288,6 +288,24 @@ const api = {
       ipcRenderer.invoke('module:setEnabled', { moduleId, enabled }),
     relaunch: (): Promise<void> => ipcRenderer.invoke('module:relaunch'),
   },
+  // Device license activation / revalidation
+  license: {
+    getDeviceFingerprint: () => ipcRenderer.invoke('license:getDeviceFingerprint'),
+    getState: () => ipcRenderer.invoke('license:getState'),
+    validateOnline: () => ipcRenderer.invoke('license:validateOnline'),
+    activateOnline: (email: string, licenseKey: string) =>
+      ipcRenderer.invoke('license:activateOnline', { email, licenseKey }),
+    /**
+     * Fires when a background revalidation changes the stored activation, so the
+     * UI can re-read its state immediately instead of waiting for the 15 minute
+     * poll. Returns an unsubscribe function.
+     */
+    onStateChanged: (cb: () => void): (() => void) => {
+      const handler = (): void => cb()
+      ipcRenderer.on('license:stateChanged', handler)
+      return () => ipcRenderer.removeListener('license:stateChanged', handler)
+    },
+  },
   finance: {
     addTransaction: (data: { type: string; amount: number; description?: string; userId?: string }) =>
       ipcRenderer.invoke('finance:addTransaction', data),

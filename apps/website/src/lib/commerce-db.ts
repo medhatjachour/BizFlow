@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
 import { recordAccountActivity } from "@/lib/account-auth";
 import { getPurchasable } from "@/lib/payments";
+import { licenseKeyFor } from "@/lib/license";
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -108,6 +109,98 @@ type LicenseWithOrder = {
     paymentStatus: string;
   };
 };
+
+export interface IssuedLicense {
+  email: string;
+  itemId: string;
+  itemLabel: string;
+  licenseKey: string;
+  orderId: string;
+  reissued: boolean;
+}
+
+/**
+ * Issues (or re-issues) a one-time license for an email + item, outside of a
+ * payment gateway. Used by the admin dashboard to manually provision a customer
+ * after they pay offline. Creates a paid order so the standard activation flow
+ * (`activateLicenseForDevice`, which requires `paymentStatus: "paid"`) works.
+ *
+ * Deterministic key: the same email + item always mints the same key, so running
+ * this twice returns the existing license instead of creating duplicates.
+ */
+export async function issueLicenseManually(params: {
+  email: string;
+  itemId: string;
+  amountTotal?: number;
+}): Promise<IssuedLicense> {
+  const email = normalizeEmail(params.email);
+  const itemId = params.itemId.trim();
+
+  const customer = await upsertCustomerByEmail(email);
+  const sessionId = `manual_${crypto.createHash("sha256").update(`${email}|${itemId}`).digest("hex").slice(0, 32)}`;
+  const licenseKey = licenseKeyFor({ sessionId, itemId, email: customer.email });
+
+  const existing = await prisma.license.findFirst({
+    where: { key: licenseKey, customerId: customer.id },
+    select: { orderId: true },
+  });
+
+  const order = await prisma.order.upsert({
+    where: { sessionId },
+    create: {
+      sessionId,
+      itemId,
+      email,
+      customerId: customer.id,
+      amountTotal: params.amountTotal ?? 0,
+      currency: "usd",
+      paymentStatus: "paid",
+      fulfilledAt: new Date(),
+    },
+    update: {
+      email,
+      customerId: customer.id,
+      itemId,
+      paymentStatus: "paid",
+    },
+  });
+
+  await prisma.license.upsert({
+    where: { orderId: order.id },
+    create: {
+      customerId: customer.id,
+      orderId: order.id,
+      key: licenseKey,
+    },
+    update: {
+      customerId: customer.id,
+      key: licenseKey,
+    },
+  });
+
+  await prisma.orderAudit.create({
+    data: {
+      orderId: order.id,
+      event: "license.issued.manual",
+      payloadJson: JSON.stringify({ email, itemId }),
+    },
+  });
+
+  await recordAccountActivity(
+    customer.id,
+    "license_issued",
+    `License issued for ${getPurchasable(itemId)?.label ?? itemId}`
+  );
+
+  return {
+    email,
+    itemId,
+    itemLabel: getPurchasable(itemId)?.label ?? itemId,
+    licenseKey,
+    orderId: order.id,
+    reissued: Boolean(existing),
+  };
+}
 
 export async function hasPaidLicenseDb(email: string, licenseKey: string): Promise<boolean> {
   const e = normalizeEmail(email);

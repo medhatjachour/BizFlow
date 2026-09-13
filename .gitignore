@@ -96,3 +96,33 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Project-specific ignores
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Local editor / AI-assistant configuration (machine-specific, not project config)
+.continue/
+
+# Root-domain static site. It is built from the SEPARATE portfolio repository and
+# deployed out-of-band to the host, so the build output must never be committed
+# here. See docs/PRODUCTION_SERVER_RUNBOOK.md section 15.
+portfolio-dist/
+
+# Scratch scripts written during deploys/debugging (e.g. .tmp-dbcheck.sh)
+.tmp-*
+
+# Secrets: never commit a private key. `*.pem` is already ignored above; these are
+# listed explicitly so the intent is unmistakable.
+license-signing-private.pem
+license-private.pem
+*-private.pem
+*.key
+
+# ...but the desktop app's PUBLIC verification key must stay committed, because a
+# packaged build falls back to this file when BIZFLOW_LICENSE_PUBLIC_KEY is unset.
+!apps/Bizflow/resources/license-public.pem
+
+# Keep env templates in the repo so new contributors can bootstrap.
+!.env.example
+!**/.env.example

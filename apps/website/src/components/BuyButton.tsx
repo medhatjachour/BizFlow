@@ -33,6 +33,7 @@ export default function BuyButton({
 }: BuyButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentUnavailable, setPaymentUnavailable] = useState(false);
   const [acceptedPolicies, setAcceptedPolicies] = useState(false);
 
   const onClick = async () => {
@@ -62,7 +63,9 @@ export default function BuyButton({
           }
           return;
         }
-        setError("Payments aren't enabled yet.");
+        // No download link either: let the visitor express intent so a human
+        // can follow up (and issue a license manually from the dashboard).
+        setPaymentUnavailable(true);
         return;
       }
 
@@ -106,6 +109,16 @@ export default function BuyButton({
       >
         {loading ? "Starting…" : error ?? label}
       </button>
+
+      {paymentUnavailable ? (
+        <p className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          Card checkout is being set up.{" "}
+          <Link className="font-semibold underline" href={withBasePath("/support")}>
+            Contact us to buy {label}
+          </Link>{" "}
+          and we&apos;ll send your license right away.
+        </p>
+      ) : null}
     </div>
   );
 }

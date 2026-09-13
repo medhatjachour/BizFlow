@@ -178,7 +178,42 @@ the desktop app (Settings → License).
 > ⚠️ Keep `LICENSE_SECRET` stable and identical wherever you verify keys. If it
 > changes, previously issued keys stop verifying.
 
-### 6.1 Per-OS release pipeline
+### 6.1 Device activation & revalidation
+
+The desktop app binds a license to one device and revalidates online:
+
+| Endpoint | Body | Response |
+| --- | --- | --- |
+| `POST /api/license/activate` | `{ email, licenseKey, deviceFingerprint, deviceName }` | `{ ok, activation, signature }` — a **v2 signed certificate** |
+| `POST /api/license/validate` | `{ email, licenseKey, deviceFingerprint }` | `{ ok, valid, expiresAt? }` |
+
+- The certificate is signed with `LICENSE_SIGNING_PRIVATE_KEY` (Ed25519) and
+  verified in the app with the embedded public key (`BIZFLOW_LICENSE_PUBLIC_KEY`).
+- Each certificate carries `expiresAt` — a **30-day** validity window
+  (`LICENSE_VALIDITY_DAYS`). A successful `/validate` rolls it forward, so a
+  device that checks in regularly stays active. Missed revalidation enters a
+  **14-day grace window** before the app locks.
+
+### 6.2 Issuing a license manually (offline payment)
+
+If a customer pays outside Stripe, the admin can mint their license from the
+dashboard → **Access control** → **Issue a license**:
+
+- `POST /api/admin/licenses` `{ email, itemId, sendEmail? }` (admin only).
+- Creates a paid order + license (`issueLicenseManually()`), computes the key,
+  and optionally emails it via `sendLicenseDeliveryEmail()`.
+- The key is deterministic per `email + itemId`, so re-issuing returns the same
+  key instead of creating duplicates.
+
+### 6.3 Production secret requirement
+
+`LICENSE_SECRET` no longer falls back to a public default. `src/lib/license.ts`
+throws at import time if it is unset, and `src/lib/admin.ts` / `src/lib/customer.ts`
+throw in production when it is missing — a guessable secret would let anyone
+forge license keys and admin/customer cookies. Always set a long random value
+server-side.
+
+### 6.4 Per-OS release pipeline
 
 `apps/bizflow/.github/workflows/release-all-os.yml` builds BizFlow for Windows,
 macOS and Linux on a `v*.*.*` tag and publishes installers to a GitHub Release

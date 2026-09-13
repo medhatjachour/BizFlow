@@ -11,7 +11,23 @@ import crypto from "node:crypto";
  * Format: BIZ-XXXXX-XXXXX-XXXXX-XXXXX (Crockford base32, 20 chars of entropy).
  */
 
-const SECRET = process.env.LICENSE_SECRET ?? "bizflow-dev-license-secret";
+/**
+ * How long an activation certificate stays valid before the desktop app must
+ * revalidate online. Revalidation rolls this window forward.
+ */
+export const LICENSE_VALIDITY_DAYS = 30;
+
+function resolveSecret(): string {
+  const value = process.env.LICENSE_SECRET;
+  // Never fall back to a publicly-known default: a guessable secret lets anyone
+  // forge license keys. Fail loudly instead.
+  if (!value) {
+    throw new Error("LICENSE_SECRET must be configured");
+  }
+  return value;
+}
+
+const SECRET = resolveSecret();
 function pemFromEnvironment(value: string | undefined): string | undefined {
   if (!value) return undefined;
   if (value.includes("BEGIN")) return value.replace(/\\n/g, "\n");
@@ -23,10 +39,6 @@ function pemFromEnvironment(value: string | undefined): string | undefined {
 }
 
 const SIGNING_PRIVATE_KEY = pemFromEnvironment(process.env.LICENSE_SIGNING_PRIVATE_KEY);
-
-if (process.env.NODE_ENV === "production" && !process.env.LICENSE_SECRET) {
-  throw new Error("LICENSE_SECRET must be configured in production");
-}
 
 // Crockford base32 alphabet (no I, L, O, U to avoid ambiguity).
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -74,13 +86,22 @@ export function verifyLicenseKey(key: string, input: LicenseInput): boolean {
 }
 
 export interface ActivationCertificate {
-  version: 1;
+  version: 2;
   email: string;
   licenseKey: string;
   itemId: string;
   deviceFingerprint: string;
   deviceName: string;
   issuedAt: string;
+  /** End of the current validity window; revalidation rolls this forward. */
+  expiresAt: string;
+  /** ISO timestamp of the last successful online revalidation. */
+  lastValidatedAt: string;
+}
+
+/** Compute the expiry timestamp `days` from now (default: the validity window). */
+export function licenseExpiryFrom(now: Date = new Date(), days = LICENSE_VALIDITY_DAYS): string {
+  return new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
 export function signActivationCertificate(certificate: ActivationCertificate): string {

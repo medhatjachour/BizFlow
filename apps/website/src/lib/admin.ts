@@ -22,7 +22,12 @@ const REQUESTS_FILE = path.join(DATA_DIR, "requests.json");
 
 export const ADMIN_COOKIE = "bf_admin";
 
+// HMAC secret for the admin/auth cookies. A publicly-known default would let
+// anyone forge the cookie, so production must configure it explicitly.
 const SECRET = process.env.LICENSE_SECRET ?? "bizflow-dev-license-secret";
+if (process.env.NODE_ENV === "production" && SECRET === "bizflow-dev-license-secret") {
+  throw new Error("LICENSE_SECRET must be configured in production");
+}
 const RAW_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
 
 /** Local development may use the documented default; production must configure it. */

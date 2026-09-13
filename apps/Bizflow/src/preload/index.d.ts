@@ -14,6 +14,33 @@ export interface ManagedRole {
   userCount?: number
 }
 
+export type LicenseStatus = 'trial' | 'active' | 'grace' | 'expired' | 'trial_expired'
+
+export interface LicenseState {
+  status: LicenseStatus
+  activated: boolean
+  /** True only when the app must be gated behind the activation screen. */
+  locked?: boolean
+  trialDaysLeft?: number
+  trialEndsAt?: string
+  daysUntilExpiry?: number
+  graceDaysLeft?: number
+  signatureValid?: boolean
+  boundToCurrentDevice?: boolean
+  deviceFingerprint: string
+  deviceName: string
+  activation?: {
+    email: string
+    licenseKey: string
+    itemId: string
+    deviceFingerprint: string
+    deviceName: string
+    issuedAt: string
+    expiresAt: string
+    lastValidatedAt: string
+  }
+}
+
 interface API {
   permissions: {
     getRoles: () => Promise<Record<string, { capabilities: Capability[]; isDefault: boolean; isWildcard: boolean }>>
@@ -463,21 +490,14 @@ interface API {
       serverBaseUrl: string
       appVersion: string
     }>
-    getActivationState: () => Promise<{
-      activated: boolean
-      checksumValid?: boolean
-      boundToCurrentDevice?: boolean
-      deviceFingerprint: string
-      deviceName: string
-      activation?: {
-        email: string
-        licenseKey: string
-        itemId: string
-        deviceFingerprint: string
-        deviceName: string
-        activatedAt: string
-      }
-    }>
+    /** Current license status for this device. */
+    getState: () => Promise<LicenseState>
+    validateOnline: () => Promise<{ valid: boolean; checked: boolean; expiresAt?: string }>
+    /**
+     * Fires when a background revalidation changes the stored activation.
+     * Returns an unsubscribe function.
+     */
+    onStateChanged: (cb: () => void) => () => void
     activateOnline: (
       email: string,
       licenseKey: string
@@ -485,9 +505,7 @@ interface API {
       ok: boolean
       error?: string
       code?: string
-      activationState?: {
-        activated: boolean
-      }
+      activationState?: LicenseState
     }>
   }
   // ─── Plugin APIs ────────────────────────────────────────────────────────

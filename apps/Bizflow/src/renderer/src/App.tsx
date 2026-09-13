@@ -13,6 +13,7 @@ import PageLoader from './components/ui/PageLoader'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import CommandPalette from './components/CommandPalette'
 import { MigrationProgress } from './components/MigrationProgress'
+import LicenseGate from './components/LicenseGate'
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
 import type { Capability } from '../../shared/permissions'
 
@@ -93,8 +94,8 @@ function AppContent() {
     }
   ])
 
-  return (
-    <>
+          return (
+    <LicenseGate>
       <ErrorBoundary>
         <MigrationProgress />
       </ErrorBoundary>
@@ -392,7 +393,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
-    </>
+    </LicenseGate>
   )
 }
 

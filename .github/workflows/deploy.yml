@@ -92,7 +92,10 @@ jobs:
           SCP="scp -i ~/.ssh/deploy_key -q"
 
           # Root infra
-          $SCP Dockerfile docker-compose.yml nginx.conf root-chooser.html $REMOTE:$BASE/
+          # NOTE: the root-domain static site is NOT synced here. It is built from
+          # the separate portfolio repository and lives in ./portfolio-dist on the
+          # host, which nginx bind-mounts (see docker-compose.yml).
+          $SCP Dockerfile docker-compose.yml nginx.conf $REMOTE:$BASE/
 
           # BizFlow bridge, web UI, schemas, and build configuration
           $SCP -r apps/Bizflow $REMOTE:$BASE/apps/
@@ -134,17 +137,25 @@ jobs:
 
       - name: Smoke test
         run: |
-          BASE="https://bizflow.medhatjachour.tech"
+          # Use the canonical, DNS-resolvable hostname. The bare
+          # `bizflow.medhatjachour.tech` has no A record and always fails.
+          BASE="https://www.bizflow.medhatjachour.tech"
           ROOT="https://medhatjachour.tech"
-          check() { code=\$(curl -s -o /dev/null -w "%{http_code}" "\$1"); echo "\$2=\$code"; [ "\$code" = "200" ]; }
+          check() { code=$(curl -s -o /dev/null -w "%{http_code}" "$1"); echo "$2=$code"; [ "$code" = "200" ]; }
+          # Asserts an exact status code (used to prove the root web root is populated:
+          # an empty/missing web root yields 403 for "/" and 500 for missing files).
+          expect() { code=$(curl -s -o /dev/null -w "%{http_code}" "$1"); echo "$2=$code"; [ "$code" = "$3" ]; }
           check "$BASE"                      HOME
           check "$BASE/robots.txt"           ROBOTS
           check "$BASE/sitemap.xml"          SITEMAP
           check "$BASE/admin/login"          ADMIN_LOGIN
           check "$BASE/portal/login"         PORTAL_LOGIN
           check "$BASE/api/prices"           PRICES_API
-          check "$ROOT/"                     ROOT_CHOOSER
-          check "$ROOT/root-chooser.html"    ROOT_FILE
+          check "$ROOT/"                     ROOT_HOME
+          check "$ROOT/favicon.ico"          ROOT_FAVICON
+          check "$ROOT/profile.png"          ROOT_PROFILE
+          # Missing hashed assets must return 404, not the SPA fallback HTML.
+          expect "$ROOT/assets/does-not-exist.js" ROOT_ASSET_404 404
 
       - name: Cleanup temp deploy dir
         if: always()

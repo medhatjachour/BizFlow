@@ -8,7 +8,11 @@ import { getCustomerOrdersDb, hasPaidLicenseDb } from "@/lib/commerce-db";
 
 const DATA_DIR = dataDir;
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
+// HMAC secret for the customer session cookie. Production must set it.
 const SECRET = process.env.LICENSE_SECRET ?? "bizflow-dev-license-secret";
+if (process.env.NODE_ENV === "production" && SECRET === "bizflow-dev-license-secret") {
+  throw new Error("LICENSE_SECRET must be configured in production");
+}
 
 export const CUSTOMER_COOKIE = "bf_customer";
 
