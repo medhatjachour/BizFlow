@@ -112,6 +112,13 @@ portfolio-dist/
 # Scratch scripts written during deploys/debugging (e.g. .tmp-dbcheck.sh)
 .tmp-*
 
+# Host marker: its presence makes scripts/reset-demo-data.sh refuse to run.
+# Created on the production server, never committed.
+.production
+
+# Database backups produced by scripts/backup-data.sh
+backups/
+
 # Secrets: never commit a private key. `*.pem` is already ignored above; these are
 # listed explicitly so the intent is unmistakable.
 license-signing-private.pem

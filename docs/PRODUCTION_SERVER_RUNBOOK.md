@@ -388,3 +388,222 @@ It also asserts that `medhatjachour.tech/assets/does-not-exist.js` returns **404
 exact-status check is the regression guard for the empty-web-root incident: an empty web root
 produces 403/500 instead of 404, and the `^~ /assets/` block must never let a missing hashed
 asset fall back to `index.html`.
+
+## 18) Database Backups
+
+`website.db` holds customers, orders, licence keys and support tickets. Losing it loses paid
+customers, and there is no way to regenerate it.
+
+**Schedule (in `medhat`'s crontab):**
+
+- `30 2 * * *` — `bash scripts/backup-data.sh`
+- `*/5 * * * *` — `bash scripts/health-check.sh` (section 19)
+
+**How it works** (`scripts/backup-data.sh`):
+
+- Resolves the data volume from the running container's mount, *not* from a name pattern. This
+  matters: the host also carries a stale, empty `bizflow-data` volume, and matching by name
+  silently "backs up" nothing.
+- Uses SQLite's own `.backup` API rather than `cp`, because copying a live SQLite file can
+  capture a torn page or miss WAL contents.
+- **Verifies** each snapshot with `PRAGMA integrity_check` and records row counts in
+  `MANIFEST.txt`. A snapshot that fails verification is deleted and the script exits non-zero.
+- Keeps 30 days (`BIZFLOW_BACKUP_KEEP_DAYS`), then rotates.
+- Writes to `/home/medhat/bizflow-backups/<timestamp>/`.
+
+**Restore** (`scripts/restore-data.sh`):
+
+```bash
+cd /home/medhat/bizflow
+RESTORE_CONFIRM=RESTORE-DATA bash scripts/restore-data.sh /home/medhat/bizflow-backups/<stamp>
+```
+
+It snapshots the *current* data to `pre-restore-<stamp>/` first, so a restore that turns out to be
+the wrong choice is itself revertible.
+
+**Rehearsal** (do this quarterly — an untested backup is not a backup). Restore into a scratch
+volume so production is untouched:
+
+```bash
+docker volume create restore-drill
+BIZFLOW_VOLUME=restore-drill BIZFLOW_SKIP_COMPOSE=1 \
+  RESTORE_CONFIRM=RESTORE-DATA bash scripts/restore-data.sh /home/medhat/bizflow-backups/<stamp>
+# then verify, and clean up:
+docker run --rm -v restore-drill:/d:ro alpine sh -c 'apk add --no-cache sqlite >/dev/null; \
+  sqlite3 /d/website.db "PRAGMA integrity_check; SELECT count(*) FROM Customer;"'
+docker volume rm restore-drill
+```
+
+**Off-box copies.** Backups currently live on the same disk as the data, so they do not protect
+against disk failure. Set `BIZFLOW_BACKUP_REMOTE` to an rsync target to change that:
+
+```bash
+BIZFLOW_BACKUP_REMOTE="user@host:/backups/bizflow/" bash scripts/backup-data.sh
+```
+
+Note: `website.db` contains customer PII — never push it to GitHub.
+
+## 19) Monitoring and Alerts
+
+`scripts/health-check.sh` runs every 5 minutes and emails `medhatjachour8@gmail.com` on trouble.
+
+It is **silent while healthy** (logging six lines every 5 minutes would bloat the log for no
+benefit). Set `BIZFLOW_HEALTH_VERBOSE=1` to see every result.
+
+Checked:
+
+| Check | Threshold |
+| --- | --- |
+| Root domain, BizFlow site, bridge `/health`, `/api/prices`, admin login, TransHub | HTTP 200 |
+| Disk usage on `/` | alert above 85% (`BIZFLOW_DISK_MAX_PERCENT`) |
+| TLS certificates in `./ssl` | alert below 21 days (`BIZFLOW_CERT_WARN_DAYS`) |
+| Newest database backup | alert above 36h old (`BIZFLOW_BACKUP_MAX_AGE_HOURS`) |
+
+Alert behaviour: one email when a check starts failing, one when everything recovers, and a repeat
+every 6 hours while still down (`BIZFLOW_ALERT_REPEAT_MINUTES`). State lives in
+`~/.config/bizflow/health-state`, so cron cannot spam you.
+
+The backup and certificate checks exist because those failures are *silent* — a backup job that
+stopped, or a certificate that will not renew, produces no error until it is too late.
+
+Verify alerting end-to-end (sends real email):
+
+```bash
+BIZFLOW_DISK_MAX_PERCENT=1 bash scripts/health-check.sh
+```
+
+## 20) TLS Certificate Renewal — the gap to close
+
+This one is not yet fixed and **will take the sites down around 2–6 November 2026**.
+
+`certbot.timer` is active on the host and renews certificates into `/etc/letsencrypt/live/...`.
+But nginx does not read that directory: `docker-compose.yml` bind-mounts `./ssl/` into the
+container as `/etc/nginx/ssl/`, and `nginx.conf` points at `root-cert.pem`, `bizflow-cert.pem`
+and `transhub-cert.pem` in there.
+
+Nothing copies a renewed certificate from `/etc/letsencrypt/` into `./ssl/`, and nothing reloads
+nginx afterwards. So when automation renews the cert on disk, **the running server keeps serving
+the old one until it expires** — every visitor then gets a browser security warning.
+
+Current expiry dates: `root-cert.pem` 2 Nov 2026, `bizflow-cert.pem` and `transhub-cert.pem`
+6 Nov 2026.
+
+**Fix:** add a certbot deploy hook that copies the renewed files into `./ssl/` and reloads nginx.
+Create `/etc/letsencrypt/renewal-hooks/deploy/bizflow.sh` (needs `sudo`):
+
+```bash
+#!/bin/sh
+set -e
+cd /home/medhat/bizflow
+cp -f /etc/letsencrypt/live/medhatjachour.tech/fullchain.pem  ssl/root-cert.pem
+cp -f /etc/letsencrypt/live/medhatjachour.tech/privkey.pem    ssl/root-key.pem
+cp -f /etc/letsencrypt/live/bizflow.medhatjachour.tech/fullchain.pem ssl/bizflow-cert.pem
+cp -f /etc/letsencrypt/live/bizflow.medhatjachour.tech/privkey.pem   ssl/bizflow-key.pem
+cp -f /etc/letsencrypt/live/www.transhub.medhatjachour.tech/fullchain.pem ssl/transhub-cert.pem
+cp -f /etc/letsencrypt/live/www.transhub.medhatjachour.tech/privkey.pem   ssl/transhub-key.pem
+chown 1000:1000 ssl/*.pem
+chmod 644 ssl/*-cert.pem
+chmod 600 ssl/*-key.pem
+docker compose exec -T nginx nginx -s reload || docker compose restart nginx
+```
+
+Then make it executable (`sudo chmod +x`) and confirm with `sudo certbot renew --dry-run`.
+
+Until that exists, the health check will start emailing about expiring certificates 21 days out —
+treat that email as the reminder to do this.
+
+## 21) Staging Environment
+
+A second, fully isolated stack on the same host. Use it to test a change against a **fresh
+database** — seeds, `prisma db push`, migrations — before production sees it.
+
+```bash
+cd /home/medhat/bizflow
+bash scripts/deploy-staging.sh          # build + start + verify
+bash scripts/deploy-staging.sh --smoke  # re-run the checks
+bash scripts/deploy-staging.sh --down   # stop and delete the staging volume
+```
+
+- Project name `bizflow-staging` gives it its own containers, image tag and **data volume**, so
+  production data is never at risk.
+- Reachable only over loopback (`127.0.0.1:3100` for the site, `:8888` for the bridge). Tunnel in
+  with `ssh -L 3100:127.0.0.1:3100 medhat@168.231.107.207`, then open <http://localhost:3100>.
+- `docker-compose.staging.yml` uses `ports: !override`. This is required: compose **merges**
+  sequence values across files, so without it staging also tries to bind production's ports and
+  fails with "port is already allocated".
+- nginx and dozzle are excluded via a profile that is never activated — a second nginx would fight
+  over ports 80/443.
+- Resource limits: 1 CPU / 1 GB. The host has 8 GB and the app idles near 100 MB, so there is
+  ample headroom.
+
+## 22) Deploy Safety Net
+
+`.github/workflows/deploy.yml` now protects production in three ways:
+
+1. **Pre-deploy backup.** `scripts/backup-data.sh` runs before `docker compose up -d --build`.
+   Because the step uses `set -e`, a failed backup **aborts the deploy** — better to ship nothing
+   than to ship without a restore point.
+2. **Rollback tag.** The current image is tagged `bizflow-bizflow-app:previous` before rebuilding.
+3. **Automatic rollback.** A `Roll back to the previous image` step runs when verification fails
+   *and* the apply step succeeded, re-tagging `:previous` as `:latest` and recreating the
+   container. It is guarded on `steps.apply.outcome` so a failure during checkout or sync (when
+   nothing was deployed) does not trigger a pointless rollback.
+
+The database is never rolled back automatically — restoring data is a deliberate decision. Use
+`scripts/restore-data.sh` with the pre-deploy snapshot if the data itself is the problem.
+
+## 23) Secrets: Back Up the License Signing Key
+
+**This is the highest-impact single point of failure on the server.**
+
+`LICENSE_SIGNING_PRIVATE_KEY` (and its twin `license-signing-private.pem`) signs every activation
+certificate. If the disk dies and that key is lost, you cannot issue licences that the installed
+app will accept. Recovery means generating a new key pair, which changes the public key baked into
+every published installer — so **every customer would have to download a new build**.
+
+A protected copy is staged at `/home/medhat/bizflow-secrets-backup/` (mode 700, files 600)
+containing `env.production`, `license-signing-private.pem` and `license-signing-public.pem`.
+Download it and store it offline in a password manager, then remove it from the server:
+
+```bash
+scp -r medhat@168.231.107.207:/home/medhat/bizflow-secrets-backup .
+```
+
+`.env` is deliberately **not** part of the database backup set, because that set may eventually be
+copied off-box and `.env` carries the SMTP app password, `ADMIN_PASSWORD` and `LICENSE_SECRET`.
+
+The repo is public — never commit any of these files.
+
+## 24) Host-level Items Needing `sudo`
+
+`medhat` has no passwordless sudo, so these must be run by you:
+
+**Add swap.** The host has 0 swap, so a memory spike (a build, an image pull, a traffic burst) is
+handled by the OOM killer, which kills containers outright:
+
+```bash
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+free -m
+```
+
+**Install logrotate for the cron logs** so `~/.config/bizflow/*.log` cannot grow unbounded:
+
+```bash
+sudo tee /etc/logrotate.d/bizflow >/dev/null <<'EOF'
+/home/medhat/.config/bizflow/*.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+EOF
+```
+
+**Certificate renewal hook** — see section 20.
+

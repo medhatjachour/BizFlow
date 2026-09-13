@@ -1,0 +1,42 @@
+# Staging overlay — runs a second, fully isolated stack on the same host.
+#
+#   cd /home/medhat/bizflow
+#   bash scripts/deploy-staging.sh          # build + start + verify
+#   bash scripts/deploy-staging.sh --down   # tear it down
+#
+# Why an overlay instead of a second host:
+#
+#   * `-p bizflow-staging` gives it its own project namespace, so it gets its own
+#     containers, network, image tag and — most importantly — its own DATA VOLUME.
+#     That means a fresh database, the seed scripts and any schema push are all
+#     exercised for real, without touching production data.
+#   * Different loopback ports mean nothing new is exposed publicly.
+#   * It only ever starts `bizflow-app`. nginx and dozzle are intentionally
+#     excluded: a second nginx would fight over ports 80/443, and the proxy layer
+#     is already covered by `nginx -t` plus the production smoke test.
+#
+# Interpolation still reads the repo `.env` (so the same secrets are used) which
+# is deliberate: staging is not a secret-rotation environment, it is a
+# "does this code and schema actually work" environment.
+services:
+  bizflow-app:
+    container_name: bizflow-app-staging
+    # `!override` is required: compose MERGES sequence values across files, so
+    # without it staging would also try to bind production's 3000/5180/8787 and
+    # fail with "port is already allocated".
+    ports: !override
+      - "127.0.0.1:3100:3000"   # Next.js website
+      - "127.0.0.1:5280:5180"   # BizFlow web UI
+      - "127.0.0.1:8888:8787"   # HTTP bridge
+    mem_limit: 1g
+    cpus: 1.0
+
+  # Staging must never publish the production proxy ports. A profile that is
+  # never requested keeps these services out of `up -d` entirely.
+  nginx:
+    profiles: ["disabled"]
+    ports: !override
+      - "127.0.0.1:8181:80"
+
+  dozzle:
+    profiles: ["disabled"]
