@@ -32,7 +32,9 @@ jobs:
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: 0
+          # 1 = fail the build. This was 0, so the scanner could never fail a
+          # build no matter what it found.
+          exit-code: 1
 
       - name: Upload Trivy report
         uses: github/codeql-action/upload-sarif@v3

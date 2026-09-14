@@ -14,6 +14,7 @@ jobs:
   build:
     name: Build & lint
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -35,6 +36,16 @@ jobs:
         working-directory: apps/website
         run: npm run lint
 
+      - name: Test
+        working-directory: apps/website
+        env:
+          # Suites exercise registration, ticket lookup and the download route
+          # against a throwaway SQLite file, so they need the schema pushed first.
+          WEBSITE_DATABASE_URL: file:${{ runner.temp }}/ci-website-test.db
+        run: |
+          npx prisma db push --schema=prisma/schema.prisma --skip-generate --accept-data-loss
+          npx vitest run
+
       - name: Build website (with build-time placeholder secrets)
         working-directory: apps/website
         env:
@@ -55,6 +66,7 @@ jobs:
     name: Deploy to VPS
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     environment: production
     steps:
       - uses: actions/checkout@v4
