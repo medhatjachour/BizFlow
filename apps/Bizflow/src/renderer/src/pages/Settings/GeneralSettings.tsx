@@ -128,58 +128,74 @@ export default function GeneralSettings({
 
 /** Shows the installed version and lets the user trigger an update check. */
 function SoftwareUpdate() {
+  const { t } = useLanguage()
   const [version, setVersion] = useState('')
-  const [status, setStatus] = useState('')
+  const [statusKey, setStatusKey] = useState<string | null>(null)
+  const [statusParams, setStatusParams] = useState<Record<string, string | number>>()
   const [checking, setChecking] = useState(false)
+
+  const setStatus = (key: string | null, params?: Record<string, string | number>) => {
+    setStatusKey(key)
+    setStatusParams(params)
+  }
 
   useEffect(() => {
     if (!window.api?.updater) return
     window.api.updater.getVersion().then(setVersion).catch(() => {})
     const offs = [
-      window.api.updater.on('available', (p) => setStatus(`Update available: v${p?.version} — downloading…`)),
-      window.api.updater.on('progress', (p) => setStatus(`Downloading… ${p?.percent ?? 0}%`)),
-      window.api.updater.on('downloaded', (p) => setStatus(`v${p?.version} downloaded — restart to install.`)),
-      window.api.updater.on('none', () => setStatus('You are on the latest version.')),
-      window.api.updater.on('error', (p) => setStatus(`Update error: ${p?.message ?? 'unknown'}`))
+      window.api.updater.on('available', (p) =>
+        setStatus('updAvailable', { version: p?.version ?? '' })
+      ),
+      window.api.updater.on('progress', (p) => setStatus('updDownloading', { percent: p?.percent ?? 0 })),
+      window.api.updater.on('downloaded', (p) => setStatus('updDownloaded', { version: p?.version ?? '' })),
+      window.api.updater.on('none', () => setStatus('updUpToDate')),
+      window.api.updater.on('error', (p) =>
+        setStatus('updError', { message: p?.message || t('updUnknownError') })
+      )
     ]
     return () => offs.forEach((off) => off())
-  }, [])
+    // `t` is stable per language; re-subscribing on language change keeps the
+    // error text in the language the user is currently reading.
+  }, [t])
 
   const check = async () => {
     if (!window.api?.updater) {
-      setStatus('Updates are only available in the installed app.')
+      setStatus('updDevOnly')
       return
     }
     setChecking(true)
-    setStatus('Checking for updates…')
+    setStatus('updChecking')
     try {
       const res = await window.api.updater.check()
-      if (res.status === 'dev') setStatus('Updates are only available in the installed app.')
-      else if (res.status === 'error') setStatus(`Update error: ${res.message ?? 'unknown'}`)
+      if (res.status === 'dev') setStatus('updDevOnly')
+      else if (res.status === 'error') {
+        setStatus('updError', { message: res.message || t('updUnknownError') })
+      }
       // 'checking' → live events drive the rest of the status.
     } finally {
       setChecking(false)
     }
   }
 
+  const statusText = statusKey ? t(statusKey, statusParams) : t('updIdle')
+
   return (
     <div>
-      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Software update</h3>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t('updTitle')}</h3>
       <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div className="min-w-0">
           <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
             BizFlow{version ? ` v${version}` : ''}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {status || 'Check whether a newer version is available.'}
-          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{statusText}</p>
         </div>
         <button
           onClick={check}
           disabled={checking}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[color:var(--accent-contrast)] bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] disabled:opacity-50 transition-colors shrink-0"
         >
-          <RefreshCw size={16} className={checking ? 'animate-spin' : ''} /> Check for updates
+          <RefreshCw size={16} className={checking ? 'animate-spin' : ''} />
+          {t('updCheckButton')}
         </button>
       </div>
     </div>

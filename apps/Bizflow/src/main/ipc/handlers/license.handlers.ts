@@ -13,6 +13,24 @@ const TRIAL_SETTINGS_KEY = 'licenseTrial'
 
 /** After activation, the license must be revalidated online at least this often. */
 const REVALIDATION_INTERVAL_MS = 30 * 24 * 60 * 60 * 1000
+/**
+ * How far ahead of the due date we are willing to revalidate.
+ *
+ * The window is a rolling one — every successful check moves the expiry a full
+ * interval forward — so checking a few days early costs nothing and means a
+ * customer who only opens the app in short sessions still gets refreshed long
+ * before the grace period starts.
+ */
+const REVALIDATION_LEAD_MS = 3 * 24 * 60 * 60 * 1000
+/**
+ * How often a *running* app looks at the due date.
+ *
+ * The old schedule was anchored to app start: it fired 30 days after boot, so a
+ * customer who opens BizFlow for twenty minutes a day was never revalidated and
+ * dropped into grace at day 30 despite being online every single day. The timer
+ * now only wakes us up to ask "is it due yet?", which is free when it is not.
+ */
+const REVALIDATION_SWEEP_MS = 6 * 60 * 60 * 1000
 /** How long the app keeps working (with a warning) after a missed revalidation. */
 const GRACE_PERIOD_MS = 14 * 24 * 60 * 60 * 1000
 /** Free trial length from first launch on this device. */
@@ -468,6 +486,57 @@ function notifyLicenseStateChanged(): void {
   }
 }
 
+/**
+ * When the certificate currently on disk stops being accepted without a fresh
+ * check.
+ *
+ * There is no second clock to keep in sync: the server sets `expiresAt` to the
+ * end of a full validity window on every successful validation, so the
+ * certificate's expiry *is* the next revalidation due date.
+ */
+function revalidationDueAt(activation: LocalActivation): number {
+  const expiresAt = new Date(activation.expiresAt).getTime()
+  if (!Number.isNaN(expiresAt)) return expiresAt
+  // A certificate whose expiry we cannot read still has to expire: fall back to
+  // the documented window measured from the last check.
+  return new Date(activation.lastValidatedAt).getTime() + REVALIDATION_INTERVAL_MS
+}
+
+/**
+ * Whether a certificate is due (or overdue) for an online check.
+ *
+ * Measured against the certificate's own expiry, which the server rolls forward
+ * on every success — so a customer who just revalidated is not due again for
+ * another 27 days, and the request rate stays at roughly one per month no matter
+ * how often the app is opened or how often the sweep fires.
+ *
+ * An unreadable timestamp counts as due: one extra request is far cheaper than a
+ * customer whose licence never gets refreshed.
+ */
+function revalidationIsDue(activation: LocalActivation, now: number): boolean {
+  const lastChecked = new Date(activation.lastValidatedAt).getTime()
+  if (Number.isNaN(lastChecked)) return true
+  const dueAt = revalidationDueAt(activation)
+  if (Number.isNaN(dueAt)) return true
+  return now >= dueAt - REVALIDATION_LEAD_MS
+}
+
+/**
+ * Revalidate only if the certificate is actually due.
+ *
+ * Called on boot and from the sweep timer. Returns whether a request went out,
+ * so the caller can log a real decision instead of a guess.
+ */
+async function revalidateIfDue(): Promise<boolean> {
+  if (!app.isPackaged) return false
+  const activation = readActivation()
+  if (!activation || !signatureIsValid(activation)) return false
+  if (!revalidationIsDue(activation, Date.now())) return false
+  log.info('License revalidation is due; checking with the license server')
+  await validateActivationOnline()
+  return true
+}
+
 async function validateActivationOnline(): Promise<{ valid: boolean; checked: boolean; expiresAt?: string }> {
   if (!app.isPackaged) return { valid: true, checked: false }
 
@@ -537,6 +606,77 @@ async function validateActivationOnline(): Promise<{ valid: boolean; checked: bo
   }
 }
 
+// ── Licence requests ────────────────────────────────────────────────────────
+
+/** What the customer tells us when they ask us to mint a key. */
+export interface LicenseRequestBody {
+  email?: string
+  fullName?: string
+  business?: string
+  phone?: string
+  itemId?: string
+  seats?: string
+  message?: string
+}
+
+/**
+ * Ask us to issue a licence.
+ *
+ * Deliberately runs in the main process: the renderer never talks to our own
+ * API directly, so the device fingerprint and platform are the real ones rather
+ * than whatever a modified page decided to send, and there is no CSP to work
+ * around. The endpoint stores the request and emails the owner; it never mints
+ * anything by itself, so this cannot be abused into a free licence.
+ */
+async function requestLicense(payload: LicenseRequestBody): Promise<{
+  ok: boolean
+  ref?: string
+  error?: string
+}> {
+  const email = String(payload?.email ?? '').trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'Enter a valid email address so we can send your key.' }
+  }
+
+  try {
+    const response = await fetchWithTimeout(`${getLicenseServerBaseUrl()}/api/license/request`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'desktop',
+        email,
+        fullName: String(payload?.fullName ?? '').slice(0, 120),
+        business: String(payload?.business ?? '').slice(0, 160),
+        phone: String(payload?.phone ?? '').slice(0, 40),
+        itemId: String(payload?.itemId ?? 'suite'),
+        seats: String(payload?.seats ?? '').slice(0, 40),
+        message: String(payload?.message ?? '').slice(0, 2000),
+        deviceFingerprint: getDeviceFingerprint(),
+        deviceName: getDeviceName(),
+        platform: `${os.platform()} ${os.release()} (${os.arch()})`,
+        appVersion: app.getVersion(),
+      }),
+    })
+
+    const data = (await response.json().catch(() => ({}))) as { ref?: string; error?: string }
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: data.error ?? 'We could not send your request. Please email us instead.',
+      }
+    }
+
+    return { ok: true, ref: data.ref }
+  } catch (error) {
+    log.error('license:requestLicense failed', error)
+    return {
+      ok: false,
+      error:
+        'No internet connection, or our server could not be reached. Check your connection and try again, or email us.',
+    }
+  }
+}
+
 function getActivationState() {
   const currentFingerprint = getDeviceFingerprint()
   const activation = readActivation()
@@ -560,6 +700,8 @@ function getActivationState() {
       clockTampered,
       trialDaysLeft,
       trialEndsAt: new Date(trialEndsAt).toISOString(),
+      nextRevalidationAt: null,
+      revalidationDue: false,
       deviceFingerprint: currentFingerprint,
       deviceName: getDeviceName(),
     }
@@ -590,6 +732,13 @@ function getActivationState() {
     clockTampered,
     daysUntilExpiry,
     graceDaysLeft,
+    /**
+     * The revalidation schedule, so the UI can show the real date instead of
+     * asserting "in 30 days" — the window is rolling, so a customer who just
+     * revalidated and one who is three days overdue must not read the same copy.
+     */
+    nextRevalidationAt: activation.expiresAt,
+    revalidationDue: revalidationIsDue(activation, now),
     deviceFingerprint: currentFingerprint,
     deviceName: getDeviceName(),
     activation: {
@@ -616,6 +765,10 @@ export function registerLicenseHandlers(): void {
   })
 
   ipcMain.handle('license:validateOnline', async () => validateActivationOnline())
+
+  ipcMain.handle('license:requestLicense', async (_event, payload: LicenseRequestBody) => {
+    return requestLicense(payload ?? {})
+  })
 
   ipcMain.handle('license:getState', async () => getActivationState())
 
@@ -665,6 +818,10 @@ export function registerLicenseHandlers(): void {
           return { ok: false, error: 'Secure license activation is unavailable. Contact support.' }
         }
 
+        // The rest of the UI (module switcher, licence gate) reads its own copy
+        // of this state, so tell it rather than waiting for the next poll.
+        notifyLicenseStateChanged()
+
         return {
           ok: true,
           activationState: getActivationState(),
@@ -680,7 +837,10 @@ export function registerLicenseHandlers(): void {
   )
 
   if (app.isPackaged) {
-    void validateActivationOnline()
-    setInterval(() => void validateActivationOnline(), REVALIDATION_INTERVAL_MS).unref()
+    // Due-driven, not boot-anchored: a customer who opens the app daily is
+    // refreshed on the first launch after the window closes, and the sweep only
+    // covers the case of an app left running for weeks. See REVALIDATION_SWEEP_MS.
+    void revalidateIfDue()
+    setInterval(() => void revalidateIfDue(), REVALIDATION_SWEEP_MS).unref()
   }
 }

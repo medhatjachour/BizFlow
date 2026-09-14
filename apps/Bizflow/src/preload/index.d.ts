@@ -27,6 +27,16 @@ export interface LicenseState {
   graceDaysLeft?: number
   signatureValid?: boolean
   boundToCurrentDevice?: boolean
+  /** True when the system clock is behind this install's high-water mark. */
+  clockTampered?: boolean
+  /**
+   * When the stored certificate is next due for an online check. Null while the
+   * device is still on the free trial. This is the expiry of the rolling window
+   * the server issues, so it moves forward on every successful check.
+   */
+  nextRevalidationAt?: string | null
+  /** True when that date has arrived (or the certificate was never checked). */
+  revalidationDue?: boolean
   deviceFingerprint: string
   deviceName: string
   activation?: {
@@ -507,6 +517,20 @@ interface API {
       code?: string
       activationState?: LicenseState
     }>
+    /**
+     * Ask us to issue a licence. The request lands in the website's licence
+     * console together with this device's fingerprint, so we can mint a key that
+     * activates here without another round of emails.
+     */
+    requestLicense: (payload: {
+      email: string
+      fullName?: string
+      business?: string
+      phone?: string
+      itemId?: string
+      seats?: string
+      message?: string
+    }) => Promise<{ ok: boolean; ref?: string; error?: string }>
   }
   // ─── Plugin APIs ────────────────────────────────────────────────────────
   bakery: {
