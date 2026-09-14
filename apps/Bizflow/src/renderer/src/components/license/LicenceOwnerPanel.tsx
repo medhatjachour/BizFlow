@@ -6,10 +6,14 @@
  * panel does not pretend to sell seats — it shows the entitlement we actually
  * hold, which modules are switched on locally, and gives a one-click way to ask
  * for the licence to be moved to another computer.
+ *
+ * The key, the address it was issued to and the device ID are all spelled out
+ * in the status card above, so this panel deliberately does not repeat them:
+ * it answers only "what does this key unlock".
  */
 
 import { useState } from 'react'
-import { CheckCircle2, Lock, MonitorSmartphone, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, Lock, ShieldCheck } from 'lucide-react'
 
 import { MODULE_REGISTRY, MODULE_IDS, type ModuleId } from '../../../../shared/modules'
 import {
@@ -22,8 +26,6 @@ import LicenceRequestForm from './LicenceRequestForm'
 export interface OwnerPanelState {
   itemId?: string
   email?: string
-  deviceName: string
-  deviceFingerprint: string
 }
 
 interface Props {
@@ -44,6 +46,14 @@ export default function LicenceOwnerPanel({
   const [moving, setMoving] = useState(false)
   const allModules = Object.values(MODULE_IDS) as ModuleId[]
   const suite = state.itemId === 'suite'
+  const includedCount = allModules.filter((id) => coversModule(state.itemId, id)).length
+
+  // Entitled modules first: a wall of "not included" buries the one line that
+  // matters. Presentation only — the entitlement set is the same either way.
+  const orderedModules = [
+    ...allModules.filter((id) => coversModule(state.itemId, id)),
+    ...allModules.filter((id) => !coversModule(state.itemId, id)),
+  ]
 
   const plan = !state.itemId
     ? strings.notActivated
@@ -67,36 +77,16 @@ export default function LicenceOwnerPanel({
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{strings.ownerLead}</p>
       </div>
 
-      {/* Plan + device, side by side: the two things an owner checks first. */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            {strings.planRow}
-          </p>
-          <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{plan}</p>
-          {state.email ? (
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              {strings.licensedToRow} {state.email}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            <MonitorSmartphone className="h-3.5 w-3.5" aria-hidden="true" />
-            {strings.deviceRow}
-          </p>
-          <p className="mt-1 truncate text-sm font-semibold text-slate-900 dark:text-white">{state.deviceName}</p>
-          <p className="mt-1 break-all font-mono text-[11px] text-slate-500 dark:text-slate-400">
-            {state.deviceFingerprint}
-          </p>
-        </div>
-      </div>
-
-      {/* Entitlement per module — this is what "licence" actually means here. */}
+      {/* Entitlement — the only thing this panel owns. */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-slate-900 dark:text-white">{strings.modulesTitle}</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">{strings.modulesTitle}</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-medium text-slate-700 dark:text-slate-200">{strings.planRow}:</span>{' '}
+              {plan} · {strings.modulesSummary(includedCount, allModules.length)}
+            </p>
+          </div>
           {onOpenModules ? (
             <button
               type="button"
@@ -109,7 +99,7 @@ export default function LicenceOwnerPanel({
         </div>
 
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {allModules.map((moduleId) => {
+          {orderedModules.map((moduleId) => {
             const meta = MODULE_REGISTRY[moduleId]
             const included = coversModule(state.itemId, moduleId)
             const enabled = enabledModules.includes(moduleId)

@@ -381,8 +381,6 @@ export default function LicenseActivation() {
         state={{
           itemId: activation?.itemId,
           email: activation?.email,
-          deviceName: state?.deviceName ?? '',
-          deviceFingerprint: state?.deviceFingerprint ?? '',
         }}
       />
     </div>

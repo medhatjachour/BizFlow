@@ -99,7 +99,6 @@ export interface LicenseStrings {
   clockWarning: string
   keyRow: string
   licensedToRow: string
-  deviceRow: string
   issuedRow: string
   expiresRow: string
   lastCheckedRow: string
@@ -120,6 +119,8 @@ export interface LicenseStrings {
   planSuite: string
   planSingle: (module: string) => string
   modulesTitle: string
+  /** "1 of 9 included" — the headline for the entitlement list. */
+  modulesSummary: (included: number, total: number) => string
   moduleEntitled: string
   moduleLocked: string
   moduleEnabled: string
@@ -243,7 +244,6 @@ const ar: LicenseStrings = {
     'ساعة هذا الجهاز متأخرة عن آخر وقت مسجّل. اضبط التاريخ والوقت تلقائياً لتفادي مشكلات في الترخيص.',
   keyRow: 'مفتاح الترخيص',
   licensedToRow: 'مُرخّص لـ',
-  deviceRow: 'الجهاز',
   issuedRow: 'تاريخ الإصدار',
   expiresRow: 'صالح حتى',
   lastCheckedRow: 'آخر تحقق',
@@ -263,6 +263,7 @@ const ar: LicenseStrings = {
   planSuite: 'الباقة الكاملة — كل الوحدات',
   planSingle: (module) => `وحدة ${module}`,
   modulesTitle: 'الوحدات',
+  modulesSummary: (included, total) => `مشمولة ${included} من ${total}`,
   moduleEntitled: 'مشمولة',
   moduleLocked: 'غير مشمولة',
   moduleEnabled: 'مُشغّلة',
@@ -371,7 +372,6 @@ const en: LicenseStrings = {
     'This computer’s clock is behind the last recorded time. Set the date and time automatically to avoid licence problems.',
   keyRow: 'Licence key',
   licensedToRow: 'Licensed to',
-  deviceRow: 'Device',
   issuedRow: 'Issued',
   expiresRow: 'Valid until',
   lastCheckedRow: 'Last checked',
@@ -391,6 +391,7 @@ const en: LicenseStrings = {
   planSuite: 'Full suite — every module',
   planSingle: (module) => `${module} module`,
   modulesTitle: 'Modules',
+  modulesSummary: (included, total) => `${included} of ${total} included`,
   moduleEntitled: 'Included',
   moduleLocked: 'Not included',
   moduleEnabled: 'Enabled',
