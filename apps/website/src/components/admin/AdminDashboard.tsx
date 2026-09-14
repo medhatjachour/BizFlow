@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type {
@@ -279,106 +280,31 @@ function UsersPanel({ customers }: { customers: AdminCustomer[] }) {
   );
 }
 
-function IssueLicenseCard() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [itemId, setItemId] = useState("suite");
-  const [sendEmail, setSendEmail] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ key: string; email: string; itemLabel: string; reissued: boolean } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function issue() {
-    setBusy(true);
-    setError(null);
-    setResult(null);
-    try {
-      const res = await fetch(withBasePath("/api/admin/licenses"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), itemId, sendEmail }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Could not issue license");
-      setResult({
-        key: data.license.licenseKey,
-        email: data.license.email,
-        itemLabel: data.license.itemLabel,
-        reissued: data.license.reissued,
-      });
-      setEmail("");
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not issue license");
-    } finally {
-      setBusy(false);
-    }
-  }
-
+/**
+ * Hand-off to the licence console.
+ *
+ * Issuing used to live here as a cramped two-field card with no customer
+ * context. It now has its own page with the request inbox beside it, so this is
+ * deliberately a door rather than a second, worse copy of that form.
+ */
+function LicenceConsoleLink() {
   return (
     <section className="glass-strong rounded-2xl p-5">
-      <h2 className="text-lg font-black tracking-tight">Issue a license</h2>
-      <p className="mt-1 text-sm text-foreground/55">
-        Provision a one-time license for a customer who paid offline. This creates a paid order,
-        mints the key, and can email it to them.
-      </p>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="text-sm">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-foreground/40">Customer email</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="customer@example.com"
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400"
-          />
-        </label>
-        <label className="text-sm">
-          <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-foreground/40">Product</span>
-          <select
-            value={itemId}
-            onChange={(e) => setItemId(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400"
-          >
-            <option value="suite">BizFlow — Full Suite</option>
-            {PLUGINS.map((p) => (
-              <option key={p.id} value={`module:${p.id}`}>
-                {p.name} module
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      <label className="mt-3 flex items-center gap-2 text-sm text-foreground/70">
-        <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} />
-        Email the license key to the customer
-      </label>
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <button
-          onClick={issue}
-          disabled={busy || !email.trim()}
-          className="rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.02] disabled:opacity-50"
-        >
-          {busy ? "Issuing…" : "Issue license"}
-        </button>
-        {error && <span className="text-sm font-semibold text-rose-300">{error}</span>}
-      </div>
-
-      {result && (
-        <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4">
-          <p className="text-sm font-semibold text-emerald-200">
-            {result.reissued ? "License retrieved (already existed)" : "License issued"} for {result.email}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-lg font-black tracking-tight">Licence console</h2>
+          <p className="mt-1 max-w-xl text-sm text-foreground/55">
+            Answer licence requests from the desktop app, mint a key for a customer who paid
+            offline, email it, and release a device binding when someone changes hardware.
           </p>
-          <p className="mt-1 text-xs text-emerald-200/70">{result.itemLabel}</p>
-          <div className="mt-2 flex items-center gap-2">
-            <code className="break-all rounded-md bg-black/20 px-2 py-1 font-mono text-sm tracking-wider">{result.key}</code>
-            <CopyKey value={result.key} />
-          </div>
         </div>
-      )}
+        <Link
+          href={withBasePath("/admin/licenses")}
+          className="shrink-0 rounded-xl bg-gradient-to-r from-biz-400 to-biz-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.02]"
+        >
+          Open licence console
+        </Link>
+      </div>
     </section>
   );
 }
@@ -418,7 +344,7 @@ function AccessPanel({ licenses }: { licenses: AdminLicense[] }) {
 
   return (
     <div className="space-y-4">
-      <IssueLicenseCard />
+      <LicenceConsoleLink />
       <section className="glass-strong rounded-2xl p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

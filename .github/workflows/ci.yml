@@ -1,0 +1,117 @@
+name: CI
+
+# Pull requests got no automated checks at all: the only job that ran the test
+# suite lived inside `publish-commerce-installers.yml`, which is a push-to-main
+# publisher. A broken type or a failing test could therefore land on main and
+# only surface at release time. This job is the fast gate.
+#
+# `npm run lint` is deliberately NOT part of this gate. The repo currently
+# carries 182 eslint errors and ~3.7k warnings, so wiring it in would fail on
+# the first run and block every pull request. Lint should join this job once
+# that backlog is paid down.
+
+on:
+  pull_request:
+    paths:
+      - "apps/Bizflow/**"
+      - ".github/workflows/ci.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/Bizflow/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, tests, build and demo data
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+    env:
+      # `.env` is gitignored, so the datasource URL has to be supplied here.
+      # Relative paths resolve against the schema's own directory.
+      DATABASE_URL: "file:./dev.db"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Generate Prisma client
+        run: |
+          node scripts/merge-schemas.js --all
+          npx prisma generate --schema=prisma/merged.prisma
+
+      - name: Type-check main process
+        run: npx tsc --noEmit -p tsconfig.node.json --composite false
+
+      - name: Type-check renderer
+        shell: bash
+        # `src/renderer/src/plugins/**` carries a backlog of pre-existing type
+        # errors that this job is not the place to clear. Everything else — the
+        # shared app and the HR module included — has to be clean.
+        #
+        # The backlog is frozen at the count below rather than ignored outright:
+        # it is allowed to shrink, never to grow. Lower PLUGIN_ERROR_CAP (or set
+        # it to 0) as the backlog is paid down; raise it only deliberately.
+        env:
+          PLUGIN_ERROR_CAP: 62
+        run: |
+          npx tsc --noEmit -p tsconfig.web.json --composite false > /tmp/tsc-web.txt 2>&1 || true
+          grep -v 'src/renderer/src/plugins/' /tmp/tsc-web.txt > /tmp/tsc-core.txt || true
+          if grep -q 'error TS' /tmp/tsc-core.txt; then
+            cat /tmp/tsc-core.txt
+            echo "::error::Type errors outside src/renderer/src/plugins/**"
+            exit 1
+          fi
+          echo "No type errors outside src/renderer/src/plugins/."
+
+          plugin_errors=$(grep -c 'error TS' /tmp/tsc-web.txt || true)
+          plugin_errors=${plugin_errors:-0}
+          echo "Plugin backlog errors: ${plugin_errors} (cap ${PLUGIN_ERROR_CAP})"
+          if [ "${plugin_errors}" -gt "${PLUGIN_ERROR_CAP}" ]; then
+            echo "::error::src/renderer/src/plugins/** type-error backlog grew from ${PLUGIN_ERROR_CAP} to ${plugin_errors}."
+            exit 1
+          fi
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build renderer and main bundles
+        run: npm run build
+
+      - name: Create database
+        # `npm run build` re-merges the schema with only the default module set,
+        # so re-merge with `--all` here: the demo seed and verifier should run
+        # against the same full schema this job type-checks and tests.
+        run: |
+          node scripts/merge-schemas.js --all
+          npx prisma generate --schema=prisma/merged.prisma
+          npx prisma db push --schema=prisma/merged.prisma --accept-data-loss --skip-generate
+
+      # The seed is only worth having if the states the UI branches on are
+      # actually reachable, so the verifier runs here rather than by hand. It
+      # exits non-zero on a missing state.
+      - name: Seed and verify HR demo data
+        run: |
+          npm run prisma:seed:hr-demo
+          npm run prisma:seed:hr-demo:verify

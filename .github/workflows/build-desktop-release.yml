@@ -17,6 +17,7 @@ on:
           - windows
           - mac
           - linux
+          - all
       release_tag:
         description: "Release tag to upload into"
         required: true
@@ -28,7 +29,7 @@ permissions:
 
 jobs:
   build-windows:
-    if: ${{ inputs.os == 'windows' }}
+    if: ${{ inputs.os == 'windows' || inputs.os == 'all' }}
     runs-on: windows-latest
     defaults:
       run:
@@ -91,7 +92,7 @@ jobs:
           generate_release_notes: false
 
   build-mac:
-    if: ${{ inputs.os == 'mac' }}
+    if: ${{ inputs.os == 'mac' || inputs.os == 'all' }}
     runs-on: macos-latest
     defaults:
       run:
@@ -117,7 +118,7 @@ jobs:
           ENABLED_MODULES: ${{ inputs.module }}
 
       - name: Package macOS installer
-        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --mac --publish never
+        run: npx cross-env ENABLED_MODULES=${{ inputs.module }} electron-builder --mac dmg --publish never
 
       - name: Normalize asset file name
         run: |
@@ -153,7 +154,7 @@ jobs:
           generate_release_notes: false
 
   build-linux:
-    if: ${{ inputs.os == 'linux' }}
+    if: ${{ inputs.os == 'linux' || inputs.os == 'all' }}
     runs-on: ubuntu-latest
     defaults:
       run:

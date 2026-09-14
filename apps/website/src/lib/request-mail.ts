@@ -71,6 +71,15 @@ function createTransport() {
   });
 }
 
+/**
+ * The configured SMTP transport, or null when mail is not set up.
+ *
+ * Exported so the licence-request inbox sends through exactly the same
+ * credentials as the custom-request form rather than duplicating the config and
+ * drifting from it.
+ */
+export const createMailTransport = createTransport;
+
 function shouldUseDirectFallback(): boolean {
   const raw = String(process.env.REQUEST_MAIL_FALLBACK_DIRECT ?? "true").toLowerCase();
   return raw === "1" || raw === "true" || raw === "yes";
