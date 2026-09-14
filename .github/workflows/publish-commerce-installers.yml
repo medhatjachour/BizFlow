@@ -21,9 +21,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Runs once for the whole push. Putting this step inside the platform jobs
+  # would repeat it ten times, once per module in the matrix.
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Unit tests
+        run: npm test
+
   windows:
     runs-on: windows-latest
     timeout-minutes: 90
+    # Nothing is built or published until the suite is green.
+    needs: test
     strategy:
       fail-fast: false
       max-parallel: 1
