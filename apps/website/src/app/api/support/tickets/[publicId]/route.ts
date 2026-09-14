@@ -20,8 +20,25 @@ export async function GET(
     return NextResponse.json({ error: "Invalid ticket id", requestId }, { status: 400 });
   }
 
+  // A ticket id is not a secret. It is generated from a millisecond timestamp
+  // plus only three random bytes, it appears in emails and in the copy button on
+  // the support form, and this endpoint used to return the customer's address
+  // and the entire conversation to anybody who asked - no auth, no ownership
+  // check, and a crisp 404 as an existence oracle.
+  //
+  // Require the address the ticket was raised from as well, the same two things
+  // an airline asks for. A mismatch answers 404, not 403, so the response cannot
+  // be used to confirm that a ticket id is real.
+  const email = new URL(request.url).searchParams.get("email")?.trim().toLowerCase() ?? "";
+  if (!email) {
+    return NextResponse.json(
+      { error: "Enter the email address the ticket was raised from", requestId },
+      { status: 400 }
+    );
+  }
+
   const ticket = await getSupportTicketByPublicId(publicId.toUpperCase());
-  if (!ticket) {
+  if (!ticket || ticket.email.trim().toLowerCase() !== email) {
     return NextResponse.json({ error: "Ticket not found", requestId }, { status: 404 });
   }
 

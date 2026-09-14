@@ -28,6 +28,7 @@ type TicketResponse = {
 
 export default function SupportStatusPage() {
   const [ticketId, setTicketId] = useState("");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TicketResponse | null>(null);
 
@@ -38,9 +39,12 @@ export default function SupportStatusPage() {
 
     try {
       const id = ticketId.trim().toUpperCase();
-      const res = await fetch(withBasePath(`/api/support/tickets/${encodeURIComponent(id)}`), {
-        cache: "no-store",
-      });
+      // The email is required as well: a ticket id on its own is not a secret,
+      // so the lookup needs the address the ticket was raised from.
+      const url = `/api/support/tickets/${encodeURIComponent(id)}?email=${encodeURIComponent(
+        email.trim()
+      )}`;
+      const res = await fetch(withBasePath(url), { cache: "no-store" });
       setResult((await res.json()) as TicketResponse);
     } catch {
       setResult({ ok: false, requestId: "n/a", error: "Network error" });
@@ -53,7 +57,8 @@ export default function SupportStatusPage() {
     <main className="mx-auto min-h-screen w-full max-w-4xl px-4 py-16">
       <h1 className="text-3xl font-black tracking-tight">Support Ticket Status</h1>
       <p className="mt-3 text-sm text-foreground/70">
-        Enter your ticket ID (for example, BF-ABC123-4F9A) to view current status.
+        Enter your ticket ID (for example, BF-ABC123-4F9A) and the email address you raised it
+        from.
       </p>
 
       <form onSubmit={onSubmit} className="glass mt-6 flex flex-wrap gap-3 rounded-2xl p-4">
@@ -61,8 +66,18 @@ export default function SupportStatusPage() {
           required
           value={ticketId}
           onChange={(e) => setTicketId(e.target.value)}
-          className="min-w-[240px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2"
+          className="min-w-[200px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2"
           placeholder="BF-..."
+          aria-label="Ticket ID"
+        />
+        <input
+          required
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="min-w-[200px] flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2"
+          placeholder="you@example.com"
+          aria-label="Email the ticket was raised from"
         />
         <button
           type="submit"
