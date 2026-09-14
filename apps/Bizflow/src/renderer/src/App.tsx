@@ -34,7 +34,7 @@ const Bakery          = __PLUGIN_BAKERY__ ? lazy(() => import('./plugins/bakery/
 const Restaurant      = __PLUGIN_RESTAURANT__ ? lazy(() => import('./plugins/restaurant/pages/index')) : null
 const Warehouse       = __PLUGIN_WAREHOUSE__ ? lazy(() => import('./plugins/warehouse/pages/index')) : null
 const Clinic          = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/index')) : null
-const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages')) : null
+const ClinicPatientProfile = __PLUGIN_CLINIC__ ? lazy(() => import('./plugins/clinic/pages/patientProfile')) : null
 const Vet             = __PLUGIN_VET__ ? lazy(() => import('./plugins/vet/pages/index')) : null
 const VetPatientProfile = __PLUGIN_VET__ ? lazy(() => import('@renderer/plugins/vet/pages/vet-patient-profile')) : null
 const Gym             = __PLUGIN_GYM__ ? lazy(() => import('./plugins/gym/index')) : null
