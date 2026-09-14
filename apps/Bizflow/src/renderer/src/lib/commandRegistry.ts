@@ -222,7 +222,10 @@ export function buildCommands(enabledModules: ModuleId[]): Command[] {
       keywords: ['keys', 'hotkeys', 'keyboard', 'اختصارات'],
       run: (ctx) => {
         ctx.close()
-        window.dispatchEvent(new CustomEvent('bizflow:shortcuts:open'))
+        // Shortcuts live inside the help panel now - there is a single help
+        // surface, so this jumps straight to that topic instead of opening a
+        // second modal the way it used to.
+        window.dispatchEvent(new CustomEvent('bizflow:help:open', { detail: { section: 'shortcuts' } }))
       },
     },
     {

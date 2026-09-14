@@ -37,7 +37,6 @@ import {
   type HelpIcon,
   type HelpSection,
 } from './help/helpContent'
-import KeyboardShortcutsHelp from './KeyboardShortcutsHelp'
 
 const TOUR_SEEN_KEY = 'bizflow:helpTourSeen'
 
@@ -135,18 +134,20 @@ export default function HelpCentre() {
     }
   }, [])
 
-  const openHelp = useCallback(() => {
-    setOpen(true)
-    setActiveSection(null)
-    setQuery('')
-  }, [])
-
-  // The command palette lives in a different subtree, so it asks for the panel
-  // through an event rather than through props.
+  // Opened from the header button and from the command palette, both of which
+  // live in other subtrees - so they ask for the panel with an event rather than
+  // props. The event can name a section, so "Show keyboard shortcuts" lands on
+  // that topic instead of the topic list.
   useEffect(() => {
-    window.addEventListener('bizflow:help:open', openHelp)
-    return () => window.removeEventListener('bizflow:help:open', openHelp)
-  }, [openHelp])
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<{ section?: string }>).detail
+      setOpen(true)
+      setActiveSection(detail?.section ?? null)
+      setQuery('')
+    }
+    window.addEventListener('bizflow:help:open', onOpen)
+    return () => window.removeEventListener('bizflow:help:open', onOpen)
+  }, [])
 
   // Focus the close button when the panel opens, and restore focus after.
   useEffect(() => {
@@ -386,28 +387,6 @@ export default function HelpCentre() {
 
   return (
     <>
-      {/* ---- Floating launcher -------------------------------------------- */}
-      {/* One column so the two buttons can never drift into each other.
-          Logical inset utilities (end-*) keep it on the right in English and
-          move it to the left in Arabic, where the document is RTL. */}
-      <div className="fixed end-6 bottom-6 z-40 flex flex-col items-end gap-3">
-        <KeyboardShortcutsHelp />
-
-        <button
-          type="button"
-          data-tour="help-button"
-          onClick={openHelp}
-          className="group inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105 hover:shadow-xl"
-          aria-label="Open help and user guide"
-          title="Help and user guide"
-        >
-          <HelpCircle className="h-5 w-5" aria-hidden="true" />
-          <span className="max-w-0 overflow-hidden whitespace-nowrap transition-all duration-300 group-hover:max-w-[8rem]">
-            Help
-          </span>
-        </button>
-      </div>
-
       {/* ---- Slide-over panel --------------------------------------------- */}
       {open ? (
         <div className="fixed inset-0 z-[110]" role="dialog" aria-modal="true" aria-label="Help and user guide">

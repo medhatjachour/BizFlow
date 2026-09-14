@@ -24,7 +24,8 @@ import {
   PawPrint,
   Dumbbell,
   Pill,
-  Coffee
+  Coffee,
+  HelpCircle
 } from 'lucide-react'
 import LocalIcon from '../../assets/icon.png'
 import { useAuth } from '@renderer/contexts/AuthContext'
@@ -401,6 +402,21 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
               </div>
             </div>
           </div>
+
+          {/* Help sits in the header rather than floating over the content. The
+              old fixed button covered the bottom corner of every screen, and
+              there were two of them (help and shortcuts) competing for it. */}
+          <button
+            type="button"
+            data-tour="help-button"
+            onClick={() => window.dispatchEvent(new CustomEvent('bizflow:help:open'))}
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+            aria-label="Open help and user guide"
+            title="Help and user guide — shortcuts are in here too"
+          >
+            <HelpCircle size={18} aria-hidden="true" />
+            <span className="hidden sm:inline">Help</span>
+          </button>
 
         </header>
 
