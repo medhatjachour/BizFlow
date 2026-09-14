@@ -160,22 +160,23 @@ jobs:
           cache: npm
           cache-dependency-path: apps/Bizflow/package-lock.json
 
-      # The macOS jobs cannot get past npm ci here: it reports every dependency
-      # as missing from a lock file that provably contains them.
+      # Root cause (confirmed, see the note on the root package.json): while the
+      # repo declared `workspaces`, npm walked up from apps/Bizflow, treated the
+      # repository root as the project and validated against the ROOT lock file,
+      # which registers apps/website but not apps/Bizflow. Every dependency then
+      # read as missing even though the app's own lock file contains it, e.g.
+      # "Missing: vite@8.3.0 from lock file", "Missing: rolldown@1.2.8",
+      # "Missing: @rolldown/binding-darwin-arm64@1.2.8".
       #
-      # The previous "fix" made things worse, and the log from run 34785576758
-      # shows exactly how: falling back to `npm install` re-hoisted dependencies
-      # into the repo ROOT, where the website's Tailwind 4 shadows this app's
-      # Tailwind 3. The renderer then died on:
+      # The root `workspaces` field is now gone, so a plain `npm ci` here works.
+      # `--workspaces=false` is kept as belt-and-braces in case it is ever added
+      # back.
       #
-      #   [postcss] Cannot find module 'tailwindcss/plugin'
-      #   Require stack: /Users/runner/work/BizFlow/BizFlow/node_modules/tailwindcss-animate/index.js
-      #
-      # Note the path: node_modules at the repo root, not apps/Bizflow. So the
-      # fallback is gone. Instead: install from this app's own lock file with
-      # workspace resolution switched off, then prove the layout is right before
-      # handing it to the build, so a bad install fails here with a reason
-      # rather than three minutes later in the CSS pipeline.
+      # Note that the earlier fallback of `npm install` was actively worse: it
+      # re-hoisted dependencies into the repo ROOT, where the website's Tailwind 4
+      # shadowed this app's Tailwind 3, and the renderer died on
+      # "[postcss] Cannot find module 'tailwindcss/plugin'". The guard below fails
+      # here with a reason instead of three minutes later in the CSS pipeline.
       - name: Install dependencies
         shell: bash
         working-directory: apps/Bizflow
