@@ -3,7 +3,23 @@
  * Tests the isWithinRefundPeriod function behavior
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+/**
+ * `isWithinRefundPeriod` reads the clock itself, so a case that compares it
+ * against a timestamp captured a few milliseconds earlier races on the elapsed
+ * time between the two reads - which made the exact-limit assertions fail
+ * intermittently under parallel load. Pin "now" for those cases.
+ */
+function withPinnedNow<T>(isoNow: string, run: (now: Date) => T): T {
+  vi.useFakeTimers()
+  try {
+    vi.setSystemTime(new Date(isoNow))
+    return run(new Date())
+  } finally {
+    vi.useRealTimers()
+  }
+}
 
 /**
  * Function under test - extracted from Sales component
@@ -40,11 +56,11 @@ describe('Refund Period Logic', () => {
     })
 
     it('should return true for transaction made exactly at refund period limit', () => {
-      const now = new Date()
-      // Create a date exactly 30 days ago by subtracting milliseconds
-      const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
-      const refundPeriodDays = 30
-      expect(isWithinRefundPeriod(thirtyDaysAgo.toISOString(), refundPeriodDays)).toBe(true)
+      withPinnedNow('2026-03-10T12:00:00.000Z', (now) => {
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
+        const refundPeriodDays = 30
+        expect(isWithinRefundPeriod(thirtyDaysAgo.toISOString(), refundPeriodDays)).toBe(true)
+      })
     })
 
     it('should return false for transaction made 31 days ago when period is 30 days', () => {
@@ -129,9 +145,10 @@ describe('Refund Period Logic', () => {
     })
 
     it('7-day policy: Day 7 should be within period (exactly at limit)', () => {
-      const sevenDaysAgo = new Date()
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-      expect(isWithinRefundPeriod(sevenDaysAgo.toISOString(), 7)).toBe(true)
+      withPinnedNow('2026-03-10T12:00:00.000Z', (now) => {
+        const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000))
+        expect(isWithinRefundPeriod(sevenDaysAgo.toISOString(), 7)).toBe(true)
+      })
     })
 
     it('7-day policy: Day 8 should be outside period', () => {
@@ -182,9 +199,10 @@ describe('Refund Period Logic', () => {
 
   describe('Boundary Testing', () => {
     it('should handle transactions at exact millisecond boundaries', () => {
-      const now = new Date()
-      const exactly30DaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
-      expect(isWithinRefundPeriod(exactly30DaysAgo.toISOString(), 30)).toBe(true)
+      withPinnedNow('2026-03-10T12:00:00.000Z', (now) => {
+        const exactly30DaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
+        expect(isWithinRefundPeriod(exactly30DaysAgo.toISOString(), 30)).toBe(true)
+      })
     })
 
     it('should handle very small time differences (minutes)', () => {
