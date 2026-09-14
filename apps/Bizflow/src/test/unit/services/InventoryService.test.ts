@@ -81,15 +81,10 @@ describe('InventoryService', () => {
         include: {
           variants: {
             orderBy: { createdAt: 'asc' },
-            select: {
-              id: true,
-              sku: true,
-              color: true,
-              size: true,
-              price: true,
-              stock: true,
-              createdAt: true,
-              updatedAt: true
+            // Variant colour/size used to be their own columns; they are now EAV
+            // attribute values hanging off the variant.
+            include: {
+              attributeValues: { include: { attribute: { select: { name: true } } } }
             }
           },
           images: false,
@@ -432,7 +427,8 @@ describe('InventoryService', () => {
             OR: [
               { name: { contains: 'test' } },
               { baseSKU: { contains: 'test' } },
-              { category: { contains: 'test' } },
+              // `category` became a relation, so the name is matched one level down.
+              { category: { name: { contains: 'test' } } },
               { description: { contains: 'test' } }
             ]
           }
@@ -452,7 +448,8 @@ describe('InventoryService', () => {
             OR: [
               { name: { contains: 'test' } },
               { baseSKU: { contains: 'test' } },
-              { category: { contains: 'test' } },
+              // `category` became a relation, so the name is matched one level down.
+              { category: { name: { contains: 'test' } } },
               { description: { contains: 'test' } }
             ]
           }

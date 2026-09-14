@@ -379,7 +379,11 @@ describe('InstallmentManager', () => {
 
       await waitFor(() => {
         expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to load installments: Error: Network error')
-        expect(consoleSpy).toHaveBeenCalledWith('Error loading installments:', expect.any(Error))
+        // logger.error() prefixes a '❌' marker, so assert that the label and the
+        // error object were logged rather than pinning the exact argument list.
+        const logged = consoleSpy.mock.calls.flat()
+        expect(logged).toContain('Error loading installments:')
+        expect(logged.some((arg) => arg instanceof Error)).toBe(true)
       })
 
       consoleSpy.mockRestore()
@@ -400,7 +404,10 @@ describe('InstallmentManager', () => {
 
       await waitFor(() => {
         expect(mockShowToast).toHaveBeenCalledWith('error', 'Failed to mark installment as paid')
-        expect(consoleSpy).toHaveBeenCalledWith('Error marking installment as paid:', expect.any(Error))
+        // See the note above: the logger adds a '❌' marker ahead of the label.
+        const logged = consoleSpy.mock.calls.flat()
+        expect(logged).toContain('Error marking installment as paid:')
+        expect(logged.some((arg) => arg instanceof Error)).toBe(true)
       })
 
       consoleSpy.mockRestore()

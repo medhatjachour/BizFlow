@@ -365,7 +365,11 @@ describe('SmartDeleteDialog', () => {
       fireEvent.click(deleteButton)
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Delete failed:', expect.any(Error))
+        // logger.error() prefixes a '❌' marker, so assert that the label and the
+        // error object were logged rather than pinning the exact argument list.
+        const logged = consoleSpy.mock.calls.flat()
+        expect(logged).toContain('Delete failed:')
+        expect(logged.some((arg) => arg instanceof Error)).toBe(true)
       })
 
       consoleSpy.mockRestore()
@@ -386,7 +390,10 @@ describe('SmartDeleteDialog', () => {
       fireEvent.click(archiveButton)
 
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Archive failed:', expect.any(Error))
+        // See the note above: the logger adds a '❌' marker ahead of the label.
+        const logged = consoleSpy.mock.calls.flat()
+        expect(logged).toContain('Archive failed:')
+        expect(logged.some((arg) => arg instanceof Error)).toBe(true)
       })
 
       consoleSpy.mockRestore()

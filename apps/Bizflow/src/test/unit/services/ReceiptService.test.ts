@@ -67,8 +67,7 @@ describe('ReceiptService', () => {
             include: {
               items: {
                 include: {
-                  product: true,
-                  variant: true
+                  product: true
                 }
               }
             }
@@ -159,7 +158,7 @@ describe('ReceiptService', () => {
       sale: {
         id: 'sale-2',
         total: 1500,
-        saleItems: [
+        items: [
           {
             product: { name: 'Premium Product' },
             variant: { id: 'var-3' },
@@ -184,8 +183,7 @@ describe('ReceiptService', () => {
             include: {
               items: {
                 include: {
-                  product: true,
-                  variant: true
+                  product: true
                 }
               }
             }

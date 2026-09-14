@@ -22,6 +22,11 @@ const mockPrisma = {
   productVariant: {
     update: vi.fn()
   },
+  category: {
+    findMany: vi.fn(),
+    findFirst: vi.fn(),
+    create: vi.fn()
+  },
   productImage: {
     create: vi.fn(),
     delete: vi.fn()
@@ -508,7 +513,8 @@ describe('Repository Tests', () => {
         expect(mockPrisma.productImage.create).toHaveBeenCalledWith({
           data: {
             productId: 'prod-1',
-            imageData: 'base64data',
+            // ProductImage stores a filename on disk, not base64 payload.
+            filename: 'base64data',
             order: 1
           }
         })
@@ -537,18 +543,19 @@ describe('Repository Tests', () => {
 
     describe('getCategories', () => {
       it('should get unique product categories', async () => {
-        const mockProducts = [
-          { category: 'Electronics' },
-          { category: 'Clothing' },
-          { category: 'Books' }
-        ]
-        mockPrisma.product.findMany.mockResolvedValue(mockProducts)
+        // Category became its own model (products reference it by id), so this
+        // queries the category table rather than distilling a string column.
+        mockPrisma.category.findMany.mockResolvedValue([
+          { name: 'Books' },
+          { name: 'Clothing' },
+          { name: 'Electronics' }
+        ])
 
         const result = await productRepo.getCategories()
 
-        expect(mockPrisma.product.findMany).toHaveBeenCalledWith({
-          select: { category: true },
-          distinct: ['category']
+        expect(mockPrisma.category.findMany).toHaveBeenCalledWith({
+          select: { name: true },
+          orderBy: { name: 'asc' }
         })
         expect(result).toEqual(['Books', 'Clothing', 'Electronics'])
       })
@@ -876,11 +883,13 @@ describe('Repository Tests', () => {
 
     describe('findByName', () => {
       it('should find supplier by name', async () => {
-        mockPrisma.supplier.findUnique.mockResolvedValue(mockSupplier)
+        // Supplier.name is only @@index()ed, not @unique, so this has to be
+        // findFirst - findUnique would not even typecheck.
+        mockPrisma.supplier.findFirst.mockResolvedValue(mockSupplier)
 
         const result = await supplierRepo.findByName('Test Supplier')
 
-        expect(mockPrisma.supplier.findUnique).toHaveBeenCalledWith({
+        expect(mockPrisma.supplier.findFirst).toHaveBeenCalledWith({
           where: { name: 'Test Supplier' },
           include: expect.any(Object)
         })
@@ -909,12 +918,12 @@ describe('Repository Tests', () => {
           phone: '987-654-3210'
         }
 
-        mockPrisma.supplier.findUnique.mockResolvedValue(null) // No duplicate by name
+        mockPrisma.supplier.findFirst.mockResolvedValue(null) // No duplicate by name
         mockPrisma.supplier.create.mockResolvedValue(mockSupplier)
 
         const result = await supplierRepo.create(createData)
 
-        expect(mockPrisma.supplier.findUnique).toHaveBeenCalledWith({
+        expect(mockPrisma.supplier.findFirst).toHaveBeenCalledWith({
           where: { name: 'New Supplier' },
           include: expect.any(Object)
         })
@@ -924,7 +933,7 @@ describe('Repository Tests', () => {
       it('should throw error for duplicate name', async () => {
         const createData = { name: 'Test Supplier' }
 
-        mockPrisma.supplier.findUnique.mockResolvedValue(mockSupplier) // Duplicate found
+        mockPrisma.supplier.findFirst.mockResolvedValue(mockSupplier) // Duplicate found
 
         await expect(supplierRepo.create(createData)).rejects.toThrow(DuplicateEntityError)
       })

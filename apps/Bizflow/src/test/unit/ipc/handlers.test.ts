@@ -146,23 +146,30 @@ describe('IPC Handlers Registration', () => {
 
     mockPrisma.productVariant.findUnique.mockResolvedValue(null) // No existing SKU
     mockPrisma.category.findFirst.mockResolvedValue({ id: 'cat-1', name: 'Test Category' })
-    mockPrisma.$transaction.mockImplementation(async (callback) => {
-      const tx = {
-        ...mockPrisma,
-        product: {
-          ...mockPrisma.product,
-          create: vi.fn().mockResolvedValue({
-            id: 'prod-1',
-            ...newProduct,
-            images: [], // Empty images array as returned by include
-            variants: [], // Empty variants array as returned by include
-            store: { id: 'store-1', name: 'Test Store' }, // Included store
-            category: { id: 'cat-1', name: 'Test Category' } // Included category
-          })
-        }
+      const createdProduct = {
+        id: 'prod-1',
+        ...newProduct,
+        images: [], // Empty images array as returned by include
+        variants: [], // Empty variants array as returned by include
+        store: { id: 'store-1', name: 'Test Store' }, // Included store
+        category: { id: 'cat-1', name: 'Test Category' } // Included category
       }
-      return await callback(tx)
-    })
+
+      mockPrisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          ...mockPrisma,
+          product: {
+            ...mockPrisma.product,
+            create: vi.fn().mockResolvedValue(createdProduct),
+            // The handler now re-reads the product through the transaction so it
+            // can include variant attribute values; the mock has to cover it too,
+            // otherwise the handler dereferences undefined and returns
+            // { success: false }.
+            findUnique: vi.fn().mockResolvedValue(createdProduct)
+          }
+        }
+        return await callback(tx)
+      })
 
       registerProductsHandlers(mockPrisma)
       const createCall = (ipcMain.handle as any).mock.calls.find(call => call[0] === 'products:create')
