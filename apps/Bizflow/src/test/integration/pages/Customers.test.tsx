@@ -56,6 +56,11 @@ vi.mock('xlsx', () => ({
 import { ipc } from '../../../renderer/src/utils/ipc'
 import { useToast } from '../../../renderer/src/contexts/ToastContext'
 
+// ToastContext is fully mocked in this file, so these are plain stub reads
+// rather than real hook calls; they do not take part in any component's hook
+// order. The rule is suppressed rather than the code moved, because the read has
+// to happen at module scope to configure the mock before the suite runs.
+/* eslint-disable react-hooks/rules-of-hooks */
 const mockToast = vi.mocked(useToast())
 
 describe('Customers', () => {

@@ -20,9 +20,12 @@ interface Props {
 }
 
 export function CustomerDrawer({ profile, loading, onClose, onEdit }: Props) {
+  // Hooks run before the early return. React requires the same hook count on
+  // every render, and this guard used to sit above useLanguage().
+  const { t } = useLanguage()
+
   // ✅ Only render if loading or we have a profile
   if (!loading && !profile) return null
-  const { t } = useLanguage()
   const avgOrder =
     profile && profile.visitCount > 0 ? profile.totalSpent / profile.visitCount : 0
 

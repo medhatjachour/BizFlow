@@ -8,8 +8,10 @@ interface Props {
 }
 
 export function TopProducts({ summary }: Props) {
-  if (!summary?.topProducts?.length) return null
+  // Hooks run before the early return, which is what React requires.
   const {t} = useLanguage()
+
+  if (!summary?.topProducts?.length) return null
   const maxQty = Math.max(...summary.topProducts.map(p => p.qty))
 
   return (

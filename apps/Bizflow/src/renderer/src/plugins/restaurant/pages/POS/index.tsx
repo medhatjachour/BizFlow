@@ -176,13 +176,18 @@ export default function PosOrderPadPage() {
         }}
       />
 
-      <PaymentSplitModal
-        isOpen={showPayment}
-        onClose={() => setShowPayment(false)}
-        order={activeOrderData}
-        onProcessPayment={processOrderPayment}
-        onSettlementSuccess={handleSettlementCompleted}
-      />
+      {/* Mounted only while open, so tenderAmount is seeded from the live order
+          balance. Rendering it permanently and toggling `isOpen` is what made
+          the modal's hook count change mid-life and crash React. */}
+      {showPayment && activeOrderData && (
+        <PaymentSplitModal
+          isOpen
+          onClose={() => setShowPayment(false)}
+          order={activeOrderData}
+          onProcessPayment={processOrderPayment}
+          onSettlementSuccess={handleSettlementCompleted}
+        />
+      )}
 
       <ReceiptThermalPreview
         isOpen={showReceipt}

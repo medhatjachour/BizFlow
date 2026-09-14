@@ -202,6 +202,11 @@ const mockIpc = vi.mocked(await import('../../../renderer/src/utils/ipc')).ipc
 // const mockToast = vi.mocked(useToast()) - now mocked at module level
 // const mockLanguage = vi.mocked(useLanguage()) - now mocked at module level
 // const mockDisplaySettings = vi.mocked(useDisplaySettings()) - now mocked at module level
+// These hooks are fully mocked in this file, so these are plain stub reads
+// rather than real hook calls; they do not take part in any component's hook
+// order. The rule is suppressed rather than the code moved, because the reads
+// have to happen at module scope to configure the mocks before the suite runs.
+/* eslint-disable react-hooks/rules-of-hooks */
 const mockBackendSearch = vi.mocked(useBackendSearch())
 const mockFilterMetadata = vi.mocked(useFilterMetadata())
 const mockUseFilterMetadata = vi.mocked(useFilterMetadata)

@@ -26,10 +26,12 @@ export const PaymentSplitModal: React.FC<Props> = ({
   onProcessPayment,
   onSettlementSuccess
 }) => {
-  if (!isOpen || !order) return null
-
-  const alreadyPaid = (order.payments || []).reduce((s, p) => s + p.amount, 0)
-  const remainingBalance = Math.max(0, Math.round((order.total - alreadyPaid) * 100) / 100)
+  // Every hook runs before the early return. `tenderAmount` is seeded from the
+  // order's balance, so the caller mounts this modal only once an order exists.
+  // Previously the guard came first, which made the hook count change from 0 to
+  // 6 as soon as the cashier tapped Pay.
+  const alreadyPaid = (order?.payments || []).reduce((s, p) => s + p.amount, 0)
+  const remainingBalance = Math.max(0, Math.round(((order?.total ?? 0) - alreadyPaid) * 100) / 100)
 
   const [method, setMethod] = useState('cash')
   const [tipRate, setTipRate] = useState<number>(0)
@@ -41,6 +43,8 @@ export const PaymentSplitModal: React.FC<Props> = ({
     if (customTip) return Number(customTip) || 0
     return Math.round(remainingBalance * tipRate * 100) / 100
   }, [customTip, tipRate, remainingBalance])
+
+  if (!isOpen || !order) return null
 
   const totalRequired = Math.round((remainingBalance + tipValue) * 100) / 100
   const tenderNumber = Number(tenderAmount) || totalRequired

@@ -24,10 +24,12 @@ export function RescheduleFollowUpModal({ followUp, onReschedule, onClose }: Pro
   const { language } = useLanguage()
   const isAr = language === 'ar'
 
-  if (!followUp) return null
-
-  const [date, setDate] = useState(() => extractDateString(followUp.followUpDate))
+  // Hooks run before the early return. extractDateString already handles a
+  // missing date, so the initialiser is safe while followUp is null.
+  const [date, setDate] = useState(() => extractDateString(followUp?.followUpDate))
   const [submitting, setSubmitting] = useState(false)
+
+  if (!followUp) return null
 
   const addDays = (dCount: number) => {
     const next = new Date()

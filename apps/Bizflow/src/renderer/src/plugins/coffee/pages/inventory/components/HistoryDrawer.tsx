@@ -37,8 +37,12 @@ export function HistoryDrawer({
   period, setPeriod, typeFilter, setTypeFilter,
   page, setPage, totalPages, stats,
 }: Props) {
-  if (!product) return null
+  // Hooks first: this drawer used to call useLanguage() after the guard below,
+  // so the hook count changed when a product was selected.
   const {t} = useLanguage()
+
+  if (!product) return null
+
   // ── Movement type metadata (for history drawer) ────────────────────────────
  const MOVEMENT_TYPES: {
   value: string

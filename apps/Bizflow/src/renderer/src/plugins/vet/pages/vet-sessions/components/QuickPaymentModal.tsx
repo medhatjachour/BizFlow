@@ -16,14 +16,16 @@ export function QuickPaymentModal({ session, onSuccess, onClose }: Props) {
   const { language } = useLanguage()
   const isAr = language === 'ar'
 
-  if (!session) return null
-
-  const charged = Number(session.amountCharged) || 0
-  const paid = Number(session.amountPaid) || 0
+  // Hooks run before the early return. The caller mounts this modal only once a
+  // session is selected, so the default amount is the real outstanding balance.
+  const charged = Number(session?.amountCharged) || 0
+  const paid = Number(session?.amountPaid) || 0
   const outstanding = Math.max(0, charged - paid)
 
   const [amount, setAmount] = useState(outstanding.toString())
   const [submitting, setSubmitting] = useState(false)
+
+  if (!session) return null
 
   const handleSettle = async (full: boolean) => {
     const payVal = full ? undefined : parseFloat(amount)

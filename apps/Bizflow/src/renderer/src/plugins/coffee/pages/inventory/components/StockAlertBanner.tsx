@@ -7,8 +7,10 @@ interface Props {
 }
 
 export function StockAlertBanner({ lowCount, outCount }: Props) {
-  if (lowCount === 0 && outCount === 0) return null
+  // Hooks run before the early return, which is what React requires.
   const { t } = useLanguage()
+
+  if (lowCount === 0 && outCount === 0) return null
   const hasOut = outCount > 0
   const hasLow = lowCount > 0
 

@@ -27,15 +27,35 @@ export const ModifierSelectionModal: React.FC<Props> = ({
   activeSeat,
   onConfirm
 }) => {
-  if (!isOpen || !item) return null
-
+  // Every hook runs before the early return below. The caller mounts this modal
+  // unconditionally and toggles `isOpen`, so the guard used to change the hook
+  // count from 0 to 8 between renders and React threw "Rendered more hooks than
+  // during the previous render".
   const [quantity, setQuantity] = useState(1)
   const [course, setCourse] = useState<CourseType>('main')
   const [seatNumber, setSeatNumber] = useState<number>(activeSeat || 1)
   const [selectedMods, setSelectedMods] = useState<Record<string, ModifierOptionChoice[]>>({})
   const [notes, setNotes] = useState('')
 
-  const groups = item.modifierGroups || []
+  const groups = item?.modifierGroups || []
+
+  // Calculate live financial additions
+  const flatModifiers = useMemo(() => Object.values(selectedMods).flat(), [selectedMods])
+  const extraCost = useMemo(() => flatModifiers.reduce((acc, m) => acc + (m.priceDelta || 0), 0), [flatModifiers])
+
+  // Validate required modifier groups
+  const validationErrors = useMemo(() => {
+    const errors: string[] = []
+    for (const grp of groups) {
+      const count = (selectedMods[grp.title] || []).length
+      if (grp.minSelect > 0 && count < grp.minSelect) {
+        errors.push(`"${grp.title}" requires at least ${grp.minSelect} selection${grp.minSelect > 1 ? 's' : ''}`)
+      }
+    }
+    return errors
+  }, [groups, selectedMods])
+
+  if (!isOpen || !item) return null
 
   // Toggle modifier option with min/max constraint validation
   const handleToggleOption = (groupTitle: string, option: ModifierOptionChoice, maxSelect: number) => {
@@ -62,23 +82,8 @@ export const ModifierSelectionModal: React.FC<Props> = ({
     })
   }
 
-  // Calculate live financial additions
-  const flatModifiers = useMemo(() => Object.values(selectedMods).flat(), [selectedMods])
-  const extraCost = useMemo(() => flatModifiers.reduce((acc, m) => acc + (m.priceDelta || 0), 0), [flatModifiers])
   const unitPrice = item.price + extraCost
   const totalPrice = unitPrice * quantity
-
-  // Validate required modifier groups
-  const validationErrors = useMemo(() => {
-    const errors: string[] = []
-    for (const grp of groups) {
-      const count = (selectedMods[grp.title] || []).length
-      if (grp.minSelect > 0 && count < grp.minSelect) {
-        errors.push(`"${grp.title}" requires at least ${grp.minSelect} selection${grp.minSelect > 1 ? 's' : ''}`)
-      }
-    }
-    return errors
-  }, [groups, selectedMods])
 
   const isValid = validationErrors.length === 0
 
