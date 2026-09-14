@@ -15,6 +15,7 @@ export default function AccountLoginPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [requestingReset, setRequestingReset] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -22,6 +23,7 @@ export default function AccountLoginPage() {
     setSubmitting(true);
     setError(null);
     setResetMessage(null);
+    setClaimMessage(null);
 
     try {
       if (mode === "register") {
@@ -31,8 +33,22 @@ export default function AccountLoginPage() {
           body: JSON.stringify({ email, password, fullName }),
         });
 
-        const registerData = (await registerRes.json()) as { error?: string };
+        const registerData = (await registerRes.json()) as {
+          error?: string;
+          verificationRequired?: boolean;
+          message?: string;
+        };
         if (!registerRes.ok) throw new Error(registerData.error ?? "Could not register account");
+
+        // This address already had an account from a purchase or Google sign-in,
+        // so we emailed a claim link rather than setting a password we cannot
+        // prove they own. There is no password to sign in with yet.
+        if (registerData.verificationRequired) {
+          setClaimMessage(registerData.message ?? null);
+          setMode("login");
+          setPassword("");
+          return;
+        }
       }
 
       const loginRes = await fetch(withBasePath("/api/account/login"), {
@@ -191,6 +207,25 @@ export default function AccountLoginPage() {
         >
           {submitting ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
         </button>
+
+        {claimMessage ? (
+          <Feedback
+            tone="info"
+            title="Check your email to finish"
+            message={
+              <>
+                {claimMessage} We sent it to{" "}
+                <span className="font-medium text-foreground/90">{email}</span>.
+              </>
+            }
+            nextSteps={[
+              "Open the link in that email and choose a password.",
+              "Then sign in here with the password you chose.",
+              "If you already had a password, just sign in — nothing has changed.",
+              "No email after a few minutes? Check spam, then request a reset link below.",
+            ]}
+          />
+        ) : null}
 
         {resetMessage ? (
           <Feedback

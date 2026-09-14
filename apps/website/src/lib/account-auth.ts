@@ -79,29 +79,50 @@ export async function registerAccount(params: { email: string; password: string;
     where: { email },
     include: { credentials: true },
   });
+
   if (existing?.credentials) {
     throw new Error("ACCOUNT_EXISTS");
   }
 
+  // A customer row with no credential was created by something other than a
+  // password sign-up: a paid order (`upsertCustomerByEmail`) or Google sign-in.
+  //
+  // We must not attach a password to it here. Knowing an email address is not
+  // proof of controlling it, and that row can already hold the person's orders,
+  // licence keys and support history — so the old code let anyone who knew a
+  // buyer's address claim their account and read all of it.
+  //
+  // The caller claims it with the emailed reset link instead, which does prove
+  // control of the inbox. `resetPasswordWithToken` upserts the credential, so
+  // that path already works for an account that has never had a password.
+  if (existing) {
+    throw new Error("ACCOUNT_CLAIM_REQUIRES_EMAIL");
+  }
+
   const passwordHash = await makePasswordHash(params.password);
-  const customer =
-    existing ??
-    (await prisma.customer.create({
+
+  let customer;
+  try {
+    customer = await prisma.customer.create({
       data: {
         email,
         fullName: params.fullName?.trim() || null,
         status: "ACTIVE",
       },
-    }));
+    });
+  } catch (error) {
+    // Two simultaneous sign-ups for the same new address: the unique constraint
+    // fires on the loser. Report it as an existing account rather than a 500.
+    if ((error as { code?: string }).code === "P2002") {
+      throw new Error("ACCOUNT_EXISTS");
+    }
+    throw error;
+  }
 
-  await prisma.credential.upsert({
-    where: { customerId: customer.id },
-    create: { customerId: customer.id, passwordHash },
-    update: {
-      passwordHash,
-      failedCount: 0,
-      lockedUntil: null,
-    },
+  // `create`, not `upsert`: we just created this customer, so no credential can
+  // exist. An upsert here would be a second path that can overwrite a password.
+  await prisma.credential.create({
+    data: { customerId: customer.id, passwordHash },
   });
 
   return customer;
