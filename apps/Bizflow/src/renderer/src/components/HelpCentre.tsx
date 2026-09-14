@@ -141,6 +141,13 @@ export default function HelpCentre() {
     setQuery('')
   }, [])
 
+  // The command palette lives in a different subtree, so it asks for the panel
+  // through an event rather than through props.
+  useEffect(() => {
+    window.addEventListener('bizflow:help:open', openHelp)
+    return () => window.removeEventListener('bizflow:help:open', openHelp)
+  }, [openHelp])
+
   // Focus the close button when the panel opens, and restore focus after.
   useEffect(() => {
     if (open) closeRef.current?.focus()
@@ -380,8 +387,10 @@ export default function HelpCentre() {
   return (
     <>
       {/* ---- Floating launcher -------------------------------------------- */}
-      {/* One column so the two buttons can never drift into each other. */}
-      <div className="fixed right-6 bottom-6 z-40 flex flex-col items-end gap-3">
+      {/* One column so the two buttons can never drift into each other.
+          Logical inset utilities (end-*) keep it on the right in English and
+          move it to the left in Arabic, where the document is RTL. */}
+      <div className="fixed end-6 bottom-6 z-40 flex flex-col items-end gap-3">
         <KeyboardShortcutsHelp />
 
         <button
@@ -408,7 +417,7 @@ export default function HelpCentre() {
             role="presentation"
           />
 
-          <div className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white shadow-2xl dark:bg-slate-900">
+          <div className="absolute inset-y-0 end-0 flex w-full max-w-xl flex-col bg-white shadow-2xl dark:bg-slate-900">
             {/* Header */}
             <div className="flex items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
               {current ? (
@@ -418,7 +427,7 @@ export default function HelpCentre() {
                   className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                   aria-label="Back to all help topics"
                 >
-                  <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                  <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
                 </button>
               ) : (
                 <HelpCircle className="h-5 w-5 text-primary" aria-hidden="true" />
@@ -465,14 +474,14 @@ export default function HelpCentre() {
                   <label className="relative block">
                     <span className="sr-only">Search help</span>
                     <Search
-                      className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
+                      className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                       aria-hidden="true"
                     />
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Search help — try printer, licence, backup…"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pr-3 pl-9 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 ps-9 pe-3 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                     />
                   </label>
 
@@ -487,7 +496,7 @@ export default function HelpCentre() {
                           className="flex w-full items-start gap-3 rounded-xl border border-slate-200 bg-white p-3.5 text-left transition hover:border-primary/50 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800/60"
                         >
                           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                            <Icon className="h-4.5 w-4.5" aria-hidden="true" />
+                            <Icon className="h-4 w-4" aria-hidden="true" />
                           </span>
                           <span className="min-w-0">
                             <span className="block text-sm font-semibold text-slate-900 dark:text-white">

@@ -6,6 +6,7 @@
 import { Sun, Moon, Monitor, Globe, Check, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import LicenseActivation from './LicenseActivation'
 
 interface GeneralSettingsProps {
   theme: string
@@ -113,6 +114,11 @@ export default function GeneralSettings({
           {t('languageWillApply')}
         </p>
       </div>
+
+      {/* Licence — trial countdown, Device ID and activation steps. The panel
+          was written for this exact spot but was never mounted, so there was no
+          way to find out how to activate from inside the app. */}
+      <LicenseActivation />
 
       {/* Software update */}
       <SoftwareUpdate />

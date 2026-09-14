@@ -143,6 +143,21 @@ export default function CoffeePage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [visibleTabs])
 
+  // Open-tab requests from elsewhere in the app (the command palette). Every
+  // other module already listens for this; Coffee was the only one missing it,
+  // so jumping straight to a Coffee screen only worked from a cold start.
+  useEffect(() => {
+    const handleRequestedTab = (event: Event) => {
+      const tabId = (event as CustomEvent<CoffeeTab>).detail
+      if (visibleTabs.some((tab) => tab.id === tabId)) {
+        handleTabChange(tabId)
+      }
+    }
+
+    window.addEventListener('bizflow:coffee:open-tab', handleRequestedTab)
+    return () => window.removeEventListener('bizflow:coffee:open-tab', handleRequestedTab)
+  }, [visibleTabs])
+
   const toggleFullscreen = () => {
     const next = !isFullscreenMode
     setIsFullscreenMode(next)
