@@ -7,7 +7,15 @@
  *
  * `contact` is an interactive block: HelpCentre renders it with the live Device
  * ID and a copy button.
+ *
+ * The Arabic translation lives in `helpContent.ar.ts` and mirrors this file's
+ * structure exactly (same ids, icons, anchors and key combos) so switching
+ * language never breaks deep links, search or the guided tour. Read the content
+ * through `getHelpContent(language)` rather than importing the arrays directly.
  */
+
+import { HELP_SECTIONS_AR, HELP_TOUR_STEPS_AR } from './helpContent.ar'
+import { SUPPORT_EMAIL } from './support'
 
 export type HelpIcon =
   | 'rocket'
@@ -35,7 +43,7 @@ export interface HelpSection {
   blocks: HelpBlock[]
 }
 
-export const SUPPORT_EMAIL = 'medhatjachour8@gmail.com'
+export { SUPPORT_EMAIL }
 
 export const HELP_SECTIONS: HelpSection[] = [
   {
@@ -607,3 +615,32 @@ export const HELP_TOUR_STEPS: TourStep[] = [
     placement: 'top',
   },
 ]
+
+/* -------------------------------------------------------------------------- */
+/* Language selection                                                          */
+/* -------------------------------------------------------------------------- */
+
+export interface HelpContent {
+  sections: HelpSection[]
+  tourSteps: TourStep[]
+}
+
+const HELP_CONTENT_EN: HelpContent = {
+  sections: HELP_SECTIONS,
+  tourSteps: HELP_TOUR_STEPS,
+}
+
+const HELP_CONTENT_AR: HelpContent = {
+  sections: HELP_SECTIONS_AR,
+  tourSteps: HELP_TOUR_STEPS_AR,
+}
+
+/**
+ * Help content for a given app language.
+ *
+ * Anything that is not Arabic falls back to English, so a future third language
+ * degrades to the source content instead of showing an empty panel.
+ */
+export function getHelpContent(language: string): HelpContent {
+  return language === 'ar' ? HELP_CONTENT_AR : HELP_CONTENT_EN
+}

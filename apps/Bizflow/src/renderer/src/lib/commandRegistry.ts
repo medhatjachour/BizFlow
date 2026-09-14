@@ -148,19 +148,55 @@ const CORE: CoreEntry[] = [
   { path: '/settings', settingsTab: 'modules', label: 'Settings — Modules', description: 'Turn modules on and off', keywords: ['plugins', 'features', 'enable', 'وحدات'] },
 ]
 
+/**
+ * Arabic labels for the core routes and settings tabs, keyed by path or tab id.
+ *
+ * The palette is a shortcut surface, so it has to read in the language the user
+ * picked — an Arabic UI with an English "Go to" list was the thing people
+ * complained about. Module tab labels still come from the module registry.
+ */
+const CORE_AR: Record<string, { label: string; description: string }> = {
+  '/dashboard': { label: 'لوحة التحكم', description: 'نظرة عامة على المبيعات والتحليلات' },
+  '/employees': { label: 'الموظفون', description: 'سجلات الموظفين وملفاتهم' },
+  '/reports': { label: 'التقارير', description: 'تقارير النشاط والاتجاهات' },
+  '/finance': { label: 'المالية', description: 'الإيرادات والتكاليف والهوامش' },
+  '/settings': { label: 'الإعدادات', description: 'كل إعدادات التطبيق' },
+  general: { label: 'الإعدادات — عام', description: 'بيانات المتجر والعملة والمنطقة الزمنية والترخيص' },
+  display: { label: 'الإعدادات — العرض', description: 'اللغة والمظهر والتخطيط' },
+  categories: { label: 'الإعدادات — التصنيفات', description: 'تصنيفات المنتجات' },
+  users: { label: 'الإعدادات — المستخدمون والصلاحيات', description: 'الحسابات ومصفوفة الصلاحيات' },
+  tax: { label: 'الإعدادات — الضريبة والفاتورة', description: 'نسبة الضريبة والفواتير وطابعة الإيصالات' },
+  notifications: { label: 'الإعدادات — التنبيهات', description: 'التنبيهات والتذكيرات' },
+  email: { label: 'الإعدادات — تقارير البريد', description: 'إرسال التقارير بالبريد وفق جدول' },
+  backup: { label: 'الإعدادات — النسخ الاحتياطي', description: 'نسخ بياناتك احتياطياً واستعادتها' },
+  archive: { label: 'الإعدادات — الأرشيف', description: 'السجلات المؤرشفة' },
+  modules: { label: 'الإعدادات — الوحدات', description: 'تشغيل الوحدات وإيقافها' },
+}
+
+/** Action-command labels, which are the same in every language's keyword list. */
+const ACTION_TEXT_AR = {
+  help: { label: 'فتح المساعدة', description: 'الأدلة وحل المشكلات ومعرف الجهاز' },
+  shortcuts: { label: 'عرض اختصارات لوحة المفاتيح', description: 'كل المفاتيح التي يستجيب لها التطبيق' },
+  theme: { label: 'تبديل الوضع الليلي', description: 'التبديل بين المظهر الفاتح والداكن' },
+  language: { label: 'تغيير اللغة (العربية ⇄ English)', description: 'تغيير لغة الواجهة' },
+}
+
 /* -------------------------------------------------------------------------- */
 /* Builders                                                                   */
 /* -------------------------------------------------------------------------- */
 
 /** Module ids the caller says are switched on. */
-export function buildCommands(enabledModules: ModuleId[]): Command[] {
+export function buildCommands(enabledModules: ModuleId[], lang: 'en' | 'ar' = 'en'): Command[] {
   const commands: Command[] = []
+  const isAr = lang === 'ar'
+  const ar = ACTION_TEXT_AR
 
   for (const entry of CORE) {
+    const arabic = isAr ? CORE_AR[entry.settingsTab ?? entry.path] : undefined
     commands.push({
       id: `core:${entry.settingsTab ?? entry.path}`,
-      label: entry.label,
-      description: entry.description,
+      label: arabic?.label ?? entry.label,
+      description: arabic?.description ?? entry.description,
       group: entry.settingsTab ? 'settings' : 'core',
       keywords: entry.keywords,
       run: (ctx) => {
@@ -176,7 +212,7 @@ export function buildCommands(enabledModules: ModuleId[]): Command[] {
 
     commands.push({
       id: `module:${moduleId}`,
-      label: `Open ${meta.name}`,
+      label: isAr ? `افتح ${meta.name}` : `Open ${meta.name}`,
       description: meta.description,
       group: 'module',
       moduleId,
@@ -205,8 +241,8 @@ export function buildCommands(enabledModules: ModuleId[]): Command[] {
   commands.push(
     {
       id: 'action:help',
-      label: 'Open Help',
-      description: 'Guides, troubleshooting and Device ID',
+      label: isAr ? ar.help.label : 'Open Help',
+      description: isAr ? ar.help.description : 'Guides, troubleshooting and Device ID',
       group: 'action',
       keywords: ['support', 'guide', 'docs', 'device id', 'licence', 'مساعدة', 'دعم'],
       run: (ctx) => {
@@ -216,8 +252,8 @@ export function buildCommands(enabledModules: ModuleId[]): Command[] {
     },
     {
       id: 'action:shortcuts',
-      label: 'Show Keyboard Shortcuts',
-      description: 'Every key the app listens for',
+      label: isAr ? ar.shortcuts.label : 'Show Keyboard Shortcuts',
+      description: isAr ? ar.shortcuts.description : 'Every key the app listens for',
       group: 'action',
       keywords: ['keys', 'hotkeys', 'keyboard', 'اختصارات'],
       run: (ctx) => {
@@ -230,8 +266,8 @@ export function buildCommands(enabledModules: ModuleId[]): Command[] {
     },
     {
       id: 'action:theme',
-      label: 'Toggle Dark Mode',
-      description: 'Switch between light and dark',
+      label: isAr ? ar.theme.label : 'Toggle Dark Mode',
+      description: isAr ? ar.theme.description : 'Switch between light and dark',
       group: 'action',
       keywords: ['theme', 'night', 'light', 'dark', 'وضع ليلي'],
       run: (ctx) => {
@@ -244,8 +280,8 @@ export function buildCommands(enabledModules: ModuleId[]): Command[] {
     },
     {
       id: 'action:language',
-      label: 'Switch Language (English ⇄ العربية)',
-      description: 'Change the interface language',
+      label: isAr ? ar.language.label : 'Switch Language (English ⇄ العربية)',
+      description: isAr ? ar.language.description : 'Change the interface language',
       group: 'action',
       keywords: ['arabic', 'english', 'rtl', 'translation', 'اللغة', 'عربي'],
       run: (ctx) => {

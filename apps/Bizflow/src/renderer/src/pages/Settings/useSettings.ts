@@ -13,6 +13,7 @@ import type {
   BackupSettings,
   DisplaySettings
 } from './types'
+import { notifyCurrencyChanged } from '../../utils/storeCurrency'
 
 export function useSettings() {
   // Store Settings
@@ -148,6 +149,10 @@ export function useSettings() {
     localStorage.setItem('showImagesInProductCards', String(displaySettings.showImagesInProductCards))
     localStorage.setItem('showImagesInPOSCards', String(displaySettings.showImagesInPOSCards))
     localStorage.setItem('showImagesInInventory', String(displaySettings.showImagesInInventory))
+
+    // Money formatting elsewhere (HR payslips, Finance) reads the currency at render
+    // time; localStorage alone would leave already-mounted screens stale.
+    notifyCurrencyChanged()
 
     return true
   }, [storeSettings, taxReceiptSettings, notificationSettings, paymentMethods, userProfile, backupSettings, displaySettings])

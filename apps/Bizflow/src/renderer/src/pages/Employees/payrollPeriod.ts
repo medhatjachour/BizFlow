@@ -1,45 +1,27 @@
 /**
- * Payroll period encoding.
+ * Payroll period helpers.
  *
- * Payroll records are keyed by a single integer `month` field + `year`
- * (unique per employee). To support monthly / weekly / daily periods without a
- * schema change we pack the period into non-overlapping integer ranges so the
- * three period types can never collide with each other:
+ * The implementation lives in `src/shared/hrPayrollPeriod.ts`, because the main
+ * process needs it too: a payroll record is keyed by a packed integer `month`
+ * that only the period module can read, and while that decoder lived here in the
+ * renderer the main process could not turn a period into real dates — which is
+ * why weekly and daily payroll silently never matched its approved overtime.
  *
- *   monthly →  1 – 12                (calendar month)
- *   weekly  →  1001 – 1053           (1000 + ISO week number)
- *   daily   →  2101 – 3231           (2000 + calendarMonth*100 + dayOfMonth)
- *
- * Previously all three shared the 1–53 range, so e.g. "day 5 of July" and
- * "day 5 of August" (or "week 5" and "month 5") overwrote each other.
+ * This module stays as the renderer's entry point so existing imports keep
+ * working, and so there is one obvious place to look for period logic.
  */
 
-export type PayrollPeriodType = 'monthly' | 'weekly' | 'daily'
+export type { PayrollPeriodType, ResolvedPeriod } from '../../../../shared/hrPayrollPeriod'
 
-const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+export {
+  encodePayrollPeriodKey,
+  describePayrollPeriod,
+  decodePayrollPeriod,
+  periodTypeOf,
+  periodRangeOf,
+  periodsOverlap,
+  resolvePayrollPeriod,
+  isoWeekStart,
+  calendarMonthSpan,
+} from '../../../../shared/hrPayrollPeriod'
 
-/** Encode the active UI period into the integer stored in `EmployeePayroll.month`. */
-export function encodePayrollPeriodKey(
-  periodType: PayrollPeriodType,
-  month: number,
-  week: number,
-  day: number,
-): number {
-  if (periodType === 'weekly') return 1000 + week
-  if (periodType === 'daily') return 2000 + month * 100 + day
-  return month
-}
-
-/** Human-readable label for a stored payroll `month` field. Robust to all three encodings. */
-export function describePayrollPeriod(monthField: number, year: number): string {
-  if (monthField >= 2000) {
-    const m = Math.floor((monthField - 2000) / 100)
-    const d = (monthField - 2000) % 100
-    const name = MONTH_SHORT[m - 1] ?? '?'
-    return `${d} ${name} ${year}`
-  }
-  if (monthField >= 1000) {
-    return `Week ${monthField - 1000} · ${year}`
-  }
-  return `${MONTH_SHORT[monthField - 1] ?? '?'} ${year}`
-}

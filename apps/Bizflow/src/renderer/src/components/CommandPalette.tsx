@@ -61,6 +61,13 @@ const GROUP_LABEL: Record<CommandGroup, string> = {
   action: 'Actions',
 }
 
+const GROUP_LABEL_AR: Record<CommandGroup, string> = {
+  core: 'انتقل إلى',
+  settings: 'الإعدادات',
+  module: 'الوحدات',
+  action: 'إجراءات',
+}
+
 const GROUP_ORDER: CommandGroup[] = ['core', 'module', 'settings', 'action']
 
 /** Icon per core route, so the list reads at a glance. */
@@ -136,7 +143,9 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
   const navigate = useNavigate()
   const location = useLocation()
   const { can } = useAuth()
-  const { setLanguage } = useLanguage()
+  const { setLanguage, language } = useLanguage()
+  const isAr = language === 'ar'
+  const groupLabel = isAr ? GROUP_LABEL_AR : GROUP_LABEL
 
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -173,12 +182,12 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
    * than hiding the whole palette, so a cashier still gets their module screens.
    */
   const commands = useMemo(() => {
-    const all = buildCommands(enabledModules)
+    const all = buildCommands(enabledModules, language)
     return all.filter((command) => {
       if (command.group !== 'settings') return true
       return can('manage_settings')
     })
-  }, [enabledModules, can])
+  }, [enabledModules, can, language])
 
   const byId = useMemo(() => new Map(commands.map((c) => [c.id, c])), [commands])
 
@@ -197,26 +206,27 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
    * apart. Headers are display-only; only rows are selectable.
    */
   const rows = useMemo(() => {
+    const recentLabel = isAr ? 'الأخيرة' : 'Recent'
     if (query.trim()) {
-      return search.map(({ command }) => ({ kind: 'row' as const, command, header: GROUP_LABEL[command.group] }))
+      return search.map(({ command }) => ({ kind: 'row' as const, command, header: groupLabel[command.group] }))
     }
 
     const out: { kind: 'header' | 'row'; command?: Command; header?: string; label?: string }[] = []
 
     if (recent.length) {
-      out.push({ kind: 'header', label: 'Recent' })
-      for (const command of recent) out.push({ kind: 'row', command, header: 'Recent' })
+      out.push({ kind: 'header', label: recentLabel })
+      for (const command of recent) out.push({ kind: 'row', command, header: recentLabel })
     }
 
     for (const group of GROUP_ORDER) {
       const inGroup = search.filter(({ command }) => command.group === group).map(({ command }) => command)
       if (!inGroup.length) continue
-      out.push({ kind: 'header', label: GROUP_LABEL[group] })
-      for (const command of inGroup) out.push({ kind: 'row', command, header: GROUP_LABEL[group] })
+      out.push({ kind: 'header', label: groupLabel[group] })
+      for (const command of inGroup) out.push({ kind: 'row', command, header: groupLabel[group] })
     }
 
     return out
-  }, [query, search, recent])
+  }, [query, search, recent, groupLabel, isAr])
 
   const selectable = useMemo(
     () => rows.filter((r): r is { kind: 'row'; command: Command; header: string } => r.kind === 'row'),

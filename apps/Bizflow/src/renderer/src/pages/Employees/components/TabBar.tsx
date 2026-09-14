@@ -1,6 +1,6 @@
 import React from 'react'
 import type { ProfileTab } from '../hooks/useEmployeeProfile'
-import { User, Calendar, Clock, DollarSign, Activity, FileText, AlarmClock, Plane } from 'lucide-react'
+import { User, Calendar, Clock, DollarSign, Activity, FileText, AlarmClock, Plane, Repeat } from 'lucide-react'
 import { useLanguage } from '../../../contexts/LanguageContext'
 
 interface Props {
@@ -18,7 +18,9 @@ export default function TabBar({ tab, onChange, counts = {}, hidden = [] }: Prop
     { key: 'attendance', label: t('tabAttendance'),  icon: <Calendar size={16} /> },
     { key: 'shifts',     label: t('tabShifts'),      icon: <Clock size={16} /> },
     { key: 'overtime',   label: t('tabOvertime'),    icon: <AlarmClock size={16} /> },
-    { key: 'leave',      label: t('tabLeave') ?? 'Leave', icon: <Plane size={16} /> },
+    { key: 'leave',      label: t('tabLeave'),      icon: <Plane size={16} /> },
+    // Onboarding + offboarding live together: same list, two ends of the job.
+    { key: 'lifecycle',  label: t('tabLifecycle'),  icon: <Repeat size={16} /> },
     { key: 'payroll',    label: t('tabPayroll'),     icon: <DollarSign size={16} /> },
     { key: 'activity',   label: t('tabActivity'),    icon: <Activity size={16} /> },
     { key: 'documents',  label: t('tabDocuments'),   icon: <FileText size={16} /> },
@@ -26,10 +28,15 @@ export default function TabBar({ tab, onChange, counts = {}, hidden = [] }: Prop
   const TABS = ALL_TABS.filter(tb => !hidden.includes(tb.key))
 
   return (
-    <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+    <div
+      role="tablist"
+      className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto"
+    >
       {TABS.map(tb => (
         <button
           key={tb.key}
+          role="tab"
+          aria-selected={tab === tb.key}
           onClick={() => onChange(tb.key)}
           className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             tab === tb.key

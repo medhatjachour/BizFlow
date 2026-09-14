@@ -1,25 +1,50 @@
-import { useState } from 'react'
-import { Plus, Search, Users, Filter, DollarSign, X, BarChart3, Download } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Search, Users, Filter, DollarSign, X, BarChart3, Download, Inbox, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useAuth } from '../../contexts/AuthContext'
+import { ipc } from '../../utils/ipc'
 import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import ApprovalsInbox from './components/ApprovalsInbox'
 import EmployeeAnalytics from './components/EmployeeAnalytics'
 import EmployeeCard from './components/EmployeeCard'
 import EmployeeForm from './components/EmployeeForm'
+import HrAttentionPanel from './components/HrAttentionPanel'
 import PayrollOverview from './components/PayrollOverview'
+import { HrButton, HrEmptyState } from './ui/primitives'
 import { useEmployees } from './hooks/useEmployees'
 import { usePluginRoles } from './hooks/usePluginRoles'
 
-type TabView = 'team' | 'analytics' | 'payroll'
+type TabView = 'team' | 'approvals' | 'analytics' | 'payroll'
 
 export default function Employees() {
   const { t } = useLanguage()
+  const navigate = useNavigate()
   const { can } = useAuth()
   const canFinance = can('view_finance')
   const state = useEmployees()
   const { allDepartments } = usePluginRoles()
   const [view, setView] = useState<TabView>('team')
+
+  // Counted up front so the tab can say how much is waiting without the user
+  // having to open it to find out.
+  const [pendingApprovals, setPendingApprovals] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await ipc.employees.approvals.pending()
+        if (!cancelled) {
+          setPendingApprovals((res?.leave?.length ?? 0) + (res?.overtime?.length ?? 0))
+        }
+      } catch {
+        // The badge is a nicety; the inbox itself reports any real failure.
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   // Count helpers for the quick-status pills
   const countAll        = state.employees.length
@@ -67,6 +92,21 @@ export default function Employees() {
           <Users size={15} /> {t('empTeam') ?? 'Team'}
         </button>
         <button
+          onClick={() => setView('approvals')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            view === 'approvals'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+          }`}
+        >
+          <Inbox size={15} /> {t('hrTeamApprovals')}
+          {pendingApprovals > 0 && (
+            <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white tabular-nums">
+              {pendingApprovals}
+            </span>
+          )}
+        </button>
+        <button
           onClick={() => setView('analytics')}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             view === 'analytics'
@@ -94,11 +134,18 @@ export default function Employees() {
       {/* ── Payroll tab ─────────────────────────────────────────────── */}
       {view === 'payroll' && canFinance && <PayrollOverview />}
 
+      {/* ── Approvals tab ───────────────────────────────────────────── */}
+      {view === 'approvals' && <ApprovalsInbox onOpen={id => navigate(`/employees/${id}`)} />}
+
       {/* ── Analytics tab ───────────────────────────────────────────── */}
       {view === 'analytics' && <EmployeeAnalytics employees={state.employees} stats={state.stats} />}
 
       {/* ── Team tab ────────────────────────────────────────────────── */}
       {view === 'team' && (<>
+
+      {/* Anything that will bite if nobody looks: contracts, documents,
+          payroll details, today's exceptions, missing line managers. */}
+      <HrAttentionPanel employees={state.employees} onOpen={id => navigate(`/employees/${id}`)} />
 
       {/* Search + Filters */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm space-y-3">
@@ -200,7 +247,9 @@ export default function Employees() {
         {/* Active filter chips */}
         {(state.filterDepartment || state.filterRole) && (
           <div className="flex items-center gap-2 flex-wrap pt-1">
-            <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">Active:</span>
+            <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wide">
+              {t('hrTeamActive')}
+            </span>
             {state.filterDepartment && (
               <button
                 onClick={() => state.setFilterDepartment('')}
@@ -221,7 +270,7 @@ export default function Employees() {
               onClick={() => { state.setFilterDepartment(''); state.setFilterRole('') }}
               className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline transition-colors"
             >
-              Clear all
+              {t('hrTeamClearAll')}
             </button>
           </div>
         )}
@@ -251,26 +300,58 @@ export default function Employees() {
         <div className="flex items-center justify-center py-24">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
+      ) : state.loadError ? (
+        /* Checked BEFORE the empty state: a failed read is not an empty database,
+           and offering "Add employee" here would invite duplicate records. */
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+          <HrEmptyState
+            icon={AlertTriangle}
+            tone="danger"
+            title={t('empLoadFailedTitle') ?? 'Could not load employees'}
+            description={
+              t('empLoadFailedHint') ??
+              'The employee list could not be read, so it is not shown. This is a loading problem, not an empty list — existing records are unaffected. Try again, and if it keeps failing check the application log.'
+            }
+            action={
+              <HrButton variant="primary" size="md" onClick={() => state.retryLoad()}>
+                {t('retry') ?? 'Try again'}
+              </HrButton>
+            }
+          />
+        </div>
       ) : state.filtered.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-16 text-center">
-          <Users size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           {state.totalCount === 0 ? (
-            <>
-              <p className="text-slate-500 dark:text-slate-400">{t('empNoEmployeesFound')}</p>
-              <button onClick={state.openAdd} className="btn-primary mt-4">
-                <Plus size={16} className="inline mr-1" /> {t('addEmployee')}
-              </button>
-            </>
+            <HrEmptyState
+              icon={Users}
+              title={t('empNoEmployeesFound')}
+              description={
+                t('empNoEmployeesHint') ??
+                'Add your first team member to start tracking attendance, leave and payroll.'
+              }
+              action={
+                <HrButton variant="primary" size="md" icon={Plus} onClick={state.openAdd}>
+                  {t('addEmployee')}
+                </HrButton>
+              }
+            />
           ) : (
-            <>
-              <p className="text-slate-500 dark:text-slate-400">{t('empNoMatches') ?? 'No employees match your filters'}</p>
-              <button
-                onClick={() => { state.setSearchQuery(''); state.setFilterStatus(''); state.setFilterDepartment(''); state.setFilterRole('') }}
-                className="mt-4 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-              >
-                {t('empClearFilters') ?? 'Clear filters'}
-              </button>
-            </>
+            <HrEmptyState
+              icon={Search}
+              title={t('empNoMatches') ?? 'No employees match your filters'}
+              description={
+                t('empNoMatchesHint') ??
+                'Everyone may be hidden by the current search and filters rather than missing.'
+              }
+              action={
+                <HrButton
+                  size="md"
+                  onClick={() => { state.setSearchQuery(''); state.setFilterStatus(''); state.setFilterDepartment(''); state.setFilterRole('') }}
+                >
+                  {t('empClearFilters') ?? 'Clear filters'}
+                </HrButton>
+              }
+            />
           )}
         </div>
       ) : (

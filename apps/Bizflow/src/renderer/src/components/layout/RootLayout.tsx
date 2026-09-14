@@ -109,7 +109,8 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
     }
   }, [location.pathname])
 
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const isAr = language === 'ar'
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [iconBroken, setIconBroken] = useState(false)
   const ICON_CANDIDATES = [LocalIcon, '/logo192.png', '/icon.png', '/build/icon.png']
@@ -411,11 +412,15 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
             data-tour="help-button"
             onClick={() => window.dispatchEvent(new CustomEvent('bizflow:help:open'))}
             className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
-            aria-label="Open help and user guide"
-            title="Help and user guide — shortcuts are in here too"
+            aria-label={isAr ? 'فتح المساعدة ودليل الاستخدام' : 'Open help and user guide'}
+            title={
+              isAr
+                ? 'المساعدة ودليل الاستخدام — وفيه أيضاً اختصارات لوحة المفاتيح'
+                : 'Help and user guide — shortcuts are in here too'
+            }
           >
             <HelpCircle size={18} aria-hidden="true" />
-            <span className="hidden sm:inline">Help</span>
+            <span className="hidden sm:inline">{isAr ? 'مساعدة' : 'Help'}</span>
           </button>
 
         </header>

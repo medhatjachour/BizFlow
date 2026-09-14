@@ -40,6 +40,8 @@ export function useEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [stats, setStats] = useState<EmployeeStats | null>(null)
   const [loading, setLoading] = useState(true)
+  // null = no known problem. A string means the list could not be read.
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterDepartment, setFilterDepartment] = useState('')
@@ -61,6 +63,7 @@ export function useEmployees() {
   const load = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const [emps, st] = await Promise.all([
         ipc.employees.getAll(),
         ipc.employees.stats()
@@ -69,6 +72,10 @@ export function useEmployees() {
       setStats(st)
     } catch (err) {
       logger.error('Failed to load employees:', err)
+      // Without this flag a failed read rendered identically to an empty
+      // database — "no employees yet" plus an Add button — which invites
+      // re-creating people who are already on file.
+      setLoadError(err instanceof Error ? err.message : String(err))
       toast.error?.(t('empToastLoadFailed'))
     } finally {
       setLoading(false)
@@ -279,7 +286,7 @@ export function useEmployees() {
   }
 
   return {
-    employees, stats, loading, filtered: sorted, totalCount: employees.length,
+    employees, stats, loading, loadError, retryLoad: load, filtered: sorted, totalCount: employees.length,
     searchQuery, setSearchQuery,
     filterStatus, setFilterStatus,
     filterDepartment, setFilterDepartment,

@@ -1,122 +1,149 @@
-import { Plus, Trash2, CheckCircle, AlarmClock, CheckCheck } from 'lucide-react'
+import { AlarmClock, CheckCheck, CheckCircle, CheckCircle2, Clock, Plus, Trash2, Undo2 } from 'lucide-react'
 import type { EmployeeOvertime } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
+import { useHrFormat } from '../ui/hrFormat'
+import {
+  HrBadge,
+  HrButton,
+  HrEmptyState,
+  HrIconButton,
+  HrSectionHeader,
+  HrStat,
+  HrTableShell,
+  hrRequestStatusTone,
+} from '../ui/primitives'
 
 interface Props {
   overtimeRecords: EmployeeOvertime[]
   onAdd: () => void
   onApprove: (id: string) => void
+  /** Withdraw an approval taken by mistake. */
+  onRevoke?: (id: string) => void
   onApproveAll?: () => void
   onDelete: (id: string) => void
   disabled?: boolean
 }
 
-export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onApproveAll, onDelete, disabled }: Props) {
+export default function OvertimeTab({ overtimeRecords, onAdd, onApprove, onRevoke, onApproveAll, onDelete, disabled }: Props) {
   const { t } = useLanguage()
+  const fmt = useHrFormat()
   const totalHours = overtimeRecords.reduce((sum, o) => sum + o.hours, 0)
   const approvedHours = overtimeRecords.filter(o => o.approved).reduce((sum, o) => sum + o.hours, 0)
   const pendingCount = overtimeRecords.filter(o => !o.approved).length
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <AlarmClock size={16} /> {t('empOvertimeRecords')}
-        </h3>
-        {!disabled && (
-          <div className="flex items-center gap-2">
-            {pendingCount > 0 && onApproveAll && (
-              <button onClick={onApproveAll} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
-                <CheckCheck size={14} /> {t('empApproveAll') ?? 'Approve all'} ({pendingCount})
-              </button>
-            )}
-            <button onClick={onAdd} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm hover:bg-primary/90 transition-colors">
-              <Plus size={14} /> {t('empLogOvertime')}
-            </button>
-          </div>
-        )}
-      </div>
+      <HrSectionHeader
+        icon={AlarmClock}
+        title={t('empOvertimeRecords')}
+        subtitle={
+          pendingCount > 0
+            ? `${pendingCount} ${t('empOvertimePendingHint') ?? 'hour(s) awaiting approval'}`
+            : undefined
+        }
+        action={
+          !disabled ? (
+            <div className="flex items-center gap-2">
+              {pendingCount > 0 && onApproveAll && (
+                <HrButton onClick={onApproveAll} icon={CheckCheck} variant="successOutline" size="md">
+                  {t('empApproveAll') ?? 'Approve all'} ({pendingCount})
+                </HrButton>
+              )}
+              <HrButton onClick={onAdd} icon={Plus} variant="primary" size="md">
+                {t('empLogOvertime')}
+              </HrButton>
+            </div>
+          ) : undefined
+        }
+      />
 
       {/* Summary row */}
       {overtimeRecords.length > 0 && (
-        <div className="flex gap-4 flex-wrap">
-          <div className="px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-700">
-            <div className="text-xl font-bold text-slate-900 dark:text-white">{totalHours.toFixed(1)}h</div>
-            <div className="text-xs text-slate-500">{t('empTotalOTHours')}</div>
-          </div>
-          <div className="px-4 py-2 rounded-lg bg-green-50 dark:bg-green-900/20">
-            <div className="text-xl font-bold text-green-600">{approvedHours.toFixed(1)}h</div>
-            <div className="text-xs text-slate-500">{t('empApproved')}</div>
-          </div>
-          <div className="px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-            <div className="text-xl font-bold text-amber-600">{(totalHours - approvedHours).toFixed(1)}h</div>
-            <div className="text-xs text-slate-500">{t('empPendingApproval')}</div>
-          </div>
+        <div className="grid grid-cols-3 gap-3">
+          <HrStat icon={Clock} label={t('empTotalOTHours')} value={`${totalHours.toFixed(1)}h`} />
+          <HrStat
+            icon={CheckCircle2}
+            tone="success"
+            label={t('empApproved')}
+            value={`${approvedHours.toFixed(1)}h`}
+            hint={
+              totalHours > 0
+                ? `${Math.round((approvedHours / totalHours) * 100)}% ${t('empOfTotal') ?? 'of total'}`
+                : undefined
+            }
+          />
+          <HrStat
+            icon={AlarmClock}
+            tone={totalHours - approvedHours > 0 ? 'warning' : 'neutral'}
+            label={t('empPendingApproval')}
+            value={`${(totalHours - approvedHours).toFixed(1)}h`}
+          />
         </div>
       )}
 
       {overtimeRecords.length === 0 ? (
-        <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-          <AlarmClock size={40} className="mx-auto mb-3 text-slate-300 dark:text-slate-600" />
-          <p>{t('empNoOvertimeYet')}</p>
-        </div>
+        <HrEmptyState
+          icon={AlarmClock}
+          title={t('empNoOvertimeYet')}
+          description={t('empNoOvertimeHint')}
+          action={
+            !disabled ? (
+              <HrButton onClick={onAdd} icon={Plus} variant="primary" size="md">
+                {t('empLogOvertime')}
+              </HrButton>
+            ) : undefined
+          }
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 dark:bg-slate-700/50">
-              <tr>
-                {[t('empDate'), t('empHourly'), t('empMultiplier'), t('reason'), t('status'), t('empApprovedBy'), ''].map((h, i) => (
-                  <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-              {overtimeRecords.map(o => (
-                <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{new Date(o.date).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">{o.hours}h</td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{o.multiplier}×</td>
-                  <td className="px-4 py-3 text-slate-500 max-w-[160px] truncate">{o.reason ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    {o.approved ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{t('empApproved')}</span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{t('empStatusPending')}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-slate-500">{o.approvedBy ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      {!disabled && !o.approved && (
-                        <button
-                          onClick={() => onApprove(o.id)}
-                          title={t('empApproved')}
-                          className="p-1.5 rounded text-slate-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-                        >
-                          <CheckCircle size={14} />
-                        </button>
-                      )}
-                      {!disabled && (
-                        <button onClick={() => onDelete(o.id)} className="p-1.5 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <HrTableShell
+          columns={[
+            { label: t('empDate') },
+            // Was labelled `empHourly` ("Hourly") over a cell showing hours worked.
+            { label: t('empHours') ?? 'Hours', align: 'end' },
+            { label: t('empMultiplier'), align: 'end' },
+            { label: t('reason') },
+            { label: t('status') },
+            { label: t('empApprovedBy') },
+            { label: '' },
+          ]}
+        >
+          {overtimeRecords.map(o => (
+            <tr key={o.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+              <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">{fmt.date(o.date)}</td>
+              <td className="px-4 py-3 text-end font-semibold text-slate-800 dark:text-slate-200">{o.hours}h</td>
+              <td className="px-4 py-3 text-end text-slate-600 dark:text-slate-400">{o.multiplier}×</td>
+              <td className="px-4 py-3 text-slate-500 max-w-[160px] truncate">{o.reason ?? '—'}</td>
+              <td className="px-4 py-3">
+                <HrBadge tone={o.approved ? hrRequestStatusTone('approved') : hrRequestStatusTone('pending')}>
+                  {o.approved ? t('empApproved') : t('empStatusPending')}
+                </HrBadge>
+              </td>
+              <td className="px-4 py-3 text-slate-500">{o.approvedBy ?? '—'}</td>
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-1 justify-end">
+                  {!disabled && !o.approved && (
+                    <HrIconButton icon={CheckCircle} onClick={() => onApprove(o.id)} title={t('empApproved')} tone="success" />
+                  )}
+                  {/* Approval was a one-way latch: a mistake could only be undone by
+                      deleting the record, which also destroyed the history. */}
+                  {!disabled && o.approved && onRevoke && (
+                    <HrIconButton
+                      icon={Undo2}
+                      onClick={() => onRevoke(o.id)}
+                      title={t('empRevokeApproval') ?? 'Withdraw approval'}
+                      tone="warning"
+                    />
+                  )}
+                  {!disabled && (
+                    <HrIconButton icon={Trash2} onClick={() => onDelete(o.id)} title={t('delete') ?? 'Delete'} tone="danger" />
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </HrTableShell>
       )}
     </div>
   )
-}
-
-interface Props {
-  overtimeRecords: EmployeeOvertime[]
-  onAdd: () => void
-  onApprove: (id: string) => void
-  onDelete: (id: string) => void
 }
 

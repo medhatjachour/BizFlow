@@ -30,13 +30,14 @@ import {
   X,
 } from 'lucide-react'
 import {
-  HELP_SECTIONS,
-  HELP_TOUR_STEPS,
+  getHelpContent,
   SUPPORT_EMAIL,
   type HelpBlock,
   type HelpIcon,
   type HelpSection,
+  type TourStep,
 } from './help/helpContent'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const TOUR_SEEN_KEY = 'bizflow:helpTourSeen'
 
@@ -50,7 +51,76 @@ const SECTION_ICONS: Record<HelpIcon, typeof Rocket> = {
   keyboard: Keyboard,
 }
 
-/** Flatten a section into searchable text. */
+/**
+ * Chrome for the help panel, per language.
+ *
+ * The guide itself is not here — it lives in `helpContent.ts` (English) and
+ * `helpContent.ar.ts` (Arabic) and is read through `getHelpContent()`. This is
+ * only the surrounding furniture: titles, buttons, the search box and the tour.
+ */
+function helpStrings(isAr: boolean) {
+  return {
+    panelTitle: isAr ? 'المساعدة ودليل الاستخدام' : 'Help and user guide',
+    panelAria: isAr ? 'المساعدة ودليل الاستخدام' : 'Help and user guide',
+    backToTopics: isAr ? 'العودة إلى كل مواضيع المساعدة' : 'Back to all help topics',
+    backToTopicsShort: isAr ? 'العودة إلى كل المواضيع' : 'Back to all topics',
+    closeHelp: isAr ? 'إغلاق المساعدة' : 'Close help',
+    searchLabel: isAr ? 'ابحث في المساعدة' : 'Search help',
+    searchPlaceholder: isAr
+      ? 'ابحث في المساعدة — جرّب: طابعة، ترخيص، نسخة احتياطية…'
+      : 'Search help — try printer, licence, backup…',
+    noMatch: isAr ? 'لا يوجد ما يطابق بحثك.' : 'Nothing matched that.',
+    noMatchTail: isAr ? 'يمكنك مراسلتنا على' : 'You can email us at',
+    noMatchEnd: isAr ? 'للحصول على معرف جهازك.' : 'for your Device ID.',
+    contactSupport: isAr ? 'التواصل مع الدعم' : 'Contact support',
+    openWord: isAr ? 'افتح' : 'open',
+    replayTour: isAr ? 'إعادة تشغيل الجولة التعريفية' : 'Replay the guided tour',
+    emailUs: isAr ? 'راسلنا بالبريد' : 'Email us',
+    emailUsBody: isAr
+      ? 'أرفق معرف جهازك وسننجز التفعيل أو نقل الترخيص في رد واحد.'
+      : 'Include your Device ID and we can sort activation and licence moves in one reply.',
+    deviceIdLabel: isAr ? 'معرف جهازك' : 'Your Device ID',
+    deviceIdMissing: isAr ? 'غير متاح في هذا الإصدار' : 'Not available in this build',
+    copyDeviceId: isAr ? 'نسخ معرف الجهاز' : 'Copy Device ID',
+    copied: isAr ? 'تم النسخ' : 'Copied',
+    emailSupport: isAr ? 'مراسلة الدعم' : 'Email support',
+    tourAria: isAr ? 'الجولة التعريفية' : 'Product tour',
+    skipTour: isAr ? 'تخطي الجولة' : 'Skip the tour',
+    back: isAr ? 'السابق' : 'Back',
+    next: isAr ? 'التالي' : 'Next',
+    gotIt: isAr ? 'تم' : 'Got it',
+    stepOf: (n: number, total: number) =>
+      isAr ? `الخطوة ${n} من ${total}` : `Step ${n} of ${total}`,
+    mailSubject: isAr ? 'طلب دعم BizFlow' : 'BizFlow support request',
+    mailBody: (deviceId: string) =>
+      isAr
+        ? [
+            'مرحباً،',
+            '',
+            'أحتاج مساعدة بخصوص BizFlow.',
+            '',
+            'ما حدث:',
+            '',
+            'ما توقعته:',
+            '',
+            `معرف الجهاز: ${deviceId || '(غير متاح)'}`,
+          ].join('\n')
+        : [
+            'Hello,',
+            '',
+            'I need help with BizFlow.',
+            '',
+            'What happened:',
+            '',
+            'What I expected:',
+            '',
+            `Device ID: ${deviceId || '(unavailable)'}`,
+          ].join('\n'),
+  }
+}
+
+/**
+ * Flatten a section into searchable text. */
 function sectionText(section: HelpSection): string {
   const parts: string[] = [section.title, section.summary, ...section.keywords]
   for (const block of section.blocks) {
@@ -71,7 +141,8 @@ function sectionText(section: HelpSection): string {
       if (block.title) parts.push(block.title)
       for (const k of block.keys) parts.push(k.combo, k.text)
     }
-    if (block.kind === 'contact') parts.push('contact support device id email')
+    if (block.kind === 'contact')
+      parts.push('contact support device id email', 'تواصل دعم معرف الجهاز بريد مساعدة')
   }
   return parts.join(' ').toLowerCase()
 }
@@ -96,6 +167,11 @@ export default function HelpCentre() {
   const [deviceId, setDeviceId] = useState('')
   const [copied, setCopied] = useState(false)
   const [tourStep, setTourStep] = useState<number | null>(null)
+
+  const { language } = useLanguage()
+  const isAr = language === 'ar'
+  const i18n = useMemo(() => helpStrings(isAr), [isAr])
+  const content = useMemo(() => getHelpContent(language), [language])
 
   const closeRef = useRef<HTMLButtonElement | null>(null)
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -199,31 +275,21 @@ export default function HelpCentre() {
 
   const sections = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return HELP_SECTIONS
-    return HELP_SECTIONS.filter((s) => sectionText(s).includes(q))
-  }, [query])
+    if (!q) return content.sections
+    return content.sections.filter((s) => sectionText(s).includes(q))
+  }, [query, content])
 
   const current = useMemo(
-    () => HELP_SECTIONS.find((s) => s.id === activeSection) ?? null,
-    [activeSection]
+    () => content.sections.find((s) => s.id === activeSection) ?? null,
+    [activeSection, content]
   )
 
   const supportMailto = useMemo(() => {
-    const body = [
-      'Hello,',
-      '',
-      'I need help with BizFlow.',
-      '',
-      'What happened:',
-      '',
-      'What I expected:',
-      '',
-      `Device ID: ${deviceId || '(unavailable)'}`,
-    ].join('\n')
+    const body = i18n.mailBody(deviceId)
     return `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-      'BizFlow support request'
+      i18n.mailSubject
     )}&body=${encodeURIComponent(body)}`
-  }, [deviceId])
+  }, [deviceId, i18n])
 
   const renderBlock = (block: HelpBlock, i: number) => {
     switch (block.kind) {
@@ -339,19 +405,18 @@ export default function HelpCentre() {
             className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950/50"
           >
             <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              Email us
+              {i18n.emailUs}
             </p>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-              Include your Device ID and we can sort activation and licence moves in one
-              reply.
+              {i18n.emailUsBody}
             </p>
 
             <div className="mt-3 rounded-lg border border-slate-200 bg-white p-2.5 dark:border-slate-800 dark:bg-slate-900">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Your Device ID
+                {i18n.deviceIdLabel}
               </p>
               <p className="mt-1 break-all font-mono text-[11px] text-slate-700 dark:text-slate-300">
-                {deviceId || 'Not available in this build'}
+                {deviceId || i18n.deviceIdMissing}
               </p>
               <button
                 type="button"
@@ -364,7 +429,7 @@ export default function HelpCentre() {
                 ) : (
                   <Copy className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
-                {copied ? 'Copied' : 'Copy Device ID'}
+                {copied ? i18n.copied : i18n.copyDeviceId}
               </button>
             </div>
 
@@ -374,7 +439,7 @@ export default function HelpCentre() {
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
               >
                 <Mail className="h-4 w-4" aria-hidden="true" />
-                Email support
+                {i18n.emailSupport}
               </a>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 {SUPPORT_EMAIL}
@@ -389,7 +454,7 @@ export default function HelpCentre() {
     <>
       {/* ---- Slide-over panel --------------------------------------------- */}
       {open ? (
-        <div className="fixed inset-0 z-[110]" role="dialog" aria-modal="true" aria-label="Help and user guide">
+        <div className="fixed inset-0 z-[110]" role="dialog" aria-modal="true" aria-label={i18n.panelAria}>
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setOpen(false)}
@@ -404,7 +469,7 @@ export default function HelpCentre() {
                   type="button"
                   onClick={() => setActiveSection(null)}
                   className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                  aria-label="Back to all help topics"
+                  aria-label={i18n.backToTopics}
                 >
                   <ChevronLeft className="h-5 w-5 rtl:rotate-180" aria-hidden="true" />
                 </button>
@@ -413,7 +478,7 @@ export default function HelpCentre() {
               )}
 
               <h2 className="min-w-0 flex-1 truncate text-base font-semibold text-slate-900 dark:text-white">
-                {current ? current.title : 'Help and user guide'}
+                {current ? current.title : i18n.panelTitle}
               </h2>
 
               <button
@@ -421,7 +486,7 @@ export default function HelpCentre() {
                 type="button"
                 onClick={() => setOpen(false)}
                 className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-                aria-label="Close help"
+                aria-label={i18n.closeHelp}
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
@@ -444,14 +509,14 @@ export default function HelpCentre() {
                       }}
                       className="text-sm font-semibold text-primary hover:underline"
                     >
-                      Back to all topics
+                      {i18n.backToTopicsShort}
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="px-5 py-5">
                   <label className="relative block">
-                    <span className="sr-only">Search help</span>
+                    <span className="sr-only">{i18n.searchLabel}</span>
                     <Search
                       className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                       aria-hidden="true"
@@ -459,7 +524,7 @@ export default function HelpCentre() {
                     <input
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search help — try printer, licence, backup…"
+                      placeholder={i18n.searchPlaceholder}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 ps-9 pe-3 text-sm text-slate-900 outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                     />
                   </label>
@@ -491,16 +556,17 @@ export default function HelpCentre() {
 
                     {sections.length === 0 ? (
                       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-950/50 dark:text-slate-400">
-                        Nothing matched that. You can email us at{' '}
-                        <span className="font-medium">{SUPPORT_EMAIL}</span> — open{' '}
+                        {i18n.noMatch} {i18n.noMatchTail}{' '}
+                        <span className="font-medium">{SUPPORT_EMAIL}</span> —{' '}
+                        {i18n.openWord}{' '}
                         <button
                           type="button"
                           className="font-semibold text-primary underline"
                           onClick={() => setActiveSection('support')}
                         >
-                          Contact support
+                          {i18n.contactSupport}
                         </button>{' '}
-                        for your Device ID.
+                        {i18n.noMatchEnd}
                       </div>
                     ) : null}
                   </div>
@@ -513,7 +579,7 @@ export default function HelpCentre() {
                     }}
                     className="mt-5 text-sm font-semibold text-primary hover:underline"
                   >
-                    Replay the guided tour
+                    {i18n.replayTour}
                   </button>
                 </div>
               )}
@@ -524,7 +590,7 @@ export default function HelpCentre() {
 
       {/* ---- First-run guided tour ---------------------------------------- */}
       {tourStep !== null ? (
-        <HelpTour step={tourStep} onStep={setTourStep} onDone={dismissTour} />
+        <HelpTour step={tourStep} steps={content.tourSteps} onStep={setTourStep} onDone={dismissTour} />
       ) : null}
     </>
   )
@@ -536,14 +602,18 @@ export default function HelpCentre() {
 
 function HelpTour({
   step,
+  steps,
   onStep,
   onDone,
 }: {
   step: number
+  steps: TourStep[]
   onStep: (n: number) => void
   onDone: () => void
 }) {
-  const current = HELP_TOUR_STEPS[step]
+  const { language } = useLanguage()
+  const i18n = helpStrings(language === 'ar')
+  const current = steps[step]
   const [rect, setRect] = useState<DOMRect | null>(null)
 
   // Measure the anchor on each step, and keep it correct through resize/scroll.
@@ -570,7 +640,7 @@ function HelpTour({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onDone()
-      if (e.key === 'ArrowRight') onStep(Math.min(step + 1, HELP_TOUR_STEPS.length - 1))
+      if (e.key === 'ArrowRight') onStep(Math.min(step + 1, steps.length - 1))
       if (e.key === 'ArrowLeft') onStep(Math.max(step - 1, 0))
     }
     window.addEventListener('keydown', onKey)
@@ -579,7 +649,7 @@ function HelpTour({
 
   if (!current) return null
 
-  const last = step === HELP_TOUR_STEPS.length - 1
+  const last = step === steps.length - 1
   const pad = 6
 
   // Tooltip placement. Everything is clamped so it can never leave the viewport.
@@ -642,17 +712,17 @@ function HelpTour({
         style={tipStyle}
         role="dialog"
         aria-modal="true"
-        aria-label={`Tour step ${step + 1} of ${HELP_TOUR_STEPS.length}`}
+        aria-label={`${i18n.tourAria} — ${i18n.stepOf(step + 1, steps.length)}`}
       >
         <div className="flex items-start justify-between gap-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
-            Step {step + 1} of {HELP_TOUR_STEPS.length}
+            {i18n.stepOf(step + 1, steps.length)}
           </p>
           <button
             type="button"
             onClick={onDone}
             className="-mt-1 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 dark:hover:bg-slate-800"
-            aria-label="Skip the tour"
+            aria-label={i18n.skipTour}
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -667,7 +737,7 @@ function HelpTour({
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1.5" aria-hidden="true">
-            {HELP_TOUR_STEPS.map((_, i) => (
+            {steps.map((_, i) => (
               <span
                 key={i}
                 className={`h-1.5 rounded-full transition-all ${
@@ -684,7 +754,7 @@ function HelpTour({
                 onClick={() => onStep(step - 1)}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                Back
+                {i18n.back}
               </button>
             ) : null}
             <button
@@ -692,7 +762,7 @@ function HelpTour({
               onClick={() => (last ? onDone() : onStep(step + 1))}
               className="rounded-lg bg-primary px-3.5 py-1.5 text-sm font-semibold text-white transition hover:bg-primary/90"
             >
-              {last ? 'Got it' : 'Next'}
+              {last ? i18n.gotIt : i18n.next}
             </button>
           </div>
         </div>

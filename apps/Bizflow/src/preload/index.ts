@@ -79,9 +79,25 @@ const api = {
     payroll: {
       upsert: (data: any) => ipcRenderer.invoke('employees:payroll:upsert', data),
       getAll: (year: number) => ipcRenderer.invoke('employees:payroll:getAll', { year }),
-      markPaid: (id: string) => ipcRenderer.invoke('employees:payroll:markPaid', id),
+      markPaid: (id: string, performedBy?: string) => ipcRenderer.invoke('employees:payroll:markPaid', { id, performedBy }),
       compute: (params: any) => ipcRenderer.invoke('employees:payroll:compute', params),
       getSummary: (params: any) => ipcRenderer.invoke('employees:payroll:getSummary', params)
+    },
+    /** Period state: draft → approved → paid → locked, and the way back. */
+    payrollRuns: {
+      get: (year: number, month: number) => ipcRenderer.invoke('employees:payrollRuns:get', { year, month }),
+      ensure: (year: number, month: number, performedBy?: string) =>
+        ipcRenderer.invoke('employees:payrollRuns:ensure', { year, month, performedBy }),
+      approve: (year: number, month: number, performedBy?: string) =>
+        ipcRenderer.invoke('employees:payrollRuns:approve', { year, month, performedBy }),
+      markAllPaid: (year: number, month: number, performedBy?: string) =>
+        ipcRenderer.invoke('employees:payrollRuns:markAllPaid', { year, month, performedBy }),
+      lock: (year: number, month: number, performedBy?: string) =>
+        ipcRenderer.invoke('employees:payrollRuns:lock', { year, month, performedBy }),
+      reopen: (year: number, month: number, performedBy?: string, reason?: string) =>
+        ipcRenderer.invoke('employees:payrollRuns:reopen', { year, month, performedBy, reason }),
+      bankExport: (year: number, month: number) =>
+        ipcRenderer.invoke('employees:payrollRuns:bankExport', { year, month })
     },
     activity: {
       add: (data: { employeeId: string; action: string; details?: string; performedBy?: string }) =>
@@ -94,8 +110,56 @@ const api = {
     },
     overtime: {
       add: (data: any) => ipcRenderer.invoke('employees:overtime:add', data),
-      approve: (id: string, approvedBy?: string) => ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy }),
+      /**
+       * Approve, or revoke approval of, an overtime record. `approved: false`
+       * withdraws a decision taken by mistake — it used to be impossible.
+       */
+      approve: (id: string, approvedBy?: string, approved = true) =>
+        ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy, approved }),
       delete: (id: string) => ipcRenderer.invoke('employees:overtime:delete', id)
+    },
+    leave: {
+      add: (data: any) => ipcRenderer.invoke('employees:leave:add', data),
+      setStatus: (id: string, status: string, approvedBy?: string) =>
+        ipcRenderer.invoke('employees:leave:setStatus', { id, status, approvedBy }),
+      delete: (id: string) => ipcRenderer.invoke('employees:leave:delete', id)
+    },
+    documents: {
+      add: (data: any) => ipcRenderer.invoke('employees:documents:add', data),
+      /** Metadata only — the attached file itself is never replaced in place. */
+      update: (data: {
+        id: string
+        title?: string
+        type?: string
+        reference?: string | null
+        issuedAt?: string | null
+        expiresAt?: string | null
+        performedBy?: string
+      }) => ipcRenderer.invoke('employees:documents:update', data),
+      open: (id: string) => ipcRenderer.invoke('employees:documents:open', id),
+      delete: (id: string) => ipcRenderer.invoke('employees:documents:delete', id)
+    },
+    /** Team-wide queue of everything awaiting a manager's decision. */
+    approvals: {
+      pending: () => ipcRenderer.invoke('employees:approvals:pending')
+    },
+    /** Onboarding / offboarding task lists (same model, split by `phase`). */
+    checklist: {
+      add: (data: any) => ipcRenderer.invoke('employees:checklist:add', data),
+      toggle: (id: string, completed: boolean, performedBy?: string, notes?: string) =>
+        ipcRenderer.invoke('employees:checklist:toggle', { id, completed, performedBy, notes }),
+      remove: (id: string) => ipcRenderer.invoke('employees:checklist:delete', id)
+    },
+    onboarding: {
+      start: (employeeId: string, probationMonths?: number, performedBy?: string) =>
+        ipcRenderer.invoke('employees:onboarding:start', { employeeId, probationMonths, performedBy })
+    },
+    offboarding: {
+      initiate: (data: any) => ipcRenderer.invoke('employees:offboarding:initiate', data),
+      /** Read-only settlement preview; nothing is written until a human confirms. */
+      settlement: (params: any) => ipcRenderer.invoke('employees:offboarding:settlement', params),
+      complete: (employeeId: string, performedBy?: string, force?: boolean) =>
+        ipcRenderer.invoke('employees:offboarding:complete', { employeeId, performedBy, force })
     }
   },
   users: {
@@ -295,6 +359,19 @@ const api = {
     validateOnline: () => ipcRenderer.invoke('license:validateOnline'),
     activateOnline: (email: string, licenseKey: string) =>
       ipcRenderer.invoke('license:activateOnline', { email, licenseKey }),
+    /**
+     * Ask us to issue a licence. Runs in the main process so the device details
+     * are the real ones and no CSP is involved.
+     */
+    requestLicense: (payload: {
+      email: string
+      fullName?: string
+      business?: string
+      phone?: string
+      itemId?: string
+      seats?: string
+      message?: string
+    }) => ipcRenderer.invoke('license:requestLicense', payload),
     /**
      * Fires when a background revalidation changes the stored activation, so the
      * UI can re-read its state immediately instead of waiting for the 15 minute

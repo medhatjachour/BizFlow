@@ -2,18 +2,19 @@ import { useMemo } from 'react'
 import {
   Users, Activity, Star, DollarSign, CalendarClock, Building2,
   Briefcase, AlertTriangle, Award, TrendingDown,
+  type LucideIcon,
 } from 'lucide-react'
 import type { Employee, EmployeeStats } from '../types'
 import { expiryState, daysUntil } from '../expiry'
 import { useLanguage } from '../../../contexts/LanguageContext'
-import { useAuth } from '../../../contexts/AuthContext'
+import { useHrPermissions } from '../hooks/useHrPermissions'
+import { useHrFormat } from '../ui/hrFormat'
+import { HrStat, type HrTone } from '../ui/primitives'
 
 interface Props {
   employees: Employee[]
   stats: EmployeeStats | null
 }
-
-const money = (n: number) => `$${(n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 
 function Bars({ rows, max, empty }: { rows: [string, number][]; max: number; empty: string }) {
   if (rows.length === 0) return <p className="text-xs text-slate-400">{empty}</p>
@@ -68,8 +69,8 @@ function Card({ children, title, icon }: { children: React.ReactNode; title: str
 
 export default function EmployeeAnalytics({ employees, stats }: Props) {
   const { t } = useLanguage()
-  const { can } = useAuth()
-  const canFinance = can('view_finance')
+  const hr = useHrPermissions()
+  const fmt = useHrFormat()
 
   const d = useMemo(() => {
     const active = employees.filter(e => e.status !== 'terminated')
@@ -129,12 +130,22 @@ export default function EmployeeAnalytics({ employees, stats }: Props) {
     return { statusCounts, typeCounts, perf, avgPerf, topPerformers, depts, roles, avgTenure, turnover, newHires, monthlyBase, expiries, activeCount: active.length, maxDept: depts[0]?.[1] ?? 1, maxRole: roles[0]?.[1] ?? 1, maxPerf: Math.max(perf.high, perf.good, perf.low, perf.unrated, 1) }
   }, [employees])
 
-  const kpis = [
-    { label: t('empHeadcount') ?? 'Headcount', value: `${d.activeCount}`, sub: `${employees.length} ${t('empTotal') ?? 'total'}`, icon: <Users size={16} />, tone: 'text-primary' },
-    { label: t('empPresentToday') ?? 'Present today', value: `${stats?.presentToday ?? 0}`, sub: `${stats?.attendanceRate ?? 0}% ${t('empRate') ?? 'rate'}`, icon: <Activity size={16} />, tone: 'text-green-600' },
-    { label: t('empAvgPerformance') ?? 'Avg performance', value: d.avgPerf ? `${d.avgPerf}%` : '—', sub: `${d.topPerformers.length} ${t('empRated') ?? 'rated'}`, icon: <Star size={16} />, tone: 'text-amber-500' },
-    ...(canFinance ? [{ label: t('empPaidThisMonth') ?? 'Paid this month', value: money(stats?.payrollThisMonth ?? 0), sub: `${money(d.monthlyBase)} ${t('empMonthlyBaseShort') ?? 'base'}`, icon: <DollarSign size={16} />, tone: 'text-violet-500' }] : []),
-    { label: t('empAvgTenure') ?? 'Avg tenure', value: `${d.avgTenure.toFixed(1)}`, sub: `${d.newHires} ${t('empNewHiresYear') ?? 'new this yr'}`, icon: <CalendarClock size={16} />, tone: 'text-blue-500' },
+  const kpis: { label: string; value: string; sub: string; icon: LucideIcon; tone: HrTone }[] = [
+    { label: t('empHeadcount') ?? 'Headcount', value: `${d.activeCount}`, sub: `${employees.length} ${t('empTotal') ?? 'total'}`, icon: Users, tone: 'brand' },
+    { label: t('empPresentToday') ?? 'Present today', value: `${stats?.presentToday ?? 0}`, sub: `${stats?.attendanceRate ?? 0}% ${t('empRate') ?? 'rate'}`, icon: Activity, tone: 'success' },
+    { label: t('empAvgPerformance') ?? 'Avg performance', value: d.avgPerf ? `${d.avgPerf}%` : '—', sub: `${d.topPerformers.length} ${t('empRated') ?? 'rated'}`, icon: Star, tone: 'warning' },
+    // Gated on `canSeePayrollCosts` (view_finance) — this is a company-wide cost
+    // total, unlike an individual salary which is `manage_staff`.
+    ...(hr.canSeePayrollCosts
+      ? [{
+          label: t('empPaidThisMonth') ?? 'Paid this month',
+          value: fmt.money(stats?.payrollThisMonth ?? 0, { decimals: 0 }),
+          sub: `${fmt.money(d.monthlyBase, { decimals: 0 })} ${t('empMonthlyBaseShort') ?? 'base'}`,
+          icon: DollarSign,
+          tone: 'info' as HrTone,
+        }]
+      : []),
+    { label: t('empAvgTenure') ?? 'Avg tenure', value: `${d.avgTenure.toFixed(1)}`, sub: `${d.newHires} ${t('empNewHiresYear') ?? 'new this yr'}`, icon: CalendarClock, tone: 'neutral' },
   ]
 
   return (
@@ -142,11 +153,7 @@ export default function EmployeeAnalytics({ employees, stats }: Props) {
       {/* KPI row */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
         {kpis.map(k => (
-          <div key={k.label} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm">
-            <div className={`flex items-center gap-1.5 text-xs font-medium text-slate-400 mb-2 ${k.tone}`}>{k.icon}<span className="text-slate-400">{k.label}</span></div>
-            <div className="text-2xl font-bold text-slate-900 dark:text-white leading-none">{k.value}</div>
-            <div className="text-xs text-slate-400 mt-1.5">{k.sub}</div>
-          </div>
+          <HrStat key={k.label} icon={k.icon} tone={k.tone} label={k.label} value={k.value} hint={k.sub} />
         ))}
       </div>
 

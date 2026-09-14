@@ -123,6 +123,13 @@ model Employee {
   // Contract & documents lifecycle
   contractEndDate   DateTime?         // fixed-term contract end / renewal date
   idExpiryDate      DateTime?         // national ID / visa / work-permit expiry
+  // Onboarding — probation / trial period
+  probationEndDate  DateTime?         // end of probation; drives the review reminder
+  // Offboarding — the things a termination needs that a status flip does not carry
+  lastWorkingDate   DateTime?         // final day actually worked (may differ from terminationDate)
+  exitReason        String?           // resignation, end-of-contract, dismissal, redundancy, retirement
+  rehireEligible    Boolean?          // would we hire them again?
+  exitInterviewNotes String?          // free notes from the exit conversation
   // Org chart — self-relation (who this employee reports to)
   managerId       String?
   manager         Employee?           @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: SetNull)
@@ -135,6 +142,7 @@ model Employee {
   shifts          EmployeeShift[]
   overtimeRecords EmployeeOvertime[]
   leaveRecords    EmployeeLeave[]
+  checklistItems  EmployeeChecklistItem[]
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
@@ -173,6 +181,9 @@ model EmployeeDocument {
   title       String
   type        String   // contract, id_copy, certificate, other
   filename    String
+  reference   String?  // passport / licence / policy number printed on the document
+  issuedAt    DateTime?
+  expiresAt   DateTime? // null = never expires; drives the renewal warnings
   uploadedAt  DateTime @default(now())
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
@@ -199,8 +210,15 @@ model EmployeeActivityLog {
 model EmployeePayroll {
   id              String   @id @default(uuid())
   employeeId      String
-  month           Int      // 1–12
+  month           Int      // packed period key — see src/shared/hrPayrollPeriod.ts
   year            Int
+  // Real dates for the period. `month` is a packed integer that only the period
+  // module can read, so anything doing date maths (overtime matching, reports)
+  // needs these instead.
+  periodType      String   @default("monthly") // monthly, weekly, daily
+  periodKey       String?                      // 2026-09 | 2026-W37 | 2026-09-14
+  periodStart     DateTime?                    // first day covered (UTC midnight)
+  periodEnd       DateTime?                    // last day covered (UTC midnight, inclusive)
   baseSalary      Float
   regularHours    Float    @default(0)   // standard hours worked this period
   overtimeHours   Float    @default(0)   // extra hours beyond normal shift
@@ -222,6 +240,36 @@ model EmployeePayroll {
   @@index([employeeId])
   @@index([year, month])
   @@index([status])
+}
+
+// A payroll run — the state of one pay period.
+//
+// Records can be edited freely while the period is a draft, and not at all once
+// it has been approved. Before this existed, a month closed six months ago was
+// still editable, so a payslip a customer had already been given could change
+// without anybody noticing. Reopening is possible, explicit, and logged.
+model PayrollRun {
+  id         String   @id @default(uuid())
+  year       Int
+  month      Int      // period key — see src/renderer/src/pages/Employees/payrollPeriod.ts
+  status     String   @default("draft") // draft, approved, paid, locked
+  headcount  Int      @default(0)
+  grossTotal Float    @default(0)
+  netTotal   Float    @default(0)
+  notes      String?
+  createdBy  String?
+  approvedBy String?
+  approvedAt DateTime?
+  lockedAt   DateTime?
+  reopenedBy String?
+  reopenedAt DateTime?
+  reopenReason String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([year, month])
+  @@index([status])
+  @@index([year])
 }
 
 // Planned shifts — when an employee is scheduled to work
@@ -276,6 +324,32 @@ model EmployeeLeave {
   @@index([employeeId])
   @@index([status])
   @@index([startDate])
+}
+
+// Onboarding / offboarding checklist — what still has to happen around someone
+// joining or leaving. Separate from EmployeeDocument (the files) and
+// EmployeeActivityLog (the history): this is the outstanding work, and the thing
+// that stops an employee being deleted while they still hold a laptop.
+model EmployeeChecklistItem {
+  id          String   @id @default(uuid())
+  employeeId  String
+  phase       String   @default("onboarding") // onboarding, offboarding
+  title       String
+  category    String   @default("other")      // documents, access, equipment, payroll, handover, compliance, other
+  required    Boolean  @default(true)         // blocks phase completion
+  dueDate     DateTime?
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  completedBy String?
+  notes       String?
+  sortOrder   Int      @default(0)
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([employeeId, phase])
+  @@index([completed])
 }
 
 model EmailReport {

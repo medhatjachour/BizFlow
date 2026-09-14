@@ -113,6 +113,8 @@
     "prisma:seed:pharmacy": "ts-node prisma/seeds/pharmacy/seed.ts",
     "prisma:seed:gym": "ts-node prisma/seeds/gym/seed.ts",
     "prisma:seed:restaurant": "ts-node prisma/seeds/restaurant/seed.ts",
+    "prisma:seed:hr-demo": "ts-node prisma/seeds/hr-demo/seed.ts",
+    "prisma:seed:hr-demo:verify": "ts-node prisma/seeds/hr-demo/verify.ts",
     "prisma:seed:coffee": "cross-env ENABLED_MODULES=coffee node scripts/merge-schemas.js && cross-env ENABLED_MODULES=coffee npx prisma generate --schema=prisma/merged.prisma && cross-env ENABLED_MODULES=coffee ts-node prisma/seeds/coffee/seed.ts",
     "tours:capture": "node scripts/capture-tours.mjs",
     "tours:encode": "node scripts/encode-tours.mjs",

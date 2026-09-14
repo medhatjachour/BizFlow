@@ -4,7 +4,9 @@ import type { EmployeeProfile, EmployeeAttendance, AttendanceStatus } from '../t
 import { describePayrollPeriod } from '../payrollPeriod'
 import { expiryState, daysUntil } from '../expiry'
 import { useLanguage } from '../../../contexts/LanguageContext'
-import { useAuth } from '../../../contexts/AuthContext'
+import { useHrPermissions } from '../hooks/useHrPermissions'
+import { useHrFormat } from '../ui/hrFormat'
+import { HrSectionHeader, HrStat } from '../ui/primitives'
 
 const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
   present:    'bg-green-500',
@@ -12,14 +14,6 @@ const ATTENDANCE_COLORS: Record<AttendanceStatus, string> = {
   late:       'bg-amber-400',
   'half-day': 'bg-yellow-300',
   leave:      'bg-blue-400'
-}
-
-// Render a stored check-in/out timestamp as local HH:MM (handles ISO strings and Date objects)
-function fmtTime(value: string | Date | null | undefined): string {
-  if (!value) return '—'
-  const d = value instanceof Date ? value : new Date(value)
-  if (isNaN(d.getTime())) return '—'
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 interface Props {
@@ -33,7 +27,10 @@ interface Props {
 
 export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance, savingPerf, disabled }: Props) {
   const { t } = useLanguage()
-  const { can } = useAuth()
+  const hr = useHrPermissions()
+  const fmt = useHrFormat()
+  /** Was a local `toLocaleTimeString`; now follows the active language. */
+  const fmtTime = fmt.time
   const [selectedDay, setSelectedDay] = useState<{ date: string; att: EmployeeAttendance | null } | null>(null)
   const [pendingScore, setPendingScore] = useState<number>(emp.performanceScore ?? 0)
 
@@ -49,10 +46,8 @@ export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Attendance summary + calendar */}
       <div className="lg:col-span-2 space-y-4">
-        <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-          <Calendar size={16} /> {t('empAttLast90Days')}
-        </h3>
-        <div className="flex gap-3 flex-wrap">
+        <HrSectionHeader icon={Calendar} title={t('empAttLast90Days')} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
             { label: t('empPresent'), value: emp.attendanceSummary.present, color: 'text-green-600' },
             { label: t('empAbsent'), value: emp.attendanceSummary.absent, color: 'text-red-500' },
@@ -60,10 +55,7 @@ export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance
             { label: t('empLeave'), value: emp.attendanceSummary.onLeave, color: 'text-blue-500' },
             { label: t('empRate'), value: `${emp.attendanceSummary.rate}%`, color: 'text-primary' },
           ].map(s => (
-            <div key={s.label} className="px-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-700">
-              <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">{s.label}</div>
-            </div>
+            <HrStat key={s.label} label={s.label} value={s.value} valueClassName={s.color} />
           ))}
         </div>
 
@@ -73,7 +65,7 @@ export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance
               <button
                 key={date}
                 type="button"
-                title={`${new Date(date).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}: ${att ? attLabels[att.status as AttendanceStatus] : t('empNoRecord')}`}
+                title={`${fmt.date(date, { weekday: 'short', day: 'numeric', month: 'short' })}: ${att ? attLabels[att.status as AttendanceStatus] : t('empNoRecord')}`}
                 onClick={() => setSelectedDay(prev => prev?.date === date ? null : { date, att })}
                 className={`w-4 h-4 rounded-sm transition-transform hover:scale-125 hover:ring-2 hover:ring-offset-1 hover:ring-primary/60 ${att ? ATTENDANCE_COLORS[att.status as AttendanceStatus] : 'bg-slate-200 dark:bg-slate-700'} ${selectedDay?.date === date ? 'ring-2 ring-offset-1 ring-primary scale-125' : ''}`}
               />
@@ -97,7 +89,7 @@ export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance
                 <div className="flex items-center gap-2">
                   <Calendar size={14} className="text-slate-400 shrink-0" />
                   <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                    {new Date(selectedDay.date).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    {fmt.date(selectedDay.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                   </span>
                 </div>
                 <button
@@ -197,7 +189,7 @@ export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance
               <div key={f.label}>
                 <dt className="text-xs text-slate-500 dark:text-slate-400">{f.label}</dt>
                 <dd className={`text-sm font-medium mt-0.5 flex items-center gap-2 ${cls}`}>
-                  {new Date(f.value as string).toLocaleDateString()}
+                  {fmt.date(f.value as string)}
                   {st === 'expired' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">{t('empExpired') ?? 'Expired'}</span>}
                   {st === 'soon' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">{n}{t('empDaysLeftSuffix') ?? 'd left'}</span>}
                 </dd>
@@ -237,7 +229,7 @@ export default function OverviewTab({ emp, calendar, onLogDate, onSetPerformance
           )}
         </div>
 
-        {can('view_finance') && emp.payrollRecords.length > 0 && (
+        {hr.canSeePayrollLines && emp.payrollRecords.length > 0 && (
           <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
             <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{t('empLatestPayroll')}</h4>
             <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3">

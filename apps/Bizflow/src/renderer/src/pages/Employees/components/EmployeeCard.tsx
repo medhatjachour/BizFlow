@@ -2,12 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Edit2, Trash2, LogIn, LogOut, ChevronRight, Mail, Phone, Briefcase, Star, CheckCircle2 } from 'lucide-react'
 import type { Employee } from '../types'
 import { useLanguage } from '../../../contexts/LanguageContext'
-
-const STATUS_COLORS: Record<string, string> = {
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  'on-leave': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  terminated: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-}
+import { employeeStatusLabel, useHrFormat } from '../ui/hrFormat'
+import { HrStatusBadge } from '../ui/primitives'
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -34,15 +30,14 @@ interface Props {
 export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheckOut, checkingIn, selectMode, selected, onToggleSelect }: Props) {
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const fmt = useHrFormat()
 
-  const statusLabel: Record<string, string> = {
-    active: t('empStatusActive'),
-    'on-leave': t('empStatusOnLeave'),
-    terminated: t('empStatusTerminated'),
-  }
+  const statusLabel = (status: string) => employeeStatusLabel(status, t)
 
   const att = emp.todayAttendance
-  const fmtTime = (v?: string | null) => (v ? new Date(v).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '')
+  // Kept as a local wrapper: this returned '' for a missing time and callers rely
+  // on that (the "in–out" range collapses), whereas the shared formatter returns '—'.
+  const fmtTime = (v?: string | null) => (v ? fmt.time(v) : '')
   const checkedIn = !!att?.checkIn
   const checkedOut = !!att?.checkOut
   const busy = checkingIn === emp.id
@@ -73,9 +68,7 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
                 title={selectMode ? undefined : (t('empViewProfile') ?? 'View Profile')}
                 className={`font-semibold text-slate-900 dark:text-white truncate ${selectMode ? '' : 'cursor-pointer hover:text-primary transition-colors'}`}
               >{emp.name}</h3>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_COLORS[emp.status] || ''}`}>
-                {statusLabel[emp.status] ?? emp.status}
-              </span>
+              <HrStatusBadge status={emp.status} label={statusLabel(emp.status)} />
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">{emp.role}{emp.department ? ` · ${emp.department}` : ''}</p>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -107,7 +100,7 @@ export default function EmployeeCard({ emp, onEdit, onDelete, onCheckIn, onCheck
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Briefcase size={12} className="shrink-0" />
             <span className="capitalize">{emp.salaryType}</span>
-            <span className="ml-auto font-medium text-slate-600 dark:text-slate-300">{t('empHired') ?? 'Hired'} {new Date(emp.hireDate).toLocaleDateString()}</span>
+            <span className="ml-auto font-medium text-slate-600 dark:text-slate-300">{t('empHired') ?? 'Hired'} {fmt.date(emp.hireDate)}</span>
           </div>
         </div>
       </div>

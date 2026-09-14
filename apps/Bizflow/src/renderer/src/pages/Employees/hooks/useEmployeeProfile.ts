@@ -3,15 +3,21 @@ import { useNavigate } from 'react-router-dom'
 import { ipc } from '../../../utils/ipc'
 import { useToast } from '../../../contexts/ToastContext'
 import { useAuth } from '../../../contexts/AuthContext'
+import { useLanguage } from '../../../contexts/LanguageContext'
 import logger from '../../../../../shared/utils/logger'
-import type { EmployeeProfile, EmployeeAttendance, AttendanceStatus } from '../types'
+import type { EmployeeProfile, EmployeeAttendance, AttendanceStatus, EmployeeDocument } from '../types'
+import { hrErrorLabel } from '../ui/hrFormat'
+import { calendarDay, localDayOffset } from '../shiftTimes'
 
-export type ProfileTab = 'overview' | 'attendance' | 'shifts' | 'overtime' | 'leave' | 'payroll' | 'activity' | 'documents'
+export type ProfileTab = 'overview' | 'attendance' | 'shifts' | 'overtime' | 'leave' | 'lifecycle' | 'payroll' | 'activity' | 'documents'
+
+const emptyDocForm = { title: '', type: 'contract', reference: '', issuedAt: '', expiresAt: '' }
 
 export function useEmployeeProfile(id: string | undefined) {
   const navigate = useNavigate()
   const toast = useToast()
   const { user } = useAuth()
+  const { t } = useLanguage()
   const actor = user?.username ?? user?.id ?? undefined
 
   const [emp, setEmp] = useState<EmployeeProfile | null>(null)
@@ -21,7 +27,7 @@ export function useEmployeeProfile(id: string | undefined) {
   // ── Attendance modal ─────────────────────────────────────────────────────
   const [showAttModal, setShowAttModal] = useState(false)
   const [attForm, setAttForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: localDayOffset(0),
     status: 'present' as AttendanceStatus,
     checkIn: '', checkOut: '', notes: ''
   })
@@ -45,7 +51,7 @@ export function useEmployeeProfile(id: string | undefined) {
   // ── End contract modal ────────────────────────────────────────────────────
   const [showTerminateModal, setShowTerminateModal] = useState(false)
   const [terminateForm, setTerminateForm] = useState({
-    terminationDate: new Date().toISOString().split('T')[0],
+    terminationDate: localDayOffset(0),
     terminationNote: '',
   })
   const [savingTerminate, setSavingTerminate] = useState(false)
@@ -60,7 +66,7 @@ export function useEmployeeProfile(id: string | undefined) {
   // ── Shift modal ──────────────────────────────────────────────────────────
   const [showShiftModal, setShowShiftModal] = useState(false)
   const [shiftForm, setShiftForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: localDayOffset(0),
     shiftType: 'morning',
     startTime: '08:00',
     endTime: '16:00',
@@ -72,7 +78,7 @@ export function useEmployeeProfile(id: string | undefined) {
   // ── Overtime modal ───────────────────────────────────────────────────────
   const [showOTModal, setShowOTModal] = useState(false)
   const [otForm, setOtForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: localDayOffset(0),
     hours: 1,
     reason: '',
     multiplier: 1.5
@@ -81,15 +87,17 @@ export function useEmployeeProfile(id: string | undefined) {
 
   // ── Document modal ───────────────────────────────────────────────────────
   const [showDocModal, setShowDocModal] = useState(false)
-  const [docForm, setDocForm] = useState({ title: '', type: 'contract' })
+  const [docForm, setDocForm] = useState(emptyDocForm)
+  /** null = attaching a new file, an id = editing the details of an existing one. */
+  const [editingDocId, setEditingDocId] = useState<string | null>(null)
   const [savingDoc, setSavingDoc] = useState(false)
 
   // ── Leave modal ──────────────────────────────────────────────────────────
   const [showLeaveModal, setShowLeaveModal] = useState(false)
   const [leaveForm, setLeaveForm] = useState({
     type: 'annual' as 'annual' | 'sick' | 'unpaid' | 'other',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+    startDate: localDayOffset(0),
+    endDate: localDayOffset(0),
     days: 1,
     reason: '',
   })
@@ -113,6 +121,17 @@ export function useEmployeeProfile(id: string | undefined) {
 
   useEffect(() => { load() }, [load])
 
+  /** A failed call the user must see: translated per action, raw detail to the log. */
+  const complain = (res: { code?: string; message?: string } | null | undefined, fallbackKey: string) => {
+    if (res?.message) logger.warn(`HR action failed (${fallbackKey}): ${res.message}`)
+    toast.error?.(hrErrorLabel(res, t, fallbackKey))
+  }
+
+  const failed = (err: unknown, fallbackKey: string) => {
+    logger.error('HR action threw:', err)
+    toast.error?.(err instanceof Error && err.message ? err.message : t(fallbackKey))
+  }
+
   // ── Attendance ────────────────────────────────────────────────────────────
   const saveAttendance = async () => {
     if (!emp) return
@@ -127,9 +146,9 @@ export function useEmployeeProfile(id: string | undefined) {
         notes: attForm.notes || null,
         performedBy: actor
       })
-      if (res?.success) { toast.success?.('Attendance saved'); setShowAttModal(false); load() }
-      else toast.error?.(res?.message || 'Failed to save attendance')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empAttSavedOk')); setShowAttModal(false); load() }
+      else complain(res, 'empAttSaveErr')
+    } catch (err) { failed(err, 'empAttSaveErr') }
     finally { setSavingAtt(false) }
   }
 
@@ -138,9 +157,10 @@ export function useEmployeeProfile(id: string | undefined) {
     setCheckingIn(true)
     try {
       const res = await ipc.employees.attendance.checkIn(emp.id)
-      if (res?.success) { toast.success?.('Checked in'); load() }
-      else toast.error?.(res?.message || 'Failed')
-    } finally { setCheckingIn(false) }
+      if (res?.success) { toast.success?.(t('empCheckedInOk')); load() }
+      else complain(res, 'empCheckInErr')
+    } catch (err) { failed(err, 'empCheckInErr') }
+    finally { setCheckingIn(false) }
   }
 
   const handleCheckOut = async () => {
@@ -148,9 +168,10 @@ export function useEmployeeProfile(id: string | undefined) {
     setCheckingOut(true)
     try {
       const res = await ipc.employees.attendance.checkOut(emp.id)
-      if (res?.success) { toast.success?.('Checked out'); load() }
-      else toast.error?.(res?.message || 'Failed')
-    } finally { setCheckingOut(false) }
+      if (res?.success) { toast.success?.(t('empCheckedOutOk')); load() }
+      else complain(res, 'empCheckOutErr')
+    } catch (err) { failed(err, 'empCheckOutErr') }
+    finally { setCheckingOut(false) }
   }
 
   // ── Payroll ───────────────────────────────────────────────────────────────
@@ -159,18 +180,18 @@ export function useEmployeeProfile(id: string | undefined) {
     setSavingPay(true)
     try {
       const res = await ipc.employees.payroll.upsert({ employeeId: emp.id, ...payForm, performedBy: actor })
-      if (res?.success) { toast.success?.('Payroll saved'); setShowPayModal(false); load() }
-      else toast.error?.(res?.message || 'Failed to save payroll')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empPayrollSavedOk')); setShowPayModal(false); load() }
+      else complain(res, 'empPayrollSaveErr')
+    } catch (err) { failed(err, 'empPayrollSaveErr') }
     finally { setSavingPay(false) }
   }
 
   const markPayrollPaid = async (recordId: string) => {
     try {
       const res = await ipc.employees.payroll.markPaid(recordId)
-      if (res?.success || res === undefined) { toast.success?.('Salary marked as paid'); load() }
-      else toast.error?.(res?.message || 'Failed to mark as paid')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success || res === undefined) { toast.success?.(t('empPayrollPaidOk')); load() }
+      else complain(res, 'empPayrollPaidErr')
+    } catch (err) { failed(err, 'empPayrollPaidErr') }
   }
 
   // ── Activity / note ───────────────────────────────────────────────────────
@@ -181,9 +202,9 @@ export function useEmployeeProfile(id: string | undefined) {
       const res = await ipc.employees.activity.add({
         employeeId: emp.id, action: 'note_added', details: noteText.trim(), performedBy: actor
       })
-      if (res?.success) { toast.success?.('Note added'); setShowNoteModal(false); setNoteText(''); load() }
-      else toast.error?.(res?.message || 'Failed')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empNoteAddedOk')); setShowNoteModal(false); setNoteText(''); load() }
+      else complain(res, 'empNoteAddErr')
+    } catch (err) { failed(err, 'empNoteAddErr') }
     finally { setSavingNote(false) }
   }
 
@@ -201,22 +222,22 @@ export function useEmployeeProfile(id: string | undefined) {
         breakMins: Number(shiftForm.breakMins),
         notes: shiftForm.notes || null
       })
-      if (res?.success) { toast.success?.('Shift added'); setShowShiftModal(false); load() }
-      else toast.error?.(res?.message || 'Failed to add shift')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empShiftSavedOk')); setShowShiftModal(false); load() }
+      else complain(res, 'empShiftSaveErr')
+    } catch (err) { failed(err, 'empShiftSaveErr') }
     finally { setSavingShift(false) }
   }
 
   const deleteShift = (shiftId: string) => {
     setConfirm({
-      message: 'Delete this shift? This action cannot be undone.',
+      message: t('empShiftConfirmDelete'),
       onConfirm: async () => {
         setConfirm(null)
         try {
           const res = await ipc.employees.shifts.delete(shiftId)
-          if (res?.success) { toast.success?.('Shift deleted'); load() }
-          else toast.error?.(res?.message || 'Failed to delete shift')
-        } catch (err: any) { toast.error?.(err.message) }
+          if (res?.success) { toast.success?.(t('empShiftDeletedOk')); load() }
+          else complain(res, 'empShiftDeleteErr')
+        } catch (err) { failed(err, 'empShiftDeleteErr') }
       }
     })
   }
@@ -233,18 +254,32 @@ export function useEmployeeProfile(id: string | undefined) {
         reason: otForm.reason || null,
         multiplier: Number(otForm.multiplier)
       })
-      if (res?.success) { toast.success?.('Overtime logged'); setShowOTModal(false); load() }
-      else toast.error?.(res?.message || 'Failed to log overtime')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empOTLoggedOk')); setShowOTModal(false); load() }
+      else complain(res, 'empOTLogErr')
+    } catch (err) { failed(err, 'empOTLogErr') }
     finally { setSavingOT(false) }
   }
 
   const approveOvertime = async (overtimeId: string) => {
     try {
       const res = await ipc.employees.overtime.approve(overtimeId, actor)
-      if (res?.success) { toast.success?.('Overtime approved'); load() }
-      else toast.error?.(res?.message || 'Failed to approve')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empOTApprovedOk')); load() }
+      else complain(res, 'empOTApproveErr')
+    } catch (err) { failed(err, 'empOTApproveErr') }
+  }
+
+  /**
+   * Withdraw an approval taken by mistake.
+   *
+   * Before this, the only way to undo an approval was to delete the record —
+   * which also threw away the fact that the hours had been logged at all.
+   */
+  const revokeOvertime = async (overtimeId: string) => {
+    try {
+      const res = await ipc.employees.overtime.approve(overtimeId, actor, false)
+      if (res?.success) { toast.success?.(t('empOTRevokedOk')); load() }
+      else complain(res, 'empOTRevokeErr')
+    } catch (err) { failed(err, 'empOTRevokeErr') }
   }
 
   const approveAllOvertime = async () => {
@@ -252,58 +287,104 @@ export function useEmployeeProfile(id: string | undefined) {
     const pending = emp.overtimeRecords.filter(o => !o.approved)
     if (!pending.length) return
     for (const o of pending) { try { await ipc.employees.overtime.approve(o.id, actor) } catch { /* skip */ } }
-    toast.success?.(`Approved ${pending.length} overtime record${pending.length !== 1 ? 's' : ''}`)
+    toast.success?.(t('empOTBulkApproved', { count: pending.length }))
     load()
   }
 
   const deleteOvertime = (overtimeId: string) => {
     setConfirm({
-      message: 'Delete this overtime record? This action cannot be undone.',
+      message: t('empOTConfirmDelete'),
       onConfirm: async () => {
         setConfirm(null)
         try {
           const res = await ipc.employees.overtime.delete(overtimeId)
-          if (res?.success) { toast.success?.('Overtime deleted'); load() }
-          else toast.error?.(res?.message || 'Failed to delete')
-        } catch (err: any) { toast.error?.(err.message) }
+          if (res?.success) { toast.success?.(t('empOTDeletedOk')); load() }
+          else complain(res, 'empOTDeleteErr')
+        } catch (err) { failed(err, 'empOTDeleteErr') }
       }
     })
   }
 
   // ── Documents ─────────────────────────────────────────────────────────────
+  const openDocForAdd = () => {
+    setEditingDocId(null)
+    setDocForm(emptyDocForm)
+    setShowDocModal(true)
+  }
+
+  const openDocForEdit = (doc: EmployeeDocument) => {
+    setEditingDocId(doc.id)
+    setDocForm({
+      title: doc.title ?? '',
+      type: doc.type ?? 'other',
+      reference: doc.reference ?? '',
+      issuedAt: doc.issuedAt ? calendarDay(doc.issuedAt) : '',
+      expiresAt: doc.expiresAt ? calendarDay(doc.expiresAt) : '',
+    })
+    setShowDocModal(true)
+  }
+
   const saveDocument = async () => {
     if (!emp || savingDoc) return
     setSavingDoc(true)
+    const renewal = {
+      reference: docForm.reference.trim() || null,
+      issuedAt: docForm.issuedAt || null,
+      expiresAt: docForm.expiresAt || null,
+    }
     try {
-      const res = await ipc.employees.documents.add({
-        employeeId: emp.id,
-        title: docForm.title.trim() || undefined,
-        type: docForm.type,
-        performedBy: actor,
-      })
-      if (res?.success) { toast.success?.('Document attached'); setShowDocModal(false); setDocForm({ title: '', type: 'contract' }); load() }
-      else if (!res?.canceled) toast.error?.(res?.message || 'Failed to attach document')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (editingDocId) {
+        // The attached file is never replaced in place — only its details change.
+        const res = await ipc.employees.documents.update({
+          id: editingDocId,
+          title: docForm.title.trim() || undefined,
+          type: docForm.type,
+          ...renewal,
+          performedBy: actor,
+        })
+        if (res?.success) {
+          toast.success?.(t('empDocMetadataSavedOk'))
+          setShowDocModal(false)
+          setEditingDocId(null)
+          setDocForm(emptyDocForm)
+          load()
+        } else complain(res, 'empDocSaveMetadataErr')
+      } else {
+        const res = await ipc.employees.documents.add({
+          employeeId: emp.id,
+          title: docForm.title.trim() || undefined,
+          type: docForm.type,
+          ...renewal,
+          performedBy: actor,
+        })
+        if (res?.success) {
+          toast.success?.(t('empDocAttachedOk'))
+          setShowDocModal(false)
+          setDocForm(emptyDocForm)
+          load()
+        } else if (!res?.canceled) complain(res, 'empDocSaveErr')
+      }
+    } catch (err) { failed(err, 'empDocSaveErr') }
     finally { setSavingDoc(false) }
   }
 
   const openDocument = async (documentId: string) => {
     try {
       const res = await ipc.employees.documents.open(documentId)
-      if (res && !res.success) toast.error?.(res.message || 'Could not open document')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res && !res.success) complain(res, 'empDocOpenErr')
+    } catch (err) { failed(err, 'empDocOpenErr') }
   }
 
   const deleteDocument = (documentId: string) => {
     setConfirm({
-      message: 'Delete this document? The file will be removed from disk.',
+      message: t('empDocConfirmDelete'),
       onConfirm: async () => {
         setConfirm(null)
         try {
           const res = await ipc.employees.documents.delete(documentId)
-          if (res?.success) { toast.success?.('Document deleted'); load() }
-          else toast.error?.(res?.message || 'Failed to delete document')
-        } catch (err: any) { toast.error?.(err.message) }
+          if (res?.success) { toast.success?.(t('empDocDeletedOk')); load() }
+          else complain(res, 'empDocDeleteErr')
+        } catch (err) { failed(err, 'empDocDeleteErr') }
       }
     })
   }
@@ -322,18 +403,20 @@ export function useEmployeeProfile(id: string | undefined) {
         reason: leaveForm.reason || null,
         performedBy: actor,
       })
-      if (res?.success) { toast.success?.('Leave requested'); setShowLeaveModal(false); load() }
-      else toast.error?.(res?.message || 'Failed to request leave')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empLeaveRequestedOk')); setShowLeaveModal(false); load() }
+      else complain(res, 'empLeaveRequestErr')
+    } catch (err) { failed(err, 'empLeaveRequestErr') }
     finally { setSavingLeave(false) }
   }
 
   const setLeaveStatus = async (leaveId: string, status: 'approved' | 'rejected') => {
     try {
       const res = await ipc.employees.leave.setStatus(leaveId, status, actor)
-      if (res?.success) { toast.success?.(status === 'approved' ? 'Leave approved' : 'Leave rejected'); load() }
-      else toast.error?.(res?.message || 'Failed to update leave')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) {
+        toast.success?.(t(status === 'approved' ? 'empLeaveApprovedOk' : 'empLeaveRejectedOk'))
+        load()
+      } else complain(res, 'empLeaveUpdateErr')
+    } catch (err) { failed(err, 'empLeaveUpdateErr') }
   }
 
   const approveAllLeave = async () => {
@@ -341,20 +424,20 @@ export function useEmployeeProfile(id: string | undefined) {
     const pending = emp.leaveRecords.filter(l => l.status === 'pending')
     if (!pending.length) return
     for (const l of pending) { try { await ipc.employees.leave.setStatus(l.id, 'approved', actor) } catch { /* skip */ } }
-    toast.success?.(`Approved ${pending.length} leave request${pending.length !== 1 ? 's' : ''}`)
+    toast.success?.(t('empLeaveBulkApproved', { count: pending.length }))
     load()
   }
 
   const deleteLeave = (leaveId: string) => {
     setConfirm({
-      message: 'Delete this leave record? This action cannot be undone.',
+      message: t('empLeaveConfirmDelete'),
       onConfirm: async () => {
         setConfirm(null)
         try {
           const res = await ipc.employees.leave.delete(leaveId)
-          if (res?.success) { toast.success?.('Leave deleted'); load() }
-          else toast.error?.(res?.message || 'Failed to delete leave')
-        } catch (err: any) { toast.error?.(err.message) }
+          if (res?.success) { toast.success?.(t('empLeaveDeletedOk')); load() }
+          else complain(res, 'empLeaveDeleteErr')
+        } catch (err) { failed(err, 'empLeaveDeleteErr') }
       }
     })
   }
@@ -371,13 +454,13 @@ export function useEmployeeProfile(id: string | undefined) {
         performedBy: actor,
       })
       if (res?.success) {
-        toast.success?.('Contract ended — employee marked as terminated')
+        toast.success?.(t('empContractEndedOk'))
         setShowTerminateModal(false)
         load()
       } else {
-        toast.error?.(res?.message || 'Failed to end contract')
+        complain(res, 'empContractEndErr')
       }
-    } catch (err: any) { toast.error?.(err.message) }
+    } catch (err) { failed(err, 'empContractEndErr') }
     finally { setSavingTerminate(false) }
   }
 
@@ -387,9 +470,9 @@ export function useEmployeeProfile(id: string | undefined) {
     setSavingPerf(true)
     try {
       const res = await ipc.employees.update(emp.id, { performanceScore: score > 0 ? score : null, performedBy: actor })
-      if (res?.success) { toast.success?.('Performance updated'); load() }
-      else toast.error?.(res?.message || 'Failed to update performance')
-    } catch (err: any) { toast.error?.(err.message) }
+      if (res?.success) { toast.success?.(t('empPerfUpdatedOk')); load() }
+      else complain(res, 'empPerfUpdateErr')
+    } catch (err) { failed(err, 'empPerfUpdateErr') }
     finally { setSavingPerf(false) }
   }
 
@@ -405,21 +488,18 @@ export function useEmployeeProfile(id: string | undefined) {
         performedBy: actor,
       })
       if (res?.success) {
-        toast.success?.('Employee reactivated')
+        toast.success?.(t('empReactivatedOk'))
         load()
       } else {
-        toast.error?.(res?.message || 'Failed to reactivate')
+        complain(res, 'empReactivateErr')
       }
-    } catch (err: any) { toast.error?.(err.message) }
+    } catch (err) { failed(err, 'empReactivateErr') }
     finally { setReactivating(false) }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const toDateKey = (d: string | Date) =>
-    (d instanceof Date ? d : new Date(d)).toISOString().split('T')[0]
-
-  const todayKey = new Date().toISOString().split('T')[0]
-  const todayAtt = emp?.attendance.find(a => toDateKey(a.date) === todayKey) ?? null
+  const todayKey = localDayOffset(0)
+  const todayAtt = emp?.attendance.find(a => calendarDay(a.date) === todayKey) ?? null
 
   const openAttendanceFor = (date: string, existing?: EmployeeAttendance | null) => {
     setAttForm({
@@ -432,15 +512,19 @@ export function useEmployeeProfile(id: string | undefined) {
     setShowAttModal(true)
   }
 
+  /**
+   * The last 90 days, newest last, each paired with the attendance recorded for it.
+   *
+   * Keys are local calendar days on both sides of the lookup, so a record logged on
+   * the 5th lands on the 5th in every timezone.
+   */
   const buildCalendar = () => {
     if (!emp) return []
     const map: Record<string, EmployeeAttendance> = {}
-    for (const a of emp.attendance) map[toDateKey(a.date)] = a
+    for (const a of emp.attendance) map[calendarDay(a.date)] = a
     const days: { date: string; att: EmployeeAttendance | null }[] = []
-    const today = new Date(); today.setHours(0, 0, 0, 0)
     for (let i = 89; i >= 0; i--) {
-      const d = new Date(today); d.setDate(d.getDate() - i)
-      const key = d.toISOString().split('T')[0]
+      const key = localDayOffset(-i)
       days.push({ date: key, att: map[key] ?? null })
     }
     return days
@@ -460,9 +544,10 @@ export function useEmployeeProfile(id: string | undefined) {
     // shifts
     showShiftModal, setShowShiftModal, shiftForm, setShiftForm, savingShift, saveShift, deleteShift,
     // overtime
-    showOTModal, setShowOTModal, otForm, setOtForm, savingOT, saveOvertime, approveOvertime, deleteOvertime, approveAllOvertime,
+    showOTModal, setShowOTModal, otForm, setOtForm, savingOT, saveOvertime, approveOvertime, revokeOvertime, deleteOvertime, approveAllOvertime,
     // documents
-    showDocModal, setShowDocModal, docForm, setDocForm, savingDoc, saveDocument, openDocument, deleteDocument,
+    showDocModal, setShowDocModal, docForm, setDocForm, editingDocId, savingDoc, saveDocument,
+    openDocForAdd, openDocForEdit, openDocument, deleteDocument,
     // leave
     showLeaveModal, setShowLeaveModal, leaveForm, setLeaveForm, savingLeave, saveLeave, setLeaveStatus, deleteLeave, approveAllLeave,
     // confirm dialog

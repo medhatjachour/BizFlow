@@ -3,7 +3,14 @@ import { X, ChevronDown, ChevronUp } from 'lucide-react'
 import type { EmployeeFormData } from '../hooks/useEmployees'
 import { usePluginRoles, type RoleGroup } from '../hooks/usePluginRoles'
 import { useLanguage } from '../../../contexts/LanguageContext'
-import { useAuth } from '../../../contexts/AuthContext'
+import { useHrPermissions } from '../hooks/useHrPermissions'
+import {
+  HrField,
+  HrFormSection,
+  HR_INPUT_CLASS as INP,
+  HR_SELECT_CLASS as SEL,
+  HR_TEXTAREA_CLASS as TXT,
+} from '../ui/primitives'
 
 // ─── Tailwind colour maps (full class names required — no dynamic concat) ─────
 
@@ -32,38 +39,26 @@ const HEADER_COLOR: Record<string, string> = {
   teal:   'text-teal-500 dark:text-teal-400',
 }
 
-const INP = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors placeholder:text-slate-400'
-const SEL = 'w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary cursor-pointer'
-
-function Field({ label, required, half, children }: {
-  label: string; required?: boolean; half?: boolean; children: React.ReactNode
+function Field({ label, required, half, hint, children }: {
+  label: string; required?: boolean; half?: boolean; hint?: string; children: React.ReactNode
 }) {
   return (
-    <div className={half ? '' : 'sm:col-span-2'}>
-      <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">
-        {label}{required && <span className="text-red-400 ml-0.5">*</span>}
-      </label>
+    <HrField label={label} required={required} hint={hint} className={half ? '' : 'sm:col-span-2'}>
       {children}
-    </div>
+    </HrField>
   )
 }
 
 function SectionHeader({ title }: { title: string }) {
-  return (
-    <div className="sm:col-span-2 flex items-center gap-3 pt-1">
-      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap">
-        {title}
-      </span>
-      <div className="flex-1 h-px bg-slate-100 dark:bg-slate-700/80" />
-    </div>
-  )
+  return <HrFormSection title={title} />
 }
 
-function RolePicker({ value, onChange, onDeptSuggest, groups }: {
+function RolePicker({ value, onChange, onDeptSuggest, groups, placeholder }: {
   value: string
   onChange: (role: string) => void
   onDeptSuggest: (dept: string) => void
   groups: RoleGroup[]
+  placeholder: string
 }) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -90,7 +85,7 @@ function RolePicker({ value, onChange, onDeptSuggest, groups }: {
           onChange={e => { onChange(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 180)}
-          placeholder="Type a role or pick from suggestions…"
+          placeholder={placeholder}
           className={INP + ' pr-8'}
           autoComplete="off"
         />
@@ -178,8 +173,10 @@ interface Props {
 export default function EmployeeForm({ formData, onChange, managerOptions = [], excludeId }: Props) {
   const { t } = useLanguage()
   const { groups, allDepartments } = usePluginRoles()
-  const { can } = useAuth()
-  const canManageSalary = can('manage_staff')
+  // Uses the same capability the rest of the module reads salary with, so the
+  // field can never be editable but hidden (see `useHrPermissions`).
+  const hr = useHrPermissions()
+  const canManageSalary = hr.canManageSalary
   const [showMore, setShowMore] = useState(false)
 
   function handleRoleChange(role: string) {
@@ -194,13 +191,13 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
 
       {/* Identity */}
-      <SectionHeader title="Identity" />
+      <SectionHeader title={t('empFormSectionIdentity')} />
 
-      <Field label={`${t('fullName')} *`} half>
+      <Field label={t('fullName')} required half>
         <input
           value={formData.name}
           onChange={e => onChange({ name: e.target.value })}
-          placeholder="e.g. Ahmed Hassan"
+          placeholder={t('empFormNamePlaceholder')}
           className={INP}
         />
       </Field>
@@ -216,17 +213,18 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
         </select>
       </Field>
 
-      <Field label={`${t('role')} *`}>
+      <Field label={t('role')} required>
         <RolePicker
           value={formData.role}
           onChange={handleRoleChange}
           onDeptSuggest={handleDeptSuggest}
           groups={groups}
+          placeholder={t('empFormRolePlaceholder')}
         />
       </Field>
 
       {/* Employment */}
-      <SectionHeader title="Employment" />
+      <SectionHeader title={t('empFormSectionEmployment')} />
 
       <Field label={t('empEmploymentType')} half>
         <select
@@ -261,13 +259,13 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
         />
       </Field>
 
-      <Field label={t('empReportsTo') ?? 'Reports to (manager)'} half>
+      <Field label={t('empReportsTo')} half>
         <select
           value={formData.managerId ?? ''}
           onChange={e => onChange({ managerId: e.target.value })}
           className={SEL}
         >
-          <option value="">{t('empNoManager') ?? '— No manager —'}</option>
+          <option value="">{t('empNoManager')}</option>
           {managerOptions
             .filter(m => m.id !== excludeId)
             .map(m => <option key={m.id} value={m.id}>{m.name}{m.role ? ` · ${m.role}` : ''}</option>)}
@@ -276,7 +274,7 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
 
       {/* Compensation — salary is sensitive; only staff managers can view/edit it */}
       {canManageSalary && (<>
-        <SectionHeader title="Compensation" />
+        <SectionHeader title={t('empFormSectionCompensation')} />
 
         <Field label={t('salary')} half>
           <input
@@ -285,19 +283,19 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
             step={0.01}
             value={formData.salary}
             onChange={e => onChange({ salary: Number(e.target.value) })}
-            placeholder={formData.salaryType === 'hourly' ? 'Rate per hour' : '0.00'}
+            placeholder={formData.salaryType === 'hourly' ? t('empFormRatePerHour') : '0.00'}
             className={INP}
           />
         </Field>
 
-        <Field label={t('salaryMonthly').replace(' (monthly)', '')} half>
+        <Field label={t('empSalaryBasis')} half>
           <select
             value={formData.salaryType}
             onChange={e => onChange({ salaryType: e.target.value })}
             className={SEL}
           >
             <option value="monthly">{t('empMonthly')}</option>
-            <option value="weekly">Weekly</option>
+            <option value="weekly">{t('empWeekly')}</option>
             <option value="daily">{t('empDaily')}</option>
             <option value="hourly">{t('empHourly')}</option>
           </select>
@@ -305,7 +303,7 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
       </>)}
 
       {/* Performance & Leave */}
-      <SectionHeader title={t('empPerfLeaveSection') ?? 'Performance & Leave'} />
+      <SectionHeader title={t('empPerfLeaveSection')} />
 
       <Field label={t('empPerformanceScore')} half>
         <input
@@ -314,12 +312,12 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
           max={100}
           value={formData.performanceScore || ''}
           onChange={e => onChange({ performanceScore: Number(e.target.value) })}
-          placeholder="0 – 100"
+          placeholder={t('empFormScorePlaceholder')}
           className={INP}
         />
       </Field>
 
-      <Field label={t('empAnnualLeaveDays') ?? 'Annual leave days'} half>
+      <Field label={t('empAnnualLeaveDays')} half hint={t('empFormLeaveDaysHint')}>
         <input
           type="number"
           min={0}
@@ -332,13 +330,13 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
       </Field>
 
       {/* Contact */}
-      <SectionHeader title="Contact" />
+      <SectionHeader title={t('empFormSectionContact')} />
 
-      <Field label={`${t('phone')} *`} half>
+      <Field label={t('phone')} required half>
         <input
           value={formData.phone}
           onChange={e => onChange({ phone: e.target.value })}
-          placeholder="+1 555 000 0000"
+          placeholder={t('empFormPhonePlaceholder')}
           className={INP}
         />
       </Field>
@@ -348,7 +346,7 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
           type="email"
           value={formData.email}
           onChange={e => onChange({ email: e.target.value })}
-          placeholder="employee@company.com"
+          placeholder={t('empFormEmailPlaceholder')}
           className={INP}
         />
       </Field>
@@ -362,14 +360,14 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
         >
           {showMore ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           <span className="uppercase tracking-widest">
-            {showMore ? 'Hide additional fields' : 'More details (address, ID, emergency contact, notes)'}
+            {showMore ? t('empFormHideDetails') : t('empFormMoreDetails')}
           </span>
         </button>
       </div>
 
       {showMore && (
         <>
-          <SectionHeader title="Location & ID" />
+          <SectionHeader title={t('empFormSectionLocationId')} />
 
           <Field label={t('empAddress')} half>
             <input
@@ -389,7 +387,7 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
             />
           </Field>
 
-          <SectionHeader title="Emergency Contact" />
+          <SectionHeader title={t('empFormSectionEmergency')} />
 
           <Field label={t('empEmergencyContactName')} half>
             <input
@@ -404,52 +402,52 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
             <input
               value={formData.emergencyPhone}
               onChange={e => onChange({ emergencyPhone: e.target.value })}
-              placeholder="+1 555 000 0000"
+              placeholder={t('empFormEmergencyPhonePlaceholder')}
               className={INP}
             />
           </Field>
 
-          <SectionHeader title="Payroll & compliance" />
+          <SectionHeader title={t('empFormSectionPayroll')} />
 
-          <Field label={t('empTaxId') ?? 'Tax ID'} half>
+          <Field label={t('empTaxId')} half>
             <input
               value={formData.taxId}
               onChange={e => onChange({ taxId: e.target.value })}
-              placeholder="TIN / tax file no."
+              placeholder={t('empFormTaxIdPlaceholder')}
               className={INP}
             />
           </Field>
 
-          <Field label={t('empSocialInsurance') ?? 'Social insurance no.'} half>
+          <Field label={t('empSocialInsurance')} half>
             <input
               value={formData.socialInsuranceNo}
               onChange={e => onChange({ socialInsuranceNo: e.target.value })}
-              placeholder="SSN / social insurance"
+              placeholder={t('empFormSocialInsurancePlaceholder')}
               className={INP}
             />
           </Field>
 
-          <Field label={t('empBankName') ?? 'Bank name'} half>
+          <Field label={t('empBankName')} half>
             <input
               value={formData.bankName}
               onChange={e => onChange({ bankName: e.target.value })}
-              placeholder="Bank"
+              placeholder={t('empFormBankPlaceholder')}
               className={INP}
             />
           </Field>
 
-          <Field label={t('empIban') ?? 'Account / IBAN'} half>
+          <Field label={t('empIban')} half>
             <input
               value={formData.iban}
               onChange={e => onChange({ iban: e.target.value })}
-              placeholder="Account number / IBAN"
+              placeholder={t('empFormIbanPlaceholder')}
               className={INP}
             />
           </Field>
 
-          <SectionHeader title="Contract & expiry" />
+          <SectionHeader title={t('empFormSectionContract')} />
 
-          <Field label={t('empContractEnd') ?? 'Contract end date'} half>
+          <Field label={t('empContractEnd')} half>
             <input
               type="date"
               value={formData.contractEndDate}
@@ -458,7 +456,7 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
             />
           </Field>
 
-          <Field label={t('empIdExpiry') ?? 'ID / visa expiry'} half>
+          <Field label={t('empIdExpiry')} half>
             <input
               type="date"
               value={formData.idExpiryDate}
@@ -467,7 +465,7 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
             />
           </Field>
 
-          <SectionHeader title="Notes" />
+          <SectionHeader title={t('empFormSectionNotes')} />
 
           <Field label={t('notes')}>
             <textarea
@@ -475,7 +473,7 @@ export default function EmployeeForm({ formData, onChange, managerOptions = [], 
               onChange={e => onChange({ notes: e.target.value })}
               rows={3}
               placeholder={t('empNotesPlaceholder')}
-              className={INP + ' resize-none'}
+              className={TXT}
             />
           </Field>
         </>

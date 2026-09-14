@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, UserX } from 'lucide-react'
 import Modal from '../../components/ui/Modal'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import EmployeeHero from './components/EmployeeHero'
@@ -10,20 +10,34 @@ import ShiftsTab from './components/ShiftsTab'
 import OvertimeTab from './components/OvertimeTab'
 import LeaveTab from './components/LeaveTab'
 import PayrollTab from './components/PayrollTab'
+import LifecycleTab from './components/LifecycleTab'
 import ActivityTab from './components/ActivityTab'
 import DocumentsTab from './components/DocumentsTab'
 import { useEmployeeProfile } from './hooks/useEmployeeProfile'
+import { useHrPermissions } from './hooks/useHrPermissions'
+import { hourlyRateFor, overtimePayFor } from '../../../../shared/hrRate'
 import { expiryState, daysUntil } from './expiry'
+import { localDayOffset, shiftDurationMinutes, calendarDay } from './shiftTimes'
+import { formatMinutes, useHrFormat } from './ui/hrFormat'
 import { useLanguage } from '../../contexts/LanguageContext'
-import { useAuth } from '../../contexts/AuthContext'
+import {
+  HrButton,
+  HrEmptyState,
+  HrField,
+  HrFormSection,
+  HrModalActions,
+  HR_INPUT_CLASS,
+  HR_SELECT_CLASS,
+  HR_TEXTAREA_CLASS,
+} from './ui/primitives'
 import type { AttendanceStatus } from './types'
 
 export default function EmployeeProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const { can } = useAuth()
-  const canFinance = can('view_finance')
+  const hr = useHrPermissions()
+  const fmt = useHrFormat()
   const s = useEmployeeProfile(id)
 
   if (s.loading) return (
@@ -31,7 +45,35 @@ export default function EmployeeProfilePage() {
       <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
   )
-  if (!s.emp) return null
+
+  // Used to be `return null`, which rendered an empty page with no explanation,
+  // no way back, and no clue whether the record was missing or still loading.
+  if (!s.emp) return (
+    <div className="p-6 mx-auto max-w-2xl">
+      <button
+        onClick={() => navigate('/employees')}
+        className="flex items-center gap-2 text-sm text-slate-500 hover:text-primary transition-colors mb-4"
+      >
+        <ArrowLeft size={16} /> {t('empBackToEmployees')}
+      </button>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <HrEmptyState
+          icon={UserX}
+          tone="danger"
+          title={t('empNotFound') ?? 'Employee not found'}
+          description={
+            t('empNotFoundHint') ??
+            'This record may have been deleted, or the link may be out of date. The employee list shows everyone currently on file.'
+          }
+          action={
+            <HrButton variant="primary" size="md" onClick={() => navigate('/employees')}>
+              {t('empBackToEmployees')}
+            </HrButton>
+          }
+        />
+      </div>
+    </div>
+  )
 
   const calendar = s.buildCalendar()
 
@@ -48,9 +90,13 @@ export default function EmployeeProfilePage() {
         checkingOut={s.checkingOut}
         onCheckIn={s.handleCheckIn}
         onCheckOut={s.handleCheckOut}
-        onLogAttendance={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], s.todayAtt)}
+        onLogAttendance={() => s.openAttendanceFor(localDayOffset(0), s.todayAtt)}
         onAddNote={() => s.setShowNoteModal(true)}
-        onEndContract={() => s.setShowTerminateModal(true)}
+        // Ending a contract has real consequences — a checklist, a last working
+        // day, a final settlement. Sending the user to the Lifecycle tab keeps
+        // that as ONE journey instead of a second, thinner modal that skipped
+        // all of it and disagreed with the serious path.
+        onEndContract={() => s.setTab('lifecycle')}
         onReactivate={s.reactivate}
       />
 
@@ -67,12 +113,12 @@ export default function EmployeeProfilePage() {
               ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
               : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400'
           }`}>
-            <span className="leading-none">⚠</span>
+            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
             <span>
               <strong>{x.label}</strong>{' '}
               {st === 'expired'
-                ? `${t('empExpiredOn') ?? 'expired on'} ${new Date(x.value as string).toLocaleDateString()}`
-                : `${t('empExpiresIn') ?? 'expires in'} ${n} ${t('empDays') ?? 'days'} (${new Date(x.value as string).toLocaleDateString()})`}
+                ? `${t('empExpiredOn') ?? 'expired on'} ${fmt.date(x.value)}`
+                : `${t('empExpiresIn') ?? 'expires in'} ${n} ${t('empDays') ?? 'days'} (${fmt.date(x.value)})`}
             </span>
           </div>
         )
@@ -131,11 +177,12 @@ export default function EmployeeProfilePage() {
 
       {/* Tabs panel */}
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-        <TabBar tab={s.tab === 'payroll' && !canFinance ? 'overview' : s.tab} onChange={s.setTab} hidden={canFinance ? [] : ['payroll']} counts={{
+        <TabBar tab={s.tab === 'payroll' && !hr.canSeePayrollLines ? 'overview' : s.tab} onChange={s.setTab} hidden={hr.canSeePayrollLines ? [] : ['payroll']} counts={{
           attendance: s.emp.attendance.length,
           shifts: s.emp.shifts.length,
           overtime: s.emp.overtimeRecords.length,
           leave: s.emp.leaveRecords.length,
+          lifecycle: (s.emp.checklistItems ?? []).filter(i => !i.completed).length,
           payroll: s.emp.payrollRecords.length,
           activity: s.emp.activityLogs.length,
           documents: s.emp.documents.length,
@@ -143,26 +190,33 @@ export default function EmployeeProfilePage() {
         <div className="p-6">
           {s.emp.status === 'terminated' && (
             <div className="mb-5 flex items-start gap-3 p-4 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
-              <span className="text-red-500 text-lg leading-none mt-0.5">⚠</span>
+              <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-                  Contract ended{s.emp.terminationDate ? ` on ${new Date(s.emp.terminationDate).toLocaleDateString()}` : ''}
+                  {t('empStatusTerminated')}{s.emp.terminationDate ? ` · ${fmt.date(s.emp.terminationDate)}` : ''}
                 </p>
                 {s.emp.terminationNote && (
                   <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-0.5">{s.emp.terminationNote}</p>
                 )}
-                <p className="text-xs text-red-500/70 dark:text-red-400/60 mt-1">All actions are locked. Use the Reactivate button to restore.</p>
+                <p className="text-xs text-red-500/70 dark:text-red-400/60 mt-1">
+                  {t('empTerminatedEditLocked')}
+                </p>
               </div>
             </div>
           )}
           {s.tab === 'overview'   && <OverviewTab emp={s.emp} calendar={calendar} onLogDate={(date, att) => s.openAttendanceFor(date, att)} onSetPerformance={s.savePerformance} savingPerf={s.savingPerf} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'attendance' && <AttendanceTab attendance={s.emp.attendance} onLog={() => s.openAttendanceFor(new Date().toISOString().split('T')[0], null)} onEdit={a => s.openAttendanceFor(new Date(a.date).toISOString().split('T')[0], a)} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'attendance' && <AttendanceTab attendance={s.emp.attendance} onLog={() => s.openAttendanceFor(localDayOffset(0), null)} onEdit={a => s.openAttendanceFor(calendarDay(a.date), a)} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'shifts'     && <ShiftsTab shifts={s.emp.shifts} onAdd={() => s.setShowShiftModal(true)} onDelete={s.deleteShift} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onApproveAll={s.approveAllOvertime} onDelete={s.deleteOvertime} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'overtime'   && <OvertimeTab overtimeRecords={s.emp.overtimeRecords} onAdd={() => s.setShowOTModal(true)} onApprove={s.approveOvertime} onRevoke={s.revokeOvertime} onApproveAll={s.approveAllOvertime} onDelete={s.deleteOvertime} disabled={s.emp.status === 'terminated'} />}
           {s.tab === 'leave'      && <LeaveTab leaveRecords={s.emp.leaveRecords} balance={s.emp.leaveBalance} onAdd={() => s.setShowLeaveModal(true)} onApprove={id => s.setLeaveStatus(id, 'approved')} onReject={id => s.setLeaveStatus(id, 'rejected')} onApproveAll={s.approveAllLeave} onDelete={s.deleteLeave} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'payroll'    && canFinance && <PayrollTab emp={s.emp} payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} onMarkPaid={s.markPayrollPaid} disabled={s.emp.status === 'terminated'} />}
+          {/* Lifecycle owns its own writes (checklist, settlement) and calls back to re-read. */}
+          {s.tab === 'lifecycle'  && <LifecycleTab emp={s.emp} onChanged={s.reload} />}
+          {/* Payroll stays available after termination: a final settlement payslip,
+              or a reprint for a tax query, is exactly when you need it most. The
+              old blanket `disabled` locked it away. */}
+          {s.tab === 'payroll'    && hr.canSeePayrollLines && <PayrollTab emp={s.emp} payrollRecords={s.emp.payrollRecords} onAdd={() => s.setShowPayModal(true)} onMarkPaid={s.markPayrollPaid} />}
           {s.tab === 'activity'   && <ActivityTab activityLogs={s.emp.activityLogs} onAddNote={() => s.setShowNoteModal(true)} disabled={s.emp.status === 'terminated'} />}
-          {s.tab === 'documents'  && <DocumentsTab documents={s.emp.documents} onAdd={() => s.setShowDocModal(true)} onOpen={s.openDocument} onDelete={s.deleteDocument} disabled={s.emp.status === 'terminated'} />}
+          {s.tab === 'documents'  && <DocumentsTab documents={s.emp.documents} onAdd={s.openDocForAdd} onEdit={s.openDocForEdit} onOpen={s.openDocument} onDelete={s.deleteDocument} disabled={s.emp.status === 'terminated'} />}
         </div>
       </div>
 
@@ -170,42 +224,40 @@ export default function EmployeeProfilePage() {
       <Modal isOpen={s.showAttModal} onClose={() => s.setShowAttModal(false)} title={t('empLogAttendanceTitle')}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empDate')}</label>
+            <HrField label={t('empDate')}>
               <input type="date" value={s.attForm.date} onChange={e => s.setAttForm(p => ({ ...p, date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('status')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('status')}>
               <select value={s.attForm.status} onChange={e => s.setAttForm(p => ({ ...p, status: e.target.value as AttendanceStatus }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
+                className={HR_SELECT_CLASS}>
                 <option value="present">{t('empStatusPresent')}</option>
                 <option value="absent">{t('empStatusAbsent')}</option>
                 <option value="late">{t('empStatusLate')}</option>
                 <option value="half-day">{t('empHalfDay')}</option>
                 <option value="leave">{t('empStatusLeave')}</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empCheckInCol')}</label>
+            </HrField>
+            <HrField label={t('empCheckInCol')}>
               <input type="time" value={s.attForm.checkIn} onChange={e => s.setAttForm(p => ({ ...p, checkIn: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empCheckOutCol')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empCheckOutCol')}>
               <input type="time" value={s.attForm.checkOut} onChange={e => s.setAttForm(p => ({ ...p, checkOut: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
+                className={HR_INPUT_CLASS} />
+            </HrField>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('notes')}</label>
+          <HrField label={t('notes')}>
             <textarea value={s.attForm.notes} onChange={e => s.setAttForm(p => ({ ...p, notes: e.target.value }))} rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm resize-none" />
-          </div>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => s.setShowAttModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.saveAttendance} disabled={s.savingAtt} className="btn-primary">{s.savingAtt ? t('empSaving') : t('save')}</button>
-          </div>
+              className={HR_TEXTAREA_CLASS} />
+          </HrField>
+          <HrModalActions
+            onCancel={() => s.setShowAttModal(false)}
+            onSubmit={s.saveAttendance}
+            cancelLabel={t('cancel')}
+            submitLabel={t('save')}
+            submitting={s.savingAtt}
+          />
         </div>
       </Modal>
 
@@ -213,57 +265,53 @@ export default function EmployeeProfilePage() {
       <Modal isOpen={s.showPayModal} onClose={() => s.setShowPayModal(false)} title={t('empAddEditPayrollTitle')}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('month')}</label>
+            <HrField label={t('month')}>
               <select value={s.payForm.month} onChange={e => s.setPayForm(p => ({ ...p, month: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
-                {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                className={HR_SELECT_CLASS}>
+                {fmt.monthNames().map((m, i) => (
                   <option key={m} value={i + 1}>{m}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empYear')}</label>
+            </HrField>
+            <HrField label={t('empYear')}>
               <input type="number" value={s.payForm.year} onChange={e => s.setPayForm(p => ({ ...p, year: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empBaseSalary')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empBaseSalary')}>
               <input type="number" min={0} value={s.payForm.baseSalary} onChange={e => s.setPayForm(p => ({ ...p, baseSalary: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empBonuses')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empBonuses')}>
               <input type="number" min={0} value={s.payForm.bonuses} onChange={e => s.setPayForm(p => ({ ...p, bonuses: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empDeductions')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empDeductions')}>
               <input type="number" min={0} value={s.payForm.deductions} onChange={e => s.setPayForm(p => ({ ...p, deductions: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('status')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('status')}>
               <select value={s.payForm.status} onChange={e => s.setPayForm(p => ({ ...p, status: e.target.value as any }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
+                className={HR_SELECT_CLASS}>
                 <option value="pending">{t('empStatusPending')}</option>
                 <option value="paid">{t('empPaid')}</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empPaidDate')}</label>
+            </HrField>
+            <HrField label={t('empPaidDate')}>
               <input type="date" value={s.payForm.paidDate} onChange={e => s.setPayForm(p => ({ ...p, paidDate: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
+                className={HR_INPUT_CLASS} />
+            </HrField>
           </div>
           <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-700/50 flex items-center justify-between">
             <span className="text-sm text-slate-600 dark:text-slate-400">{t('empNetPay')}</span>
-            <span className="text-xl font-bold text-slate-900 dark:text-white">${s.netPay.toFixed(2)}</span>
+            <span className="text-xl font-bold text-slate-900 dark:text-white">{fmt.money(s.netPay)}</span>
           </div>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => s.setShowPayModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.savePayroll} disabled={s.savingPay} className="btn-primary">{s.savingPay ? t('empSaving') : t('empSavePayroll')}</button>
-          </div>
+          <HrModalActions
+            onCancel={() => s.setShowPayModal(false)}
+            onSubmit={s.savePayroll}
+            cancelLabel={t('cancel')}
+            submitLabel={t('empSavePayroll')}
+            submitting={s.savingPay}
+          />
         </div>
       </Modal>
 
@@ -273,12 +321,16 @@ export default function EmployeeProfilePage() {
           <textarea
             value={s.noteText} onChange={e => s.setNoteText(e.target.value)}
             rows={4} placeholder={t('empEnterNote')}
-            className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm resize-none"
+            className={HR_TEXTAREA_CLASS}
           />
-          <div className="flex justify-end gap-3">
-            <button onClick={() => s.setShowNoteModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.saveNote} disabled={s.savingNote || !s.noteText.trim()} className="btn-primary">{s.savingNote ? t('empSaving') : t('empAddNote')}</button>
-          </div>
+          <HrModalActions
+            onCancel={() => s.setShowNoteModal(false)}
+            onSubmit={s.saveNote}
+            cancelLabel={t('cancel')}
+            submitLabel={t('empAddNote')}
+            submitting={s.savingNote}
+            submitDisabled={!s.noteText.trim()}
+          />
         </div>
       </Modal>
 
@@ -286,13 +338,11 @@ export default function EmployeeProfilePage() {
       <Modal isOpen={s.showShiftModal} onClose={() => s.setShowShiftModal(false)} title={t('empAddShiftTitle')}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empDate')}</label>
+            <HrField label={t('empDate')}>
               <input type="date" value={s.shiftForm.date} onChange={e => s.setShiftForm(p => ({ ...p, date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empShiftType')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empShiftType')}>
               <select value={s.shiftForm.shiftType} onChange={e => {
                 const type = e.target.value
                 const presets: Record<string, { startTime: string; endTime: string; breakMins: number }> = {
@@ -302,38 +352,50 @@ export default function EmployeeProfilePage() {
                 }
                 s.setShiftForm(p => ({ ...p, shiftType: type, ...(presets[type] ?? {}) }))
               }}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
+                className={HR_SELECT_CLASS}>
                 <option value="morning">{t('empMorningShift')}</option>
                 <option value="evening">{t('empEveningShift')}</option>
                 <option value="night">{t('empNightShift')}</option>
                 <option value="custom">{t('empCustomShift')}</option>
               </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empStartTime')}</label>
+            </HrField>
+            <HrField label={t('empStartTime')}>
               <input type="time" value={s.shiftForm.startTime} onChange={e => s.setShiftForm(p => ({ ...p, startTime: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empEndTime')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empEndTime')}>
               <input type="time" value={s.shiftForm.endTime} onChange={e => s.setShiftForm(p => ({ ...p, endTime: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empBreakMinutes')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empBreakMinutes')}>
               <input type="number" min={0} value={s.shiftForm.breakMins} onChange={e => s.setShiftForm(p => ({ ...p, breakMins: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            {/* A night shift typed as 22:00 → 06:00 is easy to get wrong; showing the
+                paid length as it is typed makes an accidental 24-hour shift obvious. */}
+            <HrField label={t('empPaidHours')}>
+              <div className={`${HR_INPUT_CLASS} bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300`} dir="ltr">
+                {formatMinutes(
+                  shiftDurationMinutes(s.shiftForm.startTime, s.shiftForm.endTime, s.shiftForm.breakMins),
+                  t
+                )}
+              </div>
+            </HrField>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('notes')}</label>
+          {s.shiftForm.startTime === s.shiftForm.endTime && (
+            <p className="text-xs text-amber-600 dark:text-amber-400">{t('empShiftZeroLengthHint')}</p>
+          )}
+          <HrField label={t('notes')}>
             <input type="text" value={s.shiftForm.notes} onChange={e => s.setShiftForm(p => ({ ...p, notes: e.target.value }))} placeholder={t('empOptionalNotes')}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-          </div>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => s.setShowShiftModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.saveShift} disabled={s.savingShift} className="btn-primary">{s.savingShift ? t('empSaving') : t('empAddShift')}</button>
-          </div>
+              className={HR_INPUT_CLASS} />
+          </HrField>
+          <HrModalActions
+            onCancel={() => s.setShowShiftModal(false)}
+            onSubmit={s.saveShift}
+            cancelLabel={t('cancel')}
+            submitLabel={t('empAddShift')}
+            submitting={s.savingShift}
+          />
         </div>
       </Modal>
 
@@ -341,132 +403,168 @@ export default function EmployeeProfilePage() {
       <Modal isOpen={s.showOTModal} onClose={() => s.setShowOTModal(false)} title={t('empLogOvertimeTitle')}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empDate')}</label>
+            <HrField label={t('empDate')}>
               <input type="date" value={s.otForm.date} onChange={e => s.setOtForm(p => ({ ...p, date: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('hours')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('hours')}>
               <input type="number" min={0.5} step={0.5} value={s.otForm.hours} onChange={e => s.setOtForm(p => ({ ...p, hours: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('empRateMultiplier')}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empRateMultiplier')}>
               <select value={s.otForm.multiplier} onChange={e => s.setOtForm(p => ({ ...p, multiplier: Number(e.target.value) }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm">
+                className={HR_SELECT_CLASS}>
                 <option value={1.0}>{t('empRegularRate')}</option>
                 <option value={1.5}>{t('empTimeAndHalf')}</option>
                 <option value={2.0}>{t('empDoubleTime')}</option>
               </select>
-            </div>
+            </HrField>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('reason')}</label>
+          <HrField label={t('reason')}>
             <input type="text" value={s.otForm.reason} onChange={e => s.setOtForm(p => ({ ...p, reason: e.target.value }))} placeholder={t('empReasonPlaceholder')}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm" />
-          </div>
+              className={HR_INPUT_CLASS} />
+          </HrField>
           {/* Pay estimate */}
           {s.emp.salary > 0 && (() => {
-            const hourlyRate = s.emp.salaryType === 'hourly' ? s.emp.salary
-              : s.emp.salaryType === 'weekly' ? s.emp.salary / 40
-              : s.emp.salary / 160
-            const est = hourlyRate * s.otForm.hours * s.otForm.multiplier
+            // Was `salary / 160` for anything that was not hourly or weekly, which
+            // priced daily staff twenty times too low. Now the shared rule.
+            const hourlyRate = hourlyRateFor(s.emp.salary, s.emp.salaryType)
+            const est = overtimePayFor(s.emp.salary, s.emp.salaryType, s.otForm.hours, s.otForm.multiplier)
             return (
               <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-between">
                 <span className="text-sm text-amber-700 dark:text-amber-400">{t('empEstimatedOTPay')}</span>
                 <span className="text-lg font-bold text-amber-700 dark:text-amber-400">
-                  ${est.toFixed(2)}
-                  <span className="text-xs font-normal ml-1 opacity-70">({s.otForm.hours}h × {s.otForm.multiplier}× @ ${hourlyRate.toFixed(2)}/hr)</span>
+                  {fmt.money(est)}
+                  <span className="text-xs font-normal ml-1 opacity-70">({s.otForm.hours}h × {s.otForm.multiplier}× @ {fmt.money(hourlyRate)}/hr)</span>
                 </span>
               </div>
             )
           })()}
-          <div className="flex justify-end gap-3">
-            <button onClick={() => s.setShowOTModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.saveOvertime} disabled={s.savingOT} className="btn-primary">{s.savingOT ? t('empSaving') : t('empLogOvertime')}</button>
-          </div>
+          <HrModalActions
+            onCancel={() => s.setShowOTModal(false)}
+            onSubmit={s.saveOvertime}
+            cancelLabel={t('cancel')}
+            submitLabel={t('empLogOvertime')}
+            submitting={s.savingOT}
+          />
         </div>
       </Modal>
       {/* ── Leave Request Modal ──────────────────────────────────────────── */}
       <Modal isOpen={s.showLeaveModal} onClose={() => s.setShowLeaveModal(false)} title={t('empRequestLeave') ?? 'Request leave'} size="sm">
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveType') ?? 'Type'}</label>
+          <HrField label={t('empLeaveType')}>
             <select
               value={s.leaveForm.type}
               onChange={e => s.setLeaveForm(p => ({ ...p, type: e.target.value as typeof p.type }))}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white"
+              className={HR_SELECT_CLASS}
             >
-              <option value="annual">{t('empLeaveAnnual') ?? 'Annual'}</option>
-              <option value="sick">{t('empLeaveSick') ?? 'Sick'}</option>
-              <option value="unpaid">{t('empLeaveUnpaid') ?? 'Unpaid'}</option>
-              <option value="other">{t('empLeaveOther') ?? 'Other'}</option>
+              <option value="annual">{t('empLeaveAnnual')}</option>
+              <option value="sick">{t('empLeaveSick')}</option>
+              <option value="unpaid">{t('empLeaveUnpaid')}</option>
+              <option value="other">{t('empLeaveOther')}</option>
             </select>
-          </div>
+          </HrField>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveStart') ?? 'Start date'}</label>
+            <HrField label={t('empLeaveStart')}>
               <input type="date" value={s.leaveForm.startDate}
                 onChange={e => s.setLeaveForm(p => ({ ...p, startDate: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white" />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveEnd') ?? 'End date'}</label>
+                className={HR_INPUT_CLASS} />
+            </HrField>
+            <HrField label={t('empLeaveEnd')}>
               <input type="date" value={s.leaveForm.endDate}
                 onChange={e => s.setLeaveForm(p => ({ ...p, endDate: e.target.value }))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white" />
-            </div>
+                className={HR_INPUT_CLASS} />
+            </HrField>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empLeaveDays') ?? 'Days'}</label>
+          <HrField label={t('empLeaveDays')}>
             <input type="number" min={0} step={0.5} value={s.leaveForm.days}
               onChange={e => s.setLeaveForm(p => ({ ...p, days: Number(e.target.value) }))}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('reason')}</label>
+              className={HR_INPUT_CLASS} />
+          </HrField>
+          <HrField label={t('reason')}>
             <textarea value={s.leaveForm.reason} rows={2}
               onChange={e => s.setLeaveForm(p => ({ ...p, reason: e.target.value }))}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white resize-none" />
-          </div>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => s.setShowLeaveModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.saveLeave} disabled={s.savingLeave} className="btn-primary">{s.savingLeave ? t('empSaving') : (t('empRequestLeave') ?? 'Request leave')}</button>
-          </div>
+              className={HR_TEXTAREA_CLASS} />
+          </HrField>
+          <HrModalActions
+            onCancel={() => s.setShowLeaveModal(false)}
+            onSubmit={s.saveLeave}
+            cancelLabel={t('cancel')}
+            submitLabel={t('empRequestLeave')}
+            submitting={s.savingLeave}
+          />
         </div>
       </Modal>
 
-      {/* ── Document Upload Modal ────────────────────────────────────────── */}
-      <Modal isOpen={s.showDocModal} onClose={() => s.setShowDocModal(false)} title={t('empUploadDocument') ?? 'Upload document'} size="sm">
+      {/* ── Document Modal — attach a new file, or correct an existing one ── */}
+      <Modal
+        isOpen={s.showDocModal}
+        onClose={() => s.setShowDocModal(false)}
+        title={t(s.editingDocId ? 'empDocumentEditTitle' : 'empUploadDocument')}
+        size="sm"
+      >
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empDocumentTitle') ?? 'Title'}</label>
+          <HrField label={t('empDocumentTitle')}>
             <input
               value={s.docForm.title}
               onChange={e => s.setDocForm(p => ({ ...p, title: e.target.value }))}
-              placeholder={t('empDocumentTitlePlaceholder') ?? 'e.g. Employment contract'}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm focus:ring-2 focus:ring-primary text-slate-900 dark:text-white"
+              placeholder={t('empDocumentTitlePlaceholder')}
+              className={HR_INPUT_CLASS}
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">{t('empDocumentType') ?? 'Type'}</label>
+          </HrField>
+          <HrField label={t('empDocumentType')}>
             <select
               value={s.docForm.type}
               onChange={e => s.setDocForm(p => ({ ...p, type: e.target.value }))}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white"
+              className={HR_SELECT_CLASS}
             >
-              <option value="contract">{t('empDocContract') ?? 'Contract'}</option>
-              <option value="id_copy">{t('empDocIdCopy') ?? 'ID copy'}</option>
-              <option value="certificate">{t('empDocCertificate') ?? 'Certificate'}</option>
-              <option value="other">{t('empDocOther') ?? 'Other'}</option>
+              <option value="contract">{t('empDocContract')}</option>
+              <option value="id_copy">{t('empDocIdCopy')}</option>
+              <option value="certificate">{t('empDocCertificate')}</option>
+              <option value="other">{t('empDocOther')}</option>
             </select>
-          </div>
-          <p className="text-xs text-slate-400">{t('empDocumentPickHint') ?? 'You will be asked to choose a file after clicking Choose file.'}</p>
-          <div className="flex justify-end gap-3">
-            <button onClick={() => s.setShowDocModal(false)} className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300">{t('cancel')}</button>
-            <button onClick={s.saveDocument} disabled={s.savingDoc} className="btn-primary">{s.savingDoc ? t('empSaving') : (t('empChooseFile') ?? 'Choose file & attach')}</button>
-          </div>
+          </HrField>
+
+          {/* Reference, issue and expiry are what make a document *actionable* —
+              without them nothing can warn that a residency permit is about to
+              lapse. They are collected on the same screen as the file so there is
+              one step, not a second pass the user never comes back to do. */}
+          <HrFormSection title={t('empDocRenewalSection')}>
+            <div className="space-y-4">
+              <HrField label={t('empDocumentNumber')}>
+                <input
+                  value={s.docForm.reference}
+                  onChange={e => s.setDocForm(p => ({ ...p, reference: e.target.value }))}
+                  className={HR_INPUT_CLASS}
+                  dir="ltr"
+                />
+              </HrField>
+              <div className="grid grid-cols-2 gap-4">
+                <HrField label={t('empDocIssued')}>
+                  <input type="date" value={s.docForm.issuedAt}
+                    onChange={e => s.setDocForm(p => ({ ...p, issuedAt: e.target.value }))}
+                    className={HR_INPUT_CLASS} />
+                </HrField>
+                <HrField label={t('empDocExpires')}>
+                  <input type="date" value={s.docForm.expiresAt}
+                    onChange={e => s.setDocForm(p => ({ ...p, expiresAt: e.target.value }))}
+                    className={HR_INPUT_CLASS} />
+                </HrField>
+              </div>
+              <p className="text-xs text-slate-400">{t('empDocRenewalHint')}</p>
+            </div>
+          </HrFormSection>
+
+          {!s.editingDocId && (
+            <p className="text-xs text-slate-400">{t('empDocumentPickHint')}</p>
+          )}
+          <HrModalActions
+            onCancel={() => s.setShowDocModal(false)}
+            onSubmit={s.saveDocument}
+            cancelLabel={t('cancel')}
+            submitLabel={t(s.editingDocId ? 'save' : 'empChooseFile')}
+            submitting={s.savingDoc}
+          />
         </div>
       </Modal>
 
@@ -477,52 +575,6 @@ export default function EmployeeProfilePage() {
         onConfirm={() => s.confirm?.onConfirm()}
         onCancel={() => s.setConfirm(null)}
       />
-
-      {/* ── End Contract Modal ───────────────────────────────────────────── */}
-      <Modal isOpen={s.showTerminateModal} onClose={() => s.setShowTerminateModal(false)} title="End Contract" size="sm">
-        <div className="space-y-5">
-          <div className="flex items-start gap-3 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800">
-            <span className="text-red-500 mt-0.5">⚠</span>
-            <p className="text-sm text-red-700 dark:text-red-400">
-              This will mark <strong>{s.emp?.name}</strong> as <strong>terminated</strong>. Their data is preserved and can be reinstated by editing the employee record.
-            </p>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Termination Date</label>
-            <input
-              type="date"
-              value={s.terminateForm.terminationDate}
-              onChange={e => s.setTerminateForm(p => ({ ...p, terminationDate: e.target.value }))}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Reason / Note (optional)</label>
-            <textarea
-              rows={3}
-              value={s.terminateForm.terminationNote}
-              onChange={e => s.setTerminateForm(p => ({ ...p, terminationNote: e.target.value }))}
-              placeholder="Resignation, end of contract, redundancy…"
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-1 border-t border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => s.setShowTerminateModal(false)}
-              className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={s.endContract}
-              disabled={s.savingTerminate}
-              className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {s.savingTerminate ? 'Saving…' : 'End Contract'}
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   )
 }

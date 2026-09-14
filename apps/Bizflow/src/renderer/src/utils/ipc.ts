@@ -136,14 +136,25 @@ const mockIPC = {
     payroll: {
       upsert: async (_data: any) => ({ success: true }),
       getAll: async (_year: number) => [],
-      markPaid: async (_id: string) => ({ success: true }),
+      markPaid: async (_id: string, _by?: string) => ({ success: true }),
+      compute: async (_params: any) => null,
       getSummary: async (_params: any) => ({})
+    },
+    payrollRuns: {
+      get: async (_year: number, _month: number) => null,
+      ensure: async (_year: number, _month: number, _by?: string) => ({ success: false, message: 'Not available in browser' }),
+      approve: async (_year: number, _month: number, _by?: string) => ({ success: false }),
+      markAllPaid: async (_year: number, _month: number, _by?: string) => ({ success: false }),
+      lock: async (_year: number, _month: number, _by?: string) => ({ success: false }),
+      reopen: async (_year: number, _month: number, _by?: string, _reason?: string) => ({ success: false }),
+      bankExport: async (_year: number, _month: number) => ({ rows: [], missing: [] })
     },
     activity: {
       add: async (_data: any) => ({ success: true })
     },
     documents: {
       add: async (_data: any) => ({ success: false, message: 'Document upload is only available in the desktop app' }),
+      update: async (_data: any) => ({ success: false, message: 'Document upload is only available in the desktop app' }),
       open: async (_id: string) => ({ success: false, message: 'Not available in browser' }),
       delete: async (_id: string) => ({ success: true })
     },
@@ -154,13 +165,29 @@ const mockIPC = {
     },
     overtime: {
       add: async (_data: any) => ({ success: true }),
-      approve: async (_id: string, _by?: string) => ({ success: true }),
+      approve: async (_id: string, _by?: string, _approved = true) => ({ success: true }),
       delete: async (_id: string) => ({ success: true })
     },
     leave: {
       add: async (_data: any) => ({ success: true }),
       setStatus: async (_id: string, _status: string, _by?: string) => ({ success: true }),
       delete: async (_id: string) => ({ success: true })
+    },
+    approvals: {
+      pending: async () => ({ leave: [], overtime: [] })
+    },
+    checklist: {
+      add: async (_data: any) => ({ success: false, message: 'Not available in browser' }),
+      toggle: async (_id: string, _completed: boolean, _by?: string, _notes?: string) => ({ success: false }),
+      remove: async (_id: string) => ({ success: false })
+    },
+    onboarding: {
+      start: async (_employeeId: string, _months?: number, _by?: string) => ({ success: false })
+    },
+    offboarding: {
+      initiate: async (_data: any) => ({ success: false, message: 'Not available in browser' }),
+      settlement: async (_params: any) => null,
+      complete: async (_employeeId: string, _by?: string, _force?: boolean) => ({ success: false })
     }
   },
   customers: {
@@ -564,14 +591,32 @@ export const ipc = isElectron ? {
     payroll: {
       upsert: (data: any) => window.electron.ipcRenderer.invoke('employees:payroll:upsert', data),
       getAll: (year: number) => window.electron.ipcRenderer.invoke('employees:payroll:getAll', { year }),
-      markPaid: (id: string) => window.electron.ipcRenderer.invoke('employees:payroll:markPaid', id),
+      markPaid: (id: string, performedBy?: string) => window.electron.ipcRenderer.invoke('employees:payroll:markPaid', { id, performedBy }),
+      compute: (params: any) => window.electron.ipcRenderer.invoke('employees:payroll:compute', params),
       getSummary: (params: any) => window.electron.ipcRenderer.invoke('employees:payroll:getSummary', params)
+    },
+    /** Period state: draft → approved → paid → locked, and the way back. */
+    payrollRuns: {
+      get: (year: number, month: number) => window.electron.ipcRenderer.invoke('employees:payrollRuns:get', { year, month }),
+      ensure: (year: number, month: number, performedBy?: string) =>
+        window.electron.ipcRenderer.invoke('employees:payrollRuns:ensure', { year, month, performedBy }),
+      approve: (year: number, month: number, performedBy?: string) =>
+        window.electron.ipcRenderer.invoke('employees:payrollRuns:approve', { year, month, performedBy }),
+      markAllPaid: (year: number, month: number, performedBy?: string) =>
+        window.electron.ipcRenderer.invoke('employees:payrollRuns:markAllPaid', { year, month, performedBy }),
+      lock: (year: number, month: number, performedBy?: string) =>
+        window.electron.ipcRenderer.invoke('employees:payrollRuns:lock', { year, month, performedBy }),
+      reopen: (year: number, month: number, performedBy?: string, reason?: string) =>
+        window.electron.ipcRenderer.invoke('employees:payrollRuns:reopen', { year, month, performedBy, reason }),
+      bankExport: (year: number, month: number) =>
+        window.electron.ipcRenderer.invoke('employees:payrollRuns:bankExport', { year, month })
     },
     activity: {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:activity:add', data)
     },
     documents: {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:documents:add', data),
+      update: (data: any) => window.electron.ipcRenderer.invoke('employees:documents:update', data),
       open: (id: string) => window.electron.ipcRenderer.invoke('employees:documents:open', id),
       delete: (id: string) => window.electron.ipcRenderer.invoke('employees:documents:delete', id)
     },
@@ -582,13 +627,35 @@ export const ipc = isElectron ? {
     },
     overtime: {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:overtime:add', data),
-      approve: (id: string, approvedBy?: string) => window.electron.ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy }),
+      approve: (id: string, approvedBy?: string, approved = true) =>
+        window.electron.ipcRenderer.invoke('employees:overtime:approve', { id, approvedBy, approved }),
       delete: (id: string) => window.electron.ipcRenderer.invoke('employees:overtime:delete', id)
     },
     leave: {
       add: (data: any) => window.electron.ipcRenderer.invoke('employees:leave:add', data),
       setStatus: (id: string, status: string, approvedBy?: string) => window.electron.ipcRenderer.invoke('employees:leave:setStatus', { id, status, approvedBy }),
       delete: (id: string) => window.electron.ipcRenderer.invoke('employees:leave:delete', id)
+    },
+    /** Team-wide queue of everything awaiting a manager's decision. */
+    approvals: {
+      pending: () => window.electron.ipcRenderer.invoke('employees:approvals:pending')
+    },
+    /** Onboarding / offboarding task lists (same model, split by `phase`). */
+    checklist: {
+      add: (data: any) => window.electron.ipcRenderer.invoke('employees:checklist:add', data),
+      toggle: (id: string, completed: boolean, performedBy?: string, notes?: string) =>
+        window.electron.ipcRenderer.invoke('employees:checklist:toggle', { id, completed, performedBy, notes }),
+      remove: (id: string) => window.electron.ipcRenderer.invoke('employees:checklist:delete', id)
+    },
+    onboarding: {
+      start: (employeeId: string, probationMonths?: number, performedBy?: string) =>
+        window.electron.ipcRenderer.invoke('employees:onboarding:start', { employeeId, probationMonths, performedBy })
+    },
+    offboarding: {
+      initiate: (data: any) => window.electron.ipcRenderer.invoke('employees:offboarding:initiate', data),
+      settlement: (params: any) => window.electron.ipcRenderer.invoke('employees:offboarding:settlement', params),
+      complete: (employeeId: string, performedBy?: string, force?: boolean) =>
+        window.electron.ipcRenderer.invoke('employees:offboarding:complete', { employeeId, performedBy, force })
     }
   },
   

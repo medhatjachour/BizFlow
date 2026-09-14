@@ -35,10 +35,18 @@ export interface Employee {
   iban?: string
   contractEndDate?: string | null
   idExpiryDate?: string | null
+  /** End of probation / trial period. */
+  probationEndDate?: string | null
+  /** Final day actually worked — may differ from terminationDate. */
+  lastWorkingDate?: string | null
+  /** resignation | end-of-contract | dismissal | redundancy | retirement */
+  exitReason?: string | null
+  rehireEligible?: boolean | null
+  exitInterviewNotes?: string | null
   managerId?: string | null
   manager?: { id: string; name: string; role?: string; avatarUrl?: string | null } | null
   todayAttendance?: { checkIn?: string | null; checkOut?: string | null; status?: string } | null
-  _count?: { attendance: number; activityLogs: number; reports?: number }
+  _count?: { attendance: number; activityLogs: number; reports?: number; /** Open required onboarding tasks. */ checklistItems?: number }
 }
 
 export interface EmployeeAttendance {
@@ -66,6 +74,11 @@ export interface EmployeeDocument {
   title: string
   type: string
   filename: string
+  /** Number printed on the document itself (licence, policy, national ID). */
+  reference?: string | null
+  issuedAt?: string | null
+  /** null means the document never expires. */
+  expiresAt?: string | null
   uploadedAt: string
 }
 
@@ -144,6 +157,59 @@ export interface LeaveBalance {
   remaining: number   // allowance − taken
 }
 
+export type ChecklistPhase = 'onboarding' | 'offboarding'
+export type ChecklistCategory =
+  | 'documents' | 'access' | 'equipment' | 'payroll' | 'handover' | 'compliance' | 'other'
+
+/**
+ * One task on an onboarding or offboarding list.
+ *
+ * `required` is what makes the list load-bearing: an offboarding cannot be
+ * completed while a required task is still open.
+ */
+export interface EmployeeChecklistItem {
+  id: string
+  employeeId: string
+  phase: ChecklistPhase
+  title: string
+  category: ChecklistCategory
+  required: boolean
+  dueDate?: string | null
+  completed: boolean
+  completedAt?: string | null
+  completedBy?: string | null
+  notes?: string | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** Progress through one phase of a checklist. */
+export interface ChecklistProgress {
+  total: number
+  done: number
+  requiredOpen: number
+  percent: number
+  complete: boolean
+}
+
+/**
+ * How far through a phase an employee is.
+ * `complete` needs every *required* task done — optional tasks never block.
+ */
+export function checklistProgress(items: EmployeeChecklistItem[]): ChecklistProgress {
+  const total = items.length
+  const done = items.filter((item) => item.completed).length
+  const requiredOpen = items.filter((item) => item.required && !item.completed).length
+  return {
+    total,
+    done,
+    requiredOpen,
+    percent: total === 0 ? 0 : Math.round((done / total) * 100),
+    complete: total > 0 && requiredOpen === 0,
+  }
+}
+
 export interface EmployeeProfile extends Employee {
   attendance: EmployeeAttendance[]
   documents: EmployeeDocument[]
@@ -152,6 +218,7 @@ export interface EmployeeProfile extends Employee {
   shifts: EmployeeShift[]
   overtimeRecords: EmployeeOvertime[]
   leaveRecords: EmployeeLeave[]
+  checklistItems: EmployeeChecklistItem[]
   attendanceSummary: AttendanceSummary
   leaveBalance: LeaveBalance
   reports?: { id: string; name: string; role?: string; status?: EmployeeStatus; avatarUrl?: string | null }[]
