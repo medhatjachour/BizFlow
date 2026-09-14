@@ -3428,6 +3428,129 @@ function registerFinanceHandlers(prisma2) {
 init_electron_node();
 var import_node_fs3 = __toESM(require("node:fs"));
 var import_node_path4 = __toESM(require("node:path"));
+
+// src/shared/hrSettlement.ts
+var DEFAULT_GRATUITY_MONTHS_PER_YEAR = 1;
+var STANDARD_MONTHLY_HOURS = 160;
+var STANDARD_MONTH_DAYS = 30;
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+function toDate(value) {
+  if (!value)
+    return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+function round2(value) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+function monthlyRateFor(salary, salaryType) {
+  if (!isFiniteNumber(salary) || salary <= 0)
+    return 0;
+  switch (String(salaryType).toLowerCase()) {
+    case "hourly":
+      return salary * STANDARD_MONTHLY_HOURS;
+    case "daily":
+      return salary * STANDARD_MONTH_DAYS;
+    case "weekly":
+      return salary * 52 / 12;
+    default:
+      return salary;
+  }
+}
+function dailyRateFor(salary, salaryType) {
+  return monthlyRateFor(salary, salaryType) / STANDARD_MONTH_DAYS;
+}
+function computeSettlement(input) {
+  const salary = isFiniteNumber(input.salary) ? input.salary : 0;
+  const monthlyRate = monthlyRateFor(salary, input.salaryType);
+  const dailyRate = dailyRateFor(salary, input.salaryType);
+  const lastDay = toDate(input.lastWorkingDate);
+  const hireDay = toDate(input.hireDate);
+  const daysInFinalMonth = lastDay ? new Date(lastDay.getFullYear(), lastDay.getMonth() + 1, 0).getDate() : STANDARD_MONTH_DAYS;
+  const proratedDays = lastDay ? lastDay.getDate() : 0;
+  const proratedSalary = round2(monthlyRate / daysInFinalMonth * proratedDays);
+  const leaveDays = isFiniteNumber(input.leaveRemainingDays) ? Math.max(0, input.leaveRemainingDays) : 0;
+  const leaveEncashment = round2(leaveDays * dailyRate);
+  let completedYears = 0;
+  if (lastDay && hireDay && lastDay.getTime() > hireDay.getTime()) {
+    const ms = lastDay.getTime() - hireDay.getTime();
+    completedYears = Math.floor(ms / (365.25 * 24 * 60 * 60 * 1e3));
+  }
+  const includeGratuity = input.includeGratuity !== false;
+  const gratuityMonthsPerYear = isFiniteNumber(input.gratuityMonthsPerYear) ? Math.max(0, input.gratuityMonthsPerYear) : DEFAULT_GRATUITY_MONTHS_PER_YEAR;
+  const gratuity = includeGratuity ? round2(completedYears * monthlyRate * gratuityMonthsPerYear) : 0;
+  const additions = isFiniteNumber(input.additions) ? input.additions : 0;
+  const deductions = isFiniteNumber(input.deductions) ? Math.max(0, input.deductions) : 0;
+  const overtimePay = isFiniteNumber(input.overtimePay) ? Math.max(0, input.overtimePay) : 0;
+  const extraShiftPay = isFiniteNumber(input.extraShiftPay) ? Math.max(0, input.extraShiftPay) : 0;
+  const lines = [
+    {
+      label: "salaryForDaysWorked",
+      amount: proratedSalary
+    }
+  ];
+  if (overtimePay > 0) {
+    lines.push({ label: "overtime", amount: round2(overtimePay) });
+  }
+  if (extraShiftPay > 0) {
+    lines.push({ label: "extraShifts", amount: round2(extraShiftPay) });
+  }
+  lines.push({
+    label: "leaveEncashment",
+    amount: leaveEncashment
+  });
+  if (gratuity > 0) {
+    lines.push({ label: "endOfService", amount: gratuity });
+  }
+  if (additions > 0) {
+    lines.push({ label: "otherAdditions", amount: round2(additions) });
+  }
+  if (deductions > 0) {
+    lines.push({ label: "deductions", amount: -round2(deductions) });
+  }
+  const grossTotal = round2(
+    lines.filter((line) => line.amount > 0).reduce((sum, line) => sum + line.amount, 0)
+  );
+  return {
+    dailyRate: round2(dailyRate),
+    monthlyRate: round2(monthlyRate),
+    completedYears,
+    proratedDays,
+    daysInFinalMonth,
+    lines,
+    grossTotal,
+    deductions: round2(deductions),
+    total: round2(Math.max(0, grossTotal - deductions))
+  };
+}
+var DEFAULT_OFFBOARDING_TASKS = [
+  { title: "Revoke system and app access", category: "access", required: true },
+  { title: "Collect keys, badge and uniform", category: "equipment", required: true },
+  { title: "Collect laptop, phone and tools", category: "equipment", required: true },
+  { title: "Hand over open work and customers", category: "handover", required: true },
+  { title: "Clear outstanding cash advances", category: "payroll", required: true },
+  { title: "Confirm final timesheet and overtime", category: "payroll", required: true },
+  { title: "Agree and pay the final settlement", category: "payroll", required: true },
+  { title: "Return company documents and files", category: "documents", required: false },
+  { title: "Hold the exit interview", category: "compliance", required: false },
+  { title: "Issue the service certificate", category: "documents", required: false }
+];
+var DEFAULT_ONBOARDING_TASKS = [
+  { title: "Signed employment contract on file", category: "documents", required: true },
+  { title: "ID / passport copy collected", category: "documents", required: true },
+  { title: "Tax number recorded", category: "payroll", required: true },
+  { title: "Social insurance number recorded", category: "payroll", required: true },
+  { title: "Bank account / IBAN recorded", category: "payroll", required: true },
+  { title: "Emergency contact recorded", category: "compliance", required: true },
+  { title: "System account created and role assigned", category: "access", required: true },
+  { title: "Uniform and equipment issued", category: "equipment", required: false },
+  { title: "Induction and till/POS training done", category: "other", required: false },
+  { title: "Line manager introduced to the team", category: "other", required: false }
+];
+
+// src/main/ipc/handlers/employees.handlers.ts
 var log7 = createLogger("Employees");
 function employeeDocsDir() {
   const dir = import_node_path4.default.join(app.getPath("userData"), "employee-documents");
@@ -3442,18 +3565,55 @@ var EMPLOYEE_INCLUDE = {
   shifts: { orderBy: { date: "desc" }, take: 60 },
   overtimeRecords: { orderBy: { date: "desc" }, take: 60 },
   leaveRecords: { orderBy: { startDate: "desc" }, take: 60 },
+  checklistItems: { orderBy: [{ phase: "asc" }, { sortOrder: "asc" }] },
   manager: { select: { id: true, name: true, role: true, avatarUrl: true } },
   reports: { select: { id: true, name: true, role: true, status: true, avatarUrl: true }, orderBy: { name: "asc" } }
 };
 async function ensureEmployeeColumns(prisma2) {
   try {
     const cols = await prisma2.$queryRawUnsafe(`PRAGMA table_info("Employee")`);
-    if (!cols.some((c) => c.name === "managerId")) {
-      await prisma2.$executeRawUnsafe(`ALTER TABLE "Employee" ADD COLUMN "managerId" TEXT`);
-      log7.info("\u2705 Employee.managerId column added");
+    const present = new Set(cols.map((c) => c.name));
+    const additive = [
+      ["managerId", "TEXT"],
+      // Lifecycle columns, added alongside onboarding/offboarding.
+      ["probationEndDate", "DATETIME"],
+      ["lastWorkingDate", "DATETIME"],
+      ["exitReason", "TEXT"],
+      ["rehireEligible", "BOOLEAN"],
+      ["exitInterviewNotes", "TEXT"]
+    ];
+    for (const [name, type] of additive) {
+      if (present.has(name))
+        continue;
+      await prisma2.$executeRawUnsafe(`ALTER TABLE "Employee" ADD COLUMN "${name}" ${type}`);
+      log7.info(`\u2705 Employee.${name} column added`);
     }
+    await prisma2.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "EmployeeChecklistItem" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "employeeId" TEXT NOT NULL,
+        "phase" TEXT NOT NULL DEFAULT 'onboarding',
+        "title" TEXT NOT NULL,
+        "category" TEXT NOT NULL DEFAULT 'other',
+        "required" BOOLEAN NOT NULL DEFAULT 1,
+        "dueDate" DATETIME,
+        "completed" BOOLEAN NOT NULL DEFAULT 0,
+        "completedAt" DATETIME,
+        "completedBy" TEXT,
+        "notes" TEXT,
+        "sortOrder" INTEGER NOT NULL DEFAULT 0,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL,
+        CONSTRAINT "EmployeeChecklistItem_employeeId_fkey"
+          FOREIGN KEY ("employeeId") REFERENCES "Employee" ("id")
+          ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `);
+    await prisma2.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "EmployeeChecklistItem_employeeId_idx" ON "EmployeeChecklistItem"("employeeId")`
+    );
   } catch (err) {
-    log7.warn("managerId column migration skipped:", err);
+    log7.warn("Employee table migration skipped:", err);
   }
 }
 async function wouldCreateCycle(prisma2, id, managerId) {
@@ -3472,6 +3632,68 @@ async function wouldCreateCycle(prisma2, id, managerId) {
     cursor = m?.managerId ?? null;
   }
   return false;
+}
+var HR_AUDITED_FIELDS = [
+  "salary",
+  "salaryType",
+  "role",
+  "department",
+  "status",
+  "employmentType",
+  "managerId",
+  "hireDate",
+  "contractEndDate",
+  "idExpiryDate",
+  "terminationDate",
+  "annualLeaveDays",
+  "iban",
+  "bankName",
+  "taxId",
+  "socialInsuranceNo",
+  "email"
+];
+function formatAuditValue(value) {
+  if (value === null || value === void 0 || value === "")
+    return "\u2014";
+  if (value instanceof Date)
+    return value.toISOString().slice(0, 10);
+  return String(value);
+}
+function describeEmployeeChanges(before, patch) {
+  const detailed = [];
+  const namesOnly = [];
+  for (const key of Object.keys(patch)) {
+    const next = patch[key];
+    const prev = before ? before[key] : void 0;
+    const changed = prev instanceof Date || next instanceof Date ? formatAuditValue(prev) !== formatAuditValue(next) : prev !== next;
+    if (!changed)
+      continue;
+    if (HR_AUDITED_FIELDS.includes(key)) {
+      detailed.push(`${key}: ${formatAuditValue(prev)} \u2192 ${formatAuditValue(next)}`);
+    } else {
+      namesOnly.push(key);
+    }
+  }
+  if (!detailed.length && !namesOnly.length)
+    return "Profile saved with no field changes";
+  const parts = [...detailed];
+  if (namesOnly.length)
+    parts.push(`${namesOnly.length} other field(s): ${namesOnly.join(", ")}`);
+  return `Profile updated \u2014 ${parts.join("; ")}`;
+}
+function hourlyRateFor(salary, salaryType) {
+  if (!(salary > 0))
+    return 0;
+  switch (String(salaryType).toLowerCase()) {
+    case "hourly":
+      return salary;
+    case "daily":
+      return salary / 8;
+    case "weekly":
+      return salary / 40;
+    default:
+      return salary / 160;
+  }
 }
 function computeAttendanceSummary(attendance) {
   const total = attendance.length;
@@ -3504,7 +3726,16 @@ function registerEmployeesHandlers(prisma2) {
       const emps = await prisma2.employee.findMany({
         orderBy: { createdAt: "desc" },
         include: {
-          _count: { select: { attendance: true, activityLogs: true, reports: true } },
+          _count: {
+            select: {
+              attendance: true,
+              activityLogs: true,
+              reports: true,
+              // Open required tasks per phase, so the list page can flag incomplete
+              // onboarding and unclosed offboarding without loading every checklist.
+              checklistItems: { where: { completed: false, required: true, phase: "onboarding" } }
+            }
+          },
           manager: { select: { id: true, name: true } },
           attendance: { where: { date: today }, take: 1, select: { checkIn: true, checkOut: true, status: true } }
         }
@@ -3576,12 +3807,13 @@ function registerEmployeesHandlers(prisma2) {
           }
         }
       }
+      const before = await prisma2.employee.findUnique({ where: { id } });
       const employee = await prisma2.employee.update({ where: { id }, data });
       await prisma2.employeeActivityLog.create({
         data: {
           employeeId: id,
           action: "profile_updated",
-          details: `Profile fields updated: ${Object.keys(data).join(", ")}`,
+          details: describeEmployeeChanges(before, data),
           performedBy: performedBy ?? null
         }
       });
@@ -3722,18 +3954,21 @@ function registerEmployeesHandlers(prisma2) {
       return { success: false, message: error.message };
     }
   });
-  async function computeOvertimeForMonth(employeeId, month, year, baseSalary) {
+  async function computeOvertimeForMonth(employeeId, month, year) {
     if (!prisma2)
       return { overtimeHours: 0, overtimePay: 0 };
     const monthStart = new Date(year, month - 1, 1);
     const monthEnd = new Date(year, month, 1);
-    const records = await prisma2.employeeOvertime.findMany({
-      where: { employeeId, approved: true, date: { gte: monthStart, lt: monthEnd } }
-    });
+    const [records, employee] = await Promise.all([
+      prisma2.employeeOvertime.findMany({
+        where: { employeeId, approved: true, date: { gte: monthStart, lt: monthEnd } }
+      }),
+      prisma2.employee.findUnique({ where: { id: employeeId }, select: { salary: true, salaryType: true } })
+    ]);
+    const rate = hourlyRateFor(employee?.salary ?? 0, employee?.salaryType ?? "monthly");
     const overtimeHours = records.reduce((s, r) => s + (r.hours ?? 0), 0);
-    const hourlyRate = baseSalary > 0 ? baseSalary / 160 : 0;
     const overtimePay = records.reduce(
-      (s, r) => s + (r.hours ?? 0) * hourlyRate * (r.multiplier ?? 1.5),
+      (s, r) => s + (r.hours ?? 0) * rate * (r.multiplier ?? 1.5),
       0
     );
     return { overtimeHours, overtimePay };
@@ -3774,7 +4009,8 @@ function registerEmployeesHandlers(prisma2) {
     notes,
     status,
     paidDate,
-    performedBy
+    performedBy,
+    reopen
   }) => {
     try {
       if (!prisma2)
@@ -3782,10 +4018,13 @@ function registerEmployeesHandlers(prisma2) {
       const base = baseSalary ?? 0;
       const bon = bonuses ?? 0;
       const ded = deductions ?? 0;
+      const existing = await prisma2.employeePayroll.findUnique({
+        where: { employeeId_month_year: { employeeId, month, year } }
+      });
       let otHours = overtimeHours ?? null;
       let otPay = overtimePay ?? null;
       if (otPay == null) {
-        const ot = await computeOvertimeForMonth(employeeId, month, year, base);
+        const ot = await computeOvertimeForMonth(employeeId, month, year);
         otHours = ot.overtimeHours;
         otPay = ot.overtimePay;
       }
@@ -3798,9 +4037,12 @@ function registerEmployeesHandlers(prisma2) {
       }
       const grossPay = base + otPay + xPay + bon;
       const netPay = grossPay - ded;
+      const isReopen = reopen === true;
+      const nextStatus = isReopen ? "pending" : status ?? existing?.status ?? "pending";
+      const nextPaidDate = isReopen ? null : paidDate ? new Date(paidDate) : existing?.paidDate ?? null;
       const data = {
         baseSalary: base,
-        regularHours: regularHours ?? 0,
+        regularHours: regularHours ?? existing?.regularHours ?? 0,
         overtimeHours: otHours,
         overtimePay: otPay,
         extraShifts: xShifts,
@@ -3809,9 +4051,9 @@ function registerEmployeesHandlers(prisma2) {
         deductions: ded,
         grossPay,
         netPay,
-        status: status ?? "pending",
+        status: nextStatus,
         notes: notes ?? null,
-        paidDate: paidDate ? new Date(paidDate) : null
+        paidDate: nextPaidDate
       };
       const record = await prisma2.employeePayroll.upsert({
         where: { employeeId_month_year: { employeeId, month, year } },
@@ -3821,8 +4063,8 @@ function registerEmployeesHandlers(prisma2) {
       await prisma2.employeeActivityLog.create({
         data: {
           employeeId,
-          action: status === "paid" ? "payroll_paid" : "payroll_updated",
-          details: `Payroll ${month}/${year}: base $${base.toFixed(2)}, OT $${otPay.toFixed(2)}, extra-shifts $${xPay.toFixed(2)}, net $${netPay.toFixed(2)}`,
+          action: isReopen ? "payroll_reopened" : nextStatus === "paid" ? "payroll_paid" : "payroll_updated",
+          details: isReopen ? `Payroll ${month}/${year} reopened for editing (net $${netPay.toFixed(2)})` : `Payroll ${month}/${year}: base $${base.toFixed(2)}, OT $${otPay.toFixed(2)}, extra-shifts $${xPay.toFixed(2)}, net $${netPay.toFixed(2)}`,
           performedBy: performedBy ?? null
         }
       });
@@ -3838,7 +4080,7 @@ function registerEmployeesHandlers(prisma2) {
         return null;
       const base = baseSalary ?? 0;
       const [ot, xShifts] = await Promise.all([
-        computeOvertimeForMonth(employeeId, month, year, base),
+        computeOvertimeForMonth(employeeId, month, year),
         countExtraShiftsForMonth(employeeId, month, year)
       ]);
       const bonusPerShift = extraShiftBonusPerShift ?? 0;
@@ -4097,6 +4339,62 @@ function registerEmployeesHandlers(prisma2) {
       return { success: false, message: error.message };
     }
   });
+  ipcMain.handle("employees:approvals:pending", async () => {
+    try {
+      if (!prisma2)
+        return { leave: [], overtime: [] };
+      const employeeSelect = { id: true, name: true, role: true, department: true, avatarUrl: true };
+      const [leave, overtime] = await Promise.all([
+        prisma2.employeeLeave.findMany({
+          where: { status: "pending" },
+          include: { employee: { select: employeeSelect } },
+          orderBy: { startDate: "asc" }
+        }),
+        prisma2.employeeOvertime.findMany({
+          where: { approved: false },
+          include: { employee: { select: employeeSelect } },
+          orderBy: { date: "asc" }
+        })
+      ]);
+      const employeeIds = Array.from(new Set(leave.map((l) => l.employeeId)));
+      const leaveBalance = {};
+      if (employeeIds.length) {
+        const year = (/* @__PURE__ */ new Date()).getFullYear();
+        const [employees, approvedAnnual] = await Promise.all([
+          prisma2.employee.findMany({
+            where: { id: { in: employeeIds } },
+            select: { id: true, annualLeaveDays: true }
+          }),
+          prisma2.employeeLeave.findMany({
+            where: {
+              employeeId: { in: employeeIds },
+              status: "approved",
+              type: "annual",
+              startDate: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) }
+            },
+            select: { employeeId: true, days: true }
+          })
+        ]);
+        const takenBy = {};
+        for (const row of approvedAnnual) {
+          takenBy[row.employeeId] = (takenBy[row.employeeId] ?? 0) + (row.days ?? 0);
+        }
+        for (const employee of employees) {
+          const allowance = employee.annualLeaveDays ?? 21;
+          const taken = takenBy[employee.id] ?? 0;
+          leaveBalance[employee.id] = {
+            allowance,
+            taken,
+            remaining: Math.max(0, allowance - taken)
+          };
+        }
+      }
+      return { leave, overtime, leaveBalance };
+    } catch (error) {
+      log7.error("Error fetching pending approvals:", error);
+      return { leave: [], overtime: [], leaveBalance: {} };
+    }
+  });
   ipcMain.handle("employees:overtime:add", async (_, { employeeId, date, hours, reason, multiplier }) => {
     try {
       if (!prisma2)
@@ -4115,20 +4413,26 @@ function registerEmployeesHandlers(prisma2) {
       return { success: false, message: error.message };
     }
   });
-  ipcMain.handle("employees:overtime:approve", async (_, { id, approvedBy }) => {
+  ipcMain.handle("employees:overtime:approve", async (_, { id, approvedBy, approved }) => {
     try {
       if (!prisma2)
         return { success: false };
+      const next = approved !== false;
       const ot = await prisma2.employeeOvertime.update({
         where: { id },
-        data: { approved: true, approvedBy: approvedBy ?? null }
+        data: { approved: next, approvedBy: next ? approvedBy ?? null : null }
       });
       await prisma2.employeeActivityLog.create({
-        data: { employeeId: ot.employeeId, action: "overtime_approved", details: `${ot.hours}h overtime approved`, performedBy: approvedBy ?? null }
+        data: {
+          employeeId: ot.employeeId,
+          action: next ? "overtime_approved" : "overtime_unapproved",
+          details: next ? `${ot.hours}h overtime approved` : `${ot.hours}h overtime approval withdrawn`,
+          performedBy: approvedBy ?? null
+        }
       });
       return { success: true, overtime: ot };
     } catch (error) {
-      log7.error("Error approving overtime:", error);
+      log7.error("Error updating overtime approval:", error);
       return { success: false, message: error.message };
     }
   });
@@ -4181,22 +4485,34 @@ function registerEmployeesHandlers(prisma2) {
         where: { id },
         data: { status, approvedBy: approvedBy ?? null, reviewedAt: /* @__PURE__ */ new Date() }
       });
+      const rangeStart = new Date(leave.startDate);
+      rangeStart.setUTCHours(0, 0, 0, 0);
+      const rangeEnd = new Date(leave.endDate);
+      rangeEnd.setUTCHours(0, 0, 0, 0);
       if (status === "approved") {
-        const cur = new Date(leave.startDate);
-        cur.setUTCHours(0, 0, 0, 0);
-        const end = new Date(leave.endDate);
-        end.setUTCHours(0, 0, 0, 0);
+        const cur = new Date(rangeStart);
         let guard = 0;
-        while (cur.getTime() <= end.getTime() && guard < 400) {
+        while (cur.getTime() <= rangeEnd.getTime() && guard < 400) {
           const day = new Date(cur);
           await prisma2.employeeAttendance.upsert({
             where: { employeeId_date: { employeeId: leave.employeeId, date: day } },
             create: { employeeId: leave.employeeId, date: day, status: "leave", notes: `${leave.type} leave` },
-            update: { status: "leave" }
+            update: { status: "leave", notes: `${leave.type} leave` }
           });
           cur.setUTCDate(cur.getUTCDate() + 1);
           guard++;
         }
+      } else {
+        const after = new Date(rangeEnd);
+        after.setUTCDate(after.getUTCDate() + 1);
+        await prisma2.employeeAttendance.deleteMany({
+          where: {
+            employeeId: leave.employeeId,
+            date: { gte: rangeStart, lt: after },
+            status: "leave",
+            notes: `${leave.type} leave`
+          }
+        });
       }
       await prisma2.employeeActivityLog.create({
         data: { employeeId: leave.employeeId, action: `leave_${status}`, details: `${leave.type} leave ${status} (${leave.days} day(s))`, performedBy: approvedBy ?? null }
@@ -4215,6 +4531,265 @@ function registerEmployeesHandlers(prisma2) {
       return { success: true };
     } catch (error) {
       log7.error("Error deleting leave:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  const CHECKLIST_PHASES = ["onboarding", "offboarding"];
+  async function seedChecklist(employeeId, phase, performedBy) {
+    if (!prisma2)
+      return 0;
+    const template = phase === "onboarding" ? DEFAULT_ONBOARDING_TASKS : DEFAULT_OFFBOARDING_TASKS;
+    const existing = await prisma2.employeeChecklistItem.findMany({
+      where: { employeeId, phase },
+      select: { title: true }
+    });
+    const have = new Set(existing.map((item) => item.title));
+    const toCreate = template.filter((task) => !have.has(task.title));
+    if (!toCreate.length)
+      return 0;
+    await prisma2.employeeChecklistItem.createMany({
+      data: toCreate.map((task, index) => ({
+        employeeId,
+        phase,
+        title: task.title,
+        category: task.category,
+        required: task.required,
+        sortOrder: index
+      }))
+    });
+    await prisma2.employeeActivityLog.create({
+      data: {
+        employeeId,
+        action: `${phase}_checklist_created`,
+        details: `${toCreate.length} ${phase} task(s) created`,
+        performedBy
+      }
+    });
+    return toCreate.length;
+  }
+  ipcMain.handle("employees:checklist:add", async (_, { employeeId, phase, title, category, required, dueDate, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const clean = String(title ?? "").trim();
+      if (!employeeId || !clean)
+        return { success: false, message: "A task needs a title" };
+      const next = await prisma2.employeeChecklistItem.count({ where: { employeeId, phase: phase ?? "onboarding" } });
+      const item = await prisma2.employeeChecklistItem.create({
+        data: {
+          employeeId,
+          phase: CHECKLIST_PHASES.includes(phase) ? phase : "onboarding",
+          title: clean.slice(0, 200),
+          category: String(category ?? "other").slice(0, 40),
+          required: required !== false,
+          dueDate: dueDate ? new Date(dueDate) : null,
+          sortOrder: next
+        }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId,
+          action: "checklist_item_added",
+          details: `${item.phase} \xB7 ${item.title}`,
+          performedBy: performedBy ?? null
+        }
+      });
+      return { success: true, item };
+    } catch (error) {
+      log7.error("Error adding checklist item:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:checklist:toggle", async (_, { id, completed, performedBy, notes }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const done = completed !== false;
+      const item = await prisma2.employeeChecklistItem.update({
+        where: { id },
+        data: {
+          completed: done,
+          completedAt: done ? /* @__PURE__ */ new Date() : null,
+          completedBy: done ? performedBy ?? null : null,
+          ...notes !== void 0 ? { notes: notes || null } : {}
+        }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId: item.employeeId,
+          action: done ? "checklist_item_done" : "checklist_item_reopened",
+          details: `${item.phase} \xB7 ${item.title}`,
+          performedBy: performedBy ?? null
+        }
+      });
+      return { success: true, item };
+    } catch (error) {
+      log7.error("Error updating checklist item:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:checklist:delete", async (_, id) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      await prisma2.employeeChecklistItem.delete({ where: { id } });
+      return { success: true };
+    } catch (error) {
+      log7.error("Error deleting checklist item:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:onboarding:start", async (_, { employeeId, probationMonths, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const created = await seedChecklist(employeeId, "onboarding", performedBy ?? null);
+      const employee = await prisma2.employee.findUnique({
+        where: { id: employeeId },
+        select: { hireDate: true, probationEndDate: true }
+      });
+      let probationEndDate = employee?.probationEndDate ?? null;
+      if (!probationEndDate && employee?.hireDate) {
+        const months = Number.isFinite(Number(probationMonths)) ? Number(probationMonths) : 3;
+        const start = new Date(employee.hireDate);
+        const end = new Date(start);
+        end.setMonth(end.getMonth() + months);
+        probationEndDate = end;
+        await prisma2.employee.update({ where: { id: employeeId }, data: { probationEndDate: end } });
+      }
+      return { success: true, created, probationEndDate };
+    } catch (error) {
+      log7.error("Error starting onboarding:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:offboarding:initiate", async (_, {
+    employeeId,
+    lastWorkingDate,
+    exitReason,
+    rehireEligible,
+    exitInterviewNotes,
+    performedBy
+  }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      if (!employeeId)
+        return { success: false, message: "Missing employee" };
+      const lastDay = lastWorkingDate ? new Date(lastWorkingDate) : /* @__PURE__ */ new Date();
+      const employee = await prisma2.employee.update({
+        where: { id: employeeId },
+        data: {
+          lastWorkingDate: lastDay,
+          exitReason: exitReason ? String(exitReason).slice(0, 60) : null,
+          rehireEligible: typeof rehireEligible === "boolean" ? rehireEligible : null,
+          exitInterviewNotes: exitInterviewNotes ? String(exitInterviewNotes).slice(0, 4e3) : null
+        }
+      });
+      const created = await seedChecklist(employeeId, "offboarding", performedBy ?? null);
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId,
+          action: "offboarding_started",
+          details: `Last working day ${lastDay.toISOString().slice(0, 10)}${exitReason ? ` \xB7 ${exitReason}` : ""} \xB7 ${created} task(s) created`,
+          performedBy: performedBy ?? null
+        }
+      });
+      return { success: true, employee, created };
+    } catch (error) {
+      log7.error("Error initiating offboarding:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:offboarding:settlement", async (_, {
+    employeeId,
+    gratuityMonthsPerYear,
+    includeGratuity,
+    additions,
+    deductions
+  }) => {
+    try {
+      if (!prisma2)
+        return null;
+      const employee = await prisma2.employee.findUnique({ where: { id: employeeId } });
+      if (!employee)
+        return null;
+      const year = (/* @__PURE__ */ new Date()).getFullYear();
+      const approvedAnnual = await prisma2.employeeLeave.findMany({
+        where: {
+          employeeId,
+          status: "approved",
+          type: "annual",
+          startDate: { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) }
+        },
+        select: { days: true }
+      });
+      const taken = approvedAnnual.reduce((sum, row) => sum + (row.days ?? 0), 0);
+      const allowance = employee.annualLeaveDays ?? 21;
+      const lastDay = new Date(employee.lastWorkingDate ?? /* @__PURE__ */ new Date());
+      const ot = await computeOvertimeForMonth(employeeId, lastDay.getMonth() + 1, lastDay.getFullYear());
+      const breakdown = computeSettlement({
+        salary: employee.salary ?? 0,
+        salaryType: employee.salaryType ?? "monthly",
+        hireDate: employee.hireDate ? new Date(employee.hireDate).toISOString() : (/* @__PURE__ */ new Date()).toISOString(),
+        lastWorkingDate: lastDay.toISOString(),
+        leaveRemainingDays: Math.max(0, allowance - taken),
+        gratuityMonthsPerYear: Number(gratuityMonthsPerYear),
+        includeGratuity: includeGratuity !== false,
+        additions: Number(additions),
+        deductions: Number(deductions),
+        overtimePay: ot.overtimePay,
+        overtimeHours: ot.overtimeHours
+      });
+      return {
+        ...breakdown,
+        leaveAllowance: allowance,
+        leaveTaken: taken,
+        overtimeHours: ot.overtimeHours,
+        overtimePay: ot.overtimePay
+      };
+    } catch (error) {
+      log7.error("Error computing settlement:", error);
+      return null;
+    }
+  });
+  ipcMain.handle("employees:offboarding:complete", async (_, { employeeId, performedBy, force }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const outstanding = await prisma2.employeeChecklistItem.findMany({
+        where: { employeeId, phase: "offboarding", required: true, completed: false },
+        select: { title: true }
+      });
+      if (outstanding.length && force !== true) {
+        return {
+          success: false,
+          code: "OUTSTANDING_TASKS",
+          outstanding: outstanding.map((item) => item.title),
+          message: `${outstanding.length} required task(s) are still open`
+        };
+      }
+      const employee = await prisma2.employee.findUnique({ where: { id: employeeId } });
+      const exitDate = employee?.lastWorkingDate ?? /* @__PURE__ */ new Date();
+      const updated = await prisma2.employee.update({
+        where: { id: employeeId },
+        data: {
+          status: "terminated",
+          terminationDate: exitDate,
+          terminationNote: employee?.exitReason ?? "Offboarded"
+        }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId,
+          action: "offboarding_completed",
+          details: `Offboarding closed on ${new Date(exitDate).toISOString().slice(0, 10)}${force === true && outstanding.length ? ` \xB7 forced with ${outstanding.length} open task(s)` : ""}`,
+          performedBy: performedBy ?? null
+        }
+      });
+      return { success: true, employee: updated, forced: force === true && outstanding.length > 0 };
+    } catch (error) {
+      log7.error("Error completing offboarding:", error);
       return { success: false, message: error.message };
     }
   });
@@ -27041,8 +27616,8 @@ function registerVetMedicineQueryHandlers(prisma2) {
       if (!medicineId)
         throw new Error("medicineId is required");
       const fromDate = params?.from ? new Date(params.from) : null;
-      const toDate = params?.to ? new Date(new Date(params.to).getTime() + 86399999) : null;
-      const inRange = (d) => (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+      const toDate2 = params?.to ? new Date(new Date(params.to).getTime() + 86399999) : null;
+      const inRange = (d) => (!fromDate || d >= fromDate) && (!toDate2 || d <= toDate2);
       const medicine = await prisma2.vetMedicine.findUnique({
         where: { id: medicineId },
         select: { id: true, name: true, unit: true, subUnit: true, category: true, minimumStock: true }
