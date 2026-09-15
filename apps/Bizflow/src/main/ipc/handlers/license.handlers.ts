@@ -803,6 +803,12 @@ export function registerLicenseHandlers(): void {
           signature?: string
           error?: string
           code?: string
+          currentDeviceName?: string
+        }
+
+        if (res.status === 429) {
+          // The server rate-limits failed attempts; that is not a wrong key.
+          return { ok: false, error: data.error ?? 'Too many attempts', code: 'RATE_LIMITED' }
         }
 
         if (!res.ok || !data.activation || !data.signature) {
@@ -810,12 +816,19 @@ export function registerLicenseHandlers(): void {
             ok: false,
             error: data.error ?? 'Activation failed',
             code: data.code,
+            // Which device already holds the licence — the one fact that makes
+            // the "already activated elsewhere" answer actionable.
+            currentDeviceName: data.currentDeviceName,
           }
         }
 
         const activation: LocalActivation = { ...data.activation, signature: data.signature }
         if (!writeActivation(activation)) {
-          return { ok: false, error: 'Secure license activation is unavailable. Contact support.' }
+          return {
+            ok: false,
+            error: 'Secure license activation is unavailable. Contact support.',
+            code: 'STORAGE',
+          }
         }
 
         // The rest of the UI (module switcher, licence gate) reads its own copy
@@ -831,6 +844,9 @@ export function registerLicenseHandlers(): void {
         return {
           ok: false,
           error: (error as Error).message,
+          // Distinguished from a rejected key so the panel can tell the
+          // customer to check their connection instead of their typing.
+          code: 'OFFLINE',
         }
       }
     }

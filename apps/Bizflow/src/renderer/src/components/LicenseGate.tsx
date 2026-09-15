@@ -25,7 +25,7 @@ import { BadgeCheck, KeyRound, LifeBuoy, Loader2, Mail, ShieldAlert, ShieldCheck
 import { useLanguage } from '../contexts/LanguageContext'
 import LicenceDeviceId from './license/LicenceDeviceId'
 import LicenceRequestForm from './license/LicenceRequestForm'
-import { licenseStrings, statusLabel } from './license/licenseStrings'
+import { activationErrorText, licenceKeyShapeOk, licenseStrings, statusLabel } from './license/licenseStrings'
 import { SUPPORT_EMAIL } from './help/support'
 
 type LicenseStatus = 'trial' | 'active' | 'grace' | 'expired' | 'trial_expired' | 'unknown'
@@ -140,6 +140,7 @@ export default function LicenseGate({ children }: { children: ReactNode }) {
   const blocked = state.status === 'trial_expired' || state.status === 'expired'
   const isAr = language === 'ar'
   const strings = licenseStrings(isAr)
+  const keyLooksWrong = licenseKey.trim().length > 0 && !licenceKeyShapeOk(licenseKey)
 
   async function handleActivate() {
     setBusy(true)
@@ -147,13 +148,14 @@ export default function LicenseGate({ children }: { children: ReactNode }) {
     try {
       const result = await window.api.license.activateOnline(email.trim(), licenseKey.trim().toUpperCase())
       if (!result.ok) {
-        setMessage({ tone: 'bad', text: result.error ?? strings.activateFailed })
+        // The server replies in English; `code` is the part we can translate.
+        setMessage({ tone: 'bad', text: activationErrorText(strings, result) })
         return
       }
       setMessage({ tone: 'ok', text: strings.activateSuccess })
       await refresh()
-    } catch (err) {
-      setMessage({ tone: 'bad', text: (err as Error).message || strings.activateFailed })
+    } catch {
+      setMessage({ tone: 'bad', text: strings.activateOffline })
     } finally {
       setBusy(false)
     }
@@ -267,14 +269,20 @@ export default function LicenseGate({ children }: { children: ReactNode }) {
                   <span className={labelClass}>{strings.keyLabel}</span>
                   <input
                     value={licenseKey}
-                    onChange={(event) => setLicenseKey(event.target.value.toUpperCase())}
+                    onChange={(event) => setLicenseKey(event.target.value.toUpperCase().replace(/\s+/g, ''))}
                     placeholder={strings.keyPlaceholder}
                     spellCheck={false}
-                    className={`${inputClass} font-mono tracking-wide`}
+                    className={`${inputClass} font-mono tracking-wide ${
+                      keyLooksWrong ? 'border-amber-300 dark:border-amber-700' : ''
+                    }`}
                   />
                 </label>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">{strings.keyHint}</p>
+
+              {keyLooksWrong ? (
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-300">{strings.keyShapeWarning}</p>
+              ) : null}
 
               {message ? (
                 <p

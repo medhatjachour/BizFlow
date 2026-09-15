@@ -69,11 +69,14 @@ export default function LicenceOwnerPanel({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-900 dark:text-white">
-          <ShieldCheck className="h-5 w-5" />
+      {/* A sub-section, not a second page title: the panel header above already
+          says "Licence", and two identical headings on one screen read like a
+          rendering bug. */}
+      <div className="border-t border-slate-200 pt-5 dark:border-slate-700">
+        <h4 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
+          <ShieldCheck className="h-4 w-4" />
           {strings.ownerTitle}
-        </h3>
+        </h4>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{strings.ownerLead}</p>
       </div>
 

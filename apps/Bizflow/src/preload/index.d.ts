@@ -515,6 +515,8 @@ interface API {
       ok: boolean
       error?: string
       code?: string
+      /** Set when the key is already live on another device. */
+      currentDeviceName?: string
       activationState?: LicenseState
     }>
     /**

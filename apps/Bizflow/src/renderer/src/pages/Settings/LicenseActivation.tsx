@@ -22,9 +22,20 @@ import type { ModuleId } from '../../../../shared/modules'
 import LicenceDeviceId from '../../components/license/LicenceDeviceId'
 import LicenceOwnerPanel from '../../components/license/LicenceOwnerPanel'
 import LicenceRequestForm from '../../components/license/LicenceRequestForm'
-import { licenseStrings, statusLabel, type LicenseTone } from '../../components/license/licenseStrings'
+import {
+  activationErrorText,
+  licenceKeyShapeOk,
+  licenseStrings,
+  statusLabel,
+  type LicenseTone,
+} from '../../components/license/licenseStrings'
 
 type LicenseStatus = 'trial' | 'active' | 'grace' | 'expired' | 'trial_expired'
+
+interface Notice {
+  kind: 'ok' | 'error'
+  text: string
+}
 
 interface ActivationInfo {
   email: string
@@ -70,9 +81,13 @@ export default function LicenseActivation() {
   const [state, setState] = useState<LicenseState | null>(null)
   const [email, setEmail] = useState('')
   const [licenseKey, setLicenseKey] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busyAction, setBusyAction] = useState<'revalidate' | 'activate' | null>(null)
   const [requesting, setRequesting] = useState(false)
-  const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  // Two notices, because the two buttons live in different cards. A failed
+  // activation used to render at the top of the page, in the status card, far
+  // from the form the customer had just submitted.
+  const [statusNote, setStatusNote] = useState<Notice | null>(null)
+  const [formNote, setFormNote] = useState<Notice | null>(null)
 
   async function refresh() {
     try {
@@ -102,27 +117,30 @@ export default function LicenseActivation() {
   }, [activationEmail])
 
   async function handleActivate() {
-    setBusy(true)
-    setMessage(null)
+    setBusyAction('activate')
+    setFormNote(null)
     try {
       const result = await window.api.license.activateOnline(email.trim(), licenseKey.trim().toUpperCase())
       if (!result.ok) {
-        setMessage({ kind: 'error', text: result.error ?? strings.activateFailed })
+        setFormNote({ kind: 'error', text: activationErrorText(strings, result) })
         return
       }
       await refresh()
-      setMessage({ kind: 'ok', text: strings.activateSuccess })
+      setFormNote({ kind: 'ok', text: strings.activateSuccess })
       setLicenseKey('')
-    } catch (err) {
-      setMessage({ kind: 'error', text: (err as Error).message })
+      // A customer who just activated does not need the "please send me a key"
+      // form left open underneath the confirmation.
+      setRequesting(false)
+    } catch {
+      setFormNote({ kind: 'error', text: strings.activateOffline })
     } finally {
-      setBusy(false)
+      setBusyAction(null)
     }
   }
 
   async function handleRevalidate() {
-    setBusy(true)
-    setMessage(null)
+    setBusyAction('revalidate')
+    setStatusNote(null)
     try {
       const result = await window.api.license.validateOnline()
       await refresh()
@@ -130,17 +148,17 @@ export default function LicenseActivation() {
       // machine (offline) the main process deliberately keeps the licence and
       // reports `checked: false`. Claiming success there told offline customers
       // their licence had been confirmed when nothing had happened.
-      setMessage(
+      setStatusNote(
         !result.checked
           ? { kind: 'error', text: strings.revalidateOffline }
           : result.valid
             ? { kind: 'ok', text: strings.revalidateOk }
             : { kind: 'error', text: strings.revalidateFailed }
       )
-    } catch (err) {
-      setMessage({ kind: 'error', text: (err as Error).message })
+    } catch {
+      setStatusNote({ kind: 'error', text: strings.revalidateFailed })
     } finally {
-      setBusy(false)
+      setBusyAction(null)
     }
   }
 
@@ -148,6 +166,12 @@ export default function LicenseActivation() {
   const style = STATUS_STYLES[status]
   const needsActivation = status === 'trial_expired' || status === 'expired'
   const activation = state?.activation
+  const busy = busyAction !== null
+
+  // A typo in the key costs a round trip and counts against the server's
+  // failed-attempt limiter, so flag the shape while the customer is still
+  // typing. It is a hint, never a blocker: the server stays the authority.
+  const keyLooksWrong = licenseKey.trim().length > 0 && !licenceKeyShapeOk(licenseKey)
 
   // Dates follow the active language, the same way every HR screen formats
   // them. `toLocaleDateString('ar')` used to decide on its own and emitted
@@ -176,6 +200,20 @@ export default function LicenseActivation() {
     </div>
   )
 
+  const notice = (value: Notice | null): React.ReactNode =>
+    value ? (
+      <p
+        role={value.kind === 'ok' ? 'status' : 'alert'}
+        className={`mt-3 text-sm font-medium ${
+          value.kind === 'ok'
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : 'rounded-lg border border-rose-300/60 bg-rose-50 px-3 py-2 text-rose-700 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-200'
+        }`}
+      >
+        {value.text}
+      </p>
+    ) : null
+
   return (
     <div className="space-y-6">
       <div>
@@ -203,19 +241,23 @@ export default function LicenseActivation() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={handleRevalidate}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50"
-            >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              )}
-              {busy ? strings.revalidating : strings.revalidate}
-            </button>
+            {/* Nothing to check before the device is activated: the button could
+                only ever fail, so it is not offered. */}
+            {activation ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleRevalidate}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50"
+              >
+                {busyAction === 'revalidate' ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                )}
+                {busyAction === 'revalidate' ? strings.revalidating : strings.revalidate}
+              </button>
+            ) : null}
             <a
               href={supportMailto}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50"
@@ -256,15 +298,7 @@ export default function LicenseActivation() {
           </p>
         ) : null}
 
-        {message ? (
-          <p
-            className={`mt-3 text-sm font-medium ${
-              message.kind === 'ok' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-            }`}
-          >
-            {message.text}
-          </p>
-        ) : null}
+        {notice(statusNote)}
 
         {activation ? (
           <dl className="mt-4 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-900/50">
@@ -278,8 +312,10 @@ export default function LicenseActivation() {
             {detailRow(strings.licensedToRow, activation.email)}
             {detailRow(strings.issuedRow, dateLabel(activation.issuedAt))}
             {detailRow(strings.expiresRow, dateLabel(activation.expiresAt))}
+            {/* The next check falls on the expiry date, so the sentence above
+                already carries it — repeating it here just made the panel look
+                like it was saying three different things. */}
             {detailRow(strings.lastCheckedRow, dateLabel(activation.lastValidatedAt))}
-            {nextCheck ? detailRow(strings.nextCheckRow, nextCheck) : null}
           </dl>
         ) : (
           <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{strings.notActivated}</p>
@@ -336,14 +372,20 @@ export default function LicenseActivation() {
             </span>
             <input
               value={licenseKey}
-              onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
+              onChange={(e) => setLicenseKey(e.target.value.toUpperCase().replace(/\s+/g, ''))}
               placeholder={strings.keyPlaceholder}
               spellCheck={false}
               dir="ltr"
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left font-mono text-sm outline-none focus:border-primary dark:border-slate-700 dark:bg-slate-900"
+              className={`w-full rounded-lg border bg-white px-3 py-2 text-left font-mono text-sm outline-none focus:border-primary dark:bg-slate-900 ${
+                keyLooksWrong ? 'border-amber-300 dark:border-amber-700' : 'border-slate-200 dark:border-slate-700'
+              }`}
             />
           </label>
         </div>
+
+        {keyLooksWrong ? (
+          <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">{strings.keyShapeWarning}</p>
+        ) : null}
 
         <button
           type="button"
@@ -351,14 +393,16 @@ export default function LicenseActivation() {
           onClick={handleActivate}
           className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
         >
-          {busy ? (
+          {busyAction === 'activate' ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
             <KeyRound className="h-4 w-4" aria-hidden="true" />
           )}
-          {busy ? strings.activating : strings.activateButton}
+          {busyAction === 'activate' ? strings.activating : strings.activateButton}
         </button>
         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{strings.keyHint}</p>
+
+        {notice(formNote)}
 
         {needsActivation || requesting ? (
           <div className="mt-5 border-t border-slate-200 pt-5 dark:border-slate-700">

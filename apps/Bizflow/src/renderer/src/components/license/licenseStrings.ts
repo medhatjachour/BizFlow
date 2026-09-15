@@ -33,10 +33,19 @@ export interface LicenseStrings {
   keyLabel: string
   keyPlaceholder: string
   keyHint: string
+  /** Inline, non-blocking hint under the key field for an obviously mistyped key. */
+  keyShapeWarning: string
   activateButton: string
   activating: string
   activateSuccess: string
   activateFailed: string
+  /** The request never reached us — say so instead of blaming the details. */
+  activateOffline: string
+  activateRateLimited: string
+  /** The licence is already live somewhere else; say where, then offer the move. */
+  activateLockedToOtherDevice: (device?: string) => string
+  activateNotFound: string
+  activateStorageFailed: string
   whereIsKeyTitle: string
   whereIsKeyBody: string
 
@@ -102,7 +111,6 @@ export interface LicenseStrings {
   issuedRow: string
   expiresRow: string
   lastCheckedRow: string
-  nextCheckRow: string
   notActivated: string
   revalidate: string
   revalidating: string
@@ -171,11 +179,21 @@ const ar: LicenseStrings = {
   emailPlaceholder: 'you@example.com',
   keyLabel: 'مفتاح الترخيص',
   keyPlaceholder: 'BIZ-XXXXX-XXXXX-XXXXX-XXXXX',
-  keyHint: 'المفتاح يبدأ بـ BIZ- ثم خمس مجموعات من خمسة أحرف، والشرطات جزء منه.',
+  keyHint: 'المفتاح يبدأ بـ BIZ- ثم أربع مجموعات من خمسة أحرف، والشرطات جزء منه.',
+  keyShapeWarning: 'صيغة المفتاح تبدو غير مكتملة: BIZ- ثم أربع مجموعات من خمسة أحرف. تأكد من نسخه كاملاً.',
   activateButton: 'تفعيل هذا الجهاز',
   activating: 'جارٍ التفعيل…',
   activateSuccess: 'تم تفعيل الترخيص لهذا الجهاز.',
-  activateFailed: 'لم يكتمل التفعيل. راجع البيانات وحاول مرة أخرى.',
+  activateFailed: 'لم يكتمل التفعيل. راجع البريد والمفتاح وحاول مرة أخرى.',
+  activateOffline: 'تعذّر الوصول إلى الخادم. تأكد من الاتصال بالإنترنت ثم حاول مرة أخرى.',
+  activateRateLimited: 'توقّفنا عن المحاولات بعد عدة محاولات غير صحيحة. انتظر ربع ساعة ثم أعد المحاولة.',
+  activateLockedToOtherDevice: (device) =>
+    device
+      ? `هذا المفتاح مُفعّل بالفعل على جهاز آخر (${device}). إن كان الجهاز القديم لديك، اطلب نقل الترخيص إلى هذا الجهاز وسننقله بلا مقابل.`
+      : 'هذا المفتاح مُفعّل بالفعل على جهاز آخر. اطلب نقل الترخيص إلى هذا الجهاز وسننقله بلا مقابل.',
+  activateNotFound: 'لم نجد ترخيصاً بهذا البريد وهذا المفتاح. تأكد من البريد الذي اشتريت به، ثم راجع المفتاح أو اطلب منّا إعادة إرساله.',
+  activateStorageFailed:
+    'قَبِل الخادم الترخيص، لكن تعذّر تخزينه على هذا الجهاز. أعد تشغيل التطبيق ثم حاول مرة أخرى، وإن تكرّر الأمر راسل الدعم.',
   whereIsKeyTitle: 'أين أجد المفتاح؟',
   whereIsKeyBody:
     'وصل المفتاح في رسالة بريد عند الشراء. ابحث في بريدك عن «BizFlow». فإن لم تجده، اطلب منّا إعادة إرساله وسنرسله إلى البريد نفسه.',
@@ -247,7 +265,6 @@ const ar: LicenseStrings = {
   issuedRow: 'تاريخ الإصدار',
   expiresRow: 'صالح حتى',
   lastCheckedRow: 'آخر تحقق',
-  nextCheckRow: 'التحقق التلقائي القادم',
   notActivated: 'لم يُفعّل بعد',
   revalidate: 'التحقق الآن',
   revalidating: 'جارٍ التحقق…',
@@ -299,11 +316,21 @@ const en: LicenseStrings = {
   emailPlaceholder: 'you@example.com',
   keyLabel: 'Licence key',
   keyPlaceholder: 'BIZ-XXXXX-XXXXX-XXXXX-XXXXX',
-  keyHint: 'The key starts with BIZ- followed by five groups of five characters. The dashes are part of it.',
+  keyHint: 'The key starts with BIZ- followed by four groups of five characters. The dashes are part of it.',
+  keyShapeWarning: 'That does not look like a full key yet: BIZ- then four groups of five characters. Check you copied all of it.',
   activateButton: 'Activate this device',
   activating: 'Activating…',
   activateSuccess: 'Licence activated for this device.',
-  activateFailed: 'Activation did not complete. Check the details and try again.',
+  activateFailed: 'Activation did not complete. Check the email and the key, then try again.',
+  activateOffline: 'We could not reach the server. Check your internet connection and try again.',
+  activateRateLimited: 'We paused after several failed attempts. Wait fifteen minutes, then try again.',
+  activateLockedToOtherDevice: (device) =>
+    device
+      ? `This key is already activated on another device (${device}). If that is an old computer of yours, request a licence move and we will move it across at no charge.`
+      : 'This key is already activated on another device. Request a licence move and we will move it across at no charge.',
+  activateNotFound: 'We found no licence for that email and key. Check the address you bought with, review the key, or ask us to resend it.',
+  activateStorageFailed:
+    'The server accepted the licence, but it could not be stored on this device. Restart the app and try again — if it keeps happening, email support.',
   whereIsKeyTitle: 'Where is my key?',
   whereIsKeyBody:
     'It arrived by email when you bought. Search your inbox for “BizFlow”. If it is missing, ask us to resend it and it will go to the same address.',
@@ -375,7 +402,6 @@ const en: LicenseStrings = {
   issuedRow: 'Issued',
   expiresRow: 'Valid until',
   lastCheckedRow: 'Last checked',
-  nextCheckRow: 'Next automatic check',
   notActivated: 'Not activated yet',
   revalidate: 'Check now',
   revalidating: 'Checking…',
@@ -408,6 +434,47 @@ const en: LicenseStrings = {
 
 export function licenseStrings(isAr: boolean): LicenseStrings {
   return isAr ? ar : en
+}
+
+/** `BIZ-` plus four groups of five Crockford base32 characters. */
+const KEY_SHAPE = /^BIZ(-[0-9A-HJKMNP-TV-Z]{5}){4}$/
+
+/**
+ * Does the typed key at least look like a key?
+ *
+ * A typo costs a round trip and counts against the server's failed-attempt
+ * limiter, so both activation screens flag the shape while the customer is still
+ * typing. This is a hint, never a gate: the server stays the authority.
+ */
+export function licenceKeyShapeOk(key: string): boolean {
+  return KEY_SHAPE.test(key.trim())
+}
+
+/**
+ * Turn a licence-server failure into something the customer can read.
+ *
+ * The server answers in English and sends a stable `code` next to its message,
+ * so translate the cases we can act on and fall back to our own sentence rather
+ * than leaking raw English into an Arabic panel.
+ */
+export function activationErrorText(
+  strings: LicenseStrings,
+  failure: { code?: string; currentDeviceName?: string }
+): string {
+  switch (failure.code) {
+    case 'LOCKED_TO_OTHER_DEVICE':
+      return strings.activateLockedToOtherDevice(failure.currentDeviceName)
+    case 'NOT_FOUND':
+      return strings.activateNotFound
+    case 'RATE_LIMITED':
+      return strings.activateRateLimited
+    case 'OFFLINE':
+      return strings.activateOffline
+    case 'STORAGE':
+      return strings.activateStorageFailed
+    default:
+      return strings.activateFailed
+  }
 }
 
 /** Status label for a licence state. */

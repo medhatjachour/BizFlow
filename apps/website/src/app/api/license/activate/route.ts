@@ -57,7 +57,13 @@ export async function POST(request: Request) {
 
   if (retryAfter) {
     return NextResponse.json(
-      { error: "Too many failed activation attempts. Try again later.", requestId },
+      {
+        error: "Too many failed activation attempts. Try again later.",
+        // Stable machine-readable reason: the desktop app localises on `code`
+        // rather than showing this English sentence to an Arabic customer.
+        code: "RATE_LIMITED",
+        requestId,
+      },
       { status: 429, headers: { "Retry-After": String(retryAfter) } }
     );
   }
