@@ -1,7 +1,7 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Phone, ArrowRight, UserCheck } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { openPluginTab } from '@renderer/utils/pluginTabs'
 import { AtRiskMember } from '../types'
 
 interface Props {
@@ -9,7 +9,6 @@ interface Props {
 }
 
 export const AtRiskMembersCard: React.FC<Props> = ({ members }) => {
-  const navigate = useNavigate()
   const { t } = useLanguage()
 
   return (
@@ -34,7 +33,7 @@ export const AtRiskMembersCard: React.FC<Props> = ({ members }) => {
           </div>
 
           <button
-            onClick={() => navigate('/gym/members?status=inactive')}
+            onClick={() => openPluginTab('gym', 'trainees')}
             className="inline-flex items-center gap-1 text-[11px] text-orange-500 hover:text-orange-600 font-semibold"
           >
             <span>View All</span>

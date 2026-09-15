@@ -16,13 +16,14 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { GymDashboardOverview } from '../types'
 import { formatCompactNumber } from '../utils'
 import { KpiSection } from '@renderer/components/ui/KpiVisibility'
+import { followPluginTarget, PluginTabTarget } from '@renderer/utils/pluginTabs'
 
 interface Props {
   stats: GymDashboardOverview
   atRiskCount: number
 }
 
-interface StatItem {
+interface StatItem extends PluginTabTarget {
   icon: LucideIcon
   label: string
   value: string | number
@@ -30,7 +31,6 @@ interface StatItem {
   color: string
   bg: string
   border: string
-  route?: string
 }
 
 export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
@@ -48,7 +48,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: 'text-orange-600 dark:text-orange-400',
       bg: 'bg-orange-50/70 dark:bg-orange-950/20',
       border: 'border-orange-200/70 dark:border-orange-800/40',
-      route: '/gym/members'
+      tab: 'trainees'
     },
     {
       icon: CalendarX,
@@ -58,7 +58,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: stats.expiringSoon > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400',
       bg: 'bg-amber-50/70 dark:bg-amber-950/20',
       border: 'border-amber-200/70 dark:border-amber-800/40',
-      route: '/gym/subscriptions'
+      tab: 'subscriptions'
     },
     {
       icon: Footprints,
@@ -68,7 +68,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: 'text-teal-600 dark:text-teal-400',
       bg: 'bg-teal-50/70 dark:bg-teal-950/20',
       border: 'border-teal-200/70 dark:border-teal-800/40',
-      route: '/gym/attendance'
+      tab: 'attendance'
     },
     {
       icon: TrendingUp,
@@ -78,7 +78,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: isNetPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
       bg: 'bg-emerald-50/70 dark:bg-emerald-950/20',
       border: 'border-emerald-200/70 dark:border-emerald-800/40',
-      route: '/gym/finance'
+      to: '/finance'
     },
     {
       icon: UserCheck,
@@ -88,7 +88,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: 'text-blue-600 dark:text-blue-400',
       bg: 'bg-blue-50/70 dark:bg-blue-950/20',
       border: 'border-blue-200/70 dark:border-blue-800/40',
-      route: '/gym/members'
+      tab: 'trainees'
     },
     {
       icon: ClipboardList,
@@ -98,7 +98,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: 'text-purple-600 dark:text-purple-400',
       bg: 'bg-purple-50/70 dark:bg-purple-950/20',
       border: 'border-purple-200/70 dark:border-purple-800/40',
-      route: '/gym/programs'
+      tab: 'programs'
     },
     {
       icon: Lock,
@@ -108,7 +108,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: 'text-slate-700 dark:text-slate-300',
       bg: 'bg-slate-50 dark:bg-slate-800/60',
       border: 'border-slate-200/80 dark:border-slate-700/80',
-      route: '/gym/lockers'
+      tab: 'lockers'
     },
     {
       icon: AlertTriangle,
@@ -118,7 +118,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
       color: atRiskCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400',
       bg: atRiskCount > 0 ? 'bg-rose-50/70 dark:bg-rose-950/20' : 'bg-slate-50 dark:bg-slate-800/60',
       border: atRiskCount > 0 ? 'border-rose-200/70 dark:border-rose-800/40' : 'border-slate-200/80 dark:border-slate-700/80',
-      route: '/gym/members?status=inactive'
+      tab: 'trainees'
     }
   ]
 
@@ -130,7 +130,7 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
           return (
             <div
               key={idx}
-              onClick={() => card.route && navigate(card.route)}
+              onClick={() => followPluginTarget('gym', card, navigate)}
               className={`group rounded-2xl border p-3.5 ${card.bg} ${card.border} cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 relative overflow-hidden`}
             >
               <div className="flex items-center justify-between mb-1.5">

@@ -1,7 +1,7 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Clock, ArrowRight, ShieldCheck } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { openPluginTab } from '@renderer/utils/pluginTabs'
 import { ExpiringSubscription } from '../types'
 import { getDaysRemaining } from '../utils'
 
@@ -10,7 +10,6 @@ interface Props {
 }
 
 export const ExpiringSubsCard: React.FC<Props> = ({ subscriptions }) => {
-  const navigate = useNavigate()
   const { t } = useLanguage()
 
   return (
@@ -35,7 +34,7 @@ export const ExpiringSubsCard: React.FC<Props> = ({ subscriptions }) => {
           </div>
 
           <button
-            onClick={() => navigate('/gym/subscriptions')}
+            onClick={() => openPluginTab('gym', 'subscriptions')}
             className="inline-flex items-center gap-1 text-[11px] text-orange-500 hover:text-orange-600 font-semibold"
           >
             <span>Manage</span>

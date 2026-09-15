@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { followPluginTarget } from '@renderer/utils/pluginTabs'
 import { QUICK_ACTIONS } from '../constants'
 
 export const QuickActionsBar: React.FC = () => {
@@ -14,7 +15,7 @@ export const QuickActionsBar: React.FC = () => {
         return (
           <button
             key={action.id}
-            onClick={() => navigate(action.route)}
+            onClick={() => followPluginTarget('gym', action, navigate)}
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all duration-150 active:scale-95 ${action.className}`}
           >
             <Icon size={13} />

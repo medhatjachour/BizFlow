@@ -1,12 +1,13 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Boxes, ArrowRightLeft, BarChart3, ArrowUpRight } from 'lucide-react'
+import { followPluginTarget } from '@renderer/utils/pluginTabs'
 import { QUICK_NAV_LINKS } from '../constants'
 
 export const QuickNavShortcuts: React.FC = () => {
   const navigate = useNavigate()
 
-  const iconsMap: Record<string, any> = {
+  const iconsMap: Record<string, typeof MapPin> = {
     locations: MapPin,
     inventory: Boxes,
     transfers: ArrowRightLeft,
@@ -16,11 +17,11 @@ export const QuickNavShortcuts: React.FC = () => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       {QUICK_NAV_LINKS.map(link => {
-        const Icon = iconsMap[link.tab] || Boxes
+        const Icon = iconsMap[link.id] || Boxes
         return (
           <button
-            key={link.tab}
-            onClick={() => navigate(link.route)}
+            key={link.id}
+            onClick={() => followPluginTarget('warehouse', link, navigate)}
             className="group p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm text-left hover:border-indigo-300 dark:hover:border-indigo-800 hover:shadow-md transition-all flex flex-col justify-between"
           >
             <div className="flex items-center justify-between w-full mb-3">
