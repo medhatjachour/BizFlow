@@ -18,14 +18,56 @@ import { afterEach, describe, expect, it, vi } from "vitest";
  *
  * `/api/version` is the endpoint that makes that last check possible, and its
  * value only means anything if it is inlined at image build time - so the whole
- * chain is asserted here: workflow export -> compose build arg -> Dockerfile ENV
- * -> next.config `env` -> route.
+ * chain is asserted here: workflow argument -> compose build arg -> Dockerfile
+ * ENV -> next.config `env` -> route.
+ *
+ * The second half of this file guards the shape of the remote commands. The
+ * apply step used to hand ssh one enormous double-quoted body, and bash expands
+ * backticks inside double quotes *on the runner* - so two backticks in that
+ * body's comments ran on the runner (`cp: missing file operand`, then the bare
+ * word env, which pulled the whole environment into the remote script and
+ * killed the run with exit 127). The body now travels as a tracked script over
+ * stdin, and the rule that keeps it that way is asserted directly: no quoted
+ * string in the workflow may span more than one line.
  */
 
 const ROOT = path.join(__dirname, "..", "..", "..");
 
 function read(...segments: string[]): string {
   return fs.readFileSync(path.join(ROOT, ...segments), "utf8");
+}
+
+/**
+ * Lines on which a double-quoted string is still open when the line ends.
+ *
+ * A quoted body that survives to the next line is what let the runner's bash
+ * expand the remote command - backticks and `$(...)` included - before ssh ran.
+ * Callers that pass ssh a body now pipe a file instead, which leaves only short
+ * single-line argument lists inside quotes.
+ */
+function linesWithUnclosedQuote(script: string): string[] {
+  return script.split(/\r?\n/).filter((line) => {
+    let depth = 0;
+    for (let i = 0; i < line.length; i += 1) {
+      if (line[i] === "\\") {
+        i += 1;
+      } else if (line[i] === '"') {
+        depth += 1;
+      }
+    }
+    return depth % 2 === 1;
+  });
+}
+
+/**
+ * The text of the script as bash sees it, with backslash continuations joined.
+ *
+ * Steps wrap long `ssh` invocations across lines for readability, which splits a
+ * single command over several lines of the file. Matching the raw file text would
+ * only assert the wrapping, not the command.
+ */
+function joined(script: string): string {
+  return script.replace(/\\\r?\n\s*/g, " ");
 }
 
 describe("the build stamp answers where a running image came from", () => {
@@ -72,8 +114,16 @@ describe("the deploy syncs the committed tree instead of a path list", () => {
   });
 
   it("clears the website source so a deleted route cannot keep being served", () => {
-    expect(workflow).toMatch(/rm -rf apps\/website\/src apps\/website\/tests\r?\n/);
-    expect(workflow).toContain("cp -a /tmp/bizflow-ci-deploy/. .");
+    const script = read("scripts", "apply-deploy.sh");
+
+    expect(script).toMatch(/rm -rf apps\/website\/src apps\/website\/tests\n/);
+    expect(script).toContain('cp -a "$PAYLOAD_DIR/." .');
+    // Clearing the trees before discovering the payload is missing would leave
+    // the checkout unusable until the next sync, so the check comes first.
+    expect(script).toMatch(/\[ ! -d "\$PAYLOAD_DIR" \]/);
+    expect(script.indexOf('[ ! -d "$PAYLOAD_DIR" ]')).toBeLessThan(
+      script.indexOf("rm -rf apps/website/src")
+    );
   });
 
   it("refuses an image that does not name the pushed commit", () => {
@@ -83,15 +133,56 @@ describe("the deploy syncs the committed tree instead of a path list", () => {
   });
 });
 
-describe("the commit reaches the bundle through the image build", () => {
-  it("is exported by the deploy workflow before the compose build", () => {
-    const workflow = read(".github", "workflows", "deploy.yml");
+describe("the remote bodies are shipped as scripts instead of quoted into ssh", () => {
+  const workflow = read(".github", "workflows", "deploy.yml");
 
-    expect(workflow).toContain("export BUILD_COMMIT='${{ github.sha }}'");
+  it("never lets a quoted string span lines, where the runner would expand it", () => {
+    // The bug this replaces: `ssh host "…"` with a multi-line body, whose
+    // backticks bash expanded on the runner. Nothing inside a single-line quote
+    // can reach a second line's worth of remote script.
+    expect(linesWithUnclosedQuote(workflow)).toEqual([]);
+  });
+
+  it("applies the payload by piping the script in with the commit as its argument", () => {
+    expect(joined(workflow)).toMatch(
+      /ssh [^\n]*"bash -s -- '\$\{\{ github\.sha \}\}'"\s+< scripts\/apply-deploy\.sh/
+    );
+  });
+
+  it("rolls back by piping a script in too", () => {
+    expect(joined(workflow)).toMatch(/ssh [^\n]*'bash -s'\s+< scripts\/rollback-deploy\.sh/);
+
+    const script = read("scripts", "rollback-deploy.sh");
+    expect(script).toContain("docker compose up -d --no-build --force-recreate bizflow-app");
+    expect(script).toContain("ROLLBACK_STATUS=");
+    // Pointless rollback if the previous tag would be replaced by the same image.
+    expect(script).toContain("if ! docker image inspect bizflow-bizflow-app:previous");
+  });
+
+  it("runs the script somewhere other than the VPS under APP_DIR/PAYLOAD_DIR", () => {
+    // These overrides are what make the script exercisable in a scratch
+    // directory with docker stubbed, which is how it is tested off the VPS.
+    const script = read("scripts", "apply-deploy.sh");
+
+    expect(script).toContain('APP_DIR="${APP_DIR:-/home/medhat/bizflow}"');
+    expect(script).toContain('PAYLOAD_DIR="${PAYLOAD_DIR:-/tmp/bizflow-ci-deploy}"');
+    expect(script).toContain("set -euo pipefail");
+    // Traces name the file and line, which the inline form never could.
+    expect(script).toContain("PS4='+ ${BASH_SOURCE##*/}:${LINENO}: '");
+  });
+});
+
+describe("the commit reaches the bundle through the image build", () => {
+  it("is exported by the deploy script before the compose build", () => {
+    const script = read("scripts", "apply-deploy.sh");
+
+    // The argument the workflow passes in becomes the build stamp.
+    expect(script).toMatch(/commit="\$\{1:-\$\{BUILD_COMMIT:-unknown\}\}"/);
+    expect(script).toContain('export BUILD_COMMIT="$commit"');
     // Ordering matters: compose interpolates the arg from the shell environment,
     // so the export has to happen before `docker compose up -d --build`.
-    expect(workflow.indexOf("export BUILD_COMMIT=")).toBeLessThan(
-      workflow.indexOf("docker compose up -d --build")
+    expect(script.indexOf('export BUILD_COMMIT="$commit"')).toBeLessThan(
+      script.indexOf("docker compose up -d --build")
     );
   });
 

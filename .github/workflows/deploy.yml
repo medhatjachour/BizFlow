@@ -165,6 +165,21 @@ jobs:
             exit 1
           fi
 
+      # The remote body is a tracked script read from stdin, not a double-quoted
+      # argument to ssh.
+      #
+      # The inline form was a live bug rather than a style preference: bash
+      # expands backticks inside double quotes on the machine running the
+      # workflow, so the two backticks in that body's prose comments - around
+      # "cp -a" and around "env" - were executed on the runner before ssh ever
+      # saw the string. The second one, the bare word env, spliced the runner's
+      # entire environment (secrets included) into the remote script, where those
+      # lines sit outside any comment; bash on the VPS then exited 127 with
+      # "command not found" before reaching the data backup or the image tag, and
+      # the failure said "bash: line 25" - a line number that belonged to nothing.
+      # Piping a file keeps the runner from parsing a single byte of the script,
+      # removes the need for the \$VAR and \" escaping the remote body used, and
+      # makes any future failure name scripts/apply-deploy.sh with a line number.
       - name: Apply & rebuild on VPS
         id: apply
         run: |
@@ -172,51 +187,8 @@ jobs:
           # healthy build is not dropped half way through.
           ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
             -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
-            medhat@168.231.107.207 "
-            set -e
-            cd /home/medhat/bizflow
-
-            # `cp -a` overlays; it never deletes. A route file deleted from the repo
-            # would otherwise keep being served by every later build, so the website
-            # source trees are cleared and restored wholesale from the payload.
-            # Everything under them is tracked - runtime data lives in the
-            # bizflow-data volume, secrets in .env and TLS in ./ssl, none of which
-            # the payload touches.
-            rm -rf apps/website/src apps/website/tests
-            cp -a /tmp/bizflow-ci-deploy/. .
-
-            # Baked into the image at build time (Docker build arg -> next.config
-            # `env`), so the smoke test can prove the container answering requests
-            # was built from this commit rather than from stale sources.
-            export BUILD_COMMIT='${{ github.sha }}'
-
-            echo '--- pre-deploy data backup ---'
-            # Fail-safe: refuse to deploy without a restore point. If this breaks,
-            # fix backups rather than shipping without one.
-            bash scripts/backup-data.sh
-
-            echo '--- tag the current image so we can roll back ---'
-            if docker image inspect bizflow-bizflow-app:latest >/dev/null 2>&1; then
-              docker tag bizflow-bizflow-app:latest bizflow-bizflow-app:previous
-              echo 'tagged bizflow-bizflow-app:previous'
-            else
-              echo 'no existing image to tag (first deploy?)'
-            fi
-
-            docker compose config --quiet
-            docker compose up -d --build
-            echo 'Waiting for healthy...'
-            for i in \$(seq 1 24); do
-              s=\$(docker inspect -f '{{.State.Health.Status}}' bizflow-app 2>/dev/null || echo starting)
-              [ \"\$s\" = 'healthy' ] && break
-              sleep 5
-            done
-            docker inspect -f 'STATUS={{.State.Health.Status}}' bizflow-app
-
-            # Record what the running container says it was built from. The smoke
-            # test asserts this, so a mismatch fails the run and rolls back.
-            echo \"RUNTIME_VERSION=\$(curl -s http://127.0.0.1:3000/api/version || true)\"
-          "
+            medhat@168.231.107.207 "bash -s -- '${{ github.sha }}'" \
+            < scripts/apply-deploy.sh
 
       - name: Smoke test
         id: smoke
@@ -266,21 +238,8 @@ jobs:
         if: failure() && steps.apply.outcome == 'success'
         run: |
           echo 'Verification failed after deploying - rolling back.'
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes medhat@168.231.107.207 "
-            cd /home/medhat/bizflow
-            if ! docker image inspect bizflow-bizflow-app:previous >/dev/null 2>&1; then
-              echo 'no previous image available; cannot roll back'
-              exit 0
-            fi
-            docker tag bizflow-bizflow-app:previous bizflow-bizflow-app:latest
-            docker compose up -d --no-build --force-recreate bizflow-app
-            for i in \$(seq 1 24); do
-              s=\$(docker inspect -f '{{.State.Health.Status}}' bizflow-app 2>/dev/null || echo starting)
-              [ \"\$s\" = 'healthy' ] && break
-              sleep 5
-            done
-            docker inspect -f 'ROLLBACK_STATUS={{.State.Health.Status}}' bizflow-app
-          "
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes medhat@168.231.107.207 'bash -s' \
+            < scripts/rollback-deploy.sh
           echo 'Rolled back. Investigate the failed run before retrying.'
 
       - name: Cleanup temp deploy dir
