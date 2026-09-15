@@ -77,10 +77,10 @@ export const CatalogToolbar: React.FC<Props> = ({
         {/* Quick Filter Chips */}
         <div className="flex items-center gap-1 overflow-x-auto">
           {[
-            { id: 'all', label: 'All', icon: Sparkles },
-            { id: 'in_stock', label: 'In Stock', icon: Package },
-            { id: 'low_stock', label: 'Low Stock', icon: AlertTriangle },
-            { id: 'expiring', label: 'Expiring Soon', icon: Clock }
+            { id: 'all', labelKey: 'vetPosFilterAll', icon: Sparkles },
+            { id: 'in_stock', labelKey: 'vetPosFilterInStock', icon: Package },
+            { id: 'low_stock', labelKey: 'vetPosFilterLowStock', icon: AlertTriangle },
+            { id: 'expiring', labelKey: 'vetPosFilterExpiring', icon: Clock }
           ].map(f => {
             const isSelected = quickFilter === f.id
             const Icon = f.icon
@@ -96,7 +96,7 @@ export const CatalogToolbar: React.FC<Props> = ({
                 }`}
               >
                 <Icon size={12} />
-                <span>{f.label}</span>
+                <span>{t(f.labelKey)}</span>
               </button>
             )
           })}
@@ -105,7 +105,7 @@ export const CatalogToolbar: React.FC<Props> = ({
         {/* View Mode Toggle & Counter */}
         <div className="flex items-center gap-2.5 ml-auto">
           <span className="text-[11px] font-bold text-slate-400 hidden xl:inline-block">
-            {totalShowing} / {totalAll} items
+            {totalShowing} / {totalAll} {t('vetItemsLabel')}
           </span>
 
           <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
@@ -117,7 +117,7 @@ export const CatalogToolbar: React.FC<Props> = ({
                   ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-300 shadow-2xs'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
-              title="Grid View"
+              title={t('vetPosGridView')}
             >
               <LayoutGrid size={14} />
             </button>
@@ -129,7 +129,7 @@ export const CatalogToolbar: React.FC<Props> = ({
                   ? 'bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-300 shadow-2xs'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
-              title="Dense List View"
+              title={t('vetPosListView')}
             >
               <List size={14} />
             </button>

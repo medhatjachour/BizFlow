@@ -1,5 +1,6 @@
 import React from 'react'
 import { Plus, Check, AlertCircle, Clock } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { remainingDisplay, daysUntil, getFefoBatch } from '../utils'
 import type { MedicineLite } from '../types'
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const MedicineCard: React.FC<Props> = ({ medicine, isInCart, onClick }) => {
+  const { t } = useLanguage()
   const fefoBatch = getFefoBatch(medicine.batches)
   const isOutOfStock = medicine.totalStock <= 0 || !fefoBatch
   const price = fefoBatch?.sellingPrice ?? fefoBatch?.costPerUnit ?? 0
@@ -55,7 +57,7 @@ export const MedicineCard: React.FC<Props> = ({ medicine, isInCart, onClick }) =
             </span>
           ) : isOutOfStock ? (
             <span className="text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 bg-slate-200/70 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-              Out
+              {t('vetPosOut')}
             </span>
           ) : isExpiringSoon ? (
             <span className="text-[9px] font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1.5 py-0.5 rounded flex items-center gap-0.5">

@@ -79,8 +79,9 @@ export const CustomerSelector: React.FC<Props> = ({
         <button
           type="button"
           onClick={onOpenNewModal}
+          aria-label={t('vetPosNewClient')}
+          title={t('vetPosNewClient')}
           className="p-2 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 rounded-xl transition-colors shrink-0"
-          title="New Client"
         >
           <UserPlus size={14} />
         </button>
@@ -89,7 +90,7 @@ export const CustomerSelector: React.FC<Props> = ({
       {dropdownOpen && search.trim().length > 0 && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-30 max-h-48 overflow-y-auto">
           {results.length === 0 && !searching ? (
-            <div className="p-3 text-center text-xs text-slate-400">No client found</div>
+            <div className="p-3 text-center text-xs text-slate-400">{t('vetPosNoClient')}</div>
           ) : (
             results.map(c => (
               <button

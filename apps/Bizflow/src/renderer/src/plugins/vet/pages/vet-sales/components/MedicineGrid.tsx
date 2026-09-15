@@ -26,7 +26,7 @@ export const MedicineGrid: React.FC<Props> = ({
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-24 text-slate-400">
         <Loader2 className="h-8 w-8 text-violet-500 animate-spin stroke-[2.5] mb-2" />
-        <p className="text-xs font-semibold">Loading medical pharmacy catalog…</p>
+        <p className="text-xs font-semibold">{t('vetPosLoadingCatalog')}</p>
       </div>
     )
   }
@@ -38,7 +38,7 @@ export const MedicineGrid: React.FC<Props> = ({
         <p className="text-sm font-bold text-slate-700 dark:text-slate-300">
           {t('vetNoMedicinesFound') || 'No items matched your search'}
         </p>
-        <p className="text-xs text-slate-400 mt-1">Try refining search query or category filter</p>
+        <p className="text-xs text-slate-400 mt-1">{t('vetPosNoMatchHint')}</p>
       </div>
     )
   }
@@ -51,12 +51,12 @@ export const MedicineGrid: React.FC<Props> = ({
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                <th className="px-4 py-2.5">Medicine</th>
-                <th className="px-4 py-2.5">Category</th>
-                <th className="px-4 py-2.5">Stock</th>
-                <th className="px-4 py-2.5">FEFO Lot</th>
-                <th className="px-4 py-2.5">Price</th>
-                <th className="px-4 py-2.5 text-right">Action</th>
+                <th className="px-4 py-2.5">{t('vetMedicineHeader')}</th>
+                <th className="px-4 py-2.5">{t('vetPosColCategory')}</th>
+                <th className="px-4 py-2.5">{t('vetStock')}</th>
+                <th className="px-4 py-2.5">{t('vetPosColLot')}</th>
+                <th className="px-4 py-2.5">{t('vetPosColPrice')}</th>
+                <th className="px-4 py-2.5 text-right">{t('vetPosColAction')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -111,6 +111,7 @@ export const MedicineGrid: React.FC<Props> = ({
                       <button
                         type="button"
                         disabled={isOutOfStock}
+                        aria-label={isInCart ? t('vetPosInCart') : t('vetPosAddToCart')}
                         className={`p-1.5 rounded-xl font-bold text-xs inline-flex items-center gap-1 ${
                           isInCart
                             ? 'bg-violet-600 text-white'

@@ -38,15 +38,17 @@ export const BatchPickerModal: React.FC<Props> = ({
                 {t('vetSelectBatch') || 'Select Batch'}
               </h2>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 font-bold uppercase tracking-wider">
-                FEFO Priority
+                {t('vetPosFefoPriority')}
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {medicine.name} · Sorted earliest expiration first
+              {medicine.name} · {t('vetPosSortedEarliestExpiry')}
             </p>
           </div>
           <button
             onClick={onClose}
+            aria-label={t('vetClose')}
+            title={t('vetClose')}
             className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X size={18} />
@@ -99,11 +101,11 @@ export const BatchPickerModal: React.FC<Props> = ({
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {b.batchNumber || 'Lot: Default'}
+                          {b.batchNumber || t('vetPosDefaultLot')}
                         </span>
                         {isFefo && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 font-bold">
-                            RECOMMENDED
+                            {t('vetPosRecommended')}
                           </span>
                         )}
                         {isSelected && <CheckCircle2 className="h-4 w-4 text-violet-500" />}
@@ -121,15 +123,15 @@ export const BatchPickerModal: React.FC<Props> = ({
                     <div className="text-right shrink-0">
                       {expired ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400">
-                          <AlertTriangle className="h-3 w-3" /> Expired
+                          <AlertTriangle className="h-3 w-3" /> {t('vetExpiredValue')}
                         </span>
                       ) : warnSoon || warnMid ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-                          <Clock className="h-3 w-3" /> {days}d left
+                          <Clock className="h-3 w-3" /> {t('vetPosDaysLeft', { days })}
                         </span>
                       ) : (
                         <span className="text-xs text-slate-400">
-                          Exp: {new Date(b.expiryDate).toLocaleDateString()}
+                          {t('vetExpPrefix')} {new Date(b.expiryDate).toLocaleDateString()}
                         </span>
                       )}
                       {b.sellingPrice && (

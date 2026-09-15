@@ -55,7 +55,7 @@ export const CheckoutSummary: React.FC<Props> = ({
   onOpenNewCustomerModal,
   onSubmitSale
 }) => {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [showOptions, setShowOptions] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<string>('cash')
   const [cartDiscount, setCartDiscount] = useState<string>('')
@@ -102,7 +102,7 @@ export const CheckoutSummary: React.FC<Props> = ({
       {/* ── Net Payable Bar ─────────────────────────────────────────────── */}
       <div className="space-y-1 text-xs">
         <div className="flex justify-between text-slate-500">
-          <span>Subtotal</span>
+          <span>{t('vetSubtotal')}</span>
           <span className="font-semibold text-slate-700 dark:text-slate-300">
             ${cartTotals.rawSubtotal.toFixed(2)}
           </span>
@@ -110,20 +110,20 @@ export const CheckoutSummary: React.FC<Props> = ({
 
         {cartTotals.itemDiscounts > 0 && (
           <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-            <span>Item Discounts</span>
+            <span>{t('vetItemDiscounts')}</span>
             <span>-${cartTotals.itemDiscounts.toFixed(2)}</span>
           </div>
         )}
 
         {discountVal > 0 && (
           <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-            <span>Order Discount</span>
+            <span>{t('vetPosOrderDiscount')}</span>
             <span>-${discountVal.toFixed(2)}</span>
           </div>
         )}
 
         <div className="flex justify-between text-sm font-black text-slate-900 dark:text-white pt-2 border-t border-slate-100 dark:border-slate-800">
-          <span>Net Payable</span>
+          <span>{t('vetPosNetPayable')}</span>
           <span className="text-lg text-violet-600 dark:text-violet-400 font-mono">
             ${grandTotal.toFixed(2)}
           </span>
@@ -149,7 +149,7 @@ export const CheckoutSummary: React.FC<Props> = ({
               {pm.id === 'card' && <CreditCard size={14} />}
               {pm.id === 'insurance' && <ShieldCheck size={14} />}
               {pm.id === 'other' && <Coins size={14} />}
-              <span>{pm.label}</span>
+              <span>{language === 'ar' ? pm.labelAr : pm.label}</span>
             </button>
           )
         })}
@@ -159,13 +159,13 @@ export const CheckoutSummary: React.FC<Props> = ({
       {paymentMethod === 'cash' && grandTotal > 0 && (
         <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl space-y-2">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-slate-500 text-[10px] uppercase">Cash Tendered</span>
+            <span className="font-bold text-slate-500 text-[10px] uppercase">{t('vetPosCashTendered')}</span>
             <button
               type="button"
               onClick={() => setAmountPaid(grandTotal.toFixed(2))}
               className="text-[10px] font-bold text-violet-600 dark:text-violet-400 hover:underline"
             >
-              Exact (${grandTotal.toFixed(2)})
+              {t('vetPosExact')} (${grandTotal.toFixed(2)})
             </button>
           </div>
 
@@ -174,7 +174,7 @@ export const CheckoutSummary: React.FC<Props> = ({
               type="number"
               min="0"
               step="any"
-              placeholder="Amount received..."
+              placeholder={t('vetPosAmountReceived')}
               value={amountPaid}
               onChange={e => setAmountPaid(e.target.value)}
               className={`${INPUT_BASE_CLS} font-black text-sm`}
@@ -196,14 +196,14 @@ export const CheckoutSummary: React.FC<Props> = ({
           {/* Change Due Display */}
           {changeDue > 0 && (
             <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300">
-              <span className="text-xs font-bold">Change Due (الباقي):</span>
+              <span className="text-xs font-bold">{t('vetPosChangeDue')}:</span>
               <span className="text-base font-black font-mono">${changeDue.toFixed(2)}</span>
             </div>
           )}
 
           {isPartial && (
             <div className="flex items-center justify-between p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-300">
-              <span className="text-xs font-bold">Remaining Due:</span>
+              <span className="text-xs font-bold">{t('vetPosRemainingDue')}:</span>
               <span className="text-sm font-black font-mono">${remainingBal.toFixed(2)}</span>
             </div>
           )}
@@ -216,7 +216,7 @@ export const CheckoutSummary: React.FC<Props> = ({
         onClick={() => setShowOptions(v => !v)}
         className="w-full flex items-center justify-between p-2 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-[11px] font-bold text-slate-600 dark:text-slate-400 hover:border-violet-400 transition-colors"
       >
-        <span>Client & Discount Options</span>
+        <span>{t('vetPosClientDiscountOptions')}</span>
         {showOptions ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
       </button>
 
@@ -237,7 +237,7 @@ export const CheckoutSummary: React.FC<Props> = ({
 
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-              Order Discount ($)
+              {t('vetPosOrderDiscountAmount')}
             </label>
             <div className="flex gap-1.5">
               <input
@@ -275,7 +275,7 @@ export const CheckoutSummary: React.FC<Props> = ({
         ) : (
           <>
             <CheckCircle className="h-4 w-4 stroke-[2.5]" />
-            <span>Complete Sale (${grandTotal.toFixed(2)})</span>
+            <span>{t('vetPosCompleteSale')} (${grandTotal.toFixed(2)})</span>
           </>
         )}
       </button>

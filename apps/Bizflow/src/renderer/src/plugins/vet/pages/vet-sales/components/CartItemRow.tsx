@@ -1,5 +1,6 @@
 import React from 'react'
 import { Minus, Plus, Pencil, Trash2 } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { CartItem } from '../types'
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const CartItemRow: React.FC<Props> = ({ item, onEdit, onRemove, onAdjustQty }) => {
+  const { t } = useLanguage()
   const qty = parseFloat(item.quantity) || 0
   const price = parseFloat(item.unitPrice) || 0
   const disc = parseFloat(item.discount) || 0
@@ -25,13 +27,15 @@ export const CartItemRow: React.FC<Props> = ({ item, onEdit, onRemove, onAdjustQ
             {item.medicine.name}
           </h5>
           <span className="text-[10px] text-slate-400 font-mono">
-            Lot: {item.batch.batchNumber || 'Default'}
+            {t('vetLotPrefix')} {item.batch.batchNumber || t('vetPosDefaultLot')}
           </span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={onEdit}
+            aria-label={t('vetPosEditItem')}
+            title={t('vetPosEditItem')}
             className="p-1 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/40 transition-colors"
           >
             <Pencil size={13} />
@@ -39,6 +43,8 @@ export const CartItemRow: React.FC<Props> = ({ item, onEdit, onRemove, onAdjustQ
           <button
             type="button"
             onClick={onRemove}
+            aria-label={t('vetPosRemoveItem')}
+            title={t('vetPosRemoveItem')}
             className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
           >
             <Trash2 size={13} />
@@ -52,6 +58,8 @@ export const CartItemRow: React.FC<Props> = ({ item, onEdit, onRemove, onAdjustQ
           <button
             type="button"
             onClick={() => onAdjustQty(-1)}
+            aria-label={t('vetPosDecreaseQty')}
+            title={t('vetPosDecreaseQty')}
             className="px-2 py-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
           >
             <Minus size={11} />
@@ -62,6 +70,8 @@ export const CartItemRow: React.FC<Props> = ({ item, onEdit, onRemove, onAdjustQ
           <button
             type="button"
             onClick={() => onAdjustQty(1)}
+            aria-label={t('vetPosIncreaseQty')}
+            title={t('vetPosIncreaseQty')}
             className="px-2 py-1 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
           >
             <Plus size={11} />

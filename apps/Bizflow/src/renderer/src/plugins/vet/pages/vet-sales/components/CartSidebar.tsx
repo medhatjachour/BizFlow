@@ -61,7 +61,7 @@ export const CartSidebar: React.FC<Props> = ({
         <div className="flex items-center gap-2">
           <ShoppingCart className="h-4 w-4 text-violet-600 dark:text-violet-400" />
           <h3 className="font-black text-xs text-slate-900 dark:text-white uppercase tracking-wider">
-            Active Cart
+            {t('vetPosActiveCart')}
           </h3>
           {cart.length > 0 && (
             <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
@@ -75,8 +75,9 @@ export const CartSidebar: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClearCart}
+              aria-label={t('vetClearCart')}
               className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-              title="Clear Cart"
+              title={t('vetClearCart')}
             >
               <Trash2 size={14} />
             </button>
@@ -84,6 +85,8 @@ export const CartSidebar: React.FC<Props> = ({
           <button
             type="button"
             onClick={onHideSidebar}
+            aria-label={t('vetPosCollapseCart')}
+            title={t('vetPosCollapseCart')}
             className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition-colors"
           >
             <PanelRightClose size={15} />
@@ -96,8 +99,8 @@ export const CartSidebar: React.FC<Props> = ({
         {cart.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
             <ShoppingCart className="h-10 w-10 stroke-1 opacity-30 mb-2" />
-            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Cart is empty</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Click any medicine card to add items</p>
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{t('vetCartEmpty')}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{t('vetPosCartEmptyHint')}</p>
           </div>
         ) : (
           cart.map(item => (

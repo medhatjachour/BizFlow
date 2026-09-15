@@ -112,9 +112,9 @@ export default function VetSalesTab({
     if (!hasSubUnit && fefo && fefo.quantity >= 1) {
       const added = quickAdd(med, fefo)
       if (added) {
-        toast.success(`${med.name} added`)
+        toast.success(t('vetPosItemAdded', { name: med.name }))
       } else {
-        toast.error('Insufficient stock in earliest batch')
+        toast.error(t('vetPosInsufficientStock'))
       }
       return
     }
@@ -125,7 +125,7 @@ export default function VetSalesTab({
 
   const handleCheckoutSubmit = async (payload: SaleSubmitPayload) => {
     if (cart.length === 0) {
-      toast.error('Your cart is empty')
+      toast.error(t('vetPosCartEmptyWarning'))
       return
     }
 
@@ -148,7 +148,7 @@ export default function VetSalesTab({
       clearCustomer()
       refreshCatalog()
     } catch (err: any) {
-      toast.error(err?.message || 'Sale execution failed')
+      toast.error(err?.message || t('vetPosSaleFailed'))
     } finally {
       setSubmitting(false)
     }
@@ -215,7 +215,7 @@ export default function VetSalesTab({
               </span>
             )}
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 [writing-mode:vertical-rl] rotate-180">
-              Open Cart
+              {t('vetPosOpenCart')}
             </span>
           </button>
 

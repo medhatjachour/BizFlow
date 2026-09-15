@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { INPUT_BASE_CLS } from '../constants'
 import { daysUntil, roundDecimal, remainingDisplay } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { MedicineLite, BatchLite, CartItem } from '../types'
 import { BatchPickerModal } from './BatchPickerModal'
 
@@ -30,6 +31,7 @@ export const ItemConfigModal: React.FC<Props> = ({
   onSave,
   onClose
 }) => {
+  const { t } = useLanguage()
   const [showBatchModal, setShowBatchModal] = useState(false)
 
   // Auto-pick FEFO batch
@@ -136,6 +138,8 @@ export const ItemConfigModal: React.FC<Props> = ({
             </div>
             <button
               onClick={onClose}
+              aria-label={t('vetClose')}
+              title={t('vetClose')}
               className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <X size={18} />
@@ -147,24 +151,24 @@ export const ItemConfigModal: React.FC<Props> = ({
             <div className="space-y-1">
               <div className="flex justify-between items-center text-xs">
                 <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
-                  Batch / Lot Selected
+                  {t('vetPosBatchSelected')}
                 </span>
                 <button
                   type="button"
                   onClick={() => setShowBatchModal(true)}
                   className="text-violet-600 dark:text-violet-400 font-bold hover:underline"
                 >
-                  Change Batch
+                  {t('vetPosChangeBatch')}
                 </button>
               </div>
 
               <div className="p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex items-center justify-between">
                 <div>
                   <p className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {selectedBatch?.batchNumber || 'Lot: Default'}
+                    {selectedBatch?.batchNumber || t('vetPosDefaultLot')}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Net Available:{' '}
+                    {t('vetPosNetAvailable')}:{' '}
                     <strong className="text-slate-700 dark:text-slate-300">
                       {availableNet} {activeUnitLabel}
                     </strong>
@@ -172,7 +176,7 @@ export const ItemConfigModal: React.FC<Props> = ({
                 </div>
                 {selectedBatch && (
                   <span className="text-[11px] font-semibold text-slate-400">
-                    Exp: {new Date(selectedBatch.expiryDate).toLocaleDateString()}
+                    {t('vetExpPrefix')} {new Date(selectedBatch.expiryDate).toLocaleDateString()}
                   </span>
                 )}
               </div>
@@ -182,7 +186,7 @@ export const ItemConfigModal: React.FC<Props> = ({
             {hasSubUnit && (
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  Dispense Unit
+                  {t('vetPosDispenseUnit')}
                 </span>
                 <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
                   <button
@@ -195,7 +199,7 @@ export const ItemConfigModal: React.FC<Props> = ({
                         : 'text-slate-500'
                     } ${isBatchPartial ? 'opacity-40 cursor-not-allowed' : ''}`}
                   >
-                    Whole ({medicine.unit})
+                    {t('vetPosWhole')} ({medicine.unit})
                   </button>
                   <button
                     type="button"
@@ -206,7 +210,7 @@ export const ItemConfigModal: React.FC<Props> = ({
                         : 'text-slate-500'
                     }`}
                   >
-                    Fraction ({medicine.subUnit})
+                    {t('vetPosFraction')} ({medicine.subUnit})
                   </button>
                 </div>
               </div>
@@ -217,7 +221,7 @@ export const ItemConfigModal: React.FC<Props> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Qty ({activeUnitLabel}) *
+                    {t('vetQty')} ({activeUnitLabel}) *
                   </label>
                   <input
                     type="number"
@@ -234,7 +238,7 @@ export const ItemConfigModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Price ($)
+                    {t('vetPosPriceAmount')}
                   </label>
                   <input
                     type="number"
@@ -248,7 +252,7 @@ export const ItemConfigModal: React.FC<Props> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                    Discount ($)
+                    {t('vetPosDiscountAmount')}
                   </label>
                   <input
                     type="number"
@@ -278,7 +282,7 @@ export const ItemConfigModal: React.FC<Props> = ({
                   onClick={() => setQuantity(String(availableNet))}
                   className="px-3 py-1 text-[11px] font-bold rounded-lg bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 border border-violet-200 dark:border-violet-800"
                 >
-                  Max ({availableNet})
+                  {t('vetPosMax')} ({availableNet})
                 </button>
               </div>
             </div>
@@ -286,21 +290,21 @@ export const ItemConfigModal: React.FC<Props> = ({
             {isOverMax && (
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-xs">
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>Quantity exceeds available batch stock ({availableNet} max)</span>
+                <span>{t('vetPosQtyExceeds', { max: availableNet })}</span>
               </div>
             )}
 
             {/* Calculated Order Preview */}
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
               <div>
-                <span className="text-slate-400">Remaining stock after sale:</span>
+                <span className="text-slate-400">{t('vetPosRemainingStock')}:</span>
                 <p className="font-bold text-slate-700 dark:text-slate-300">
                   {remainingAfter} {activeUnitLabel}
                 </p>
               </div>
 
               <div className="text-right">
-                <span className="text-slate-400">Line Total:</span>
+                <span className="text-slate-400">{t('vetPosLineTotal')}:</span>
                 <p className="text-base font-black text-slate-900 dark:text-white">
                   ${lineTotal.toFixed(2)}
                 </p>
@@ -314,7 +318,7 @@ export const ItemConfigModal: React.FC<Props> = ({
               className="w-full py-3.5 px-4 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 disabled:opacity-40 text-white font-bold text-xs rounded-2xl shadow-lg shadow-violet-600/20 transition-all flex items-center justify-center gap-2"
             >
               <Check className="h-4 w-4 stroke-[2.5]" />
-              {editingItem ? 'Update Cart Line' : 'Add Item to Cart'}
+              {editingItem ? t('vetPosUpdateCartLine') : t('vetPosAddToCart')}
             </button>
           </div>
         </div>
