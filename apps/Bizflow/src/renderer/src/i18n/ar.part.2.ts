@@ -203,6 +203,7 @@ export const arPart2 = {
     warehouseTransferDeleted: 'تم حذف التحويل',
     warehouseDeleteTransferFailed: 'فشل حذف التحويل',
     warehouseSearchRoutesOrProducts: 'ابحث بالمسارات أو المنتجات',
+    warehouseTransfersFilterAll: 'كل التحويلات',
     warehouseVisible: 'الظاهر',
     warehouseCompletedLower: 'مكتمل',
     warehouseAdvanceTo: 'التقدم إلى {status}',

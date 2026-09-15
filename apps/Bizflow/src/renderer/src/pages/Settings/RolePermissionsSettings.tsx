@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToast } from '../../contexts/ToastContext'
+import { useLanguage } from '../../contexts/LanguageContext'
 import {
   catalogForScope,
   capabilitiesForScope,
@@ -20,6 +21,7 @@ import {
   type Capability,
   type Scope,
 } from '../../../../shared/permissions'
+import { pluginNameAr, roleDescriptionAr, roleDisplayLabelAr } from '../../../../shared/permissionsAr'
 import PermissionMatrix from './PermissionMatrix'
 
 type ManagedRole = {
@@ -44,6 +46,8 @@ function errorMessage(error: unknown, fallback: string): string {
 export default function RolePermissionsSettings({ pluginId = null }: { pluginId?: PluginId | null }) {
   const { can, refreshPermissions } = useAuth()
   const toast = useToast()
+  const { t, language } = useLanguage()
+  const isAr = language === 'ar'
   const editable = can('manage_settings')
   const scope: Scope = pluginId ?? 'kernel'
   const catalog = useMemo(() => catalogForScope(scope), [scope])
@@ -62,15 +66,19 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
     try {
       setRoles(await window.api.roles.list(scope))
     } catch (error) {
-      toast.error(errorMessage(error, 'Failed to load roles'))
+      toast.error(errorMessage(error, t('rpLoadFailed')))
     } finally {
       setLoading(false)
     }
-  }, [scope, toast])
+  }, [scope, toast, t])
 
   useEffect(() => { void load() }, [load])
 
   const active = roles.find(role => role.key === selectedKey) ?? roles[0] ?? null
+
+  /** Built-in names are translated; a role the owner renamed keeps their wording. */
+  const displayLabel = (role: { key: string; label: string }): string =>
+    isAr ? roleDisplayLabelAr(role.key, role.label) : role.label
 
   useEffect(() => {
     if (active && active.key !== selectedKey) setSelectedKey(active.key)
@@ -87,7 +95,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
       await refreshPermissions()
     } catch (error) {
       setRoles(previous)
-      toast.error(errorMessage(error, 'Failed to save role'))
+      toast.error(errorMessage(error, t('rpSaveFailed')))
     } finally {
       setSavingKey(null)
     }
@@ -106,9 +114,9 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
       setRoles(current => [...current, { ...created, userCount: 0 }])
       setSelectedKey(created.key)
       setDraftName('')
-      toast.success(`Role “${created.label}” created`)
+      toast.success(t('rpCreated', { name: created.label }))
     } catch (error) {
-      toast.error(errorMessage(error, 'Failed to create role'))
+      toast.error(errorMessage(error, t('rpCreateFailed')))
     } finally {
       setCreating(false)
     }
@@ -119,9 +127,9 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
       await window.api.roles.remove(role.key)
       setRoles(current => current.filter(item => item.key !== role.key))
       setSelectedKey(null)
-      toast.success(`Role “${role.label}” deleted`)
+      toast.success(t('rpDeleted', { name: role.label }))
     } catch (error) {
-      toast.error(errorMessage(error, 'Failed to delete role'))
+      toast.error(errorMessage(error, t('rpDeleteFailed')))
     }
   }
 
@@ -131,9 +139,9 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
       const updated = await window.api.roles.reset(role.key)
       setRoles(current => current.map(item => (item.key === role.key ? { ...updated, userCount: item.userCount } : item)))
       await refreshPermissions()
-      toast.success(`Role “${role.label}” reset to defaults`)
+      toast.success(t('rpReset', { name: role.label }))
     } catch (error) {
-      toast.error(errorMessage(error, 'Failed to reset role'))
+      toast.error(errorMessage(error, t('rpResetFailed')))
     } finally {
       setSavingKey(null)
     }
@@ -143,7 +151,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-400">
         <Loader2 className="mb-2 h-8 w-8 animate-spin text-primary" />
-        <p className="text-xs font-medium">Loading roles…</p>
+        <p className="text-xs font-medium">{t('rpLoading')}</p>
       </div>
     )
   }
@@ -156,14 +164,15 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
         </div>
         <div className="min-w-0">
           <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-            {pluginId ? `${catalog.label} roles` : 'Core roles'}
+            {pluginId
+              ? t('rpPluginTitle', { plugin: isAr ? pluginNameAr(pluginId, catalog.label) : catalog.label })
+              : t('rpCoreTitle')}
           </h3>
           <p className="mt-0.5 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-            Pick a role, then switch its permissions on or off. Changes save instantly and apply the next time
-            that user signs in.
+            {t('rpIntro')}
             {!editable && (
               <span className="ms-1 font-semibold text-amber-600 dark:text-amber-400">
-                (read-only — needs the “Manage settings” permission)
+                {t('rpReadOnly')}
               </span>
             )}
           </p>
@@ -174,8 +183,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
         <div className="flex items-start gap-3 rounded-2xl border border-blue-200/70 bg-blue-50/60 p-4 text-xs leading-relaxed text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300">
           <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
           <span>
-            These roles cover the core app — dashboard, reports, finance, staff and settings. Each plugin keeps
-            its own roles, managed from that plugin's settings.
+            {t('rpKernelNote')}
           </span>
         </div>
       )}
@@ -194,6 +202,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                   key={role.key}
                   type="button"
                   onClick={() => setSelectedKey(role.key)}
+                  title={isAr ? roleDescriptionAr(role.key, role.description) : role.description ?? undefined}
                   className={`w-full rounded-xl px-3 py-2.5 text-start transition ${
                     isSelected
                       ? 'bg-primary text-white shadow-sm'
@@ -202,14 +211,14 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                 >
                   <span className="flex items-center gap-1.5">
                     {role.isWildcard && <Lock size={11} className={isSelected ? 'text-white' : 'text-rose-500'} />}
-                    <span className="truncate text-sm font-semibold">{role.label}</span>
+                    <span className="truncate text-sm font-semibold">{displayLabel(role)}</span>
                   </span>
                   <span
                     className={`mt-0.5 flex items-center gap-2 text-[11px] ${
                       isSelected ? 'text-white/75' : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
-                    <span>{granted}/{scopeCapabilityCount} permissions</span>
+                    <span>{t('rpPermissionsCount', { granted, total: scopeCapabilityCount })}</span>
                     {role.userCount !== undefined && (
                       <span className="inline-flex items-center gap-0.5">
                         <Users size={10} />{role.userCount}
@@ -227,7 +236,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                 value={draftName}
                 onChange={event => setDraftName(event.target.value)}
                 onKeyDown={event => event.key === 'Enter' && void createRole()}
-                placeholder="New role name…"
+                placeholder={t('rpNewPlaceholder')}
                 className="h-8 min-w-0 flex-1 rounded-lg bg-transparent px-2 text-xs text-slate-700 outline-none placeholder:text-slate-400 dark:text-slate-200"
               />
               <button
@@ -235,7 +244,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                 onClick={() => void createRole()}
                 disabled={!draftName.trim() || creating}
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white transition hover:opacity-90 disabled:opacity-40"
-                aria-label="Create role"
+                aria-label={t('rpCreateAria')}
               >
                 {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
               </button>
@@ -265,23 +274,23 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                     className="min-w-0 rounded-lg border border-transparent bg-transparent px-1.5 py-0.5 text-sm font-bold text-slate-900 outline-none transition hover:border-slate-200 focus:border-primary dark:text-white dark:hover:border-slate-600"
                   />
                 ) : (
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{active.label}</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">{displayLabel(active)}</span>
                 )}
 
                 {active.isSystem ? (
-                  <Badge tone="rose"><Lock size={10} /> full access</Badge>
+                  <Badge tone="rose"><Lock size={10} /> {t('rpBadgeFull')}</Badge>
                 ) : active.isBuiltIn ? (
-                  <Badge tone="slate">built-in</Badge>
+                  <Badge tone="slate">{t('rpBadgeBuiltIn')}</Badge>
                 ) : (
-                  <Badge tone="primary">custom</Badge>
+                  <Badge tone="primary">{t('rpBadgeCustom')}</Badge>
                 )}
-                {!active.isSystem && !active.isDefault && <Badge tone="primary">customised</Badge>}
+                {!active.isSystem && !active.isDefault && <Badge tone="primary">{t('rpBadgeCustomised')}</Badge>}
               </div>
 
               <div className="flex items-center gap-3">
                 {savingKey === active.key && (
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
-                    <Loader2 size={13} className="animate-spin" /> Saving…
+                    <Loader2 size={13} className="animate-spin" /> {t('rpSaving')}
                   </span>
                 )}
                 {editable && !active.isSystem && active.isBuiltIn && !active.isDefault && (
@@ -290,7 +299,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                     onClick={() => void resetRole(active)}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 transition hover:text-slate-800 dark:hover:text-slate-200"
                   >
-                    <RotateCcw size={13} /> Reset
+                    <RotateCcw size={13} /> {t('rpResetAction')}
                   </button>
                 )}
                 {editable && !active.isBuiltIn && (
@@ -299,7 +308,7 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                     onClick={() => void removeRole(active)}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-rose-500 transition hover:text-rose-600"
                   >
-                    <Trash2 size={13} /> Delete
+                    <Trash2 size={13} /> {t('rpDeleteAction')}
                   </button>
                 )}
               </div>
@@ -310,9 +319,9 @@ export default function RolePermissionsSettings({ pluginId = null }: { pluginId?
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 dark:bg-rose-950/40">
                   <Lock className="h-6 w-6" />
                 </div>
-                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Admin role is protected</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{t('rpAdminProtected')}</p>
                 <p className="mx-auto max-w-sm text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-                  The <b>Admin</b> role always has every permission and can't be limited or restricted.
+                  {t('rpAdminProtectedLead')} <b>{t('rpAdminRoleName')}</b> {t('rpAdminProtectedTail')}
                 </p>
               </div>
             ) : (

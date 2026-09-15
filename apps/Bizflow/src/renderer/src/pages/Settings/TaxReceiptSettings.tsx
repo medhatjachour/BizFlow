@@ -35,8 +35,7 @@ export default function TaxReceiptSettings({
   settings,
   onChange
 }: Readonly<TaxReceiptSettingsProps>) {
-  const { t, language } = useLanguage()
-  const isAr = language === 'ar'
+  const { t } = useLanguage()
 
   // Local Action States
   const [detectingPrinters, setDetectingPrinters] = useState(false)
@@ -53,71 +52,7 @@ export default function TaxReceiptSettings({
     onChange({ ...settings, [field]: value })
   }
 
-  // Bilingual UI dictionary
-  const i18n = {
-    title: t('taxReceiptSettings') || (isAr ? 'إعدادات الضرائب والإيصالات' : 'Tax & Receipt Settings'),
-    subtitle: t('configureTaxReceipt') || (isAr ? 'تخصيص بيانات المتجر، الطابعات الحرارية، الضرائب والخصومات' : 'Configure store details, POS thermal printers, sales tax, and discount rules'),
-    
-    // Store Section
-    storeSectionTitle: t('storeInformationReceipt') || (isAr ? 'بيانات المتجر على الإيصال' : 'Store Receipt Identity'),
-    storeSectionDesc: t('receiptInformation') || (isAr ? 'تظهر هذه المعلومات في رأس الإيصالات المطبوعة والفواتير الضريبية.' : 'This information appears at the header of all printed receipts and tax invoices.'),
-    storeName: t('storeNameLabel') || (isAr ? 'اسم المتجر' : 'Store Name'),
-    storePhone: t('storePhoneLabel') || (isAr ? 'رقم الهاتف' : 'Phone Number'),
-    storeEmail: t('storeEmailLabel') || (isAr ? 'البريد الإلكتروني' : 'Email Address'),
-    taxNumber: t('taxNumberLabel') || (isAr ? 'الرقم الضريبي' : 'Tax / VAT Number'),
-    storeAddress: t('storeAddressLabel') || (isAr ? 'عنوان المتجر' : 'Store Address'),
-    commRegister: t('commercialRegisterNumber') || (isAr ? 'السجل التجاري' : 'Commercial Register No.'),
-
-    // Printer Section
-    printerSectionTitle: t('thermalPrinterSettings') || (isAr ? 'إعدادات الطابعة الحرارية' : 'Thermal & POS Printer'),
-    printerSectionDesc: t('configureThermalPrinter') || (isAr ? 'إعداد طابعة الإيصالات USB أو الشبكية واختبار الاتصال.' : 'Setup USB or Network thermal receipt printers with test utilities.'),
-    printerType: t('printerType') || (isAr ? 'نوع الطابعة' : 'Printer Type'),
-    printerNone: t('noPrinter') || (isAr ? 'بدون طابعة حرارية' : 'No Hardware Printer (Disabled)'),
-    printerUSB: t('usbThermalPrinter') || (isAr ? 'طابعة حرارية USB' : 'Direct USB Thermal Printer (ESC/POS)'),
-    printerNetwork: t('networkThermalPrinter') || (isAr ? 'طابعة شبكية Ethernet / Wi-Fi' : 'Network Thermal Printer (IP)'),
-    printerSystem: t('systemPrinter') || (isAr ? 'طابعة النظام الافتراضية (HTML)' : 'System Default Print Dialog (HTML)'),
-    usbHelp: t('usbPrinterHelp') || (isAr ? 'يدعم طابعات ESC/POS المتوافقة مثل Epson وXprinter.' : 'Supports standard ESC/POS USB printers (e.g. Epson, Xprinter).'),
-    usbPrinterName: t('usbPrinterName') || (isAr ? 'مسار / اسم طابعة USB' : 'USB Printer Port / Name'),
-    autoDetect: t('autoDetect') || (isAr ? 'كشف تلقائي' : 'Auto Detect'),
-    autoDetectHelp: t('autoDetectHelp') || (isAr ? 'البحث التلقائي عن طابعات USB الموصولة بالجهاز.' : 'Scan for connected USB thermal receipt printers.'),
-    ipAddress: t('printerIPAddress') || (isAr ? 'عنوان IP للطابعة' : 'Printer IP Address'),
-    printerOptionalName: t('printerNameOptional') || (isAr ? 'اسم وصفي للطابعة (اختياري)' : 'Printer Friendly Name (Optional)'),
-    paperWidth: t('paperWidth') || (isAr ? 'عرض ورق الطباعة' : 'Receipt Paper Width'),
-    paperSmall: t('paperSmall') || '58mm (Small)',
-    paperStandard: t('paperStandard') || '80mm (Standard)',
-    bottomSpacing: t('receiptBottomSpacing') || (isAr ? 'أسطر التغذية السفلية بعد الطباعة' : 'Bottom Feed Lines (Cut Spacing)'),
-    testPrintBtn: isAr ? 'طباعة إيصال تجريبي' : 'Print Test Receipt',
-
-    // Language & Layout Section
-    layoutTitle: isAr ? 'تخصيص لغة وتصميم الإيصال' : 'Receipt Content & Layout',
-    layoutDesc: isAr ? 'التحكم في الشعار، الباركود، رمز QR واللغة المستخدمة في الطباعة.' : 'Control barcodes, QR codes, logos, and printed language templates.',
-    receiptLang: isAr ? 'لغة الإيصال المطبوع' : 'Receipt Language',
-    printLogo: t('printStoreLogo') || (isAr ? 'طباعة شعار المتجر' : 'Print Store Logo'),
-    printQR: t('printQRCode') || (isAr ? 'طباعة رمز QR الضريبي' : 'Print Tax QR Code'),
-    printBarcode: t('printReceiptBarcode') || (isAr ? 'طباعة باركود الفاتورة' : 'Print Invoice Barcode'),
-    openCashDrawer: isAr ? 'فتح درج النقدية تلقائياً بعد الطباعة' : 'Kick Cash Drawer Open After Print',
-    autoPrintReceipts: t('autoPrintReceipts') || (isAr ? 'طباعة الإيصال تلقائياً فور إتمام البيع' : 'Auto-Print Receipt Upon Checkout'),
-    autoPrintDesc: t('autoPrintReceiptsDesc') || (isAr ? 'تخطي نافذة المعاينة والطباعة مباشرة' : 'Skip print preview and dispatch directly to printer'),
-    headerText: t('receiptHeader') || (isAr ? 'النص الترحيبي أعلى الإيصال' : 'Receipt Header Note'),
-    footerText: t('receiptFooter') || (isAr ? 'النص الختامي أسفل الإيصال' : 'Receipt Footer Note'),
-
-    // Tax & COGS Section
-    taxSectionTitle: isAr ? 'الضرائب وتكاليف البضاعة (COGS)' : 'Sales Tax & COGS Accounting',
-    taxRate: t('salesTaxRate') || (isAr ? 'نسبة ضريبة المبيعات / القيمة المضافة' : 'Sales Tax / VAT Rate'),
-    taxExample: isAr ? 'مثال: على بيع بقيمة 100 ستكون الضريبة' : 'Example: On a sale of 100.00, tax applied will be',
-    cogsDesc: t('includeCOGSDescription') || (isAr ? 'عند التفعيل، يتم خصم تكلفة شراء المنتجات تلقائياً لحساب صافي الأرباح.' : 'Deducts purchase costs from total revenue when calculating net profit metrics.'),
-
-    // Policies & Discounts
-    policiesTitle: isAr ? 'سياسات الإرجاع والخصومات' : 'Return Policy & POS Discounts',
-    refundDays: t('refundReturnPeriod') || (isAr ? 'مهلة قبول المرتجعات (بالأيام)' : 'Allowed Return Period (Days)'),
-    refundNotice: isAr ? 'يُسمح باسترجاع أو استبدال المنتجات خلال' : 'Customer returns accepted within',
-    refundNoticeSuffix: isAr ? 'يوماً من تاريخ الشراء. (0 لتعطيل الإرجاع)' : 'days from purchase date. (0 to disable returns)',
-    allowDiscounts: t('allowDiscounts') || (isAr ? 'السماح بمنح خصومات عند نقاط البيع (POS)' : 'Enable Manual POS Cashier Discounts'),
-    maxPercent: t('maximumDiscountPercent') || (isAr ? 'الحد الأقصى للخصم كنسبة مئوية' : 'Max Allowed Discount Percentage'),
-    maxAmount: t('maximumDiscountAmount') || (isAr ? 'الحد الأقصى للخصم كمبلغ ثابت' : 'Max Allowed Discount Fixed Amount'),
-    discountReasonRequired: t('discountReasonRequired') || (isAr ? 'سبب الخصم إلزامي دائماً' : 'Discount Reason Mandatory'),
-    discountReasonDesc: t('discountReasonRequiredDesc') || (isAr ? 'يلتزم الكاشير بتحديد سبب عند تطبيق أي خصم للمساءلة والمراجعة.' : 'Cashiers must provide an audit reason when applying manual discounts.')
-  }
+  
 
   // Handle Auto Detect USB Printers
   const handleAutoDetect = async () => {
@@ -132,21 +67,19 @@ export default function TaxReceiptSettings({
         handleChange('printerName', result.printers[0].path)
         setPrinterFeedback({
           type: 'success',
-          message: isAr
-            ? `تم العثور على الطابعة: ${result.printers.map((p) => p.name).join(', ')}`
-            : `Detected: ${result.printers.map((p) => p.name).join(', ')}`
+          message: t('trDetectedPrinters', { list: result.printers.map((p) => p.name).join(', ') })
         })
       } else {
         setPrinterFeedback({
           type: 'info',
-          message: isAr ? 'لم يتم العثور على طابعات USB موصولة.' : 'No USB thermal printers detected.'
+          message: t('trNoPrintersFound')
         })
       }
     } catch (err: any) {
       logger.error('Detection error:', err)
       setPrinterFeedback({
         type: 'error',
-        message: err?.message || (isAr ? 'فشل كشف الطابعات' : 'Failed to scan printers')
+        message: err?.message || t('trDetectFailed')
       })
     } finally {
       setDetectingPrinters(false)
@@ -165,18 +98,18 @@ export default function TaxReceiptSettings({
       if (result.success) {
         setPrinterFeedback({
           type: 'success',
-          message: isAr ? 'تمت طباعة الإيصال التجريبي بنجاح!' : 'Test receipt printed successfully!'
+          message: t('trTestPrinted')
         })
       } else {
         setPrinterFeedback({
           type: 'error',
-          message: result.message || (isAr ? 'فشلت الطباعة التجريبية' : 'Test print failed')
+          message: result.message || t('trTestPrintFailed')
         })
       }
     } catch (err: any) {
       setPrinterFeedback({
         type: 'error',
-        message: err?.message || (isAr ? 'خطأ أثناء الطباعة التجريبية' : 'Test print error')
+        message: err?.message || t('trTestPrintError')
       })
     } finally {
       setTestingPrint(false)
@@ -189,10 +122,10 @@ export default function TaxReceiptSettings({
       <div>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
           <FileText className="w-5 h-5 text-primary" />
-          <span>{i18n.title}</span>
+          <span>{t('taxReceiptSettings')}</span>
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          {i18n.subtitle}
+          {t('configureTaxReceipt')}
         </p>
       </div>
 
@@ -204,10 +137,10 @@ export default function TaxReceiptSettings({
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-              {i18n.storeSectionTitle}
+              {t('storeInformationReceipt')}
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {i18n.storeSectionDesc}
+              {t('receiptInformation')}
             </p>
           </div>
         </div>
@@ -215,20 +148,20 @@ export default function TaxReceiptSettings({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.storeName} <span className="text-rose-500">*</span>
+              {t('storeNameLabel')} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
               value={settings.storeName || ''}
               onChange={(e) => handleChange('storeName', e.target.value)}
-              placeholder={isAr ? 'مثال: متجر الزهور' : 'e.g., BizFlow Store'}
+              placeholder={t('trStoreNamePlaceholder')}
               className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.storePhone} <span className="text-rose-500">*</span>
+              {t('storePhoneLabel')} <span className="text-rose-500">*</span>
             </label>
             <input
               type="tel"
@@ -242,7 +175,7 @@ export default function TaxReceiptSettings({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.taxNumber} <span className="text-rose-500">*</span>
+              {t('taxNumberLabel')} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -256,7 +189,7 @@ export default function TaxReceiptSettings({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.commRegister}
+              {t('commercialRegisterNumber')}
             </label>
             <input
               type="text"
@@ -270,13 +203,13 @@ export default function TaxReceiptSettings({
 
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.storeAddress} <span className="text-rose-500">*</span>
+              {t('storeAddressLabel')} <span className="text-rose-500">*</span>
             </label>
             <textarea
               rows={2}
               value={settings.storeAddress || ''}
               onChange={(e) => handleChange('storeAddress', e.target.value)}
-              placeholder={isAr ? 'شارع النصر، القاهرة، مصر' : '123 Main Street, Suite 100'}
+              placeholder={t('trStoreAddressPlaceholder')}
               className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none transition-all"
             />
           </div>
@@ -291,10 +224,10 @@ export default function TaxReceiptSettings({
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-              {i18n.printerSectionTitle}
+              {t('thermalPrinterSettings')}
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {i18n.printerSectionDesc}
+              {t('configureThermalPrinter')}
             </p>
           </div>
         </div>
@@ -320,17 +253,17 @@ export default function TaxReceiptSettings({
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.printerType}
+              {t('printerType')}
             </label>
             <select
               value={settings.printerType || 'none'}
               onChange={(e) => handleChange('printerType', e.target.value)}
               className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             >
-              <option value="none">{i18n.printerNone}</option>
-              <option value="usb">{i18n.printerUSB}</option>
-              <option value="network">{i18n.printerNetwork}</option>
-              <option value="html">{i18n.printerSystem}</option>
+              <option value="none">{t('noPrinter')}</option>
+              <option value="usb">{t('usbThermalPrinter')}</option>
+              <option value="network">{t('networkThermalPrinter')}</option>
+              <option value="html">{t('systemPrinter')}</option>
             </select>
           </div>
 
@@ -338,7 +271,7 @@ export default function TaxReceiptSettings({
           {settings.printerType === 'usb' && (
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/80 space-y-3 animate-in fade-in">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                {i18n.usbPrinterName}
+                {t('usbPrinterName')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -346,7 +279,7 @@ export default function TaxReceiptSettings({
                   dir="ltr"
                   value={settings.printerName || ''}
                   onChange={(e) => handleChange('printerName', e.target.value)}
-                  placeholder="e.g., POS-80 / COM3 / /dev/usb/lp0"
+                  placeholder={t('trPrinterPlaceholder')}
                   className="flex-1 px-3.5 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white font-mono text-start"
                 />
                 <button
@@ -356,10 +289,10 @@ export default function TaxReceiptSettings({
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors shrink-0 shadow-sm"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${detectingPrinters ? 'animate-spin' : ''}`} />
-                  <span>{i18n.autoDetect}</span>
+                  <span>{t('autoDetect')}</span>
                 </button>
               </div>
-              <p className="text-xs text-slate-400">{i18n.autoDetectHelp}</p>
+              <p className="text-xs text-slate-400">{t('autoDetectHelp')}</p>
             </div>
           )}
 
@@ -368,7 +301,7 @@ export default function TaxReceiptSettings({
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700/80 grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  {i18n.ipAddress} <span className="text-rose-500">*</span>
+                  {t('printerIPAddress')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -381,13 +314,13 @@ export default function TaxReceiptSettings({
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  {i18n.printerOptionalName}
+                  {t('printerNameOptional')}
                 </label>
                 <input
                   type="text"
                   value={settings.printerName || ''}
                   onChange={(e) => handleChange('printerName', e.target.value)}
-                  placeholder="e.g., Kitchen Thermal"
+                  placeholder={t('trKitchenPrinterPlaceholder')}
                   className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
                 />
               </div>
@@ -399,7 +332,7 @@ export default function TaxReceiptSettings({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  {i18n.paperWidth}
+                  {t('paperWidth')}
                 </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-slate-700 dark:text-slate-300">
@@ -411,7 +344,7 @@ export default function TaxReceiptSettings({
                       onChange={(e) => handleChange('paperWidth', e.target.value)}
                       className="w-4 h-4 text-primary focus:ring-primary"
                     />
-                    <span>{i18n.paperSmall}</span>
+                    <span>{t('paperSmall')}</span>
                   </label>
                   <label className="flex items-center gap-2 text-xs font-medium cursor-pointer text-slate-700 dark:text-slate-300">
                     <input
@@ -422,14 +355,14 @@ export default function TaxReceiptSettings({
                       onChange={(e) => handleChange('paperWidth', e.target.value)}
                       className="w-4 h-4 text-primary focus:ring-primary"
                     />
-                    <span>{i18n.paperStandard}</span>
+                    <span>{t('paperStandard')}</span>
                   </label>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  {i18n.bottomSpacing}
+                  {t('receiptBottomSpacing')}
                 </label>
                 <input
                   type="number"
@@ -459,7 +392,7 @@ export default function TaxReceiptSettings({
                 ) : (
                   <Printer className="w-4 h-4 text-emerald-400" />
                 )}
-                <span>{testingPrint ? (isAr ? 'جاري الاختبار…' : 'Printing…') : i18n.testPrintBtn}</span>
+                <span>{testingPrint ? t('trPrinting') : t('trTestPrintBtn')}</span>
               </button>
             </div>
           )}
@@ -474,10 +407,10 @@ export default function TaxReceiptSettings({
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-              {i18n.layoutTitle}
+              {t('trLayoutTitle')}
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {i18n.layoutDesc}
+              {t('trLayoutDesc')}
             </p>
           </div>
         </div>
@@ -485,7 +418,7 @@ export default function TaxReceiptSettings({
         {/* Receipt Language Switch */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            {i18n.receiptLang}
+            {t('trReceiptLang')}
           </label>
           <div className="flex gap-4">
             <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300">
@@ -526,7 +459,7 @@ export default function TaxReceiptSettings({
               className="w-4 h-4 rounded text-primary focus:ring-primary"
             />
             <ImageIcon className="w-4 h-4 text-blue-500" />
-            <span>{i18n.printLogo}</span>
+            <span>{t('printStoreLogo')}</span>
           </label>
 
           <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 cursor-pointer text-xs font-medium text-slate-800 dark:text-slate-200 select-none">
@@ -537,7 +470,7 @@ export default function TaxReceiptSettings({
               className="w-4 h-4 rounded text-primary focus:ring-primary"
             />
             <QrCode className="w-4 h-4 text-indigo-500" />
-            <span>{i18n.printQR}</span>
+            <span>{t('printQRCode')}</span>
           </label>
 
           <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 cursor-pointer text-xs font-medium text-slate-800 dark:text-slate-200 select-none">
@@ -548,7 +481,7 @@ export default function TaxReceiptSettings({
               className="w-4 h-4 rounded text-primary focus:ring-primary"
             />
             <Barcode className="w-4 h-4 text-amber-500" />
-            <span>{i18n.printBarcode}</span>
+            <span>{t('printReceiptBarcode')}</span>
           </label>
 
           <label className="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 cursor-pointer text-xs font-medium text-slate-800 dark:text-slate-200 select-none">
@@ -559,7 +492,7 @@ export default function TaxReceiptSettings({
               className="w-4 h-4 rounded text-primary focus:ring-primary"
             />
             <DollarSign className="w-4 h-4 text-emerald-500" />
-            <span>{i18n.openCashDrawer}</span>
+            <span>{t('trOpenCashDrawer')}</span>
           </label>
         </div>
 
@@ -567,10 +500,10 @@ export default function TaxReceiptSettings({
         <div className="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/40">
           <div>
             <div className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
-              {i18n.autoPrintReceipts}
+              {t('autoPrintReceipts')}
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              {i18n.autoPrintDesc}
+              {t('autoPrintReceiptsDesc')}
             </div>
           </div>
           <button
@@ -594,28 +527,28 @@ export default function TaxReceiptSettings({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.headerText}
+              {t('receiptHeader')}
             </label>
             <textarea
               rows={2}
               maxLength={200}
               value={settings.receiptHeader || ''}
               onChange={(e) => handleChange('receiptHeader', e.target.value)}
-              placeholder={isAr ? 'أهلاً بكم في متجرنا' : 'Welcome to our store!'}
+              placeholder={t('trHeaderPlaceholder')}
               className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white resize-none"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.footerText}
+              {t('receiptFooter')}
             </label>
             <textarea
               rows={2}
               maxLength={200}
               value={settings.receiptFooter || ''}
               onChange={(e) => handleChange('receiptFooter', e.target.value)}
-              placeholder={isAr ? 'شكراً لزيارتكم! البضاعة المباعة ترد خلال 14 يوماً' : 'Thank you for your business! Please visit us again.'}
+              placeholder={t('trFooterPlaceholder')}
               className="w-full px-3.5 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white resize-none"
             />
           </div>
@@ -630,7 +563,7 @@ export default function TaxReceiptSettings({
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-              {i18n.taxSectionTitle}
+              {t('trTaxSectionTitle')}
             </h4>
           </div>
         </div>
@@ -638,7 +571,7 @@ export default function TaxReceiptSettings({
         {/* Tax Rate Field */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            {i18n.taxRate} <span className="text-rose-500">*</span>
+            {t('salesTaxRate')} <span className="text-rose-500">*</span>
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -654,7 +587,7 @@ export default function TaxReceiptSettings({
           </div>
 
           <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/70 text-xs text-slate-600 dark:text-slate-400">
-            <span>{i18n.taxExample} </span>
+            <span>{t('trTaxExample')} </span>
             <span className="font-semibold text-slate-900 dark:text-white">
               {((100 * (settings.taxRate || 0)) / 100).toFixed(2)}
             </span>
@@ -672,7 +605,7 @@ export default function TaxReceiptSettings({
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-              {i18n.policiesTitle}
+              {t('trPoliciesTitle')}
             </h4>
           </div>
         </div>
@@ -680,7 +613,7 @@ export default function TaxReceiptSettings({
         {/* Refund Window */}
         <div className="space-y-2">
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-            {i18n.refundDays}
+            {t('refundReturnPeriod')}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -693,11 +626,11 @@ export default function TaxReceiptSettings({
               }
               className="w-32 px-3.5 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-semibold"
             />
-            <span className="text-xs text-slate-500">{isAr ? 'يوماً' : 'Days'}</span>
+            <span className="text-xs text-slate-500">{t('trDays')}</span>
           </div>
 
           <p className="text-xs text-slate-500">
-            {i18n.refundNotice} <strong>{settings.refundPeriodDays ?? 14}</strong> {i18n.refundNoticeSuffix}
+            {t('trRefundNotice')} <strong>{settings.refundPeriodDays ?? 14}</strong> {t('trRefundNoticeSuffix')}
           </p>
         </div>
 
@@ -706,7 +639,7 @@ export default function TaxReceiptSettings({
           <div className="flex items-center justify-between">
             <div>
               <div className="font-semibold text-slate-900 dark:text-white text-xs sm:text-sm">
-                {i18n.allowDiscounts}
+                {t('allowDiscounts')}
               </div>
             </div>
 
@@ -731,7 +664,7 @@ export default function TaxReceiptSettings({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 animate-in fade-in">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  {i18n.maxPercent}
+                  {t('maximumDiscountPercent')}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -753,7 +686,7 @@ export default function TaxReceiptSettings({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  {i18n.maxAmount}
+                  {t('maximumDiscountAmount')}
                 </label>
                 <input
                   type="number"
@@ -770,8 +703,8 @@ export default function TaxReceiptSettings({
               <div className="sm:col-span-2 p-3 rounded-lg bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-xs text-blue-800 dark:text-blue-300 flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-bold">{i18n.discountReasonRequired}: </span>
-                  <span>{i18n.discountReasonDesc}</span>
+                  <span className="font-bold">{t('discountReasonRequired')}: </span>
+                  <span>{t('discountReasonRequiredDesc')}</span>
                 </div>
               </div>
             </div>

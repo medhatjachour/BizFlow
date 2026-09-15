@@ -46,56 +46,10 @@ interface EmailSettingsProps {
 
 
 export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) {
-  const { t, language } = useLanguage()
-  const isAr = language === 'ar'
+  const { t } = useLanguage()
 
   // Text dictionary helper for complete English/Arabic localization
-  const i18n = {
-    title: t('emailReports') || (isAr ? 'تقارير البريد الإلكتروني' : 'Email Reports'),
-    subtitle: isAr
-      ? 'احصل على تقارير أعمال تلقائية يتم تسليمها مباشرة إلى بريدك الإلكتروني.'
-      : 'Get automated business performance reports delivered straight to your inbox.',
-    enableTitle: isAr ? 'تفعيل التقارير الآلية' : 'Enable Automated Reports',
-    enableDesc: isAr
-      ? 'إرسال ملخصات المبيعات والأرباح والتنبيهات تلقائياً'
-      : 'Automatically receive sales, revenue, and inventory alert summaries',
-    configTitle: isAr ? 'إعدادات البريد والمواعيد' : 'Email & Delivery Configuration',
-    emailLabel: isAr ? 'البريد الإلكتروني للمستلم' : 'Recipient Email Address',
-    emailPlaceholder: isAr ? 'name@business.com' : 'name@business.com',
-    freqLabel: isAr ? 'تكرار إرسال التقرير' : 'Report Frequency',
-    freqDaily: isAr ? 'يومياً (موصى به)' : 'Daily (Recommended)',
-    freqWeekly: isAr ? 'أسبوعياً' : 'Weekly',
-    freqMonthly: isAr ? 'شهرياً' : 'Monthly',
-    actionsTitle: isAr ? 'الإجراءات والاختبار' : 'Actions & Testing',
-    btnTest: isAr ? 'إرسال بريد تجريبي' : 'Send Test Email',
-    btnPreview: isAr ? 'معاينة التقرير' : 'Preview Report',
-    btnSendNow: isAr ? 'إرسال التقرير الآن' : 'Send Report Now',
-    btnSave: t('saveSettings') || (isAr ? 'حفظ الإعدادات' : 'Save Settings'),
-    testing: isAr ? 'جاري الإرسال التجريبي…' : 'Sending test…',
-    previewing: isAr ? 'جاري التحميل…' : 'Generating preview…',
-    sendingNow: isAr ? 'جاري إرسال التقرير…' : 'Sending report…',
-    saving: isAr ? 'جاري الحفظ…' : 'Saving…',
-    scheduleTitle: isAr ? 'الجدول الزمني للتقارير' : 'Automated Schedule',
-    scheduleDesc: isAr
-      ? 'يتم إرسال التقرير اليومي تلقائياً في نهاية اليوم عند الساعة 11:00 مساءً لإبقائك على اطلاع دائم.'
-      : 'Reports are automatically scheduled and dispatched at 11:00 PM to summarize the day’s activities.',
-    previewTitle: isAr ? 'معاينة التقرير الفعلي' : 'Live Report Preview',
-    previewNotice: isAr
-      ? 'هذه المعاينة توضح بيانات اليوم الحالية. سيتم إرسال التقرير الفعلي في الموعد المجدول.'
-      : 'This preview shows current live data for today. The scheduled report will be generated at delivery time.',
-    statSales: isAr ? 'إجمالي المبيعات' : 'Total Sales',
-    statRevenue: isAr ? 'إجمالي الإيرادات' : 'Total Revenue',
-    statProfit: isAr ? 'صافي الأرباح' : 'Net Profit',
-    topProductsTitle: isAr ? 'المنتجات الأكثر مبيعاً' : 'Top Selling Products',
-    soldCount: isAr ? 'تم بيع' : 'sold',
-    lowStockTitle: isAr ? 'تنبيهات نقص المخزون' : 'Low Stock Alerts',
-    remaining: isAr ? 'متبقي' : 'remaining',
-    testSuccess: isAr ? 'تم إرسال البريد التجريبي بنجاح! تحقق من صندوق الوارد.' : 'Test email sent successfully! Check your inbox.',
-    saveSuccess: isAr ? 'تم حفظ إعدادات البريد بنجاح!' : 'Email settings saved successfully!',
-    sendSuccess: isAr ? 'تم إرسال التقرير بنجاح!' : 'Report sent successfully!',
-    errorEmailRequired: isAr ? 'يرجى إدخال عنوان بريد إلكتروني صالح أولاً.' : 'Please enter a valid email address first.',
-    errorGeneric: isAr ? 'حدث خطأ أثناء تنفيذ العملية.' : 'An error occurred while processing your request.'
-  }
+  
 
   // Component States
   const [settings, setSettings] = useState<EmailSettingsData>({
@@ -161,14 +115,14 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
     try {
       const result = await invokeIPC('email:configure', settings)
       if (result?.success) {
-        setFeedback({ type: 'success', text: i18n.saveSuccess })
+        setFeedback({ type: 'success', text: t('emSaveSuccess') })
         onSave?.()
       } else {
-        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
+        setFeedback({ type: 'error', text: result?.error || t('emErrorGeneric') })
       }
     } catch (error: any) {
       logger.error('Failed to save email settings:', error)
-      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
+      setFeedback({ type: 'error', text: error?.message || t('emErrorGeneric') })
     } finally {
       setIsSaving(false)
     }
@@ -177,7 +131,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
   // Test Email
   const handleTestEmail = async () => {
     if (!settings.email.trim()) {
-      setFeedback({ type: 'error', text: i18n.errorEmailRequired })
+      setFeedback({ type: 'error', text: t('emErrorEmailRequired') })
       return
     }
 
@@ -187,13 +141,13 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
     try {
       const result = await invokeIPC('email:testSend', settings.email.trim())
       if (result?.success) {
-        setFeedback({ type: 'success', text: i18n.testSuccess })
+        setFeedback({ type: 'success', text: t('emTestSuccess') })
       } else {
-        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
+        setFeedback({ type: 'error', text: result?.error || t('emErrorGeneric') })
       }
     } catch (error: any) {
       logger.error('Failed to send test email:', error)
-      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
+      setFeedback({ type: 'error', text: error?.message || t('emErrorGeneric') })
     } finally {
       setIsTesting(false)
     }
@@ -209,11 +163,11 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
       if (result?.success && result.data) {
         setPreview(result.data)
       } else {
-        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
+        setFeedback({ type: 'error', text: result?.error || t('emErrorGeneric') })
       }
     } catch (error: any) {
       logger.error('Failed to generate preview:', error)
-      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
+      setFeedback({ type: 'error', text: error?.message || t('emErrorGeneric') })
     } finally {
       setIsPreviewLoading(false)
     }
@@ -222,7 +176,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
   // Send Report Now
   const handleSendNow = async () => {
     if (!settings.email.trim()) {
-      setFeedback({ type: 'error', text: i18n.errorEmailRequired })
+      setFeedback({ type: 'error', text: t('emErrorEmailRequired') })
       return
     }
 
@@ -232,13 +186,13 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
     try {
       const result = await invokeIPC('email:sendReport', 'default-user')
       if (result?.success) {
-        setFeedback({ type: 'success', text: i18n.sendSuccess })
+        setFeedback({ type: 'success', text: t('emSendSuccess') })
       } else {
-        setFeedback({ type: 'error', text: result?.error || i18n.errorGeneric })
+        setFeedback({ type: 'error', text: result?.error || t('emErrorGeneric') })
       }
     } catch (error: any) {
       logger.error('Failed to send report:', error)
-      setFeedback({ type: 'error', text: error?.message || i18n.errorGeneric })
+      setFeedback({ type: 'error', text: error?.message || t('emErrorGeneric') })
     } finally {
       setIsSendingNow(false)
     }
@@ -248,7 +202,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
     return (
       <div className="flex flex-col items-center justify-center py-16 text-slate-500">
         <Loader2 className="w-8 h-8 animate-spin text-primary mb-3" />
-        <p className="text-sm font-medium">{i18n.previewing}</p>
+        <p className="text-sm font-medium">{t('emPreviewing')}</p>
       </div>
     )
   }
@@ -259,10 +213,10 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
       <div>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
           <Mail className="w-5 h-5 text-primary" />
-          <span>{i18n.title}</span>
+          <span>{t('emailReports')}</span>
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          {i18n.subtitle}
+          {t('emSubtitle')}
         </p>
       </div>
 
@@ -293,10 +247,10 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
           </div>
           <div className="min-w-0">
             <div className="font-semibold text-slate-900 dark:text-white text-base">
-              {i18n.enableTitle}
+              {t('emEnableTitle')}
             </div>
             <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-              {i18n.enableDesc}
+              {t('emEnableDesc')}
             </div>
           </div>
         </div>
@@ -306,7 +260,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
           type="button"
           role="switch"
           aria-checked={settings.enabled}
-          aria-label={i18n.enableTitle}
+          aria-label={t('emEnableTitle')}
           onClick={() => setSettings((prev) => ({ ...prev, enabled: !prev.enabled }))}
           className={`relative inline-flex h-7 w-12 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
             settings.enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
@@ -324,14 +278,14 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
       <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 space-y-5">
         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
           <FileText className="w-4 h-4 text-primary" />
-          {i18n.configTitle}
+          {t('emConfigTitle')}
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Email Address */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.emailLabel} <span className="text-rose-500">*</span>
+              {t('emEmailLabel')} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -339,7 +293,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
                 dir="ltr"
                 value={settings.email}
                 onChange={(e) => setSettings((prev) => ({ ...prev, email: e.target.value }))}
-                placeholder={i18n.emailPlaceholder}
+                placeholder="name@business.com"
                 className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-start"
               />
             </div>
@@ -348,7 +302,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
           {/* Frequency */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              {i18n.freqLabel}
+              {t('emFreqLabel')}
             </label>
             <div className="relative">
               <select
@@ -361,9 +315,9 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
                 }
                 className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
-                <option value="daily">{i18n.freqDaily}</option>
-                <option value="weekly">{i18n.freqWeekly}</option>
-                <option value="monthly">{i18n.freqMonthly}</option>
+                <option value="daily">{t('emFreqDaily')}</option>
+                <option value="weekly">{t('emFreqWeekly')}</option>
+                <option value="monthly">{t('emFreqMonthly')}</option>
               </select>
             </div>
           </div>
@@ -374,7 +328,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
       <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 space-y-4">
         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
           <Calendar className="w-4 h-4 text-primary" />
-          {i18n.actionsTitle}
+          {t('emActionsTitle')}
         </h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -386,7 +340,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isTesting ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <TestTube className="w-4 h-4 text-blue-500" />}
-            <span>{isTesting ? i18n.testing : i18n.btnTest}</span>
+            <span>{isTesting ? t('emTesting') : t('emBtnTest')}</span>
           </button>
 
           {/* Preview Report */}
@@ -397,7 +351,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-medium text-sm transition-all disabled:opacity-50"
           >
             {isPreviewLoading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Eye className="w-4 h-4 text-slate-500" />}
-            <span>{isPreviewLoading ? i18n.previewing : i18n.btnPreview}</span>
+            <span>{isPreviewLoading ? t('emPreviewing') : t('emBtnPreview')}</span>
           </button>
 
           {/* Send Now */}
@@ -408,7 +362,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSendingNow ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            <span>{isSendingNow ? i18n.sendingNow : i18n.btnSendNow}</span>
+            <span>{isSendingNow ? t('emSendingNow') : t('emBtnSendNow')}</span>
           </button>
 
           {/* Save Settings */}
@@ -419,7 +373,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 font-medium text-sm transition-all shadow-sm active:scale-95 disabled:opacity-50"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>{isSaving ? i18n.saving : i18n.btnSave}</span>
+            <span>{isSaving ? t('emSaving') : t('saveSettings')}</span>
           </button>
         </div>
       </div>
@@ -430,10 +384,10 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4">
             <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-base">
               <Eye className="w-5 h-5 text-primary" />
-              <span>{i18n.previewTitle}</span>
+              <span>{t('emPreviewTitle')}</span>
             </h4>
             <span className="text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
-              Live Data
+              {t('emLiveData')}
             </span>
           </div>
 
@@ -441,7 +395,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 text-start">
               <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wider">{i18n.statSales}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">{t('emStatSales')}</span>
                 <TrendingUp className="w-4 h-4 text-blue-500" />
               </div>
               <div className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -451,7 +405,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
 
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700/60 text-start">
               <div className="flex items-center justify-between text-slate-500 mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wider">{i18n.statRevenue}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">{t('emStatRevenue')}</span>
                 <DollarSign className="w-4 h-4 text-emerald-500" />
               </div>
               <div className="text-2xl font-bold text-slate-900 dark:text-white">
@@ -461,7 +415,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
 
             <div className="p-4 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-start">
               <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 mb-1">
-                <span className="text-xs font-semibold uppercase tracking-wider">{i18n.statProfit}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider">{t('emStatProfit')}</span>
                 <TrendingUp className="w-4 h-4" />
               </div>
               <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
@@ -475,14 +429,14 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
             <div className="space-y-3">
               <h5 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                 <Package className="w-3.5 h-3.5 text-primary" />
-                {i18n.topProductsTitle}
+                {t('emTopProductsTitle')}
               </h5>
               <div className="divide-y divide-slate-100 dark:divide-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden">
                 {preview.topProducts.slice(0, 3).map((product, idx) => (
                   <div key={idx} className="flex items-center justify-between p-3 text-sm">
                     <span className="font-medium text-slate-800 dark:text-slate-200">{product.name}</span>
                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                      {product.quantity} {i18n.soldCount} • ${(product.revenue || 0).toFixed(2)}
+                      {product.quantity} {t('emSoldCount')} • ${(product.revenue || 0).toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -495,7 +449,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
             <div className="space-y-2">
               <h5 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" />
-                {i18n.lowStockTitle}
+                {t('emLowStockTitle')}
               </h5>
               <div className="space-y-1.5">
                 {preview.lowStockAlerts.slice(0, 3).map((alert, idx) => (
@@ -504,7 +458,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
                     className="flex items-center justify-between p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300"
                   >
                     <span className="font-semibold">{alert.name}</span>
-                    <span>{alert.currentStock} {i18n.remaining}</span>
+                    <span>{alert.currentStock} {t('emRemaining')}</span>
                   </div>
                 ))}
               </div>
@@ -512,7 +466,7 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
           )}
 
           <p className="text-xs text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-700">
-            {i18n.previewNotice}
+            {t('emPreviewNotice')}
           </p>
         </div>
       )}
@@ -524,10 +478,10 @@ export default function EmailSettings({ onSave }: Readonly<EmailSettingsProps>) 
         </div>
         <div className="text-xs leading-relaxed space-y-0.5">
           <div className="font-semibold text-slate-900 dark:text-white text-sm">
-            {i18n.scheduleTitle}
+            {t('emScheduleTitle')}
           </div>
           <p className="text-slate-500 dark:text-slate-400">
-            {i18n.scheduleDesc}
+            {t('emScheduleDesc')}
           </p>
         </div>
       </div>

@@ -310,7 +310,7 @@ export const enPart5 = {
     insightsSuccessDescription: 'Performing well above expectations',
     insightsOpportunityDescription: 'Has potential for improvement',
     insightsWarningDescription: 'Requires immediate attention',
-    insightsNoInsightsFound: 'No insights found',
+    insightsNoInsightsFound: 'No {type} insights found',
     insightsRevenue: 'Revenue',
     insightsMargin: 'Margin',
     insightsTrend: 'Trend',

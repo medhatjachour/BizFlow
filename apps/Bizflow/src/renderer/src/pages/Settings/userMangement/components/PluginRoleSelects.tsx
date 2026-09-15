@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CAPABILITIES, type Capability, type PluginId, type PluginRoleAssignments } from '../../../../../../shared/permissions'
+import { capabilityLabelAr, pluginNameAr, roleLabelAr } from '../../../../../../shared/permissionsAr'
+import { useLanguage } from '../../../../contexts/LanguageContext'
 import { BUNDLED_PLUGIN_FLAGS, PLUGIN_ROLE_OPTIONS, ROLE_PRESENTATION } from '../constants'
 
 type Props = {
@@ -11,6 +13,9 @@ type Props = {
 type RoleChoice = { key: string; label: string; capabilities: Capability[] }
 
 export default function PluginRoleSelects({ value, onChange, pluginScope }: Props) {
+  const { t, language } = useLanguage()
+  const isAr = language === 'ar'
+
   const available = PLUGIN_ROLE_OPTIONS.filter(plugin =>
     BUNDLED_PLUGIN_FLAGS[plugin.id] && (!pluginScope || plugin.id === pluginScope)
   )
@@ -42,10 +47,12 @@ export default function PluginRoleSelects({ value, onChange, pluginScope }: Prop
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/30 p-4 space-y-4">
       <div>
         <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          {pluginScope ? `${available[0]?.label} role` : 'Plugin access'}
+          {pluginScope
+            ? t('umPluginRoleTitle', { plugin: isAr ? pluginNameAr(available[0]?.id ?? '', available[0]?.label) : available[0]?.label ?? '' })
+            : t('umPluginAccessTitle')}
         </p>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          {pluginScope ? 'Choose a role and review exactly what it allows before saving.' : 'Assign a separate role for each enabled plugin.'}
+          {pluginScope ? t('umPluginRoleHint') : t('umPluginAccessHint')}
         </p>
       </div>
 
@@ -59,7 +66,11 @@ export default function PluginRoleSelects({ value, onChange, pluginScope }: Prop
 
           return (
             <div key={plugin.id} className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 space-y-3">
-              {!pluginScope && <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">{plugin.label}</p>}
+              {!pluginScope && (
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  {isAr ? pluginNameAr(plugin.id, plugin.label) : plugin.label}
+                </p>
+              )}
 
               <select
                 value={selectedRole ?? ''}
@@ -71,22 +82,26 @@ export default function PluginRoleSelects({ value, onChange, pluginScope }: Prop
                 }}
                 className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               >
-                <option value="">No plugin access</option>
+                <option value="">{t('umNoPluginAccess')}</option>
                 {roles.map(role => (
-                  <option key={role.key} value={role.key}>{role.label}</option>
+                  <option key={role.key} value={role.key}>
+                    {isAr ? roleLabelAr(role.key, role.label) : role.label}
+                  </option>
                 ))}
               </select>
 
               {selected && (
                 <div className={`rounded-lg border px-3 py-2.5 ${roleMeta?.tone ?? 'border-primary/20 bg-primary/5 text-slate-700 dark:text-slate-200'}`}>
-                  <p className="text-xs font-semibold">{selected.label} can:</p>
+                  <p className="text-xs font-semibold">
+                    {t('umRoleCanDo', { role: isAr ? roleLabelAr(selected.key, selected.label) : selected.label })}
+                  </p>
                   {selected.capabilities.length === 0 ? (
-                    <p className="mt-1.5 text-xs opacity-80">No permissions granted yet.</p>
+                    <p className="mt-1.5 text-xs opacity-80">{t('umNoPermissions')}</p>
                   ) : (
                     <ul className="mt-1.5 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1 max-h-36 overflow-y-auto pr-1">
                       {selected.capabilities.map(capability => (
                         <li key={capability} className="text-xs opacity-90 break-words">
-                          {CAPABILITIES[capability]?.label ?? capability}
+                          {isAr ? capabilityLabelAr(capability) : CAPABILITIES[capability]?.label ?? capability}
                         </li>
                       ))}
                     </ul>

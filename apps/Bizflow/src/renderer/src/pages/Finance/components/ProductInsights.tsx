@@ -28,6 +28,13 @@ type ProductInsight = {
   recommendations: string[]
 }
 
+/** The tab labels, so an empty state can name the filter it found nothing for. */
+const FILTER_LABEL_KEYS = {
+  success: 'insightsSuccess',
+  opportunity: 'insightsOpportunity',
+  warning: 'insightsWarning'
+} as const
+
 export default function ProductInsights() {
   const { t } = useLanguage()
   const [loading, setLoading] = useState(true)
@@ -192,7 +199,9 @@ export default function ProductInsights() {
           <p className="text-sm text-slate-500 mt-2">
             {filter === 'all' 
               ? t('insightsNeedMoreData') 
-              : t('insightsNoInsightsFound', { type: filter })}
+              : t('insightsNoInsightsFound', {
+                  type: t(FILTER_LABEL_KEYS[filter])
+                })}
           </p>
         </div>
       ) : (

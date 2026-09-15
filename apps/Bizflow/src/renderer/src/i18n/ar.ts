@@ -16,6 +16,9 @@ import { arPart11 } from './ar.part.11'
 import { arPart12 } from './ar.part.12'
 import { arPart13 } from './ar.part.13'
 import { arPart14 } from './ar.part.14'
+import { arPart15 } from './ar.part.15'
+import { arPart16 } from './ar.part.16'
+import { arPart17 } from './ar.part.17'
 
 export const ar = {
   ...arPart0,
@@ -33,4 +36,7 @@ export const ar = {
   ...arPart12,
   ...arPart13,
   ...arPart14,
+  ...arPart15,
+  ...arPart16,
+  ...arPart17,
 }

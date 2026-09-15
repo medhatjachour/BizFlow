@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { translations, Language } from '../i18n/translations'
+import { translate, Language } from '../i18n/translations'
 
 interface LanguageContextType {
   language: Language
@@ -32,18 +32,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLanguageState(lang)
   }
 
-  const t = (key: string, params?: Record<string, any>): string => {
-    let translation = translations[language][key] || translations.en[key] || key
-    
-    if (params) {
-      // Simple interpolation: replace {key} with params.key
-      Object.keys(params).forEach(paramKey => {
-        translation = translation.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), String(params[paramKey]))
-      })
-    }
-    
-    return translation
-  }
+  const t = (key: string, params?: Record<string, any>): string => translate(language, key, params)
 
   const isRtl = language === 'ar'
   const contextValue: LanguageContextType = {

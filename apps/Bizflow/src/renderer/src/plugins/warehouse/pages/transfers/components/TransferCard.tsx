@@ -13,6 +13,7 @@ import {
 import { Transfer, LocationRef } from '../types'
 import { STATUS_CONFIG } from '../constants'
 import { getNextTransferStatus } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   transfer: Transfer
@@ -33,6 +34,7 @@ export const TransferCard: React.FC<Props> = ({
   onDelete,
   isActing
 }) => {
+  const { t } = useLanguage()
   const from = transfer.fromLocation || locationMap.get(transfer.fromLocationId)
   const to = transfer.toLocation || locationMap.get(transfer.toLocationId)
   const statusCfg = STATUS_CONFIG[transfer.status] || STATUS_CONFIG.draft
@@ -69,7 +71,7 @@ export const TransferCard: React.FC<Props> = ({
           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusCfg.badge} self-start sm:self-auto`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
-          {statusCfg.label}
+          {t(statusCfg.labelKey)}
         </span>
       </div>
 

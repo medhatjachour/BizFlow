@@ -77,7 +77,7 @@ export default function RefundModal({ target, onClose, onDone }: {
               <button type="button" onClick={() => setQtyStr(String(refundableQty))}
                 className="px-2.5 h-9 shrink-0 rounded-lg text-xs font-semibold text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20">{t('vetRefundAll') || 'All'}</button>
             </div>
-            {!qtyValid && <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">{(t('vetRefundMax') || 'Max {n}').replace('{n}', `${refundableQty} ${unitLabel}`)}</p>}
+            {!qtyValid && <p className="mt-1 text-[11px] text-red-600 dark:text-red-400">{t('vetRefundMax', { n: `${refundableQty} ${unitLabel}` })}</p>}
           </div>
         )}
 

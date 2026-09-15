@@ -168,7 +168,7 @@ export const enPart9 = {
   cfUnits: 'Units',
   cfApplyAdjustment: 'Apply Adjustment',
   cfApplyCorrection: 'Apply Correction',
-  cfStockCannotGoBelowZero: 'Stock cannot go below zero. Current stock is {{current}}, you\'re trying to remove {{trying}} units.',
+  cfStockCannotGoBelowZero: 'Stock cannot go below zero. Current stock is {current}, you\'re trying to remove {trying} units.',
   cfRevenueImpact: 'Revenue impact',
   cfCostValueImpact: 'Cost value impact',
   cfHealthyStockLevel: 'Healthy stock level',

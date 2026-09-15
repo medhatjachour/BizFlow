@@ -74,21 +74,20 @@ export function useOperationsData() {
           actedBy: 'warehouse.operator',
           notes: t('warehousePostedFromPhase2') || 'Fulfillment finalized'
         })
-        toast.success(
-          (t('warehouseOrderCompleted') || 'Order {orderNumber} finalized').replace('{orderNumber}', order.orderNumber)
-        )
+        toast.success(t('warehouseOrderCompleted', { orderNumber: order.orderNumber }))
       } else {
         if (!nxt) return
         await window.api.warehouse.advanceOrderStage({
           id: order.id,
           stage: nxt,
           actedBy: 'warehouse.operator',
-          notes: (t('warehouseAdvancedToStage') || 'Stage advanced to {stage}').replace('{stage}', nxt)
+          notes: t('warehouseAdvancedToStage', { stage: getStageLabel(nxt, t) })
         })
         toast.success(
-          (t('warehouseOrderMovedToStage') || 'Order {orderNumber} moved to {stage}')
-            .replace('{orderNumber}', order.orderNumber)
-            .replace('{stage}', getStageLabel(nxt, t))
+          t('warehouseOrderMovedToStage', {
+            orderNumber: order.orderNumber,
+            stage: getStageLabel(nxt, t)
+          })
         )
       }
       await loadAll()

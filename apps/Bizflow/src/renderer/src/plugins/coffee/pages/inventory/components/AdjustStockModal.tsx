@@ -488,8 +488,10 @@ const REASON_PRESETS: Record<AdjustType, string[]> = {
             <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
               <AlertTriangle size={18} className="shrink-0 mt-0.5" />
               <span>
-                {t('cfStockCannotGoBelowZero', { current: product.stock, trying: Math.abs(inputQty) }) ||
-                `Stock cannot go below zero. Current stock is ${product.stock}, you're trying to remove ${Math.abs(inputQty)} units.`}
+                {t('cfStockCannotGoBelowZero', {
+                  current: product.stock,
+                  trying: Math.abs(inputQty)
+                })}
               </span>
             </div>
           )}

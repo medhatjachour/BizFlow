@@ -603,6 +603,6 @@ export const arPart6 = {
     vetMedicineUpdated: 'تم تحديث الدواء',
     vetMedicineAdded: 'تم إضافة الدواء',
     vetDeleted: 'تم الحذف',
-    vetWriteOffSuccess: 'تم الشطب — خسارة ${amount} مسجلة في المصاريف',
+    vetWriteOffSuccess: 'تم الشطب — خسارة {amount} مسجلة في المصاريف',
 
 }

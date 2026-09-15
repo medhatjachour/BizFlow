@@ -21,11 +21,11 @@ export const TransfersFilterBar: React.FC<Props> = ({
   const { t } = useLanguage()
 
   const tabs = [
-    { id: 'all', label: 'All Transfers' },
-    { id: 'draft', label: 'Draft' },
-    { id: 'in_transit', label: 'In Transit' },
-    { id: 'completed', label: 'Completed' },
-    { id: 'cancelled', label: 'Cancelled' }
+    { id: 'all', labelKey: 'warehouseTransfersFilterAll' },
+    { id: 'draft', labelKey: 'warehouseStatusDraft' },
+    { id: 'in_transit', labelKey: 'warehouseStatusInTransit' },
+    { id: 'completed', labelKey: 'warehouseStatusCompleted' },
+    { id: 'cancelled', labelKey: 'warehouseStatusCancelled' }
   ]
 
   return (
@@ -44,7 +44,7 @@ export const TransfersFilterBar: React.FC<Props> = ({
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              {tab.label}
+              {t(tab.labelKey)}
             </button>
           )
         })}

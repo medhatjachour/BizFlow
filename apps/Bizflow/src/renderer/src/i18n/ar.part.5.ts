@@ -293,7 +293,7 @@ export const arPart5 = {
     insightsSuccessDescription: 'أداء جيد جداً فوق التوقعات',
     insightsOpportunityDescription: 'لديه إمكانية للتحسين',
     insightsWarningDescription: 'يحتاج إلى انتباه فوري',
-    insightsNoInsightsFound: 'لم يتم العثور على رؤى',
+    insightsNoInsightsFound: 'لا توجد رؤى من نوع «{type}»',
     insightsRevenue: 'الإيرادات',
     insightsMargin: 'الهامش',
     insightsTrend: 'الاتجاه',

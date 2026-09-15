@@ -203,6 +203,7 @@ export const enPart2 = {
     warehouseTransferDeleted: 'Transfer deleted',
     warehouseDeleteTransferFailed: 'Failed to delete transfer',
     warehouseSearchRoutesOrProducts: 'Search routes or products',
+    warehouseTransfersFilterAll: 'All transfers',
     warehouseVisible: 'Visible',
     warehouseCompletedLower: 'completed',
     warehouseAdvanceTo: 'Advance to {status}',

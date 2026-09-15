@@ -64,7 +64,7 @@ export default function InstallmentPlansSection() {
     if (days === 7) return t('weekly')
     if (days === 14) return t('biweekly')
     if (days === 30) return t('monthly')
-    return t('everyNDays').replace('{0}', String(days))
+    return t('everyNDays', { days })
   }
 
   if (loading) {
@@ -412,7 +412,7 @@ export default function InstallmentPlansSection() {
               {t('deleteInstallmentPlan')}
             </h3>
             <p className="text-slate-600 dark:text-slate-400 mb-6">
-              {t('deleteConfirmMessage').replace('{0}', deletingPlan.name)}
+              {t('deleteConfirmMessage', { name: deletingPlan.name })}
             </p>
             <div className="flex gap-3 justify-end">
               <button

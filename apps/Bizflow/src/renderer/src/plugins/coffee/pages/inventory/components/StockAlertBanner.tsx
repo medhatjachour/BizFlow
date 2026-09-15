@@ -22,7 +22,7 @@ export function StockAlertBanner({ lowCount, outCount }: Props) {
     }`}>
       <AlertTriangle className={`w-5 h-5 flex-shrink-0 ${hasOut ? 'text-red-500' : 'text-amber-500'}`} />
       <div className="text-sm text-slate-700 dark:text-slate-300">
-        {hasOut && <span className="font-medium">{outCount} {t('cfProduct', { count: outCount })} {t('cfOutOfStock')}</span>}
+        {hasOut && <span className="font-medium">{outCount} {t('cfProduct')} {t('cfOutOfStock')}</span>}
         {hasOut && hasLow && ' '}
         {hasLow && <span>{lowCount} {t('cfRunningLow')}</span>}
       </div>

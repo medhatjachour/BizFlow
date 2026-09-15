@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Archive, RefreshCw, Trash2, Search, Package, Users, User } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
+import { formatDateTime } from '../../lib/format'
 import logger from '../../../../shared/utils/logger'
 
 type ArchiveTab = 'products' | 'customers' | 'users'
@@ -18,7 +19,7 @@ interface ArchivedItem {
 }
 
 export default function ArchiveManagementSettings() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [activeTab, setActiveTab] = useState<ArchiveTab>('products')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
@@ -150,15 +151,7 @@ export default function ArchiveManagementSettings() {
     )
   })
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  const formatDate = (dateString: string): string => formatDateTime(dateString, language)
 
   return (
     <div className="space-y-6">

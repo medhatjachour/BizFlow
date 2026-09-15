@@ -566,10 +566,7 @@ export function TransactionViewModal({
                       </h4>
                     </div>
                     <p className="text-xs text-slate-600 dark:text-slate-400">
-                      {t('refundPeriodExpiredMessage').replace(
-                        '{days}',
-                        String(refundPeriodDays)
-                      )}
+                      {t('refundPeriodExpiredMessage', { days: refundPeriodDays })}
                     </p>
                   </div>
                 )}

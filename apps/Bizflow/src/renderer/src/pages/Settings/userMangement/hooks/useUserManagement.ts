@@ -3,6 +3,12 @@ import { useAuth } from '../../../../contexts/AuthContext'
 import logger from '../../../../../../shared/utils/logger'
 import type { NewUser, User } from '../types'
 
+/**
+ * Destructive actions report an i18n key rather than a message so the caller
+ * can render it in the active language.
+ */
+type DeleteActionResult = { success: true } | { success: false; errorKey: string }
+
 export function useUserManagement() {
   const { user } = useAuth()
   const [users, setUsers] = useState<User[]>([])
@@ -88,7 +94,7 @@ export function useUserManagement() {
     return result
   }
 
-  const checkDelete = async (account: User) => {
+  const checkDelete = async (account: User): Promise<DeleteActionResult> => {
     try {
       const result = await window.electron.ipcRenderer.invoke('delete:check-user', {
         userId: account.id,
@@ -101,34 +107,37 @@ export function useUserManagement() {
         return { success: true }
       }
 
-      return { success: false, error: 'Failed to check user dependencies' }
+      logger.error('Failed to check user dependencies:', result.error)
+      return { success: false, errorKey: 'umDeleteCheckFailed' }
     } catch (error) {
       logger.error('Failed to check user:', error)
-      return { success: false, error: 'Failed to check user' }
+      return { success: false, errorKey: 'umDeleteCheckFailed' }
     }
   }
 
-  const confirmDelete = async () => {
-    if (!userToDelete) return { success: false, error: 'No selected user' }
+  const confirmDelete = async (): Promise<DeleteActionResult> => {
+    if (!userToDelete) return { success: false, errorKey: 'umNoSelection' }
 
     try {
       const result = await window.electron.ipcRenderer.invoke('delete:hard-delete-user', {
         userId: userToDelete.id,
       })
 
-      if (result.success) {
-        await loadUsers({ keepLayout: true })
+      if (!result.success) {
+        logger.error('Failed to delete user:', result.error)
+        return { success: false, errorKey: 'umDeleteFailed' }
       }
 
-      return result
+      await loadUsers({ keepLayout: true })
+      return { success: true }
     } catch (error) {
       logger.error('Failed to delete user:', error)
-      return { success: false, error: 'Failed to delete user' }
+      return { success: false, errorKey: 'umDeleteFailed' }
     }
   }
 
-  const deactivateUser = async () => {
-    if (!userToDelete) return { success: false, error: 'No selected user' }
+  const deactivateUser = async (): Promise<DeleteActionResult> => {
+    if (!userToDelete) return { success: false, errorKey: 'umNoSelection' }
 
     try {
       const result = await window.electron.ipcRenderer.invoke('delete:deactivate-user', {
@@ -136,14 +145,16 @@ export function useUserManagement() {
         deactivatedBy: user?.id,
       })
 
-      if (result.success) {
-        await loadUsers({ keepLayout: true })
+      if (!result.success) {
+        logger.error('Failed to deactivate user:', result.error)
+        return { success: false, errorKey: 'umDeactivateFailed' }
       }
 
-      return result
+      await loadUsers({ keepLayout: true })
+      return { success: true }
     } catch (error) {
       logger.error('Failed to deactivate user:', error)
-      return { success: false, error: 'Failed to deactivate user' }
+      return { success: false, errorKey: 'umDeactivateFailed' }
     }
   }
 

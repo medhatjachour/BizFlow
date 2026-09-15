@@ -105,12 +105,7 @@ export default function VetMedicinesTab() {
       const res = await (window as any).api?.vet?.medicines?.disposeBatch(disposeTarget.batch.id, {
         reason: reason || undefined
       })
-      toast.success(
-        (t('vetWriteOffSuccess') || 'Written off — ${amount} loss recorded').replace(
-          '${amount}',
-          `$${(res?.lossAmount ?? 0).toFixed(2)}`
-        )
-      )
+      toast.success(t('vetWriteOffSuccess', { amount: `$${(res?.lossAmount ?? 0).toFixed(2)}` }))
       setDisposeTarget(null)
       refresh()
     } catch (err: any) {

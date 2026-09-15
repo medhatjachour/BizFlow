@@ -471,10 +471,7 @@ export default function VetPage() {
               </h3>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-5 leading-relaxed">
-              {(
-                t('vetLeaveSalesBody') ||
-                'You have {n} item(s) in the sales cart that have not been checkout completed. Leaving the Sales tab will discard them.'
-              ).replace('{n}', String(salesCartCount))}
+              {t('vetLeaveSalesBody', { n: salesCartCount })}
             </p>
             <div className="flex gap-2.5">
               <button

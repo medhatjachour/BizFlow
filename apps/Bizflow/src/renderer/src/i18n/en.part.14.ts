@@ -6,6 +6,7 @@
 // copy in the same place: this file for the chrome, the registry for the modules.
 export const enPart14 = {
   // ── Modules screen ───────────────────────────────────────────────────────
+  modulesTab: 'Modules',
   modsTitle: 'Business Modules',
   modsLead:
     'Enable the modules that match your business type. Disabled modules are hidden from the menu but their data is preserved — you can re-enable them at any time without losing anything.',

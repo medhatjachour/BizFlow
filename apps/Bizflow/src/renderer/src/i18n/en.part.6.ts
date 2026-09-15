@@ -137,7 +137,7 @@ export const enPart6 = {
 
     // Clinic — Material loss
     logMaterialLoss: 'Log as Loss (Expense)',
-    materialLossExpenseDesc: 'Material loss / waste — {name}',
+    materialLossExpenseDesc: 'Material loss / waste',
     logMaterialLossTitle: 'Log Material Loss as Expense',
 
     // Clinic — Dashboard
@@ -608,6 +608,6 @@ export const enPart6 = {
     vetMedicineUpdated: 'Medicine updated',
     vetMedicineAdded: 'Medicine added',
     vetDeleted: 'Deleted',
-    vetWriteOffSuccess: 'Written off — ${amount} loss recorded in expenses',
+    vetWriteOffSuccess: 'Written off — {amount} loss recorded in expenses',
 
 }

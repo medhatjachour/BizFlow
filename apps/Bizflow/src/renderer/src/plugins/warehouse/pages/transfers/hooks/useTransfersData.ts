@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Transfer, LocationRef, CreateTransferFormData } from '../types'
+import { STATUS_CONFIG } from '../constants'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
@@ -95,10 +96,9 @@ export function useTransfersData() {
         actedBy: 'warehouse.operator'
       })
       toast.success(
-        (t('warehouseTransferMovedTo') || 'Transfer moved to {status}').replace(
-          '{status}',
-          targetStatus.replace('_', ' ')
-        )
+        t('warehouseTransferMovedTo', {
+          status: t(STATUS_CONFIG[targetStatus]?.labelKey ?? 'warehouseStatusDraft')
+        })
       )
       await loadData()
     } catch (err: any) {

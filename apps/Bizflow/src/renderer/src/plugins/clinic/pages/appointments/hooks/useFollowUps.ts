@@ -40,7 +40,7 @@ export function useFollowUps() {
     setClearingId(fu.id)
     try {
       await window.api.clinic.appointments.clearFollowUp(fu.id)
-      showToast('success', t('followUpMarkedDone').replace('{name}', fu.patient.name))
+      showToast('success', t('followUpMarkedDone', { name: fu.patient.name }))
       setAllFollowUps((prev) => prev.filter((f) => f.id !== fu.id))
     } catch {
       showToast('error', t('followUpClearFailed'))

@@ -72,6 +72,25 @@ export function formatTime(value: string | Date | null | undefined, language = '
   }
 }
 
+/**
+ * `14 Sept 2026, 17:05`, in the active language.
+ *
+ * The pairing matters for audit trails — a timestamp read apart from its clock
+ * time is ambiguous across a shift change, which is the only place this shows up.
+ * `join` keeps the two halves in logical order so an RTL renderer places the
+ * separator correctly.
+ */
+export function formatDateTime(
+  value: string | Date | null | undefined,
+  language = 'en',
+  options: Intl.DateTimeFormatOptions = DEFAULT_DATE_OPTIONS
+): string {
+  const date = toDate(value)
+  if (!date) return EMPTY_VALUE
+  const separator = language === 'ar' ? '، ' : ', '
+  return `${formatDate(date, language, options)}${separator}${formatTime(date, language)}`
+}
+
 /** `2026-09-14` — the value an `<input type="date">` expects. */
 export function toDateInputValue(value: string | Date | null | undefined): string {
   const date = toDate(value)

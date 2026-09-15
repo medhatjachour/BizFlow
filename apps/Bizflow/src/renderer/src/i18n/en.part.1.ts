@@ -378,7 +378,7 @@ export const enPart1 = {
     bakeryPantryFilterReorder:'Needs Reorder',
     bakeryPantryFilterHealthy:'Healthy Stock',
     bakeryPantryTotalValuation:'Total Pantry Valuation',
-    bakeryPantryFilterAll:'ِAll',
+    bakeryPantryFilterAll:'All',
     bakeryTotalBatches:'Total Batches',
     bakeryWasteLoss:'Waste Loss',
     bakerySearchProductionPlaceholder:'Search for a recipe or product...',

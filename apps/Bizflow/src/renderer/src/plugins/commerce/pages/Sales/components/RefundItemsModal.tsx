@@ -89,10 +89,13 @@ export default function RefundItemsModal({ show, transaction, onClose, onRefund 
       const availableQty = item.quantity - (item.refundedQuantity || 0)
       
       if (requestedQty > availableQty) {
-        setError(t('cannotRefundExceeds')
-          .replace('{requested}', requestedQty.toString())
-          .replace('{product}', item.product?.name || '')
-          .replace('{available}', availableQty.toString()))
+        setError(
+          t('cannotRefundExceeds', {
+            requested: requestedQty,
+            product: item.product?.name || '',
+            available: availableQty
+          })
+        )
         return
       }
     }

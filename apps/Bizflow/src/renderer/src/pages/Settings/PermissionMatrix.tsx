@@ -7,6 +7,8 @@ import {
   type PluginPermissionCatalog,
   type Scope,
 } from '../../../../shared/permissions'
+import { catalogEntryLabelAr, catalogScopeLabelAr } from '../../../../shared/permissionsAr'
+import { useLanguage } from '../../contexts/LanguageContext'
 
 type Props = {
   catalog: PluginPermissionCatalog
@@ -16,16 +18,26 @@ type Props = {
   onChange: (capabilities: Capability[]) => void
 }
 
-const PRESETS: Array<{ id: PermissionPreset; label: string; Icon: typeof Eye; hint: string }> = [
-  { id: 'none',   label: 'None',   Icon: Ban,         hint: 'Revoke everything in this section' },
-  { id: 'viewer', label: 'Viewer', Icon: Eye,         hint: 'Read-only pages only' },
-  { id: 'editor', label: 'Editor', Icon: Pencil,      hint: 'All pages, no sensitive actions' },
-  { id: 'admin',  label: 'Admin',  Icon: ShieldCheck, hint: 'All pages and sensitive actions' },
+const PRESETS: Array<{ id: PermissionPreset; labelKey: string; Icon: typeof Eye; hintKey: string }> = [
+  { id: 'none',   labelKey: 'rpPresetNone',   Icon: Ban,         hintKey: 'rpPresetNoneHint' },
+  { id: 'viewer', labelKey: 'rpPresetViewer', Icon: Eye,         hintKey: 'rpPresetViewerHint' },
+  { id: 'editor', labelKey: 'rpPresetEditor', Icon: Pencil,      hintKey: 'rpPresetEditorHint' },
+  { id: 'admin',  labelKey: 'rpPresetAdmin',  Icon: ShieldCheck, hintKey: 'rpPresetAdminHint' },
 ]
 
 export default function PermissionMatrix({ catalog, scope, capabilities, disabled = false, onChange }: Props) {
+  const { t, language } = useLanguage()
+  const isAr = language === 'ar'
   const [query, setQuery] = useState('')
   const selected = useMemo(() => new Set(capabilities), [capabilities])
+
+  /**
+   * Rows are owned by `permissions.ts`, so they arrive in English. The Arabic
+   * label is looked up per entry — and both languages stay searchable, because
+   * an Arabic speaker types Arabic while the underlying model is English.
+   */
+  const entryLabel = (entry: { id: string; capability: Capability; label: string }): string =>
+    isAr ? catalogEntryLabelAr(scope, entry) : entry.label
 
   const pages = useMemo(() => {
     const actions = catalog.entries.filter(entry => entry.kind === 'action')
@@ -37,11 +49,13 @@ export default function PermissionMatrix({ catalog, scope, capabilities, disable
   const visiblePages = useMemo(() => {
     const needle = query.trim().toLowerCase()
     if (!needle) return pages
+    const matches = (entry: { id: string; capability: Capability; label: string }) =>
+      entry.label.toLowerCase().includes(needle) ||
+      catalogEntryLabelAr(scope, entry).includes(query.trim())
     return pages.filter(page =>
-      page.label.toLowerCase().includes(needle) ||
-      page.actions.some(action => action.label.toLowerCase().includes(needle))
+      matches(page) || page.actions.some(action => matches(action))
     )
-  }, [pages, query])
+  }, [pages, query, scope])
 
   const grantedPages = pages.filter(page => selected.has(page.capability)).length
 
@@ -72,9 +86,11 @@ export default function PermissionMatrix({ catalog, scope, capabilities, disable
     <div className="flex flex-col">
       <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50/70 px-5 py-3.5 dark:border-slate-700 dark:bg-slate-900/40 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <h4 className="text-sm font-bold text-slate-900 dark:text-white">{catalog.label} permissions</h4>
+          <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+            {t('permTitle', { scope: isAr ? catalogScopeLabelAr(scope) : catalog.label })}
+          </h4>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {grantedPages} of {pages.length} pages enabled · sensitive actions require their page
+            {t('permSummary', { granted: grantedPages, total: pages.length })}
           </p>
         </div>
 
@@ -84,22 +100,22 @@ export default function PermissionMatrix({ catalog, scope, capabilities, disable
             <input
               value={query}
               onChange={event => setQuery(event.target.value)}
-              placeholder="Filter permissions…"
+              placeholder={t('permFilter')}
               className="h-8 w-44 rounded-lg border border-slate-200 bg-white ps-8 pe-2 text-xs text-slate-700 outline-none transition focus:border-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
             />
           </div>
           <div className="flex items-center gap-1 rounded-xl bg-white p-1 shadow-sm dark:bg-slate-800">
-            {PRESETS.map(({ id, label, Icon, hint }) => (
+            {PRESETS.map(({ id, labelKey, Icon, hintKey }) => (
               <button
                 key={id}
                 type="button"
-                title={hint}
+                title={t(hintKey)}
                 disabled={disabled}
                 onClick={() => apply(presetCapabilities(scope, id))}
                 className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-primary/10 hover:text-primary disabled:opacity-40 dark:text-slate-300"
               >
                 <Icon className="h-3.5 w-3.5" />
-                {label}
+                {t(labelKey)}
               </button>
             ))}
           </div>
@@ -113,17 +129,19 @@ export default function PermissionMatrix({ catalog, scope, capabilities, disable
             <div key={page.id} className="px-5 py-3.5">
               <div className="flex items-center justify-between gap-3">
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">{page.label}</span>
+                  <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">{entryLabel(page)}</span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {page.viewer ? 'Read-only page' : 'Page access'}
-                    {page.actions.length > 0 && ` · ${page.actions.length} sensitive action${page.actions.length === 1 ? '' : 's'}`}
+                    {page.viewer ? t('permReadOnlyPage') : t('permPageAccess')}
+                    {page.actions.length > 0 && (page.actions.length === 1
+                      ? t('permSensitiveOne', { count: page.actions.length })
+                      : t('permSensitiveMany', { count: page.actions.length }))}
                   </span>
                 </span>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={enabled}
-                  aria-label={`Allow ${page.label}`}
+                  aria-label={t('permAllowPageAria', { page: entryLabel(page) })}
                   disabled={disabled}
                   onClick={() => togglePage(page, !enabled)}
                   className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
@@ -165,7 +183,7 @@ export default function PermissionMatrix({ catalog, scope, capabilities, disable
                       >
                         <Check size={10} strokeWidth={3} />
                       </span>
-                      {action.label}
+                      {entryLabel(action)}
                     </label>
                   ))}
                 </div>
@@ -176,7 +194,7 @@ export default function PermissionMatrix({ catalog, scope, capabilities, disable
 
         {visiblePages.length === 0 && (
           <p className="px-5 py-10 text-center text-xs text-slate-500 dark:text-slate-400">
-            No permissions match “{query}”.
+            {t('permNoMatch', { query })}
           </p>
         )}
       </div>

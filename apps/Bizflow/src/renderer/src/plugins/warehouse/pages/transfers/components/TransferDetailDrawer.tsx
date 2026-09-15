@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Transfer, LocationRef } from '../types'
 import { STATUS_CONFIG } from '../constants'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   transfer: Transfer | null
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export const TransferDetailDrawer: React.FC<Props> = ({ transfer, locations, onClose }) => {
+  const { t } = useLanguage()
 
   if (!transfer) return null
 
@@ -35,7 +37,7 @@ export const TransferDetailDrawer: React.FC<Props> = ({ transfer, locations, onC
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-bold text-slate-400">TRANSFER #{transfer.id.slice(-6).toUpperCase()}</span>
               <span className={`text-[10px] font-semibold px-2 py-0.2 rounded-full border ${statusCfg.badge}`}>
-                {statusCfg.label}
+                {t(statusCfg.labelKey)}
               </span>
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1">

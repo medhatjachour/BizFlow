@@ -165,10 +165,10 @@ export default function Settings() {
 
       { id: 'tax' as SettingsTab, name: t('taxReceipt'), icon: Receipt },
       { id: 'notifications' as SettingsTab, name: t('notifications'), icon: Bell },
-      { id: 'email' as SettingsTab, name: 'Email Reports', icon: Mail },
+      { id: 'email' as SettingsTab, name: t('emailReports'), icon: Mail },
       { id: 'backup' as SettingsTab, name: t('backup'), icon: Database },
       { id: 'archive' as SettingsTab, name: t('archive'), icon: Archive },
-      { id: 'modules' as SettingsTab, name: 'Modules', icon: Puzzle }
+      { id: 'modules' as SettingsTab, name: t('modulesTab'), icon: Puzzle }
     ],
     [t]
   )
@@ -252,7 +252,7 @@ export default function Settings() {
         {/* Sidebar Tabs */}
         <aside className="w-full md:w-64 flex-shrink-0">
           <nav
-            aria-label="Settings navigation"
+            aria-label={t('settingsNavAria')}
             className="sticky top-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
           >
             {tabs.map((tab) => {
@@ -282,6 +282,9 @@ export default function Settings() {
         {/* Content Area */}
         <main className="flex-1 min-w-0 w-full bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 lg:p-8">
           <div className="space-y-6">
+            {/* The licence panel can jump straight to the Modules tab, but only
+                when that tab is reachable — the sync effect above bounces the
+                user back to the first tab otherwise. */}
             {activeTab === 'general' && (
               <GeneralSettings
                 theme={theme}
@@ -289,6 +292,11 @@ export default function Settings() {
                 actualTheme={actualTheme}
                 language={language}
                 onLanguageChange={setLanguage}
+                onOpenModules={
+                  tabs.some((tab) => tab.id === 'modules')
+                    ? () => setActiveTab('modules')
+                    : undefined
+                }
               />
             )}
 

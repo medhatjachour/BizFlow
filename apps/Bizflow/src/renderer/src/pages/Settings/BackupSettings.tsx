@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useToast } from '../../contexts/ToastContext'
+import { formatDateTime } from '../../lib/format'
 import type { BackupSettings } from './types'
 import logger from '../../../../shared/utils/logger'
 
@@ -46,50 +47,10 @@ export default function BackupSettingsPanel({
 }: Readonly<BackupSettingsProps>) {
   const { t, language } = useLanguage()
   const toast = useToast()
-  const isAr = language === 'ar'
 
-  // Bilingual dictionary helper
-  const i18n = {
-    title: t('backupAndRestore') || (isAr ? 'النسخ الاحتياطي والاستعادة' : 'Backup & Restore'),
-    subtitle: t('manageBackupRestore') || (isAr ? 'إدارة النسخ الاحتياطية واستعادة قاعدة البيانات بأمان' : 'Manage automated backups and restore database safely'),
-    manualTitle: t('manualBackup') || (isAr ? 'إنشاء نسخة احتياطية يدوياً' : 'Manual Backup'),
-    manualDesc: isAr ? 'سيُطلب منك اختيار المجلد الذي تريد حفظ ملف النسخة الاحتياطية فيه.' : 'You will be prompted to choose where to save the backup file.',
-    btnCreateBackup: t('createBackupNow') || (isAr ? 'إنشاء نسخة الآن' : 'Create Backup Now'),
-    creating: isAr ? 'جاري إنشاء النسخة…' : 'Creating backup…',
-    autoTitle: t('automaticBackup') || (isAr ? 'النسخ الاحتياطي التلقائي' : 'Automatic Backup'),
-    autoDesc: t('scheduleRegularBackups') || (isAr ? 'جدولة النسخ الاحتياطي الدوري تلقائياً' : 'Schedule periodic automated backups'),
-    freqLabel: t('backupFrequency') || (isAr ? 'تكرار النسخ' : 'Backup Frequency'),
-    daily: t('daily') || (isAr ? 'يومياً' : 'Daily'),
-    weekly: t('weekly') || (isAr ? 'أسبوعياً' : 'Weekly'),
-    monthly: t('monthly') || (isAr ? 'شهرياً' : 'Monthly'),
-    keepLabel: t('numberOfBackupsToKeep') || (isAr ? 'عدد النسخ المراد الاحتفاظ بها' : 'Number of backups to keep'),
-    keepDesc: t('olderBackupsDeleted') || (isAr ? 'يتم حذف النسخ الأقدم تلقائياً' : 'Older backups will be deleted automatically'),
-    closeTitle: isAr ? 'النسخ الاحتياطي عند إغلاق البرنامج' : 'Backup when closing application',
-    closeDesc: isAr ? 'سؤالك عن حفظ نسخة احتياطية في كل مرة تغلق فيها البرنامج.' : 'Prompt to create a fresh backup every time you exit BizFlow.',
-    closeFolderLabel: isAr ? 'مجلد حفظ النسخ عند الإغلاق' : 'Close Backup Target Folder',
-    closeFolderDefault: isAr ? 'الافتراضي (المستندات / نسخ BizFlow)' : 'Default (Documents/BizFlow Backups)',
-    btnChangeFolder: t('change') || (isAr ? 'تغيير المجلد' : 'Change Folder'),
-    allBackupsTitle: isAr ? 'سجل النسخ الاحتياطية' : 'Backup History',
-    allBackupsSubtitle: isAr ? 'جميع النسخ المنشأة عبر هذا الجهاز بكافة المسارات' : 'All backups registered on this system across all directories',
-    btnRestoreFile: isAr ? 'استعادة من ملف خارجي…' : 'Restore from file…',
-    btnRefresh: isAr ? 'تحديث' : 'Refresh',
-    noBackupsTitle: isAr ? 'لا توجد نسخ احتياطية حتى الآن' : 'No backups found',
-    noBackupsSubtitle: isAr ? 'انقر على "إنشاء نسخة الآن" لحفظ بياناتك بأمان.' : 'Click "Create Backup Now" to safeguard your data.',
-    missingFileNotice: isAr ? 'الملف غير موجود على القرص — ربما تم نقله أو حذفه خارج التطبيق.' : 'File not found on disk — it may have been moved or deleted.',
-    btnRestore: isAr ? 'استعادة' : 'Restore',
-    btnDelete: isAr ? 'حذف' : 'Delete',
-    btnRemoveMissing: isAr ? 'إزالة من السجل' : 'Remove from registry',
-    restoring: isAr ? 'جاري الاستعادة…' : 'Restoring…',
-    deleting: isAr ? 'جاري الحذف…' : 'Deleting…',
-    confirmRestoreTitle: isAr ? 'تأكيد استعادة قاعدة البيانات' : 'Confirm Database Restore',
-    confirmRestoreDesc: isAr
-      ? 'تحذير: سيتم استبدال قاعدة البيانات الحالية بالكامل بالنسخة المختارة. سيتطلب التطبيق إعادة تشغيل فورية.'
-      : 'Warning: Your active database will be completely replaced by the selected backup. The application will restart automatically.',
-    confirmDeleteTitle: isAr ? 'تأكيد حذف النسخة الاحتياطية' : 'Confirm Backup Deletion',
-    confirmDeleteDesc: isAr ? 'هل أنت متأكد من رغبتك في حذف هذا الملف؟ لا يمكن التراجع عن هذا الإجراء.' : 'Are you sure you want to permanently delete this backup file? This action cannot be undone.',
-    cancel: t('cancel') || (isAr ? 'إلغاء' : 'Cancel'),
-    importantNotes: t('importantNotes') || (isAr ? 'ملاحظات هامة' : 'Important Security Notes')
-  }
+  // Screen copy comes from the dictionaries (i18n/*.part.16.ts); this object only
+  // keeps the JSX readable.
+  
 
   // Component States
   const [backups, setBackups] = useState<Backup[]>([])
@@ -139,11 +100,11 @@ export default function BackupSettingsPanel({
     try {
       const result = await invokeIPC('backup:set-close-prefs', next)
       if (!result?.success) {
-        toast.error(result?.error || 'Failed to save preference')
+        toast.error(result?.error || t('bkSaveFailed'))
       }
     } catch (error) {
       logger.error('Failed to save close-backup prefs:', error)
-      toast.error('Failed to save preference')
+      toast.error(t('bkSaveFailed'))
     }
   }
 
@@ -159,10 +120,10 @@ export default function BackupSettingsPanel({
       if (!dirResult?.success) return
       setCloseBackupDir(dirResult.data.path)
       await saveClosePrefs({ backupDir: dirResult.data.path })
-      toast.success(isAr ? 'تم تحديث مجلد النسخ بنجاح' : 'Backup folder updated')
+      toast.success(t('bkFolderUpdated'))
     } catch (error) {
       logger.error('Failed to choose folder:', error)
-      toast.error('Failed to choose folder')
+      toast.error(t('bkChooseFailed'))
     }
   }
 
@@ -174,11 +135,11 @@ export default function BackupSettingsPanel({
       if (result?.success) {
         setBackups(result.data.backups || [])
       } else {
-        toast.error(result?.error || 'Failed to load backups')
+        toast.error(result?.error || t('bkLoadFailed'))
       }
     } catch (error) {
       logger.error('Failed to load backups:', error)
-      toast.error('Failed to load backups')
+      toast.error(t('bkLoadFailed'))
     } finally {
       setLoading(false)
     }
@@ -195,21 +156,21 @@ export default function BackupSettingsPanel({
       if (!dirResult?.success) return
 
       setCreating(true)
-      toast.info(i18n.creating)
+      toast.info(t('bkCreating'))
 
       const result = await invokeIPC('backup:create', {
         customPath: dirResult.data.path
       })
 
       if (result?.success) {
-        toast.success(isAr ? `تم حفظ النسخة: ${result.data.filename}` : `Backup saved: ${result.data.filename}`)
+        toast.success(t('bkCreated', { name: result.data.filename }))
         setBackups((prev) => [result.data, ...prev])
       } else {
-        toast.error(result?.error || 'Failed to create backup')
+        toast.error(result?.error || t('bkCreateFailed'))
       }
     } catch (error) {
       logger.error('Backup failed:', error)
-      toast.error('Failed to create backup')
+      toast.error(t('bkCreateFailed'))
     } finally {
       setCreating(false)
     }
@@ -220,21 +181,17 @@ export default function BackupSettingsPanel({
     try {
       setRestoringPath(backupPath)
       setRestoreModalBackup(null)
-      toast.info(i18n.restoring)
+      toast.info(t('bkRestoring'))
 
       const result = await invokeIPC('backup:restore', backupPath)
       if (result?.success) {
-        toast.success(
-          isAr
-            ? 'تمت استعادة النسخة الاحتياطية بنجاح! يرجى إعادة تشغيل التطبيق.'
-            : 'Backup restored successfully! Please restart the application.'
-        )
+        toast.success(t('bkRestored'))
       } else {
-        toast.error(result?.error || 'Failed to restore backup')
+        toast.error(result?.error || t('bkRestoreFailed'))
       }
     } catch (error) {
       logger.error('Restore failed:', error)
-      toast.error('Failed to restore backup')
+      toast.error(t('bkRestoreFailed'))
     } finally {
       setRestoringPath(null)
     }
@@ -253,7 +210,7 @@ export default function BackupSettingsPanel({
       })
     } catch (error) {
       logger.error('Failed to pick backup file:', error)
-      toast.error('Failed to select file')
+      toast.error(t('bkSelectFailed'))
     }
   }
 
@@ -265,14 +222,14 @@ export default function BackupSettingsPanel({
 
       const result = await invokeIPC('backup:delete', backupPath)
       if (result?.success) {
-        toast.success(isAr ? 'تم حذف النسخة بنجاح' : 'Backup removed')
+        toast.success(t('bkRemoved'))
         setBackups((prev) => prev.filter((b) => b.path !== backupPath))
       } else {
-        toast.error(result?.error || 'Failed to delete backup')
+        toast.error(result?.error || t('bkDeleteFailed'))
       }
     } catch (error) {
       logger.error('Delete failed:', error)
-      toast.error('Failed to delete backup')
+      toast.error(t('bkDeleteFailed'))
     } finally {
       setDeletingPath(null)
     }
@@ -285,19 +242,12 @@ export default function BackupSettingsPanel({
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
   }
 
-  const formatDate = (dateString: string): string => {
-    try {
-      return new Date(dateString).toLocaleString(isAr ? 'ar-EG' : undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    } catch {
-      return dateString
-    }
-  }
+  const formatDate = (dateString: string): string =>
+    formatDateTime(dateString, language, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+    })
 
   return (
     <div className="space-y-6">
@@ -305,10 +255,10 @@ export default function BackupSettingsPanel({
       <div>
         <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
           <Database className="w-5 h-5 text-primary" />
-          <span>{i18n.title}</span>
+          <span>{t('backupAndRestore')}</span>
         </h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          {i18n.subtitle}
+          {t('manageBackupRestore')}
         </p>
       </div>
 
@@ -320,10 +270,10 @@ export default function BackupSettingsPanel({
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-              {i18n.manualTitle}
+              {t('manualBackup')}
             </h4>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {i18n.manualDesc}
+              {t('bkManualDesc')}
             </p>
           </div>
         </div>
@@ -339,7 +289,7 @@ export default function BackupSettingsPanel({
           ) : (
             <Download className="w-4 h-4" />
           )}
-          <span>{creating ? i18n.creating : i18n.btnCreateBackup}</span>
+          <span>{creating ? t('bkCreating') : t('createBackupNow')}</span>
         </button>
       </div>
 
@@ -352,10 +302,10 @@ export default function BackupSettingsPanel({
             </div>
             <div className="min-w-0">
               <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-                {i18n.autoTitle}
+                {t('automaticBackup')}
               </h4>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                {i18n.autoDesc}
+                {t('scheduleRegularBackups')}
               </p>
             </div>
           </div>
@@ -381,22 +331,22 @@ export default function BackupSettingsPanel({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-700/80 animate-in fade-in duration-200">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                {i18n.freqLabel}
+                {t('backupFrequency')}
               </label>
               <select
                 value={settings.backupFrequency || 'daily'}
                 onChange={(e) => handleSettingChange('backupFrequency', e.target.value)}
                 className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               >
-                <option value="daily">{i18n.daily}</option>
-                <option value="weekly">{i18n.weekly}</option>
-                <option value="monthly">{i18n.monthly}</option>
+                <option value="daily">{t('daily')}</option>
+                <option value="weekly">{t('weekly')}</option>
+                <option value="monthly">{t('monthly')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                {i18n.keepLabel}
+                {t('numberOfBackupsToKeep')}
               </label>
               <input
                 type="number"
@@ -411,7 +361,7 @@ export default function BackupSettingsPanel({
                 }
                 className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
-              <span className="block text-xs text-slate-400 mt-1">{i18n.keepDesc}</span>
+              <span className="block text-xs text-slate-400 mt-1">{t('olderBackupsDeleted')}</span>
             </div>
           </div>
         )}
@@ -426,10 +376,10 @@ export default function BackupSettingsPanel({
             </div>
             <div className="min-w-0">
               <h4 className="font-semibold text-slate-900 dark:text-white text-base">
-                {i18n.closeTitle}
+                {t('bkCloseTitle')}
               </h4>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                {i18n.closeDesc}
+                {t('bkCloseDesc')}
               </p>
             </div>
           </div>
@@ -454,13 +404,13 @@ export default function BackupSettingsPanel({
         {promptOnClose && (
           <div className="pt-4 border-t border-slate-100 dark:border-slate-700/80 space-y-2 animate-in fade-in duration-200">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              {i18n.closeFolderLabel}
+              {t('bkCloseFolderLabel')}
             </label>
             <div className="flex items-center gap-2">
               <div className="flex-1 min-w-0 flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/50">
                 <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
                 <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 truncate" dir="ltr">
-                  {closeBackupDir || i18n.closeFolderDefault}
+                  {closeBackupDir || t('bkCloseFolderDefault')}
                 </span>
               </div>
               <button
@@ -469,7 +419,7 @@ export default function BackupSettingsPanel({
                 className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-medium rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shrink-0"
               >
                 <FolderOpen className="w-4 h-4 text-primary" />
-                <span>{i18n.btnChangeFolder}</span>
+                <span>{t('change')}</span>
               </button>
             </div>
           </div>
@@ -481,10 +431,10 @@ export default function BackupSettingsPanel({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
           <div>
             <h4 className="font-bold text-slate-900 dark:text-white text-base">
-              {i18n.allBackupsTitle} ({backups.length})
+              {t('bkHistoryTitle')} ({backups.length})
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {i18n.allBackupsSubtitle}
+              {t('bkHistorySubtitle')}
             </p>
           </div>
 
@@ -495,7 +445,7 @@ export default function BackupSettingsPanel({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5 text-blue-500" />
-              <span>{i18n.btnRestoreFile}</span>
+              <span>{t('bkRestoreFromFile')}</span>
             </button>
             <button
               type="button"
@@ -504,7 +454,7 @@ export default function BackupSettingsPanel({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-              <span>{i18n.btnRefresh}</span>
+              <span>{t('bkRefresh')}</span>
             </button>
           </div>
         </div>
@@ -512,16 +462,16 @@ export default function BackupSettingsPanel({
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-500">
             <RefreshCw className="w-7 h-7 animate-spin text-primary mb-2" />
-            <p className="text-xs font-medium">{i18n.creating}</p>
+            <p className="text-xs font-medium">{t('bkCreating')}</p>
           </div>
         ) : backups.length === 0 ? (
           <div className="text-center py-12 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-8">
             <Database className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-3" />
             <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">
-              {i18n.noBackupsTitle}
+              {t('bkNoBackupsTitle')}
             </p>
             <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              {i18n.noBackupsSubtitle}
+              {t('bkNoBackupsSubtitle')}
             </p>
           </div>
         ) : (
@@ -579,7 +529,7 @@ export default function BackupSettingsPanel({
                   {backup.missing && (
                     <div className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300 bg-amber-100/70 dark:bg-amber-900/30 rounded-lg p-2.5 mb-3">
                       <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
-                      <span>{i18n.missingFileNotice}</span>
+                      <span>{t('bkMissingFile')}</span>
                     </div>
                   )}
 
@@ -597,7 +547,7 @@ export default function BackupSettingsPanel({
                         ) : (
                           <RotateCcw className="w-3.5 h-3.5" />
                         )}
-                        <span>{isRestoring ? i18n.restoring : i18n.btnRestore}</span>
+                        <span>{isRestoring ? t('bkRestoring') : t('bkRestore')}</span>
                       </button>
                     )}
 
@@ -614,10 +564,10 @@ export default function BackupSettingsPanel({
                       )}
                       <span>
                         {isDeleting
-                          ? i18n.deleting
+                          ? t('bkDeleting')
                           : backup.missing
-                          ? i18n.btnRemoveMissing
-                          : i18n.btnDelete}
+                          ? t('bkRemoveMissing')
+                          : t('bkDelete')}
                       </span>
                     </button>
                   </div>
@@ -633,7 +583,7 @@ export default function BackupSettingsPanel({
         <ShieldAlert className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
         <div className="text-xs text-blue-800 dark:text-blue-300 leading-relaxed space-y-1">
           <p className="font-semibold text-blue-900 dark:text-blue-200">
-            {i18n.importantNotes}
+            {t('importantNotes')}
           </p>
           <ul className="list-disc list-inside space-y-0.5 text-slate-600 dark:text-slate-300">
             <li>{t('backupsIncludeAllData') || 'Backups contain full database tables, sales history, inventory, and user privileges.'}</li>
@@ -652,12 +602,12 @@ export default function BackupSettingsPanel({
                 <RotateCcw className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                {i18n.confirmRestoreTitle}
+                {t('bkConfirmRestoreTitle')}
               </h3>
             </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              {i18n.confirmRestoreDesc}
+              {t('bkConfirmRestoreDesc')}
             </p>
 
             <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 text-xs font-mono text-slate-700 dark:text-slate-300 break-all" dir="ltr">
@@ -670,7 +620,7 @@ export default function BackupSettingsPanel({
                 onClick={() => setRestoreModalBackup(null)}
                 className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
-                {i18n.cancel}
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -678,7 +628,7 @@ export default function BackupSettingsPanel({
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white transition-colors shadow-sm"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>{i18n.btnRestore}</span>
+                <span>{t('bkRestore')}</span>
               </button>
             </div>
           </div>
@@ -694,12 +644,12 @@ export default function BackupSettingsPanel({
                 <Trash2 className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                {i18n.confirmDeleteTitle}
+                {t('bkConfirmDeleteTitle')}
               </h3>
             </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              {i18n.confirmDeleteDesc}
+              {t('bkConfirmDeleteDesc')}
             </p>
 
             <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 text-xs font-mono text-slate-700 dark:text-slate-300 break-all" dir="ltr">
@@ -712,7 +662,7 @@ export default function BackupSettingsPanel({
                 onClick={() => setDeleteModalBackup(null)}
                 className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
-                {i18n.cancel}
+                {t('cancel')}
               </button>
               <button
                 type="button"
@@ -720,7 +670,7 @@ export default function BackupSettingsPanel({
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-rose-600 hover:bg-rose-700 text-white transition-colors shadow-sm"
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{i18n.btnDelete}</span>
+                <span>{t('bkDelete')}</span>
               </button>
             </div>
           </div>

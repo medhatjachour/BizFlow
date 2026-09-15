@@ -159,7 +159,7 @@ export const arPart9 = {
   cfUnits: 'الوحدات',
   cfApplyAdjustment: 'اجراء تعديل',
   cfApplyCorrection: 'تطبيق التصحيح',
-  cfStockCannotGoBelowZero: 'لا يمكن أن ينخفض المخزون عن الصفر. المخزون الحالي هو {{current}}، تحاول إزالة {{trying}} وحدة.',
+  cfStockCannotGoBelowZero: 'لا يمكن أن ينخفض المخزون عن الصفر. المخزون الحالي هو {current}، تحاول إزالة {trying} وحدة.',
   cfRevenueImpact: 'تأثير الإيرادات',
   cfCostValueImpact: 'تأثير قيمة التكلفة',
   cfHealthyStockLevel: 'مستوى المخزون الصحي',
