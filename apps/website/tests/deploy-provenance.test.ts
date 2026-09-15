@@ -183,6 +183,25 @@ describe("the remote bodies are shipped as scripts instead of quoted into ssh", 
       expect(script).not.toMatch(/\$\{BASH_SOURCE##/);
     }
   });
+
+  it("keeps a harness that runs both bodies through the stdin transport", () => {
+    // The stdin-only failure above got through because the scripts were
+    // verified as files. The harness has to keep feeding them the way the
+    // workflow does, and it has to keep docker unreachable so it can never
+    // touch a real container.
+    const harness = read("scripts", "selftest-deploy-scripts.sh");
+
+    expect(harness).toContain('timeout 30 bash -s -- deadbeef < "$APPLY"');
+    expect(harness).toContain('timeout 60 bash -s < "$APPLY"');
+    expect(harness).toContain('timeout 60 bash -s < "$ROLLBACK"');
+    // Five bounded stdin runs: missing payload, the real apply, the env
+    // fallback, and both rollback cases - plus the file-mode run in section E.
+    expect(harness.match(/timeout \d+ bash -s/g) ?? []).toHaveLength(5);
+    expect(harness).toContain('RUNPATH="$WORK/bin:/usr/bin:/bin"');
+    expect(harness).toContain("no BASH_SOURCE failure under bash -s");
+    expect(harness).toContain("PAYLOAD_DIR=");
+    expect(harness).toContain("APP_DIR=");
+  });
 });
 
 describe("the commit reaches the bundle through the image build", () => {
