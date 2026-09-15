@@ -69,7 +69,12 @@ jobs:
     # The VPS now builds both apps from their own lock files in both stages, so the
     # first build after this change cannot reuse cached layers. 30 minutes was too
     # tight for that cold run.
-    timeout-minutes: 45
+    #
+    # The sync is fast again (a single tar stream rather than ~1,800 per-file scp
+    # round trips), but the docker build on the VPS legitimately takes 20-30+ minutes
+    # with cold layers. At 45 minutes a cold deploy was killed mid-build - worse than
+    # a slow one, because the run then reports a timeout with nothing to roll back.
+    timeout-minutes: 90
     environment: production
     steps:
       - uses: actions/checkout@v5
@@ -104,7 +109,8 @@ jobs:
         run: |
           REMOTE="medhat@168.231.107.207"
           BASE="/tmp/bizflow-ci-deploy"
-          SSH="ssh -i ~/.ssh/deploy_key -o BatchMode=yes"
+          # Fail fast instead of hanging for hours if the link to the VPS stalls.
+          SSH="ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
 
           $SSH $REMOTE "
             mkdir -p \
@@ -126,8 +132,19 @@ jobs:
               $BASE/.github/workflows
           "
 
-          SCP="scp -i ~/.ssh/deploy_key -q"
-
+          # One tar stream instead of a dozen `scp -r` calls. scp needs a round trip
+          # per file, which made this step take ~21 minutes for ~1,800 files (~28
+          # KB/s); a single compressed stream moves the same tree in seconds and
+          # removes the per-connection handshake of each separate scp.
+          #
+          # The excludes are defensive: `actions/checkout` only provides tracked
+          # files and every excluded path is gitignored. They keep the payload
+          # correct if this job ever grows a build step, and they mirror what the
+          # root .dockerignore already strips out of the build context.
+          #
+          # Every path is listed in repo-relative form, so extracting at $BASE
+          # reproduces exactly the layout the previous scp calls created.
+          #
           # Root infra
           # NOTE: the root-domain static site is NOT synced here. It is built from
           # the separate portfolio repository and lives in ./portfolio-dist on the
@@ -135,34 +152,48 @@ jobs:
           # The root manifests and .dockerignore MUST be synced: the container build
           # installs from them, and a stale root package.json (which used to declare
           # npm `workspaces`) made the VPS build context differ from the repo.
-          $SCP Dockerfile docker-compose.yml nginx.conf \
-               package.json package-lock.json .dockerignore $REMOTE:$BASE/
+          PATHS=(
+            # Root infra
+            Dockerfile docker-compose.yml nginx.conf
+            package.json package-lock.json .dockerignore
+            # BizFlow bridge, web UI, schemas, and build configuration
+            apps/Bizflow
+            # Website source
+            apps/website/src/app/admin
+            apps/website/src/app/api
+            apps/website/src/app/plugins
+            apps/website/src/app/portal
+            apps/website/src/app/checkout
+            apps/website/src/app/layout.tsx
+            apps/website/src/app/sitemap.ts
+            apps/website/src/components
+            apps/website/src/lib
+            apps/website/package.json
+            apps/website/package-lock.json
+            # Scripts & docs
+            scripts
+            docs/DOWNLOAD_FLOW_AND_RELEASES.md
+            .github/workflows/trivy-container.yml
+          )
 
-          # BizFlow bridge, web UI, schemas, and build configuration
-          $SCP -r apps/Bizflow $REMOTE:$BASE/apps/
+          tar -czf - \
+            --exclude='*/node_modules' \
+            --exclude='*/dist' \
+            --exclude='*/out' \
+            --exclude='*/.next' \
+            "${PATHS[@]}" \
+          | $SSH $REMOTE "tar -xzf - -C $BASE"
 
-          # Website source
-          $SCP -r apps/website/src/app/admin        $REMOTE:$BASE/apps/website/src/app/
-          $SCP -r apps/website/src/app/api          $REMOTE:$BASE/apps/website/src/app/
-          $SCP -r apps/website/src/app/plugins      $REMOTE:$BASE/apps/website/src/app/
-          $SCP -r apps/website/src/app/portal       $REMOTE:$BASE/apps/website/src/app/
-          $SCP -r apps/website/src/app/checkout     $REMOTE:$BASE/apps/website/src/app/
-          $SCP apps/website/src/app/layout.tsx      $REMOTE:$BASE/apps/website/src/app/
-          $SCP apps/website/src/app/sitemap.ts      $REMOTE:$BASE/apps/website/src/app/
-          $SCP -r apps/website/src/components       $REMOTE:$BASE/apps/website/src/
-          $SCP -r apps/website/src/lib              $REMOTE:$BASE/apps/website/src/
-          $SCP apps/website/package.json apps/website/package-lock.json \
-               $REMOTE:$BASE/apps/website/
-
-          # Scripts & docs
-          $SCP -r scripts $REMOTE:$BASE/
-          $SCP docs/DOWNLOAD_FLOW_AND_RELEASES.md $REMOTE:$BASE/docs/
-          $SCP .github/workflows/trivy-container.yml $REMOTE:$BASE/.github/workflows/
+          echo "Synced $(git ls-files -- "${PATHS[@]}" | wc -l) tracked files to $BASE"
 
       - name: Apply & rebuild on VPS
         id: apply
         run: |
-          ssh -i ~/.ssh/deploy_key -o BatchMode=yes medhat@168.231.107.207 "
+          # Keep the session alive across the multi-minute docker build so a slow but
+          # healthy build is not dropped half way through.
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+            medhat@168.231.107.207 "
             set -e
             cd /home/medhat/bizflow
             cp -a /tmp/bizflow-ci-deploy/. .
