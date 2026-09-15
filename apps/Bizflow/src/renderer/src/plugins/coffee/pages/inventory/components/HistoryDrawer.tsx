@@ -105,7 +105,7 @@ export function HistoryDrawer({
         </div>
 
         {/* ── Stats row ──────────────────────────────────────────── */}
-        <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 grid grid-cols-3 gap-2">
+        <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-2">
           <StatPill
             icon={TrendingUp}
             label={t('cfIn') || 'In'}

@@ -29,7 +29,7 @@ export const TransferPipelineCard: React.FC<Props> = ({ transfers }) => {
       </div>
 
       {/* Stage count summary pills */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
         {pipelinePills.map(p => (
           <div key={p.label} className={`rounded-xl p-2 text-center ${p.color}`}>
             <div className="text-lg font-bold tracking-tight">{p.count}</div>

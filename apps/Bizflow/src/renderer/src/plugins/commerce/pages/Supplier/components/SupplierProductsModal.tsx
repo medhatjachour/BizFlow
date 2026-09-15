@@ -87,8 +87,8 @@ export const SupplierProductsModal: React.FC<SupplierProductsModalProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-                <table className="w-full text-xs text-start">
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-x-auto">
+                <table className="w-full min-w-[640px] text-xs text-start">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold">
                       <th className="px-3.5 py-2.5 text-start">{t('productSKU') || 'Product / SKU'}</th>

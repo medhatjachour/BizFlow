@@ -327,8 +327,8 @@ export const RecipeFormModal: React.FC<Props> = ({ open, recipe, onClose, onSave
                       className="rounded-2xl border border-slate-200/80 dark:border-slate-800 p-3.5 space-y-3 bg-slate-50/50 dark:bg-slate-800/40"
                     >
                       {/* Ingredient Inputs */}
-                      <div className="grid grid-cols-12 gap-2.5 items-center">
-                        <div className="col-span-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-12 gap-2.5 items-center">
+                        <div className="col-span-2 sm:col-span-3">
                           <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-1">
                             Ingredient *
                           </label>
@@ -352,7 +352,7 @@ export const RecipeFormModal: React.FC<Props> = ({ open, recipe, onClose, onSave
                           />
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="sm:col-span-2">
                           <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-1">
                             Qty *
                           </label>
@@ -367,7 +367,7 @@ export const RecipeFormModal: React.FC<Props> = ({ open, recipe, onClose, onSave
                           />
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="sm:col-span-2">
                           <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-1">
                             Unit
                           </label>
@@ -389,7 +389,7 @@ export const RecipeFormModal: React.FC<Props> = ({ open, recipe, onClose, onSave
                           />
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="sm:col-span-2">
                           <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-1">
                             Cost/{ing.unit || 'u'}
                           </label>
@@ -403,7 +403,7 @@ export const RecipeFormModal: React.FC<Props> = ({ open, recipe, onClose, onSave
                           />
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="sm:col-span-2">
                           <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide block mb-1">
                             Subtotal
                           </label>
@@ -412,7 +412,7 @@ export const RecipeFormModal: React.FC<Props> = ({ open, recipe, onClose, onSave
                           </div>
                         </div>
 
-                        <div className="col-span-1 pt-4 flex justify-center">
+                        <div className="sm:col-span-1 pt-4 flex justify-center">
                           <button
                             type="button"
                             onClick={() => removeIngredient(idx)}

@@ -74,7 +74,7 @@ export function ProgramFormModal({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className={labelCls}>{t('gymProgramGoal') || 'Target Goal'}</label>
               <select

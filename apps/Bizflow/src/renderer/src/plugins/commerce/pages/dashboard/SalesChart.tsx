@@ -141,7 +141,7 @@ export default function SalesChart() {
 
       {/* Key Metrics Cards */}
       {!loading && metrics.hasData && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-gradient-to-br from-success/10 to-emerald-50 dark:from-success/20 dark:to-slate-800 rounded-lg p-4 border border-success/20">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">

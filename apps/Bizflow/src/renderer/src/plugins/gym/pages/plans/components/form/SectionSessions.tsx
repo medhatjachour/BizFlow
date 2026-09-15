@@ -65,7 +65,7 @@ export function SectionSessions({ form, onChange }: SectionSessionsProps) {
         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
           Limits Summary Preview
         </p>
-        <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
           {[
             { label: 'Weekly Access', val: form.sessionsPerWeek ? `${form.sessionsPerWeek}/wk` : 'Unlimited' },
             { label: 'Total Visits', val: form.sessionsTotal || 'Unlimited' },

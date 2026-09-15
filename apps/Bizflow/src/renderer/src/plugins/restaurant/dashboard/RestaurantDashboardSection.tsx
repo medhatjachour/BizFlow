@@ -220,7 +220,7 @@ export default function RestaurantDashboardSection({ refreshSignal }: Props) {
           </h3>
           {raw.tables.length > 0 ? (
             <>
-              <div className="grid grid-cols-5 gap-2 mb-3">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-3">
                 {raw.tables.slice(0, 20).map((table: any, i: number) => (
                   <div
                     key={i}
@@ -277,7 +277,7 @@ export default function RestaurantDashboardSection({ refreshSignal }: Props) {
             <div className="h-[110px] flex items-center justify-center text-xs text-slate-400">No order data</div>
           )}
           {heatmap && (
-            <div className="mt-2 grid grid-cols-3 gap-1 text-xs text-center text-slate-500">
+            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-1 text-xs text-center text-slate-500">
               <div><span className="block font-semibold text-slate-800 dark:text-white">{heatmap.periods.morning}</span>Morning</div>
               <div><span className="block font-semibold text-slate-800 dark:text-white">{heatmap.periods.afternoon}</span>Afternoon</div>
               <div><span className="block font-semibold text-slate-800 dark:text-white">{heatmap.periods.evening}</span>Evening</div>

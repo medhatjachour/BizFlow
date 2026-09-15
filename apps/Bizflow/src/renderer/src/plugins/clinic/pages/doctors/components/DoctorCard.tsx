@@ -70,7 +70,7 @@ export const DoctorCard: React.FC<Props> = ({
       </div>
 
       {/* Metrics Row */}
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
         <div className="rounded-2xl bg-slate-50 dark:bg-slate-900/50 p-2 border border-slate-100 dark:border-slate-800">
           <div className="text-sm font-extrabold text-slate-900 dark:text-white">{doctor.todayCount ?? 0}</div>
           <div className="text-[10px] font-semibold text-slate-400 flex items-center justify-center gap-1 mt-0.5">

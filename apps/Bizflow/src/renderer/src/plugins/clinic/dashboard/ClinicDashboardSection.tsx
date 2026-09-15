@@ -298,7 +298,7 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
           ) : (
             <div className="h-[100px] flex items-center justify-center text-xs text-slate-400">{t('clinicNoSessionHistory')}</div>
           )}
-          <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs text-slate-500">
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center text-xs text-slate-500">
             <div><span className="block font-semibold text-slate-800 dark:text-white">{sessionTrend?.avg.toFixed(1) ?? '—'}</span>{t('clinicAvgPerDay')}</div>
             <div><span className="block font-semibold text-slate-800 dark:text-white">{sessionTrend?.max ?? '—'}</span>{t('clinicPeak')}</div>
             <div><span className="block font-semibold text-slate-800 dark:text-white">{raw.weekSessions.length}</span>{t('clinicThisWeek')}</div>

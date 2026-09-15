@@ -363,7 +363,7 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700 border-y xl:border-y-0 border-slate-200 dark:border-slate-800 xl:min-w-[430px]">
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700 border-y xl:border-y-0 border-slate-200 dark:border-slate-800 xl:min-w-[430px]">
             <div className="px-4 py-1 xl:py-0">
               <p className="text-[10px] font-semibold uppercase text-slate-400">{t('inventoryUiCatalog')}</p>
               <p className="text-sm font-bold text-slate-900 dark:text-white">{totalCount.toLocaleString()} {t('inventoryUiItems')}</p>

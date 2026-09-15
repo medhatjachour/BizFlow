@@ -36,7 +36,7 @@ export function ExpiryAlertsCard({
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
         <div className={`rounded-xl p-3 text-center border ${expiredBatches.length > 0 ? 'bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60' : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-700'}`}>
           <p className={`text-2xl font-black ${expiredBatches.length > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'}`}>{expiredBatches.length}</p>
           <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Expired</p>

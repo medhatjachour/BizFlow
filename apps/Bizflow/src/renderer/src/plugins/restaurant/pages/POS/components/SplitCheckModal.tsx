@@ -70,7 +70,7 @@ export const SplitCheckModal: React.FC<Props> = ({ isOpen, onClose, order, onSpl
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
             Select Seats to Separate onto New Check:
           </span>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {presentSeats.map((seat) => {
               const isSelected = selectedSeats.includes(seat)
               const count = order.items.filter((i) => i.status !== 'voided' && (i.seatNumber || 1) === seat).length

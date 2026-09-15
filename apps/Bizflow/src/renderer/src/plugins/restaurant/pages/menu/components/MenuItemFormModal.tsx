@@ -177,7 +177,7 @@ export const MenuItemFormModal: React.FC<Props> = ({
         </div>
 
         {/* Price, Cost & Prep Time */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <label className="block">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Selling Price *</span>
             <input

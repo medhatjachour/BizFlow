@@ -121,7 +121,7 @@ export default function CategoryModal({
               </label>
 
               {/* Swatch grid */}
-              <div className="grid grid-cols-8 gap-2">
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
                 {PRESET_COLORS.map((c) => (
                   <button
                     type="button"
@@ -179,7 +179,7 @@ export default function CategoryModal({
                 {t('cfSelected') || 'Selected'}: {form.icon}
               </div>
 
-              <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto p-1 border border-slate-200 dark:border-slate-700 rounded-lg">
+              <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-40 overflow-y-auto p-1 border border-slate-200 dark:border-slate-700 rounded-lg">
                 {CAFE_ICONS.map((ic) => (
                   <button
                     type="button"

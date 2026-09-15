@@ -104,7 +104,7 @@ export function TransitForm({ isOpen, onClose, onSuccess }: {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-1">{t('cfReceivedDate') || 'Date'}</label>
               <input type="date" value={receivedAt} onChange={e => setReceivedAt(e.target.value)} className="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-transparent" />
@@ -132,12 +132,12 @@ export function TransitForm({ isOpen, onClose, onSuccess }: {
             </div>
             <div className="p-3 space-y-3">
               {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                  <input type="text" placeholder={t('cfItemDescription') || 'Item description'} value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="col-span-5 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
-                  <input type="number" placeholder={t('cfQuantity') || 'Qty'} value={item.quantity} onChange={e => handleItemChange(index, 'quantity', e.target.value)} className="col-span-2 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
-                  <input type="number" placeholder={t('cfUnitCost') || 'Price'} value={item.unitPrice} onChange={e => handleItemChange(index, 'unitPrice', e.target.value)} className="col-span-2 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
-                  <input type="text" placeholder={t('cfWeight') || 'Weight'} value={item.weight} onChange={e => handleItemChange(index, 'weight', e.target.value)} className="col-span-2 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
-                  <button onClick={() => handleRemoveItem(index)} className="col-span-1 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex justify-center">
+                <div key={index} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-center">
+                  <input type="text" placeholder={t('cfItemDescription') || 'Item description'} value={item.description} onChange={e => handleItemChange(index, 'description', e.target.value)} className="col-span-2 sm:col-span-5 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
+                  <input type="number" placeholder={t('cfQuantity') || 'Qty'} value={item.quantity} onChange={e => handleItemChange(index, 'quantity', e.target.value)} className="sm:col-span-2 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
+                  <input type="number" placeholder={t('cfUnitCost') || 'Price'} value={item.unitPrice} onChange={e => handleItemChange(index, 'unitPrice', e.target.value)} className="sm:col-span-2 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
+                  <input type="text" placeholder={t('cfWeight') || 'Weight'} value={item.weight} onChange={e => handleItemChange(index, 'weight', e.target.value)} className="sm:col-span-2 px-2 py-2 text-md border border-slate-200 dark:border-slate-700 rounded bg-transparent" />
+                  <button onClick={() => handleRemoveItem(index)} className="sm:col-span-1 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex justify-center">
                     <Trash2 size={14} />
                   </button>
                 </div>

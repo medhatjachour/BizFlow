@@ -48,7 +48,7 @@ export function TabInfo({ coach, stats }: TabInfoProps) {
 
       {/* Aggregate KPI Summary Strip */}
       {stats && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <div className="rounded-2xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-center">
             <p className="text-base font-black text-slate-900 dark:text-white tabular-nums">
               {stats.uniqueTrainees}

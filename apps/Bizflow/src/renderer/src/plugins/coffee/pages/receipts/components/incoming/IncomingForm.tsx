@@ -309,7 +309,7 @@ export function IncomingForm({ isOpen, onClose, products, onSuccess }: {
                   />
                   <button 
                     onClick={() => handleRemoveItem(index)}
-                    className="col-span-1 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex justify-center items-center transition-colors mx-auto"
+                    className="col-span-12 md:col-span-1 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex justify-center items-center transition-colors mx-auto"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>

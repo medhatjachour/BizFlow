@@ -149,7 +149,7 @@ export const PaymentSplitModal: React.FC<Props> = ({
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
             Server Gratuity
           </span>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
             {[0, 0.1, 0.15, 0.2].map((r) => (
               <button
                 key={r}
@@ -180,7 +180,7 @@ export const PaymentSplitModal: React.FC<Props> = ({
                 Exact Total (${totalRequired.toFixed(2)})
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-1.5">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
               {[20, 50, 100, 200].map((amt) => (
                 <button
                   key={amt}

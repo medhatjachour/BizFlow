@@ -99,7 +99,7 @@ export const AdjustStockModal: React.FC<Props> = ({ target, onClose, onConfirm }
           </div>
 
           {/* Mode Tabs */}
-          <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80">
             {(
               [
                 { key: 'add', label: 'Add (+)', icon: <TrendingUp className="h-3.5 w-3.5" /> },

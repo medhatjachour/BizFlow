@@ -59,7 +59,7 @@ export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
             </div>
 
             {/* ── Stats grid ── */}
-            <div className="grid grid-cols-3 gap-px bg-slate-200 dark:bg-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-slate-200 dark:bg-slate-700">
               {[
                 { label: t('cfOpeningCash') || 'Opening Cash', value: formatMoney(shift.openingCash),       icon: Wallet,       color: '#0891b2' },
                 { label: t('cfClosingCash') || 'Closing Cash', value: formatMoney(shift.closingCash ?? 0),  icon: Banknote,     color: '#16a34a' },
@@ -95,7 +95,7 @@ export function ShiftDetailDrawer({ shift, loading, onClose }: Props) {
               <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">
                 {t('cfPaymentBreakdown') || 'Payment Breakdown'}
               </h4>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[
                   { label: t('cfCash') || 'Cash',    value: shift.cashTotal },
                   { label: t('cfCard') || 'Card',    value: shift.cardTotal },

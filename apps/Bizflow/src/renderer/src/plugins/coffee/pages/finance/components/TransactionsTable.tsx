@@ -41,6 +41,8 @@ export function TransactionsTable({
         </div>
       </div>
 
+      <div className="overflow-x-auto">
+        <div className="min-w-[720px]">
       {/* Table header */}
       <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
         <div className="col-span-3 text-xs font-medium text-slate-500 dark:text-slate-400">Order</div>
@@ -103,6 +105,8 @@ export function TransactionsTable({
             ))}
           </div>
         )}
+      </div>
+        </div>
       </div>
 
       {/* Pagination */}

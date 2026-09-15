@@ -131,7 +131,7 @@ export const CheckoutSummary: React.FC<Props> = ({
       </div>
 
       {/* ── Payment Method 4-Way Selector ────────────────────────────────── */}
-      <div className="grid grid-cols-4 gap-1">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
         {PAYMENT_METHODS.map(pm => {
           const isSelected = paymentMethod === pm.id
           return (

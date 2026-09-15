@@ -71,7 +71,7 @@ export const RecipeCostBreakdownDrawer: React.FC<Props> = ({
       {/* ─── Financial Telemetry Strip ────────────────────────────── */}
       <div className="flex-1 overflow-y-auto p-5 space-y-5">
         {/* Margin Summary Grid */}
-        <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center text-xs">
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 block">Selling Price</span>
             <span className="text-base font-black text-slate-900 dark:text-white">

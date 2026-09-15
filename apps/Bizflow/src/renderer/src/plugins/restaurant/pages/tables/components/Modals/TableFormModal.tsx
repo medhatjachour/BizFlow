@@ -138,7 +138,7 @@ export const TableFormModal: React.FC<Props> = ({
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
             Table Shape
           </span>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {SHAPE_OPTIONS.map((shp) => (
               <button
                 type="button"

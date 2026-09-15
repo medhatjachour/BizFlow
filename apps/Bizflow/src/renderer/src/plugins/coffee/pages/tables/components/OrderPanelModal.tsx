@@ -120,7 +120,7 @@ export default function OrderPanelModal({ table, order, onClose, onSuccess }: Pr
           <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
             <div>
               <label className="text-xs text-slate-500 block mb-1.5">Payment Method</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[
                   { v: 'cash', l: 'Cash', I: Banknote },
                   { v: 'card', l: 'Card', I: CreditCard },

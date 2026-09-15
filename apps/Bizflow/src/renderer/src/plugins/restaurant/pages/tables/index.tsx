@@ -191,7 +191,7 @@ export default function FloorPlanPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 pt-2">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((count) => (
                 <button
                   key={count}

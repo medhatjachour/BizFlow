@@ -157,8 +157,8 @@ export const PantryFormModal: React.FC<Props> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-5 gap-3">
-                  <div className="col-span-3">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  <div className="md:col-span-3">
                     <label className={labelClass}>{t('bakeryCurrentStock') || 'Current Stock'}</label>
                     <input
                       type="number"
@@ -169,7 +169,7 @@ export const PantryFormModal: React.FC<Props> = ({
                       className={inputClass}
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div className="md:col-span-2">
                     <label className={labelClass}>{t('bakeryUnit') || 'Unit'} *</label>
                     <input
                       list="pantry-unit-datalist"

@@ -98,7 +98,7 @@ export const StockUpsertModal: React.FC<Props> = ({
         </div>
 
         {/* SKU, Barcode, Type */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">SKU</label>
             <input
@@ -134,7 +134,7 @@ export const StockUpsertModal: React.FC<Props> = ({
         </div>
 
         {/* Quantities */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Initial Qty *</label>
             <input
@@ -169,7 +169,7 @@ export const StockUpsertModal: React.FC<Props> = ({
         </div>
 
         {/* Traceability: Lot, Batch, Expiry */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Lot Number</label>
             <input

@@ -115,7 +115,7 @@ export function ExpenseModal({
 
           {/* Category — visual grid */}
           <Field label={t('cfExpenseCategory')} icon={Tag}>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
               {EXPENSE_CATEGORIES.map(c => {
                 const Icon = c.icon
                 const selected = form.category === c.value

@@ -41,8 +41,8 @@ export function IncomingRow({ receipt }: { receipt: IncomingReceipt }) {
       </div>
 
       {expanded && (
-        <div className="px-6 pb-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700">
-          <table className="w-full text-sm mt-4">
+        <div className="px-6 pb-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm mt-4">
             <thead>
               <tr className="text-left text-slate-400 border-b border-slate-200 dark:border-slate-700">
                 <th className="pb-2 font-medium text-right">{t('cfProduct') || 'Product'}</th>

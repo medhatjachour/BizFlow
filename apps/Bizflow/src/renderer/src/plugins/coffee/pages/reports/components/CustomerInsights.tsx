@@ -13,7 +13,7 @@ export function CustomerInsights({ customers, loading, t }: CustomerInsightsProp
     return (
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 animate-pulse">
         <div className="h-6 w-40 bg-slate-200 dark:bg-slate-700 rounded mb-4" />
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-20 bg-slate-200 dark:bg-slate-700 rounded" />
           ))}
@@ -34,7 +34,7 @@ export function CustomerInsights({ customers, loading, t }: CustomerInsightsProp
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">{t('cfCustomerInsights')}</h3>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
         <div className="rounded-xl bg-purple-50 dark:bg-purple-500/10 p-3 text-center">
           <Users className="h-5 w-5 text-purple-500 mx-auto mb-1" />
           <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 tabular-nums">

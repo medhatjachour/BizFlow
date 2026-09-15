@@ -152,7 +152,7 @@ export const AppointmentFormModal: React.FC<Props> = ({
               <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
               Payment Details
             </span>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Charged</label>
                 <input

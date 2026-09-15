@@ -63,7 +63,7 @@ export function ShiftCard({ shift, onView }: Props) {
 
       {/* Payment breakdown */}
       <div className="px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700">
-        <div className="grid grid-cols-4 gap-2 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           {[
             { label: t('cfOpen') || 'Open',    value: shift.openingCash,         icon: Wallet },
             { label: t('cfCash') || 'Cash',    value: shift.cashTotal,           icon: Banknote },

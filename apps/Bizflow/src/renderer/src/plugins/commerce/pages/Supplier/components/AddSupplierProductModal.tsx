@@ -111,7 +111,7 @@ export const AddSupplierProductModal: React.FC<AddSupplierProductModalProps> = (
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className="block text-[11px] font-medium text-slate-700 dark:text-slate-300 mb-1">
                 {t('unitCost') || 'Unit Cost *'}

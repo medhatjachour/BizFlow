@@ -242,7 +242,7 @@ export default function OrdersTab() {
             <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{payModal.total.toFixed(2)}</p>
             <div>
               <label className="block text-xs font-medium text-slate-500 mb-2">Payment Method</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[['cash','Cash'],['card','Card'],['vodafone_cash','Vodafone']].map(([val, lbl]) => (
                   <button
                     key={val}

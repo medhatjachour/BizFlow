@@ -89,7 +89,7 @@ export const TransferTrendCard: React.FC<Props> = ({
       </div>
 
       {/* Sub-stats */}
-      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2 text-center text-xs">
+      <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center text-xs">
         <div>
           <span className="block font-bold text-slate-900 dark:text-white">
             {transferTrend?.avg.toFixed(1) ?? '—'}

@@ -76,7 +76,7 @@ export function CustomerCard({ customer, onEdit, onDelete }: Props) {
         </div>
 
         {/* Actions */}
-        <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
           <button
             onClick={() => navigate(`/customers/${customer.id}`)}
             className="flex flex-col items-center justify-center gap-1 px-2 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors"

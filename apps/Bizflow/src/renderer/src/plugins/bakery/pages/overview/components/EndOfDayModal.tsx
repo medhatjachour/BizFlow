@@ -73,7 +73,7 @@ export function EndOfDayModal({ onClose, onWasteLogged }: EndOfDayModalProps) {
                     className="p-3.5 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40"
                   >
                     <p className="font-bold text-sm text-slate-900 dark:text-white mb-2">{entry.recipeName}</p>
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center text-xs">
                       <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
                         <span className="text-slate-400 block mb-0.5">{t('bakeryEODProduced')}</span>
                         <span className="font-extrabold text-slate-800 dark:text-slate-200">{entry.unitsProduced}</span>

@@ -9,7 +9,7 @@ export function TabActivity({ stats }: TabActivityProps) {
   return (
     <div className="space-y-4">
       {/* Overview Metric Boxes */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Today', value: stats?.sessionsToday ?? 0, icon: Zap, color: 'text-blue-500' },
           { label: 'This Week', value: stats?.sessionsWeek ?? 0, icon: Calendar, color: 'text-orange-500' },

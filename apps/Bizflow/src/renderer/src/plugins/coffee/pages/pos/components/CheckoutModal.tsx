@@ -128,7 +128,7 @@ export function CheckoutModal({
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
               {t('cfCheckoutOrderType') || 'Order Type'}
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {ORDER_TYPES.map(({ value, label, icon: Icon, color }) => {
                 const selected = checkout.orderType === value
                 return (
@@ -184,7 +184,7 @@ export function CheckoutModal({
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">
               {t('cfCheckoutPaymentMethod') || 'Payment Method'}
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {PAYMENT_METHODS.map(({ value, label, icon: Icon, color }) => {
                 const selected = checkout.paymentMethod === value
                 return (

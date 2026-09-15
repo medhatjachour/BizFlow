@@ -230,7 +230,7 @@ export default function PatientFormModal({ patient, onClose, onSaved }: Props) {
             <div className="space-y-4">
               <div>
                 <label className={labelCls}>Blood Type</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                   {(['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'] as BloodType[]).map(bt => (
                     <button
                       key={bt}

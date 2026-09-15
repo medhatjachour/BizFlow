@@ -62,11 +62,11 @@ function ShoppingCart({
         <>
           {/* Compact Table Header */}
           <div className="grid grid-cols-12 gap-1 px-2 py-1.5 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
-            <div className="col-span-4">{t('product')}</div>
+            <div className="col-span-3">{t('product')}</div>
             <div className="col-span-3 text-center">{t('qty')}</div>
             <div className="col-span-2 text-right">{t('price')}</div>
             <div className="col-span-2 text-right">{t('total')}</div>
-            <div className="col-span-1"></div>
+            <div className="col-span-2"></div>
           </div>
 
           {/* Scrollable Items - Optimized for space */}
@@ -81,7 +81,7 @@ function ShoppingCart({
                 `}
               >
                 {/* Product Name + Variant (More compact) */}
-                <div className="col-span-4 flex flex-col justify-center min-w-0 pr-1">
+                <div className="col-span-3 flex flex-col justify-center min-w-0 pr-1">
                   <div className="text-xs font-semibold text-slate-900 dark:text-white truncate leading-tight" title={item.name}>
                     {item.name}
                   </div>
@@ -158,7 +158,7 @@ function ShoppingCart({
                 </div>
 
                 {/* Action Buttons (Discount + Remove) */}
-                <div className="col-span-1 flex items-center justify-center gap-0.5">
+                <div className="col-span-2 flex items-center justify-center gap-0.5">
                   {onApplyDiscount && canApplyDiscount?.() && (
                     <button
                       onClick={() => onApplyDiscount(item)}

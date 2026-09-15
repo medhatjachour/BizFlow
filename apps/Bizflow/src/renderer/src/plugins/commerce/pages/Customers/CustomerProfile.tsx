@@ -267,7 +267,7 @@ export default function CustomerProfile() {
                         <CreditCard className="w-5 h-5 text-slate-400 dark:text-slate-500" />
                       </div>
                       <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(stats.installments.totalAmount)}</p>
-                      <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                      <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                         <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                           <CheckCircle className="w-3 h-3" />
                           <span>{stats.installments.paid} {t('installmentPaidInstallments')}</span>

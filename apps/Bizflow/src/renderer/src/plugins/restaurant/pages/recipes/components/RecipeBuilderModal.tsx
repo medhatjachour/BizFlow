@@ -138,8 +138,8 @@ export const RecipeBuilderModal: React.FC<Props> = ({
         </div>
 
         {/* Target Dish & Yield */}
-        <div className="grid grid-cols-3 gap-3">
-          <label className="col-span-2 block">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <label className="sm:col-span-2 block">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
               Target Menu Item *
             </span>
@@ -175,7 +175,7 @@ export const RecipeBuilderModal: React.FC<Props> = ({
         </div>
 
         {/* Live Food Cost Telemetry Strip */}
-        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center text-xs">
           <div>
             <span className="text-[10px] font-black uppercase text-slate-400 block">Selling Price</span>
             <span className="font-black text-slate-900 dark:text-white">

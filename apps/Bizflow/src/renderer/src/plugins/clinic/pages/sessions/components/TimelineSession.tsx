@@ -166,8 +166,8 @@ export default function TimelineSession({ session, isLast, onEdit }: Props) {
                     <Printer className="h-3 w-3" /> Print Rx
                   </button>
                 </div>
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                  <table className="w-full text-xs text-left">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
+                  <table className="w-full min-w-[620px] text-xs text-left">
                     <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-400 uppercase font-semibold">
                       <tr>
                         <th className="py-2 px-3">Medicine</th>
@@ -212,8 +212,8 @@ export default function TimelineSession({ session, isLast, onEdit }: Props) {
                 <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-2 flex items-center gap-1">
                   <Package className="h-3.5 w-3.5" /> Inventory Used
                 </p>
-                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-200/80 dark:border-amber-900/40 overflow-hidden">
-                  <table className="w-full text-xs text-left">
+                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-200/80 dark:border-amber-900/40 overflow-x-auto">
+                  <table className="w-full min-w-[520px] text-xs text-left">
                     <thead className="bg-amber-50/50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
                       <tr>
                         <th className="py-2 px-3">Item</th>

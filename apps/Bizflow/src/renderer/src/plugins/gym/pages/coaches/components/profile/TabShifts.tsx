@@ -55,8 +55,8 @@ export function TabShifts({ coachId }: TabShiftsProps) {
       {/* Shift Form */}
       {showShiftForm && (
         <div className="rounded-2xl border border-orange-200 dark:border-orange-800/40 bg-orange-50/40 dark:bg-orange-950/10 p-4 space-y-3 shadow-inner">
-          <div className="grid grid-cols-3 gap-2">
-            <div className="col-span-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="sm:col-span-3">
               <label className="text-[10px] font-bold text-slate-400 block mb-0.5">Shift Date</label>
               <input
                 type="date"

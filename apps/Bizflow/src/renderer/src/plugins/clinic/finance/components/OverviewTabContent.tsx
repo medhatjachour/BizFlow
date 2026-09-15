@@ -88,7 +88,7 @@ export const OverviewTabContent: React.FC<Props> = ({
         </div>
 
         {/* Glanceable Micro Stats Row */}
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-white/20">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-4 border-t border-white/20">
           <div>
             <p className="text-[11px] opacity-70 uppercase tracking-wider mb-0.5">{t('revenueLabel') || 'Revenue'}</p>
             <p className="text-base sm:text-lg font-black tabular-nums">${formatMoney(summary.revenue)}</p>

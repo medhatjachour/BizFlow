@@ -35,7 +35,7 @@ export function ProfileStatsHeader({ stats, loading }: ProfileStatsHeaderProps) 
   ]
 
   return (
-    <div className="grid grid-cols-4 gap-2 px-6 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/20">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-2 px-6 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-900/20">
       {cards.map(c => {
         const Icon = c.icon
         return (

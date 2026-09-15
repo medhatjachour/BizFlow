@@ -11,7 +11,7 @@ export function PatientFinanceSummary({ finance }: { finance: any }) {
   const outstanding = finance?.outstanding || 0
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       <div className="bg-white dark:bg-slate-800/90 rounded-3xl border border-slate-200/80 dark:border-slate-700/80 p-4 text-center shadow-sm">
         <CreditCard size={18} className="mx-auto mb-1 text-slate-400" />
         <p className="text-lg font-black text-slate-900 dark:text-white">{formatOwnerMoney(charged)}</p>

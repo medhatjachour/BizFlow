@@ -74,7 +74,7 @@ export function PlanCard({ plan, onEdit, onDelete }: PlanCardProps) {
         </div>
 
         {/* Sessions Matrix */}
-        <div className="px-6 mb-3 grid grid-cols-3 gap-1.5 text-center">
+        <div className="px-6 mb-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-center">
           {[
             { val: plan.sessionsPerWeek != null ? plan.sessionsPerWeek : '∞', lbl: 'Per Week' },
             { val: plan.sessionsTotal != null ? plan.sessionsTotal : '∞', lbl: 'Total Visits' },

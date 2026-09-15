@@ -45,7 +45,7 @@ export default function EditSaleModal({ sale, onClose, onSaved }: { sale: Sale; 
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"><X size={18} /></button>
         </div>
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs text-slate-500 dark:text-slate-400 mb-1">{t('vetQty') || 'Qty'} ({unitLabel})</label>
               <input type="number" min="0.01" step="any" value={qty} onChange={e => setQty(e.target.value)} className={inputCls} />

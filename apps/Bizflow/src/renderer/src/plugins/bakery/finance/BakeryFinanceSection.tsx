@@ -473,7 +473,7 @@ console.log(plData, 'plData')
                         </div>
 
                         {/* Stats grid */}
-                        <div className="grid grid-cols-4 gap-2 text-center">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                           <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-2">
                             <p className="text-[10px] text-slate-500 uppercase tracking-wide">{t('bakeryFinanceProdCost')}</p>
                             <p className="text-sm font-bold text-amber-600">${(row.totalProductionCost || 0).toFixed(2)}</p>

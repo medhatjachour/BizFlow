@@ -39,7 +39,7 @@ export const DoctorFormModal: React.FC<Props> = ({ existing, onClose, onSaved })
         {/* Form Body */}
         <form onSubmit={save} className="px-6 py-5 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Title & Name */}
-          <div className="grid grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div>
               <label className={labelCls}>{t('title') || 'Title'}</label>
               <input
@@ -49,7 +49,7 @@ export const DoctorFormModal: React.FC<Props> = ({ existing, onClose, onSaved })
                 placeholder="Dr."
               />
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className={labelCls}>{t('doctorName') || 'Name'} *</label>
               <input
                 className={inputCls}
@@ -84,7 +84,7 @@ export const DoctorFormModal: React.FC<Props> = ({ existing, onClose, onSaved })
           </div>
 
           {/* Phone, Email, Room */}
-          <div className="grid grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div>
               <label className={labelCls}>{t('phone') || 'Phone'}</label>
               <input
@@ -116,7 +116,7 @@ export const DoctorFormModal: React.FC<Props> = ({ existing, onClose, onSaved })
           </div>
 
           {/* Fees, Commission & Status */}
-          <div className="grid grid-cols-3 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
             <div>
               <label className={labelCls}>{t('consultationFee') || 'Consultation fee'}</label>
               <input

@@ -202,7 +202,7 @@ export default function ProductAnalytics() {
             {leadingProduct && (
               <section className="xl:col-span-2 rounded-lg border border-slate-800 bg-slate-950 text-white p-4 flex flex-col justify-between min-h-56">
                 <div><div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase text-amber-400">{t('inventoryUiPeriodLeader')}</span><Trophy size={17} className="text-amber-400" /></div><h3 className="mt-5 text-lg font-bold leading-tight">{leadingProduct.productName}</h3><p className="mt-1 text-[11px] text-slate-400">{leadingProduct.category || t('uncategorized')}</p></div>
-                <div className="grid grid-cols-3 gap-2 mt-5 pt-4 border-t border-white/10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-5 pt-4 border-t border-white/10">
                   <div><p className="text-base font-bold">{formatLargeNumber(leadingProduct.unitsSold)}</p><p className="text-[9px] text-slate-400">{t('inventoryUiUnits')}</p></div>
                   <div><p className="text-base font-bold text-emerald-400">{formatCurrency(leadingProduct.revenue)}</p><p className="text-[9px] text-slate-400">{t('inventoryUiRevenue')}</p></div>
                   <div><p className="text-base font-bold">{leadingProduct.transactions}</p><p className="text-[9px] text-slate-400">{t('inventoryUiOrders')}</p></div>

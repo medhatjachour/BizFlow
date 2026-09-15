@@ -263,8 +263,8 @@ export const WasteFormModal: React.FC<Props> = ({
             )}
 
             {/* Quantity & Unit */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                   {t('bakeryWasteQuantity') || 'Lost Quantity'  } *
                 </label>

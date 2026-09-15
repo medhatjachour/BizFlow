@@ -44,7 +44,7 @@ export const RecipeCard: React.FC<Props> = ({ recipe, onEdit, onDelete }) => {
         </div>
 
         {/* Cost & Margin Strip */}
-        <div className="mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 grid grid-cols-3 gap-2 text-xs text-center">
+        <div className="mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-center">
           <div>
             <span className="text-[10px] text-slate-400 block">Selling Price</span>
             <span className="font-black text-slate-900 dark:text-white">${sellingPrice.toFixed(2)}</span>

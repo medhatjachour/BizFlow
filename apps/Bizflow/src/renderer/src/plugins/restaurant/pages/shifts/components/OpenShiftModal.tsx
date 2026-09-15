@@ -57,7 +57,7 @@ export const OpenShiftModal: React.FC<Props> = ({ isOpen, onClose, onOpen }) => 
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
             Opening Float Presets
           </span>
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-1.5">
             {FLOAT_PRESETS.map((amount) => (
               <button
                 type="button"

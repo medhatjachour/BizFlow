@@ -62,7 +62,7 @@ export function CartTable({
   }
 
   return (
-    <table className="w-full text-sm">
+    <table className="w-full min-w-[560px] text-sm">
       <thead className="bg-slate-50 dark:bg-slate-700/50 sticky top-0">
         <tr>
           <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">

@@ -64,7 +64,7 @@ export const FollowUpsTab: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
         <div className="bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/30 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-xs">
           <AlertTriangle className="h-7 w-7 text-rose-500 flex-shrink-0" />
           <div>

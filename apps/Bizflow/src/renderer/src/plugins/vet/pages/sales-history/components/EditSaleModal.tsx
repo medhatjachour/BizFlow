@@ -80,7 +80,7 @@ export const EditSaleModal: React.FC<Props> = ({ sale, onClose, onSaved }) => {
         </div>
 
         <div className="p-6 space-y-4">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-500 mb-1">
                 Qty ({unitLabel})
@@ -120,7 +120,7 @@ export const EditSaleModal: React.FC<Props> = ({ sale, onClose, onSaved }) => {
 
           <div>
             <label className="block text-xs font-bold text-slate-500 mb-1">Payment Method</label>
-            <div className="grid grid-cols-4 gap-1">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
               {PAYMENT_METHODS.map(m => (
                 <button
                   key={m}

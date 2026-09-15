@@ -262,7 +262,7 @@ export default function BakeryDashboardSection({ refreshSignal }: Props) {
           ) : (
             <div className="h-[100px] flex items-center justify-center text-xs text-slate-400">No history yet</div>
           )}
-          <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs text-slate-500">
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center text-xs text-slate-500">
             <div><span className="block font-semibold text-slate-800 dark:text-white">{trends?.avg.toFixed(1) ?? '—'}</span>Avg/day</div>
             <div><span className="block font-semibold text-slate-800 dark:text-white">{trends?.max ?? '—'}</span>Peak</div>
             <div><span className="block font-semibold text-slate-800 dark:text-white">{trends?.min ?? '—'}</span>Low</div>

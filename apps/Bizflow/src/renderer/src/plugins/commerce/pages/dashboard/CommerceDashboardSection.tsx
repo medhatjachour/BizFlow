@@ -160,7 +160,7 @@ export default function CommerceDashboardSection({ refreshSignal }: Props) {
                   {weekTrend.change >= 0 ? '+' : ''}{weekTrend.change.toFixed(1)}%
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-xs text-center text-slate-500">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-center text-slate-500">
                 <div>
                   <p className="font-semibold text-slate-800 dark:text-white">${weekTrend.min.toFixed(0)}</p>
                   <p>Lowest</p>

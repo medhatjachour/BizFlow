@@ -152,7 +152,7 @@ export const ModifierSelectionModal: React.FC<Props> = ({
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
                 Course Timing
               </span>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
                 {COURSE_OPTIONS.map((c) => (
                   <button
                     key={c.value}

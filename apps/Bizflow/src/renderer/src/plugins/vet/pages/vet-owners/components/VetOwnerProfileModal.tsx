@@ -235,7 +235,7 @@ export function VetOwnerProfileModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-1 mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 text-xs">
                     <button
                       type="button"
                       onClick={() => onViewPet(pet.id)}

@@ -82,8 +82,8 @@ export const BulkRestockModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <table className="w-full text-sm text-left">
+        <div className="flex-1 overflow-y-auto overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm text-left">
             <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-500 uppercase tracking-wider sticky top-0">
               <tr>
                 <th className="px-4 py-3">Ingredient</th>

@@ -80,7 +80,7 @@ export function RescheduleFollowUpModal({ followUp, onReschedule, onClose }: Pro
           <label className="block text-xs font-bold text-slate-600 dark:text-slate-400">
             {isAr ? 'خيارات سريعة' : 'Quick Shortcuts'}
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => addDays(3)}
