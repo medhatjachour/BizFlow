@@ -1,0 +1,9 @@
+# Shell scripts must keep LF endings: they are copied into the Linux image and executed
+# as the container entrypoint. A CRLF shebang (`#!/bin/sh\r`) makes the kernel look for an
+# interpreter literally named "sh\r", so the container dies on boot with
+# "No such file or directory" even though the script is present in the image.
+*.sh text eol=lf
+
+# The Dockerfile is parsed by BuildKit on Linux; keep it LF for consistent hashing/layers.
+Dockerfile text eol=lf
+Dockerfile.* text eol=lf

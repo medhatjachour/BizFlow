@@ -66,7 +66,10 @@ jobs:
     name: Deploy to VPS
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The VPS now builds both apps from their own lock files in both stages, so the
+    # first build after this change cannot reuse cached layers. 30 minutes was too
+    # tight for that cold run.
+    timeout-minutes: 45
     environment: production
     steps:
       - uses: actions/checkout@v4
@@ -129,7 +132,11 @@ jobs:
           # NOTE: the root-domain static site is NOT synced here. It is built from
           # the separate portfolio repository and lives in ./portfolio-dist on the
           # host, which nginx bind-mounts (see docker-compose.yml).
-          $SCP Dockerfile docker-compose.yml nginx.conf $REMOTE:$BASE/
+          # The root manifests and .dockerignore MUST be synced: the container build
+          # installs from them, and a stale root package.json (which used to declare
+          # npm `workspaces`) made the VPS build context differ from the repo.
+          $SCP Dockerfile docker-compose.yml nginx.conf \
+               package.json package-lock.json .dockerignore $REMOTE:$BASE/
 
           # BizFlow bridge, web UI, schemas, and build configuration
           $SCP -r apps/Bizflow $REMOTE:$BASE/apps/

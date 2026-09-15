@@ -16,25 +16,35 @@ COPY apps/Bizflow/package*.json ./apps/Bizflow/
 COPY apps/website/package*.json ./apps/website/
 COPY scripts/container-entrypoint.sh ./scripts/container-entrypoint.sh
 
-# lock file was generated on Windows; use install to resolve Linux-specific platform packages
-# Skip scripts so the Electron postinstall hook does not fail in the container build
-RUN npm install --legacy-peer-deps --ignore-scripts
+# The repo root is deliberately NOT an npm workspace: the two apps pin incompatible
+# majors and each keeps its own lock file (see the "//workspaces" note in package.json).
+# Every manifest set therefore has to be installed on its own, from its own lock file.
+# `npm install` (not `ci`) because the lock files were generated on Windows, so Linux-only
+# platform packages have to be resolved. `--ignore-scripts` skips the Electron postinstall
+# hook, which cannot run in the container.
+RUN npm install --legacy-peer-deps --ignore-scripts \
+ && npm --prefix apps/Bizflow install --legacy-peer-deps --ignore-scripts \
+ && npm --prefix apps/website install --legacy-peer-deps --ignore-scripts
 
 COPY apps/Bizflow ./apps/Bizflow
 COPY apps/website ./apps/website
 
+# The Prisma CLI is invoked through the app's own node_modules. `npx prisma` would look
+# for a CLI at the repo root, find none, and download the latest major - Prisma 7 rejects
+# the `url = env(...)` datasource these schemas still use, so the build used to fail here.
 RUN cd apps/Bizflow && \
     node scripts/merge-schemas.js --all && \
-    npx prisma generate --schema=prisma/merged.prisma && \
-    DATABASE_URL=file:./dev.db npx prisma db push --schema=prisma/merged.prisma --accept-data-loss --skip-generate
+    node node_modules/prisma/build/index.js generate --schema=prisma/merged.prisma && \
+    DATABASE_URL=file:./dev.db node node_modules/prisma/build/index.js db push \
+      --schema=prisma/merged.prisma --accept-data-loss --skip-generate
 
 RUN cd apps/website && \
-    npx prisma generate --schema=prisma/schema.prisma
+    node node_modules/prisma/build/index.js generate --schema=prisma/schema.prisma
 
 # esbuild compiles server.ts → web/.dist/server.cjs, then spawns it; timeout kills the server
 RUN cd apps/Bizflow && timeout 60 node web/build-server.mjs || true
 RUN test -f apps/Bizflow/web/.dist/server.cjs
-RUN cd apps/Bizflow && npx vite build --config web/vite.web.config.ts
+RUN cd apps/Bizflow && node node_modules/vite/bin/vite.js build --config web/vite.web.config.ts
 RUN test -f apps/Bizflow/web/.dist-web/index.html
 
 RUN npm run build:site
@@ -52,9 +62,25 @@ COPY apps/Bizflow/package*.json ./apps/Bizflow/
 COPY apps/website/package*.json ./apps/website/
 COPY scripts/container-entrypoint.sh ./scripts/container-entrypoint.sh
 
-# Production deps only — no devDeps, no esbuild, no build tools
-# --ignore-scripts skips postinstall (electron-builder install-app-deps) which only matters for Electron
-RUN npm install --omit=dev --legacy-peer-deps --ignore-scripts && npm cache clean --force
+# Production deps only — no devDeps, no esbuild, no build tools.
+# The repo root has no runtime dependencies at all (only `concurrently`, a devDependency),
+# so each app installs its own production dependencies instead of relying on hoisting.
+# --ignore-scripts skips postinstall (electron-builder install-app-deps), which only matters for Electron
+RUN npm --prefix apps/Bizflow install --omit=dev --legacy-peer-deps --ignore-scripts \
+ && npm --prefix apps/website install --omit=dev --legacy-peer-deps --ignore-scripts \
+ && npm cache clean --force
+
+# Fail the build - not the container - if a runtime dependency went missing.
+# These are the bridge's real runtime externals (see web/build-server.mjs): they are
+# declared production dependencies of apps/Bizflow, so a production install must keep
+# them app-local. (The bridge resolves them from apps/Bizflow/node_modules, not from
+# the repo root.) The entrypoint runs the website's Prisma CLI by path.
+RUN set -e; \
+    for m in @prisma/client xlsx jspdf jspdf-autotable node-thermal-printer nodemailer node-cron; do \
+      test -d "apps/Bizflow/node_modules/$m"; \
+    done; \
+    test -f apps/Bizflow/node_modules/prisma/build/index.js; \
+    test -f apps/website/node_modules/prisma/build/index.js
 
 # Prisma generated client + query engine binaries
 COPY --from=builder /app/apps/Bizflow/src/generated/prisma   ./apps/Bizflow/src/generated/prisma
