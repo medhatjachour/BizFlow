@@ -62,7 +62,12 @@ export default function LicenceDeviceId({ deviceId, deviceName, strings, compact
         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{deviceName}</p>
       ) : null}
       <div className="mt-1 flex items-center gap-2">
-        <code className="min-w-0 flex-1 break-all font-mono text-[11px] text-slate-700 dark:text-slate-300">
+        {/* A hex fingerprint is read and copied left-to-right whatever the UI
+            language is, so it is pinned rather than inherited from the RTL page. */}
+        <code
+          dir="ltr"
+          className="min-w-0 flex-1 break-all text-left font-mono text-[11px] text-slate-700 dark:text-slate-300"
+        >
           {deviceId || '—'}
         </code>
         <button

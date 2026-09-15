@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 import LicenseActivation from '../../../renderer/src/pages/Settings/LicenseActivation'
@@ -144,6 +144,62 @@ describe('licence panel', () => {
 
     expect(await screen.findByText(ar.revalidateOffline)).toBeInTheDocument()
     expect(screen.queryByText(ar.revalidateOk)).toBeNull()
+  })
+
+  it('follows a background revalidation instead of showing the old receipt', async () => {
+    const api = stubApi(activatedState())
+    let push: (() => void) | null = null
+    api.onStateChanged.mockImplementation((cb: () => void) => {
+      push = cb
+      return () => {}
+    })
+    const { container } = renderAr(<LicenseActivation />)
+    expect(await screen.findByText(KEY)).toBeInTheDocument()
+
+    // The main process revalidates on launch and every 30 days; it announces the
+    // change rather than letting the panel wait for a remount.
+    expect(api.onStateChanged).toHaveBeenCalledTimes(1)
+    const renewed = activatedState()
+    renewed.activation.lastValidatedAt = '2026-10-14T00:00:00.000Z'
+    renewed.nextRevalidationAt = '2026-11-13T00:00:00.000Z'
+    api.getState.mockResolvedValue(renewed)
+    push!()
+
+    const expected = ar.nextCheckOn(formatDate('2026-11-13T00:00:00.000Z', 'ar'))
+    await waitFor(() => expect(container.textContent).toContain(expected))
+    expect(api.getState).toHaveBeenCalledTimes(2)
+  })
+
+  it('lets an owner close the request form again', async () => {
+    stubApi(activatedState())
+    renderAr(<LicenseActivation />)
+
+    const open = await screen.findByRole('button', { name: ar.tabRequest })
+    expect(open).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(open)
+
+    const close = screen.getByRole('button', { name: ar.close })
+    expect(close).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getAllByText(ar.requestTitle)).toHaveLength(1)
+
+    fireEvent.click(close)
+    expect(screen.queryByText(ar.requestTitle)).toBeNull()
+  })
+
+  it('offers the modules shortcut only when that tab can actually be reached', async () => {
+    stubApi(activatedState())
+    const onOpenModules = vi.fn()
+    const { unmount } = renderAr(<LicenseActivation onOpenModules={onOpenModules} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: ar.openModules }))
+    expect(onOpenModules).toHaveBeenCalledTimes(1)
+    unmount()
+
+    // Settings only passes the handler when the Modules tab survives its own
+    // filtering, so an unhandled panel must not show a dead button.
+    renderAr(<LicenseActivation />)
+    expect(await screen.findByText(KEY)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: ar.openModules })).toBeNull()
   })
 })
 

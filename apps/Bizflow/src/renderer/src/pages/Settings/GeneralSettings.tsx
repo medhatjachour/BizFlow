@@ -14,6 +14,8 @@ interface GeneralSettingsProps {
   actualTheme: 'light' | 'dark'
   language: string
   onLanguageChange: (lang: 'en' | 'ar') => void
+  /** Jumps to the Modules tab — offered by the licence panel's module grid. */
+  onOpenModules?: () => void
 }
 
 export default function GeneralSettings({
@@ -21,7 +23,8 @@ export default function GeneralSettings({
   onThemeChange,
   actualTheme,
   language,
-  onLanguageChange
+  onLanguageChange,
+  onOpenModules
 }: Readonly<GeneralSettingsProps>) {
   const { t } = useLanguage()
   
@@ -118,7 +121,7 @@ export default function GeneralSettings({
       {/* Licence — trial countdown, Device ID and activation steps. The panel
           was written for this exact spot but was never mounted, so there was no
           way to find out how to activate from inside the app. */}
-      <LicenseActivation />
+      <LicenseActivation onOpenModules={onOpenModules} />
 
       {/* Software update */}
       <SoftwareUpdate />

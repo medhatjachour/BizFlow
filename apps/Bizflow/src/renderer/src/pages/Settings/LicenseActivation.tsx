@@ -72,7 +72,12 @@ const STATUS_STYLES: Record<LicenseStatus, { badge: string; icon: 'ok' | 'warn' 
 }
 
 
-export default function LicenseActivation() {
+interface LicenseActivationProps {
+  /** Offered by the module grid below, when the Modules tab is reachable. */
+  onOpenModules?: () => void
+}
+
+export default function LicenseActivation({ onOpenModules }: Readonly<LicenseActivationProps>) {
   const { language } = useLanguage()
   const isAr = language === 'ar'
   const strings = licenseStrings(isAr)
@@ -100,6 +105,15 @@ export default function LicenseActivation() {
 
   useEffect(() => {
     void refresh()
+    // The main process revalidates on its own schedule — on launch, and every
+    // 30 days while the app is running. Without this the receipt kept showing
+    // the previous check date until the tab was remounted, so a licence that had
+    // just been renewed in the background still read as due.
+    const api = window.api?.license
+    if (!api?.onStateChanged) return
+    return api.onStateChanged(() => {
+      void refresh()
+    })
   }, [])
 
   /**
@@ -306,7 +320,7 @@ export default function LicenseActivation() {
               strings.keyRow,
               <span className="flex items-center gap-1.5">
                 <BadgeCheck className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-                <span className="font-mono text-xs">{activation.licenseKey}</span>
+                <span dir="ltr" className="text-left font-mono text-xs">{activation.licenseKey}</span>
               </span>
             )}
             {detailRow(strings.licensedToRow, activation.email)}
@@ -342,10 +356,11 @@ export default function LicenseActivation() {
           {!needsActivation ? (
             <button
               type="button"
-              onClick={() => setRequesting(true)}
+              aria-expanded={requesting}
+              onClick={() => setRequesting((open) => !open)}
               className="text-xs font-semibold text-primary hover:underline"
             >
-              {strings.tabRequest}
+              {requesting ? strings.close : strings.tabRequest}
             </button>
           ) : null}
         </div>
@@ -422,6 +437,7 @@ export default function LicenseActivation() {
         isAr={isAr}
         strings={strings}
         enabledModules={enabledModules}
+        onOpenModules={onOpenModules}
         state={{
           itemId: activation?.itemId,
           email: activation?.email,
