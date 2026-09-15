@@ -1,8 +1,8 @@
 import { DashboardPeriod } from './types'
 
-export const DASHBOARD_PERIODS: { label: string; value: DashboardPeriod }[] = [
-  { label: 'Today', value: 'today' },
-  { label: 'This Week', value: 'week' },
-  { label: 'This Month', value: 'month' },
-  { label: 'This Year', value: 'year' },
+export const DASHBOARD_PERIODS: { labelKey: string; value: DashboardPeriod }[] = [
+  { labelKey: 'salesUiToday', value: 'today' },
+  { labelKey: 'salesUiThisWeek', value: 'week' },
+  { labelKey: 'salesUiThisMonth', value: 'month' },
+  { labelKey: 'financeThisYear', value: 'year' },
 ]

@@ -1,5 +1,7 @@
 import { PharmacySupplierItem, SupplierFormData, SuppliersMetrics } from './types'
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
 export function computeSuppliersMetrics(suppliers: PharmacySupplierItem[]): SuppliersMetrics {
   return suppliers.reduce(
     (acc, s) => {
@@ -23,8 +25,11 @@ export function initialSupplierFormData(initial?: PharmacySupplierItem | null): 
   }
 }
 
-export function exportSuppliersToCSV(suppliers: PharmacySupplierItem[]) {
-  const headers = ['Supplier Name', 'Phone', 'Email', 'Address', 'Orders Sourced', 'Batches Delivered', 'Notes']
+export function exportSuppliersToCSV(suppliers: PharmacySupplierItem[], t: TranslateFn) {
+  const headers = [
+    t('supplierName'), t('phone'), t('email'), t('address'),
+    t('phSuCsvOrdersSourced'), t('phSuDeliveredBatches'), t('notes'),
+  ]
   const rows = suppliers.map(s => [
     s.name,
     s.phone || '',

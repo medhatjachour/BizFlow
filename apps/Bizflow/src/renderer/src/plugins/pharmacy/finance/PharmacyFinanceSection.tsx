@@ -37,12 +37,12 @@ export default function PharmacyFinanceSection() {
 
   const collectionRate = sales.revenue > 0 ? (sales.collected / sales.revenue) * 100 : 0
   const kpis = [
-    { label: t('phRevenue') || 'Revenue', value: `$${money(sales.revenue)}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800/40' },
-    { label: 'COGS', value: `$${money(sales.cogs)}`, icon: TrendingDown, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-800/40' },
-    { label: `${t('phGrossProfit') || 'Gross Profit'} (${(sales.margin || 0).toFixed(0)}%)`, value: `$${money(sales.grossProfit)}`, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800/40' },
-    { label: `${t('phCollectionRate') || 'Collected'} (${collectionRate.toFixed(0)}%)`, value: `$${money(sales.collected)}`, icon: Banknote, color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-800/40' },
-    { label: t('phReceivables') || 'Receivables', value: `$${money(sales.outstanding)}`, icon: Wallet, color: sales.outstanding > 0 ? 'text-amber-600' : 'text-slate-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800/40' },
-    { label: t('phStockValue') || 'Stock Value', value: `$${money(inv?.stockValue)}`, icon: Boxes, color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-900/20', border: 'border-teal-200 dark:border-teal-800/40' },
+    { label: t('phRevenue'), value: `$${money(sales.revenue)}`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800/40' },
+    { label: t('vetCOGS'), value: `$${money(sales.cogs)}`, icon: TrendingDown, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-800/40' },
+    { label: `${t('phGrossProfit')} (${(sales.margin || 0).toFixed(0)}%)`, value: `$${money(sales.grossProfit)}`, icon: DollarSign, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800/40' },
+    { label: `${t('phCollectionRate')} (${collectionRate.toFixed(0)}%)`, value: `$${money(sales.collected)}`, icon: Banknote, color: 'text-violet-600', bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-800/40' },
+    { label: t('phReceivables'), value: `$${money(sales.outstanding)}`, icon: Wallet, color: sales.outstanding > 0 ? 'text-amber-600' : 'text-slate-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800/40' },
+    { label: t('phStockValue'), value: `$${money(inv?.stockValue)}`, icon: Boxes, color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-900/20', border: 'border-teal-200 dark:border-teal-800/40' },
   ]
 
   return (
@@ -51,8 +51,8 @@ export default function PharmacyFinanceSection() {
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center"><Pill className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" /></div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('pharmacy') || 'Pharmacy'} — {t('phFinance') || 'Finance'}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{t('phFinanceSubtitle') || 'Revenue, profit, receivables & inventory value'}</p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('pharmacy')} — {t('phFinance')}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{t('phFinanceSubtitle')}</p>
           </div>
         </div>
         <div className="flex bg-slate-100 dark:bg-slate-700/60 rounded-xl p-1 gap-0.5">
@@ -73,14 +73,14 @@ export default function PharmacyFinanceSection() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> {t('phProfitSummary') || 'Profit Summary'}</h4>
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> {t('phProfitSummary')}</h4>
           <div className="space-y-1">
             {[
-              { label: t('phRevenue') || 'Revenue', value: sales.revenue, color: 'text-emerald-600' },
-              { label: 'COGS', value: -sales.cogs, color: 'text-orange-500' },
-              { label: t('phGrossProfit') || 'Gross Profit', value: sales.grossProfit, color: 'text-blue-600', bold: true },
-              { label: `${t('phMargin') || 'Margin'}`, value: null, text: `${(sales.margin || 0).toFixed(1)}%`, color: 'text-slate-500' },
-              { label: t('phUnits') || 'Units sold', value: null, text: String(sales.unitsSold ?? 0), color: 'text-slate-500' },
+              { label: t('phRevenue'), value: sales.revenue, color: 'text-emerald-600' },
+              { label: t('vetCOGS'), value: -sales.cogs, color: 'text-orange-500' },
+              { label: t('phGrossProfit'), value: sales.grossProfit, color: 'text-blue-600', bold: true },
+              { label: `${t('phMargin')}`, value: null, text: `${(sales.margin || 0).toFixed(1)}%`, color: 'text-slate-500' },
+              { label: t('phUnits'), value: null, text: String(sales.unitsSold ?? 0), color: 'text-slate-500' },
             ].map((l: any) => (
               <div key={l.label} className={`flex justify-between items-center py-2 ${l.bold ? 'border-t border-slate-200 dark:border-slate-700 font-semibold' : ''}`}>
                 <span className="text-sm text-slate-600 dark:text-slate-300">{l.label}</span>
@@ -91,8 +91,8 @@ export default function PharmacyFinanceSection() {
         </div>
 
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('phTopProducts') || 'Top Products by Revenue'}</h4>
-          {(!sales.topProducts || sales.topProducts.length === 0) ? <p className="text-xs text-slate-400 text-center py-6">{t('phNoSalesPeriod') || 'No sales in this period'}</p> : (
+          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('phTopProducts')}</h4>
+          {(!sales.topProducts || sales.topProducts.length === 0) ? <p className="text-xs text-slate-400 text-center py-6">{t('phNoSalesPeriod')}</p> : (
             <div className="space-y-2.5">
               {sales.topProducts.slice(0, 6).map((m: any, i: number) => {
                 const max = sales.topProducts[0]?.revenue || 1

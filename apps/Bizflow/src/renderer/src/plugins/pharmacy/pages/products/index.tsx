@@ -46,12 +46,12 @@ export default function PharmacyProducts() {
 
   const handleExportCSV = () => {
     if (rows.length === 0) {
-      toast.error('No products available to export')
+      toast.error(t('phPrExportEmpty'))
       return
     }
-    const csvData = exportProductsToCSV(rows)
+    const csvData = exportProductsToCSV(rows, t)
     downloadCSV(csvData, `pharmacy-catalog-${new Date().toISOString().slice(0, 10)}.csv`)
-    toast.success('Catalog exported successfully')
+    toast.success(t('phPrExportDone'))
   }
 
   const handleDeleteConfirm = async () => {
@@ -60,13 +60,13 @@ export default function PharmacyProducts() {
       const res = await pharma()?.products.delete(deleteTarget.id)
       toast.success(
         res?.softDeleted
-          ? t('phProductDisabled') || 'Product disabled (has existing sales records)'
-          : t('phProductDeleted') || 'Product deleted'
+          ? t('phProductDisabled')
+          : t('phProductDeleted')
       )
       setDeleteTarget(null)
       reload()
     } catch (err: any) {
-      toast.error(err?.message || 'Delete failed')
+      toast.error(err?.message || t('deleteFailed'))
     }
   }
 
@@ -85,7 +85,7 @@ export default function PharmacyProducts() {
               icon={Download}
               onClick={handleExportCSV}
             >
-              Export CSV
+              {t('phExportCSV')}
             </Button>
             <Button
               variant="primary"
@@ -96,7 +96,7 @@ export default function PharmacyProducts() {
                 setShowForm(true)
               }}
             >
-              {t('phAddProduct') || 'Add Product'}
+              {t('phAddProduct')}
             </Button>
           </div>
         }
@@ -104,10 +104,10 @@ export default function PharmacyProducts() {
         <SearchBox
           value={search}
           onChange={setSearch}
-          placeholder={t('phSearchProduct') || 'Search medicines, barcode, formula...'}
+          placeholder={t('phSearchProduct')}
         />
         <FilterSelect value={category} onChange={setCategory}>
-          <option value="all">{t('phAllCategories') || 'All Categories'}</option>
+          <option value="all">{t('phAllCategories')}</option>
           {categories.map(c => (
             <option key={c} value={c}>
               {c}
@@ -142,7 +142,7 @@ export default function PharmacyProducts() {
             pageCount={pageCount}
             total={total}
             onPage={setPage}
-            label={t('phProductsLc') || 'products'}
+            label={t('phProductsLc')}
           />
         </div>
       </div>

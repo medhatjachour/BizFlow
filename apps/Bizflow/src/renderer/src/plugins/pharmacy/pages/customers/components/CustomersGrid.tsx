@@ -9,7 +9,7 @@ interface CustomersGridProps {
   onSelectCustomer: (id: string) => void
   onEdit: (c: PharmacyCustomerItem) => void
   onDelete: (c: PharmacyCustomerItem) => void
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const CustomersGrid: React.FC<CustomersGridProps> = ({
@@ -24,7 +24,7 @@ export const CustomersGrid: React.FC<CustomersGridProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <Loader2 className="h-7 w-7 animate-spin text-emerald-500 mb-2" />
-        <p className="text-xs">Loading customer directory...</p>
+        <p className="text-xs">{t('phCuLoadingList')}</p>
       </div>
     )
   }
@@ -33,8 +33,8 @@ export const CustomersGrid: React.FC<CustomersGridProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <Users size={36} className="mb-2 opacity-30" />
-        <p className="text-sm font-medium">{t('phNoCustomers') || 'No customers registered yet'}</p>
-        <p className="text-xs mt-0.5">Click "Add Customer" above to start linking sales and managing balances.</p>
+        <p className="text-sm font-medium">{t('phNoCustomers')}</p>
+        <p className="text-xs mt-0.5">{t('phCuEmptyHint')}</p>
       </div>
     )
   }
@@ -62,7 +62,7 @@ export const CustomersGrid: React.FC<CustomersGridProps> = ({
                       {c.name}
                     </p>
                     <p className="text-[11px] text-slate-400 truncate mt-0.2">
-                      {c.phone || (t('phNoPhone') || 'No phone recorded')}
+                      {c.phone || (t('phNoPhone'))}
                     </p>
                   </div>
                 </div>
@@ -75,14 +75,14 @@ export const CustomersGrid: React.FC<CustomersGridProps> = ({
                   <button
                     onClick={() => onEdit(c)}
                     className="p-1 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800"
-                    title="Edit profile"
+                    title={t('phCuEditProfile')}
                   >
                     <Pencil size={13} />
                   </button>
                   <button
                     onClick={() => onDelete(c)}
                     className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-                    title="Delete customer"
+                    title={t('phDeleteCustomer')}
                   >
                     <Trash2 size={13} />
                   </button>
@@ -90,20 +90,20 @@ export const CustomersGrid: React.FC<CustomersGridProps> = ({
               </div>
 
               {/* Financial Snapshot */}
-              <div className="mt-3.5 grid grid-cols-3 gap-1 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl text-center border border-slate-100 dark:border-slate-800">
+              <div className="mt-3.5 grid grid-cols-2 sm:grid-cols-3 gap-1 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-xl text-center border border-slate-100 dark:border-slate-800">
                 <div>
                   <p className="text-xs font-bold text-slate-800 dark:text-slate-100">{int(c.salesCount)}</p>
-                  <p className="text-[9px] text-slate-400 uppercase font-semibold">Orders</p>
+                  <p className="text-[9px] text-slate-400 uppercase font-semibold">{t('orders')}</p>
                 </div>
                 <div>
                   <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">${money(c.totalSpent)}</p>
-                  <p className="text-[9px] text-slate-400 uppercase font-semibold">Spent</p>
+                  <p className="text-[9px] text-slate-400 uppercase font-semibold">{t('phSpent')}</p>
                 </div>
                 <div>
                   <p className={`text-xs font-bold ${hasDebt ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'}`}>
                     ${money(c.outstanding)}
                   </p>
-                  <p className="text-[9px] text-slate-400 uppercase font-semibold">Due</p>
+                  <p className="text-[9px] text-slate-400 uppercase font-semibold">{t('dueLabel')}</p>
                 </div>
               </div>
             </div>
@@ -112,7 +112,7 @@ export const CustomersGrid: React.FC<CustomersGridProps> = ({
             {(c.defaultDiscount ?? 0) > 0 && (
               <div className="mt-2.5 flex items-center gap-1 text-[10px] font-bold text-violet-600 dark:text-violet-400">
                 <Percent size={10} />
-                <span>{c.defaultDiscount}% default discount</span>
+                <span>{t('phDefaultDiscountSuffix', { percent: c.defaultDiscount })}</span>
               </div>
             )}
           </div>

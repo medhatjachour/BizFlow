@@ -7,6 +7,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { OperationalAlertItem } from '../types'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface OperationalAlertsCardProps {
   alerts: OperationalAlertItem[]
@@ -17,6 +18,7 @@ export const OperationalAlertsCard: React.FC<OperationalAlertsCardProps> = ({
   alerts,
   onNavigate,
 }) => {
+  const { t } = useLanguage()
   if (alerts.length === 0) return null
 
   const getAlertIcon = (iconKey: string) => {
@@ -42,7 +44,7 @@ export const OperationalAlertsCard: React.FC<OperationalAlertsCardProps> = ({
       <div className="flex items-center gap-1.5">
         <AlertTriangle size={13} className="text-amber-500" />
         <h2 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-          Action Required
+          {t('phHealthActionRequired')}
         </h2>
         <span className="text-[10px] font-extrabold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950 px-1.5 py-0.2 rounded-full">
           {alerts.length}

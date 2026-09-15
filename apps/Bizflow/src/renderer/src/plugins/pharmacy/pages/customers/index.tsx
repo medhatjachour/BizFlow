@@ -39,23 +39,23 @@ export default function PharmacyCustomers() {
 
   const handleExportCSV = () => {
     if (rows.length === 0) {
-      toast.error('No customer records available to export')
+      toast.error(t('phCuExportEmpty'))
       return
     }
-    const csvData = exportCustomersToCSV(rows)
+    const csvData = exportCustomersToCSV(rows, t)
     downloadCSV(csvData, `pharmacy-customers-ledger-${new Date().toISOString().slice(0, 10)}.csv`)
-    toast.success('Customer ledger exported successfully')
+    toast.success(t('phCuExportDone'))
   }
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
     try {
       await pharma()?.customers.delete(deleteTarget.id)
-      toast.success(t('phCustomerDeleted') || 'Customer deleted')
+      toast.success(t('phCustomerDeleted'))
       setDeleteTarget(null)
       reload()
     } catch (err: any) {
-      toast.error(err?.message || 'Delete failed')
+      toast.error(err?.message || t('deleteFailed'))
     }
   }
 
@@ -74,7 +74,7 @@ export default function PharmacyCustomers() {
               icon={Download}
               onClick={handleExportCSV}
             >
-              Export CSV
+              {t('phExportCSV')}
             </Button>
             <Button
               variant="primary"
@@ -85,7 +85,7 @@ export default function PharmacyCustomers() {
                 setShowForm(true)
               }}
             >
-              {t('phAddCustomer') || 'Add Customer'}
+              {t('phAddCustomer')}
             </Button>
           </div>
         }
@@ -93,7 +93,7 @@ export default function PharmacyCustomers() {
         <SearchBox
           value={search}
           onChange={setSearch}
-          placeholder={t('phSearchCustomers') || 'Search customers by name or phone...'}
+          placeholder={t('phSearchCustomers')}
         />
       </Toolbar>
 
@@ -118,7 +118,7 @@ export default function PharmacyCustomers() {
               pageCount={pageCount}
               total={totalCount}
               onPage={setPage}
-              label={t('phCustomers') || 'customers'}
+              label={t('phCustomers')}
             />
           </div>
         )}

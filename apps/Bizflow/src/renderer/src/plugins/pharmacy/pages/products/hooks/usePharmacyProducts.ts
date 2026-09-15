@@ -3,8 +3,10 @@ import { pharma } from '../../components/_shared'
 import { PharmacyProductItem, StockFilterType } from '../types'
 import { PRODUCTS_PAGE_SIZE } from '../constants'
 import { computeProductsMetrics } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePharmacyProducts(toast: any) {
+  const { t } = useLanguage()
   const [rows, setRows] = useState<PharmacyProductItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -30,7 +32,7 @@ export function usePharmacyProducts(toast: any) {
       setRows(response?.data ?? [])
       setTotal(response?.total ?? 0)
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to load products')
+      toast.error(err?.message || t('phPrLoadFailed'))
     } finally {
       setLoading(false)
     }

@@ -39,42 +39,42 @@ export default function PharmacyReportSection({ refreshSignal }: Props) {
   function exportCsv() {
     if (mode === 'sales' && sales) {
       downloadCSV([
-        ['Pharmacy Sales Report', `${rng.from} → ${rng.to}`], [],
-        ['Metric', 'Value'],
-        ['Sales', sales.saleCount], ['Revenue', sales.revenue.toFixed(2)], ['COGS', sales.cogs.toFixed(2)],
-        ['Gross Profit', sales.grossProfit.toFixed(2)], ['Margin %', sales.margin.toFixed(1) + '%'],
-        ['Units sold', sales.unitsSold], ['Collected', sales.collected.toFixed(2)], ['Outstanding', sales.outstanding.toFixed(2)],
-        [], ['Top Products', 'Units', 'Revenue'],
+        [t('phRptSalesTitle'), `${rng.from} → ${rng.to}`], [],
+        [t('phRptMetric'), t('phValue')],
+        [t('phSales'), sales.saleCount], [t('phRevenue'), sales.revenue.toFixed(2)], [t('vetCOGS'), sales.cogs.toFixed(2)],
+        [t('phGrossProfit'), sales.grossProfit.toFixed(2)], [t('vetBatchMargin'), sales.margin.toFixed(1) + '%'],
+        [t('inventoryUiUnitsSold'), sales.unitsSold], [t('phCollectionRate'), sales.collected.toFixed(2)], [t('phOutstanding'), sales.outstanding.toFixed(2)],
+        [], [t('topProducts'), t('cfUnits'), t('phRevenue')],
         ...(sales.topProducts ?? []).map((p: any) => [p.name, p.units, p.revenue.toFixed(2)]),
       ], `pharmacy-sales-${rng.from}_${rng.to}.csv`)
     } else if (inv) {
       downloadCSV([
-        ['Pharmacy Inventory Report', new Date().toLocaleString()], [],
-        ['Metric', 'Value'],
-        ['Products', inv.totalProducts], ['Stock value', inv.stockValue.toFixed(2)], ['Retail value', inv.retailValue.toFixed(2)],
-        ['Low stock', inv.lowStock], ['Out of stock', inv.outOfStock], ['Expired batches', inv.expiredBatches],
-        ['Expired value', inv.expiredValue.toFixed(2)], ['Expiring 30d', inv.expiringSoon], ['Expiring value', inv.expiringValue.toFixed(2)],
-        [], ['Category', 'Products', 'Stock value'],
+        [t('phRptInventoryTitle'), new Date().toLocaleString()], [],
+        [t('phRptMetric'), t('phValue')],
+        [t('phProducts'), inv.totalProducts], [t('inventoryUiStockValue'), inv.stockValue.toFixed(2)], [t('phRetailValue'), inv.retailValue.toFixed(2)],
+        [t('inventoryUiLowStock'), inv.lowStock], [t('inventoryUiOutOfStock'), inv.outOfStock], [t('phExpiredBatches'), inv.expiredBatches],
+        [t('phRptExpiredValue'), inv.expiredValue.toFixed(2)], [t('phRptExpiring30d'), inv.expiringSoon], [t('phRptExpiringValue'), inv.expiringValue.toFixed(2)],
+        [], [t('phCategory'), t('phProducts'), t('inventoryUiStockValue')],
         ...(inv.byCategory ?? []).map((c: any) => [c.category, c.count, c.value.toFixed(2)]),
       ], `pharmacy-inventory-${ymd(new Date())}.csv`)
     }
   }
 
   const salesKpis = sales ? [
-    { label: t('phSalesCount') || 'Sales', value: int(sales.saleCount), icon: ShoppingBag, color: 'text-violet-600 dark:text-violet-400' },
-    { label: t('phRevenue') || 'Revenue', value: `$${money(sales.revenue)}`, icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: 'COGS', value: `$${money(sales.cogs)}`, icon: TrendingDown, color: 'text-orange-500 dark:text-orange-400' },
-    { label: t('phGrossProfit') || 'Gross Profit', value: `$${money(sales.grossProfit)}`, icon: DollarSign, color: 'text-blue-600 dark:text-blue-400' },
-    { label: `${t('phMargin') || 'Margin'} (${(sales.margin || 0).toFixed(0)}%)`, value: `${(sales.margin || 0).toFixed(1)}%`, icon: Activity, color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: t('phReceivables') || 'Receivables', value: `$${money(sales.outstanding)}`, icon: Wallet, color: 'text-amber-600 dark:text-amber-400' },
+    { label: t('phSalesCount'), value: int(sales.saleCount), icon: ShoppingBag, color: 'text-violet-600 dark:text-violet-400' },
+    { label: t('phRevenue'), value: `$${money(sales.revenue)}`, icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: t('vetCOGS'), value: `$${money(sales.cogs)}`, icon: TrendingDown, color: 'text-orange-500 dark:text-orange-400' },
+    { label: t('phGrossProfit'), value: `$${money(sales.grossProfit)}`, icon: DollarSign, color: 'text-blue-600 dark:text-blue-400' },
+    { label: `${t('phMargin')} (${(sales.margin || 0).toFixed(0)}%)`, value: `${(sales.margin || 0).toFixed(1)}%`, icon: Activity, color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: t('phReceivables'), value: `$${money(sales.outstanding)}`, icon: Wallet, color: 'text-amber-600 dark:text-amber-400' },
   ] : []
   const invKpis = inv ? [
-    { label: t('phStockValue') || 'Stock value', value: `$${money(inv.stockValue)}`, icon: Boxes, color: 'text-emerald-600 dark:text-emerald-400' },
-    { label: t('phRetailValue') || 'Retail value', value: `$${money(inv.retailValue)}`, icon: TrendingUp, color: 'text-blue-600 dark:text-blue-400' },
-    { label: t('phProducts') || 'Products', value: int(inv.totalProducts), icon: ShoppingBag, color: 'text-violet-600 dark:text-violet-400' },
-    { label: t('phLowStock') || 'Low stock', value: int(inv.lowStock), icon: TrendingDown, color: inv.lowStock > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
-    { label: t('phExpired') || 'Expired', value: int(inv.expiredBatches), icon: TrendingDown, color: inv.expiredBatches > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400' },
-    { label: t('phExpiringSoon') || 'Expiring 30d', value: int(inv.expiringSoon), icon: Activity, color: inv.expiringSoon > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
+    { label: t('phStockValue'), value: `$${money(inv.stockValue)}`, icon: Boxes, color: 'text-emerald-600 dark:text-emerald-400' },
+    { label: t('phRetailValue'), value: `$${money(inv.retailValue)}`, icon: TrendingUp, color: 'text-blue-600 dark:text-blue-400' },
+    { label: t('phProducts'), value: int(inv.totalProducts), icon: ShoppingBag, color: 'text-violet-600 dark:text-violet-400' },
+    { label: t('phLowStock'), value: int(inv.lowStock), icon: TrendingDown, color: inv.lowStock > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
+    { label: t('phExpired'), value: int(inv.expiredBatches), icon: TrendingDown, color: inv.expiredBatches > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400' },
+    { label: t('phExpiringSoon'), value: int(inv.expiringSoon), icon: Activity, color: inv.expiringSoon > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
   ] : []
 
   return (
@@ -83,14 +83,14 @@ export default function PharmacyReportSection({ refreshSignal }: Props) {
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center"><Pill className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" /></div>
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('pharmacy') || 'Pharmacy'} — {t('phReports') || 'Reports'}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">{mode === 'sales' ? `${rng.from} → ${rng.to}` : (t('phInventorySnapshot') || 'Current inventory snapshot')}</p>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">{t('pharmacy')} — {t('phReports')}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{mode === 'sales' ? `${rng.from} → ${rng.to}` : (t('phInventorySnapshot'))}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden text-xs">
-            <button onClick={() => setMode('sales')} className={`px-3 py-1.5 ${mode === 'sales' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>{t('phSalesReport') || 'Sales'}</button>
-            <button onClick={() => setMode('inventory')} className={`px-3 py-1.5 ${mode === 'inventory' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>{t('phInventoryReport') || 'Inventory'}</button>
+            <button onClick={() => setMode('sales')} className={`px-3 py-1.5 ${mode === 'sales' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>{t('phSalesReport')}</button>
+            <button onClick={() => setMode('inventory')} className={`px-3 py-1.5 ${mode === 'inventory' ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>{t('phInventoryReport')}</button>
           </div>
           {mode === 'sales' && (
             <>
@@ -98,7 +98,7 @@ export default function PharmacyReportSection({ refreshSignal }: Props) {
               <div className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-slate-400" /><input type="date" value={rng.from} onChange={e => setRng(r => ({ ...r, from: e.target.value }))} className={inputCls + ' py-1 text-xs w-auto'} /><span className="text-slate-400 text-xs">–</span><input type="date" value={rng.to} onChange={e => setRng(r => ({ ...r, to: e.target.value }))} className={inputCls + ' py-1 text-xs w-auto'} /></div>
             </>
           )}
-          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"><Download size={14} /> {t('phExportCSV') || 'Export CSV'}</button>
+          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg"><Download size={14} /> {t('phExportCSV')}</button>
         </div>
       </div>
 
@@ -114,7 +114,7 @@ export default function PharmacyReportSection({ refreshSignal }: Props) {
           </div>
           {mode === 'sales' && sales?.topProducts?.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('phTopProducts') || 'Top Products by Revenue'}</h4>
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('phTopProducts')}</h4>
               <div className="space-y-2.5">
                 {sales.topProducts.map((m: any, i: number) => {
                   const max = sales.topProducts[0]?.revenue || 1
@@ -130,7 +130,7 @@ export default function PharmacyReportSection({ refreshSignal }: Props) {
           )}
           {mode === 'inventory' && inv?.byCategory?.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('phStockByCategory') || 'Stock Value by Category'}</h4>
+              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">{t('phStockByCategory')}</h4>
               <div className="space-y-2.5">
                 {inv.byCategory.map((c: any) => {
                   const max = inv.byCategory[0]?.value || 1

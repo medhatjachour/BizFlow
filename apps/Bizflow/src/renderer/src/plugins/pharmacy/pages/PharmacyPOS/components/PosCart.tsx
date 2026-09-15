@@ -6,6 +6,7 @@ import { QUICK_CASH_DENOMINATIONS, PAYMENT_METHODS } from '../constants'
 import { money } from '../../components/_shared'
 import { Button } from '../../components/ui'
 import { PosCustomerPicker } from './PosCustomerPicker'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface PosCartProps {
   cart: CartLine[]
@@ -63,6 +64,7 @@ export const PosCart: React.FC<PosCartProps> = ({
   onResumeHeldSale,
   onCheckout,
 }) => {
+  const { t } = useLanguage()
   const [showHeldList, setShowHeldList] = useState(false)
 
   return (
@@ -74,8 +76,8 @@ export const PosCart: React.FC<PosCartProps> = ({
             <ShoppingCart size={15} />
           </div>
           <div>
-            <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100">Sale Cart</h2>
-            <span className="text-[10px] text-slate-400">{cart.length} item{cart.length !== 1 ? 's' : ''} queued</span>
+            <h2 className="text-xs font-bold text-slate-800 dark:text-slate-100">{t('phPosCartTitle')}</h2>
+            <span className="text-[10px] text-slate-400">{t(cart.length === 1 ? 'phPosItemQueued' : 'phPosItemsQueued', { count: cart.length })}</span>
           </div>
         </div>
 
@@ -85,7 +87,7 @@ export const PosCart: React.FC<PosCartProps> = ({
               onClick={() => setShowHeldList(!showHeldList)}
               className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-md flex items-center gap-1 hover:bg-amber-100"
             >
-              <PlayCircle size={12} /> Held ({heldSales.length})
+              <PlayCircle size={12} /> {t('phPosHeldCount', { count: heldSales.length })}
             </button>
           )}
 
@@ -93,10 +95,10 @@ export const PosCart: React.FC<PosCartProps> = ({
             <>
               <button
                 onClick={onParkSale}
-                title="Hold current sale to attend next customer"
+                title={t('phPosHoldHint')}
                 className="text-[11px] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-1.5 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1"
               >
-                <PauseCircle size={13} /> Hold
+                <PauseCircle size={13} /> {t('phPosHold')}
               </button>
               <button
                 onClick={onClearCart}
@@ -114,7 +116,7 @@ export const PosCart: React.FC<PosCartProps> = ({
         <div className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 p-2 space-y-1 max-h-32 overflow-y-auto">
           {heldSales.map(hs => (
             <div key={hs.id} className="flex items-center justify-between text-xs bg-white dark:bg-slate-800 p-1.5 rounded border border-amber-200/60 dark:border-amber-800">
-              <span>#{hs.id} ({hs.time}) - {hs.cart.length} items</span>
+              <span>#{hs.id} ({hs.time}) - {t('phItemsCount', { count: hs.cart.length })}</span>
               <button
                 onClick={() => {
                   onResumeHeldSale(hs.id)
@@ -122,7 +124,7 @@ export const PosCart: React.FC<PosCartProps> = ({
                 }}
                 className="text-[10px] font-bold text-amber-700 dark:text-amber-300 underline"
               >
-                Restore
+                {t('phPosRestore')}
               </button>
             </div>
           ))}
@@ -141,8 +143,8 @@ export const PosCart: React.FC<PosCartProps> = ({
         {cart.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
             <ShoppingCart size={32} className="opacity-20 mb-2" />
-            <p className="text-xs font-medium">Cart is currently empty</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Scan barcodes or click items to begin checkout</p>
+            <p className="text-xs font-medium">{t('phPosCartEmpty')}</p>
+            <p className="text-[10px] text-slate-400 mt-0.5">{t('phPosCartEmptyHint')}</p>
           </div>
         ) : (
           cart.map((line, idx) => (
@@ -164,12 +166,12 @@ export const PosCart: React.FC<PosCartProps> = ({
         {/* Calculations */}
         <div className="space-y-1 text-xs">
           <div className="flex justify-between text-slate-500 dark:text-slate-400">
-            <span>Subtotal</span>
+            <span>{t('salesUiSubtotal')}</span>
             <span className="font-semibold text-slate-700 dark:text-slate-200">${money(subtotal)}</span>
           </div>
 
           <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
-            <span>Discount ($)</span>
+            <span>{t('phPosDiscount')}</span>
             <input
               type="number"
               min="0"
@@ -182,13 +184,13 @@ export const PosCart: React.FC<PosCartProps> = ({
           </div>
 
           <div className="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-800 text-sm font-bold">
-            <span className="text-slate-800 dark:text-white">Payable Total</span>
+            <span className="text-slate-800 dark:text-white">{t('phPosPayableTotal')}</span>
             <span className="text-emerald-600 dark:text-emerald-400 text-base">${money(total)}</span>
           </div>
         </div>
 
         {/* Payment Method Selector */}
-        <div className="grid grid-cols-3 gap-1 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 pt-1">
           {PAYMENT_METHODS.slice(0, 3).map(pm => (
             <button
               key={pm.id}
@@ -199,7 +201,7 @@ export const PosCart: React.FC<PosCartProps> = ({
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
               }`}
             >
-              {pm.label}
+              {t(pm.labelKey)}
             </button>
           ))}
         </div>
@@ -212,7 +214,7 @@ export const PosCart: React.FC<PosCartProps> = ({
                 onClick={() => onSetAmountPaid(total.toString())}
                 className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 whitespace-nowrap"
               >
-                Exact (${money(total)})
+                {t('phPosExactAmount', { amount: money(total) })}
               </button>
               {QUICK_CASH_DENOMINATIONS.filter(denom => denom >= total || denom === 50 || denom === 100).slice(0, 4).map(denom => (
                 <button
@@ -230,7 +232,7 @@ export const PosCart: React.FC<PosCartProps> = ({
                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
                 <input
                   type="number"
-                  placeholder={`Cash Received (${money(total)})`}
+                  placeholder={t('phPosCashReceived', { amount: money(total) })}
                   value={amountPaid}
                   onChange={e => onSetAmountPaid(e.target.value)}
                   className="w-full pl-6 pr-2 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
@@ -239,7 +241,7 @@ export const PosCart: React.FC<PosCartProps> = ({
 
               {changeDue > 0 && (
                 <div className="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 px-2 py-1 rounded-lg text-xs font-bold shrink-0">
-                  Change: ${money(changeDue)}
+                  {t('phPosChangeAmount', { amount: money(changeDue) })}
                 </div>
               )}
             </div>
@@ -255,7 +257,7 @@ export const PosCart: React.FC<PosCartProps> = ({
               onChange={e => onToggleThermalPrint(e.target.checked)}
               className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5"
             />
-            <span>Auto-print thermal receipt upon checkout</span>
+            <span>{t('phPosAutoPrint')}</span>
           </label>
 
           <Button
@@ -266,7 +268,7 @@ export const PosCart: React.FC<PosCartProps> = ({
             icon={CheckCircle2}
             onClick={onCheckout}
           >
-            Complete Sale (${money(total)})
+            {t('phPosCompleteSaleAmount', { amount: money(total) })}
           </Button>
         </div>
       </div>

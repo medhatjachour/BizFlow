@@ -36,23 +36,23 @@ export default function PharmacyPurchaseOrders() {
 
   const handleExportCSV = () => {
     if (orders.length === 0) {
-      toast.error('No purchase orders available to export')
+      toast.error(t('phPoExportEmpty'))
       return
     }
-    const csvData = exportPurchaseOrdersToCSV(orders)
+    const csvData = exportPurchaseOrdersToCSV(orders, t)
     downloadCSV(csvData, `pharmacy-purchase-orders-${new Date().toISOString().slice(0, 10)}.csv`)
-    toast.success('Purchase orders exported successfully')
+    toast.success(t('phPoExportDone'))
   }
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
     try {
       await pharma()?.purchaseOrders.delete(deleteTarget.id)
-      toast.success(t('phOrderDeleted') || 'Order deleted')
+      toast.success(t('phOrderDeleted'))
       setDeleteTarget(null)
       reload()
     } catch (err: any) {
-      toast.error(err?.message || 'Delete failed')
+      toast.error(err?.message || t('deleteFailed'))
     }
   }
 
@@ -71,7 +71,7 @@ export default function PharmacyPurchaseOrders() {
               icon={Download}
               onClick={handleExportCSV}
             >
-              Export CSV
+              {t('phExportCSV')}
             </Button>
             <Button
               variant="primary"
@@ -79,7 +79,7 @@ export default function PharmacyPurchaseOrders() {
               icon={Plus}
               onClick={() => setEditOrderTarget('new')}
             >
-              {t('phNewOrder') || 'New Order'}
+              {t('phNewOrder')}
             </Button>
           </div>
         }
@@ -87,7 +87,7 @@ export default function PharmacyPurchaseOrders() {
         <SearchBox
           value={search}
           onChange={setSearch}
-          placeholder="Search PO #, supplier name, notes..."
+          placeholder={t('phPoSearchPlaceholder')}
         />
         <Segmented
           value={status}

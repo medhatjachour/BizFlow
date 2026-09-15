@@ -1,5 +1,7 @@
 import { PharmacyProductItem, ProductsMetrics, ProductFormData } from './types'
 
+type TranslateFn = (key: string, params?: Record<string, any>) => string
+
 export function computeExpiryDays(dateStr?: string | null): number | null {
   if (!dateStr) return null
   return Math.floor((new Date(dateStr).getTime() - Date.now()) / 86_400_000)
@@ -36,10 +38,10 @@ export function initialProductForm(initial?: PharmacyProductItem | null): Produc
   }
 }
 
-export function exportProductsToCSV(products: PharmacyProductItem[]) {
+export function exportProductsToCSV(products: PharmacyProductItem[], t: TranslateFn) {
   const headers = [
-    'Name', 'Generic Name', 'Category', 'Barcode', 'Unit', 'Sub Unit',
-    'Ratio', 'Stock', 'Min Stock', 'Price', 'Sub Price', 'Stock Value', 'Nearest Expiry', 'Status'
+    t('phName'), t('phPrCsvGenericName'), t('phCategory'), t('phBarcode'), t('phUnit'), t('phPrCsvSubUnit'),
+    t('phPrCsvRatio'), t('phStock'), t('phPrCsvMinStock'), t('phPrice'), t('phPrCsvSubPrice'), t('inventoryUiStockValue'), t('phNearestExpiry'), t('phStatus')
   ]
   const rows = products.map(p => [
     p.name,
@@ -55,7 +57,7 @@ export function exportProductsToCSV(products: PharmacyProductItem[]) {
     p.subUnitPrice || '',
     p.stockValue,
     p.nearestExpiry ? new Date(p.nearestExpiry).toLocaleDateString() : '',
-    p.isActive ? 'Active' : 'Disabled',
+    p.isActive ? t('active') : t('phPrDisabled'),
   ])
   return [headers, ...rows]
 }

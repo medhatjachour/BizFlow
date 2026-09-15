@@ -5,7 +5,7 @@ import { PurchaseOrderItem } from '../types'
 export function useReceiveVerification(
   order: PurchaseOrderItem,
   toast: any,
-  t: (k: string) => string,
+  t: (k: string, params?: Record<string, any>) => string,
   onReceived: () => void
 ) {
   const [items, setItems] = useState<any[]>([])
@@ -25,7 +25,7 @@ export function useReceiveVerification(
         const full = await pharma()?.purchaseOrders.getById(order.id)
         setItems(full?.items ?? [])
       } catch {
-        toast.error(t('phFailedLoad') || 'Failed to load purchase order line items')
+        toast.error(t('phFailedLoad'))
       } finally {
         setLoading(false)
         focusScanner()
@@ -64,14 +64,14 @@ export function useReceiveVerification(
     }
 
     if (!matchedProduct) {
-      toast.error(`${t('phUnknownBarcode') || 'Unrecognized barcode'}: ${code}`)
+      toast.error(`${t('phUnknownBarcode')}: ${code}`)
       focusScanner()
       return
     }
 
     const matchedLine = items.find(it => it.productId && it.productId === matchedProduct.id)
     if (!matchedLine) {
-      toast.error(`${matchedProduct.name} — ${t('phNotInOrder') || 'not in this purchase order'}`)
+      toast.error(`${matchedProduct.name} — ${t('phNotInOrder')}`)
       focusScanner()
       return
     }
@@ -85,11 +85,11 @@ export function useReceiveVerification(
     try {
       const res = await pharma()?.purchaseOrders.receive(order.id)
       toast.success(
-        `${t('phReceived') || 'Stock received'} · ${res?.createdBatches ?? items.length} batches created`
+        t('phReceived') + ' · ' + t('phRvBatchesCreated', { count: res?.createdBatches ?? items.length })
       )
       onReceived()
     } catch (err: any) {
-      toast.error(err?.message || 'Receiving failed')
+      toast.error(err?.message || t('phPoReceiveFailed'))
     } finally {
       setBusy(false)
     }

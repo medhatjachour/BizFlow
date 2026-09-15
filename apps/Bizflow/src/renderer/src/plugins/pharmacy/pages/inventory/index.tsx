@@ -48,12 +48,12 @@ export default function PharmacyInventory() {
 
   const handleExportCSV = () => {
     if (batches.length === 0) {
-      toast.error('No expiring batches available to export')
+      toast.error(t('phInvExportEmpty'))
       return
     }
-    const csvData = exportInventoryToCSV(batches)
+    const csvData = exportInventoryToCSV(batches, t)
     downloadCSV(csvData, `pharmacy-expiry-report-${days}days-${new Date().toISOString().slice(0, 10)}.csv`)
-    toast.success('Expiry audit report exported')
+    toast.success(t('phInvExportDone'))
   }
 
   return (
@@ -71,7 +71,7 @@ export default function PharmacyInventory() {
               icon={Download}
               onClick={handleExportCSV}
             >
-              Export Report
+              {t('phExportReport')}
             </Button>
           </div>
         }
@@ -79,7 +79,7 @@ export default function PharmacyInventory() {
         <SearchBox
           value={search}
           onChange={setSearch}
-          placeholder="Filter expiring stock by medicine name or batch #..."
+          placeholder={t('phInvSearchPlaceholder')}
         />
 
         {/* Expiry Window Pills */}
@@ -95,7 +95,7 @@ export default function PharmacyInventory() {
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </button>
           ))}
         </div>

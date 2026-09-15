@@ -4,12 +4,13 @@ import { PharmacyProductItem } from '../types'
 import { money, expiryTone, inputCls } from '../../components/_shared'
 import { useBatchManager } from '../hooks/useBatchManager'
 import { computeExpiryDays } from '../utils'
+import { unitLabelKey } from '../../components/units'
 
 interface BatchManagerModalProps {
   product: PharmacyProductItem
   onClose: () => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
@@ -55,7 +56,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
             <h2 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
               <Boxes size={16} className="text-emerald-500" /> {product.name}
             </h2>
-            <p className="text-[11px] text-slate-400">Manage Stock Batches, Expiry Dates & Restocking</p>
+            <p className="text-[11px] text-slate-400">{t('phPrManageBatchesHeader')}</p>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
             <X size={16} />
@@ -66,7 +67,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
         <form onSubmit={addBatch} className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/40">
           <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 items-end">
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Batch #</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('vetBatchNumHeader')}</label>
               <input
                 value={newBatchForm.batchNumber}
                 onChange={e => setNewBatchForm({ ...newBatchForm, batchNumber: e.target.value })}
@@ -75,7 +76,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Qty *</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('phPrQtyRequired')}</label>
               <input
                 value={newBatchForm.quantity}
                 onChange={e => setNewBatchForm({ ...newBatchForm, quantity: e.target.value })}
@@ -86,7 +87,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Cost ($)</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('phPrCost')}</label>
               <input
                 value={newBatchForm.costPerUnit}
                 onChange={e => setNewBatchForm({ ...newBatchForm, costPerUnit: e.target.value })}
@@ -97,7 +98,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Sell ($)</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('phPrSellPrice')}</label>
               <input
                 value={newBatchForm.sellingPrice}
                 onChange={e => setNewBatchForm({ ...newBatchForm, sellingPrice: e.target.value })}
@@ -109,7 +110,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Expiry *</label>
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('phPrExpiryRequired')}</label>
               <input
                 value={newBatchForm.expiryDate}
                 onChange={e => setNewBatchForm({ ...newBatchForm, expiryDate: e.target.value })}
@@ -123,19 +124,19 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
               disabled={adding}
               className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-1 shadow-xs"
             >
-              {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Add
+              {adding ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} {t('phAdd')}
             </button>
           </div>
 
           {suppliers.length > 0 && (
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-[10px] font-medium text-slate-400">Supplier:</span>
+              <span className="text-[10px] font-medium text-slate-400">{t('bakerySupplierName')}</span>
               <select
                 value={newBatchForm.supplierId}
                 onChange={e => setNewBatchForm({ ...newBatchForm, supplierId: e.target.value })}
                 className={`${inputCls} py-0.5 text-xs w-auto`}
               >
-                <option value="">No Supplier Linked</option>
+                <option value="">{t('phPrNoSupplier')}</option>
                 {suppliers.map(s => (
                   <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
@@ -149,11 +150,11 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
               <Loader2 className="h-6 w-6 animate-spin text-emerald-500 mb-1" />
-              <p className="text-xs">Loading batches...</p>
+              <p className="text-xs">{t('phPrLoadingBatches')}</p>
             </div>
           ) : batches.length === 0 ? (
             <p className="text-xs text-slate-400 text-center py-10">
-              No inventory batches recorded yet. Add one above to populate stock.
+              {t('phBatchEmptyState')}
             </p>
           ) : (
             batches.map(b => {
@@ -176,7 +177,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-800 dark:text-slate-100">
-                          {b.quantity} {product.unit}
+                          {b.quantity} {t(unitLabelKey(product.unit))}
                         </span>
                         {b.batchNumber && (
                           <span className="text-[10px] text-slate-400 font-mono">#{b.batchNumber}</span>
@@ -192,9 +193,9 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-400 mt-0.5">
-                        Cost: ${money(b.costPerUnit)} · Sell: ${money(b.sellingPrice ?? product.sellingPrice)} ·{' '}
+                        {t('phBatchCost', { amount: money(b.costPerUnit) })} · {t('phBatchSell', { amount: money(b.sellingPrice ?? product.sellingPrice) })} ·{' '}
                         <span className={days !== null ? expiryTone(days) : ''}>
-                          Exp: {new Date(b.expiryDate).toLocaleDateString()} {days !== null ? `(${days < 0 ? 'expired' : `${days}d`})` : ''}
+                          {t('phBatchExpPrefix')} {new Date(b.expiryDate).toLocaleDateString()} {days !== null ? `(${days < 0 ? t('phBatchExpiredDays') : t('phDaysShort', { days })})` : ''}
                         </span>
                         {b.supplier && ` · ${b.supplier.name}`}
                       </div>
@@ -213,7 +214,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                     {!depleted && (
                       <button
                         onClick={() => disposeBatch(b.id)}
-                        title="Dispose remaining batch stock"
+                        title={t('phPrDisposeBatch')}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40"
                       >
                         <PackageX size={13} />
@@ -221,7 +222,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                     )}
                     <button
                       onClick={() => deleteBatch(b.id)}
-                      title="Delete batch"
+                      title={t('phPrDeleteBatch')}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40"
                     >
                       <Trash2 size={13} />
@@ -231,9 +232,9 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                   {/* Inline Batch Editor & Stock Adjust Drawer */}
                   {isEditing && (
                     <div className="px-3 pb-3 pt-2 space-y-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Cost</label>
+                          <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('inventoryUiCost')}</label>
                           <input
                             value={editForm.costPerUnit}
                             onChange={e => setEditForm({ ...editForm, costPerUnit: e.target.value })}
@@ -244,7 +245,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Sell</label>
+                          <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('bakerySaleTabSell')}</label>
                           <input
                             value={editForm.sellingPrice}
                             onChange={e => setEditForm({ ...editForm, sellingPrice: e.target.value })}
@@ -255,7 +256,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Expiry</label>
+                          <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-0.5">{t('bakeryWasteReasonExpiry')}</label>
                           <input
                             value={editForm.expiryDate}
                             onChange={e => setEditForm({ ...editForm, expiryDate: e.target.value })}
@@ -271,7 +272,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                           disabled={editBusy}
                           className="px-2.5 py-1 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg flex items-center gap-1"
                         >
-                          {editBusy ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Save Info
+                          {editBusy ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} {t('phBatchSaveInfo')}
                         </button>
                       </div>
 
@@ -279,7 +280,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                       <div className="rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-950/20 p-2.5 space-y-2">
                         <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
                           <Settings2 size={12} />
-                          <span>Adjust Batch Units</span>
+                          <span>{t('phPrAdjustUnits')}</span>
                         </div>
 
                         <div className="flex items-center gap-2 flex-wrap text-xs">
@@ -306,7 +307,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                             step="any"
                             value={adj.amount}
                             onChange={e => setAdj(prev => ({ ...prev, amount: e.target.value }))}
-                            placeholder="Qty"
+                            placeholder={t('salesUiQuantity')}
                             className={`${inputCls} py-0.5 text-xs w-20 text-center font-bold`}
                           />
 
@@ -319,7 +320,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                                   adj.unit === 'base' ? 'bg-amber-600 text-white' : 'text-slate-500'
                                 }`}
                               >
-                                {product.unit}
+                                 {t(unitLabelKey(product.unit))}
                               </button>
                               <button
                                 type="button"
@@ -328,7 +329,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                                   adj.unit === 'sub' ? 'bg-amber-600 text-white' : 'text-slate-500'
                                 }`}
                               >
-                                {product.subUnit}
+                                 {t(unitLabelKey(product.subUnit))}
                               </button>
                             </div>
                           )}
@@ -337,7 +338,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                         <input
                           value={adj.reason}
                           onChange={e => setAdj(prev => ({ ...prev, reason: e.target.value }))}
-                          placeholder="Reason (e.g. damaged, counted on shelf)"
+                          placeholder={t('phPrAdjustReason')}
                           className={`${inputCls} py-1 text-xs`}
                         />
 
@@ -347,7 +348,7 @@ export const BatchManagerModal: React.FC<BatchManagerModalProps> = ({
                             disabled={adjBusy || !adj.amount}
                             className="px-2.5 py-1 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg flex items-center gap-1 disabled:opacity-40"
                           >
-                            {adjBusy ? <Loader2 size={12} className="animate-spin" /> : null} Apply Stock
+                            {adjBusy ? <Loader2 size={12} className="animate-spin" /> : null} {t('phBatchApplyStock')}
                           </button>
                         </div>
                       </div>

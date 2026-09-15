@@ -3,6 +3,9 @@ import { Printer, Check, X } from 'lucide-react'
 import { SaleTransactionResult } from '../types'
 import { money } from '../../components/_shared'
 import { Button } from '../../components/ui'
+import { unitLabelKey } from '../../components/units'
+import { paymentMethodLabelKey } from '../constants'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface PosReceiptModalProps {
   sale: SaleTransactionResult
@@ -10,6 +13,7 @@ interface PosReceiptModalProps {
 }
 
 export const PosReceiptModal: React.FC<PosReceiptModalProps> = ({ sale, onClose }) => {
+  const { t } = useLanguage()
   const printContentRef = useRef<HTMLDivElement>(null)
 
   const handlePrint = () => {
@@ -23,7 +27,7 @@ export const PosReceiptModal: React.FC<PosReceiptModalProps> = ({ sale, onClose 
         <div className="px-4 py-3 bg-emerald-600 text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Check size={18} className="stroke-[3]" />
-            <span className="font-bold text-sm">Sale Completed</span>
+            <span className="font-bold text-sm">{t('phSaleComplete')}</span>
           </div>
           <button onClick={onClose} className="text-white/80 hover:text-white"><X size={16} /></button>
         </div>
@@ -31,10 +35,10 @@ export const PosReceiptModal: React.FC<PosReceiptModalProps> = ({ sale, onClose 
         {/* Printable Thermal Slip (58mm/80mm simulation) */}
         <div className="p-4 overflow-y-auto flex-1 font-mono text-xs text-slate-900 dark:text-slate-100" ref={printContentRef}>
           <div className="text-center pb-3 border-b border-dashed border-slate-300 dark:border-slate-700">
-            <h3 className="font-bold text-sm">PHARMACY CARE POS</h3>
-            <p className="text-[10px] text-slate-500">Invoice: #{sale.saleNumber}</p>
+            <h3 className="font-bold text-sm">{t('phPosHeaderTitle')}</h3>
+            <p className="text-[10px] text-slate-500">{t('phPosInvoice', { number: sale.saleNumber })}</p>
             <p className="text-[10px] text-slate-500">{sale.createdAt}</p>
-            {sale.customer && <p className="text-[10px] font-semibold mt-1">Customer: {sale.customer.name}</p>}
+            {sale.customer && <p className="text-[10px] font-semibold mt-1">{t('phPosCustomerLine', { name: sale.customer.name })}</p>}
           </div>
 
           <div className="py-2 space-y-1.5 border-b border-dashed border-slate-300 dark:border-slate-700">
@@ -43,7 +47,7 @@ export const PosReceiptModal: React.FC<PosReceiptModalProps> = ({ sale, onClose 
                 <div className="flex-1 pr-2">
                   <div className="truncate font-semibold">{item.name}</div>
                   <div className="text-[10px] text-slate-500">
-                    {item.quantity} x ${money(item.unitPrice)} ({item.saleUnit === 'sub' ? item.subUnit || 'sub' : item.unit})
+                    {item.quantity} x ${money(item.unitPrice)} ({t(unitLabelKey(item.saleUnit === 'sub' ? item.subUnit || 'sub' : item.unit))})
                   </div>
                 </div>
                 <div className="font-bold">${money(item.quantity * item.unitPrice)}</div>
@@ -53,43 +57,43 @@ export const PosReceiptModal: React.FC<PosReceiptModalProps> = ({ sale, onClose 
 
           <div className="py-2 space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-slate-500">Subtotal:</span>
+              <span className="text-slate-500">{t('salesUiSubtotal')}</span>
               <span>${money(sale.subtotal)}</span>
             </div>
             {sale.discount > 0 && (
               <div className="flex justify-between text-emerald-600">
-                <span>Discount:</span>
+                <span>{t('discountLabel')}</span>
                 <span>-${money(sale.discount)}</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-sm pt-1 border-t border-slate-200 dark:border-slate-800">
-              <span>Total:</span>
+              <span>{t('salesUiTotal')}</span>
               <span>${money(sale.total)}</span>
             </div>
             <div className="flex justify-between pt-1">
-              <span className="text-slate-500">Paid ({sale.paymentMethod}):</span>
+              <span className="text-slate-500">{t('phPosPaidLabel', { method: t(paymentMethodLabelKey(sale.paymentMethod)) })}</span>
               <span>${money(sale.amountPaid)}</span>
             </div>
             {sale.change > 0 && (
               <div className="flex justify-between font-semibold text-emerald-600">
-                <span>Change Due:</span>
+                <span>{t('phPosChangeDue')}</span>
                 <span>${money(sale.change)}</span>
               </div>
             )}
           </div>
 
           <div className="text-center pt-3 text-[10px] text-slate-400 border-t border-dashed border-slate-300 dark:border-slate-700">
-            Thank you for your visit!
+            {t('phPosReceiptThanks')}
           </div>
         </div>
 
         {/* Modal Actions */}
         <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 flex gap-2">
           <Button variant="secondary" size="sm" block onClick={onClose}>
-            New Sale
+            {t('phPosNewSale')}
           </Button>
           <Button variant="primary" size="sm" block icon={Printer} onClick={handlePrint}>
-            Thermal Print
+            {t('phPosThermalPrint')}
           </Button>
         </div>
       </div>

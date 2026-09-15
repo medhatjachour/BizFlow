@@ -6,7 +6,7 @@ import { initialSupplierFormData } from '../utils'
 export function useSupplierForm(
   initial: PharmacySupplierItem | null,
   toast: any,
-  t: (k: string) => string,
+  t: (k: string, params?: Record<string, any>) => string,
   onSaved: () => void
 ) {
   const [busy, setBusy] = useState(false)
@@ -19,7 +19,7 @@ export function useSupplierForm(
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.name.trim()) {
-      toast.error('Supplier name is required')
+      toast.error(t('phSuNameRequired'))
       return
     }
 
@@ -27,14 +27,14 @@ export function useSupplierForm(
     try {
       if (initial) {
         await pharma()?.suppliers.update(initial.id, form)
-        toast.success(t('phSupplierUpdated') || 'Supplier updated')
+        toast.success(t('phSupplierUpdated'))
       } else {
         await pharma()?.suppliers.create(form)
-        toast.success(t('phSupplierAdded') || 'Supplier added')
+        toast.success(t('phSupplierAdded'))
       }
       onSaved()
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to save supplier')
+      toast.error(err?.message || t('phSuSaveFailed'))
     } finally {
       setBusy(false)
     }

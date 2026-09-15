@@ -4,6 +4,7 @@ import { PharmacyProductItem } from '../types'
 import { money, expiryTone } from '../../components/_shared'
 import { IconButton } from '../../components/ui'
 import { computeExpiryDays } from '../utils'
+import { unitLabelKey } from '../../components/units'
 
 interface ProductsTableProps {
   products: PharmacyProductItem[]
@@ -12,7 +13,7 @@ interface ProductsTableProps {
   onOpenBatches: (p: PharmacyProductItem) => void
   onEdit: (p: PharmacyProductItem) => void
   onDelete: (p: PharmacyProductItem) => void
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const ProductsTable: React.FC<ProductsTableProps> = ({
@@ -28,7 +29,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <Loader2 className="h-7 w-7 animate-spin text-emerald-500 mb-2" />
-        <p className="text-xs">Loading product catalog...</p>
+        <p className="text-xs">{t('phPrLoadingCatalog')}</p>
       </div>
     )
   }
@@ -36,8 +37,8 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
   if (products.length === 0) {
     return (
       <div className="text-center py-20 text-slate-400">
-        <p className="text-sm font-medium">{t('phNoProducts') || 'No products found'}</p>
-        <p className="text-xs mt-0.5">Click "Add Product" above to create your first medicine record.</p>
+        <p className="text-sm font-medium">{t('phNoProducts')}</p>
+        <p className="text-xs mt-0.5">{t('phPrEmptyHint')}</p>
       </div>
     )
   }
@@ -47,13 +48,13 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
       <table className="w-full text-xs text-left">
         <thead>
           <tr className="text-slate-400 border-b border-slate-100 dark:border-slate-800 font-semibold bg-slate-50/40 dark:bg-slate-900/30">
-            <th className="px-4 py-3">Product Name & Formula</th>
-            <th className="px-4 py-3">Category</th>
-            <th className="px-4 py-3 text-right">Available Stock</th>
-            <th className="px-4 py-3">Nearest Expiry</th>
-            <th className="px-4 py-3 text-right">Unit Price</th>
-            <th className="px-4 py-3 text-right">Stock Value</th>
-            <th className="px-4 py-3 text-right">Actions</th>
+            <th className="px-4 py-3">{t('phPrNameFormula')}</th>
+            <th className="px-4 py-3">{t('Category')}</th>
+            <th className="px-4 py-3 text-right">{t('phPrAvailableStock')}</th>
+            <th className="px-4 py-3">{t('vetExpiry')}</th>
+            <th className="px-4 py-3 text-right">{t('UnitPrice')}</th>
+            <th className="px-4 py-3 text-right">{t('inventoryUiStockValue')}</th>
+            <th className="px-4 py-3 text-right">{t('actions')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -70,7 +71,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                   <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                     {p.name}
                     {p.hasExpired && (
-                      <span title="Contains expired batches">
+                      <span title={t('phPrHasExpired')}>
                         <AlertTriangle size={12} className="text-red-500" />
                       </span>
                     )}
@@ -81,7 +82,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                 </td>
 
                 <td className="px-4 py-2.5 capitalize text-slate-500 dark:text-slate-400 font-medium">
-                  {p.category || 'General'}
+                  {p.category || t('phGeneralCategory')}
                 </td>
 
                 <td className="px-4 py-2.5 text-right">
@@ -94,11 +95,11 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                         : 'text-slate-800 dark:text-slate-200'
                     }`}
                   >
-                    {p.isOutOfStock ? 'OUT' : `${p.totalStock} ${p.unit}`}
+                    {p.isOutOfStock ? t('phOutBadge') : `${p.totalStock} ${t(unitLabelKey(p.unit))}`}
                   </span>
                   {p.isLowStock && !p.isOutOfStock && (
                     <span className="block text-[10px] text-amber-500 font-semibold">
-                      Min: {p.minimumStock}
+                      {t('phMinLabel')}: {p.minimumStock}
                     </span>
                   )}
                 </td>
@@ -110,7 +111,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                     <span className={`font-semibold ${expiryTone(days)}`}>
                       {new Date(p.nearestExpiry!).toLocaleDateString()}{' '}
                       <span className="text-[10px]">
-                        {days < 0 ? '(expired)' : `(${days}d)`}
+                        {days < 0 ? t('phExpiredSuffix') : t('phDaysSuffix', { days })}
                       </span>
                     </span>
                   )}
@@ -120,7 +121,7 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                   ${money(p.sellingPrice)}
                   {p.subUnit && p.subUnitPrice ? (
                     <span className="block text-[10px] text-slate-400 font-normal">
-                      ${money(p.subUnitPrice)}/{p.subUnit}
+                      ${money(p.subUnitPrice)}/{t(unitLabelKey(p.subUnit))}
                     </span>
                   ) : null}
                 </td>
@@ -135,25 +136,25 @@ export const ProductsTable: React.FC<ProductsTableProps> = ({
                       icon={History}
                       tone="violet"
                       onClick={() => onOpenHistory(p)}
-                      title="History & analytics"
+                      title={t('phPrHistoryAnalytics')}
                     />
                     <IconButton
                       icon={Layers}
                       tone="emerald"
                       onClick={() => onOpenBatches(p)}
-                      title="Manage batches"
+                      title={t('phPrManageBatchesBtn')}
                     />
                     <IconButton
                       icon={Pencil}
                       tone="slate"
                       onClick={() => onEdit(p)}
-                      title="Edit product"
+                      title={t('editProduct')}
                     />
                     <IconButton
                       icon={Trash2}
                       tone="red"
                       onClick={() => onDelete(p)}
-                      title="Delete / disable product"
+                      title={t('phPrDeleteProduct')}
                     />
                   </div>
                 </td>

@@ -3,8 +3,10 @@ import { pharma } from '../../components/_shared'
 import { PharmacyCustomerItem } from '../types'
 import { CUSTOMERS_PAGE_SIZE } from '../constants'
 import { computeCustomersMetrics } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePharmacyCustomers(toast: any) {
+  const { t } = useLanguage()
   const [rows, setRows] = useState<PharmacyCustomerItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -17,7 +19,7 @@ export function usePharmacyCustomers(toast: any) {
       const data = await pharma()?.customers.getAll({ search: search.trim() })
       setRows(data ?? [])
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to load customer directory')
+      toast.error(err?.message || t('phCuLoadFailed'))
     } finally {
       setLoading(false)
     }

@@ -2,16 +2,28 @@ import { PaymentMethod } from './types'
 
 export const QUICK_CASH_DENOMINATIONS = [5, 10, 20, 50, 100, 200]
 
-export const PAYMENT_METHODS: { id: PaymentMethod; label: string; iconKey: string }[] = [
-  { id: 'cash', label: 'Cash (F2)', iconKey: 'Banknote' },
-  { id: 'card', label: 'Card (F3)', iconKey: 'CreditCard' },
-  { id: 'credit', label: 'Store Credit', iconKey: 'Clock' },
-  { id: 'other', label: 'Other', iconKey: 'MoreHorizontal' },
+export const PAYMENT_METHODS: { id: PaymentMethod; labelKey: string; iconKey: string }[] = [
+  { id: 'cash', labelKey: 'phPosCash', iconKey: 'Banknote' },
+  { id: 'card', labelKey: 'phPosCard', iconKey: 'CreditCard' },
+  { id: 'credit', labelKey: 'phPosStoreCredit', iconKey: 'Clock' },
+  { id: 'other', labelKey: 'bakeryWasteTypeOther', iconKey: 'MoreHorizontal' },
 ]
 
 export const HOTKEYS_HINT = [
-  { key: 'F1 / Enter', label: 'Search/Scan Barcode' },
-  { key: 'F2', label: 'Cash Checkout' },
-  { key: 'F4', label: 'Park/Hold Sale' },
-  { key: 'Esc', label: 'Clear Search/Close' },
+  { key: 'F1 / Enter', labelKey: 'phPosHkSearch' },
+  { key: 'F2', labelKey: 'phPosHkCash' },
+  { key: 'F4', labelKey: 'phPosHkHold' },
+  { key: 'Esc', labelKey: 'phPosHkClear' },
 ]
+
+const PAYMENT_METHOD_LABEL_KEYS: Record<string, string> = {
+  cash: 'cash',
+  card: 'card',
+  credit: 'phPosStoreCredit',
+  other: 'phPosOther',
+}
+
+/** Persisted payment ids -> dictionary keys, for read-only display sites. */
+export function paymentMethodLabelKey(id: string): string {
+  return PAYMENT_METHOD_LABEL_KEYS[id] ?? id
+}

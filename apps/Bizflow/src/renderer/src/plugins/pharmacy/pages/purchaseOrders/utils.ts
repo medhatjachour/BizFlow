@@ -1,4 +1,7 @@
 import { PurchaseOrderItem, PurchaseOrdersMetrics, POLineItem } from './types'
+import { PO_STATUS_LABEL_KEYS, statusLabel } from '../components/_shared'
+
+type TranslateFn = (key: string, params?: Record<string, any>) => string
 
 export function computePOMetrics(orders: PurchaseOrderItem[]): PurchaseOrdersMetrics {
   return orders.reduce(
@@ -22,15 +25,15 @@ export const createBlankPOLine = (): POLineItem => ({
   expiryDate: '',
 })
 
-export function exportPurchaseOrdersToCSV(orders: PurchaseOrderItem[]) {
-  const headers = ['Order #', 'Supplier', 'Order Date', 'Items Count', 'Total ($)', 'Status', 'Notes']
+export function exportPurchaseOrdersToCSV(orders: PurchaseOrderItem[], t: TranslateFn) {
+  const headers = [t('phPoCsvOrderNumber'), t('phSupplier'), t('orderDate'), t('phPoItemsCount'), t('phTotalUsd'), t('phStatus'), t('notes')]
   const rows = orders.map(o => [
     o.orderNumber || '',
-    o.supplier?.name || 'Unassigned',
+    o.supplier?.name || t('phPoUnassigned'),
     new Date(o.orderDate).toLocaleDateString(),
     o.itemCount || o.items?.length || 0,
     (o.total || 0).toFixed(2),
-    o.status,
+    statusLabel(t, PO_STATUS_LABEL_KEYS, o.status),
     o.notes || '',
   ])
   return [headers, ...rows]

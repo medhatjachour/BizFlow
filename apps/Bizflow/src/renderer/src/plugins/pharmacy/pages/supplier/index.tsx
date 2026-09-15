@@ -37,23 +37,23 @@ export default function PharmacySuppliers() {
 
   const handleExportCSV = () => {
     if (rows.length === 0) {
-      toast.error('No supplier records available to export')
+      toast.error(t('phSuExportEmpty'))
       return
     }
-    const csvData = exportSuppliersToCSV(rows)
+    const csvData = exportSuppliersToCSV(rows, t)
     downloadCSV(csvData, `pharmacy-suppliers-directory-${new Date().toISOString().slice(0, 10)}.csv`)
-    toast.success('Supplier directory exported successfully')
+    toast.success(t('phSuExportDone'))
   }
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return
     try {
       await pharma()?.suppliers.delete(deleteTarget.id)
-      toast.success(t('phSupplierDeleted') || 'Supplier deleted')
+      toast.success(t('phSupplierDeleted'))
       setDeleteTarget(null)
       reload()
     } catch (err: any) {
-      toast.error(err?.message || 'Delete failed')
+      toast.error(err?.message || t('deleteFailed'))
     }
   }
 
@@ -72,7 +72,7 @@ export default function PharmacySuppliers() {
               icon={Download}
               onClick={handleExportCSV}
             >
-              Export CSV
+              {t('phExportCSV')}
             </Button>
             <Button
               variant="primary"
@@ -83,7 +83,7 @@ export default function PharmacySuppliers() {
                 setShowForm(true)
               }}
             >
-              {t('phAddSupplier') || 'Add Supplier'}
+              {t('phAddSupplier')}
             </Button>
           </div>
         }
@@ -91,7 +91,7 @@ export default function PharmacySuppliers() {
         <SearchBox
           value={search}
           onChange={setSearch}
-          placeholder={t('phSearchSuppliers') || 'Search suppliers by name, phone, or email...'}
+          placeholder={t('phSearchSuppliers')}
         />
       </Toolbar>
 
@@ -115,7 +115,7 @@ export default function PharmacySuppliers() {
               pageCount={pageCount}
               total={totalCount}
               onPage={setPage}
-              label={t('phSuppliers') || 'suppliers'}
+              label={t('phSuppliers')}
             />
           </div>
         )}

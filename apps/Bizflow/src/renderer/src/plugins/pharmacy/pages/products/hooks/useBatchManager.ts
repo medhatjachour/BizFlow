@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { pharma } from '../../components/_shared'
 import { ProductBatch, PharmacyProductItem } from '../types'
 
-export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k: string) => string) {
+export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k: string, params?: Record<string, any>) => string) {
   const [batches, setBatches] = useState<ProductBatch[]>([])
   const [suppliers, setSuppliers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -48,7 +48,7 @@ export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k:
   const addBatch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newBatchForm.quantity || !newBatchForm.expiryDate) {
-      toast.error(t('phQtyExpiryRequired') || 'Quantity and expiry date are required')
+      toast.error(t('phQtyExpiryRequired'))
       return
     }
     setAdding(true)
@@ -62,11 +62,11 @@ export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k:
         expiryDate: newBatchForm.expiryDate,
         supplierId: newBatchForm.supplierId || undefined,
       })
-      toast.success(t('phBatchAdded') || 'Batch added')
+      toast.success(t('phBatchAdded'))
       setNewBatchForm(blankForm)
       loadBatches()
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to add batch')
+      toast.error(err?.message || t('phInvBatchAddFailed'))
     } finally {
       setAdding(false)
     }
@@ -90,11 +90,11 @@ export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k:
         sellingPrice: editForm.sellingPrice ? parseFloat(editForm.sellingPrice) : null,
         expiryDate: editForm.expiryDate,
       })
-      toast.success(t('phBatchUpdated') || 'Batch updated')
+      toast.success(t('phBatchUpdated'))
       setEditId(null)
       loadBatches()
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to save batch')
+      toast.error(err?.message || t('phInvBatchSaveFailed'))
     } finally {
       setEditBusy(false)
     }
@@ -103,7 +103,7 @@ export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k:
   const applyAdjust = async (batchId: string) => {
     const amount = parseFloat(adj.amount)
     if (!Number.isFinite(amount) || amount < 0 || (adj.mode !== 'set' && amount <= 0)) {
-      toast.error(t('phEnterAmount') || 'Enter a valid amount')
+      toast.error(t('phEnterAmount'))
       return
     }
     setAdjBusy(true)
@@ -114,11 +114,11 @@ export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k:
         unit: adj.unit,
         reason: adj.reason || undefined,
       })
-      toast.success(t('phStockAdjusted') || 'Stock adjusted successfully')
+      toast.success(t('phStockAdjusted'))
       setEditId(null)
       loadBatches()
     } catch (err: any) {
-      toast.error(err?.message || 'Adjustment failed')
+      toast.error(err?.message || t('phInvAdjustFailed'))
     } finally {
       setAdjBusy(false)
     }
@@ -127,20 +127,20 @@ export function useBatchManager(product: PharmacyProductItem, toast: any, t: (k:
   const disposeBatch = async (batchId: string) => {
     try {
       await pharma()?.batches.dispose(batchId, { reason: 'Disposed via Batch Manager' })
-      toast.success(t('phBatchDisposed') || 'Batch disposed')
+      toast.success(t('phBatchDisposed'))
       loadBatches()
     } catch (err: any) {
-      toast.error(err?.message || 'Disposal failed')
+      toast.error(err?.message || t('phInvDisposeFailed'))
     }
   }
 
   const deleteBatch = async (batchId: string) => {
     try {
       await pharma()?.batches.delete(batchId)
-      toast.success(t('phBatchDeleted') || 'Batch deleted')
+      toast.success(t('phBatchDeleted'))
       loadBatches()
     } catch (err: any) {
-      toast.error(err?.message || 'Delete failed')
+      toast.error(err?.message || t('deleteFailed'))
     }
   }
 

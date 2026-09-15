@@ -1,6 +1,7 @@
 import React from 'react'
 import { Pill } from 'lucide-react'
 import { money, int } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface TopSellingMedicinesCardProps {
   products: { id: string; name: string; units: number; revenue: number }[]
@@ -11,6 +12,7 @@ export const TopSellingMedicinesCard: React.FC<TopSellingMedicinesCardProps> = (
   products,
   period,
 }) => {
+  const { t } = useLanguage()
   const maxRevenue = products[0]?.revenue || 1
 
   return (
@@ -19,15 +21,15 @@ export const TopSellingMedicinesCard: React.FC<TopSellingMedicinesCardProps> = (
         <div className="flex items-center gap-2">
           <Pill size={16} className="text-emerald-500" />
           <h3 className="font-bold text-xs text-slate-900 dark:text-white">
-            Top Dispensed Medicines by Revenue
+            {t('phTopDispensedTitle')}
           </h3>
         </div>
-        <span className="text-[10px] text-slate-400 font-semibold capitalize">Period: {period}</span>
+        <span className="text-[10px] text-slate-400 font-semibold capitalize">{t('phDashPeriodLabel', { period })}</span>
       </div>
 
       {!products || products.length === 0 ? (
         <p className="text-xs text-slate-400 text-center py-8">
-          No sales transactions recorded for this period.
+          {t('phNoSalesInPeriod')}
         </p>
       ) : (
         <div className="space-y-2.5">
@@ -55,7 +57,7 @@ export const TopSellingMedicinesCard: React.FC<TopSellingMedicinesCardProps> = (
                       {p.name}
                     </span>
                     <span className="text-[10px] text-slate-400 shrink-0">
-                      ({int(p.units)} units)
+                      {t('phUnitsCount', { count: int(p.units) })}
                     </span>
                   </div>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400 shrink-0">

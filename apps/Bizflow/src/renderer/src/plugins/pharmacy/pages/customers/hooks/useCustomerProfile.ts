@@ -5,7 +5,7 @@ import { CustomerProfileData } from '../types'
 export function useCustomerProfile(
   customerId: string,
   toast: any,
-  t: (k: string) => string,
+  t: (k: string, params?: Record<string, any>) => string,
   onChanged: () => void
 ) {
   const [data, setData] = useState<CustomerProfileData | null>(null)
@@ -20,7 +20,7 @@ export function useCustomerProfile(
       const res = await pharma()?.customers.profile(customerId)
       setData(res ?? null)
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to load customer profile')
+      toast.error(err?.message || t('phCuLoadProfileFailed'))
     } finally {
       setLoading(false)
     }
@@ -38,14 +38,14 @@ export function useCustomerProfile(
         full ? {} : { amount: parseFloat(payAmount) }
       )
       toast.success(
-        `${t('phSettled') || 'Settled'} $${(res?.applied || 0).toFixed(2)} across ${res?.settledCount ?? 0} invoice(s)`
+        t('phSettled') + ' ' + t('phCuSettledAcross', { amount: `$${(res?.applied || 0).toFixed(2)}`, count: res?.settledCount ?? 0 })
       )
       setSettling(false)
       setPayAmount('')
       await loadProfile()
       onChanged()
     } catch (err: any) {
-      toast.error(err?.message || 'Settlement failed')
+      toast.error(err?.message || t('phCuSettleFailed'))
     } finally {
       setBusy(false)
     }

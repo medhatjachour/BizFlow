@@ -1,6 +1,6 @@
 import React from 'react'
 import { X, Phone, Mail, Receipt, Loader2, MapPin } from 'lucide-react'
-import { money, int, PAY_BADGE } from '../../components/_shared'
+import { money, int, PAY_BADGE, PAYMENT_STATUS_LABEL_KEYS, statusLabel } from '../../components/_shared'
 import { CustomerSettleBar } from './CustomerSettleBar'
 import { useCustomerProfile } from '../hooks/useCustomerProfile'
 
@@ -9,7 +9,7 @@ interface CustomerProfileModalProps {
   onClose: () => void
   onChanged: () => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
@@ -39,7 +39,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
         {loading || !data ? (
           <div className="flex flex-col items-center justify-center py-24 text-slate-400">
             <Loader2 className="h-7 w-7 animate-spin text-emerald-500 mb-2" />
-            <p className="text-xs">Loading customer profile & ledger...</p>
+            <p className="text-xs">{t('phCuLoadingProfile')}</p>
           </div>
         ) : (
           <>
@@ -82,11 +82,11 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               {/* Financial KPI Cards */}
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {[
-                  { label: 'Charged', value: `$${money(data.finance.totalCharged)}`, color: 'text-slate-800 dark:text-white' },
-                  { label: 'Paid', value: `$${money(data.finance.totalPaid)}`, color: 'text-emerald-600 dark:text-emerald-400' },
-                  { label: 'Outstanding', value: `$${money(data.finance.outstanding)}`, color: data.finance.outstanding > 0.005 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
-                  { label: 'Sales Count', value: int(data.finance.salesCount), color: 'text-slate-800 dark:text-white' },
-                  { label: 'Units Bought', value: int(data.finance.unitsBought), color: 'text-slate-800 dark:text-white' },
+                  { label: t('charged'), value: `$${money(data.finance.totalCharged)}`, color: 'text-slate-800 dark:text-white' },
+                  { label: t('salesUiPaid'), value: `$${money(data.finance.totalPaid)}`, color: 'text-emerald-600 dark:text-emerald-400' },
+                  { label: t('outstanding'), value: `$${money(data.finance.outstanding)}`, color: data.finance.outstanding > 0.005 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400' },
+                  { label: t('phCuSalesCount'), value: int(data.finance.salesCount), color: 'text-slate-800 dark:text-white' },
+                  { label: t('phCuUnitsBought'), value: int(data.finance.unitsBought), color: 'text-slate-800 dark:text-white' },
                 ].map(k => (
                   <div key={k.label} className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 text-center border border-slate-100 dark:border-slate-800">
                     <p className={`text-base font-bold ${k.color}`}>{k.value}</p>
@@ -109,7 +109,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               {/* Customer Notes */}
               {data.customer.notes && (
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
-                  <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Notes & Allergies:</p>
+                  <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5">{t('phCuNotesLabel')}</p>
                   <p className="text-slate-500 dark:text-slate-400">{data.customer.notes}</p>
                 </div>
               )}
@@ -118,11 +118,11 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               <div>
                 <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-1.5">
                   <Receipt size={14} className="text-emerald-500" />
-                  <span>Purchase History ({data.sales.length})</span>
+                  <span>{t('phCuPurchaseHistory', { count: data.sales.length })}</span>
                 </h3>
 
                 {data.sales.length === 0 ? (
-                  <p className="text-slate-400 text-center py-8">No purchase history recorded for this customer.</p>
+                  <p className="text-slate-400 text-center py-8">{t('phCuNoHistory')}</p>
                 ) : (
                   <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
                     {data.sales.map(s => {
@@ -137,18 +137,18 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
                             #{s.saleNumber ?? '—'}
                           </span>
                           <span className="text-slate-400 flex-1">
-                            {new Date(s.saleDate).toLocaleDateString([], { dateStyle: 'medium' })} · {s.items?.length ?? 0} items
+                            {new Date(s.saleDate).toLocaleDateString([], { dateStyle: 'medium' })} · {t('phItemsCount', { count: s.items?.length ?? 0 })}
                           </span>
                           <span className="font-bold text-slate-900 dark:text-slate-100">
                             ${money(s.total)}
                           </span>
                           {out > 0.005 && (
                             <span className="text-[10px] font-semibold text-red-500">
-                              -${money(out)} due
+                              -{t('phAmountDue', { amount: money(out) })}
                             </span>
                           )}
                           <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold capitalize ${PAY_BADGE[s.paymentStatus] ?? PAY_BADGE.unpaid}`}>
-                            {s.paymentStatus}
+                            {statusLabel(t, PAYMENT_STATUS_LABEL_KEYS, s.paymentStatus)}
                           </span>
                         </div>
                       )

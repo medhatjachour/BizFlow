@@ -3,8 +3,10 @@ import { pharma } from '../../components/_shared'
 import { PharmacySale, PaymentStatus, SaleStatus } from '../types'
 import { SALES_PAGE_SIZE } from '../constants'
 import { computeSalesMetrics } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePharmacySales(toast: any) {
+  const { t } = useLanguage()
   const [sales, setSales] = useState<PharmacySale[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(0)
@@ -27,7 +29,7 @@ export function usePharmacySales(toast: any) {
       setSales(response?.data ?? [])
       setTotalCount(response?.total ?? 0)
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to load sales')
+      toast.error(err?.message || t('phSaLoadFailed'))
     } finally {
       setLoading(false)
     }

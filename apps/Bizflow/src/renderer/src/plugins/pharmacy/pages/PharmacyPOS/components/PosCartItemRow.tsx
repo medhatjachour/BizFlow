@@ -2,6 +2,8 @@ import React from 'react'
 import { Trash2, Plus, Minus, Layers } from 'lucide-react'
 import { CartLine } from '../types'
 import { money } from '../../components/_shared'
+import { unitLabelKey } from '../../components/units'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface PosCartItemRowProps {
   index: number
@@ -19,6 +21,7 @@ export const PosCartItemRow: React.FC<PosCartItemRowProps> = ({
   onToggleUnit,
   onRemove,
 }) => {
+  const { t } = useLanguage()
   const lineTotal = line.quantity * line.unitPrice
 
   return (
@@ -30,18 +33,18 @@ export const PosCartItemRow: React.FC<PosCartItemRowProps> = ({
           {line.ratio ? (
             <button
               onClick={() => onToggleUnit(index)}
-              title="Click to toggle base/sub unit"
+              title={t('phPosToggleUnit')}
               className="inline-flex items-center gap-0.5 text-[10px] font-medium px-1.5 py-0.2 rounded bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300 hover:bg-violet-100 border border-violet-200/50 dark:border-violet-800/50"
             >
               <Layers size={9} />
-              {line.saleUnit === 'sub' ? line.subUnit || 'strip' : line.unit}
+              {t(unitLabelKey(line.saleUnit === 'sub' ? line.subUnit || 'strip' : line.unit))}
             </button>
           ) : (
-            <span className="text-[10px] text-slate-400">({line.unit})</span>
+            <span className="text-[10px] text-slate-400">({t(unitLabelKey(line.unit))})</span>
           )}
         </div>
         <div className="text-[10px] text-slate-400 mt-0.5">
-          Stock: {line.stockBase} · Unit: ${money(line.unitPrice)}
+          {t('phPosStockLabel')}: {line.stockBase} · {t('phPosUnitLabel')}: ${money(line.unitPrice)}
         </div>
       </div>
 
@@ -76,7 +79,7 @@ export const PosCartItemRow: React.FC<PosCartItemRowProps> = ({
       <button
         onClick={() => onRemove(index)}
         className="text-slate-300 hover:text-red-500 transition-colors p-1"
-        title="Remove"
+        title={t('warehouseRemove')}
       >
         <Trash2 size={13} />
       </button>

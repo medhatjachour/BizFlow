@@ -2,12 +2,14 @@ import React from 'react'
 import { Package, DollarSign, AlertTriangle, Clock } from 'lucide-react'
 import { ProductsMetrics } from '../types'
 import { money } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface ProductMetricsBarProps {
   metrics: ProductsMetrics
 }
 
 export const ProductMetricsBar: React.FC<ProductMetricsBarProps> = ({ metrics }) => {
+  const { t } = useLanguage()
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl shadow-2xs flex items-center gap-3">
@@ -15,7 +17,7 @@ export const ProductMetricsBar: React.FC<ProductMetricsBarProps> = ({ metrics })
           <Package size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Total Products</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('totalProducts')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{metrics.totalSkus}</p>
         </div>
       </div>
@@ -25,7 +27,7 @@ export const ProductMetricsBar: React.FC<ProductMetricsBarProps> = ({ metrics })
           <DollarSign size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Inventory Value</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('InventoryValue')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">${money(metrics.totalValue)}</p>
         </div>
       </div>
@@ -35,7 +37,7 @@ export const ProductMetricsBar: React.FC<ProductMetricsBarProps> = ({ metrics })
           <AlertTriangle size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Low / Out of Stock</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phPrLowOut')}</p>
           <p className="text-base font-bold text-amber-600 dark:text-amber-400">{metrics.lowStockCount}</p>
         </div>
       </div>
@@ -45,7 +47,7 @@ export const ProductMetricsBar: React.FC<ProductMetricsBarProps> = ({ metrics })
           <Clock size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Expiring (&le;30d)</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phPrExpiring30')}</p>
           <p className="text-base font-bold text-red-600 dark:text-red-400">{metrics.expiringCount}</p>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { initialProductForm } from '../utils'
 import { DEFAULT_SELLING_UNITS, DEFAULT_SUBUNITS } from '../constants'
 import { pharma, inputCls } from '../../components/_shared'
 import { Button } from '../../components/ui'
+import { unitLabelKey } from '../../components/units'
 
 interface ProductFormModalProps {
   initial: PharmacyProductItem | null
@@ -12,7 +13,7 @@ interface ProductFormModalProps {
   onClose: () => void
   onSaved: () => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const ProductFormModal: React.FC<ProductFormModalProps> = ({
@@ -55,10 +56,10 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         await pharma()?.products.create(payload)
       }
 
-      toast.success(initial ? t('phProductUpdated') || 'Product updated' : t('phProductAdded') || 'Product added')
+      toast.success(initial ? t('phProductUpdated') : t('phProductAdded'))
       onSaved()
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to save product')
+      toast.error(err?.message || t('phPrSaveFailed'))
     } finally {
       setBusy(false)
     }
@@ -72,7 +73,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
       >
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
           <h2 className="font-bold text-sm text-slate-900 dark:text-white">
-            {initial ? t('phEditProduct') || 'Edit Product' : t('phAddProduct') || 'Add Product'}
+            {initial ? t('phEditProduct') : t('phAddProduct')}
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
             <X size={16} />
@@ -82,13 +83,13 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-3.5 text-xs">
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Medicine Name *
+              {t('phPrNameRequired')}
             </label>
             <input
               value={form.name}
               onChange={setField('name')}
               required
-              placeholder="e.g. Augmentin 1g Tablets"
+              placeholder={t('phPrNamePlaceholder')}
               className={inputCls}
             />
           </div>
@@ -96,23 +97,23 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Generic Formula
+                {t('phPrFormula')}
               </label>
               <input
                 value={form.genericName}
                 onChange={setField('genericName')}
-                placeholder="e.g. Amoxicillin / Clavulanate"
+                placeholder={t('phPrFormulaPlaceholder')}
                 className={inputCls}
               />
             </div>
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Barcode
+                {t('phBarcode')}
               </label>
               <input
                 value={form.barcode}
                 onChange={setField('barcode')}
-                placeholder="Scan or type code"
+                placeholder={t('phPrCodePlaceholder')}
                 className={inputCls}
               />
             </div>
@@ -120,7 +121,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Category</label>
+              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">{t('Category')}</label>
               <input
                 value={form.category}
                 onChange={setField('category')}
@@ -134,17 +135,17 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               </datalist>
             </div>
             <div>
-              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Primary Unit</label>
+              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">{t('phPrPrimaryUnit')}</label>
               <input
                 value={form.unit}
                 onChange={setField('unit')}
                 list="units-list"
-                placeholder="box, bottle, strip..."
+                placeholder={t('phPrUnitsPlaceholder')}
                 className={inputCls}
               />
               <datalist id="units-list">
                 {DEFAULT_SELLING_UNITS.map(u => (
-                  <option key={u} value={u} />
+                  <option key={u} value={u}>{t(unitLabelKey(u))}</option>
                 ))}
               </datalist>
             </div>
@@ -152,7 +153,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Selling Price ($)</label>
+              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">{t('phPrSellingPrice')}</label>
               <input
                 value={form.sellingPrice}
                 onChange={setField('sellingPrice')}
@@ -164,7 +165,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Min Stock Alert Level</label>
+              <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">{t('phPrMinStock')}</label>
               <input
                 value={form.minimumStock}
                 onChange={setField('minimumStock')}
@@ -180,50 +181,50 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           <div className="rounded-xl border border-violet-200/80 dark:border-violet-800/50 bg-violet-50/40 dark:bg-violet-950/20 p-3 space-y-2">
             <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-bold">
               <Layers size={13} />
-              <span>Fractional / Sub-Unit Selling (Optional)</span>
+              <span>{t('phPrSubUnitSelling')}</span>
             </div>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              Allows cashiers to sell strips from a box or tablets from a strip at POS.
+              {t('phPrSubUnitHelp')}
             </p>
 
-            <div className="grid grid-cols-3 gap-2 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
               <div>
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Sub-Unit</label>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">{t('phSubUnitName')}</label>
                 <input
                   value={form.subUnit}
                   onChange={setField('subUnit')}
                   list="subunits-list"
-                  placeholder="strip, tablet"
+                  placeholder={t('phPrSubUnitsPlaceholder')}
                   className={`${inputCls} py-1 text-xs`}
                 />
                 <datalist id="subunits-list">
                   {DEFAULT_SUBUNITS.map(u => (
-                    <option key={u} value={u} />
+                    <option key={u} value={u}>{t(unitLabelKey(u))}</option>
                   ))}
                 </datalist>
               </div>
               <div>
                 <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">
-                  Qty per 1 {form.unit || 'unit'}
+                  {t('phPrQtyPerOne', { unit: t(unitLabelKey(form.unit || 'unit')) })}
                 </label>
                 <input
                   value={form.subUnitsPerContainer}
                   onChange={setField('subUnitsPerContainer')}
                   type="number"
                   min="1"
-                  placeholder="e.g. 2"
+                  placeholder={t('phPrSubPerBasePlaceholder')}
                   className={`${inputCls} py-1 text-xs`}
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">Sub Price ($)</label>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-0.5">{t('phPrSubPrice')}</label>
                 <input
                   value={form.subUnitPrice}
                   onChange={setField('subUnitPrice')}
                   type="number"
                   min="0"
                   step="0.001"
-                  placeholder="Auto-calculated"
+                  placeholder={t('phPrAutoCalculated')}
                   className={`${inputCls} py-1 text-xs`}
                 />
               </div>
@@ -231,7 +232,7 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">Notes / Description</label>
+            <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">{t('phPrNotes')}</label>
             <textarea
               value={form.description}
               onChange={setField('description')}
@@ -248,16 +249,16 @@ export const ProductFormModal: React.FC<ProductFormModalProps> = ({
                 onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
                 className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
               />
-              <span>Available for sales (Active)</span>
+              <span>{t('phPrActive')}</span>
             </label>
           )}
 
           <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
+              {t('phCancel')}
             </Button>
             <Button type="submit" variant="primary" size="sm" className="flex-1" loading={busy}>
-              Save Product
+              {t('phPrSaveProduct')}
             </Button>
           </div>
         </form>

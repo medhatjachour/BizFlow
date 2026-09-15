@@ -4,6 +4,7 @@ import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useAuth } from '@renderer/contexts/AuthContext'
 import { money, inputCls } from '../components/_shared'
+import { unitLabelKey } from '../components/units'
 
 import { useThermalReceipt } from './hooks/useThermalReceipt'
 import { PosCart } from './components/PosCart'
@@ -80,7 +81,7 @@ export default function PharmacyPOS() {
       setSearch('')
       focusSearch()
     } else {
-      toast.error(t('phNoProducts') || 'No matching product found for scan')
+      toast.error(t('phNoProducts'))
     }
   }
 
@@ -128,11 +129,11 @@ export default function PharmacyPOS() {
             onChange={e => setSearch(e.target.value)}
             onKeyDown={handleSearchKeyDown}
             autoFocus
-            placeholder="Scan barcode (Enter) or search medicine name / generic..."
+            placeholder={t('phPosScanPlaceholder')}
             className={`${inputCls} pl-10 pr-24 py-2.5 text-sm font-medium shadow-xs`}
           />
           <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] text-slate-400">
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-semibold">F1</kbd> Search
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 font-semibold">F1</kbd> {t('search')}
           </div>
         </div>
 
@@ -141,12 +142,12 @@ export default function PharmacyPOS() {
           {productsLoading ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mb-2" />
-              <p className="text-xs">Loading pharmacy catalog...</p>
+              <p className="text-xs">{t('phPosLoadingCatalog')}</p>
             </div>
           ) : products.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-400">
-              <p className="text-sm font-medium">{t('phNoProducts') || 'No products found'}</p>
-              <p className="text-xs mt-1">Try another search keyword or scan barcode</p>
+              <p className="text-sm font-medium">{t('phNoProducts')}</p>
+              <p className="text-xs mt-1">{t('phPrNoResults')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2.5">
@@ -181,11 +182,11 @@ export default function PharmacyPOS() {
 
                       <div className="flex items-center gap-1 mt-1">
                         <span className="text-[10px] text-slate-500 dark:text-slate-400 capitalize">
-                          {p.category || 'General'}
+                          {p.category || t('phGeneralCategory')}
                         </span>
                         {p.subUnit && (
                           <span className="text-[9px] bg-slate-100 dark:bg-slate-700 text-slate-500 px-1 rounded flex items-center gap-0.5">
-                            <Layers size={8} /> {p.subUnit}
+                            <Layers size={8} /> {t(unitLabelKey(p.subUnit))}
                           </span>
                         )}
                       </div>
@@ -204,7 +205,7 @@ export default function PharmacyPOS() {
                             : 'text-slate-400'
                         }`}
                       >
-                        {isOutOfStock ? 'OUT' : `${p.totalStock} ${p.unit}`}
+                        {isOutOfStock ? t('phOutBadge') : `${p.totalStock} ${t(unitLabelKey(p.unit))}`}
                       </span>
                     </div>
                   </button>

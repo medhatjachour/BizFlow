@@ -58,7 +58,6 @@ export type PharmacyTab =
 interface TabConfig {
   id: PharmacyTab
   labelKey: string
-  defaultLabel: string
   icon: ReactNode
   badge?: string
   badgeVariant?: 'emerald' | 'amber' | 'blue' | 'rose'
@@ -68,7 +67,6 @@ const TABS_CONFIG: TabConfig[] = [
   {
     id: 'dashboard',
     labelKey: 'phDashboard',
-    defaultLabel: 'Live Dashboard',
     icon: <LayoutDashboard className="w-4 h-4" />,
     badge: 'LIVE',
     badgeVariant: 'emerald'
@@ -76,7 +74,6 @@ const TABS_CONFIG: TabConfig[] = [
   {
     id: 'pos',
     labelKey: 'phSell',
-    defaultLabel: 'Dispensary POS',
     icon: <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
     badge: 'POS',
     badgeVariant: 'emerald'
@@ -84,43 +81,36 @@ const TABS_CONFIG: TabConfig[] = [
   {
     id: 'products',
     labelKey: 'phProducts',
-    defaultLabel: 'Drugs & Products',
     icon: <Pill className="w-4 h-4 text-emerald-500" />
   },
   {
     id: 'inventory',
     labelKey: 'phInventory',
-    defaultLabel: 'Batches & Expiry',
     icon: <PackageSearch className="w-4 h-4 text-amber-500" />
   },
   {
     id: 'sales',
     labelKey: 'phSales',
-    defaultLabel: 'Sales History',
     icon: <Receipt className="w-4 h-4" />
   },
   {
     id: 'customers',
     labelKey: 'phCustomers',
-    defaultLabel: 'Patients & Clients',
     icon: <Users className="w-4 h-4 text-blue-500" />
   },
   {
     id: 'suppliers',
     labelKey: 'phSuppliers',
-    defaultLabel: 'Suppliers & Vendors',
     icon: <Truck className="w-4 h-4" />
   },
   {
     id: 'orders',
     labelKey: 'phPurchaseOrders',
-    defaultLabel: 'Purchase Orders',
     icon: <ClipboardList className="w-4 h-4 text-indigo-500" />
   },
   {
     id: 'reports',
     labelKey: 'phReports',
-    defaultLabel: 'Analytics & P&L',
     icon: <BarChart3 className="w-4 h-4" />
   }
 ]
@@ -221,10 +211,10 @@ export default function PharmacyPage() {
                 </div>
                 <div className="flex items-center gap-2 min-w-0">
                   <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">
-                    {t('pharmacy') || 'Pharmacy Operations'}
+                    {t('pharmacy')}
                   </h1>
                   <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
-                    <Sparkles className="w-2.5 h-2.5" /> FEFO Expiry & Smart Dispense Engine
+                    <Sparkles className="w-2.5 h-2.5" /> {t('phFefoEngine')}
                   </span>
                 </div>
               </div>
@@ -235,10 +225,10 @@ export default function PharmacyPage() {
                   type="button"
                   onClick={() => setShowHowItWorks(true)}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 transition-all active:scale-95"
-                  title={`${t('pharmacyHowItWorksTitle') || 'Pharmacy Workflow Guide'} (F1)`}
+                  title={`${t('pharmacyHowItWorksTitle')} (F1)`}
                 >
                   <Info className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="hidden sm:inline">{t('howItWorks') || 'How It Works'}</span>
+                  <span className="hidden sm:inline">{t('howItWorks')}</span>
                   <kbd className="hidden md:inline px-1 py-0.2 rounded text-[9px] font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600">
                     F1
                   </kbd>
@@ -248,7 +238,7 @@ export default function PharmacyPage() {
                   type="button"
                   onClick={toggleFullscreen}
                   className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 transition-all active:scale-95"
-                  title={isFullscreenMode ? 'Exit Focus View' : 'Focus Mode (Maximize Screen)'}
+                  title={isFullscreenMode ? t('phFocusExit') : t('phFocusEnter')}
                 >
                   <Maximize2 className="w-3.5 h-3.5" />
                 </button>
@@ -261,7 +251,7 @@ export default function PharmacyPage() {
             <nav
               ref={tabListRef}
               role="tablist"
-              aria-label="Pharmacy Sub-modules"
+              aria-label={t('phSubmodulesAria')}
               className="flex items-center gap-1 min-w-max"
             >
               {visibleTabs.map((tabItem, idx) => {
@@ -292,7 +282,7 @@ export default function PharmacyPage() {
                       {tabItem.icon}
                     </span>
 
-                    <span>{t(tabItem.labelKey as any) || tabItem.defaultLabel}</span>
+                    <span>{t(tabItem.labelKey)}</span>
 
                     {/* Keycap Number Badge */}
                     <span
@@ -328,7 +318,7 @@ export default function PharmacyPage() {
                 type="button"
                 onClick={toggleFullscreen}
                 className="p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ml-auto"
-                title="Restore Standard View"
+                title={t('phRestoreView')}
               >
                 <Minimize2 className="w-3.5 h-3.5" />
               </button>
@@ -367,51 +357,51 @@ function PharmacyJourneyModal({ onClose }: { onClose: () => void }) {
   const steps = [
     {
       step: '01',
-      title: t('phHowStep1Title') || 'Define Drug Master & Active Ingredients',
-      desc: t('phHowStep1Desc') || 'Register medications with brand names, generic formulations, dosage strengths, therapeutic classes, barcodes, and reorder thresholds.',
-      tip: 'Generic name mapping makes suggesting active alternatives fast and effortless.',
+      title: t('phHowStep1Title'),
+      desc: t('phHowStep1Desc'),
+      tip: t('phHowStep1Tip'),
       icon: <Pill className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
     },
     {
       step: '02',
-      title: t('phHowStep2Title') || 'Procurement & Batch Expiry Intake',
-      desc: t('phHowStep2Desc') || 'Receive supplier purchase orders, record manufacturer Lot/Batch numbers, manufacturing & expiration dates, and unit cost prices.',
-      tip: 'FEFO (First-Expired, First-Out) logic automatically prioritizes earliest expiring stock.',
+      title: t('phHowStep2Title'),
+      desc: t('phHowStep2Desc'),
+      tip: t('phHowStep2Tip'),
       icon: <Truck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
     },
     {
       step: '03',
-      title: t('phHowStep3Title') || 'Dispensary POS & Prescription Checkout',
-      desc: t('phHowStep3Desc') || 'Scan drug barcodes at the counter, select specific batches, apply insurance co-pays or customer discounts, and print dosage instructions on receipts.',
-      tip: 'System prompts warnings for near-expiry batches and controlled substances.',
+      title: t('phHowStep3Title'),
+      desc: t('phHowStep3Desc'),
+      tip: t('phHowStep3Tip'),
       icon: <ShoppingCart className="w-4 h-4 text-amber-600 dark:text-amber-400" />
     },
     {
       step: '04',
-      title: t('phHowStep4Title') || 'Audits, Expiry Quarantine & Margin Analytics',
-      desc: t('phHowStep4Desc') || 'Track monthly product turnover, quarantine expired bottles, reconcile inventory variances, and evaluate net profit margins.',
-      tip: 'Automated 30/60/90-day expiry notifications safeguard against unsellable inventory.',
+      title: t('phHowStep4Title'),
+      desc: t('phHowStep4Desc'),
+      tip: t('phHowStep4Tip'),
       icon: <BarChart3 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
     }
   ]
 
   const safeguards = [
     {
-      title: 'FEFO Dispense Algorithm',
-      desc: 'Smart dispensing prompts cashiers to sell batches closest to expiration first, minimizing shrinkage.'
+      title: t('phGuideFefo'),
+      desc: t('phGuideFefoDesc')
     },
     {
-      title: 'Prescription & Co-Pay Records',
-      desc: 'Link repeat patient profiles with doctor prescriptions and track outstanding balances.'
+      title: t('phGuidePrescriptions'),
+      desc: t('phGuidePrescriptionsDesc')
     }
   ]
 
   const shortcuts = [
-    { key: 'Alt + 1..9', label: t('shortcutJumpTabs') || 'Switch module tab directly' },
-    { key: 'F1', label: t('shortcutHelpGuide') || 'Toggle this pharmacy operational guide' },
-    { key: 'F2', label: 'Focus barcode scanner / drug search bar' },
-    { key: 'Enter', label: 'Complete dispensary sale / print receipt' },
-    { key: 'Esc', label: t('shortcutCloseDialog') || 'Dismiss active popup / clear cart' }
+    { key: 'Alt + 1..9', label: t('shortcutJumpTabs') },
+    { key: 'F1', label: t('shortcutHelpGuide') },
+    { key: 'F2', label: t('phHotkeyFocusScanner') },
+    { key: 'Enter', label: t('phHotkeyCompleteSale') },
+    { key: 'Esc', label: t('shortcutCloseDialog') }
   ]
 
   return (
@@ -433,10 +423,10 @@ function PharmacyJourneyModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                {t('pharmacyHowItWorksTitle') || 'Pharmacy Dispensing & Inventory Lifecycle'}
+                {t('pharmacyHowItWorksTitle')}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {t('phSubtitle') || 'Step-by-step guidance for drug intake, FEFO batching, counter POS, and sales audits.'}
+                {t('phSubtitle')}
               </p>
             </div>
           </div>
@@ -506,7 +496,7 @@ function PharmacyJourneyModal({ onClose }: { onClose: () => void }) {
           {/* Keycap Shortcuts */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-3.5">
             <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 mb-2 flex items-center gap-1.5">
-              <Keyboard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Dispensary Hotkeys & Shortcuts
+              <Keyboard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> {t('phHotkeysTitle')}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {shortcuts.map((sc, i) => (
@@ -529,14 +519,14 @@ function PharmacyJourneyModal({ onClose }: { onClose: () => void }) {
         {/* Modal Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 flex items-center justify-between">
           <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            Press <kbd className="font-mono text-[10px] px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800">Alt + 1..9</kbd> to jump between tabs
+            {t('phHotkeyPress')} <kbd className="font-mono text-[10px] px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800">{t('phHotkeyAltNumbers')}</kbd> {t('phHotkeyJumpTabs')}
           </span>
           <button
             type="button"
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 active:scale-95 text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5"
           >
-            <span>{t('close') || 'Got It'}</span>
+            <span>{t('close')}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>

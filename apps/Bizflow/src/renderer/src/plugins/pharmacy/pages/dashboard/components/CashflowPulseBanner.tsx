@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { CashflowSnapshot } from '../types'
 import { money, int } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface CashflowPulseBannerProps {
   cashflow: CashflowSnapshot | null
@@ -19,14 +20,15 @@ export const CashflowPulseBanner: React.FC<CashflowPulseBannerProps> = ({
   cashflow,
   onNavigate,
 }) => {
+  const { t } = useLanguage()
   if (!cashflow) return null
 
   const pulseCards = [
     {
       key: 'cash',
-      label: 'Cash In Today',
+      label: t('phCashToday'),
       value: `$${money(cashflow.cashToday)}`,
-      sub: `${int(cashflow.txToday)} sales transactions`,
+      sub: t('phPrSalesTransactions', { count: int(cashflow.txToday) }),
       icon: ArrowDownCircle,
       cardClass: 'border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20',
       iconClass: 'text-emerald-600 dark:text-emerald-400',
@@ -34,9 +36,9 @@ export const CashflowPulseBanner: React.FC<CashflowPulseBannerProps> = ({
     },
     {
       key: 'recv',
-      label: 'Receivables Due',
+      label: t('phDashReceivablesDue'),
       value: `$${money(cashflow.receivables)}`,
-      sub: 'To collect from customers',
+      sub: t('phDbToCollect'),
       icon: Wallet,
       cardClass: 'border-amber-200/80 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/20',
       iconClass: 'text-amber-600 dark:text-amber-400',
@@ -44,9 +46,9 @@ export const CashflowPulseBanner: React.FC<CashflowPulseBannerProps> = ({
     },
     {
       key: 'pay',
-      label: 'Vendor Payables',
+      label: t('phDashVendorPayables'),
       value: `$${money(cashflow.payables)}`,
-      sub: `${int(cashflow.openOrders)} open purchase orders`,
+      sub: t('phDbOpenOrdersSub', { count: int(cashflow.openOrders) }),
       icon: ArrowUpCircle,
       cardClass: 'border-orange-200/80 dark:border-orange-900/60 bg-orange-50/50 dark:bg-orange-950/20',
       iconClass: 'text-orange-600 dark:text-orange-400',
@@ -54,9 +56,9 @@ export const CashflowPulseBanner: React.FC<CashflowPulseBannerProps> = ({
     },
     {
       key: 'stock',
-      label: 'Stock Alerts',
+      label: t('bakeryStockAlertsSection'),
       value: `${int(cashflow.outOfStock + cashflow.lowStock)}`,
-      sub: `${int(cashflow.outOfStock)} out · ${int(cashflow.lowStock)} low`,
+      sub: t('phDbOutLowSub', { out: int(cashflow.outOfStock), low: int(cashflow.lowStock) }),
       icon: PackageMinus,
       cardClass: 'border-rose-200/80 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20',
       iconClass: 'text-rose-600 dark:text-rose-400',
@@ -64,9 +66,9 @@ export const CashflowPulseBanner: React.FC<CashflowPulseBannerProps> = ({
     },
     {
       key: 'exp',
-      label: 'Expiry Watch',
+      label: t('phExpiryWatch'),
       value: `${int(cashflow.expiring + cashflow.expired)}`,
-      sub: `${int(cashflow.expired)} expired · ${int(cashflow.expiring)} ≤30d`,
+      sub: t('phDbExpirySub', { expired: int(cashflow.expired), expiring: int(cashflow.expiring) }),
       icon: AlertTriangle,
       cardClass: 'border-red-200/80 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20',
       iconClass: 'text-red-600 dark:text-red-400',

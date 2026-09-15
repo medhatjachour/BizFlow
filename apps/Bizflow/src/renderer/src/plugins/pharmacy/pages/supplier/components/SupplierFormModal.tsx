@@ -10,7 +10,7 @@ interface SupplierFormModalProps {
   onClose: () => void
   onSaved: () => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
@@ -32,7 +32,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
           <div className="flex items-center gap-2">
             <Truck size={17} className="text-emerald-500" />
             <h2 className="font-bold text-sm text-slate-900 dark:text-white">
-              {initial ? t('phEditSupplier') || 'Edit Supplier' : t('phAddSupplier') || 'Add Supplier'}
+              {initial ? t('phEditSupplier') : t('phAddSupplier')}
             </h2>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
@@ -43,13 +43,13 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
         <form onSubmit={submit} className="p-5 space-y-3 text-xs">
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Company / Vendor Name *
+              {t('phSuVendorNameRequired')}
             </label>
             <input
               value={form.name}
               onChange={setField('name')}
               required
-              placeholder="e.g. Novartis Pharma Distro"
+              placeholder={t('phSuNamePlaceholder')}
               className={inputCls}
             />
           </div>
@@ -57,7 +57,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Contact Phone
+                {t('phSuPhone')}
               </label>
               <input
                 value={form.phone}
@@ -68,7 +68,7 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
             </div>
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Email Address
+                {t('phEmailAddress')}
               </label>
               <input
                 type="email"
@@ -82,35 +82,35 @@ export const SupplierFormModal: React.FC<SupplierFormModalProps> = ({
 
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Physical Warehouse / Office Address
+              {t('phSuAddress')}
             </label>
             <input
               value={form.address}
               onChange={setField('address')}
-              placeholder="Industrial Zone, Block C"
+              placeholder={t('phSuAddressPlaceholder')}
               className={inputCls}
             />
           </div>
 
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Payment Terms & Procurement Notes
+              {t('phSuNotes')}
             </label>
             <textarea
               value={form.notes}
               onChange={setField('notes')}
               rows={2}
-              placeholder="Net 30 days, delivery schedules, rep contact..."
+              placeholder={t('phSuNotesPlaceholder')}
               className={inputCls}
             />
           </div>
 
           <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
+              {t('phCancel')}
             </Button>
             <Button type="submit" variant="primary" size="sm" className="flex-1" loading={busy}>
-              Save Vendor
+              {t('phSuSaveVendor')}
             </Button>
           </div>
         </form>

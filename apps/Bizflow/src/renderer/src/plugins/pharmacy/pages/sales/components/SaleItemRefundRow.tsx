@@ -2,6 +2,7 @@ import React from 'react'
 import { RotateCcw, X, Check } from 'lucide-react'
 import { SaleItem } from '../types'
 import { money } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface SaleItemRefundRowProps {
   item: SaleItem
@@ -26,6 +27,7 @@ export const SaleItemRefundRow: React.FC<SaleItemRefundRowProps> = ({
   onRefundQtyChange,
   onSubmitRefund,
 }) => {
+  const { t } = useLanguage()
   const refundable = item.quantity - (item.refundedQty ?? 0)
   const parsedQty = Math.max(0, parseFloat(refundQty) || 0)
   const isValid = parsedQty > 0 && parsedQty <= refundable + 0.0001
@@ -39,7 +41,7 @@ export const SaleItemRefundRow: React.FC<SaleItemRefundRowProps> = ({
             {item.quantity} × ${money(item.unitPrice)}
             {(item.refundedQty ?? 0) > 0 && (
               <span className="text-amber-500 font-medium ml-1.5">
-                ({item.refundedQty} refunded)
+                {t('phRefundedQtyInParens', { count: item.refundedQty })}
               </span>
             )}
           </div>
@@ -51,7 +53,7 @@ export const SaleItemRefundRow: React.FC<SaleItemRefundRowProps> = ({
             <button
               onClick={onStartEditing}
               disabled={busy}
-              title="Refund Item"
+              title={t('phSaRefund')}
               className="p-1 rounded-md text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors"
             >
               <RotateCcw size={13} />
@@ -62,7 +64,7 @@ export const SaleItemRefundRow: React.FC<SaleItemRefundRowProps> = ({
 
       {isEditing && (
         <div className="mt-2 flex items-center gap-1.5 p-2 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-900/50 rounded-xl">
-          <span className="text-[11px] text-slate-500 shrink-0">Refund Qty:</span>
+          <span className="text-[11px] text-slate-500 shrink-0">{t('phRefundQty')}</span>
           <input
             type="number"
             min="1"
@@ -79,7 +81,7 @@ export const SaleItemRefundRow: React.FC<SaleItemRefundRowProps> = ({
             onClick={() => onRefundQtyChange(String(refundable))}
             className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded hover:bg-amber-100"
           >
-            Max
+            {t('phInvMaxShort')}
           </button>
           <div className="flex-1" />
           <button
@@ -87,7 +89,7 @@ export const SaleItemRefundRow: React.FC<SaleItemRefundRowProps> = ({
             disabled={busy || !isValid}
             className="px-2.5 py-1 text-[11px] font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-lg flex items-center gap-1 disabled:opacity-40"
           >
-            <Check size={12} /> Confirm
+            <Check size={12} /> {t('phConfirm')}
           </button>
           <button onClick={onCancelEditing} className="text-slate-400 hover:text-slate-600 p-1">
             <X size={14} />

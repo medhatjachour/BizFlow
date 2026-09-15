@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { DashboardOverview, DashboardPeriod } from '../types'
 import { money, int } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface DashboardKpiGridProps {
   overview: DashboardOverview
@@ -21,6 +22,7 @@ export const DashboardKpiGrid: React.FC<DashboardKpiGridProps> = ({
   period,
   showProfit,
 }) => {
+  const { t } = useLanguage()
   const s = overview.sales ?? {
     revenue: 0,
     cogs: 0,
@@ -32,39 +34,39 @@ export const DashboardKpiGrid: React.FC<DashboardKpiGridProps> = ({
 
   const kpis = [
     {
-      label: "Today's Revenue",
+      label: t('bakeryTodayRevenue'),
       value: `$${money(overview.today?.revenue ?? 0)}`,
-      sub: `${int(overview.today?.saleCount?? 0)} sales today`,
+      sub: t('phDbSalesTodaySub', { count: int(overview.today?.saleCount ?? 0) }),
       icon: DollarSign,
       color: 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      label: `Revenue (${period})`,
+      label: t('phDashRevenuePeriod', { period }),
       value: `$${money(s.revenue)}`,
-      sub: showProfit ? `Profit: $${money(s.grossProfit)}` : `${int(s.saleCount)} orders`,
+      sub: showProfit ? t('phDbProfitSub', { amount: `$${money(s.grossProfit)}` }) : t('phDbOrdersSub', { count: int(s.saleCount) }),
       icon: TrendingUp,
       color: 'text-blue-600 dark:text-blue-400',
     },
     {
-      label: `Sales Count (${period})`,
+      label: t('phDashSalesCountPeriod', { period }),
       value: int(s.saleCount),
-      sub: `${int(s.unitsSold)} units dispensed`,
+      sub: t('phDbUnitsDispensedSub', { count: int(s.unitsSold) }),
       icon: ShoppingBag,
       color: 'text-violet-600 dark:text-violet-400',
     },
     {
-      label: 'Inventory Asset Value',
+      label: t('phDashInventoryAssetValue'),
       value: `$${money(overview.stockValue)}`,
-      sub: `${int(overview.activeProducts)} catalog SKUs`,
+      sub: t('phDbCatalogSkusSub', { count: int(overview.activeProducts) }),
       icon: Package,
       color: 'text-teal-600 dark:text-teal-400',
     },
     ...(showProfit
       ? [
           {
-            label: 'Operating Margin',
+            label: t('phDashOperatingMargin'),
             value: `${(s.margin || 0).toFixed(1)}%`,
-            sub: `COGS: $${money(s.cogs)}`,
+            sub: t('phDbCogsSub', { amount: `$${money(s.cogs)}` }),
             icon: Activity,
             color:
               (s.margin || 0) >= 25
@@ -74,9 +76,9 @@ export const DashboardKpiGrid: React.FC<DashboardKpiGridProps> = ({
         ]
       : []),
     {
-      label: 'Total Receivables',
+      label: t('vetTotalReceivables'),
       value: `$${money(overview.outstanding)}`,
-      sub: 'Unpaid customer balances',
+      sub: t('phDbUnpaidBalances'),
       icon: Wallet,
       color: overview.outstanding > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400',
     },

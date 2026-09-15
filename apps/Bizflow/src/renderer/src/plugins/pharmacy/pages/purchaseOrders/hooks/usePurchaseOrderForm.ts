@@ -6,7 +6,7 @@ import { createBlankPOLine } from '../utils'
 export function usePurchaseOrderForm(
   order: PurchaseOrderItem | null,
   toast: any,
-  t: (k: string) => string,
+  t: (k: string, params?: Record<string, any>) => string,
   onSaved: () => void
 ) {
   const [busy, setBusy] = useState(false)
@@ -83,7 +83,7 @@ export function usePurchaseOrderForm(
       }))
 
     if (validItems.length === 0) {
-      toast.error(t('phAddOneItem') || 'Please add at least one line item')
+      toast.error(t('phAddOneItem'))
       return
     }
 
@@ -98,15 +98,15 @@ export function usePurchaseOrderForm(
 
       if (order?.id) {
         await pharma()?.purchaseOrders.update(order.id, payload)
-        toast.success(t('phOrderUpdated') || 'Purchase order updated')
+        toast.success(t('phOrderUpdated'))
       } else {
         await pharma()?.purchaseOrders.create(payload)
-        toast.success(t('phOrderCreated') || 'Purchase order created')
+        toast.success(t('phOrderCreated'))
       }
 
       onSaved()
     } catch (err: any) {
-      toast.error(err?.message || 'Save failed')
+      toast.error(err?.message || t('cfSaveFailed'))
     } finally {
       setBusy(false)
     }

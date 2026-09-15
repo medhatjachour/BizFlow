@@ -2,12 +2,14 @@ import React from 'react'
 import { DollarSign, AlertCircle, RotateCcw, ReceiptIcon } from 'lucide-react'
 import { SalesMetrics } from '../types'
 import { money } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface SalesMetricsBarProps {
   metrics: SalesMetrics
 }
 
 export const SalesMetricsBar: React.FC<SalesMetricsBarProps> = ({ metrics }) => {
+  const { t } = useLanguage()
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl shadow-2xs flex items-center gap-3">
@@ -15,7 +17,7 @@ export const SalesMetricsBar: React.FC<SalesMetricsBarProps> = ({ metrics }) => 
           <DollarSign size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Gross Sales</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('cfGrossSales')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">${money(metrics.totalRevenue)}</p>
         </div>
       </div>
@@ -25,7 +27,7 @@ export const SalesMetricsBar: React.FC<SalesMetricsBarProps> = ({ metrics }) => 
           <ReceiptIcon size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Transactions</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('inventoryUiTransactions')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{metrics.totalSalesCount}</p>
         </div>
       </div>
@@ -35,7 +37,7 @@ export const SalesMetricsBar: React.FC<SalesMetricsBarProps> = ({ metrics }) => 
           <AlertCircle size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Total Outstanding</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phSaTotalOutstanding')}</p>
           <p className="text-base font-bold text-amber-600 dark:text-amber-400">${money(metrics.totalOutstanding)}</p>
         </div>
       </div>
@@ -45,7 +47,7 @@ export const SalesMetricsBar: React.FC<SalesMetricsBarProps> = ({ metrics }) => 
           <RotateCcw size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Total Refunded</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phSaTotalRefunded')}</p>
           <p className="text-base font-bold text-red-600 dark:text-red-400">${money(metrics.totalRefunded)}</p>
         </div>
       </div>

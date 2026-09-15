@@ -3,8 +3,10 @@ import { pharma } from '../../components/_shared'
 import { PharmacySupplierItem } from '../types'
 import { SUPPLIERS_PAGE_SIZE } from '../constants'
 import { computeSuppliersMetrics } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePharmacySuppliers(toast: any) {
+  const { t } = useLanguage()
   const [rows, setRows] = useState<PharmacySupplierItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -17,7 +19,7 @@ export function usePharmacySuppliers(toast: any) {
       const data = await pharma()?.suppliers.getAll({ search: search.trim() })
       setRows(data ?? [])
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to load supplier directory')
+      toast.error(err?.message || t('phSuLoadFailed'))
     } finally {
       setLoading(false)
     }

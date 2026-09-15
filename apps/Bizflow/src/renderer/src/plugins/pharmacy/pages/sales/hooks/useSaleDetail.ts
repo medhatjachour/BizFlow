@@ -6,7 +6,7 @@ import { computeOutstanding } from '../utils'
 export function useSaleDetail(
   initialSale: PharmacySale,
   toast: any,
-  t: (k: string) => string,
+  t: (k: string, params?: Record<string, any>) => string,
   onChanged: () => void
 ) {
   const [sale, setSale] = useState<PharmacySale>(initialSale)
@@ -32,14 +32,14 @@ export function useSaleDetail(
   const outstanding = computeOutstanding(sale)
 
   const refundWholeSale = async () => {
-    if (!confirm(t('phConfirmRefund') || 'Refund this whole sale and restock all items?')) return
+    if (!confirm(t('phConfirmRefund'))) return
     setBusy(true)
     try {
       await pharma()?.sales.refund(sale.id)
-      toast.success(t('phRefunded') || 'Sale refunded successfully')
+      toast.success(t('phRefunded'))
       onChanged()
     } catch (err: any) {
-      toast.error(err?.message || 'Refund failed')
+      toast.error(err?.message || t('phSaRefundFailed'))
     } finally {
       setBusy(false)
     }
@@ -49,13 +49,13 @@ export function useSaleDetail(
     setBusy(true)
     try {
       await pharma()?.sales.refundItem(item.id, { quantity: qty })
-      toast.success(t('phItemRefunded') || 'Item refunded & restocked')
+      toast.success(t('phItemRefunded'))
       await refreshSale()
       setRefundItemId(null)
       setRefundQty('')
       onChanged()
     } catch (err: any) {
-      toast.error(err?.message || 'Item refund failed')
+      toast.error(err?.message || t('phSaItemRefundFailed'))
     } finally {
       setBusy(false)
     }
@@ -68,13 +68,13 @@ export function useSaleDetail(
         sale.id,
         full ? { payFull: true } : { amount: parseFloat(payAmount) }
       )
-      toast.success(t('phPaymentRecorded') || 'Payment recorded')
+      toast.success(t('phPaymentRecorded'))
       await refreshSale()
       setIsPaying(false)
       setPayAmount('')
       onChanged()
     } catch (err: any) {
-      toast.error(err?.message || 'Payment update failed')
+      toast.error(err?.message || t('phSaPaymentUpdateFailed'))
     } finally {
       setBusy(false)
     }

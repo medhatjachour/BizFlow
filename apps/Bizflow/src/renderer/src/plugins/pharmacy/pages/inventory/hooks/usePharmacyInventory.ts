@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { pharma } from '../../components/_shared'
 import { ExpiringBatchItem, InventoryStats, ExpiryWindowDays } from '../types'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePharmacyInventory(toast: any) {
+  const { t } = useLanguage()
   const [days, setDays] = useState<ExpiryWindowDays>(30)
   const [search, setSearch] = useState('')
   const [batches, setBatches] = useState<ExpiringBatchItem[]>([])
@@ -19,7 +21,7 @@ export function usePharmacyInventory(toast: any) {
       setBatches(expiringList ?? [])
       setSummary(stats ?? null)
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to fetch inventory data')
+      toast.error(err?.message || t('phInvLoadFailed'))
     } finally {
       setLoading(false)
     }

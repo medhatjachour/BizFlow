@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { User, UserPlus, X } from 'lucide-react'
 import { PosCustomer } from '../types'
 import { pharma, inputCls } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface PosCustomerPickerProps {
   customer: PosCustomer | null
@@ -14,6 +15,7 @@ export const PosCustomerPicker: React.FC<PosCustomerPickerProps> = ({
   onSelectCustomer,
   onApplyDiscount,
 }) => {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PosCustomer[]>([])
@@ -34,7 +36,7 @@ export const PosCustomerPicker: React.FC<PosCustomerPickerProps> = ({
           <span className="font-semibold text-slate-800 dark:text-slate-200">{customer.name}</span>
           {(customer.defaultDiscount ?? 0) > 0 && (
             <span className="bg-emerald-200/60 dark:bg-emerald-800/40 text-emerald-800 dark:text-emerald-200 font-bold px-1.5 py-0.2 rounded text-[10px]">
-              {customer.defaultDiscount}% OFF
+              {t('phDiscountPercentOff', { percent: customer.defaultDiscount })}
             </span>
           )}
         </div>
@@ -59,7 +61,7 @@ export const PosCustomerPicker: React.FC<PosCustomerPickerProps> = ({
             setQuery(e.target.value)
             setOpen(true)
           }}
-          placeholder="Walk-in Customer (click to link name/loyalty)"
+          placeholder={t('phPosWalkIn')}
           className={`${inputCls} pl-8 py-1 text-xs`}
         />
       </div>

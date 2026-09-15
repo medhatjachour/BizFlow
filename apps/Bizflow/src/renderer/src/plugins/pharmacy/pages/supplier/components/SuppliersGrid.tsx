@@ -7,7 +7,7 @@ interface SuppliersGridProps {
   loading: boolean
   onEdit: (s: PharmacySupplierItem) => void
   onDelete: (s: PharmacySupplierItem) => void
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const SuppliersGrid: React.FC<SuppliersGridProps> = ({
@@ -21,7 +21,7 @@ export const SuppliersGrid: React.FC<SuppliersGridProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <Loader2 className="h-7 w-7 animate-spin text-emerald-500 mb-2" />
-        <p className="text-xs">Loading supplier records...</p>
+        <p className="text-xs">{t('phSuLoading')}</p>
       </div>
     )
   }
@@ -30,8 +30,8 @@ export const SuppliersGrid: React.FC<SuppliersGridProps> = ({
     return (
       <div className="flex flex-col items-center justify-center py-20 text-slate-400">
         <Truck size={36} className="mb-2 opacity-30" />
-        <p className="text-sm font-medium">{t('phNoSuppliers') || 'No suppliers registered yet'}</p>
-        <p className="text-xs mt-0.5">Click "Add Supplier" above to record medicine distributors & pharmaceutical vendors.</p>
+        <p className="text-sm font-medium">{t('phNoSuppliers')}</p>
+        <p className="text-xs mt-0.5">{t('phSuEmptyHint')}</p>
       </div>
     )
   }
@@ -55,7 +55,7 @@ export const SuppliersGrid: React.FC<SuppliersGridProps> = ({
                     {s.name}
                   </p>
                   <p className="text-[10px] text-slate-400 mt-0.2">
-                    {s.orderCount || 0} orders · {s.batchCount || 0} batches
+                    {t('phSupplierOrders', { count: s.orderCount || 0 })} · {t('phSupplierBatches', { count: s.batchCount || 0 })}
                   </p>
                 </div>
               </div>
@@ -65,14 +65,14 @@ export const SuppliersGrid: React.FC<SuppliersGridProps> = ({
                 <button
                   onClick={() => onEdit(s)}
                   className="p-1 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800"
-                  title="Edit supplier"
+                  title={t('phSuEdit')}
                 >
                   <Pencil size={13} />
                 </button>
                 <button
                   onClick={() => onDelete(s)}
                   className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-                  title="Delete supplier"
+                  title={t('phSuDelete')}
                 >
                   <Trash2 size={13} />
                 </button>
@@ -84,12 +84,12 @@ export const SuppliersGrid: React.FC<SuppliersGridProps> = ({
               <div className="flex items-center justify-center gap-1 text-slate-700 dark:text-slate-300 font-bold">
                 <Layers size={11} className="text-slate-400" />
                 <span>{s.orderCount || 0}</span>
-                <span className="text-[9px] font-normal text-slate-400">POs</span>
+                <span className="text-[9px] font-normal text-slate-400">{t('pos')}</span>
               </div>
               <div className="flex items-center justify-center gap-1 text-slate-700 dark:text-slate-300 font-bold">
                 <Boxes size={11} className="text-emerald-500" />
                 <span>{s.batchCount || 0}</span>
-                <span className="text-[9px] font-normal text-slate-400">Batches</span>
+                <span className="text-[9px] font-normal text-slate-400">{t('bakeryBatchesCount')}</span>
               </div>
             </div>
 

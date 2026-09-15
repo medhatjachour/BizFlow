@@ -10,7 +10,7 @@ interface ReceiveScanModalProps {
   onClose: () => void
   onReceived: () => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const ReceiveScanModal: React.FC<ReceiveScanModalProps> = ({
@@ -48,10 +48,10 @@ export const ReceiveScanModal: React.FC<ReceiveScanModalProps> = ({
             <ScanLine size={17} className="text-emerald-500" />
             <div>
               <h2 className="font-bold text-sm text-slate-900 dark:text-white">
-                Receive & Verify Shipment
+                {t('phRoReceiveVerify')}
               </h2>
               <p className="text-[11px] text-slate-400">
-                PO #{order.orderNumber} · {linesVerifiedCount}/{items.length} lines verified
+                {t('phPoNumberLabel', { number: order.orderNumber })} · {t('phPoLinesVerified', { verified: linesVerifiedCount, total: items.length })}
               </p>
             </div>
           </div>
@@ -70,12 +70,12 @@ export const ReceiveScanModal: React.FC<ReceiveScanModalProps> = ({
               onChange={e => setBarcodeQuery(e.target.value)}
               onKeyDown={handleScanBarcode}
               autoFocus
-              placeholder="Scan medicine barcode (Enter) to verify..."
+              placeholder={t('phPoScanPlaceholder')}
               className={`${inputCls} pl-9 text-xs font-semibold`}
             />
           </div>
           <p className="text-[10px] text-slate-400 mt-1">
-            Scan physical barcodes on boxes. Quantities will increment automatically.
+            {t('phRoScanHelp')}
           </p>
         </div>
 
@@ -84,10 +84,10 @@ export const ReceiveScanModal: React.FC<ReceiveScanModalProps> = ({
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
               <Loader2 className="h-6 w-6 animate-spin text-emerald-500 mb-1" />
-              <p className="text-xs">Loading order lines...</p>
+              <p className="text-xs">{t('phPoLoadingLines')}</p>
             </div>
           ) : items.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center py-10">This order contains no items.</p>
+            <p className="text-xs text-slate-400 text-center py-10">{t('phPoNoItems')}</p>
           ) : (
             items.map(it => {
               const ord = orderedQtyFor(it)
@@ -117,8 +117,8 @@ export const ReceiveScanModal: React.FC<ReceiveScanModalProps> = ({
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-slate-800 dark:text-slate-100 truncate">{it.productName}</p>
                     <p className="text-[10px] text-slate-400">
-                      Scanned: <strong className="text-slate-700 dark:text-slate-200">{got}</strong> / {ord} ordered
-                      {isOver && <span className="text-amber-500 font-bold ml-1">(Over received)</span>}
+                      {t('phRoScannedPrefix')} <strong className="text-slate-700 dark:text-slate-200">{got}</strong> / {t('phRoOrderedSuffix', { count: ord })}
+                      {isOver && <span className="text-amber-500 font-bold ml-1">{t('phPoOverReceived')}</span>}
                     </p>
                   </div>
 
@@ -149,13 +149,13 @@ export const ReceiveScanModal: React.FC<ReceiveScanModalProps> = ({
           {!isFullyVerified && items.length > 0 && (
             <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400">
               <AlertTriangle size={13} className="shrink-0" />
-              <span>Some items remain unverified. You can still accept full shipment into stock.</span>
+              <span>{t('phPoUnverifiedWarning')}</span>
             </div>
           )}
 
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
+              {t('phCancel')}
             </Button>
             <Button
               variant="primary"
@@ -166,7 +166,7 @@ export const ReceiveScanModal: React.FC<ReceiveScanModalProps> = ({
               disabled={loading}
               onClick={commitReceiveIntoStock}
             >
-              Receive into Inventory
+              {t('phRoReceiveInto')}
             </Button>
           </div>
         </div>

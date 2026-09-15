@@ -25,7 +25,7 @@ export const InventoryKpiGrid: React.FC<InventoryKpiGridProps> = ({ inv }) => {
       id: 'assetCost',
       label: t('phAnInventoryAssetCost'),
       value: `$${money(inv.stockValue)}`,
-      sub: 'Purchase cost basis',
+      sub: t('phAnCostBasisSub'),
       icon: Boxes,
       color: 'text-emerald-600 dark:text-emerald-400',
     },

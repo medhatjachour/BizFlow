@@ -5,6 +5,7 @@
 import { Search, X, SlidersHorizontal, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useEffect, useId, useRef } from 'react'
 import type { ComponentType, ButtonHTMLAttributes, ReactNode } from 'react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export const inputCls =
   'w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)]'
@@ -70,6 +71,7 @@ export function Modal({
   title: ReactNode; subtitle?: ReactNode; icon?: ComponentType<{ size?: number | string; className?: string }>
   onClose: () => void; children: ReactNode; footer?: ReactNode; size?: 'sm' | 'md' | 'lg'
 }) {
+  const { t } = useLanguage()
   const w = size === 'sm' ? 'max-w-sm' : size === 'lg' ? 'max-w-2xl' : 'max-w-lg'
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
@@ -112,7 +114,7 @@ export function Modal({
               {subtitle && <p className="text-xs text-slate-400 truncate">{subtitle}</p>}
             </div>
           </div>
-          <IconButton icon={X} size={18} onClick={onClose} aria-label="Close" />
+          <IconButton icon={X} size={18} onClick={onClose} aria-label={t('phCloseDialog')} />
         </div>
         <div className="overflow-y-auto flex-1">{children}</div>
         {footer && <div className="flex gap-2 px-6 py-4 border-t border-slate-100 dark:border-slate-800 shrink-0">{footer}</div>}
@@ -188,12 +190,13 @@ export function SearchBox({ value, onChange, placeholder, autoFocus, onKeyDown }
   )
 }
 
-export interface SegOption { value: string; label: string; count?: number; tone?: 'emerald' | 'amber' | 'red' | 'slate' }
+export interface SegOption { value: string; labelKey: string; count?: number; tone?: 'emerald' | 'amber' | 'red' | 'slate' }
 
 /** Pill-style segmented control replacing a <select> for short option sets. */
 export function Segmented({ options, value, onChange }: {
   options: SegOption[]; value: string; onChange: (v: string) => void
 }) {
+  const { t } = useLanguage()
   return (
     <div className="inline-flex items-center gap-0.5 bg-slate-100 dark:bg-slate-900/50 rounded-xl p-1">
       {options.map(o => {
@@ -203,7 +206,7 @@ export function Segmented({ options, value, onChange }: {
             className={`px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-colors whitespace-nowrap ${
               active ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
             }`}>
-            {o.label}
+            {t(o.labelKey)}
             {o.count != null && o.count > 0 && (
               <span className={`ml-1.5 inline-flex items-center justify-center text-[10px] font-bold rounded-full px-1.5 ${active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'}`}>{o.count}</span>
             )}

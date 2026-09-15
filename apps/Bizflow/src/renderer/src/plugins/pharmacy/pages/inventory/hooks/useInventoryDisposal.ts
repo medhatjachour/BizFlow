@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { pharma } from '../../components/_shared'
 import { ExpiringBatchItem, DisposalReason } from '../types'
 
-export function useInventoryDisposal(toast: any, t: (k: string) => string, onSuccess: () => void) {
+export function useInventoryDisposal(toast: any, t: (k: string, params?: Record<string, any>) => string, onSuccess: () => void) {
   const [targetBatch, setTargetBatch] = useState<ExpiringBatchItem | null>(null)
   const [reason, setReason] = useState<DisposalReason>('Expired')
   const [customNotes, setCustomNotes] = useState('')
@@ -26,7 +26,7 @@ export function useInventoryDisposal(toast: any, t: (k: string) => string, onSuc
     if (!targetBatch) return
     const qty = parseFloat(disposeQty)
     if (!qty || qty <= 0 || qty > targetBatch.quantity) {
-      toast.error('Please enter a valid disposal quantity')
+      toast.error(t('phInvInvalidQty'))
       return
     }
 
@@ -37,11 +37,11 @@ export function useInventoryDisposal(toast: any, t: (k: string) => string, onSuc
         quantity: qty,
         reason: fullReason,
       })
-      toast.success(t('phBatchDisposed') || 'Batch write-off & disposal registered')
+      toast.success(t('phBatchDisposed'))
       closeDisposal()
       onSuccess()
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to record disposal')
+      toast.error(err?.message || t('phInvDisposalFailed'))
     } finally {
       setBusy(false)
     }

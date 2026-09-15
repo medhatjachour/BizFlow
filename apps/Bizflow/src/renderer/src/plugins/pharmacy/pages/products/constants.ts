@@ -12,9 +12,9 @@ export const DEFAULT_SUBUNITS = [
 ]
 
 export const STOCK_FILTER_OPTIONS: SegOption[] = [
-  { value: 'all', label: 'All Stock' },
-  { value: 'low', label: 'Low Stock', tone: 'amber' },
-  { value: 'out', label: 'Out of Stock', tone: 'red' },
-  { value: 'expiring', label: 'Expiring Soon', tone: 'amber' },
-  { value: 'expired', label: 'Expired', tone: 'red' },
+  { value: 'all', labelKey: 'allStock' },
+  { value: 'low', labelKey: 'inventoryUiLowStock', tone: 'amber' },
+  { value: 'out', labelKey: 'inventoryUiOutOfStock', tone: 'red' },
+  { value: 'expiring', labelKey: 'bakeryExpiringSoon', tone: 'amber' },
+  { value: 'expired', labelKey: 'salesUiExpired', tone: 'red' },
 ]

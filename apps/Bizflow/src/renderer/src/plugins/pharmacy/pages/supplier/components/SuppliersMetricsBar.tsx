@@ -2,12 +2,14 @@ import React from 'react'
 import { Truck, Boxes, PhoneCall, Layers } from 'lucide-react'
 import { SuppliersMetrics } from '../types'
 import { int } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface SuppliersMetricsBarProps {
   metrics: SuppliersMetrics
 }
 
 export const SuppliersMetricsBar: React.FC<SuppliersMetricsBarProps> = ({ metrics }) => {
+  const { t } = useLanguage()
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl shadow-2xs flex items-center gap-3">
@@ -15,7 +17,7 @@ export const SuppliersMetricsBar: React.FC<SuppliersMetricsBarProps> = ({ metric
           <Truck size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Total Vendors</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phSuTotalVendors')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{metrics.totalSuppliers}</p>
         </div>
       </div>
@@ -25,7 +27,7 @@ export const SuppliersMetricsBar: React.FC<SuppliersMetricsBarProps> = ({ metric
           <Layers size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Purchase Orders</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('purchaseOrders')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{int(metrics.activeOrdersCount)}</p>
         </div>
       </div>
@@ -35,7 +37,7 @@ export const SuppliersMetricsBar: React.FC<SuppliersMetricsBarProps> = ({ metric
           <Boxes size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Delivered Batches</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phSuDeliveredBatches')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{int(metrics.totalBatchesSourced)}</p>
         </div>
       </div>
@@ -45,7 +47,7 @@ export const SuppliersMetricsBar: React.FC<SuppliersMetricsBarProps> = ({ metric
           <PhoneCall size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Active Contacts</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phSuActiveContacts')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{metrics.directContactCount}</p>
         </div>
       </div>

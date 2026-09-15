@@ -3,14 +3,14 @@ import { SegOption } from '../components/ui'
 export const SALES_PAGE_SIZE = 20
 
 export const PAYMENT_STATUS_OPTIONS: SegOption[] = [
-  { value: 'all', label: 'All Payments' },
-  { value: 'paid', label: 'Paid', tone: 'emerald' },
-  { value: 'partial', label: 'Partial', tone: 'amber' },
-  { value: 'unpaid', label: 'Unpaid', tone: 'red' },
+  { value: 'all', labelKey: 'phAllPayments' },
+  { value: 'paid', labelKey: 'salesUiPaid', tone: 'emerald' },
+  { value: 'partial', labelKey: 'partialPayment', tone: 'amber' },
+  { value: 'unpaid', labelKey: 'unpaidPayment', tone: 'red' },
 ]
 
 export const SALE_STATUS_OPTIONS: SegOption[] = [
-  { value: 'all', label: 'All Status' },
-  { value: 'completed', label: 'Completed', tone: 'emerald' },
-  { value: 'refunded', label: 'Refunded', tone: 'slate' },
+  { value: 'all', labelKey: 'allStatus' },
+  { value: 'completed', labelKey: 'bakeryStatusCompleted', tone: 'emerald' },
+  { value: 'refunded', labelKey: 'phSaRefunded', tone: 'slate' },
 ]

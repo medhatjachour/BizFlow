@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { pharma } from '../../components/_shared'
 import { DashboardPeriod, DashboardOverview, CashflowSnapshot } from '../types'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePharmacyDashboard(toast: any) {
+  const { t } = useLanguage()
   const [period, setPeriod] = useState<DashboardPeriod>('month')
   const [overview, setOverview] = useState<DashboardOverview | null>(null)
   const [cashflow, setCashflow] = useState<CashflowSnapshot | null>(null)
@@ -18,7 +20,7 @@ export function usePharmacyDashboard(toast: any) {
       setOverview(ovRes ?? null)
       setCashflow(cfRes ?? null)
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to load dashboard metrics')
+      toast.error(err?.message || t('phDbLoadFailed'))
     } finally {
       setLoading(false)
     }

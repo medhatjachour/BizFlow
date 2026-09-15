@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { pharma } from '../../components/_shared'
 import { PurchaseOrderItem, PurchaseOrderStatus } from '../types'
 import { computePOMetrics } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePurchaseOrders(toast: any) {
+  const { t } = useLanguage()
   const [orders, setOrders] = useState<PurchaseOrderItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -18,7 +20,7 @@ export function usePurchaseOrders(toast: any) {
       })
       setOrders(response?.data ?? [])
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to load purchase orders')
+      toast.error(err?.message || t('phPoLoadFailed'))
     } finally {
       setLoading(false)
     }

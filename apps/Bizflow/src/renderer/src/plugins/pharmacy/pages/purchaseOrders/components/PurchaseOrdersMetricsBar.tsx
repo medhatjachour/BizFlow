@@ -2,12 +2,14 @@ import React from 'react'
 import { ClipboardList, Clock, Truck, CheckCircle2 } from 'lucide-react'
 import { PurchaseOrdersMetrics } from '../types'
 import { money } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface PurchaseOrdersMetricsBarProps {
   metrics: PurchaseOrdersMetrics
 }
 
 export const PurchaseOrdersMetricsBar: React.FC<PurchaseOrdersMetricsBarProps> = ({ metrics }) => {
+  const { t } = useLanguage()
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-2xl shadow-2xs flex items-center gap-3">
@@ -15,7 +17,7 @@ export const PurchaseOrdersMetricsBar: React.FC<PurchaseOrdersMetricsBarProps> =
           <ClipboardList size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Total Purchase Orders</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phPoTotal')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{metrics.totalOrders}</p>
         </div>
       </div>
@@ -25,7 +27,7 @@ export const PurchaseOrdersMetricsBar: React.FC<PurchaseOrdersMetricsBarProps> =
           <Clock size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Draft POs</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phPoDraftCount')}</p>
           <p className="text-base font-bold text-slate-800 dark:text-slate-100">{metrics.draftsCount}</p>
         </div>
       </div>
@@ -35,7 +37,7 @@ export const PurchaseOrdersMetricsBar: React.FC<PurchaseOrdersMetricsBarProps> =
           <Truck size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Pending Inbound Value</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phPoPendingValue')}</p>
           <p className="text-base font-bold text-amber-600 dark:text-amber-400">${money(metrics.pendingOrderedValue)}</p>
         </div>
       </div>
@@ -45,7 +47,7 @@ export const PurchaseOrdersMetricsBar: React.FC<PurchaseOrdersMetricsBarProps> =
           <CheckCircle2 size={18} />
         </div>
         <div>
-          <p className="text-[11px] font-medium text-slate-400">Received Stock Value</p>
+          <p className="text-[11px] font-medium text-slate-400">{t('phPoReceivedValue')}</p>
           <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">${money(metrics.receivedValue)}</p>
         </div>
       </div>

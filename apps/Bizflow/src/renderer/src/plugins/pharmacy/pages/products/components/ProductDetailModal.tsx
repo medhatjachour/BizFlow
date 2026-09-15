@@ -4,14 +4,17 @@ import { PharmacyProductItem, ProductDetailData } from '../types'
 import { pharma, money, expiryTone } from '../../components/_shared'
 import { Modal } from '../../components/ui'
 import { computeExpiryDays } from '../utils'
+import { unitLabelKey } from '../../components/units'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface ProductDetailModalProps {
   product: PharmacyProductItem
   onClose: () => void
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose}) => {
+  const { t } = useLanguage()
   const [data, setData] = useState<ProductDetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'timeline' | 'batches'>('timeline')
@@ -35,26 +38,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
   const stats = data?.stats
   const kpiItems = stats
     ? [
-        { label: 'Current Stock', value: `${stats.currentStock} ${data?.product?.unit || product.unit}`, color: 'text-slate-800 dark:text-slate-100' },
-        { label: 'Asset Value', value: `$${money(stats.stockValue)}`, color: 'text-emerald-600 dark:text-emerald-400' },
-        { label: 'Sold Units', value: `${stats.soldUnits}`, sub: `${stats.saleCount} sales transactions`, color: 'text-violet-600 dark:text-violet-400' },
-        { label: 'Total Revenue', value: `$${money(stats.revenue)}`, color: 'text-blue-600 dark:text-blue-400' },
-        { label: 'Net Profit', value: `$${money(stats.profit)}`, sub: `${stats.margin}% margin`, color: stats.profit >= 0 ? 'text-emerald-600' : 'text-red-500' },
-        { label: 'Active Batches', value: `${stats.activeBatches}/${stats.batchCount}`, color: 'text-slate-600 dark:text-slate-300' },
+        { label: t('currentStock'), value: `${stats.currentStock} ${t(unitLabelKey(data?.product?.unit || product.unit))}`, color: 'text-slate-800 dark:text-slate-100' },
+        { label: t('phPrAssetValue'), value: `$${money(stats.stockValue)}`, color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: t('phPrSoldUnits'), value: `${stats.soldUnits}`, sub: `$${t('phPrSalesTransactions', { count: stats.saleCount })}`, color: 'text-violet-600 dark:text-violet-400' },
+        { label: t('bakerySaleTotalRevenue'), value: `$${money(stats.revenue)}`, color: 'text-blue-600 dark:text-blue-400' },
+        { label: t('bakeryFinanceNetProfit'), value: `$${money(stats.profit)}`, sub: `$${t('phPrMarginSuffix', { margin: stats.margin })}`, color: stats.profit >= 0 ? 'text-emerald-600' : 'text-red-500' },
+        { label: t('phPrActiveBatches'), value: `${stats.activeBatches}/${stats.batchCount}`, color: 'text-slate-600 dark:text-slate-300' },
       ]
     : []
 
   const EVENT_BADGES: Record<string, { color: string; sign: string; label: string }> = {
-    received: { color: 'text-emerald-600 dark:text-emerald-400', sign: '+', label: 'Received' },
-    sold: { color: 'text-blue-600 dark:text-blue-400', sign: '−', label: 'Sold' },
-    disposed: { color: 'text-red-500', sign: '−', label: 'Disposed' },
-    edited: { color: 'text-amber-600 dark:text-amber-400', sign: '', label: 'Edited' },
+    received: { color: 'text-emerald-600 dark:text-emerald-400', sign: '+', label: t('received') },
+    sold: { color: 'text-blue-600 dark:text-blue-400', sign: '−', label: t('bakeryEODSold') },
+    disposed: { color: 'text-red-500', sign: '−', label: t('phDisposed') },
+    edited: { color: 'text-amber-600 dark:text-amber-400', sign: '', label: t('vetHistEdited') },
   }
 
   return (
     <Modal
       title={product.name}
-      subtitle={`${product.category || 'General'}${product.barcode ? ` · Barcode: ${product.barcode}` : ''}`}
+      subtitle={`${product.category || t('phGeneralCategory')}${product.barcode ? ` · ${t('phBarcodeLabel')}: ${product.barcode}` : ''}`}
       icon={History}
       size="lg"
       onClose={onClose}
@@ -62,10 +65,10 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
       {loading ? (
         <div className="flex flex-col items-center justify-center py-16 text-slate-400">
           <Loader2 className="h-6 w-6 animate-spin text-emerald-500 mb-2" />
-          <p className="text-xs">Loading product analytics...</p>
+          <p className="text-xs">{t('phPrLoadingAnalytics')}</p>
         </div>
       ) : !data ? (
-        <p className="text-xs text-slate-400 text-center py-16">Failed to load analytics for this product.</p>
+        <p className="text-xs text-slate-400 text-center py-16">{t('phPrAnalyticsFailed')}</p>
       ) : (
         <div className="p-5 space-y-4 text-xs">
           {/* KPI Dashboard Row */}
@@ -89,7 +92,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
-              Stock Movements & Logs
+              {t('phPrMovementsLogs')}
             </button>
             <button
               onClick={() => setActiveTab('batches')}
@@ -99,14 +102,14 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
               }`}
             >
-              Batch Breakdown
+              {t('phPrBatchBreakdown')}
             </button>
           </div>
 
           {activeTab === 'timeline' ? (
             <div className="space-y-1.5 max-h-[36vh] overflow-y-auto pr-1">
               {data.events.length === 0 ? (
-                <p className="text-xs text-slate-400 text-center py-8">No inventory events logged yet.</p>
+                <p className="text-xs text-slate-400 text-center py-8">{t('phPrNoEvents')}</p>
               ) : (
                 data.events.map((e, i) => {
                   const meta = EVENT_BADGES[e.type] ?? EVENT_BADGES.sold
@@ -115,17 +118,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
                   return (
                     <div key={i} className="flex items-start gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 border border-transparent hover:border-slate-100 dark:hover:border-slate-800">
                       <span className={`font-bold w-16 shrink-0 ${meta.color}`}>
-                        {isStockAdjust ? 'Adjusted' : meta.label}
+                        {isStockAdjust ? t('phPrAdjusted') : meta.label}
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-slate-700 dark:text-slate-300 font-medium">
                           {e.type === 'sold'
-                            ? `Sale #${e.saleNumber ?? ''}${e.customer ? ` · ${e.customer}` : ''}`
+                            ? `${t('phSaSaleTitle', { number: e.saleNumber ?? '' })}${e.customer ? ` · ${e.customer}` : ''}`
                             : e.type === 'received'
-                            ? `Batch #${e.batchNumber ?? ''}`
-                            : e.reason || 'Inventory adjustment'}
+                            ? t('phInvBatchNumber', { number: e.batchNumber ?? '' })
+                            : e.reason || t('phPrInvAdjustment')}
                         </p>
-                        {e.userName && <p className="text-[10px] text-slate-400 mt-0.5">By: {e.userName}</p>}
+                        {e.userName && <p className="text-[10px] text-slate-400 mt-0.5">{t('phPrProductBy', { name: e.userName })}</p>}
                         <p className="text-[10px] text-slate-400">{new Date(e.date).toLocaleString()}</p>
                       </div>
                       {e.qty != null && (
@@ -148,11 +151,11 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product,
               <table className="w-full text-xs text-left">
                 <thead>
                   <tr className="text-slate-400 border-b border-slate-100 dark:border-slate-800 font-semibold">
-                    <th className="py-2">Batch #</th>
-                    <th className="py-2 text-right">Available Qty</th>
-                    <th className="py-2 text-right">Cost Price</th>
-                    <th className="py-2">Expiry Date</th>
-                    <th className="py-2">Status</th>
+                    <th className="py-2">{t('vetBatchNumHeader')}</th>
+                    <th className="py-2 text-right">{t('phPrAvailableQty')}</th>
+                    <th className="py-2 text-right">{t('phPrCostPrice')}</th>
+                    <th className="py-2">{t('materialExpiryDate')}</th>
+                    <th className="py-2">{t('status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

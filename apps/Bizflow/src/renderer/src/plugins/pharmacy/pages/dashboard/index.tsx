@@ -41,7 +41,7 @@ export default function PharmacyDashboard({ onNavigate }: PharmacyDashboardProps
     return (
       <div className="flex flex-col items-center justify-center py-28 text-slate-400">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mb-2" />
-        <p className="text-xs font-semibold">Loading pharmacy executive dashboard...</p>
+        <p className="text-xs font-semibold">{t('phDashLoading')}</p>
       </div>
     )
   }
@@ -73,7 +73,7 @@ export default function PharmacyDashboard({ onNavigate }: PharmacyDashboardProps
                   : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
               }`}
             >
-              {p.label}
+              {t(p.labelKey)}
             </button>
           ))}
         </div>

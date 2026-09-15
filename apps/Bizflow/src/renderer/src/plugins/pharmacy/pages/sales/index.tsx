@@ -40,12 +40,12 @@ export default function PharmacySales() {
 
   const handleExportCSV = () => {
     if (sales.length === 0) {
-      toast.error('No sales available to export')
+      toast.error(t('phSaExportEmpty'))
       return
     }
-    const csvData = exportSalesToCSV(sales)
+    const csvData = exportSalesToCSV(sales, t)
     downloadCSV(csvData, `pharmacy-sales-${new Date().toISOString().slice(0, 10)}.csv`)
-    toast.success('Sales exported successfully')
+    toast.success(t('phSaExportDone'))
   }
 
   const handleOpenReceiptPrint = (s: PharmacySale) => {
@@ -88,14 +88,14 @@ export default function PharmacySales() {
             icon={Download}
             onClick={handleExportCSV}
           >
-            Export CSV
+            {t('phExportCSV')}
           </Button>
         }
       >
         <SearchBox
           value={search}
           onChange={setSearch}
-          placeholder={t('phSearchSales') || 'Search sale #, customer, medicine...'}
+          placeholder={t('phSearchSales')}
         />
         <Segmented
           value={paymentStatus}
@@ -124,7 +124,7 @@ export default function PharmacySales() {
             pageCount={pageCount}
             total={totalCount}
             onPage={setPage}
-            label="sales transactions"
+            label={t('phSaTransactionsLabel')}
           />
         </div>
       </div>

@@ -10,7 +10,7 @@ interface CustomerFormModalProps {
   onClose: () => void
   onSaved: () => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
@@ -44,12 +44,12 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
       toast.success(
         initial
-          ? t('phCustomerUpdated') || 'Customer updated'
-          : t('phCustomerAdded') || 'Customer added'
+          ? t('phCustomerUpdated')
+          : t('phCustomerAdded')
       )
       onSaved()
     } catch (err: any) {
-      toast.error(err?.message || 'Save failed')
+      toast.error(err?.message || t('cfSaveFailed'))
     } finally {
       setBusy(false)
     }
@@ -63,7 +63,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
       >
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
           <h2 className="font-bold text-sm text-slate-900 dark:text-white">
-            {initial ? t('phEditCustomer') || 'Edit Customer' : t('phAddCustomer') || 'Add Customer'}
+            {initial ? t('phEditCustomer') : t('phAddCustomer')}
           </h2>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
             <X size={16} />
@@ -73,13 +73,13 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 space-y-3 text-xs">
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Customer Full Name *
+              {t('phCuFullNameRequired')}
             </label>
             <input
               value={form.name}
               onChange={setField('name')}
               required
-              placeholder="e.g. John Doe"
+              placeholder={t('phCuNamePlaceholder')}
               className={inputCls}
             />
           </div>
@@ -87,18 +87,18 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Phone Number
+                {t('phCuPhone')}
               </label>
               <input
                 value={form.phone}
                 onChange={setField('phone')}
-                placeholder="e.g. +1 555-0199"
+                placeholder={t('phCuPhonePlaceholder')}
                 className={inputCls}
               />
             </div>
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Email Address
+                {t('phEmailAddress')}
               </label>
               <input
                 type="email"
@@ -112,12 +112,12 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
 
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Address / Residence
+              {t('phCuAddress')}
             </label>
             <input
               value={form.address}
               onChange={setField('address')}
-              placeholder="Street name, Apt / House #"
+              placeholder={t('phCuAddressPlaceholder')}
               className={inputCls}
             />
           </div>
@@ -125,7 +125,7 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
           <div className="bg-violet-50/50 dark:bg-violet-950/20 border border-violet-200/60 dark:border-violet-900/50 p-2.5 rounded-xl">
             <div className="flex items-center gap-1.5 text-violet-700 dark:text-violet-300 font-bold mb-1">
               <Percent size={13} />
-              <span>Default Loyalty Discount (%)</span>
+              <span>{t('phCuLoyaltyDiscount')}</span>
             </div>
             <input
               type="number"
@@ -134,30 +134,30 @@ export const CustomerFormModal: React.FC<CustomerFormModalProps> = ({
               step="0.5"
               value={form.defaultDiscount}
               onChange={setField('defaultDiscount')}
-              placeholder="e.g. 5 (Automatically applied at POS checkout)"
+              placeholder={t('phCuLoyaltyDiscountPlaceholder')}
               className={`${inputCls} py-1 text-xs`}
             />
           </div>
 
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Medical / Account Notes
+              {t('phCuNotes')}
             </label>
             <textarea
               value={form.notes}
               onChange={setField('notes')}
               rows={2}
-              placeholder="Allergies, chronic prescriptions, or payment terms..."
+              placeholder={t('phCuNotesPlaceholder')}
               className={inputCls}
             />
           </div>
 
           <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <Button type="button" variant="secondary" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
+              {t('phCancel')}
             </Button>
             <Button type="submit" variant="primary" size="sm" className="flex-1" loading={busy}>
-              Save Profile
+              {t('phCuSaveProfile')}
             </Button>
           </div>
         </form>

@@ -1,8 +1,9 @@
 import React from 'react'
 import { X, RotateCcw, Printer } from 'lucide-react'
 import { PharmacySale } from '../types'
-import { money, SALE_STATUS_BADGE } from '../../components/_shared'
+import { money, SALE_STATUS_BADGE, SALE_STATUS_LABEL_KEYS, statusLabel } from '../../components/_shared'
 import { Button } from '../../components/ui'
+import { paymentMethodLabelKey } from '../../PharmacyPOS/constants'
 import { SaleItemRefundRow } from './SaleItemRefundRow'
 import { SettlePaymentSection } from './SettlePaymentSection'
 import { useSaleDetail } from '../hooks/useSaleDetail'
@@ -13,7 +14,7 @@ interface SaleDetailModalProps {
   onChanged: () => void
   onThermalPrint?: (sale: PharmacySale) => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const SaleDetailModal: React.FC<SaleDetailModalProps> = ({
@@ -51,20 +52,20 @@ export const SaleDetailModal: React.FC<SaleDetailModalProps> = ({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-bold text-sm text-slate-900 dark:text-white">Sale #{sale.saleNumber}</h2>
+              <h2 className="font-bold text-sm text-slate-900 dark:text-white">{t('phSaSaleTitle', { number: sale.saleNumber })}</h2>
               <span className={`px-2 py-0.2 rounded-full text-[10px] font-bold ${SALE_STATUS_BADGE[sale.status] ?? ''}`}>
-                {(sale.status || '').replace('_', ' ')}
+                {statusLabel(t, SALE_STATUS_LABEL_KEYS, sale.status)}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {new Date(sale.saleDate).toLocaleString()} · {sale.customerName || 'Walk-in'}
+              {new Date(sale.saleDate).toLocaleString()} · {sale.customerName || t('phPosWalkIn')}
             </p>
           </div>
           <div className="flex items-center gap-1">
             {onThermalPrint && (
               <button
                 onClick={() => onThermalPrint(sale)}
-                title="Print Thermal Receipt"
+                title={t('phSaPrintReceipt')}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <Printer size={15} />
@@ -80,7 +81,7 @@ export const SaleDetailModal: React.FC<SaleDetailModalProps> = ({
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Items List */}
           <div>
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Purchased Items</h3>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t('phSaPurchasedItems')}</h3>
             <div className="divide-y divide-slate-100 dark:divide-slate-800">
               {sale.items?.map(it => (
                 <SaleItemRefundRow
@@ -105,32 +106,32 @@ export const SaleDetailModal: React.FC<SaleDetailModalProps> = ({
           {/* Financial Breakdown Card */}
           <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-3 text-xs space-y-1.5 border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between text-slate-500">
-              <span>Subtotal</span>
+              <span>{t('salesUiSubtotal')}</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">${money(sale.subtotal)}</span>
             </div>
             {sale.discount > 0 && (
               <div className="flex justify-between text-emerald-600">
-                <span>Discount</span>
+                <span>{t('discountLabel')}</span>
                 <span>-${money(sale.discount)}</span>
               </div>
             )}
             <div className="flex justify-between font-bold text-sm pt-1 border-t border-slate-200 dark:border-slate-700">
-              <span className="text-slate-900 dark:text-white">Total</span>
+              <span className="text-slate-900 dark:text-white">{t('salesUiTotal')}</span>
               <span className="text-emerald-600 dark:text-emerald-400">${money(sale.total)}</span>
             </div>
             <div className="flex justify-between text-slate-500 pt-1">
-              <span>Paid Amount ({sale.paymentMethod})</span>
+              <span>{t('phSaPaidAmount', { method: t(paymentMethodLabelKey(sale.paymentMethod)) })}</span>
               <span className="font-medium text-slate-800 dark:text-slate-200">${money(sale.amountPaid)}</span>
             </div>
             {(sale.refundedAmount ?? 0) > 0 && (
               <div className="flex justify-between text-red-500 font-medium">
-                <span>Total Refunded</span>
+                <span>{t('phSaTotalRefunded')}</span>
                 <span>-${money(sale.refundedAmount ?? 0)}</span>
               </div>
             )}
             {outstanding > 0.005 && (
               <div className="flex justify-between text-amber-600 font-bold pt-1 border-t border-dashed border-slate-200 dark:border-slate-700">
-                <span>Outstanding Balance</span>
+                <span>{t('outstandingBalanceCard')}</span>
                 <span>${money(outstanding)}</span>
               </div>
             )}
@@ -161,7 +162,7 @@ export const SaleDetailModal: React.FC<SaleDetailModalProps> = ({
               icon={RotateCcw}
               onClick={refundWholeSale}
             >
-              {t('phRefundWholeSale') || 'Refund Entire Sale & Restock'}
+              {t('phRefundWholeSale')}
             </Button>
           </div>
         )}

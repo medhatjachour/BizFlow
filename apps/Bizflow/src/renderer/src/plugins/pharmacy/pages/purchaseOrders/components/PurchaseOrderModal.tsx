@@ -10,7 +10,7 @@ interface PurchaseOrderModalProps {
   onClose: () => void
   onSaved: () => void
   toast: any
-  t: (k: string) => string
+  t: (k: string, params?: Record<string, any>) => string
 }
 
 export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
@@ -50,7 +50,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           <div className="flex items-center gap-2">
             <ClipboardList size={17} className="text-emerald-500" />
             <h2 className="font-bold text-sm text-slate-900 dark:text-white">
-              {order?.id ? `Edit Purchase Order #${order.orderNumber || ''}` : 'New Purchase Order'}
+              {order?.id ? t('phPoEditTitle', { number: order.orderNumber || '' }) : t('phPoNewTitle')}
             </h2>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
@@ -64,14 +64,14 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Vendor / Supplier
+                {t('expenseVendorSupplier')}
               </label>
               <select
                 value={supplierId}
                 onChange={e => setSupplierId(e.target.value)}
                 className={inputCls}
               >
-                <option value="">No Specific Supplier</option>
+                <option value="">{t('phPoNoSupplier')}</option>
                 {suppliers.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -81,15 +81,15 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
             </div>
             <div>
               <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-                Order Status
+                {t('phPoOrderStatus')}
               </label>
               <select
                 value={status}
                 onChange={e => setStatus(e.target.value as any)}
                 className={inputCls}
               >
-                <option value="draft">Draft (Planning)</option>
-                <option value="ordered">Ordered (Sent to Supplier)</option>
+                <option value="draft">{t('phPoDraftPlanning')}</option>
+                <option value="ordered">{t('phPoOrderedSent')}</option>
               </select>
             </div>
           </div>
@@ -98,14 +98,14 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">
-                Inbound Items ({lines.length})
+                {t('phPoInboundCount', { count: lines.length })}
               </span>
               <button
                 type="button"
                 onClick={addLine}
                 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline"
               >
-                <Plus size={13} /> Add Line Item
+                <Plus size={13} /> {t('phPoAddLine')}
               </button>
             </div>
 
@@ -113,14 +113,14 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
               {lines.map((l, i) => (
                 <div
                   key={i}
-                  className="grid grid-cols-12 gap-1.5 items-center bg-slate-50/60 dark:bg-slate-800/40 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800"
+                  className="grid grid-cols-2 sm:grid-cols-12 gap-1.5 items-center bg-slate-50/60 dark:bg-slate-800/40 p-1.5 rounded-xl border border-slate-100 dark:border-slate-800"
                 >
                   <select
                     value={l.productId}
                     onChange={e => pickProduct(i, e.target.value)}
-                    className={`${inputCls} col-span-5 py-1 text-xs`}
+                    className={`${inputCls} col-span-2 sm:col-span-5 py-1 text-xs`}
                   >
-                    <option value="">Select Medicine from Catalog...</option>
+                    <option value="">{t('phPoSelectMedicine')}</option>
                     {products.map(p => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -133,8 +133,8 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                     onChange={e => setLine(i, { quantity: e.target.value })}
                     type="number"
                     min="1"
-                    placeholder="Qty"
-                    className={`${inputCls} col-span-2 py-1 text-xs text-center font-semibold`}
+                    placeholder={t('salesUiQuantity')}
+                    className={`${inputCls} sm:col-span-2 py-1 text-xs text-center font-semibold`}
                   />
 
                   <input
@@ -143,22 +143,22 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="Cost ($)"
-                    className={`${inputCls} col-span-2 py-1 text-xs text-right font-semibold`}
+                    placeholder={t('phPrCost')}
+                    className={`${inputCls} sm:col-span-2 py-1 text-xs text-right font-semibold`}
                   />
 
                   <input
                     value={l.expiryDate}
                     onChange={e => setLine(i, { expiryDate: e.target.value })}
                     type="date"
-                    title="Expected Expiry Date"
-                    className={`${inputCls} col-span-2 py-1 text-xs`}
+                    title={t('phPoExpectedExpiry')}
+                    className={`${inputCls} sm:col-span-2 py-1 text-xs`}
                   />
 
                   <button
                     type="button"
                     onClick={() => removeLine(i)}
-                    className="col-span-1 text-slate-300 hover:text-red-500 flex justify-center p-1"
+                    className="sm:col-span-1 text-slate-300 hover:text-red-500 flex justify-center p-1"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -169,13 +169,13 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
 
           <div>
             <label className="block font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Internal Procurement Notes
+              {t('phPoNotes')}
             </label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
-              placeholder="Delivery instructions, invoice #, terms..."
+              placeholder={t('phPoNotesPlaceholder')}
               className={inputCls}
             />
           </div>
@@ -184,7 +184,7 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between">
           <div className="text-xs">
-            <span className="text-slate-500">Estimated Total: </span>
+            <span className="text-slate-500">{t('phPoEstimatedTotal')} </span>
             <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
               ${money(totalCalculated)}
             </span>
@@ -192,10 +192,10 @@ export const PurchaseOrderModal: React.FC<PurchaseOrderModalProps> = ({
 
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={onClose}>
-              Cancel
+              {t('phCancel')}
             </Button>
             <Button variant="primary" size="sm" loading={busy} onClick={submit}>
-              Save Order
+              {t('phPoSaveOrder')}
             </Button>
           </div>
         </div>

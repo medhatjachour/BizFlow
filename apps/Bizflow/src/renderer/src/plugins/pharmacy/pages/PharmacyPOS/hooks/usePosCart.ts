@@ -3,7 +3,7 @@ import { CartLine, PharmacyProduct, PosCustomer, PaymentMethod, SaleTransactionR
 import { buildCartLine, calculateSubtotal, computeStockInUnit, resolveUnitPrice } from '../utils'
 import { pharma } from '../../components/_shared'
 
-export function usePosCart(toast: any, t: (k: string) => string) {
+export function usePosCart(toast: any, t: (k: string, params?: Record<string, any>) => string) {
   const [cart, setCart] = useState<CartLine[]>([])
   const [customer, setCustomer] = useState<PosCustomer | null>(null)
   const [discount, setDiscount] = useState<string>('')
@@ -14,7 +14,7 @@ export function usePosCart(toast: any, t: (k: string) => string) {
 
   const addToCart = useCallback((product: PharmacyProduct) => {
     if (product.totalStock <= 0) {
-      toast.error(`${product.name} ${t('phIsOutOfStock') || 'is out of stock'}`)
+      toast.error(`${product.name} ${t('phIsOutOfStock')}`)
       return
     }
 
@@ -22,7 +22,7 @@ export function usePosCart(toast: any, t: (k: string) => string) {
       const existing = prev.find(l => l.productId === product.id && l.saleUnit === 'base')
       if (existing) {
         if (existing.quantity + 1 > computeStockInUnit(existing)) {
-          toast.error(t('phNotEnoughStock') || 'Not enough stock')
+          toast.error(t('phNotEnoughStock'))
           return prev
         }
         return prev.map(l => l === existing ? { ...l, quantity: l.quantity + 1 } : l)
@@ -83,7 +83,7 @@ export function usePosCart(toast: any, t: (k: string) => string) {
       ...prev,
     ])
     clearCart()
-    toast.success('Sale parked on hold')
+    toast.success(t('phPosSaleParked'))
   }, [cart, customer, clearCart, toast])
 
   const resumeHeldSale = useCallback((heldId: string) => {
@@ -131,11 +131,11 @@ export function usePosCart(toast: any, t: (k: string) => string) {
         createdAt: new Date().toLocaleString(),
       }
 
-      toast.success(`${t('phSaleComplete') || 'Sale completed'} #${transactionResult.saleNumber}`)
+      toast.success(`${t('phSaleComplete')} #${transactionResult.saleNumber}`)
       clearCart()
       return transactionResult
     } catch (err: any) {
-      toast.error(err?.message || 'Checkout failed')
+      toast.error(err?.message || t('phPosCheckoutFailed'))
       return null
     } finally {
       setBusy(false)

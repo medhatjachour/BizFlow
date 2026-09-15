@@ -1,9 +1,11 @@
 import React from 'react'
 import { PackageX, X, AlertTriangle } from 'lucide-react'
 import { ExpiringBatchItem, DisposalReason } from '../types'
-import { DISPOSAL_REASON_PRESETS } from '../constants'
+import { DISPOSAL_REASON_PRESETS, DISPOSAL_REASON_LABEL_KEYS } from '../constants'
 import { money, inputCls } from '../../components/_shared'
 import { Button } from '../../components/ui'
+import { unitLabelKey } from '../../components/units'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface BatchDisposalModalProps {
   batch: ExpiringBatchItem | null
@@ -30,6 +32,7 @@ export const BatchDisposalModal: React.FC<BatchDisposalModalProps> = ({
   onQtyChange,
   onConfirm,
 }) => {
+  const { t } = useLanguage()
   if (!batch) return null
 
   const unitCost = batch.costPerUnit || (batch.value / (batch.quantity || 1))
@@ -46,7 +49,7 @@ export const BatchDisposalModal: React.FC<BatchDisposalModalProps> = ({
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800 bg-rose-50/60 dark:bg-rose-950/20">
           <div className="flex items-center gap-2 text-rose-700 dark:text-rose-300">
             <PackageX size={17} />
-            <h3 className="font-bold text-sm">Write-off & Dispose Batch</h3>
+            <h3 className="font-bold text-sm">{t('phInvDisposeTitle')}</h3>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-slate-600">
             <X size={16} />
@@ -59,19 +62,19 @@ export const BatchDisposalModal: React.FC<BatchDisposalModalProps> = ({
           <div className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/70 dark:border-slate-800 space-y-1">
             <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">{batch.product?.name}</p>
             <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
-              <span>Batch #{batch.batchNumber || 'N/A'}</span>
-              <span>Available: {batch.quantity} {batch.product?.unit}</span>
+              <span>{t('phInvBatchNumber', { number: batch.batchNumber || t('phNa') })}</span>
+              <span>{t('phInvAvailableShort')}: {batch.quantity} {t(unitLabelKey(batch.product?.unit))}</span>
             </div>
             <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium">
-              Expiry: {new Date(batch.expiryDate).toLocaleDateString()} ({batch.daysToExpiry < 0 ? 'Already expired' : `${batch.daysToExpiry}d remaining`})
+              {t('phInvExpiryLabel')}: {new Date(batch.expiryDate).toLocaleDateString()} ({batch.daysToExpiry < 0 ? t('phInvAlreadyExpired') : t('phInvDaysRemainingShort', { days: batch.daysToExpiry })})
             </p>
           </div>
 
           {/* Qty & Loss Estimator */}
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="font-semibold text-slate-700 dark:text-slate-300">Disposal Quantity</label>
-              <span className="text-[11px] text-slate-400">Max: {batch.quantity} {batch.product?.unit}</span>
+              <label className="font-semibold text-slate-700 dark:text-slate-300">{t('phInvDisposalQty')}</label>
+              <span className="text-[11px] text-slate-400">{t('phInvMaxShort')}: {batch.quantity} {t(unitLabelKey(batch.product?.unit))}</span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -87,14 +90,14 @@ export const BatchDisposalModal: React.FC<BatchDisposalModalProps> = ({
                 onClick={() => onQtyChange(String(batch.quantity))}
                 className="px-2.5 py-2 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
               >
-                All
+                {t('phInvAllShort')}
               </button>
             </div>
           </div>
 
           {/* Disposal Reason Preset Grid */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Primary Reason</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{t('phInvPrimaryReason')}</label>
             <div className="grid grid-cols-2 gap-1.5">
               {DISPOSAL_REASON_PRESETS.map(r => (
                 <button
@@ -107,18 +110,18 @@ export const BatchDisposalModal: React.FC<BatchDisposalModalProps> = ({
                       : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                   }`}
                 >
-                  {r}
+                  {t(DISPOSAL_REASON_LABEL_KEYS[r] ?? r)}
                 </button>
               ))}
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Audit Notes (Optional)</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">{t('phInvAuditNotes')}</label>
             <input
               value={customNotes}
               onChange={e => onNotesChange(e.target.value)}
-              placeholder="e.g. Incinerated per local health regulations"
+              placeholder={t('phInvNotesPlaceholder')}
               className={inputCls}
             />
           </div>
@@ -127,13 +130,13 @@ export const BatchDisposalModal: React.FC<BatchDisposalModalProps> = ({
           <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-amber-800 dark:text-amber-300">
             <AlertTriangle size={15} className="shrink-0 text-amber-600" />
             <div className="text-[11px] leading-tight">
-              Inventory asset loss will be recorded as: <strong className="font-bold">${money(writeOffLoss)}</strong>
+              {t('phInvAssetLossPrefix')} <strong className="font-bold">${money(writeOffLoss)}</strong>
             </div>
           </div>
 
           <div className="flex gap-2 pt-2">
             <Button variant="secondary" size="sm" className="flex-1" onClick={onClose}>
-              Cancel
+              {t('phCancel')}
             </Button>
             <Button
               variant="danger"
@@ -143,7 +146,7 @@ export const BatchDisposalModal: React.FC<BatchDisposalModalProps> = ({
               disabled={parsedQty <= 0 || parsedQty > batch.quantity}
               onClick={onConfirm}
             >
-              Confirm Write-Off
+              {t('phInvConfirmWriteOff')}
             </Button>
           </div>
         </div>
