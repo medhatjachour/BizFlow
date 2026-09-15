@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-import { ADMIN_COOKIE, readLicenses, updateLicenseAccess, verifyToken } from "@/lib/admin";
+import {
+  ADMIN_COOKIE,
+  readLicenses,
+  recordLicenseEmailResent,
+  updateLicenseAccess,
+  verifyToken,
+} from "@/lib/admin";
 import { issueLicenseManually } from "@/lib/commerce-db";
 import { prisma } from "@/lib/db";
 import { readLicenseRequests, setLicenseRequestStatus } from "@/lib/license-requests";
@@ -144,6 +150,12 @@ export async function PATCH(request: Request) {
         { status: 502 }
       );
     }
+
+    await recordLicenseEmailResent({
+      orderId: license.orderId,
+      customerId: license.customerId,
+      key: license.key,
+    });
     return NextResponse.json({ ok: true, emailSent: true });
   }
 

@@ -8,6 +8,7 @@ import { brandIconPath } from "@/lib/site";
 
 const LINKS = [
   { href: "#plugins", label: "Modules" },
+  { href: "#included", label: "What's included" },
   { href: "#whats-new", label: "What's new" },
   { href: "#pricing", label: "Pricing" },
   { href: "/download", label: "Download" },

@@ -1,30 +1,32 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import type {
   AdminCustomer,
   AdminLicense,
+  AdminOrder,
   AdminSupportTicket,
   CustomRequest,
-  Order,
   RequestStatus,
   TicketStatus,
 } from "@/lib/admin";
-import { PLUGINS } from "@/lib/plugins";
 import { withBasePath } from "@/lib/site";
-
-type OrderView = Order & { label: string };
+import { DASHBOARD_TABS, type AdminTab } from "@/lib/admin-tabs";
+import { PLUGINS } from "@/lib/plugins";
 
 interface Props {
-  orders: OrderView[];
+  orders: AdminOrder[];
   requests: CustomRequest[];
   tickets: AdminSupportTicket[];
   licenses: AdminLicense[];
   customers: AdminCustomer[];
   usingDefaultPassword: boolean;
+  initialTab?: Tab;
+  /** Optional banner above the panels, e.g. "licence issued". */
+  notice?: string;
 }
 
 const STATUS_META: Record<RequestStatus, { label: string; cls: string }> = {
@@ -65,17 +67,35 @@ const fmtDate = (iso?: string) =>
 const statusOf = (r: CustomRequest): RequestStatus => r.status ?? "new";
 const DASHBOARD_RENDER_TS = Date.now();
 
-type Tab = "overview" | "users" | "orders" | "access" | "requests" | "tickets" | "pricing";
+type Tab = AdminTab;
 
-export default function AdminDashboard({ orders, requests, tickets, licenses, customers, usingDefaultPassword }: Props) {
+export default function AdminDashboard({
+  orders,
+  requests,
+  tickets,
+  licenses,
+  customers,
+  usingDefaultPassword,
+  initialTab,
+  notice,
+}: Props) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "overview");
+
+  // Keep the URL in step with the open tab so a manager can copy a link to a
+  // queue — and so the drill-down pages' "back to customers" links land right.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("tab") === tab) return;
+    url.searchParams.set("tab", tab);
+    window.history.replaceState(null, "", url.toString());
+  }, [tab]);
 
   // ── Derived metrics ──────────────────────────────────────────────────────
   const metrics = useMemo(() => {
     const paid = orders.filter((o) => (o.paymentStatus ?? "paid") === "paid");
     const revenueCents = paid.reduce((s, o) => s + (o.amountTotal || 0), 0);
-    const licenses = orders.filter((o) => o.licenseKey).length;
+    const licenses = orders.filter((o) => o.license).length;
     const pending = requests.filter((r) => statusOf(r) === "new").length;
     const open = requests.filter((r) => !["accepted", "declined"].includes(statusOf(r)));
     const pipeline = open.reduce((s, r) => s + (r.quote?.max ?? 0), 0);
@@ -131,15 +151,27 @@ export default function AdminDashboard({ orders, requests, tickets, licenses, cu
     router.refresh();
   }
 
-  const tabs: { id: Tab; label: string; badge?: number }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "users", label: "Users", badge: customers.length || undefined },
-    { id: "orders", label: "Licenses & orders", badge: orders.length || undefined },
-    { id: "access", label: "Access control", badge: licenses.filter((license) => license.status === "ACTIVE").length || undefined },
-    { id: "requests", label: "Custom requests", badge: metrics.pending || undefined },
-    { id: "tickets", label: "Support tickets", badge: metrics.openTickets || undefined },
-    { id: "pricing", label: "Pricing" },
-  ];
+  // Keyed by Tab so TypeScript fails the build the moment a tab is added to the
+  // shared contract without a button or a panel behind it.
+  const tabs: Record<Tab, { label: string; badge?: number }> = {
+    overview: { label: "Overview" },
+    users: { label: "Users", badge: customers.length || undefined },
+    orders: { label: "Licenses & orders", badge: orders.length || undefined },
+    access: { label: "Access control", badge: licenses.filter((license) => license.status === "ACTIVE").length || undefined },
+    requests: { label: "Custom requests", badge: metrics.pending || undefined },
+    tickets: { label: "Support tickets", badge: metrics.openTickets || undefined },
+    pricing: { label: "Pricing" },
+  };
+
+  const panels: Record<Tab, ReactNode> = {
+    overview: <Overview metrics={metrics} orders={orders} requests={requests} tickets={tickets} />,
+    users: <UsersPanel customers={customers} />,
+    orders: <OrdersPanel orders={orders} />,
+    access: <AccessPanel licenses={licenses} />,
+    requests: <RequestsPanel requests={requests} />,
+    tickets: <TicketsPanel tickets={tickets} />,
+    pricing: <PricingPanel />,
+  };
 
   return (
     <main className="relative z-10 mx-auto min-h-screen w-full max-w-7xl px-4 py-8 sm:px-6">
@@ -176,6 +208,12 @@ export default function AdminDashboard({ orders, requests, tickets, licenses, cu
         </div>
       )}
 
+      {notice ? (
+        <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          {notice}
+        </div>
+      ) : null}
+
       {/* KPI cards */}
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-5">
         <Kpi label="Revenue" value={usdCents(metrics.revenueCents)} hint={`${metrics.paidCount} paid`} accent="from-emerald-400 to-teal-600" />
@@ -187,24 +225,27 @@ export default function AdminDashboard({ orders, requests, tickets, licenses, cu
 
       {/* Tabs */}
       <div className="mt-8 flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
-              tab === t.id
-                ? "bg-gradient-to-r from-biz-400 to-biz-600 text-white"
-                : "glass hover:bg-white/10"
-            }`}
-          >
-            {t.label}
-            {t.badge != null && (
-              <span className={`rounded-full px-2 py-0.5 text-[10px] ${tab === t.id ? "bg-white/20" : "bg-white/10"}`}>
-                {t.badge}
-              </span>
-            )}
-          </button>
-        ))}
+        {DASHBOARD_TABS.map((id) => {
+          const meta = tabs[id];
+          return (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition ${
+                tab === id
+                  ? "bg-gradient-to-r from-biz-400 to-biz-600 text-white"
+                  : "glass hover:bg-white/10"
+              }`}
+            >
+              {meta.label}
+              {meta.badge != null && (
+                <span className={`rounded-full px-2 py-0.5 text-[10px] ${tab === id ? "bg-white/20" : "bg-white/10"}`}>
+                  {meta.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <AnimatePresence mode="wait">
@@ -216,13 +257,7 @@ export default function AdminDashboard({ orders, requests, tickets, licenses, cu
           transition={{ duration: 0.18 }}
           className="mt-6"
         >
-          {tab === "overview" && <Overview metrics={metrics} orders={orders} requests={requests} tickets={tickets} />}
-          {tab === "users" && <UsersPanel customers={customers} />}
-          {tab === "orders" && <OrdersPanel orders={orders} />}
-          {tab === "access" && <AccessPanel licenses={licenses} />}
-          {tab === "requests" && <RequestsPanel requests={requests} />}
-          {tab === "tickets" && <TicketsPanel tickets={tickets} />}
-          {tab === "pricing" && <PricingPanel />}
+          {panels[tab]}
         </motion.div>
       </AnimatePresence>
     </main>
@@ -271,6 +306,14 @@ function UsersPanel({ customers }: { customers: AdminCustomer[] }) {
                 <span>{customer.counts.licenses} licenses</span>
                 <span>{customer.counts.supportTickets} tickets</span>
                 <span>{customer.counts.sessions} sessions</span>
+              </div>
+              <div className="lg:col-span-2">
+                <Link
+                  href={withBasePath(`/admin/customers/${customer.id}`)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/15 px-3 py-1.5 text-xs font-semibold text-foreground/75 transition hover:border-biz-400/40 hover:text-foreground"
+                >
+                  Open full account →
+                </Link>
               </div>
             </article>
           ))}
@@ -362,7 +405,12 @@ function AccessPanel({ licenses }: { licenses: AdminLicense[] }) {
               <article key={license.id} className="grid gap-4 rounded-xl border border-white/10 bg-white/5 p-4 lg:grid-cols-[minmax(0,1fr)_auto]">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold">{license.customer.fullName || license.customer.email}</h3>
+                    <Link
+                      href={withBasePath(`/admin/customers/${license.customer.id}`)}
+                      className="font-semibold underline-offset-4 hover:underline"
+                    >
+                      {license.customer.fullName || license.customer.email}
+                    </Link>
                     <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${active ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-300" : "border-rose-400/30 bg-rose-500/15 text-rose-300"}`}>{license.status}</span>
                     <span className="text-xs text-foreground/50">{license.order.itemId}</span>
                   </div>
@@ -418,7 +466,7 @@ function Overview({
   tickets,
 }: {
   metrics: Metrics;
-  orders: OrderView[];
+  orders: AdminOrder[];
   requests: CustomRequest[];
   tickets: AdminSupportTicket[];
 }) {
@@ -483,15 +531,20 @@ function Overview({
         ) : (
           <ul className="mt-3 divide-y divide-white/5">
             {recentOrders.map((o) => (
-              <li key={o.sessionId} className="flex items-center justify-between py-2.5 text-sm">
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{o.label}</p>
-                  <p className="truncate text-xs text-foreground/50">{o.email ?? "—"}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">{usdCents(o.amountTotal)}</p>
-                  <p className="text-xs text-foreground/50">{fmtDate(o.fulfilledAt)}</p>
-                </div>
+              <li key={o.sessionId}>
+                <Link
+                  href={withBasePath(`/admin/orders/${encodeURIComponent(o.sessionId)}`)}
+                  className="-mx-2 flex items-center justify-between rounded-lg px-2 py-2.5 text-sm transition hover:bg-white/5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{o.label}</p>
+                    <p className="truncate text-xs text-foreground/50">{o.customer?.email ?? o.email ?? "—"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{usdCents(o.amountTotal)}</p>
+                    <p className="text-xs text-foreground/50">{fmtDate(o.fulfilledAt)}</p>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
@@ -555,7 +608,7 @@ function Overview({
 }
 
 // ── Orders / licenses panel ──────────────────────────────────────────────────
-function OrdersPanel({ orders }: { orders: OrderView[] }) {
+function OrdersPanel({ orders }: { orders: AdminOrder[] }) {
   const [q, setQ] = useState("");
   const rows = useMemo(() => {
     const sorted = [...orders].sort(byDateDesc((o) => o.fulfilledAt));
@@ -565,19 +618,27 @@ function OrdersPanel({ orders }: { orders: OrderView[] }) {
       (o) =>
         o.label.toLowerCase().includes(needle) ||
         (o.email ?? "").toLowerCase().includes(needle) ||
-        (o.licenseKey ?? "").toLowerCase().includes(needle)
+        (o.customer?.email ?? "").toLowerCase().includes(needle) ||
+        (o.license?.key ?? "").toLowerCase().includes(needle) ||
+        (o.license?.deviceName ?? "").toLowerCase().includes(needle)
     );
   }, [orders, q]);
 
   return (
     <div className="glass-strong rounded-2xl p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-sm font-bold">Licenses &amp; orders</h3>
+        <div>
+          <h3 className="text-sm font-bold">Licenses &amp; orders</h3>
+          <p className="mt-1 text-xs text-foreground/50">
+            {orders.length} {orders.length === 1 ? "order" : "orders"} · open a row for the full
+            payment, licence and audit detail.
+          </p>
+        </div>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search product, email or key…"
-          className="w-64 max-w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400"
+          placeholder="Search product, email, key or device…"
+          className="w-72 max-w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm outline-none focus:border-biz-400"
         />
       </div>
 
@@ -585,7 +646,7 @@ function OrdersPanel({ orders }: { orders: OrderView[] }) {
         <Empty text="No matching orders." />
       ) : (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-foreground/40">
               <tr>
                 <Th>Date</Th>
@@ -593,16 +654,57 @@ function OrdersPanel({ orders }: { orders: OrderView[] }) {
                 <Th>Customer</Th>
                 <Th>Amount</Th>
                 <Th>License key</Th>
+                <Th>Device</Th>
+                <Th>Status</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {rows.map((o) => (
                 <tr key={o.sessionId} className="hover:bg-white/5">
-                  <Td className="whitespace-nowrap text-foreground/60">{fmtDate(o.fulfilledAt)}</Td>
-                  <Td className="font-medium">{o.label}</Td>
-                  <Td className="text-foreground/70">{o.email ?? "—"}</Td>
+                  <Td className="whitespace-nowrap text-foreground/60">
+                    <Link href={withBasePath(`/admin/orders/${o.sessionId}`)} className="hover:text-biz-200">
+                      {fmtDate(o.fulfilledAt)}
+                    </Link>
+                  </Td>
+                  <Td>
+                    <Link href={withBasePath(`/admin/orders/${o.sessionId}`)} className="font-medium hover:text-biz-200">
+                      {o.label}
+                    </Link>
+                  </Td>
+                  <Td className="text-foreground/70">
+                    {o.customer ? (
+                      <Link href={withBasePath(`/admin/customers/${o.customer.id}`)} className="hover:text-biz-200">
+                        {o.customer.email}
+                      </Link>
+                    ) : (
+                      (o.email ?? "—")
+                    )}
+                  </Td>
                   <Td className="font-semibold">{usdCents(o.amountTotal)}</Td>
-                  <Td>{o.licenseKey ? <CopyKey value={o.licenseKey} /> : <span className="text-foreground/30">—</span>}</Td>
+                  <Td>{o.license ? <CopyKey value={o.license.key} /> : <span className="text-foreground/30">—</span>}</Td>
+                  <Td className="text-foreground/60">
+                    {o.license?.deviceName ??
+                      (o.license?.deviceActivatedAt ? (
+                        "Unnamed device"
+                      ) : (
+                        <span className="text-foreground/30">Not activated</span>
+                      ))}
+                  </Td>
+                  <Td>
+                    {o.license ? (
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                          o.license.status === "ACTIVE"
+                            ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-300"
+                            : "border-rose-400/30 bg-rose-500/15 text-rose-300"
+                        }`}
+                      >
+                        {o.license.status}
+                      </span>
+                    ) : (
+                      <span className="text-foreground/30">—</span>
+                    )}
+                  </Td>
                 </tr>
               ))}
             </tbody>
@@ -990,6 +1092,22 @@ function TicketsPanel({ tickets }: { tickets: AdminSupportTicket[] }) {
                             <p>
                               <span className="text-foreground/50">Customer:</span> {t.email}
                             </p>
+                            {t.accountId && (
+                              <p>
+                                <span className="text-foreground/50">Account:</span>{" "}
+                                <Link
+                                  href={withBasePath(`/admin/customers/${t.accountId}`)}
+                                  className="font-semibold text-biz-300 hover:underline"
+                                >
+                                  Open full account →
+                                </Link>
+                                {!t.customerId && (
+                                  <span className="ml-1.5 text-xs text-foreground/40">
+                                    (matched by email)
+                                  </span>
+                                )}
+                              </p>
+                            )}
                             <p>
                               <span className="text-foreground/50">Category:</span> {t.category}
                             </p>

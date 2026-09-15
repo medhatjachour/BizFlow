@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { recordAccountActivity } from "@/lib/account-auth";
 import { getPurchasable } from "@/lib/payments";
 import { licenseKeyFor } from "@/lib/license";
+import { AUDIT_EVENTS } from "@/lib/audit-events";
+import { ACTIVITY_ACTIONS } from "@/lib/activity-actions";
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
@@ -75,7 +77,7 @@ export async function recordPaidOrder(params: {
   await prisma.orderAudit.create({
     data: {
       orderId: order.id,
-      event: "checkout.session.completed",
+      event: AUDIT_EVENTS.checkoutCompleted,
       payloadJson: JSON.stringify({
         sessionId: params.sessionId,
         itemId: params.itemId,
@@ -85,7 +87,11 @@ export async function recordPaidOrder(params: {
   });
 
   if (customer) {
-    await recordAccountActivity(customer.id, "purchase", `Purchased ${getPurchasable(params.itemId)?.label ?? params.itemId}`);
+    await recordAccountActivity(
+      customer.id,
+      ACTIVITY_ACTIONS.purchase,
+      `Purchased ${getPurchasable(params.itemId)?.label ?? params.itemId}`
+    );
   }
 }
 
@@ -181,14 +187,14 @@ export async function issueLicenseManually(params: {
   await prisma.orderAudit.create({
     data: {
       orderId: order.id,
-      event: "license.issued.manual",
+      event: AUDIT_EVENTS.licenseManualIssue,
       payloadJson: JSON.stringify({ email, itemId }),
     },
   });
 
   await recordAccountActivity(
     customer.id,
-    "license_issued",
+    ACTIVITY_ACTIONS.licenseIssued,
     `License issued for ${getPurchasable(itemId)?.label ?? itemId}`
   );
 
@@ -275,7 +281,11 @@ export async function createSupportTicket(params: {
     },
   });
 
-  await recordAccountActivity(customer.id, "support_ticket", `Opened support ticket ${ticket.publicId}: ${params.subject}`);
+  await recordAccountActivity(
+    customer.id,
+    ACTIVITY_ACTIONS.supportTicket,
+    `Opened support ticket ${ticket.publicId}: ${params.subject}`
+  );
 
   return ticket;
 }
@@ -361,7 +371,18 @@ export async function activateLicenseForDevice(params: {
   });
 
   if (activatedNow) {
-    await recordAccountActivity(license.customerId, "device_activation", `Activated ${license.order.itemId} on ${deviceName ?? "a device"}`);
+    await recordAccountActivity(
+      license.customerId,
+      ACTIVITY_ACTIONS.deviceActivation,
+      `Activated ${license.order.itemId} on ${deviceName ?? "a device"}`
+    );
+    await prisma.orderAudit.create({
+      data: {
+        orderId: license.orderId,
+        event: AUDIT_EVENTS.licenseActivated,
+        payloadJson: JSON.stringify({ deviceName, deviceFingerprint }),
+      },
+    });
   }
 
   return {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ACCOUNT_COOKIE, getAccountFromToken, recordAccountActivity } from "@/lib/account-auth";
+import { ACTIVITY_ACTIONS } from "@/lib/activity-actions";
 import { resolveDownload } from "@/lib/build";
 import { OSES, type OSId } from "@/lib/downloads";
 import { logEvent, requestIdFromHeaders } from "@/lib/observability";
@@ -86,7 +87,11 @@ export async function POST(request: Request) {
   const accountToken = (await cookies()).get(ACCOUNT_COOKIE)?.value;
   const account = accountToken ? await getAccountFromToken(accountToken) : null;
   if (account) {
-    await recordAccountActivity(account.customer.id, "download", `Requested ${moduleId} download for ${os}`);
+    await recordAccountActivity(
+      account.customer.id,
+      ACTIVITY_ACTIONS.download,
+      `Requested ${moduleId} download for ${os}`
+    );
   }
   const result = await resolveDownload(moduleId, os, { triggerBuild: true });
   return NextResponse.json(result, { headers: { "Cache-Control": "no-store" } });

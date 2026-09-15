@@ -2,6 +2,7 @@ import AuroraBackground from "@/components/AuroraBackground";
 import Nav from "@/components/landing/Nav";
 import Hero from "@/components/landing/Hero";
 import Plugins from "@/components/landing/Plugins";
+import IncludedInEveryModule from "@/components/landing/IncludedInEveryModule";
 import Features from "@/components/landing/Features";
 import WhatsNew from "@/components/landing/WhatsNew";
 import Showcase from "@/components/landing/Showcase";
@@ -18,6 +19,7 @@ export default function Home() {
       <main className="flex w-full flex-1 flex-col">
         <Hero />
         <Plugins />
+        <IncludedInEveryModule />
         <Features />
         <WhatsNew />
         <Showcase />

@@ -26,8 +26,8 @@ const features = [
     icon: <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" />,
   },
   {
-    title: "Reports & finance",
-    desc: "Revenue, expenses, profit tracking and exportable PDF/CSV reports give you the full picture at a glance.",
+    title: "Reports, finance & HR",
+    desc: "Revenue, expenses and profit with PDF/CSV exports — plus staff profiles, attendance, leave, shifts and payroll runs in the same module.",
     icon: <path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" />,
   },
   {

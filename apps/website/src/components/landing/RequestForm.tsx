@@ -55,6 +55,23 @@ const CAPABILITY_GROUPS: { group: string; items: string[] }[] = [
   { group: "Integrations", items: ["WhatsApp / SMS", "Email reports", "Online payments", "Accounting export", "Printer / scanner"] },
 ];
 
+/**
+ * Capabilities that already ship inside every module. Marking them stops a
+ * visitor from believing they have to buy basic back-office features, and it
+ * keeps them out of the auto-complexity sizing so the estimate only reflects
+ * genuinely new work.
+ */
+const CORE_INCLUDED_CAPS = new Set([
+  "Expenses",
+  "Reports & dashboards",
+  "Profit & margins",
+  "Payroll / salaries",
+  "Tax / VAT",
+  "Multiple users",
+  "Roles & permissions",
+  "Activity / audit log",
+]);
+
 const PLATFORMS = ["Windows", "macOS", "Linux"];
 const SEAT_OPTIONS = ["Just me", "2–5", "6–20", "20+"];
 const LOCATION_OPTIONS = ["1", "2–3", "4+"];
@@ -79,12 +96,13 @@ export default function RequestForm() {
   const toggle = (arr: string[], set: (v: string[]) => void, v: string) =>
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
 
-  // Auto-size the request from the number of capabilities chosen (until the
-  // user overrides it manually) so the estimate reflects what they actually need.
+  // Auto-size the request from the number of *new* capabilities chosen (until
+  // the user overrides it manually) so the estimate reflects what they actually
+  // need — features that already ship in every module don't inflate the size.
   useEffect( () => {
     (async () => {
       if (complexityTouched || type === "bundle") return;
-      const n = caps.length;
+      const n = caps.filter((c) => !CORE_INCLUDED_CAPS.has(c)).length;
       setComplexity(n >= 8 ? "large" : n >= 4 ? "medium" : "small");
     })();
   
@@ -321,7 +339,10 @@ export default function RequestForm() {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <label className="block text-sm font-medium">What should it do?</label>
-                <span className="text-xs text-foreground/50">{caps.length} selected</span>
+                <span className="text-xs text-foreground/50">
+                  {caps.filter((c) => !CORE_INCLUDED_CAPS.has(c)).length} new ·{" "}
+                  {caps.filter((c) => CORE_INCLUDED_CAPS.has(c)).length} already included
+                </span>
               </div>
               <div className="space-y-3">
                 {CAPABILITY_GROUPS.map((g) => (
@@ -330,10 +351,16 @@ export default function RequestForm() {
                     <div className="flex flex-wrap gap-1.5">
                       {g.items.map((item) => {
                         const on = caps.includes(item);
+                        const core = CORE_INCLUDED_CAPS.has(item);
                         return (
                           <button
                             type="button"
                             key={item}
+                            title={
+                              core
+                                ? "Already included in every module — no extra cost"
+                                : undefined
+                            }
                             onClick={() => toggle(caps, setCaps, item)}
                             className={`rounded-lg border px-2.5 py-1.5 text-xs transition ${
                               on
@@ -342,6 +369,11 @@ export default function RequestForm() {
                             }`}
                           >
                             {on ? "✓ " : ""}{item}
+                            {core && (
+                              <span className="ml-1.5 rounded bg-emerald-500/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-300">
+                                core
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -350,7 +382,9 @@ export default function RequestForm() {
                 ))}
               </div>
               <p className="mt-2 text-[11px] text-foreground/40">
-                Pick the building blocks you need — the estimate adjusts automatically.
+                Everything marked <span className="font-semibold text-emerald-300">core</span> is
+                already built into every module — pick it only if you want it changed. The estimate
+                sizes the genuinely new work.
               </p>
             </div>
           )}
@@ -519,6 +553,30 @@ export default function RequestForm() {
               This is an automated ballpark to help you plan. We&apos;ll confirm a
               fixed quote after reviewing your request — no commitment.
             </p>
+
+            <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
+              <p className="text-xs font-semibold text-foreground/80">
+                What happens next
+              </p>
+              <ol className="space-y-2">
+                {[
+                  "You send this brief — you get the reference and estimate instantly, on screen and by email.",
+                  "We review the scope and reply with a fixed quote and a delivery date.",
+                  "You approve, we build it into your module, and you get the update on your licence.",
+                ].map((step, i) => (
+                  <li key={step} className="flex gap-2.5 text-[11px] leading-relaxed text-foreground/55">
+                    <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-biz-500/25 text-[9px] font-bold text-biz-200">
+                      {i + 1}
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+              <p className="text-[11px] leading-relaxed text-foreground/40">
+                You can request a change to any module you already own, or a brand-new
+                module for a trade BizFlow doesn&apos;t cover yet.
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -56,6 +56,7 @@ export default function Pricing() {
           <ul className="mt-6 space-y-2 text-sm text-foreground/65">
             <Li>Any one module (from ${minModule})</Li>
             <Li>Try free in the browser first</Li>
+            <Li>HR, finance, expenses &amp; reports included</Li>
             <Li>Runs offline, data stays local</Li>
             <Li>Free updates for 1 year</Li>
           </ul>
@@ -93,7 +94,8 @@ export default function Pricing() {
           </p>
           <ul className="mt-6 space-y-2 text-sm text-foreground/75">
             <Li>All current &amp; future modules</Li>
-            <Li>{PLUGINS.map((p) => p.name).join(", ")}</Li>
+            <Li>{PLUGINS.length} ready-made modules + your choice of custom work</Li>
+            <Li>Every back office in every module</Li>
             <Li>Priority support &amp; updates included</Li>
           </ul>
           <BuyButton
@@ -124,6 +126,7 @@ export default function Pricing() {
             <Li>Updates to any existing module</Li>
             <Li>Instant ballpark estimate</Li>
             <Li>Fixed quote, no commitment</Li>
+            <Li>HR, finance &amp; reports already there</Li>
           </ul>
           <Link
             href="#request"

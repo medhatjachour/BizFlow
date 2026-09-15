@@ -35,7 +35,7 @@ export default function Hero() {
           className="glass mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-foreground/90 shadow-sm"
         >
           <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-          Test live in your browser before downloading or buying a license
+          The live demo is the full app — no install, no card, no sales call
         </motion.span>
 
         {/* Main Headline */}
@@ -53,8 +53,8 @@ export default function Hero() {
           variants={item}
           className="mt-6 max-w-2xl text-pretty text-lg text-foreground/70 sm:text-xl"
         >
-          BizFlow is a modular, offline-first management system for <strong className="font-semibold text-foreground">Retail, Bakery, Restaurant, Pharmacy, Clinic, Vet, Gym & Warehouse</strong>. 
-          Launch the full app right in your browser with real data, check estimated license pricing, or request custom features tailored directly to your business.
+          BizFlow is a modular, offline-first management system for <strong className="font-semibold text-foreground">Retail, Bakery, Restaurant, Coffee, Pharmacy, Clinic, Vet, Gym & Warehouse</strong>.
+          Every module already includes the full back office — <strong className="font-semibold text-foreground">employees &amp; HR, finance, expenses, reports and role-based access</strong> — so there is nothing extra to buy. Open it in your browser with real data first, then commission any feature your business still needs.
         </motion.p>
 
         {/* Action Buttons */}
@@ -103,7 +103,7 @@ export default function Hero() {
           </Link>
         </motion.div>
 
-        {/* 3 Core Trust Guarantees */}
+        {/* 4 Core Trust Guarantees */}
         <motion.div
           variants={item}
           className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-foreground/60"
@@ -112,19 +112,25 @@ export default function Hero() {
             <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            Zero install required to test
+            HR, finance, expenses &amp; reports in every module
+          </div>
+          <div className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            No install required — try the whole app in a browser
           </div>
           <div className="flex items-center gap-1.5">
             <svg className="h-4 w-4 text-biz-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            Transparent one-time license pricing
+            One-time licence, no subscription, runs offline
           </div>
           <div className="flex items-center gap-1.5">
             <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
-            Custom fields & workflows upon request
+            Custom features built on request
           </div>
         </motion.div>
       </motion.div>
