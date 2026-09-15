@@ -107,6 +107,12 @@ jobs:
       # Push only the app source files (not test artifacts)
       - name: Sync files to VPS
         run: |
+          # A pipeline's exit status is normally that of its last command, so a
+          # failing `tar` (a path that does not exist, say) would leave this step
+          # reporting success after syncing nothing, and the build below would
+          # then deploy the previous sources. Surface it instead.
+          set -o pipefail
+
           REMOTE="medhat@168.231.107.207"
           BASE="/tmp/bizflow-ci-deploy"
           # Fail fast instead of hanging for hours if the link to the VPS stalls.
@@ -133,9 +139,9 @@ jobs:
           "
 
           # One tar stream instead of a dozen `scp -r` calls. scp needs a round trip
-          # per file, which made this step take ~21 minutes for ~1,800 files (~28
-          # KB/s); a single compressed stream moves the same tree in seconds and
-          # removes the per-connection handshake of each separate scp.
+          # per file, which made this step take ~21 minutes for ~1,900 files
+          # (~38 MB at ~31 KB/s); a single compressed stream moves the same tree in
+          # seconds and removes the per-connection handshake of each separate scp.
           #
           # The excludes are defensive: `actions/checkout` only provides tracked
           # files and every excluded path is gitignored. They keep the payload
