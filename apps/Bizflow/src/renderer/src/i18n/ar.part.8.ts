@@ -17,6 +17,8 @@ export const arPart8 = {
     phAllStatuses: 'كل الحالات',
     phAllStock: 'كل المخزون',
     phAtRisk: 'في خطر',
+    phBadgeLive: 'مباشر',
+    phBadgePos: 'كاشير',
     phBarcode: 'الباركود',
     phBatchAdded: 'تمت إضافة الدفعة',
     phBatchDeleted: 'تم حذف الدفعة',

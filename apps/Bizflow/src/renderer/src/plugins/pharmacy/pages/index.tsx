@@ -59,7 +59,7 @@ interface TabConfig {
   id: PharmacyTab
   labelKey: string
   icon: ReactNode
-  badge?: string
+  badgeKey?: string
   badgeVariant?: 'emerald' | 'amber' | 'blue' | 'rose'
 }
 
@@ -68,14 +68,14 @@ const TABS_CONFIG: TabConfig[] = [
     id: 'dashboard',
     labelKey: 'phDashboard',
     icon: <LayoutDashboard className="w-4 h-4" />,
-    badge: 'LIVE',
+    badgeKey: 'phBadgeLive',
     badgeVariant: 'emerald'
   },
   {
     id: 'pos',
     labelKey: 'phSell',
     icon: <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
-    badge: 'POS',
+    badgeKey: 'phBadgePos',
     badgeVariant: 'emerald'
   },
   {
@@ -296,7 +296,7 @@ export default function PharmacyPage() {
                     </span>
 
                     {/* Dynamic Tag Badge */}
-                    {tabItem.badge && (
+                    {tabItem.badgeKey && (
                       <span
                         className={`text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider ${
                           isActive
@@ -304,7 +304,7 @@ export default function PharmacyPage() {
                             : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                         }`}
                       >
-                        {tabItem.badge}
+                        {t(tabItem.badgeKey)}
                       </span>
                     )}
                   </button>

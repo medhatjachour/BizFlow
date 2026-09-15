@@ -17,6 +17,8 @@ export const enPart8 = {
     phAllStatuses: 'All statuses',
     phAllStock: 'All stock',
     phAtRisk: 'at risk',
+    phBadgeLive: 'Live',
+    phBadgePos: 'POS',
     phBarcode: 'Barcode',
     phBatchAdded: 'Batch added',
     phBatchDeleted: 'Batch deleted',
