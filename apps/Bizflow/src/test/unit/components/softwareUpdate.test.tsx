@@ -148,7 +148,7 @@ describe('SoftwareUpdate card', () => {
     expect(updater.install).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps the restart offer when a later manual check reports "up to date"', async () => {
+  it('keeps the restart offer and the downloaded message when a later check reports "up to date"', async () => {
     await renderReady()
     emit('downloaded', { version: '1.1.0' })
     await screen.findByRole('button', { name: en('updRestartButton') })
@@ -159,8 +159,17 @@ describe('SoftwareUpdate card', () => {
     })
     emit('none')
 
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(en('updUpToDate')))
+    // "You are on the latest version" would be false while 1.1.0 sits staged.
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(en('updDownloaded', { version: '1.1.0' })))
     expect(screen.getByRole('button', { name: en('updRestartButton') })).toBeTruthy()
+  })
+
+  it('still reports "up to date" when nothing has been staged', async () => {
+    await renderReady()
+    emit('none')
+
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe(en('updUpToDate')))
+    expect(screen.queryByRole('button', { name: en('updRestartButton') })).toBeNull()
   })
 
   it('colours the status by meaning so an error is not mistaken for progress', async () => {

@@ -4,7 +4,7 @@
  */
 
 import { Sun, Moon, Monitor, Globe, Check, RefreshCw, Download, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import LicenseActivation from './LicenseActivation'
 
@@ -163,6 +163,9 @@ function SoftwareUpdate() {
   // Held apart from the status line: the line keeps changing (a later manual
   // check reports "up to date"), but the offer to restart must not vanish with it.
   const [readyVersion, setReadyVersion] = useState<string | null>(null)
+  // Same value as `readyVersion`, readable from an event handler that was
+  // subscribed once — the closures below never see a later render's state.
+  const readyRef = useRef<string | null>(null)
 
   const setStatus = (key: string | null, params?: Record<string, string | number>) => {
     setStatusKey(key)
@@ -183,12 +186,18 @@ function SoftwareUpdate() {
       }),
       window.api.updater.on('downloaded', (p) => {
         setPercent(null)
-        setReadyVersion(p?.version ?? '')
-        setStatus('updDownloaded', { version: p?.version ?? '' })
+        readyRef.current = p?.version ?? ''
+        setReadyVersion(readyRef.current)
+        setStatus('updDownloaded', { version: readyRef.current })
       }),
       window.api.updater.on('none', () => {
         setPercent(null)
-        setStatus('updUpToDate')
+        // A build is already staged, so "you are on the latest version" is false
+        // and it used to print directly above "restart and install". Re-stating
+        // the staged build also clears the "checking…" line the button set, which
+        // otherwise sat there looking like a hung check.
+        if (readyRef.current !== null) setStatus('updDownloaded', { version: readyRef.current })
+        else setStatus('updUpToDate')
       }),
       window.api.updater.on('error', (p) => {
         setPercent(null)
