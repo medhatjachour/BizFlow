@@ -261,18 +261,28 @@ describe('InstallmentService', () => {
     })
 
     it('should filter by date - overdue', async () => {
-      const now = new Date()
+      // The service stamps its own `new Date()`; comparing it against a second
+      // `new Date()` taken here only matched while both landed in the same
+      // millisecond, so this passed alone and failed under a loaded whole-suite
+      // run. Pinning the clock keeps the assertion strict and deterministic.
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-01-15T10:00:00.000Z'))
+      try {
+        const now = new Date()
 
-      await installmentService.listInstallments({ dateFilter: 'overdue' })
+        await installmentService.listInstallments({ dateFilter: 'overdue' })
 
-      expect(mockPrisma.installment.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            dueDate: { lt: now },
-            status: { not: 'paid' }
-          }
-        })
-      )
+        expect(mockPrisma.installment.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              dueDate: { lt: now },
+              status: { not: 'paid' }
+            }
+          })
+        )
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('should handle pagination', async () => {
