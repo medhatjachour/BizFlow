@@ -168,7 +168,20 @@ describe("the remote bodies are shipped as scripts instead of quoted into ssh", 
     expect(script).toContain('PAYLOAD_DIR="${PAYLOAD_DIR:-/tmp/bizflow-ci-deploy}"');
     expect(script).toContain("set -euo pipefail");
     // Traces name the file and line, which the inline form never could.
-    expect(script).toContain("PS4='+ ${BASH_SOURCE##*/}:${LINENO}: '");
+    expect(script).toContain("PS4='+ ${SCRIPT_NAME##*/}:${LINENO}: '");
+  });
+
+  it("does not let an unset BASH_SOURCE abort the remote script", () => {
+    // The workflow runs these with `bash -s`, and BASH_SOURCE is only set when
+    // bash executes a file - not when it reads the script from stdin. The first
+    // version expanded it bare in PS4 and died on the VPS with
+    // "BASH_SOURCE: unbound variable", under `set -u`, before doing any work.
+    for (const name of ["apply-deploy.sh", "rollback-deploy.sh"]) {
+      const script = read("scripts", name);
+
+      expect(script).toContain(`\${BASH_SOURCE[0]:-${name}}`);
+      expect(script).not.toMatch(/\$\{BASH_SOURCE##/);
+    }
   });
 });
 

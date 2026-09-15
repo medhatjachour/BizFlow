@@ -17,7 +17,10 @@ set -euo pipefail
 
 APP_DIR="${APP_DIR:-/home/medhat/bizflow}"
 
-PS4='+ ${BASH_SOURCE##*/}:${LINENO}: '
+# See scripts/apply-deploy.sh: BASH_SOURCE is unset under `bash -s`, which is
+# how the workflow pipes this in, and `set -u` makes that fatal.
+SCRIPT_NAME="${BASH_SOURCE[0]:-rollback-deploy.sh}"
+PS4='+ ${SCRIPT_NAME##*/}:${LINENO}: '
 set -x
 
 cd "$APP_DIR"

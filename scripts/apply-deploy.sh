@@ -43,7 +43,12 @@ PAYLOAD_DIR="${PAYLOAD_DIR:-/tmp/bizflow-ci-deploy}"
 # The body no longer appears in the CI log the way an inline command did, so
 # every command prints itself - prefixed with the file and line that issued it,
 # which is what the inline form could not give (it reported "bash: line 25").
-PS4='+ ${BASH_SOURCE##*/}:${LINENO}: '
+#
+# BASH_SOURCE is unset when bash reads the script from stdin - which is exactly
+# how the workflow runs it - and `set -u` turns that reference into a fatal
+# error, so the name has a fallback.
+SCRIPT_NAME="${BASH_SOURCE[0]:-apply-deploy.sh}"
+PS4='+ ${SCRIPT_NAME##*/}:${LINENO}: '
 set -x
 
 if [ ! -d "$PAYLOAD_DIR" ]; then
