@@ -3,10 +3,24 @@
  * Theme and language preferences
  */
 
-import { Sun, Moon, Monitor, Globe, Check, RefreshCw } from 'lucide-react'
+import { Sun, Moon, Monitor, Globe, Check, RefreshCw, Download, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import LicenseActivation from './LicenseActivation'
+
+/**
+ * Colour by meaning, not by decoration: "up to date" and "downloaded" are good
+ * news, an error is bad news, and work in progress uses the accent so it reads
+ * as activity rather than a warning.
+ */
+const STATUS_TONE: Record<string, string> = {
+  updUpToDate: 'text-emerald-600 dark:text-emerald-400',
+  updDownloaded: 'text-emerald-600 dark:text-emerald-400',
+  updAvailable: 'text-[color:var(--accent)]',
+  updDownloading: 'text-[color:var(--accent)]',
+  updChecking: 'text-[color:var(--accent)]',
+  updError: 'text-rose-600 dark:text-rose-400'
+}
 
 interface GeneralSettingsProps {
   theme: string
@@ -129,13 +143,26 @@ export default function GeneralSettings({
   )
 }
 
-/** Shows the installed version and lets the user trigger an update check. */
+/**
+ * Shows the installed version and lets the user trigger an update check.
+ *
+ * A download runs in the background for minutes, so the card has to say more
+ * than "downloading": it shows real progress, colours the status by what it
+ * means (up to date / in progress / failed) and, once the download has landed,
+ * offers the restart that actually installs it — the user who answered "Later"
+ * to the modal otherwise had no way back to that decision.
+ */
 function SoftwareUpdate() {
   const { t } = useLanguage()
   const [version, setVersion] = useState('')
   const [statusKey, setStatusKey] = useState<string | null>(null)
   const [statusParams, setStatusParams] = useState<Record<string, string | number>>()
+  const [percent, setPercent] = useState<number | null>(null)
   const [checking, setChecking] = useState(false)
+  const [installing, setInstalling] = useState(false)
+  // Held apart from the status line: the line keeps changing (a later manual
+  // check reports "up to date"), but the offer to restart must not vanish with it.
+  const [readyVersion, setReadyVersion] = useState<string | null>(null)
 
   const setStatus = (key: string | null, params?: Record<string, string | number>) => {
     setStatusKey(key)
@@ -146,15 +173,27 @@ function SoftwareUpdate() {
     if (!window.api?.updater) return
     window.api.updater.getVersion().then(setVersion).catch(() => {})
     const offs = [
-      window.api.updater.on('available', (p) =>
+      window.api.updater.on('available', (p) => {
+        setPercent(0)
         setStatus('updAvailable', { version: p?.version ?? '' })
-      ),
-      window.api.updater.on('progress', (p) => setStatus('updDownloading', { percent: p?.percent ?? 0 })),
-      window.api.updater.on('downloaded', (p) => setStatus('updDownloaded', { version: p?.version ?? '' })),
-      window.api.updater.on('none', () => setStatus('updUpToDate')),
-      window.api.updater.on('error', (p) =>
+      }),
+      window.api.updater.on('progress', (p) => {
+        setPercent(p?.percent ?? 0)
+        setStatus('updDownloading', { percent: p?.percent ?? 0 })
+      }),
+      window.api.updater.on('downloaded', (p) => {
+        setPercent(null)
+        setReadyVersion(p?.version ?? '')
+        setStatus('updDownloaded', { version: p?.version ?? '' })
+      }),
+      window.api.updater.on('none', () => {
+        setPercent(null)
+        setStatus('updUpToDate')
+      }),
+      window.api.updater.on('error', (p) => {
+        setPercent(null)
         setStatus('updError', { message: p?.message || t('updUnknownError') })
-      )
+      })
     ]
     return () => offs.forEach((off) => off())
     // `t` is stable per language; re-subscribing on language change keeps the
@@ -180,26 +219,86 @@ function SoftwareUpdate() {
     }
   }
 
+  const install = async () => {
+    setInstalling(true)
+    try {
+      const res = await window.api.updater.install()
+      // On success the app is already quitting; only a refusal lands back here.
+      if (!res?.ok) {
+        setStatus('updDevOnly')
+        setInstalling(false)
+      }
+    } catch {
+      setStatus('updError', { message: t('updUnknownError') })
+      setInstalling(false)
+    }
+  }
+
   const statusText = statusKey ? t(statusKey, statusParams) : t('updIdle')
 
   return (
     <div>
       <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t('updTitle')}</h3>
-      <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            BizFlow{version ? ` v${version}` : ''}
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{statusText}</p>
+      <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+              {t('updInstalledVersion')}
+            </p>
+            <p className="mt-0.5 text-sm font-medium text-slate-700 dark:text-slate-200">
+              {/* The brand and the version are Latin in both languages; `dir` keeps
+                  them from being reordered inside an RTL paragraph. */}
+              <span dir="ltr">{t('updVersionValue', { version: version || '—' })}</span>
+            </p>
+            <p
+              role="status"
+              aria-live="polite"
+              className={`text-xs mt-1 ${STATUS_TONE[statusKey ?? ''] ?? 'text-slate-500 dark:text-slate-400'}`}
+            >
+              {statusText}
+            </p>
+          </div>
+          <button
+            onClick={check}
+            disabled={checking}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[color:var(--accent-contrast)] bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] disabled:opacity-50 transition-colors shrink-0"
+          >
+            <RefreshCw size={16} className={checking ? 'animate-spin' : ''} />
+            {t('updCheckButton')}
+          </button>
         </div>
-        <button
-          onClick={check}
-          disabled={checking}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[color:var(--accent-contrast)] bg-[color:var(--accent)] hover:bg-[color:var(--accent-strong)] disabled:opacity-50 transition-colors shrink-0"
-        >
-          <RefreshCw size={16} className={checking ? 'animate-spin' : ''} />
-          {t('updCheckButton')}
-        </button>
+
+        {percent !== null ? (
+          <div
+            className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"
+            role="progressbar"
+            aria-valuenow={percent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={t('updTitle')}
+          >
+            <div
+              className="h-full rounded-full bg-[color:var(--accent)] transition-[width] duration-300"
+              style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+            />
+          </div>
+        ) : null}
+
+        {readyVersion !== null ? (
+          <button
+            type="button"
+            onClick={install}
+            disabled={installing}
+            className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {installing ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Download className="h-4 w-4" aria-hidden="true" />
+            )}
+            {t('updRestartButton')}
+          </button>
+        ) : null}
       </div>
     </div>
   )

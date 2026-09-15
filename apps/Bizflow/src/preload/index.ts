@@ -334,6 +334,7 @@ const api = {
     getVersion: (): Promise<string> => ipcRenderer.invoke('app:getVersion'),
     check: (): Promise<{ status: 'dev' | 'checking' | 'error'; version?: string; message?: string }> =>
       ipcRenderer.invoke('update:check'),
+    install: (): Promise<{ ok: boolean; reason?: 'dev' }> => ipcRenderer.invoke('update:install'),
     on: (
       event: 'available' | 'progress' | 'downloaded' | 'none' | 'error',
       cb: (payload: { version?: string; percent?: number; message?: string } | undefined) => void

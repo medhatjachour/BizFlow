@@ -51,6 +51,15 @@ export function setupAutoUpdater(mainWindow: BrowserWindow): void {
       }
     }
   })
+  // A background download finishes minutes after launch, so the prompt below is
+  // usually answered with "Later". Without this the only way to install was to
+  // quit and hope autoInstallOnAppQuit picked it up.
+  ipcMain.handle('update:install', () => {
+    if (!app.isPackaged) return { ok: false as const, reason: 'dev' as const }
+    log.info('Installing the downloaded update on request.')
+    autoUpdater.quitAndInstall(false, true)
+    return { ok: true as const }
+  })
 
   // ── Background auto-update only in the packaged app ──────────────────────
   if (!app.isPackaged) {

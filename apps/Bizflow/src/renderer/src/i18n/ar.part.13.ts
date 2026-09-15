@@ -14,5 +14,7 @@ export const arPart13 = {
     updUnknownError: 'سبب غير معروف',
     updDevOnly: 'التحديثات متاحة في النسخة المثبَّتة فقط.',
     updCheckButton: 'التحقق من التحديثات',
-    updInstalledVersion: 'الإصدار المثبَّت'
+    updRestartButton: 'أعد التشغيل للتثبيت',
+    updInstalledVersion: 'الإصدار المثبَّت',
+    updVersionValue: 'BizFlow v{version}'
 }

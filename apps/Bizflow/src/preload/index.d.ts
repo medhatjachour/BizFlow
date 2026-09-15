@@ -483,6 +483,8 @@ interface API {
       version?: string
       message?: string
     }>
+    /** Installs the downloaded update and restarts. */
+    install: () => Promise<{ ok: boolean; reason?: 'dev' }>
     on: (
       event: 'available' | 'progress' | 'downloaded' | 'none' | 'error',
       cb: (payload: { version?: string; percent?: number; message?: string } | undefined) => void

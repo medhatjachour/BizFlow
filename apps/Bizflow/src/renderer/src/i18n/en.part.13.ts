@@ -16,5 +16,8 @@ export const enPart13 = {
     updUnknownError: 'unknown error',
     updDevOnly: 'Updates are only available in the installed app.',
     updCheckButton: 'Check for updates',
-    updInstalledVersion: 'Installed version'
+    updRestartButton: 'Restart and install',
+    updInstalledVersion: 'Installed version',
+    // The product name is a proper noun, so only the version is a variable.
+    updVersionValue: 'BizFlow v{version}'
 }
