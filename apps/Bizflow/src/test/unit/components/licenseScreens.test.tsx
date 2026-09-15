@@ -64,6 +64,11 @@ function renderAr(node: React.ReactNode) {
   return render(<LanguageProvider>{node}</LanguageProvider>)
 }
 
+function renderEn(node: React.ReactNode) {
+  localStorage.setItem('language', 'en')
+  return render(<LanguageProvider>{node}</LanguageProvider>)
+}
+
 const ar = licenseStrings(true)
 
 beforeEach(() => {
@@ -200,6 +205,19 @@ describe('licence panel', () => {
     renderAr(<LicenseActivation />)
     expect(await screen.findByText(KEY)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: ar.openModules })).toBeNull()
+  })
+
+  it('names the licensed module in the language the reader is using', async () => {
+    stubApi(activatedState())
+    const en = licenseStrings(false)
+    const { container } = renderEn(<LicenseActivation />)
+
+    expect(await screen.findByText(KEY)).toBeInTheDocument()
+    // The plan row printed the Arabic module name whatever the UI language was,
+    // so an English owner read "وحدة المتجر module" directly above a module list
+    // that said "Commerce".
+    expect(container.textContent).toContain(en.planSingle('Commerce'))
+    expect(container.textContent).not.toContain(en.planSingle('المتجر'))
   })
 })
 

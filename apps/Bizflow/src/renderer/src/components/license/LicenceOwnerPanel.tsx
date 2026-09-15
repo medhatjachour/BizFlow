@@ -48,6 +48,14 @@ export default function LicenceOwnerPanel({
   const suite = state.itemId === 'suite'
   const includedCount = allModules.filter((id) => coversModule(state.itemId, id)).length
 
+  // The plan row used to name the module in Arabic whatever the UI language was,
+  // so an English owner read "وحدة المخبز" next to a list that said "Bakery".
+  const moduleName = (id: string): string => {
+    const meta = MODULE_REGISTRY[id as ModuleId]
+    const english = meta?.name ?? id
+    return isAr ? moduleNameAr(id, english) : english
+  }
+
   // Entitled modules first: a wall of "not included" buries the one line that
   // matters. Presentation only — the entitlement set is the same either way.
   const orderedModules = [
@@ -59,13 +67,7 @@ export default function LicenceOwnerPanel({
     ? strings.notActivated
     : suite
       ? strings.planSuite
-      : strings.planSingle(
-          moduleNameAr(
-            state.itemId.replace('module:', ''),
-            MODULE_REGISTRY[state.itemId.replace('module:', '') as ModuleId]?.name ??
-              state.itemId.replace('module:', '')
-          )
-        )
+      : strings.planSingle(moduleName(state.itemId.slice('module:'.length)))
 
   return (
     <div className="space-y-4">
@@ -103,7 +105,6 @@ export default function LicenceOwnerPanel({
 
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {orderedModules.map((moduleId) => {
-            const meta = MODULE_REGISTRY[moduleId]
             const included = coversModule(state.itemId, moduleId)
             const enabled = enabledModules.includes(moduleId)
             return (
@@ -119,7 +120,7 @@ export default function LicenceOwnerPanel({
                   )}
                   <span className="min-w-0">
                     <span className="block truncate text-sm text-slate-800 dark:text-slate-100">
-                      {isAr ? moduleNameAr(moduleId, meta.name) : meta.name}
+                      {moduleName(moduleId)}
                     </span>
                     <span className="block text-[11px] text-slate-400">
                       {included ? strings.moduleEntitled : strings.moduleLocked}
