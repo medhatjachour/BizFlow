@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { sounds } from '../utils/sound'
 import { ThermalPrinter } from '../utils/printer'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export default function SalesAndOrdersHistoryPage() {
   const [orders, setOrders] = useState<any[]>([])
@@ -93,63 +94,65 @@ export default function SalesAndOrdersHistoryPage() {
   return (
     <div className="space-y-4 pb-12 select-none">
       {/* ─── Sales KPI Summary Strip ──────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Settled Gross Sales
-            </span>
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-              ${stats.totalSales.toFixed(2)}
-            </span>
+      <KpiSection sectionKey="restaurant:sales-KpiStrip">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Settled Gross Sales
+              </span>
+              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                ${stats.totalSales.toFixed(2)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600">
+              <DollarSign className="w-6 h-6" />
+            </div>
           </div>
-          <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600">
-            <DollarSign className="w-6 h-6" />
-          </div>
-        </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Average Check Size
-            </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
-              ${stats.avgCheck.toFixed(2)}
-            </span>
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Average Check Size
+              </span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white">
+                ${stats.avgCheck.toFixed(2)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600">
+              <TrendingUp className="w-6 h-6" />
+            </div>
           </div>
-          <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600">
-            <TrendingUp className="w-6 h-6" />
-          </div>
-        </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Settled Checks
-            </span>
-            <span className="text-2xl font-black text-purple-600">
-              {stats.paidChecks} / {stats.totalChecks}
-            </span>
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Settled Checks
+              </span>
+              <span className="text-2xl font-black text-purple-600">
+                {stats.paidChecks} / {stats.totalChecks}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600">
+              <Receipt className="w-6 h-6" />
+            </div>
           </div>
-          <div className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600">
-            <Receipt className="w-6 h-6" />
-          </div>
-        </div>
 
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Total Tips Collected
-            </span>
-            <span className="text-2xl font-black text-blue-600">
-              ${stats.totalTips.toFixed(2)}
-            </span>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600">
-            <CreditCard className="w-6 h-6" />
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Total Tips Collected
+              </span>
+              <span className="text-2xl font-black text-blue-600">
+                ${stats.totalTips.toFixed(2)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600">
+              <CreditCard className="w-6 h-6" />
+            </div>
           </div>
         </div>
-      </div>
+      </KpiSection>
 
       {/* ─── Filter & Search Ribbon ───────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { useLanguage } from '../../contexts/LanguageContext'
 import SkipToContent from '../ui/SkipToContent'
+import { KpiToggleButton } from '../ui/KpiVisibility'
 import HelpCentre from '../HelpCentre'
 import { useModuleEnabled } from '../../hooks/useModuleEnabled'
 import { MODULE_IDS } from '@/shared/modules'
@@ -407,21 +408,26 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
           {/* Help sits in the header rather than floating over the content. The
               old fixed button covered the bottom corner of every screen, and
               there were two of them (help and shortcuts) competing for it. */}
-          <button
-            type="button"
-            data-tour="help-button"
-            onClick={() => window.dispatchEvent(new CustomEvent('bizflow:help:open'))}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
-            aria-label={isAr ? 'فتح المساعدة ودليل الاستخدام' : 'Open help and user guide'}
-            title={
-              isAr
-                ? 'المساعدة ودليل الاستخدام — وفيه أيضاً اختصارات لوحة المفاتيح'
-                : 'Help and user guide — shortcuts are in here too'
-            }
-          >
-            <HelpCircle size={18} aria-hidden="true" />
-            <span className="hidden sm:inline">{isAr ? 'مساعدة' : 'Help'}</span>
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            {/* One switch for every KPI strip in the app, so the dense
+                dashboards can get out of the way on small screens. */}
+            <KpiToggleButton />
+            <button
+              type="button"
+              data-tour="help-button"
+              onClick={() => window.dispatchEvent(new CustomEvent('bizflow:help:open'))}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+              aria-label={isAr ? 'فتح المساعدة ودليل الاستخدام' : 'Open help and user guide'}
+              title={
+                isAr
+                  ? 'المساعدة ودليل الاستخدام — وفيه أيضاً اختصارات لوحة المفاتيح'
+                  : 'Help and user guide — shortcuts are in here too'
+              }
+            >
+              <HelpCircle size={18} aria-hidden="true" />
+              <span className="hidden sm:inline">{isAr ? 'مساعدة' : 'Help'}</span>
+            </button>
+          </div>
 
         </header>
 

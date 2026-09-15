@@ -2,6 +2,7 @@ import React from 'react'
 import { Store, CheckCircle2, XCircle, UserCheck, ShieldCheck } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { StoreMetrics } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface StoresStatsProps {
   metrics: StoreMetrics
@@ -46,30 +47,32 @@ export const StoresStats: React.FC<StoresStatsProps> = ({ metrics }) => {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-      {stats.map((stat, idx) => (
-        <div
-          key={idx}
-          className={`relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 shadow-2xs hover:shadow-xs transition-all ${stat.borderClass}`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {stat.label}
-            </span>
-            <div className={`p-2 rounded-xl ${stat.accentBg}`}>
-              {stat.icon}
+    <KpiSection sectionKey="commerce:store-StoresStats">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {stats.map((stat, idx) => (
+          <div
+            key={idx}
+            className={`relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-4 shadow-2xs hover:shadow-xs transition-all ${stat.borderClass}`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                {stat.label}
+              </span>
+              <div className={`p-2 rounded-xl ${stat.accentBg}`}>
+                {stat.icon}
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono">
+                {stat.value}
+              </div>
+              <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                {stat.subtext}
+              </div>
             </div>
           </div>
-          <div className="mt-2.5">
-            <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono">
-              {stat.value}
-            </div>
-            <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              {stat.subtext}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </KpiSection>
   )
 }

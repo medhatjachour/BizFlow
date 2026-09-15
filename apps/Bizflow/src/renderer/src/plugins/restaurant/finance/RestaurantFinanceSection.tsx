@@ -17,6 +17,7 @@ import {
 } from 'recharts'
 import { useToast } from '@renderer/contexts/ToastContext'
 import logger from '@/shared/utils/logger'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 type TabType = 'overview' | 'menu' | 'tables'
 
@@ -161,11 +162,13 @@ const RestaurantFinanceSection: React.FC = () => {
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-pulse">{[...Array(3)].map((_, i) => <div key={i} className="h-28 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}</div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <StatCard icon={DollarSign} label="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} sub={`${dateRange}-day period`} color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
-              <StatCard icon={ShoppingBag} label="Total Orders" value={totalOrders} sub="closed orders" color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
-              <StatCard icon={TrendingUp} label="Avg Order Value" value={`$${avgOrder.toFixed(2)}`} sub="per closed order" color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
-            </div>
+            <KpiSection sectionKey="restaurant:finance-RestaurantFinanceSection">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <StatCard icon={DollarSign} label="Total Revenue" value={`$${totalRevenue.toFixed(2)}`} sub={`${dateRange}-day period`} color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
+                <StatCard icon={ShoppingBag} label="Total Orders" value={totalOrders} sub="closed orders" color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
+                <StatCard icon={TrendingUp} label="Avg Order Value" value={`$${avgOrder.toFixed(2)}`} sub="per closed order" color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+              </div>
+            </KpiSection>
           )}
           {!loading && revByDay.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">

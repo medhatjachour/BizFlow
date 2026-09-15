@@ -17,6 +17,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { HeatmapResult, TableMetricsResult } from '@renderer/hooks/useDashboardWorker'
 import logger from '@/shared/utils/logger'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props { refreshSignal?: number }
 
@@ -192,23 +193,25 @@ export default function RestaurantDashboardSection({ refreshSignal }: Props) {
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard icon={Table2}       label="Tables Occupied"  value={`${occupiedCount}/${raw.tables.length}`}
-          sub={`${availableCount} free`}
-          color="bg-rose-100 dark:bg-rose-900/30 text-rose-600"
-          trend={occupiedCount > raw.tables.length * 0.7 ? 'up' : 'flat'} />
-        <StatCard icon={DollarSign}   label="Revenue Today"    value={`$${Number(raw.revenueToday).toFixed(0)}`}
-          color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" trend="up" />
-        <StatCard icon={ChefHat}      label="Active Orders"    value={raw.activeOrders.length}
-          sub={`${raw.activeOrders.filter((o: any) => o.status === 'pending').length} pending`}
-          color="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
-          trend={raw.activeOrders.length > 0 ? 'up' : 'flat'} />
-        <StatCard icon={CalendarClock} label="Today's Reservations" value={raw.reservations.length}
-          color="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" trend="flat" />
-        <StatCard icon={Clock}         label="Avg Turnover"    value={fmtMin(metrics?.avgTurnoverMin ?? 0)}
-          sub={metrics ? `$${metrics.avgOrderValue.toFixed(0)} avg order` : ''}
-          color="bg-sky-100 dark:bg-sky-900/30 text-sky-600" trend="flat" />
-      </div>
+      <KpiSection sectionKey="restaurant:dashboard-RestaurantDashboardSection">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <StatCard icon={Table2}       label="Tables Occupied"  value={`${occupiedCount}/${raw.tables.length}`}
+            sub={`${availableCount} free`}
+            color="bg-rose-100 dark:bg-rose-900/30 text-rose-600"
+            trend={occupiedCount > raw.tables.length * 0.7 ? 'up' : 'flat'} />
+          <StatCard icon={DollarSign}   label="Revenue Today"    value={`$${Number(raw.revenueToday).toFixed(0)}`}
+            color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" trend="up" />
+          <StatCard icon={ChefHat}      label="Active Orders"    value={raw.activeOrders.length}
+            sub={`${raw.activeOrders.filter((o: any) => o.status === 'pending').length} pending`}
+            color="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+            trend={raw.activeOrders.length > 0 ? 'up' : 'flat'} />
+          <StatCard icon={CalendarClock} label="Today's Reservations" value={raw.reservations.length}
+            color="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" trend="flat" />
+          <StatCard icon={Clock}         label="Avg Turnover"    value={fmtMin(metrics?.avgTurnoverMin ?? 0)}
+            sub={metrics ? `$${metrics.avgOrderValue.toFixed(0)} avg order` : ''}
+            color="bg-sky-100 dark:bg-sky-900/30 text-sky-600" trend="flat" />
+        </div>
+      </KpiSection>
 
       {/* ── Row 2: Table occupancy + Peak hours + Active orders ─────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

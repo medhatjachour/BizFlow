@@ -55,7 +55,7 @@ export const CartSidebar: React.FC<Props> = ({
   const { t } = useLanguage()
 
   return (
-    <div className="w-80 2xl:w-96 flex flex-col border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 h-full overflow-hidden shrink-0">
+    <div className="absolute inset-y-0 end-0 z-40 flex h-full w-full max-w-[27rem] flex-col overflow-hidden border-s border-slate-200 bg-slate-50/95 shadow-2xl backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/95 lg:static lg:z-auto lg:h-full lg:w-80 lg:max-w-none lg:shrink-0 lg:bg-slate-50/50 lg:shadow-none lg:backdrop-blur-none dark:lg:bg-slate-900/50 2xl:w-96">
       {/* Header */}
       <div className="p-3.5 px-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
         <div className="flex items-center gap-2">

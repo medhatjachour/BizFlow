@@ -9,6 +9,7 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatMoney, formatCount } from '../utils'
 import type { MatFinanceSummary } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   matFinance: MatFinanceSummary | null
@@ -31,79 +32,81 @@ export const MaterialsFinanceContent: React.FC<Props> = ({ matFinance, loading }
   return (
     <div className="space-y-5">
       {/* 4 Financial Valuation Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Inventory Value */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-2 bg-teal-50 dark:bg-teal-950/40 rounded-2xl text-teal-600">
-              <Package2 size={16} />
+      <KpiSection sectionKey="clinic:finance-MaterialsFinanceContent">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Inventory Value */}
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-teal-50 dark:bg-teal-950/40 rounded-2xl text-teal-600">
+                <Package2 size={16} />
+              </div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                {t('matInventoryValue') || 'Asset Inventory Value'}
+              </span>
             </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              {t('matInventoryValue') || 'Asset Inventory Value'}
-            </span>
+            <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
+              ${formatMoney(matFinance.inventoryValue)}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              {t('matCurrentStock') || 'Valuation based on unit costs'}
+            </p>
           </div>
-          <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
-            ${formatMoney(matFinance.inventoryValue)}
-          </p>
-          <p className="text-[11px] font-semibold text-slate-400 mt-1">
-            {t('matCurrentStock') || 'Valuation based on unit costs'}
-          </p>
-        </div>
 
-        {/* Materials Spend */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-2 bg-rose-50 dark:bg-rose-950/40 rounded-2xl text-rose-600">
-              <TrendingDown size={16} />
+          {/* Materials Spend */}
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-rose-50 dark:bg-rose-950/40 rounded-2xl text-rose-600">
+                <TrendingDown size={16} />
+              </div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                {t('matPeriodSpend') || 'Supplies Period Spend'}
+              </span>
             </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              {t('matPeriodSpend') || 'Supplies Period Spend'}
-            </span>
+            <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
+              ${formatMoney(matFinance.totalMaterialExpenses)}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              {t('matPurchasesLogged') || 'Purchases recorded in period'}
+            </p>
           </div>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
-            ${formatMoney(matFinance.totalMaterialExpenses)}
-          </p>
-          <p className="text-[11px] font-semibold text-slate-400 mt-1">
-            {t('matPurchasesLogged') || 'Purchases recorded in period'}
-          </p>
-        </div>
 
-        {/* Material Losses */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-2 bg-amber-50 dark:bg-amber-950/40 rounded-2xl text-amber-600">
-              <AlertCircle size={16} />
+          {/* Material Losses */}
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-amber-50 dark:bg-amber-950/40 rounded-2xl text-amber-600">
+                <AlertCircle size={16} />
+              </div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                {t('matLosses') || 'Material Losses & Waste'}
+              </span>
             </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              {t('matLosses') || 'Material Losses & Waste'}
-            </span>
+            <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tabular-nums">
+              ${formatMoney(matFinance.lossAmount)}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              {t('matWastedWritten') || 'Damaged or spilled supplies'}
+            </p>
           </div>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 tabular-nums">
-            ${formatMoney(matFinance.lossAmount)}
-          </p>
-          <p className="text-[11px] font-semibold text-slate-400 mt-1">
-            {t('matWastedWritten') || 'Damaged or spilled supplies'}
-          </p>
-        </div>
 
-        {/* Expiry Write-offs */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-2 bg-rose-50 dark:bg-rose-950/40 rounded-2xl text-rose-600">
-              <Clock size={16} />
+          {/* Expiry Write-offs */}
+          <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-rose-50 dark:bg-rose-950/40 rounded-2xl text-rose-600">
+                <Clock size={16} />
+              </div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                {t('matExpiryWriteoffs') || 'Expiry Write-offs'}
+              </span>
             </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              {t('matExpiryWriteoffs') || 'Expiry Write-offs'}
-            </span>
+            <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
+              ${formatMoney(matFinance.expiryAmount)}
+            </p>
+            <p className="text-[11px] font-semibold text-slate-400 mt-1">
+              {t('matExpiredItems') || 'Expired inventory disposed'}
+            </p>
           </div>
-          <p className="text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">
-            ${formatMoney(matFinance.expiryAmount)}
-          </p>
-          <p className="text-[11px] font-semibold text-slate-400 mt-1">
-            {t('matExpiredItems') || 'Expired inventory disposed'}
-          </p>
         </div>
-      </div>
+      </KpiSection>
 
       {/* Inventory Health Matrix */}
       <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-xs">

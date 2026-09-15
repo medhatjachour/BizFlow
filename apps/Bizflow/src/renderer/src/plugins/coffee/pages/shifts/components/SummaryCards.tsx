@@ -2,6 +2,7 @@ import { TrendingUp, Layers, BarChart3, ShoppingBag, AlertTriangle, Clock } from
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { ShiftSummary } from '../types'
 import { formatMoney } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   summary: ShiftSummary | null
@@ -75,31 +76,33 @@ export function SummaryCards({ summary, loading }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      {cards.map(card => {
-        const Icon = card.icon
-        return (
-          <div key={card.label} className={`relative overflow-hidden rounded-xl p-4 border border-slate-200 dark:border-slate-700 ${card.bg}`}>
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                {card.label}
-              </span>
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: card.color + '20', color: card.color }}
-              >
-                <Icon size={14} />
+    <KpiSection sectionKey="coffee:shifts-SummaryCards">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        {cards.map(card => {
+          const Icon = card.icon
+          return (
+            <div key={card.label} className={`relative overflow-hidden rounded-xl p-4 border border-slate-200 dark:border-slate-700 ${card.bg}`}>
+              <div className="flex items-start justify-between mb-2">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                  {card.label}
+                </span>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: card.color + '20', color: card.color }}
+                >
+                  <Icon size={14} />
+                </div>
+              </div>
+              <div className="text-lg font-bold text-slate-900  dark:text-white">
+                {card.value} 
+              </div>
+              <div className="text-[11px text-slate-500 dark:text-slate-400 mt-0.5">
+                {card.sub}
               </div>
             </div>
-            <div className="text-lg font-bold text-slate-900  dark:text-white">
-              {card.value} 
-            </div>
-            <div className="text-[11px text-slate-500 dark:text-slate-400 mt-0.5">
-              {card.sub}
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

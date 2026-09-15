@@ -15,6 +15,7 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { GymDashboardOverview } from '../types'
 import { formatCompactNumber } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   stats: GymDashboardOverview
@@ -122,39 +123,41 @@ export const KpiGridSection: React.FC<Props> = ({ stats, atRiskCount }) => {
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {cards.map((card, idx) => {
-        const Icon = card.icon
-        return (
-          <div
-            key={idx}
-            onClick={() => card.route && navigate(card.route)}
-            className={`group rounded-2xl border p-3.5 ${card.bg} ${card.border} cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 relative overflow-hidden`}
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <Icon size={14} className={card.color} />
-                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 tracking-tight">
-                  {card.label}
-                </span>
+    <KpiSection sectionKey="gym:dashboard-KpiGridSection">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {cards.map((card, idx) => {
+          const Icon = card.icon
+          return (
+            <div
+              key={idx}
+              onClick={() => card.route && navigate(card.route)}
+              className={`group rounded-2xl border p-3.5 ${card.bg} ${card.border} cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 relative overflow-hidden`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Icon size={14} className={card.color} />
+                  <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 tracking-tight">
+                    {card.label}
+                  </span>
+                </div>
+                <ArrowRight
+                  size={11}
+                  className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
+                />
               </div>
-              <ArrowRight
-                size={11}
-                className="text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all"
-              />
-            </div>
 
-            <p className={`text-xl font-black tracking-tight tabular-nums ${card.color}`}>
-              {card.value}
-            </p>
-            {card.sub && (
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium truncate">
-                {card.sub}
+              <p className={`text-xl font-black tracking-tight tabular-nums ${card.color}`}>
+                {card.value}
               </p>
-            )}
-          </div>
-        )
-      })}
-    </div>
+              {card.sub && (
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-medium truncate">
+                  {card.sub}
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

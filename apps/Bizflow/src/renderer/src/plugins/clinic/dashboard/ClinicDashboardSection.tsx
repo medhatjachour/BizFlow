@@ -20,6 +20,7 @@ import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { TrendsResult, AgeDistResult, DiagnosisFreqResult } from '@renderer/hooks/useDashboardWorker'
 import logger from '@/shared/utils/logger'
 import { AppointmentFormModal } from '../pages/appointments/components/AppointmentFormModal'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props { refreshSignal?: number }
 
@@ -248,25 +249,27 @@ export default function ClinicDashboardSection({ refreshSignal }: Props) {
       </div>
 
       {/* ── Stat cards ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard icon={Users}        label={t('totalPatientsLabel')}   value={raw.patientCount}
-          sub={ageDist?.avgAge ? `${t('clinicAvgNote')} ${ageDist.avgAge}y` : ''}
-          color="bg-teal-100 dark:bg-teal-900/30 text-teal-600" trend="flat" />
-        <StatCard icon={Activity}     label={t('sessionsTodayLabel')}   value={raw.todaySessions.length}
-          sub={`${raw.todaySessions.filter((s: any) => s.status === 'completed').length} ${t('clinicDoneNote')}`}
-          color="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
-          trend={sessionTrend?.trend ?? 'flat'} />
-        <StatCard icon={CalendarClock} label={t('clinicStatFollowUps7d')} value={raw.upcomingFollowUps.length}
-          sub={t('clinicUpcomingCount')}
-          color="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
-          trend={raw.upcomingFollowUps.length > 5 ? 'up' : 'flat'} />
-        <StatCard icon={Pill}          label={t('prescriptionsLabel')}   value={raw.prescriptionsToday.length}
-          sub={t('issuedTodayNote')}
-          color="bg-purple-100 dark:bg-purple-900/30 text-purple-600" trend="flat" />
-        <StatCard icon={Heart}         label={t('clinicStatAvgAge')} value={ageDist?.avgAge ? `${ageDist.avgAge}y` : '—'}
-          sub={ageDist?.dominant ? `${t('clinicMostNote')}: ${ageDist.dominant}` : ''}
-          color="bg-rose-100 dark:bg-rose-900/30 text-rose-600" trend="flat" />
-      </div>
+      <KpiSection sectionKey="clinic:dashboard-ClinicDashboardSection">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <StatCard icon={Users}        label={t('totalPatientsLabel')}   value={raw.patientCount}
+            sub={ageDist?.avgAge ? `${t('clinicAvgNote')} ${ageDist.avgAge}y` : ''}
+            color="bg-teal-100 dark:bg-teal-900/30 text-teal-600" trend="flat" />
+          <StatCard icon={Activity}     label={t('sessionsTodayLabel')}   value={raw.todaySessions.length}
+            sub={`${raw.todaySessions.filter((s: any) => s.status === 'completed').length} ${t('clinicDoneNote')}`}
+            color="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+            trend={sessionTrend?.trend ?? 'flat'} />
+          <StatCard icon={CalendarClock} label={t('clinicStatFollowUps7d')} value={raw.upcomingFollowUps.length}
+            sub={t('clinicUpcomingCount')}
+            color="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+            trend={raw.upcomingFollowUps.length > 5 ? 'up' : 'flat'} />
+          <StatCard icon={Pill}          label={t('prescriptionsLabel')}   value={raw.prescriptionsToday.length}
+            sub={t('issuedTodayNote')}
+            color="bg-purple-100 dark:bg-purple-900/30 text-purple-600" trend="flat" />
+          <StatCard icon={Heart}         label={t('clinicStatAvgAge')} value={ageDist?.avgAge ? `${ageDist.avgAge}y` : '—'}
+            sub={ageDist?.dominant ? `${t('clinicMostNote')}: ${ageDist.dominant}` : ''}
+            color="bg-rose-100 dark:bg-rose-900/30 text-rose-600" trend="flat" />
+        </div>
+      </KpiSection>
 
       {/* ── Row 2: Trend + Today's schedule + Diagnosis frequency ─────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

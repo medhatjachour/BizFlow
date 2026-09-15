@@ -426,7 +426,16 @@ export default function VetPage() {
       </header>
 
       {/* ── Main Tab Viewport ──────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-auto p-4 sm:p-5">
+      {/* The sales tab owns its own scrolling panes (catalog + cart), so it gets
+          an unpadded, height-constrained box instead of a scroll container. Any
+          padding here would clip the panes and leave two scrollbars. */}
+      <main
+        className={
+          activeTab === 'sales'
+            ? 'flex-1 min-h-0 flex flex-col overflow-hidden'
+            : 'flex-1 overflow-auto p-4 sm:p-5'
+        }
+      >
         {activeTab === 'owners' && can(pluginTabCapability('vet', 'owners')!) && <VetOwnersTab />}
         {activeTab === 'vets' && can(pluginTabCapability('vet', 'vets')!) && <VetStaffTab />}
         {activeTab === 'sessions' && can(pluginTabCapability('vet', 'sessions')!) && <VetSessionsTab />}

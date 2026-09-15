@@ -1,6 +1,7 @@
 import { Clock3, Truck, Repeat, Calendar, CalendarX, TrendingDown } from 'lucide-react'
 import { Overview } from '../types'
 import { formatCurrency, formatHour, formatDateDisplay } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface OperatorSnapshotProps {
   overview: Overview | null
@@ -76,24 +77,26 @@ export function OperatorSnapshot({ overview, loading, t }: OperatorSnapshotProps
   ]
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
-      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Operator Snapshot</h3>
+    <KpiSection sectionKey="coffee:reports-OperatorSnapshot">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Operator Snapshot</h3>
 
-      <div className="grid grid-cols-2 gap-3">
-        {stats.map((stat, idx) => {
-          const Icon = stat.icon
-          return (
-            <div key={idx} className={`rounded-xl p-3.5 ${stat.bg}`}>
-              <div className="flex items-center gap-2 mb-1.5">
-                <Icon className={`h-4 w-4 ${stat.color}`} />
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{stat.label}</span>
+        <div className="grid grid-cols-2 gap-3">
+          {stats.map((stat, idx) => {
+            const Icon = stat.icon
+            return (
+              <div key={idx} className={`rounded-xl p-3.5 ${stat.bg}`}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Icon className={`h-4 w-4 ${stat.color}`} />
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{stat.label}</span>
+                </div>
+                <p className={`text-base font-bold ${stat.color} tabular-nums`}>{stat.value}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{stat.sub}</p>
               </div>
-              <p className={`text-base font-bold ${stat.color} tabular-nums`}>{stat.value}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{stat.sub}</p>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </KpiSection>
   )
 }

@@ -2,6 +2,7 @@ import React from 'react'
 import { Package, AlertTriangle, AlertCircle, Layers } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { MaterialStats, StockFilter, ExpiryFilter } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   stats: MaterialStats | null
@@ -26,40 +27,42 @@ export const MaterialStatCards: React.FC<Props> = ({
   if (!stats) return null
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-      <StatCard
-        icon={<Package className="h-5 w-5" />}
-        label={t('materialStatsTotal') || 'Total Inventory'}
-        value={stats.total}
-        color="teal"
-        active={stockFilter === 'all' && expiryFilter === 'all'}
-        onClick={onSelectTotal}
-      />
-      <StatCard
-        icon={<AlertTriangle className="h-5 w-5" />}
-        label={t('materialStatsLowStock') || 'Low Stock Threshold'}
-        value={stats.lowStock}
-        color={stats.lowStock > 0 ? 'amber' : 'teal'}
-        active={stockFilter === 'low_stock'}
-        onClick={onSelectLowStock}
-      />
-      <StatCard
-        icon={<AlertCircle className="h-5 w-5" />}
-        label={t('materialStatsExpired') || 'Expired Batches'}
-        value={stats.expired}
-        color={stats.expired > 0 ? 'rose' : 'teal'}
-        active={expiryFilter === 'expired'}
-        onClick={onSelectExpired}
-      />
-      <StatCard
-        icon={<Layers className="h-5 w-5" />}
-        label={t('materialStatsExpiringSoon') || 'Expiring in 30 Days'}
-        value={stats.expiringSoon}
-        color={stats.expiringSoon > 0 ? 'orange' : 'teal'}
-        active={expiryFilter === 'expiring_soon'}
-        onClick={onSelectExpiringSoon}
-      />
-    </div>
+    <KpiSection sectionKey="clinic:materials-MaterialStatCards">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <StatCard
+          icon={<Package className="h-5 w-5" />}
+          label={t('materialStatsTotal') || 'Total Inventory'}
+          value={stats.total}
+          color="teal"
+          active={stockFilter === 'all' && expiryFilter === 'all'}
+          onClick={onSelectTotal}
+        />
+        <StatCard
+          icon={<AlertTriangle className="h-5 w-5" />}
+          label={t('materialStatsLowStock') || 'Low Stock Threshold'}
+          value={stats.lowStock}
+          color={stats.lowStock > 0 ? 'amber' : 'teal'}
+          active={stockFilter === 'low_stock'}
+          onClick={onSelectLowStock}
+        />
+        <StatCard
+          icon={<AlertCircle className="h-5 w-5" />}
+          label={t('materialStatsExpired') || 'Expired Batches'}
+          value={stats.expired}
+          color={stats.expired > 0 ? 'rose' : 'teal'}
+          active={expiryFilter === 'expired'}
+          onClick={onSelectExpired}
+        />
+        <StatCard
+          icon={<Layers className="h-5 w-5" />}
+          label={t('materialStatsExpiringSoon') || 'Expiring in 30 Days'}
+          value={stats.expiringSoon}
+          color={stats.expiringSoon > 0 ? 'orange' : 'teal'}
+          active={expiryFilter === 'expiring_soon'}
+          onClick={onSelectExpiringSoon}
+        />
+      </div>
+    </KpiSection>
   )
 }
 

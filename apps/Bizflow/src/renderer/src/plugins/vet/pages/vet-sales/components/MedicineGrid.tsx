@@ -46,7 +46,7 @@ export const MedicineGrid: React.FC<Props> = ({
   // ── Dense List View ────────────────────────────────────────────────────────
   if (viewMode === 'list') {
     return (
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4">
         <div className="bg-white dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-x-auto shadow-xs">
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead>
@@ -132,7 +132,7 @@ export const MedicineGrid: React.FC<Props> = ({
 
   // ── Compact POS Grid View ──────────────────────────────────────────────────
   return (
-    <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex-1 overflow-y-auto p-4 pb-24 lg:pb-4">
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2.5">
         {medicines.map(med => (
           <MedicineCard

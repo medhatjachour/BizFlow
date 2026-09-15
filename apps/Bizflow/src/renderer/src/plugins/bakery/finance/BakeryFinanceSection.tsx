@@ -35,6 +35,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useToast } from '@renderer/contexts/ToastContext'
 import logger from '@/shared/utils/logger'
 import { StatCard, TabButton, CustomTooltip } from './BakeryFinanceComponents'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 type TabType = 'overview' | 'waste' | 'recipes'
 // Custom Tooltip Component
 
@@ -202,55 +203,57 @@ console.log(plData, 'plData')
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <StatCard
-                icon={DollarSign}
-                label={t('bakeryFinanceRevenue')}
-                value={`$${revenue.toFixed(2)}`}
-                sub={`${dateRange}-day period`}
-                color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-              />
-              <StatCard
-                icon={TrendingDown}
-                label={t('bakeryFinanceTotalCost')}
-                value={`$${cost.toFixed(2)}`}
-                sub={t('bakeryFinanceCostSub')}
-                color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-              />
-              <StatCard
-                icon={TrendingUp}
-                label={t('bakeryFinanceNetProfit')}
-                value={`$${profit.toFixed(2)}`}
-                sub={profit >= 0 ? t('bakeryFinanceProfitable') : t('bakeryFinanceLossPeriod')}
-                trend={profit >= 0 ? 'up' : 'down'}
-                color={
-                  profit >= 0
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-                    : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                }
-              />
-              <StatCard
-                icon={BarChart3}
-                label={t('bakeryFinanceProfitMargin')}
-                value={`${margin.toFixed(1)}%`}
-                sub={margin >= 20 ? t('bakeryFinanceHealthyMargin') : t('bakeryFinanceBelowTarget')}
-                color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-              />
-              <StatCard
-                icon={Receipt}
-                label={t('bakeryFinanceExpenses')}
-                value={`$${expenses.toFixed(2)}`}
-                sub={expenses >= 0 ? t('') : t('')}
-                color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
-              />
-              <StatCard
-                icon={BarChart3}
-                label={t('bakeryFinanceTotalWasteCost')}
-                value={`$${wasteCost.toFixed(2)}`}
-                sub={margin >= 20 ? t('') : t('')}
-                color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-              />
-            </div>
+            <KpiSection sectionKey="bakery:finance-BakeryFinanceSection#1">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+                <StatCard
+                  icon={DollarSign}
+                  label={t('bakeryFinanceRevenue')}
+                  value={`$${revenue.toFixed(2)}`}
+                  sub={`${dateRange}-day period`}
+                  color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                />
+                <StatCard
+                  icon={TrendingDown}
+                  label={t('bakeryFinanceTotalCost')}
+                  value={`$${cost.toFixed(2)}`}
+                  sub={t('bakeryFinanceCostSub')}
+                  color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                />
+                <StatCard
+                  icon={TrendingUp}
+                  label={t('bakeryFinanceNetProfit')}
+                  value={`$${profit.toFixed(2)}`}
+                  sub={profit >= 0 ? t('bakeryFinanceProfitable') : t('bakeryFinanceLossPeriod')}
+                  trend={profit >= 0 ? 'up' : 'down'}
+                  color={
+                    profit >= 0
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                  }
+                />
+                <StatCard
+                  icon={BarChart3}
+                  label={t('bakeryFinanceProfitMargin')}
+                  value={`${margin.toFixed(1)}%`}
+                  sub={margin >= 20 ? t('bakeryFinanceHealthyMargin') : t('bakeryFinanceBelowTarget')}
+                  color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                />
+                <StatCard
+                  icon={Receipt}
+                  label={t('bakeryFinanceExpenses')}
+                  value={`$${expenses.toFixed(2)}`}
+                  sub={expenses >= 0 ? t('') : t('')}
+                  color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                />
+                <StatCard
+                  icon={BarChart3}
+                  label={t('bakeryFinanceTotalWasteCost')}
+                  value={`$${wasteCost.toFixed(2)}`}
+                  sub={margin >= 20 ? t('') : t('')}
+                  color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                />
+              </div>
+            </KpiSection>
           )}
           {!loading && trendChartData.length > 0 && (
             <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -334,33 +337,35 @@ console.log(plData, 'plData')
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <StatCard
-                  icon={Trash2}
-                  label={t('bakeryFinanceTotalWasteCost')}
-                  value={`$${wasteCost.toFixed(2)}`}
-                  sub={t('bakeryFinanceWasteSpoiled')}
-                  color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                />
-                <StatCard
-                  icon={AlertTriangle}
-                  label={t('bakeryFinanceWasteQtyLabel')}
-                  value={wasteQty}
-                  sub={t('bakeryFinanceWasteUnits')}
-                  color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
-                />
-                <StatCard
-                  icon={TrendingDown}
-                  label={t('bakeryFinanceWastePct')}
-                  value={revenue > 0 ? `${((wasteCost / revenue) * 100).toFixed(1)}%` : '0%'}
-                  sub={
-                    wasteCost / revenue < 0.05
-                      ? t('bakeryFinanceWasteUnder')
-                      : t('bakeryFinanceWasteOver')
-                  }
-                  color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                />
-              </div>
+              <KpiSection sectionKey="bakery:finance-BakeryFinanceSection#2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <StatCard
+                    icon={Trash2}
+                    label={t('bakeryFinanceTotalWasteCost')}
+                    value={`$${wasteCost.toFixed(2)}`}
+                    sub={t('bakeryFinanceWasteSpoiled')}
+                    color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                  />
+                  <StatCard
+                    icon={AlertTriangle}
+                    label={t('bakeryFinanceWasteQtyLabel')}
+                    value={wasteQty}
+                    sub={t('bakeryFinanceWasteUnits')}
+                    color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                  />
+                  <StatCard
+                    icon={TrendingDown}
+                    label={t('bakeryFinanceWastePct')}
+                    value={revenue > 0 ? `${((wasteCost / revenue) * 100).toFixed(1)}%` : '0%'}
+                    sub={
+                      wasteCost / revenue < 0.05
+                        ? t('bakeryFinanceWasteUnder')
+                        : t('bakeryFinanceWasteOver')
+                    }
+                    color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                  />
+                </div>
+              </KpiSection>
               {wasteChartData.length > 0 && (
                 <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">
@@ -428,12 +433,14 @@ console.log(plData, 'plData')
             ) : displayRows.length > 0 ? (
               <>
                 {/* Summary bar */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <StatCard icon={DollarSign} label={t('bakeryFinanceTotalRevenue')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.totalRevenue || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceAllRecipes')} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
-                  <StatCard icon={Receipt} label={t('bakeryFinanceProdCost')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.totalProductionCost || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceAllRecipes')} color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
-                  <StatCard icon={Trash2} label={t('bakeryFinanceTotalWasteCost')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.wasteCost || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceWasteSpoiled')} color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
-                  <StatCard icon={TrendingUp} label={t('bakeryFinanceGrossProfit')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.grossProfit || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceAllRecipes')} color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
-                </div>
+                <KpiSection sectionKey="bakery:finance-BakeryFinanceSection#3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <StatCard icon={DollarSign} label={t('bakeryFinanceTotalRevenue')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.totalRevenue || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceAllRecipes')} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
+                    <StatCard icon={Receipt} label={t('bakeryFinanceProdCost')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.totalProductionCost || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceAllRecipes')} color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+                    <StatCard icon={Trash2} label={t('bakeryFinanceTotalWasteCost')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.wasteCost || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceWasteSpoiled')} color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
+                    <StatCard icon={TrendingUp} label={t('bakeryFinanceGrossProfit')} value={`$${displayRows.reduce((s: number, r: any) => s + (r.grossProfit || 0), 0).toFixed(2)}`} sub={t('bakeryFinanceAllRecipes')} color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </KpiSection>
 
                 {/* Per-recipe cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -13,6 +13,7 @@ import {
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatCurrency } from '@renderer/utils/formatNumber'
 import type { ClinicOverview, TrendDirection } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   overview: ClinicOverview
@@ -34,69 +35,71 @@ export const StatsKpiGrid: React.FC<Props> = ({
   const { t } = useLanguage()
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-      {/* 1. Total Patients */}
-      <KpiCard
-        icon={Users}
-        label={t('totalPatients') || 'Total Patients'}
-        value={overview.totalPatients}
-        color="bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400"
-      />
+    <KpiSection sectionKey="clinic:stats-StatsKpiGrid">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+        {/* 1. Total Patients */}
+        <KpiCard
+          icon={Users}
+          label={t('totalPatients') || 'Total Patients'}
+          value={overview.totalPatients}
+          color="bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400"
+        />
 
-      {/* 2. Today's Sessions */}
-      <KpiCard
-        icon={Activity}
-        label={t('todaySessions') || "Today's Sessions"}
-        value={overview.todaySessions}
-        color="bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
-      />
+        {/* 2. Today's Sessions */}
+        <KpiCard
+          icon={Activity}
+          label={t('todaySessions') || "Today's Sessions"}
+          value={overview.todaySessions}
+          color="bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400"
+        />
 
-      {/* 3. Monthly Sessions */}
-      <KpiCard
-        icon={ClipboardList}
-        label={t('sessionsThisMonth') || 'Sessions (Mo.)'}
-        value={overview.sessionsThisMonth}
-        color="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
-        trend={sessionsTrendDir}
-        trendPct={sessionsTrendPct}
-      />
+        {/* 3. Monthly Sessions */}
+        <KpiCard
+          icon={ClipboardList}
+          label={t('sessionsThisMonth') || 'Sessions (Mo.)'}
+          value={overview.sessionsThisMonth}
+          color="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
+          trend={sessionsTrendDir}
+          trendPct={sessionsTrendPct}
+        />
 
-      {/* 4. New Registrations */}
-      <KpiCard
-        icon={UserPlus}
-        label={t('newPatientsMonth') || 'New Patients'}
-        value={overview.newPatientsThisMonth}
-        color="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
-      />
+        {/* 4. New Registrations */}
+        <KpiCard
+          icon={UserPlus}
+          label={t('newPatientsMonth') || 'New Patients'}
+          value={overview.newPatientsThisMonth}
+          color="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
+        />
 
-      {/* 5. Follow-ups Due */}
-      <KpiCard
-        icon={Calendar}
-        label={t('followUpsDue') || 'Follow-ups Due'}
-        value={overview.followUpsDue}
-        color="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
-        trend={overview.followUpsDue > 5 ? 'up' : 'flat'}
-      />
+        {/* 5. Follow-ups Due */}
+        <KpiCard
+          icon={Calendar}
+          label={t('followUpsDue') || 'Follow-ups Due'}
+          value={overview.followUpsDue}
+          color="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+          trend={overview.followUpsDue > 5 ? 'up' : 'flat'}
+        />
 
-      {/* 6. Revenue This Month */}
-      <KpiCard
-        icon={DollarSign}
-        label={t('revenueThisMonth') || 'Revenue (Mo.)'}
-        value={formatCurrency(overview.revenueThisMonth)}
-        color="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
-        trend={revenueTrendDir}
-        trendPct={revenueTrendPct}
-      />
+        {/* 6. Revenue This Month */}
+        <KpiCard
+          icon={DollarSign}
+          label={t('revenueThisMonth') || 'Revenue (Mo.)'}
+          value={formatCurrency(overview.revenueThisMonth)}
+          color="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400"
+          trend={revenueTrendDir}
+          trendPct={revenueTrendPct}
+        />
 
-      {/* 7. Outstanding Receivables */}
-      <KpiCard
-        icon={AlertCircle}
-        label={t('outstandingBalanceCard') || 'Outstanding'}
-        value={formatCurrency(overview.outstandingThisMonth)}
-        color="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
-        sub={`${t('collectionRate') || 'Collection'}: ${collectionRate}%`}
-      />
-    </div>
+        {/* 7. Outstanding Receivables */}
+        <KpiCard
+          icon={AlertCircle}
+          label={t('outstandingBalanceCard') || 'Outstanding'}
+          value={formatCurrency(overview.outstandingThisMonth)}
+          color="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400"
+          sub={`${t('collectionRate') || 'Collection'}: ${collectionRate}%`}
+        />
+      </div>
+    </KpiSection>
   )
 }
 

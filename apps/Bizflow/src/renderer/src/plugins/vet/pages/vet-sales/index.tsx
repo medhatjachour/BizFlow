@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { PanelRightOpen } from 'lucide-react'
+import { PanelRightOpen, ShoppingCart } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 
@@ -66,7 +66,13 @@ export default function VetSalesTab({
     clearCustomer
   } = useCustomerSearch()
 
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  // Narrow windows open on the catalog; the cart slides in over it.
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () =>
+      typeof window === 'undefined' ||
+      typeof window.matchMedia !== 'function' ||
+      window.matchMedia('(min-width: 1024px)').matches
+  )
   const [configuringMed, setConfiguringMed] = useState<MedicineLite | null>(null)
   const [editingCartItem, setEditingCartItem] = useState<CartItem | null>(null)
   const [showOwnerModal, setShowOwnerModal] = useState(false)
@@ -149,7 +155,7 @@ export default function VetSalesTab({
   }
 
   return (
-    <div className="flex-1 flex min-h-0 overflow-hidden bg-slate-100/60 dark:bg-slate-950">
+    <div className="relative flex flex-1 min-h-0 overflow-hidden bg-slate-100/60 dark:bg-slate-950">
       {/* ── Left Column: Pharmacy Catalog ─────────────────────────────── */}
       <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
         <CatalogToolbar
@@ -176,23 +182,58 @@ export default function VetSalesTab({
         />
       </div>
 
+      {/* ── Narrow Viewports: the cart covers the catalog, so it needs a way
+             out that is not the tiny header button. ──────────────────────── */}
+      {sidebarOpen && (
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={t('closeCartOverlay')}
+          onClick={() => setSidebarOpen(false)}
+          onKeyDown={e => {
+            if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setSidebarOpen(false)
+            }
+          }}
+          className="absolute inset-0 z-30 bg-slate-950/40 lg:hidden"
+        />
+      )}
+
       {/* ── Collapsed Cart Tab Trigger ─────────────────────────────────── */}
       {!sidebarOpen && (
-        <button
-          type="button"
-          onClick={() => setSidebarOpen(true)}
-          className="w-12 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-2 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-colors shrink-0"
-        >
-          <PanelRightOpen className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-          {cart.length > 0 && (
-            <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-[11px] font-black flex items-center justify-center shadow-xs">
-              {cart.length}
+        <>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="w-12 border-s border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hidden lg:flex flex-col items-center justify-center gap-2 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-colors shrink-0"
+          >
+            <PanelRightOpen className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            {cart.length > 0 && (
+              <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-[11px] font-black flex items-center justify-center shadow-xs">
+                {cart.length}
+              </span>
+            )}
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 [writing-mode:vertical-rl] rotate-180">
+              Open Cart
             </span>
-          )}
-          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 [writing-mode:vertical-rl] rotate-180">
-            Open Cart
-          </span>
-        </button>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label={t('openShoppingCart')}
+            title={`${t('openShoppingCart')} (${cart.length})`}
+            className="lg:hidden absolute bottom-4 end-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-violet-600 text-white shadow-2xl transition-transform hover:scale-105 active:scale-95"
+          >
+            <ShoppingCart className="h-6 w-6" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -end-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-black shadow-lg">
+                {cart.length}
+              </span>
+            )}
+          </button>
+        </>
       )}
 
       {/* ── Right Column: POS Cart & Checkout Hub ─────────────────────── */}

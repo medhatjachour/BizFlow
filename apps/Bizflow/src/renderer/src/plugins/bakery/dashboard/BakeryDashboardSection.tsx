@@ -18,6 +18,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { TrendsResult, EfficiencyResult, IngredientCostResult } from '@renderer/hooks/useDashboardWorker'
 import logger from '@/shared/utils/logger'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props { refreshSignal?: number }
 
@@ -209,25 +210,27 @@ export default function BakeryDashboardSection({ refreshSignal }: Props) {
       </div>
 
       {/* ── Stat Cards ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard icon={ClipboardList} label="Today's Batches" value={raw.todayBatches.length}
-          sub={`${completedBatches} done`}
-          color="bg-amber-100 dark:bg-amber-900/30 text-amber-600" trend="flat" />
-        <StatCard icon={Flame} label="In Progress" value={inProgressBatches}
-          sub={`${pendingBatches} pending`}
-          color="bg-orange-100 dark:bg-orange-900/30 text-orange-600"
-          trend={inProgressBatches > 0 ? 'up' : 'flat'} />
-        <StatCard icon={Package} label="Recipes" value={raw.recipes}
-          color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" trend="flat" />
-        <StatCard icon={AlertTriangle} label="Low Ingredients" value={raw.lowIngredients.length}
-          sub={raw.lowIngredients.length > 0 ? 'Need restock' : 'All stocked'}
-          color="bg-red-100 dark:bg-red-900/30 text-red-600"
-          trend={raw.lowIngredients.length > 0 ? 'down' : 'flat'} />
-        <StatCard icon={Scale} label="Waste Today" value={`${totalWaste.toFixed(1)} kg`}
-          sub="from waste logs"
-          color="bg-slate-100 dark:bg-slate-700 text-slate-500"
-          trend={totalWaste > 5 ? 'down' : 'flat'} />
-      </div>
+      <KpiSection sectionKey="bakery:dashboard-BakeryDashboardSection">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <StatCard icon={ClipboardList} label="Today's Batches" value={raw.todayBatches.length}
+            sub={`${completedBatches} done`}
+            color="bg-amber-100 dark:bg-amber-900/30 text-amber-600" trend="flat" />
+          <StatCard icon={Flame} label="In Progress" value={inProgressBatches}
+            sub={`${pendingBatches} pending`}
+            color="bg-orange-100 dark:bg-orange-900/30 text-orange-600"
+            trend={inProgressBatches > 0 ? 'up' : 'flat'} />
+          <StatCard icon={Package} label="Recipes" value={raw.recipes}
+            color="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" trend="flat" />
+          <StatCard icon={AlertTriangle} label="Low Ingredients" value={raw.lowIngredients.length}
+            sub={raw.lowIngredients.length > 0 ? 'Need restock' : 'All stocked'}
+            color="bg-red-100 dark:bg-red-900/30 text-red-600"
+            trend={raw.lowIngredients.length > 0 ? 'down' : 'flat'} />
+          <StatCard icon={Scale} label="Waste Today" value={`${totalWaste.toFixed(1)} kg`}
+            sub="from waste logs"
+            color="bg-slate-100 dark:bg-slate-700 text-slate-500"
+            trend={totalWaste > 5 ? 'down' : 'flat'} />
+        </div>
+      </KpiSection>
 
       {/* ── Row 2: 7-day Trend + Efficiency + Schedule ─────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

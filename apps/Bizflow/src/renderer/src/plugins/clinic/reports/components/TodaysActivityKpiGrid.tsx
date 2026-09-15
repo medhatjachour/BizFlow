@@ -2,6 +2,7 @@ import React from 'react'
 import { Users, Stethoscope, CalendarClock, Heart } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { ClinicActivityData } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   data: ClinicActivityData
@@ -24,36 +25,38 @@ export const TodaysActivityKpiGrid: React.FC<Props> = ({ data, loading }) => {
   const uniquePatientsSeen = new Set(data.todaySessions.map((s) => s.patientId)).size
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-      <StatCard
-        icon={Users}
-        label={t('totalPatientsLabel') || 'Total Directory'}
-        value={data.patientCount}
-        sub={t('registeredPatientsNote') || 'Registered active patients'}
-        color="bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400"
-      />
-      <StatCard
-        icon={Stethoscope}
-        label={t('sessionsTodayLabel') || 'Sessions Today'}
-        value={data.todaySessions.length}
-        sub={`${uniquePatientsSeen} ${t('uniquePatientsNote') || 'unique patients'}`}
-        color="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
-      />
-      <StatCard
-        icon={CalendarClock}
-        label={t('followUpsDueLabel') || 'Upcoming Follow-ups'}
-        value={data.followUps.length}
-        sub={t('within7DaysNote') || 'Within next 7 days'}
-        color="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
-      />
-      <StatCard
-        icon={Heart}
-        label={t('prescriptionsLabel') || 'Prescriptions Issued'}
-        value={data.todayPrescriptions.length}
-        sub={t('issuedTodayNote') || 'Prescribed in today sessions'}
-        color="bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400"
-      />
-    </div>
+    <KpiSection sectionKey="clinic:reports-TodaysActivityKpiGrid">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <StatCard
+          icon={Users}
+          label={t('totalPatientsLabel') || 'Total Directory'}
+          value={data.patientCount}
+          sub={t('registeredPatientsNote') || 'Registered active patients'}
+          color="bg-teal-50 dark:bg-teal-950/40 text-teal-600 dark:text-teal-400"
+        />
+        <StatCard
+          icon={Stethoscope}
+          label={t('sessionsTodayLabel') || 'Sessions Today'}
+          value={data.todaySessions.length}
+          sub={`${uniquePatientsSeen} ${t('uniquePatientsNote') || 'unique patients'}`}
+          color="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400"
+        />
+        <StatCard
+          icon={CalendarClock}
+          label={t('followUpsDueLabel') || 'Upcoming Follow-ups'}
+          value={data.followUps.length}
+          sub={t('within7DaysNote') || 'Within next 7 days'}
+          color="bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400"
+        />
+        <StatCard
+          icon={Heart}
+          label={t('prescriptionsLabel') || 'Prescriptions Issued'}
+          value={data.todayPrescriptions.length}
+          sub={t('issuedTodayNote') || 'Prescribed in today sessions'}
+          color="bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400"
+        />
+      </div>
+    </KpiSection>
   )
 }
 

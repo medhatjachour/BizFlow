@@ -11,6 +11,7 @@ import {
 import InfoTooltip from '../../components/InfoTooltip'
 import { JourneyBoard } from '../types'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   board: JourneyBoard | null
@@ -80,29 +81,31 @@ export const OperationsMetricRibbon: React.FC<Props> = ({ board, activeCount }) 
   ]
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2.5">
-      {metrics.map(m => {
-        const Icon = m.icon
-        return (
-          <div
-            key={m.label}
-            className="group p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:shadow hover:border-slate-300 dark:hover:border-slate-700"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
-                <span>{m.label}</span>
-                <InfoTooltip text={m.hint} />
+    <KpiSection sectionKey="warehouse:Operations-OperationsMetricRibbon">
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2.5">
+        {metrics.map(m => {
+          const Icon = m.icon
+          return (
+            <div
+              key={m.label}
+              className="group p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm transition-all hover:shadow hover:border-slate-300 dark:hover:border-slate-700"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                  <span>{m.label}</span>
+                  <InfoTooltip text={m.hint} />
+                </div>
+                <div className={`p-1.5 rounded-lg ${m.bg} ${m.color}`}>
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
               </div>
-              <div className={`p-1.5 rounded-lg ${m.bg} ${m.color}`}>
-                <Icon className="w-3.5 h-3.5" />
+              <div className="mt-2 text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                {m.value}
               </div>
             </div>
-            <div className="mt-2 text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-              {m.value}
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

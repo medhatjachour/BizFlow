@@ -1,5 +1,6 @@
 import { Dumbbell, Users, CalendarCheck, CheckCircle2 } from 'lucide-react'
 import { Program } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface ProgramStatsStripProps {
   programs: Program[]
@@ -38,26 +39,28 @@ export function ProgramStatsStrip({ programs }: ProgramStatsStripProps) {
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {stats.map(s => {
-        const Icon = s.icon
-        return (
-          <div
-            key={s.label}
-            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-4 shadow-xs flex items-center justify-between"
-          >
-            <div>
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{s.label}</p>
-              <p className="text-xl font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
-                {s.value}
-              </p>
+    <KpiSection sectionKey="gym:programs-ProgramStatsStrip">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {stats.map(s => {
+          const Icon = s.icon
+          return (
+            <div
+              key={s.label}
+              className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/80 p-4 shadow-xs flex items-center justify-between"
+            >
+              <div>
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{s.label}</p>
+                <p className="text-xl font-black text-slate-900 dark:text-white tabular-nums mt-0.5">
+                  {s.value}
+                </p>
+              </div>
+              <div className={`p-2.5 rounded-2xl ${s.color}`}>
+                <Icon size={18} />
+              </div>
             </div>
-            <div className={`p-2.5 rounded-2xl ${s.color}`}>
-              <Icon size={18} />
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

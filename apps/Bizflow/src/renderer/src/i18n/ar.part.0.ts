@@ -362,4 +362,12 @@ sortByLocation: 'الترتيب حسب الموقع',
 sortByManager: 'الترتيب حسب المدير',
 sortByStatus: 'الترتيب حسب الحالة',
 refresh: 'تحديث',
+
+// KPI visibility — shared switch for every plugin's KPI strips.
+kpiHideAll: 'إخفاء البطاقات الإحصائية',
+kpiShowAll: 'إظهار البطاقات الإحصائية',
+kpiHideSection: 'إخفاء',
+kpiShowSection: 'إظهار',
+kpiAutoHint: 'تُخفى البطاقات الإحصائية تلقائياً على الشاشات الصغيرة حتى تختار غير ذلك.',
+kpiSectionHidden: 'البطاقات الإحصائية مخفية'
 }

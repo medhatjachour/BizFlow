@@ -6,6 +6,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { LucideIcon } from 'lucide-react'
 import type { FinanceOverview } from '../types'
 import { formatMoney, formatNumber, formatPercent } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   overview: FinanceOverview | null
@@ -110,39 +111,41 @@ export function KpiCards({ overview, loading }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {cards.map((card, i) => {
-        const Icon = card.icon
-        return (
-          <div
-            key={i}
-            className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:shadow-md transition-shadow"
-          >
-            {/* Label + icon */}
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {card.label}
-              </span>
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: card.bg.includes('dark:') ? undefined : card.bg }}
-              >
-                <Icon className="w-4 h-4" style={{ color: card.color }} />
+    <KpiSection sectionKey="coffee:finance-KpiCards">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {cards.map((card, i) => {
+          const Icon = card.icon
+          return (
+            <div
+              key={i}
+              className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 hover:shadow-md transition-shadow"
+            >
+              {/* Label + icon */}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {card.label}
+                </span>
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: card.bg.includes('dark:') ? undefined : card.bg }}
+                >
+                  <Icon className="w-4 h-4" style={{ color: card.color }} />
+                </div>
+              </div>
+
+              {/* Value */}
+              <div className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">
+                {card.value}
+              </div>
+
+              {/* Sub */}
+              <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                {card.sub}
               </div>
             </div>
-
-            {/* Value */}
-            <div className="text-xl font-bold text-slate-900 dark:text-white tabular-nums">
-              {card.value}
-            </div>
-
-            {/* Sub */}
-            <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              {card.sub}
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

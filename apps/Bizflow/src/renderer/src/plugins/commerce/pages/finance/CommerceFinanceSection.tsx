@@ -29,6 +29,7 @@ import PricingCalculator from '@renderer/pages/Finance/components/PricingCalcula
 import StoreComparisonSection from '@renderer/pages/Finance/components/StoreComparisonSection'
 import InstallmentPlansSection from '@renderer/pages/Finance/components/InstallmentPlansSection'
 import logger from '@/shared/utils/logger'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, ChartTooltip, Legend, Filler)
 
@@ -278,27 +279,29 @@ const CommerceFinanceSection: React.FC = () => {
               {[...Array(5)].map((_, i) => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-              <KPICard title={t('financeRevenue')} value={`$${currentMetrics?.revenue.toFixed(2) || '0.00'}`}
-                change={currentMetrics?.revenueChange || 0} icon={<DollarSign size={24} />} color="blue"
-                subtitle={currentMetrics?.revenueWithTax ? `${currentMetrics.transactions || 0} ${t('financeTransactions')} | With Tax: $${currentMetrics.revenueWithTax.toFixed(2)}` : `${currentMetrics?.transactions || 0} ${t('financeTransactions')}`}
-                tooltip={`Total income from all sales before deducting costs (pre-tax). Tax collected: $${((currentMetrics?.revenueWithTax || 0) - (currentMetrics?.revenue || 0)).toFixed(2)}`} />
-              <KPICard title={t('financeGrossProfit')} value={`$${currentMetrics?.totalProfit.toFixed(2) || '0.00'}`}
-                change={currentMetrics?.profitChange || 0} icon={<TrendingUp size={24} />} color="green"
-                subtitle={currentMetrics?.totalExpenses ? `COGS: $${currentMetrics.totalCost.toFixed(0)} | Expenses: $${currentMetrics.totalExpenses.toFixed(0)}` : `${t('financeTotalCost')}: $${currentMetrics?.totalCost.toFixed(2) || '0.00'}`}
-                showChange={currentMetrics?.profitChange !== undefined} tooltip={t('financeTooltipProfit')} />
-              <KPICard title={t('financeRefunds')} value={`$${currentMetrics?.totalRefunded?.toFixed(2) || '0.00'}`}
-                change={-(currentMetrics?.refundRate || 0)} icon={<TrendingDown size={24} />} color="red"
-                subtitle={`${currentMetrics?.refundedTransactions || 0} ${t('financeTransactions')} | ${currentMetrics?.refundedItems || 0} ${t('financeItems')}`} showChange={true}
-                tooltip={`Refund rate: ${currentMetrics?.refundRate?.toFixed(1) || 0}% of transactions`} />
-              <KPICard title={t('financeProfitMargin')} value={`${currentMetrics?.profitMargin.toFixed(2) || '0.00'}%`}
-                change={0} icon={<Percent size={24} />} color="purple"
-                subtitle={`${t('financeAverage')} (Based on pre-tax revenue)`} showChange={false}
-                tooltip={`Profit margin = (Profit ÷ Revenue) × 100`} />
-              <KPICard title={t('financeAvgOrder')} value={`$${currentMetrics?.avgOrderValue.toFixed(2) || '0.00'}`}
-                change={currentMetrics?.avgOrderValueChange || 0} icon={<ShoppingCart size={24} />} color="orange"
-                subtitle={t('financePerTransaction')} tooltip={t('financeTooltipAvgOrder')} />
-            </div>
+            <KpiSection sectionKey="commerce:finance-CommerceFinanceSection">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <KPICard title={t('financeRevenue')} value={`$${currentMetrics?.revenue.toFixed(2) || '0.00'}`}
+                  change={currentMetrics?.revenueChange || 0} icon={<DollarSign size={24} />} color="blue"
+                  subtitle={currentMetrics?.revenueWithTax ? `${currentMetrics.transactions || 0} ${t('financeTransactions')} | With Tax: $${currentMetrics.revenueWithTax.toFixed(2)}` : `${currentMetrics?.transactions || 0} ${t('financeTransactions')}`}
+                  tooltip={`Total income from all sales before deducting costs (pre-tax). Tax collected: $${((currentMetrics?.revenueWithTax || 0) - (currentMetrics?.revenue || 0)).toFixed(2)}`} />
+                <KPICard title={t('financeGrossProfit')} value={`$${currentMetrics?.totalProfit.toFixed(2) || '0.00'}`}
+                  change={currentMetrics?.profitChange || 0} icon={<TrendingUp size={24} />} color="green"
+                  subtitle={currentMetrics?.totalExpenses ? `COGS: $${currentMetrics.totalCost.toFixed(0)} | Expenses: $${currentMetrics.totalExpenses.toFixed(0)}` : `${t('financeTotalCost')}: $${currentMetrics?.totalCost.toFixed(2) || '0.00'}`}
+                  showChange={currentMetrics?.profitChange !== undefined} tooltip={t('financeTooltipProfit')} />
+                <KPICard title={t('financeRefunds')} value={`$${currentMetrics?.totalRefunded?.toFixed(2) || '0.00'}`}
+                  change={-(currentMetrics?.refundRate || 0)} icon={<TrendingDown size={24} />} color="red"
+                  subtitle={`${currentMetrics?.refundedTransactions || 0} ${t('financeTransactions')} | ${currentMetrics?.refundedItems || 0} ${t('financeItems')}`} showChange={true}
+                  tooltip={`Refund rate: ${currentMetrics?.refundRate?.toFixed(1) || 0}% of transactions`} />
+                <KPICard title={t('financeProfitMargin')} value={`${currentMetrics?.profitMargin.toFixed(2) || '0.00'}%`}
+                  change={0} icon={<Percent size={24} />} color="purple"
+                  subtitle={`${t('financeAverage')} (Based on pre-tax revenue)`} showChange={false}
+                  tooltip={`Profit margin = (Profit ÷ Revenue) × 100`} />
+                <KPICard title={t('financeAvgOrder')} value={`$${currentMetrics?.avgOrderValue.toFixed(2) || '0.00'}`}
+                  change={currentMetrics?.avgOrderValueChange || 0} icon={<ShoppingCart size={24} />} color="orange"
+                  subtitle={t('financePerTransaction')} tooltip={t('financeTooltipAvgOrder')} />
+              </div>
+            </KpiSection>
           )}
 
           {/* Charts */}

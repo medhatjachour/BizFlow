@@ -1,6 +1,7 @@
 import { ShoppingBag, Boxes, TrendingUp, DollarSign, TrendingDown, Activity } from 'lucide-react'
 import { MedSummaryStat } from '../types'
 import { formatCurrency, formatCompactNumber } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface MedicineSalesKpisProps {
   medSummary: MedSummaryStat
@@ -21,26 +22,28 @@ export function MedicineSalesKpis({ medSummary, showProfit }: MedicineSalesKpisP
   ].filter((c) => showProfit || !c.isProfitOnly)
 
   return (
-    <div className="space-y-2.5">
-      <h2 className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
-        <ShoppingBag size={14} className="text-violet-500" />
-        Pharmacy Performance
-      </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        {cards.map((card) => {
-          const Icon = card.icon
-          return (
-            <div
-              key={card.label}
-              className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 p-3.5 text-center shadow-sm hover:shadow-md transition-all"
-            >
-              <Icon className={`h-4 w-4 mx-auto mb-1.5 ${card.color}`} />
-              <p className={`text-lg font-black tracking-tight ${card.color}`}>{card.value}</p>
-              <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">{card.label}</p>
-            </div>
-          )
-        })}
+    <KpiSection sectionKey="vet:vet-stats-MedicineSalesKpis">
+      <div className="space-y-2.5">
+        <h2 className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <ShoppingBag size={14} className="text-violet-500" />
+          Pharmacy Performance
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          {cards.map((card) => {
+            const Icon = card.icon
+            return (
+              <div
+                key={card.label}
+                className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200/80 dark:border-slate-700/70 p-3.5 text-center shadow-sm hover:shadow-md transition-all"
+              >
+                <Icon className={`h-4 w-4 mx-auto mb-1.5 ${card.color}`} />
+                <p className={`text-lg font-black tracking-tight ${card.color}`}>{card.value}</p>
+                <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">{card.label}</p>
+              </div>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </KpiSection>
   )
 }

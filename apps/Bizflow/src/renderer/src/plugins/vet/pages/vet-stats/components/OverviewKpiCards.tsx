@@ -2,6 +2,7 @@ import { PawPrint, Users, Activity, TrendingUp, AlertCircle, CalendarClock } fro
 import { VetOverviewStats } from '../types'
 import { formatCurrency, formatCompactNumber } from '../utils'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface OverviewKpiCardsProps {
   overview: VetOverviewStats
@@ -56,22 +57,24 @@ export function OverviewKpiCards({ overview }: OverviewKpiCardsProps) {
   ]
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      {cards.map((card) => {
-        const Icon = card.icon
-        return (
-          <div
-            key={card.label}
-            className={`relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-gradient-to-b ${card.bgGlow} to-white dark:to-slate-800/80 p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">{card.label}</span>
-              <Icon className={`h-4 w-4 ${card.tone}`} />
+    <KpiSection sectionKey="vet:vet-stats-OverviewKpiCards">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {cards.map((card) => {
+          const Icon = card.icon
+          return (
+            <div
+              key={card.label}
+              className={`relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-700/70 bg-gradient-to-b ${card.bgGlow} to-white dark:to-slate-800/80 p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate">{card.label}</span>
+                <Icon className={`h-4 w-4 ${card.tone}`} />
+              </div>
+              <p className={`text-xl font-black tracking-tight ${card.tone}`}>{card.value}</p>
             </div>
-            <p className={`text-xl font-black tracking-tight ${card.tone}`}>{card.value}</p>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

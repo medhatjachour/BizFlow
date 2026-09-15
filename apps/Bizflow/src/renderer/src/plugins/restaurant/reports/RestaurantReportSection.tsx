@@ -21,6 +21,7 @@ import { useToast } from '@renderer/contexts/ToastContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { HeatmapResult, TableMetricsResult } from '@renderer/hooks/useDashboardWorker'
 import logger from '@/shared/utils/logger'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props { refreshSignal?: number }
 type ReportType = 'orders' | 'tables' | 'menu'
@@ -243,12 +244,14 @@ const RestaurantReportSection: React.FC<Props> = ({ refreshSignal }) => {
             {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard icon={Table2}       label="Tables Occupied" value={`${occupiedTables}/${totalTables}`} sub="currently occupied"             color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
-            <StatCard icon={CalendarClock} label="Reservations"   value={data.reservations.length}          sub="today"                            color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
-            <StatCard icon={ShoppingBag}  label="Active Orders"   value={data.activeOrders.length}          sub={`${data.allOrdersToday.length} total today`} color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
-            <StatCard icon={DollarSign}   label="Revenue Today"   value={`$${data.revenueToday.toFixed(2)}`} sub={avgOrder > 0 ? `avg $${avgOrder.toFixed(2)}/order` : 'no orders yet'} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
-          </div>
+          <KpiSection sectionKey="restaurant:reports-RestaurantReportSection">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard icon={Table2}       label="Tables Occupied" value={`${occupiedTables}/${totalTables}`} sub="currently occupied"             color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
+              <StatCard icon={CalendarClock} label="Reservations"   value={data.reservations.length}          sub="today"                            color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
+              <StatCard icon={ShoppingBag}  label="Active Orders"   value={data.activeOrders.length}          sub={`${data.allOrdersToday.length} total today`} color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
+              <StatCard icon={DollarSign}   label="Revenue Today"   value={`$${data.revenueToday.toFixed(2)}`} sub={avgOrder > 0 ? `avg $${avgOrder.toFixed(2)}/order` : 'no orders yet'} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
+            </div>
+          </KpiSection>
         )}
 
         {/* Hourly chart + Table metrics */}

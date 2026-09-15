@@ -3,6 +3,7 @@ import { Pill, AlertTriangle, Clock, Package, DollarSign, X } from 'lucide-react
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatCurrency } from '../utils'
 import type { BatchFilterKey } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface MedicinesStatsProps {
   metrics: {
@@ -72,46 +73,48 @@ export const MedicinesStats: React.FC<MedicinesStatsProps> = ({
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-      {cards.map(c => {
-        const isActive = c.id !== '__valuation__' && activeFilter === c.id && c.id !== null
+    <KpiSection sectionKey="vet:vet-medicines-MedicinesStats">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+        {cards.map(c => {
+          const isActive = c.id !== '__valuation__' && activeFilter === c.id && c.id !== null
 
-        return (
-          <div
-            key={c.label}
-            onClick={() => {
-              if (!c.clickable) return
-              if (c.id === null) {
-                onSelectFilter(null)
-              } else {
-                onSelectFilter(activeFilter === c.id ? null : (c.id as BatchFilterKey))
-              }
-            }}
-            className={`border rounded-2xl p-4 transition-all duration-200 ${
-              c.clickable ? 'cursor-pointer select-none' : ''
-            } ${
-              isActive
-                ? `ring-2 ${c.activeRing}`
-                : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/70 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className={`p-2 rounded-xl bg-slate-100 dark:bg-slate-700/50 ${c.color}`}>
-                <c.icon className="w-4 h-4" />
+          return (
+            <div
+              key={c.label}
+              onClick={() => {
+                if (!c.clickable) return
+                if (c.id === null) {
+                  onSelectFilter(null)
+                } else {
+                  onSelectFilter(activeFilter === c.id ? null : (c.id as BatchFilterKey))
+                }
+              }}
+              className={`border rounded-2xl p-4 transition-all duration-200 ${
+                c.clickable ? 'cursor-pointer select-none' : ''
+              } ${
+                isActive
+                  ? `ring-2 ${c.activeRing}`
+                  : 'bg-white dark:bg-slate-800/80 border-slate-200/80 dark:border-slate-700/70 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={`p-2 rounded-xl bg-slate-100 dark:bg-slate-700/50 ${c.color}`}>
+                  <c.icon className="w-4 h-4" />
+                </div>
+                {isActive && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-700 px-2 py-0.5 rounded-full shadow-xs">
+                    Active <X className="w-2.5 h-2.5" />
+                  </span>
+                )}
               </div>
-              {isActive && (
-                <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500 bg-white dark:bg-slate-700 px-2 py-0.5 rounded-full shadow-xs">
-                  Active <X className="w-2.5 h-2.5" />
-                </span>
-              )}
+              <p className={`text-xl font-bold tracking-tight ${c.color}`}>{c.value}</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                {c.label}
+              </p>
             </div>
-            <p className={`text-xl font-bold tracking-tight ${c.color}`}>{c.value}</p>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-              {c.label}
-            </p>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

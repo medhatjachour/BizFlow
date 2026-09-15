@@ -1,6 +1,7 @@
 import React from 'react'
 import { Users, CalendarX, Footprints, Flame } from 'lucide-react'
 import { GymReportStats } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   stats: GymReportStats
@@ -39,31 +40,33 @@ export const ReportKpiGrid: React.FC<Props> = ({ stats }) => {
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {kpis.map((kpi, idx) => {
-        const Icon = kpi.icon
-        return (
-          <div
-            key={idx}
-            className="bg-white dark:bg-slate-800/95 border border-slate-200/80 dark:border-slate-700/70 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
-                {kpi.label}
-              </span>
-              <div className={`p-2 rounded-xl border ${kpi.style}`}>
-                <Icon size={15} />
+    <KpiSection sectionKey="gym:reports-ReportKpiGrid">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi, idx) => {
+          const Icon = kpi.icon
+          return (
+            <div
+              key={idx}
+              className="bg-white dark:bg-slate-800/95 border border-slate-200/80 dark:border-slate-700/70 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
+                  {kpi.label}
+                </span>
+                <div className={`p-2 rounded-xl border ${kpi.style}`}>
+                  <Icon size={15} />
+                </div>
               </div>
+              <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
+                {kpi.value}
+              </div>
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 block">
+                {kpi.subtext}
+              </span>
             </div>
-            <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
-              {kpi.value}
-            </div>
-            <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 block">
-              {kpi.subtext}
-            </span>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

@@ -10,6 +10,7 @@ import { CloseShiftModal } from './components/CloseShiftModal'
 import { ZReportModal } from './components/ZReportModal'
 import { formatCurrency } from './utils'
 import { sounds } from '../utils/sound'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export default function StaffShiftsPage() {
   const {
@@ -60,49 +61,51 @@ export default function StaffShiftsPage() {
       />
 
       {/* ─── Historical Lifetime KPIs ─────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Total Audited Sessions
-            </span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">
-              {historyStats.closedShiftsCount} Shifts
-            </span>
+      <KpiSection sectionKey="restaurant:shifts-KpiStrip">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Total Audited Sessions
+              </span>
+              <span className="text-xl font-black text-slate-900 dark:text-white">
+                {historyStats.closedShiftsCount} Shifts
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600">
+              <Layers className="w-5 h-5" />
+            </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600">
-            <Layers className="w-5 h-5" />
-          </div>
-        </div>
 
-        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Cumulative Settled Sales
-            </span>
-            <span className="text-xl font-black text-emerald-600">
-              {formatCurrency(historyStats.totalSales)}
-            </span>
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Cumulative Settled Sales
+              </span>
+              <span className="text-xl font-black text-emerald-600">
+                {formatCurrency(historyStats.totalSales)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600">
+              <DollarSign className="w-5 h-5" />
+            </div>
           </div>
-          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600">
-            <DollarSign className="w-5 h-5" />
-          </div>
-        </div>
 
-        <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Total Gratuity Distributed
-            </span>
-            <span className="text-xl font-black text-purple-600">
-              {formatCurrency(historyStats.totalTips)}
-            </span>
-          </div>
-          <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600">
-            <HeartHandshake className="w-5 h-5" />
+          <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Total Gratuity Distributed
+              </span>
+              <span className="text-xl font-black text-purple-600">
+                {formatCurrency(historyStats.totalTips)}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600">
+              <HeartHandshake className="w-5 h-5" />
+            </div>
           </div>
         </div>
-      </div>
+      </KpiSection>
 
       {/* ─── Search & History Table ───────────────────────────────── */}
       <div className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800">

@@ -1,5 +1,6 @@
 import React from 'react'
 import { MapPin, ArrowRightLeft, AlertTriangle, TrendingUp } from 'lucide-react'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   totalLocations: number
@@ -52,31 +53,33 @@ export const TodayActivityRibbon: React.FC<Props> = ({
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      {cards.map(card => {
-        const Icon = card.icon
-        return (
-          <div
-            key={card.label}
-            className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                {card.label}
-              </span>
-              <div className={`p-1.5 rounded-lg ${card.bg} ${card.color}`}>
-                <Icon className="w-4 h-4" />
+    <KpiSection sectionKey="warehouse:reports-TodayActivityRibbon">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {cards.map(card => {
+          const Icon = card.icon
+          return (
+            <div
+              key={card.label}
+              className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  {card.label}
+                </span>
+                <div className={`p-1.5 rounded-lg ${card.bg} ${card.color}`}>
+                  <Icon className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 space-y-0.5">
+                <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                  {card.value}
+                </div>
+                <div className="text-[10.5px] text-slate-400">{card.sub}</div>
               </div>
             </div>
-            <div className="mt-2 space-y-0.5">
-              <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {card.value}
-              </div>
-              <div className="text-[10.5px] text-slate-400">{card.sub}</div>
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

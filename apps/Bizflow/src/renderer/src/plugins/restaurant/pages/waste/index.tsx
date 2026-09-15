@@ -5,6 +5,7 @@ import { useWasteManagement } from './hooks/useWasteManagement'
 import { WasteReasonBreakdown } from './components/WasteReasonBreakdown'
 import { LogWasteModal } from './components/LogWasteModal'
 import { sounds } from '../utils/sound'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export default function KitchenWasteLogPage() {
   const {
@@ -27,54 +28,56 @@ export default function KitchenWasteLogPage() {
   return (
     <div className="space-y-4 pb-12 select-none">
       {/* ─── Financial Shrinkage KPI Banner ───────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Cumulative Shrinkage Loss
-            </span>
-            <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
-              -${analytics?.totalLoss.toFixed(2) || '0.00'}
-            </span>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-rose-500/10 text-rose-600">
-            <TrendingDown className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Recorded Waste Incidents
-            </span>
-            <span className="text-2xl font-black text-slate-900 dark:text-white">
-              {analytics?.totalEntries || 0} Entries
-            </span>
-          </div>
-          <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600">
-            <Package className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
-          <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
-              Top Shrinkage Item
-            </span>
-            <span className="text-base font-black text-slate-900 dark:text-white truncate block max-w-[170px]">
-              {analytics?.topLossItems[0]?.name || 'None'}
-            </span>
-            {analytics?.topLossItems[0] && (
-              <span className="text-[10px] font-bold text-rose-500">
-                -${analytics.topLossItems[0].totalCost.toFixed(2)} loss
+      <KpiSection sectionKey="restaurant:waste-KpiStrip">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Cumulative Shrinkage Loss
               </span>
-            )}
+              <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
+                -${analytics?.totalLoss.toFixed(2) || '0.00'}
+              </span>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-rose-500/10 text-rose-600">
+              <TrendingDown className="w-6 h-6" />
+            </div>
           </div>
-          <div className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600">
-            <DollarSign className="w-6 h-6" />
+
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Recorded Waste Incidents
+              </span>
+              <span className="text-2xl font-black text-slate-900 dark:text-white">
+                {analytics?.totalEntries || 0} Entries
+              </span>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600">
+              <Package className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
+                Top Shrinkage Item
+              </span>
+              <span className="text-base font-black text-slate-900 dark:text-white truncate block max-w-[170px]">
+                {analytics?.topLossItems[0]?.name || 'None'}
+              </span>
+              {analytics?.topLossItems[0] && (
+                <span className="text-[10px] font-bold text-rose-500">
+                  -${analytics.topLossItems[0].totalCost.toFixed(2)} loss
+                </span>
+              )}
+            </div>
+            <div className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600">
+              <DollarSign className="w-6 h-6" />
+            </div>
           </div>
         </div>
-      </div>
+      </KpiSection>
 
       {/* ─── Cause Breakdown Matrix ───────────────────────────────── */}
       <WasteReasonBreakdown

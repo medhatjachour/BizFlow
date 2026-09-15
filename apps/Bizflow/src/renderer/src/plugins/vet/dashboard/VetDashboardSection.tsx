@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PawPrint, CalendarClock, BellRing, CheckCircle2, ArrowRight, Clock3, DollarSign, Pill, Package, TrendingUp, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   refreshSignal?: number
@@ -216,125 +217,133 @@ export default function VetDashboardSection({ refreshSignal }: Props) {
 
       <div className="space-y-3">
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today's Operations</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          <StatCard
-            label={t('vetAppointmentsToday') || 'Appointments Scheduled'}
-            value={raw.todayAppointments.length}
-            sub={`${scheduledAppointments.length} active`}
-            icon={CalendarClock}
-            tone="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
-          />
-          <StatCard
-            label={t('vetFollowUpsToday') || 'Follow-ups Due'}
-            value={followUpsDueToday.length}
-            sub={`${raw.todayFollowUps.length} with follow-up flag`}
-            icon={BellRing}
-            tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
-          />
-          <StatCard
-            label={t('vetSessionsDoneToday') || 'Sessions Completed'}
-            value={sessionsDone.length}
-            sub={`${raw.todaySessions.length} sessions logged`}
-            icon={CheckCircle2}
-            tone="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
-          />
-          <StatCard
-            label={t('vetPendingSessions') || 'Sessions Pending'}
-            value={Math.max(raw.todaySessions.length - sessionsDone.length, 0)}
-            sub="needs completion"
-            icon={Clock3}
-            tone="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
-          />
-        </div>
+        <KpiSection sectionKey="vet:dashboard-VetDashboardSection#1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <StatCard
+              label={t('vetAppointmentsToday') || 'Appointments Scheduled'}
+              value={raw.todayAppointments.length}
+              sub={`${scheduledAppointments.length} active`}
+              icon={CalendarClock}
+              tone="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+            />
+            <StatCard
+              label={t('vetFollowUpsToday') || 'Follow-ups Due'}
+              value={followUpsDueToday.length}
+              sub={`${raw.todayFollowUps.length} with follow-up flag`}
+              icon={BellRing}
+              tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+            />
+            <StatCard
+              label={t('vetSessionsDoneToday') || 'Sessions Completed'}
+              value={sessionsDone.length}
+              sub={`${raw.todaySessions.length} sessions logged`}
+              icon={CheckCircle2}
+              tone="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
+            />
+            <StatCard
+              label={t('vetPendingSessions') || 'Sessions Pending'}
+              value={Math.max(raw.todaySessions.length - sessionsDone.length, 0)}
+              sub="needs completion"
+              icon={Clock3}
+              tone="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+            />
+          </div>
+        </KpiSection>
 
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Today's Finance</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          <StatCard
-            label={t('vetMoneyTotal') || 'Total Charged'}
-            value={fmtMoney(moneyTotals.total)}
-            sub="all sessions today"
-            icon={DollarSign}
-            tone="bg-violet-100 dark:bg-violet-900/30 text-violet-600"
-          />
-          <StatCard
-            label={t('vetMoneyPaid') || 'Total Paid'}
-            value={fmtMoney(moneyTotals.paid)}
-            sub="collected today"
-            icon={DollarSign}
-            tone="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
-          />
-          <StatCard
-            label={t('vetMoneyLeft') || 'Balance Left'}
-            value={fmtMoney(moneyTotals.left)}
-            sub="still outstanding"
-            icon={DollarSign}
-            tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
-          />
-        </div>
+        <KpiSection sectionKey="vet:dashboard-VetDashboardSection#2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            <StatCard
+              label={t('vetMoneyTotal') || 'Total Charged'}
+              value={fmtMoney(moneyTotals.total)}
+              sub="all sessions today"
+              icon={DollarSign}
+              tone="bg-violet-100 dark:bg-violet-900/30 text-violet-600"
+            />
+            <StatCard
+              label={t('vetMoneyPaid') || 'Total Paid'}
+              value={fmtMoney(moneyTotals.paid)}
+              sub="collected today"
+              icon={DollarSign}
+              tone="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
+            />
+            <StatCard
+              label={t('vetMoneyLeft') || 'Balance Left'}
+              value={fmtMoney(moneyTotals.left)}
+              sub="still outstanding"
+              icon={DollarSign}
+              tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+            />
+          </div>
+        </KpiSection>
 
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Medicine Sales · Today</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          <StatCard
-            label="Medicine Revenue"
-            value={fmtMoney(medStats.revenue)}
-            sub={`${medStats.saleCount} sale${medStats.saleCount === 1 ? '' : 's'} today`}
-            icon={DollarSign}
-            tone="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
-          />
-          <StatCard
-            label="Units Sold"
-            value={medStats.unitsSoldLabel}
-            sub="medicine units today"
-            icon={Pill}
-            tone="bg-violet-100 dark:bg-violet-900/30 text-violet-600"
-          />
-          <StatCard
-            label="Gross Profit"
-            value={fmtMoney(medStats.grossProfit)}
-            sub="revenue minus cost"
-            icon={TrendingUp}
-            tone="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
-          />
-          <StatCard
-            label="Sales Outstanding"
-            value={fmtMoney(medStats.outstanding)}
-            sub="unpaid medicine sales"
-            icon={DollarSign}
-            tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
-          />
-        </div>
+        <KpiSection sectionKey="vet:dashboard-VetDashboardSection#3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <StatCard
+              label="Medicine Revenue"
+              value={fmtMoney(medStats.revenue)}
+              sub={`${medStats.saleCount} sale${medStats.saleCount === 1 ? '' : 's'} today`}
+              icon={DollarSign}
+              tone="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
+            />
+            <StatCard
+              label="Units Sold"
+              value={medStats.unitsSoldLabel}
+              sub="medicine units today"
+              icon={Pill}
+              tone="bg-violet-100 dark:bg-violet-900/30 text-violet-600"
+            />
+            <StatCard
+              label="Gross Profit"
+              value={fmtMoney(medStats.grossProfit)}
+              sub="revenue minus cost"
+              icon={TrendingUp}
+              tone="bg-blue-100 dark:bg-blue-900/30 text-blue-600"
+            />
+            <StatCard
+              label="Sales Outstanding"
+              value={fmtMoney(medStats.outstanding)}
+              sub="unpaid medicine sales"
+              icon={DollarSign}
+              tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+            />
+          </div>
+        </KpiSection>
 
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Inventory Health</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          <StatCard
-            label="Medicines"
-            value={inventoryStats.total}
-            sub={`${inventoryStats.outOfStock.length} out of stock`}
-            icon={Package}
-            tone="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
-          />
-          <StatCard
-            label="Low Stock"
-            value={inventoryStats.lowStock.length}
-            sub="at or below minimum"
-            icon={AlertTriangle}
-            tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
-          />
-          <StatCard
-            label="Expiring Soon"
-            value={inventoryStats.expiringSoon.length}
-            sub="within 30 days"
-            icon={Clock3}
-            tone="bg-orange-100 dark:bg-orange-900/30 text-orange-600"
-          />
-          <StatCard
-            label="Expired"
-            value={inventoryStats.expired.length}
-            sub="needs write-off"
-            icon={AlertTriangle}
-            tone="bg-red-100 dark:bg-red-900/30 text-red-600"
-          />
-        </div>
+        <KpiSection sectionKey="vet:dashboard-VetDashboardSection#4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <StatCard
+              label="Medicines"
+              value={inventoryStats.total}
+              sub={`${inventoryStats.outOfStock.length} out of stock`}
+              icon={Package}
+              tone="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+            />
+            <StatCard
+              label="Low Stock"
+              value={inventoryStats.lowStock.length}
+              sub="at or below minimum"
+              icon={AlertTriangle}
+              tone="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+            />
+            <StatCard
+              label="Expiring Soon"
+              value={inventoryStats.expiringSoon.length}
+              sub="within 30 days"
+              icon={Clock3}
+              tone="bg-orange-100 dark:bg-orange-900/30 text-orange-600"
+            />
+            <StatCard
+              label="Expired"
+              value={inventoryStats.expired.length}
+              sub="needs write-off"
+              icon={AlertTriangle}
+              tone="bg-red-100 dark:bg-red-900/30 text-red-600"
+            />
+          </div>
+        </KpiSection>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">

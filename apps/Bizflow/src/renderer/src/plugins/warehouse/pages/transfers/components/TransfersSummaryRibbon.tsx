@@ -1,6 +1,7 @@
 import React from 'react'
 import { FileEdit, Truck, CheckCircle2, XCircle } from 'lucide-react'
 import { TransferMetrics } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   metrics: TransferMetrics
@@ -39,26 +40,28 @@ export const TransfersSummaryRibbon: React.FC<Props> = ({ metrics }) => {
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {cards.map(card => {
-        const Icon = card.icon
-        return (
-          <div
-            key={card.label}
-            className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between"
-          >
-            <div>
-              <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{card.label}</div>
-              <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-                {card.value}
+    <KpiSection sectionKey="warehouse:transfers-TransfersSummaryRibbon">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {cards.map(card => {
+          const Icon = card.icon
+          return (
+            <div
+              key={card.label}
+              className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between"
+            >
+              <div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{card.label}</div>
+                <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+                  {card.value}
+                </div>
+              </div>
+              <div className={`p-2 rounded-xl ${card.bg} ${card.color}`}>
+                <Icon className="w-4 h-4" />
               </div>
             </div>
-            <div className={`p-2 rounded-xl ${card.bg} ${card.color}`}>
-              <Icon className="w-4 h-4" />
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

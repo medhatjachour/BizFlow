@@ -8,6 +8,7 @@ import { memo } from 'react'
 import { TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, Users } from 'lucide-react'
 import { formatCurrency, formatLargeNumber } from '@renderer/utils/formatNumber'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   stats: {
@@ -84,53 +85,55 @@ function DashboardStats({ stats, loading }: Props) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      {metrics.map((metric, index) => {
-        const Icon = metric.icon
-        const isPositive = metric.change > 0
-        const hasChange = metric.change !== 0
+    <KpiSection sectionKey="commerce:dashboard-DashboardStats">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {metrics.map((metric, index) => {
+          const Icon = metric.icon
+          const isPositive = metric.change > 0
+          const hasChange = metric.change !== 0
 
-        return (
-          <div
-            key={index}
-            className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
-                {metric.label}
-              </span>
-              <div className={`p-2 rounded-lg ${metric.bgColor}`}>
-                <Icon className={`w-4 h-4 ${metric.iconColor}`} />
+          return (
+            <div
+              key={index}
+              className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                  {metric.label}
+                </span>
+                <div className={`p-2 rounded-lg ${metric.bgColor}`}>
+                  <Icon className={`w-4 h-4 ${metric.iconColor}`} />
+                </div>
               </div>
-            </div>
             
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white" title={metric.rawValue}>
-                  {metric.value}
-                </p>
-                {hasChange && (
-                  <div className="flex items-center gap-1 mt-1">
-                    {isPositive ? (
-                      <TrendingUp className="w-3 h-3 text-success" />
-                    ) : (
-                      <TrendingDown className="w-3 h-3 text-error" />
-                    )}
-                    <span
-                      className={`text-xs font-medium ${
-                        isPositive ? 'text-success' : 'text-error'
-                      }`}
-                    >
-                      {Math.abs(metric.change).toFixed(1)}%
-                    </span>
-                  </div>
-                )}
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white" title={metric.rawValue}>
+                    {metric.value}
+                  </p>
+                  {hasChange && (
+                    <div className="flex items-center gap-1 mt-1">
+                      {isPositive ? (
+                        <TrendingUp className="w-3 h-3 text-success" />
+                      ) : (
+                        <TrendingDown className="w-3 h-3 text-error" />
+                      )}
+                      <span
+                        className={`text-xs font-medium ${
+                          isPositive ? 'text-success' : 'text-error'
+                        }`}
+                      >
+                        {Math.abs(metric.change).toFixed(1)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }
 

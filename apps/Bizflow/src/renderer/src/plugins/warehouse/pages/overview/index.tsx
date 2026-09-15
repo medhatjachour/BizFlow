@@ -9,6 +9,7 @@ import { OverviewHero } from './components/OverviewHero'
 import { StatCard } from './components/StatCard'
 import { RecentTransfersCard } from './components/RecentTransfersCard'
 import { RecentMovementsCard } from './components/RecentMovementsCard'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface OverviewTabProps {
   onNavigate: (tab: Tab) => void
@@ -92,15 +93,17 @@ export default function OverviewTab({ onNavigate }: OverviewTabProps) {
       />
 
       {/* 2. Key Metrics Grid */}
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
-        {statsConfig.map(stat => (
-          <StatCard
-            key={stat.id}
-            config={stat}
-            onSelect={() => onNavigate(stat.targetTab)}
-          />
-        ))}
-      </div>
+      <KpiSection sectionKey="warehouse:overview-Stats">
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
+          {statsConfig.map(stat => (
+            <StatCard
+              key={stat.id}
+              config={stat}
+              onSelect={() => onNavigate(stat.targetTab)}
+            />
+          ))}
+        </div>
+      </KpiSection>
 
       {/* 3. Dual-Feed Activity Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

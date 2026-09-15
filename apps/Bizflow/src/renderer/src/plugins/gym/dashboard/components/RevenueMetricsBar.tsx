@@ -2,6 +2,7 @@ import React from 'react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { GymDashboardOverview } from '../types'
 import { formatCurrency } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   stats: GymDashboardOverview
@@ -29,18 +30,20 @@ export const RevenueMetricsBar: React.FC<Props> = ({ stats }) => {
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {metrics.map((m, idx) => (
-        <div
-          key={idx}
-          className="bg-slate-50/80 dark:bg-slate-800/60 rounded-2xl p-3 text-center border border-slate-200/80 dark:border-slate-700/70 shadow-inner"
-        >
-          <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 mb-0.5 uppercase tracking-wider">
-            {m.label}
-          </p>
-          <p className={`text-sm font-extrabold ${m.color} tabular-nums`}>{m.value}</p>
-        </div>
-      ))}
-    </div>
+    <KpiSection sectionKey="gym:dashboard-RevenueMetricsBar">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {metrics.map((m, idx) => (
+          <div
+            key={idx}
+            className="bg-slate-50/80 dark:bg-slate-800/60 rounded-2xl p-3 text-center border border-slate-200/80 dark:border-slate-700/70 shadow-inner"
+          >
+            <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 mb-0.5 uppercase tracking-wider">
+              {m.label}
+            </p>
+            <p className={`text-sm font-extrabold ${m.color} tabular-nums`}>{m.value}</p>
+          </div>
+        ))}
+      </div>
+    </KpiSection>
   )
 }

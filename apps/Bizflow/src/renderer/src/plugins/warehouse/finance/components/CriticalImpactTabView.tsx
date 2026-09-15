@@ -1,6 +1,7 @@
 import React from 'react'
 import { AlertTriangle, ShieldCheck, Box, PackageX } from 'lucide-react'
 import { CriticalImpactItem } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   items: CriticalImpactItem[]
@@ -28,49 +29,51 @@ export const CriticalImpactTabView: React.FC<Props> = ({ items }) => {
   return (
     <div className="space-y-4">
       {/* Top Banner KPI */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-950/60 shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-              Low Stock / At Risk
+      <KpiSection sectionKey="warehouse:finance-CriticalImpactTabView">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-950/60 shadow-sm flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                Low Stock / At Risk
+              </div>
+              <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+                {items.length} SKUs
+              </div>
             </div>
-            <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-              {items.length} SKUs
+            <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600">
+              <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
-          <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600">
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-        </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Out of Stock Outages
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Out of Stock Outages
+              </div>
+              <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+                {outOfStockCount} SKUs
+              </div>
             </div>
-            <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-              {outOfStockCount} SKUs
+            <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600">
+              <PackageX className="w-4 h-4" />
             </div>
           </div>
-          <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600">
-            <PackageX className="w-4 h-4" />
-          </div>
-        </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Replenishment Deficit
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Replenishment Deficit
+              </div>
+              <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
+                {totalDeficitUnits.toLocaleString()} units
+              </div>
             </div>
-            <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-              {totalDeficitUnits.toLocaleString()} units
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600">
+              <Box className="w-4 h-4" />
             </div>
-          </div>
-          <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600">
-            <Box className="w-4 h-4" />
           </div>
         </div>
-      </div>
+      </KpiSection>
 
       {/* Critical Items Feed */}
       <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">

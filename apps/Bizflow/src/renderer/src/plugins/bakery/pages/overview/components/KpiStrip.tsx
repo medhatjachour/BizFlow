@@ -3,6 +3,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { KpiCard } from './KpiCard'
 import { DailyOverviewData } from '../types'
 import { formatCurrency, formatNumber } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface KpiStripProps {
   data: DailyOverviewData | null
@@ -24,76 +25,78 @@ export function KpiStrip({ data, derived }: KpiStripProps) {
   const profit = revenue - cost
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-      <KpiCard
-        icon={<Calendar className="h-5 w-5" />}
-        label={t('bakeryOverviewScheduled')}
-        value={String(data?.scheduled.length ?? 0)}
-        sub={`${derived?.completedScheduled ?? 0} ${t('bakeryKpiDone')}`}
-        color="blue"
-      />
+    <KpiSection sectionKey="bakery:overview-KpiStrip">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <KpiCard
+          icon={<Calendar className="h-5 w-5" />}
+          label={t('bakeryOverviewScheduled')}
+          value={String(data?.scheduled.length ?? 0)}
+          sub={`${derived?.completedScheduled ?? 0} ${t('bakeryKpiDone')}`}
+          color="blue"
+        />
 
-      <KpiCard
-        icon={<Zap className="h-5 w-5" />}
-        label={t('bakeryProducibleRecipes')}
-        value={derived?.allUnlinked ? '—' : String(derived?.producibleCount ?? 0)}
-        sub={
-          derived?.allUnlinked
-            ? t('bakeryLinkPantryUnlock')
-            : `${derived?.ready.length ?? 0} ${t('bakeryFullyReady')}${
-                (derived?.unlinked.length ?? 0) > 0
-                  ? ` · ${derived?.unlinked.length} ${t('bakeryUnlinkedLabel')}`
-                  : ''
-              }`
-        }
-        color={
-          derived?.allUnlinked
-            ? 'gray'
-            : (derived?.producibleCount ?? 0) > 0
-            ? 'green'
-            : 'orange'
-        }
-      />
+        <KpiCard
+          icon={<Zap className="h-5 w-5" />}
+          label={t('bakeryProducibleRecipes')}
+          value={derived?.allUnlinked ? '—' : String(derived?.producibleCount ?? 0)}
+          sub={
+            derived?.allUnlinked
+              ? t('bakeryLinkPantryUnlock')
+              : `${derived?.ready.length ?? 0} ${t('bakeryFullyReady')}${
+                  (derived?.unlinked.length ?? 0) > 0
+                    ? ` · ${derived?.unlinked.length} ${t('bakeryUnlinkedLabel')}`
+                    : ''
+                }`
+          }
+          color={
+            derived?.allUnlinked
+              ? 'gray'
+              : (derived?.producibleCount ?? 0) > 0
+              ? 'green'
+              : 'orange'
+          }
+        />
 
-      <KpiCard
-        icon={<Layers className="h-5 w-5" />}
-        label={t('bakeryTotalUnitsPossible')}
-        value={
-          derived?.allUnlinked
-            ? '—'
-            : (derived?.totalPossibleUnits ?? 0) > 0
-            ? formatNumber(derived?.totalPossibleUnits ?? 0)
-            : '0'
-        }
-        sub={
-          derived?.allUnlinked
-            ? t('bakeryNoPantryLinks')
-            : (derived?.unlinked.length ?? 0) > 0
-            ? `${derived?.unlinked.length} ${t('bakeryNotTracked')}`
-            : t('bakeryAcrossAllRecipes')
-        }
-        color={derived?.allUnlinked ? 'gray' : 'amber'}
-      />
+        <KpiCard
+          icon={<Layers className="h-5 w-5" />}
+          label={t('bakeryTotalUnitsPossible')}
+          value={
+            derived?.allUnlinked
+              ? '—'
+              : (derived?.totalPossibleUnits ?? 0) > 0
+              ? formatNumber(derived?.totalPossibleUnits ?? 0)
+              : '0'
+          }
+          sub={
+            derived?.allUnlinked
+              ? t('bakeryNoPantryLinks')
+              : (derived?.unlinked.length ?? 0) > 0
+              ? `${derived?.unlinked.length} ${t('bakeryNotTracked')}`
+              : t('bakeryAcrossAllRecipes')
+          }
+          color={derived?.allUnlinked ? 'gray' : 'amber'}
+        />
 
-      <KpiCard
-        icon={<Clock className="h-5 w-5" />}
-        label={t('bakeryOverviewExpiring')}
-        value={String(data?.expiringBatches.length ?? 0)}
-        sub={t('bakeryWithin48h')}
-        color={(data?.expiringBatches.length ?? 0) > 0 ? 'orange' : 'gray'}
-      />
+        <KpiCard
+          icon={<Clock className="h-5 w-5" />}
+          label={t('bakeryOverviewExpiring')}
+          value={String(data?.expiringBatches.length ?? 0)}
+          sub={t('bakeryWithin48h')}
+          color={(data?.expiringBatches.length ?? 0) > 0 ? 'orange' : 'gray'}
+        />
 
-      <KpiCard
-        icon={<DollarSign className="h-5 w-5" />}
-        label={t('bakeryTodayRevenue')}
-        value={formatCurrency(revenue)}
-        sub={
-          cost === 0
-            ? `${data?.todayUnitsSold ?? 0} ${t('bakeryUnitsSold')}`
-            : `Cost ${formatCurrency(cost)} · ${profit >= 0 ? '+' : ''}${formatCurrency(profit)} profit`
-        }
-        color="purple"
-      />
-    </div>
+        <KpiCard
+          icon={<DollarSign className="h-5 w-5" />}
+          label={t('bakeryTodayRevenue')}
+          value={formatCurrency(revenue)}
+          sub={
+            cost === 0
+              ? `${data?.todayUnitsSold ?? 0} ${t('bakeryUnitsSold')}`
+              : `Cost ${formatCurrency(cost)} · ${profit >= 0 ? '+' : ''}${formatCurrency(profit)} profit`
+          }
+          color="purple"
+        />
+      </div>
+    </KpiSection>
   )
 }

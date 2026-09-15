@@ -1,6 +1,7 @@
 import React from 'react'
 import { Package, Layers, AlertTriangle, XCircle, ShieldAlert, HeartPulse } from 'lucide-react'
 import { StockSummary } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   summary: StockSummary
@@ -53,28 +54,30 @@ export const InventorySummaryCards: React.FC<Props> = ({ summary }) => {
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
-      {cards.map(card => {
-        const Icon = card.icon
-        return (
-          <div
-            key={card.label}
-            className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
-                {card.label}
-              </span>
-              <div className={`p-1.5 rounded-lg ${card.bg} ${card.color}`}>
-                <Icon className="w-3.5 h-3.5" />
+    <KpiSection sectionKey="warehouse:inventory-InventorySummaryCards">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        {cards.map(card => {
+          const Icon = card.icon
+          return (
+            <div
+              key={card.label}
+              className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate">
+                  {card.label}
+                </span>
+                <div className={`p-1.5 rounded-lg ${card.bg} ${card.color}`}>
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <div className="mt-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {card.value}
               </div>
             </div>
-            <div className="mt-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              {card.value}
-            </div>
-          </div>
-        )
-      })}
-    </div>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

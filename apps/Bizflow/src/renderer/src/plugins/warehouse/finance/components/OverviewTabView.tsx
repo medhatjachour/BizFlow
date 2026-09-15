@@ -12,6 +12,7 @@ import {
 } from 'recharts'
 import { LocationQtyMetric, FinanceOverviewData } from '../types'
 import { FINANCE_PALETTE } from '../constants'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   overviewData: FinanceOverviewData | null
@@ -58,32 +59,34 @@ export const OverviewTabView: React.FC<Props> = ({ overviewData, totalSKUs, loca
   return (
     <div className="space-y-5">
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {cards.map((card) => {
-          const Icon = card.icon
-          return (
-            <div
-              key={card.label}
-              className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  {card.label}
-                </span>
-                <div className={`p-1.5 rounded-lg ${card.bg} ${card.color}`}>
-                  <Icon className="w-4 h-4" />
+      <KpiSection sectionKey="warehouse:finance-OverviewTabView">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {cards.map((card) => {
+            const Icon = card.icon
+            return (
+              <div
+                key={card.label}
+                className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    {card.label}
+                  </span>
+                  <div className={`p-1.5 rounded-lg ${card.bg} ${card.color}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2 space-y-0.5">
+                  <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    {card.value}
+                  </div>
+                  <div className="text-[10.5px] text-slate-400">{card.sub}</div>
                 </div>
               </div>
-              <div className="mt-2 space-y-0.5">
-                <div className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  {card.value}
-                </div>
-                <div className="text-[10.5px] text-slate-400">{card.sub}</div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      </KpiSection>
 
       {/* Stock Unit Distribution Chart */}
       {locationData.length > 0 && (

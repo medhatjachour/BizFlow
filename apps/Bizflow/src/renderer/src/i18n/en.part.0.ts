@@ -361,5 +361,13 @@ salesUiNoSalesData: 'No finalized sales in this period',
  sortByManager: 'Sort by Manager',
  sortByStatus: 'Sort by Status',
  refresh: 'Refresh',
+
+ // KPI visibility — shared switch for every plugin's KPI strips.
+ kpiHideAll: 'Hide KPI cards',
+ kpiShowAll: 'Show KPI cards',
+ kpiHideSection: 'Hide',
+ kpiShowSection: 'Show',
+ kpiAutoHint: 'KPI cards hide automatically on small screens until you choose otherwise.',
+ kpiSectionHidden: 'KPI cards hidden'
   
 }

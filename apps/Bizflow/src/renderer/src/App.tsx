@@ -8,6 +8,7 @@ import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { DisplaySettingsProvider } from './contexts/DisplaySettingsContext'
+import { KpiVisibilityProvider } from './components/ui/KpiVisibility'
 import { ModuleProvider } from './contexts/ModuleContext'
 import PageLoader from './components/ui/PageLoader'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -403,15 +404,17 @@ export default function AppRoutes() {
       <ModuleProvider>
         <ThemeProvider>
           <LanguageProvider>
-            <DisplaySettingsProvider>
-              <ToastProvider>
-                <AuthProvider>
-                  <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-                    <AppContent />
-                  </HashRouter>
-                </AuthProvider>
-              </ToastProvider>
-            </DisplaySettingsProvider>
+            <KpiVisibilityProvider>
+              <DisplaySettingsProvider>
+                <ToastProvider>
+                  <AuthProvider>
+                    <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+                      <AppContent />
+                    </HashRouter>
+                  </AuthProvider>
+                </ToastProvider>
+              </DisplaySettingsProvider>
+            </KpiVisibilityProvider>
           </LanguageProvider>
         </ThemeProvider>
       </ModuleProvider>

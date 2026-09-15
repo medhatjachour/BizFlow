@@ -19,6 +19,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatMoney, getCategoryBadgeClass } from '../utils'
 import { FinanceKpiCard } from './FinanceKpiCard'
 import type { FinanceSummary, SpendBreakdownEntry, Period } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   summary: FinanceSummary | null
@@ -105,40 +106,42 @@ export const OverviewTabContent: React.FC<Props> = ({
       </div>
 
       {/* Secondary KPI Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <FinanceKpiCard
-          label={t('kpiPayrollCost') || 'Staff Payroll'}
-          value={`$${formatMoney(summary.totalSalaries ?? 0)}`}
-          icon={Users}
-          colorClass="text-violet-600 dark:text-violet-400"
-          bgClass="bg-violet-50/60 dark:bg-violet-950/20"
-          sub={t('kpiStaffSalaries') || 'Clinical & support team payroll'}
-        />
-        <FinanceKpiCard
-          label={t('kpiTotalExpenses') || 'Operational Outflows'}
-          value={`$${formatMoney(summary.totalExpenses)}`}
-          icon={TrendingDown}
-          colorClass="text-rose-600 dark:text-rose-400"
-          bgClass="bg-rose-50/60 dark:bg-rose-950/20"
-          sub={t('kpiInclPayroll') || 'Including payroll & suppliers'}
-        />
-        <FinanceKpiCard
-          label={t('kpiCollectionRate') || 'Collection Efficiency'}
-          value={`${collectionPct}%`}
-          icon={TrendingUp}
-          colorClass={collectionPct >= 80 ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}
-          bgClass={collectionPct >= 80 ? 'bg-teal-50/60 dark:bg-teal-950/20' : 'bg-amber-50/60 dark:bg-amber-950/20'}
-          sub={t('kpiBilledVsCollected') || 'Cash realized against billed totals'}
-        />
-        <FinanceKpiCard
-          label={t('kpiUncollected') || 'Uncollected Balance'}
-          value={`$${formatMoney(summary.outstanding)}`}
-          icon={AlertCircle}
-          colorClass="text-amber-600 dark:text-amber-400"
-          bgClass="bg-amber-50/60 dark:bg-amber-950/20"
-          sub={t('kpiPendingPayment') || 'Patient receivables due'}
-        />
-      </div>
+      <KpiSection sectionKey="clinic:finance-OverviewTabContent">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <FinanceKpiCard
+            label={t('kpiPayrollCost') || 'Staff Payroll'}
+            value={`$${formatMoney(summary.totalSalaries ?? 0)}`}
+            icon={Users}
+            colorClass="text-violet-600 dark:text-violet-400"
+            bgClass="bg-violet-50/60 dark:bg-violet-950/20"
+            sub={t('kpiStaffSalaries') || 'Clinical & support team payroll'}
+          />
+          <FinanceKpiCard
+            label={t('kpiTotalExpenses') || 'Operational Outflows'}
+            value={`$${formatMoney(summary.totalExpenses)}`}
+            icon={TrendingDown}
+            colorClass="text-rose-600 dark:text-rose-400"
+            bgClass="bg-rose-50/60 dark:bg-rose-950/20"
+            sub={t('kpiInclPayroll') || 'Including payroll & suppliers'}
+          />
+          <FinanceKpiCard
+            label={t('kpiCollectionRate') || 'Collection Efficiency'}
+            value={`${collectionPct}%`}
+            icon={TrendingUp}
+            colorClass={collectionPct >= 80 ? 'text-teal-600 dark:text-teal-400' : 'text-amber-600 dark:text-amber-400'}
+            bgClass={collectionPct >= 80 ? 'bg-teal-50/60 dark:bg-teal-950/20' : 'bg-amber-50/60 dark:bg-amber-950/20'}
+            sub={t('kpiBilledVsCollected') || 'Cash realized against billed totals'}
+          />
+          <FinanceKpiCard
+            label={t('kpiUncollected') || 'Uncollected Balance'}
+            value={`$${formatMoney(summary.outstanding)}`}
+            icon={AlertCircle}
+            colorClass="text-amber-600 dark:text-amber-400"
+            bgClass="bg-amber-50/60 dark:bg-amber-950/20"
+            sub={t('kpiPendingPayment') || 'Patient receivables due'}
+          />
+        </div>
+      </KpiSection>
 
       {/* Spend Over Time Bar Chart */}
       {breakdown.length > 0 && (

@@ -10,6 +10,7 @@ import {
 import { DashboardOverview, DashboardPeriod } from '../types'
 import { money, int } from '../../components/_shared'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface DashboardKpiGridProps {
   overview: DashboardOverview
@@ -85,24 +86,26 @@ export const DashboardKpiGrid: React.FC<DashboardKpiGridProps> = ({
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
-      {kpis.map(k => (
-        <div
-          key={k.label}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-2xs flex flex-col justify-between"
-        >
-          <div>
-            <div className="flex items-center gap-1.5 text-slate-400 mb-1">
-              <k.icon size={14} className={k.color} />
-              <span className="text-[10px] font-bold uppercase tracking-wider truncate">
-                {k.label}
-              </span>
+    <KpiSection sectionKey="pharmacy:dashboard-DashboardKpiGrid">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        {kpis.map(k => (
+          <div
+            key={k.label}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-2xs flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                <k.icon size={14} className={k.color} />
+                <span className="text-[10px] font-bold uppercase tracking-wider truncate">
+                  {k.label}
+                </span>
+              </div>
+              <p className={`text-base font-extrabold mt-0.5 ${k.color}`}>{k.value}</p>
             </div>
-            <p className={`text-base font-extrabold mt-0.5 ${k.color}`}>{k.value}</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium">{k.sub}</p>
           </div>
-          <p className="text-[10px] text-slate-400 mt-1 font-medium">{k.sub}</p>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </KpiSection>
   )
 }

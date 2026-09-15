@@ -23,6 +23,7 @@ import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatMoney, getInitials } from '../utils'
 import { FinanceKpiCard } from './FinanceKpiCard'
 import type { PatientWithFinance, RevenueBreakdownEntry, Period } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   summary: { revenue: number; outstanding: number } | null
@@ -58,52 +59,54 @@ export const RevenueTabContent: React.FC<Props> = ({
     <div className="space-y-5">
       {/* Collection Health KPI Cards */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <FinanceKpiCard
-            label={t('kpiTotalBilled') || 'Total Invoiced'}
-            value={`$${formatMoney(summary.revenue + summary.outstanding)}`}
-            icon={Receipt}
-            colorClass="text-slate-700 dark:text-slate-200"
-            bgClass="bg-slate-50 dark:bg-slate-800/40"
-            sub={period.toUpperCase()}
-          />
-          <FinanceKpiCard
-            label={t('kpiCollected') || 'Realized Cash'}
-            value={`$${formatMoney(summary.revenue)}`}
-            icon={CheckCircle2}
-            colorClass="text-emerald-600 dark:text-emerald-400"
-            bgClass="bg-emerald-50/60 dark:bg-emerald-950/20"
-            sub={t('kpiCashInHand') || 'Collected in period'}
-          />
-          <FinanceKpiCard
-            label={t('outstandingLabel') || 'Awaiting Collection'}
-            value={`$${formatMoney(summary.outstanding)}`}
-            icon={AlertCircle}
-            colorClass="text-rose-600 dark:text-rose-400"
-            bgClass="bg-rose-50/60 dark:bg-rose-950/20"
-            sub={t('kpiAwaitingPayment') || 'Due from patients'}
-          />
-          <FinanceKpiCard
-            label={t('kpiCollectionRate') || 'Collection Efficiency'}
-            value={
-              summary.revenue + summary.outstanding > 0
-                ? `${Math.round((summary.revenue / (summary.revenue + summary.outstanding)) * 100)}%`
-                : '–'
-            }
-            icon={TrendingUp}
-            colorClass={
-              summary.revenue / Math.max(1, summary.revenue + summary.outstanding) >= 0.8
-                ? 'text-teal-600 dark:text-teal-400'
-                : 'text-amber-600 dark:text-amber-400'
-            }
-            bgClass={
-              summary.revenue / Math.max(1, summary.revenue + summary.outstanding) >= 0.8
-                ? 'bg-teal-50/60 dark:bg-teal-950/20'
-                : 'bg-amber-50/60 dark:bg-amber-950/20'
-            }
-            sub={t('kpiBilledVsCollected') || 'Payment compliance'}
-          />
-        </div>
+        <KpiSection sectionKey="clinic:finance-RevenueTabContent">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+            <FinanceKpiCard
+              label={t('kpiTotalBilled') || 'Total Invoiced'}
+              value={`$${formatMoney(summary.revenue + summary.outstanding)}`}
+              icon={Receipt}
+              colorClass="text-slate-700 dark:text-slate-200"
+              bgClass="bg-slate-50 dark:bg-slate-800/40"
+              sub={period.toUpperCase()}
+            />
+            <FinanceKpiCard
+              label={t('kpiCollected') || 'Realized Cash'}
+              value={`$${formatMoney(summary.revenue)}`}
+              icon={CheckCircle2}
+              colorClass="text-emerald-600 dark:text-emerald-400"
+              bgClass="bg-emerald-50/60 dark:bg-emerald-950/20"
+              sub={t('kpiCashInHand') || 'Collected in period'}
+            />
+            <FinanceKpiCard
+              label={t('outstandingLabel') || 'Awaiting Collection'}
+              value={`$${formatMoney(summary.outstanding)}`}
+              icon={AlertCircle}
+              colorClass="text-rose-600 dark:text-rose-400"
+              bgClass="bg-rose-50/60 dark:bg-rose-950/20"
+              sub={t('kpiAwaitingPayment') || 'Due from patients'}
+            />
+            <FinanceKpiCard
+              label={t('kpiCollectionRate') || 'Collection Efficiency'}
+              value={
+                summary.revenue + summary.outstanding > 0
+                  ? `${Math.round((summary.revenue / (summary.revenue + summary.outstanding)) * 100)}%`
+                  : '–'
+              }
+              icon={TrendingUp}
+              colorClass={
+                summary.revenue / Math.max(1, summary.revenue + summary.outstanding) >= 0.8
+                  ? 'text-teal-600 dark:text-teal-400'
+                  : 'text-amber-600 dark:text-amber-400'
+              }
+              bgClass={
+                summary.revenue / Math.max(1, summary.revenue + summary.outstanding) >= 0.8
+                  ? 'bg-teal-50/60 dark:bg-teal-950/20'
+                  : 'bg-amber-50/60 dark:bg-amber-950/20'
+              }
+              sub={t('kpiBilledVsCollected') || 'Payment compliance'}
+            />
+          </div>
+        </KpiSection>
       )}
 
       {/* Revenue Outflow Chart */}

@@ -19,6 +19,7 @@ import {
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import logger from '@/shared/utils/logger'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export type ReorderPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
 
@@ -247,98 +248,100 @@ export default function ReorderAlerts({ onCreatePurchaseOrder }: ReorderAlertsPr
       </div>
 
       {/* 2. KPI Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {/* Critical */}
-        <button
-          onClick={() => setPriorityFilter(priorityFilter === 'CRITICAL' ? 'ALL' : 'CRITICAL')}
-          className={`text-left p-3.5 rounded-xl border transition-all ${
-            priorityFilter === 'CRITICAL'
-              ? 'bg-rose-500/10 border-rose-500/40 ring-2 ring-rose-500/20'
-              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-rose-500/30'
-          }`}
-        >
-          <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">
-              {t('critical') || 'Critical'}</span>
-            <AlertOctagon className="w-4 h-4" />
-          </div>
-          <p className="text-xl font-bold text-slate-900 dark:text-white">
-            {analysis?.summary.criticalCount ?? 0}
-          </p>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">&le; 2 days depletion</span>
-        </button>
+      <KpiSection sectionKey="commerce:Supplier-ReorderAlerts">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {/* Critical */}
+          <button
+            onClick={() => setPriorityFilter(priorityFilter === 'CRITICAL' ? 'ALL' : 'CRITICAL')}
+            className={`text-left p-3.5 rounded-xl border transition-all ${
+              priorityFilter === 'CRITICAL'
+                ? 'bg-rose-500/10 border-rose-500/40 ring-2 ring-rose-500/20'
+                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-rose-500/30'
+            }`}
+          >
+            <div className="flex items-center justify-between text-rose-600 dark:text-rose-400 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">
+                {t('critical') || 'Critical'}</span>
+              <AlertOctagon className="w-4 h-4" />
+            </div>
+            <p className="text-xl font-bold text-slate-900 dark:text-white">
+              {analysis?.summary.criticalCount ?? 0}
+            </p>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">&le; 2 days depletion</span>
+          </button>
 
-        {/* High */}
-        <button
-          onClick={() => setPriorityFilter(priorityFilter === 'HIGH' ? 'ALL' : 'HIGH')}
-          className={`text-left p-3.5 rounded-xl border transition-all ${
-            priorityFilter === 'HIGH'
-              ? 'bg-amber-500/10 border-amber-500/40 ring-2 ring-amber-500/20'
-              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-amber-500/30'
-          }`}
-        >
-          <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">{t('highRisk') || 'High Risk'}</span>
-            <AlertTriangle className="w-4 h-4" />
-          </div>
-          <p className="text-xl font-bold text-slate-900 dark:text-white">
-            {analysis?.summary.highCount ?? 0}
-          </p>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">&le; 7 days depletion</span>
-        </button>
+          {/* High */}
+          <button
+            onClick={() => setPriorityFilter(priorityFilter === 'HIGH' ? 'ALL' : 'HIGH')}
+            className={`text-left p-3.5 rounded-xl border transition-all ${
+              priorityFilter === 'HIGH'
+                ? 'bg-amber-500/10 border-amber-500/40 ring-2 ring-amber-500/20'
+                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-amber-500/30'
+            }`}
+          >
+            <div className="flex items-center justify-between text-amber-600 dark:text-amber-400 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">{t('highRisk') || 'High Risk'}</span>
+              <AlertTriangle className="w-4 h-4" />
+            </div>
+            <p className="text-xl font-bold text-slate-900 dark:text-white">
+              {analysis?.summary.highCount ?? 0}
+            </p>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">&le; 7 days depletion</span>
+          </button>
 
-        {/* Medium */}
-        <button
-          onClick={() => setPriorityFilter(priorityFilter === 'MEDIUM' ? 'ALL' : 'MEDIUM')}
-          className={`text-left p-3.5 rounded-xl border transition-all ${
-            priorityFilter === 'MEDIUM'
-              ? 'bg-blue-500/10 border-blue-500/40 ring-2 ring-blue-500/20'
-              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-blue-500/30'
-          }`}
-        >
-          <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">{t('moderate') || 'Moderate'}</span>
-            <AlertCircle className="w-4 h-4" />
-          </div>
-          <p className="text-xl font-bold text-slate-900 dark:text-white">
-            {analysis?.summary.mediumCount ?? 0}
-          </p>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">
-            {t('atReorderThreshold') || 'At reorder threshold'}</span>
-        </button>
+          {/* Medium */}
+          <button
+            onClick={() => setPriorityFilter(priorityFilter === 'MEDIUM' ? 'ALL' : 'MEDIUM')}
+            className={`text-left p-3.5 rounded-xl border transition-all ${
+              priorityFilter === 'MEDIUM'
+                ? 'bg-blue-500/10 border-blue-500/40 ring-2 ring-blue-500/20'
+                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-blue-500/30'
+            }`}
+          >
+            <div className="flex items-center justify-between text-blue-600 dark:text-blue-400 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">{t('moderate') || 'Moderate'}</span>
+              <AlertCircle className="w-4 h-4" />
+            </div>
+            <p className="text-xl font-bold text-slate-900 dark:text-white">
+              {analysis?.summary.mediumCount ?? 0}
+            </p>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+              {t('atReorderThreshold') || 'At reorder threshold'}</span>
+          </button>
 
-        {/* Total Restock Required */}
-        <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
-          <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">{t('restockValue') || 'Restock Value'}</span>
-            <DollarSign className="w-4 h-4" />
+          {/* Total Restock Required */}
+          <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
+            <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">{t('restockValue') || 'Restock Value'}</span>
+              <DollarSign className="w-4 h-4" />
+            </div>
+            <p className="text-xl font-bold text-slate-900 dark:text-white">
+              ${totalRestockCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+              {t('estimatedOrderBudget') || 'Estimated order budget'}</span>
           </div>
-          <p className="text-xl font-bold text-slate-900 dark:text-white">
-            ${totalRestockCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400">
-            {t('estimatedOrderBudget') || 'Estimated order budget'}</span>
+
+          {/* Total Alerts Count */}
+          <button
+            onClick={() => setPriorityFilter('ALL')}
+            className={`text-left p-3.5 rounded-xl border transition-all ${
+              priorityFilter === 'ALL'
+                ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 ring-2 ring-slate-400/20'
+                : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-400'
+            }`}
+          >
+            <div className="flex items-center justify-between opacity-80 mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider">{t('totalAlerts') || 'Total Alerts'}</span>
+              <Package className="w-4 h-4" />
+            </div>
+            <p className="text-xl font-bold">
+              {analysis?.summary.totalAlerts ?? 0}
+            </p>
+            <span className="text-[10px] opacity-70">Filtered: {processedAlerts.length} items</span>
+          </button>
         </div>
-
-        {/* Total Alerts Count */}
-        <button
-          onClick={() => setPriorityFilter('ALL')}
-          className={`text-left p-3.5 rounded-xl border transition-all ${
-            priorityFilter === 'ALL'
-              ? 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 ring-2 ring-slate-400/20'
-              : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-400'
-          }`}
-        >
-          <div className="flex items-center justify-between opacity-80 mb-1">
-            <span className="text-[11px] font-bold uppercase tracking-wider">{t('totalAlerts') || 'Total Alerts'}</span>
-            <Package className="w-4 h-4" />
-          </div>
-          <p className="text-xl font-bold">
-            {analysis?.summary.totalAlerts ?? 0}
-          </p>
-          <span className="text-[10px] opacity-70">Filtered: {processedAlerts.length} items</span>
-        </button>
-      </div>
+      </KpiSection>
 
       {/* 3. Search & Control Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-2.5 rounded-xl">

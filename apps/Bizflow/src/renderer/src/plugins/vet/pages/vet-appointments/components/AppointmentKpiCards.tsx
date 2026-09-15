@@ -1,6 +1,7 @@
 import { CalendarClock, CheckCircle2, UserCheck, XCircle } from 'lucide-react'
 import { AppointmentMetrics } from '../types'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export function AppointmentKpiCards({
   metrics,
@@ -50,28 +51,30 @@ export function AppointmentKpiCards({
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-      {cards.map((card) => {
-        const Icon = card.icon
-        const isSelected = activeFilter === card.id
+    <KpiSection sectionKey="vet:vet-appointments-AppointmentKpiCards">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {cards.map((card) => {
+          const Icon = card.icon
+          const isSelected = activeFilter === card.id
 
-        return (
-          <button
-            key={card.id}
-            type="button"
-            onClick={() => onSelectFilter(activeFilter === card.id ? 'all' : card.id)}
-            className={`relative overflow-hidden rounded-3xl border p-4 text-left rtl:text-right transition-all ${card.bg} ${
-              isSelected ? 'ring-2 ring-violet-500 shadow-md scale-[1.02]' : 'hover:shadow-sm'
-            }`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{card.title}</span>
-              <Icon size={18} className={card.tone} />
-            </div>
-            <p className={`text-2xl font-black ${card.tone}`}>{card.count}</p>
-          </button>
-        )
-      })}
-    </div>
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => onSelectFilter(activeFilter === card.id ? 'all' : card.id)}
+              className={`relative overflow-hidden rounded-3xl border p-4 text-left rtl:text-right transition-all ${card.bg} ${
+                isSelected ? 'ring-2 ring-violet-500 shadow-md scale-[1.02]' : 'hover:shadow-sm'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{card.title}</span>
+                <Icon size={18} className={card.tone} />
+              </div>
+              <p className={`text-2xl font-black ${card.tone}`}>{card.count}</p>
+            </button>
+          )
+        })}
+      </div>
+    </KpiSection>
   )
 }

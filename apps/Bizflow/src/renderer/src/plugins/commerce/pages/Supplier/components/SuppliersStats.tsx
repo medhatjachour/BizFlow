@@ -2,6 +2,7 @@ import React from 'react'
 import { Users, UserCheck, ShoppingCart, DollarSign  } from 'lucide-react'
 import { formatCurrency } from '../utils'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface SuppliersStatsProps {
   totalSuppliers: number
@@ -54,30 +55,32 @@ export const SuppliersStats: React.FC<SuppliersStatsProps> = ({
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-      {cards.map((card, idx) => (
-        <div
-          key={idx}
-          className={`relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 shadow-xs hover:shadow-md transition-all duration-200 border-l-4 ${card.borderGlow}`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-tight">
-              {card.label}
-            </span>
-            <div className={`p-2 rounded-lg ${card.accentBg}`}>
-              {card.icon}
+    <KpiSection sectionKey="commerce:Supplier-SuppliersStats">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {cards.map((card, idx) => (
+          <div
+            key={idx}
+            className={`relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 shadow-xs hover:shadow-md transition-all duration-200 border-l-4 ${card.borderGlow}`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-tight">
+                {card.label}
+              </span>
+              <div className={`p-2 rounded-lg ${card.accentBg}`}>
+                {card.icon}
+              </div>
+            </div>
+            <div className="mt-2.5">
+              <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {card.value}
+              </div>
+              <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                <span>{card.subtext}</span>
+              </div>
             </div>
           </div>
-          <div className="mt-2.5">
-            <div className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-              {card.value}
-            </div>
-            <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
-              <span>{card.subtext}</span>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </KpiSection>
   )
 }

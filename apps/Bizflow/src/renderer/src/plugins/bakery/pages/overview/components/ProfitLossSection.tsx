@@ -3,6 +3,7 @@ import { useProfitLoss } from '../hooks/useProfitLoss'
 import { TrendSparkline } from './TrendSparkline'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { formatCurrency } from '../utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export function ProfitLossSection() {
   const {
@@ -100,36 +101,38 @@ export function ProfitLossSection() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryRevenueCol')}</p>
-          <p className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-            {formatCurrency(data.totals.totalRevenue)}
-          </p>
+      <KpiSection sectionKey="bakery:overview-ProfitLossSection">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryRevenueCol')}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+              {formatCurrency(data.totals.totalRevenue)}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryCostCol')}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-amber-600 dark:text-amber-400">
+              {formatCurrency(data.totals.totalProductionCost)}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryGrossProfit')}</p>
+            <p
+              className={`text-xl sm:text-2xl font-extrabold ${
+                data.totals.grossProfit >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-rose-600 dark:text-rose-400'
+              }`}
+            >
+              {formatCurrency(data.totals.grossProfit)}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryMargin')}</p>
+            <p className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-200">
+              {derived.overallMargin ? `${derived.overallMargin}%` : '—'}
+            </p>
+          </div>
         </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryCostCol')}</p>
-          <p className="text-xl sm:text-2xl font-extrabold text-amber-600 dark:text-amber-400">
-            {formatCurrency(data.totals.totalProductionCost)}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryGrossProfit')}</p>
-          <p
-            className={`text-xl sm:text-2xl font-extrabold ${
-              data.totals.grossProfit >= 0 ? 'text-sky-600 dark:text-sky-400' : 'text-rose-600 dark:text-rose-400'
-            }`}
-          >
-            {formatCurrency(data.totals.grossProfit)}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-          <p className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-1">{t('bakeryMargin')}</p>
-          <p className="text-xl sm:text-2xl font-extrabold text-slate-800 dark:text-slate-200">
-            {derived.overallMargin ? `${derived.overallMargin}%` : '—'}
-          </p>
-        </div>
-      </div>
+      </KpiSection>
 
       {/* Best / Worst Performers */}
       {(derived.bestRecipe || derived.worstRecipe) && (

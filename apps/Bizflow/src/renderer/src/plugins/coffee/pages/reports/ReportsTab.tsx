@@ -37,6 +37,7 @@ import { EmptyState } from './components/EmptyState'
 
 // Utils
 import { formatCurrency, formatNumber, formatPercent } from './utils'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export default function ReportsTab() {
   const toast = useToast()
@@ -129,75 +130,77 @@ export default function ReportsTab() {
       {!loading && overview && (
         <div className="space-y-6">
           {/* KPI Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <StatCard
-              label={t('cfRevenueLabel')}
-              value={formatCurrency(overview.totalRevenue)}
-              sub={`${overview.totalOrders} orders`}
-              icon={BadgeDollarSign}
-              tone="revenue"
-              loading={loading}
-            />
-            <StatCard
-              label={t('cfGrossProfitLabel')}
-              value={formatCurrency(overview.grossProfit)}
-              sub={`${formatPercent(overview.grossMarginPct)} margin`}
-              description={t('cfGrossProfitDescDetail')}
-              icon={TrendingUp}
-              tone="profit"
-              loading={loading}
-            />
-            <StatCard
-              label={t('cfNetProfitLabel')}
-              value={formatCurrency(overview.netProfitAfterExpenses)}
-              sub={`${formatPercent(overview.netMarginPct)} net margin`}
-              description={t('cfNetProfitDescDetail')}
-              icon={BadgeDollarSign}
-              tone="profit"
-              loading={loading}
-            />
-            <StatCard
-              label={t('cfTotalOrders')}
-              value={formatNumber(overview.totalOrders)}
-              sub={`${formatCurrency(overview.averageOrderValue)} avg`}
-              icon={Boxes}
-              tone="orders"
-              loading={loading}
-            />
-            <StatCard
-              label={t('cfItemsSold')}
-              value={formatNumber(overview.totalItemsSold)}
-              sub={`${overview.avgItemsPerOrder.toFixed(1)} per order`}
-              icon={Package}
-              tone="items"
-              loading={loading}
-            />
-            <StatCard
-              label={t('cfUniqueCustomers')}
-              value={formatNumber(overview.uniqueCustomers)}
-              sub={`${formatPercent(overview.repeatCustomerRatePct)} repeat rate`}
-              icon={Users}
-              tone="customers"
-              loading={loading}
-            />
-            <StatCard
-              label={t('cfTotalDiscount')}
-              value={formatCurrency(overview.totalDiscount)}
-              sub={`${formatPercent(overview.discountRatePct)} discount rate`}
-              icon={DollarSign}
-              tone="discount"
-              loading={loading}
-            />
-            <StatCard
-              label={t('cfTotalExpenses')}
-              value={formatCurrency(overview.totalExpenses)}
-              sub={`D = ${formatCurrency(overview.totalExpenses-overview.totalCogs)} ${overview.expenseCount} ops + ${formatCurrency(overview.totalCogs)} COGS`}
-              description={t('cfExpenseDescDetail')}
-              icon={Receipt}
-              tone="expense"
-              loading={loading}
-            />
-          </div>
+          <KpiSection sectionKey="coffee:reports-ReportsTab">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <StatCard
+                label={t('cfRevenueLabel')}
+                value={formatCurrency(overview.totalRevenue)}
+                sub={`${overview.totalOrders} orders`}
+                icon={BadgeDollarSign}
+                tone="revenue"
+                loading={loading}
+              />
+              <StatCard
+                label={t('cfGrossProfitLabel')}
+                value={formatCurrency(overview.grossProfit)}
+                sub={`${formatPercent(overview.grossMarginPct)} margin`}
+                description={t('cfGrossProfitDescDetail')}
+                icon={TrendingUp}
+                tone="profit"
+                loading={loading}
+              />
+              <StatCard
+                label={t('cfNetProfitLabel')}
+                value={formatCurrency(overview.netProfitAfterExpenses)}
+                sub={`${formatPercent(overview.netMarginPct)} net margin`}
+                description={t('cfNetProfitDescDetail')}
+                icon={BadgeDollarSign}
+                tone="profit"
+                loading={loading}
+              />
+              <StatCard
+                label={t('cfTotalOrders')}
+                value={formatNumber(overview.totalOrders)}
+                sub={`${formatCurrency(overview.averageOrderValue)} avg`}
+                icon={Boxes}
+                tone="orders"
+                loading={loading}
+              />
+              <StatCard
+                label={t('cfItemsSold')}
+                value={formatNumber(overview.totalItemsSold)}
+                sub={`${overview.avgItemsPerOrder.toFixed(1)} per order`}
+                icon={Package}
+                tone="items"
+                loading={loading}
+              />
+              <StatCard
+                label={t('cfUniqueCustomers')}
+                value={formatNumber(overview.uniqueCustomers)}
+                sub={`${formatPercent(overview.repeatCustomerRatePct)} repeat rate`}
+                icon={Users}
+                tone="customers"
+                loading={loading}
+              />
+              <StatCard
+                label={t('cfTotalDiscount')}
+                value={formatCurrency(overview.totalDiscount)}
+                sub={`${formatPercent(overview.discountRatePct)} discount rate`}
+                icon={DollarSign}
+                tone="discount"
+                loading={loading}
+              />
+              <StatCard
+                label={t('cfTotalExpenses')}
+                value={formatCurrency(overview.totalExpenses)}
+                sub={`D = ${formatCurrency(overview.totalExpenses-overview.totalCogs)} ${overview.expenseCount} ops + ${formatCurrency(overview.totalCogs)} COGS`}
+                description={t('cfExpenseDescDetail')}
+                icon={Receipt}
+                tone="expense"
+                loading={loading}
+              />
+            </div>
+          </KpiSection>
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

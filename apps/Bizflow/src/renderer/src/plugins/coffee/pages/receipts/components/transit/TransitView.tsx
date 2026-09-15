@@ -10,6 +10,7 @@ import { StatCard } from '../../ui/StatCard'
 import { Skeleton } from '@renderer/components/ui/Skeleton'
 import { EmptyState } from '../../ui/EmptyState'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 export function TransitView() {
   const [search, setSearch] = useState('')
@@ -29,20 +30,22 @@ export function TransitView() {
   return (
     <div className="space-y-6">
       {/* Stats Dashboard */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {loading ? (
-          [...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
-        ) : summary ? (
-          <>
-            <StatCard icon={<Truck size={20} />} label={t('cfTotalTransit') || 'Total Transit'} value={summary.totalReceipts.toString()} color="bg-blue-100 text-blue-600" />
-            <StatCard icon={<Clock size={20} />} label={t('cfPending') || 'Pending'} value={summary.pendingCount.toString()} color="bg-amber-100 text-amber-600" />
-            <StatCard icon={<CheckCircle2 size={20} />} label={t('cfDelivered') || 'Delivered'} value={summary.deliveredCount.toString()} color="bg-emerald-100 text-emerald-600" />
-            <StatCard icon={<Boxes size={20} />} label={t('cfTotalItems') || 'Total Items'} value={summary.totalItems.toString()} color="bg-purple-100 text-purple-600" />
-            <StatCard icon={<DollarSign size={20} />} label={t('cfTotalAmount') || 'Total Amount'} value={formatCurrency(summary.totalAmount)} color="bg-orange-100 text-orange-600" />
-            <StatCard icon={<Route size={20} />} label={t('cfDeliveryFees') || 'Delivery Fees'} value={formatCurrency(summary.totalDeliveryFees)} color="bg-teal-100 text-teal-600" />
-          </>
-        ) : null}
-      </div>
+      <KpiSection sectionKey="coffee:receipts-transit-TransitView">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {loading ? (
+            [...Array(6)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
+          ) : summary ? (
+            <>
+              <StatCard icon={<Truck size={20} />} label={t('cfTotalTransit') || 'Total Transit'} value={summary.totalReceipts.toString()} color="bg-blue-100 text-blue-600" />
+              <StatCard icon={<Clock size={20} />} label={t('cfPending') || 'Pending'} value={summary.pendingCount.toString()} color="bg-amber-100 text-amber-600" />
+              <StatCard icon={<CheckCircle2 size={20} />} label={t('cfDelivered') || 'Delivered'} value={summary.deliveredCount.toString()} color="bg-emerald-100 text-emerald-600" />
+              <StatCard icon={<Boxes size={20} />} label={t('cfTotalItems') || 'Total Items'} value={summary.totalItems.toString()} color="bg-purple-100 text-purple-600" />
+              <StatCard icon={<DollarSign size={20} />} label={t('cfTotalAmount') || 'Total Amount'} value={formatCurrency(summary.totalAmount)} color="bg-orange-100 text-orange-600" />
+              <StatCard icon={<Route size={20} />} label={t('cfDeliveryFees') || 'Delivery Fees'} value={formatCurrency(summary.totalDeliveryFees)} color="bg-teal-100 text-teal-600" />
+            </>
+          ) : null}
+        </div>
+      </KpiSection>
 
       {/* Quick Status Filters */}
       <div className="flex items-center gap-2 flex-wrap">

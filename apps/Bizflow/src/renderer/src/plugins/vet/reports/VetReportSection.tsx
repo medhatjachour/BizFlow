@@ -12,6 +12,7 @@ import {
 import { useToast } from '@renderer/contexts/ToastContext'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import VetReportBuilder, { type ReportType } from './VetReportBuilder'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props { refreshSignal?: number }
 
@@ -265,16 +266,18 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
       ) : mode === 'monthly' ? (
         <>
           {overview && (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-              <StatCard icon={PawPrint}      label={t('vetTotalPatients') || 'Total Patients'}  value={overview.totalPatients ?? 0}                                                       color="bg-violet-100 dark:bg-violet-900/40 text-violet-600" />
-              <StatCard icon={Users}         label={t('vetNewPatients')   || 'New Patients'}     value={overview.newPatients ?? 0}                                                          color="bg-blue-100 dark:bg-blue-900/40 text-blue-600" />
-              <StatCard icon={ClipboardList} label={t('vetSessions')      || 'Sessions'}         value={overview.sessionCount ?? 0}                                                         color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
-              <StatCard icon={TrendingUp}    label={t('vetRevenue')       || 'Clinical Revenue'} value={(overview.revenue ?? 0).toFixed(2)}                                                  color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
-              <StatCard icon={Activity}      label={'Medicine Sales'}                             value={`${overview.medicineSales ?? 0} · ${(overview.medicineRevenue ?? 0).toFixed(2)}`}  color="bg-purple-100 dark:bg-purple-900/40 text-purple-600" />
-              <StatCard icon={TrendingUp}    label={'Total Revenue'}                              value={((overview.revenue ?? 0) + (overview.medicineRevenue ?? 0)).toFixed(2)}             color="bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600" />
-              <StatCard icon={AlertCircle}   label={t('vetOutstanding')   || 'Outstanding'}      value={(overview.outstanding ?? 0).toFixed(2)}                                             color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
-              <StatCard icon={CalendarClock} label={t('vetUpcomingAppts') || 'Upcoming Appts'}   value={overview.upcomingAppts ?? 0}                                                        color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
-            </div>
+            <KpiSection sectionKey="vet:reports-VetReportSection#1">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                <StatCard icon={PawPrint}      label={t('vetTotalPatients') || 'Total Patients'}  value={overview.totalPatients ?? 0}                                                       color="bg-violet-100 dark:bg-violet-900/40 text-violet-600" />
+                <StatCard icon={Users}         label={t('vetNewPatients')   || 'New Patients'}     value={overview.newPatients ?? 0}                                                          color="bg-blue-100 dark:bg-blue-900/40 text-blue-600" />
+                <StatCard icon={ClipboardList} label={t('vetSessions')      || 'Sessions'}         value={overview.sessionCount ?? 0}                                                         color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
+                <StatCard icon={TrendingUp}    label={t('vetRevenue')       || 'Clinical Revenue'} value={(overview.revenue ?? 0).toFixed(2)}                                                  color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
+                <StatCard icon={Activity}      label={'Medicine Sales'}                             value={`${overview.medicineSales ?? 0} · ${(overview.medicineRevenue ?? 0).toFixed(2)}`}  color="bg-purple-100 dark:bg-purple-900/40 text-purple-600" />
+                <StatCard icon={TrendingUp}    label={'Total Revenue'}                              value={((overview.revenue ?? 0) + (overview.medicineRevenue ?? 0)).toFixed(2)}             color="bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600" />
+                <StatCard icon={AlertCircle}   label={t('vetOutstanding')   || 'Outstanding'}      value={(overview.outstanding ?? 0).toFixed(2)}                                             color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
+                <StatCard icon={CalendarClock} label={t('vetUpcomingAppts') || 'Upcoming Appts'}   value={overview.upcomingAppts ?? 0}                                                        color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
+              </div>
+            </KpiSection>
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -377,14 +380,16 @@ const VetReportSection: React.FC<Props> = ({ refreshSignal }) => {
         /* ── Daily Report ─────────────────────────────────────────────── */
         <>
           {/* Daily KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <StatCard icon={ClipboardList} label={t('vetTotalSessions')  || 'Sessions'}         value={daySessions.length}                        color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
-            <StatCard icon={TrendingUp}    label={'Clinical Revenue'}                            value={dayRevenue.toFixed(2)}                     color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
-            <StatCard icon={Activity}      label={'Medicine Sales'}                              value={`${dayMedSales.length} · ${dayMedRevenue.toFixed(2)}`}  color="bg-purple-100 dark:bg-purple-900/40 text-purple-600" />
-            <StatCard icon={TrendingUp}    label={'Total Revenue'}                               value={(dayRevenue + dayMedRevenue).toFixed(2)}   color="bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600" />
-            <StatCard icon={AlertCircle}   label={t('vetOutstanding')    || 'Outstanding'}       value={(dayRevenue - dayCollected).toFixed(2)}    color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
-            <StatCard icon={CalendarClock} label={t('vetAppointments')   || 'Appointments'}      value={dayAppts.length}                           color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
-          </div>
+          <KpiSection sectionKey="vet:reports-VetReportSection#2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard icon={ClipboardList} label={t('vetTotalSessions')  || 'Sessions'}         value={daySessions.length}                        color="bg-teal-100 dark:bg-teal-900/40 text-teal-600" />
+              <StatCard icon={TrendingUp}    label={'Clinical Revenue'}                            value={dayRevenue.toFixed(2)}                     color="bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600" />
+              <StatCard icon={Activity}      label={'Medicine Sales'}                              value={`${dayMedSales.length} · ${dayMedRevenue.toFixed(2)}`}  color="bg-purple-100 dark:bg-purple-900/40 text-purple-600" />
+              <StatCard icon={TrendingUp}    label={'Total Revenue'}                               value={(dayRevenue + dayMedRevenue).toFixed(2)}   color="bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600" />
+              <StatCard icon={AlertCircle}   label={t('vetOutstanding')    || 'Outstanding'}       value={(dayRevenue - dayCollected).toFixed(2)}    color="bg-amber-100 dark:bg-amber-900/40 text-amber-600" />
+              <StatCard icon={CalendarClock} label={t('vetAppointments')   || 'Appointments'}      value={dayAppts.length}                           color="bg-sky-100 dark:bg-sky-900/40 text-sky-600" />
+            </div>
+          </KpiSection>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             {/* Today Sessions */}

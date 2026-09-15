@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Pill, DollarSign, Package, AlertTriangle, PackageX, ArrowRight, ShoppingBag } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { money, int } from '../pages/components/_shared'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props { refreshSignal?: number }
 const api = () => (globalThis as any).api?.pharmacy
@@ -53,12 +54,14 @@ export default function PharmacyDashboardSection({ refreshSignal }: Props) {
         <button onClick={() => navigate('/pharmacy')} className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:gap-1.5 transition-all">{t('phOpen')} <ArrowRight size={13} /></button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Stat label={t('phTodayRevenue')} value={`$${money(ov.today?.revenue)}`} sub={`${int(ov.today?.saleCount)} ${t('phSalesLc')}`} icon={DollarSign} tone="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400" />
-        <Stat label={`${t('phRevenue')} (30d)`} value={`$${money(s.revenue)}`} sub={`${t('phProfit')} $${money(s.grossProfit)}`} icon={ShoppingBag} tone="bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400" />
-        <Stat label={t('phStockValue')} value={`$${money(ov.stockValue)}`} sub={`${int(ov.activeProducts)} ${t('phProductsLc')}`} icon={Package} tone="bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400" />
-        <Stat label={t('phNeedsAttention')} value={int(alerts)} sub={`${int(ov.expiredBatches)} ${t('phExpired')} · ${int(ov.lowStock + ov.outOfStock)} ${t('phLow')}`} icon={alerts > 0 ? AlertTriangle : PackageX} tone={alerts > 0 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-700'} />
-      </div>
+      <KpiSection sectionKey="pharmacy:dashboard-PharmacyDashboardSection">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Stat label={t('phTodayRevenue')} value={`$${money(ov.today?.revenue)}`} sub={`${int(ov.today?.saleCount)} ${t('phSalesLc')}`} icon={DollarSign} tone="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400" />
+          <Stat label={`${t('phRevenue')} (30d)`} value={`$${money(s.revenue)}`} sub={`${t('phProfit')} $${money(s.grossProfit)}`} icon={ShoppingBag} tone="bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400" />
+          <Stat label={t('phStockValue')} value={`$${money(ov.stockValue)}`} sub={`${int(ov.activeProducts)} ${t('phProductsLc')}`} icon={Package} tone="bg-teal-100 text-teal-600 dark:bg-teal-900/40 dark:text-teal-400" />
+          <Stat label={t('phNeedsAttention')} value={int(alerts)} sub={`${int(ov.expiredBatches)} ${t('phExpired')} · ${int(ov.lowStock + ov.outOfStock)} ${t('phLow')}`} icon={alerts > 0 ? AlertTriangle : PackageX} tone={alerts > 0 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-700'} />
+        </div>
+      </KpiSection>
 
       {s.topProducts?.length > 0 && (
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">

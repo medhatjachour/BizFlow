@@ -22,6 +22,7 @@ import { useToast } from '@renderer/contexts/ToastContext'
 import { useDashboardWorker } from '@renderer/hooks/useDashboardWorker'
 import type { TrendsResult, EfficiencyResult } from '@renderer/hooks/useDashboardWorker'
 import logger from '@/shared/utils/logger'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props { refreshSignal?: number }
 
@@ -253,12 +254,14 @@ const BakeryReportSection: React.FC<Props> = ({ refreshSignal }) => {
             {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-slate-200 dark:bg-slate-700 rounded-xl" />)}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard icon={ChefHat}       label={t('bakeryReportBatchesToday')} value={data.todayBatches.length} sub={`${completedToday} ${t('bakeryReportCompleted')}`}       color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
-            <StatCard icon={Flame}         label={t('bakeryReportInProgress')}   value={inProgressToday}           sub={`${data.schedule.length} ${t('bakeryReportScheduled')}`}   color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
-            <StatCard icon={AlertTriangle} label={t('bakeryReportLowIngredients')} value={data.lowIngredients.length} sub={t('bakeryReportBelowThreshold')}                         color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
-            <StatCard icon={Scale}         label={t('bakeryReportWasteToday')}   value={totalWasteQty}              sub={`${data.wasteLogs.length} ${t('bakeryReportLogEntries')}`}  color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
-          </div>
+          <KpiSection sectionKey="bakery:reports-BakeryReportSection">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard icon={ChefHat}       label={t('bakeryReportBatchesToday')} value={data.todayBatches.length} sub={`${completedToday} ${t('bakeryReportCompleted')}`}       color="bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" />
+              <StatCard icon={Flame}         label={t('bakeryReportInProgress')}   value={inProgressToday}           sub={`${data.schedule.length} ${t('bakeryReportScheduled')}`}   color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
+              <StatCard icon={AlertTriangle} label={t('bakeryReportLowIngredients')} value={data.lowIngredients.length} sub={t('bakeryReportBelowThreshold')}                         color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
+              <StatCard icon={Scale}         label={t('bakeryReportWasteToday')}   value={totalWasteQty}              sub={`${data.wasteLogs.length} ${t('bakeryReportLogEntries')}`}  color="bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400" />
+            </div>
+          </KpiSection>
         )}
 
         {/* Efficiency + Batch distribution */}

@@ -2,6 +2,7 @@ import React from 'react'
 import { Receipt, TrendingUp, DollarSign, BarChart2, AlertCircle } from 'lucide-react'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
 import type { HistoryViewMode } from '../types'
+import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 
 interface Props {
   viewMode: HistoryViewMode
@@ -59,25 +60,27 @@ export const HistoryStatsKPI: React.FC<Props> = ({ viewMode, kpis }) => {
   ]
 
   return (
-    <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0 bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/80">
-      {cards.map(c => (
-        <div
-          key={c.label}
-          className={`${c.bg} border rounded-2xl p-3 flex items-center gap-3 transition-all`}
-        >
-          <div className="p-2 rounded-xl bg-white dark:bg-slate-900 shadow-sm shrink-0">
-            <c.icon className={`h-4 w-4 ${c.color}`} />
+    <KpiSection sectionKey="vet:sales-history-HistoryStatsKPI">
+      <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 shrink-0 bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/80">
+        {cards.map(c => (
+          <div
+            key={c.label}
+            className={`${c.bg} border rounded-2xl p-3 flex items-center gap-3 transition-all`}
+          >
+            <div className="p-2 rounded-xl bg-white dark:bg-slate-900 shadow-sm shrink-0">
+              <c.icon className={`h-4 w-4 ${c.color}`} />
+            </div>
+            <div className="min-w-0">
+              <p className={`text-base font-black tracking-tight ${c.color} leading-tight truncate`}>
+                {c.val}
+              </p>
+              <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 truncate uppercase tracking-wider">
+                {c.label}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className={`text-base font-black tracking-tight ${c.color} leading-tight truncate`}>
-              {c.val}
-            </p>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 truncate uppercase tracking-wider">
-              {c.label}
-            </p>
-          </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </KpiSection>
   )
 }
