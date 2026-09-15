@@ -24,20 +24,57 @@ jobs:
       - name: Build image
         run: docker build --tag bizflow:scan .
 
+      # The gate. `severity` only filters anything when the report format is a
+      # table: for SARIF the action silently rewrites it to "all severities"
+      # (`limit-severities-for-sarif` defaults to false), which is why this job
+      # stayed red for weeks — a LOW and seven MEDIUM findings in the website's
+      # bundled node_modules failed the build while the log, which held nothing
+      # but the SARIF file name, showed no reason for it.
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: bizflow:scan
-          format: sarif
-          output: trivy-results.sarif
+          format: table
+          output: trivy-gate.txt
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           # 1 = fail the build. This was 0, so the scanner could never fail a
           # build no matter what it found.
           exit-code: 1
 
+      # A red job has to say what it found, so the table is read back out of the
+      # report and into the log.
+      - name: Print the gate report
+        if: always()
+        run: |
+          if [ -f trivy-gate.txt ]; then
+            cat trivy-gate.txt
+            {
+              echo '## Production image — CRITICAL/HIGH, fixable'
+              echo '```'
+              cat trivy-gate.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error::Trivy produced no report — the scan itself failed."
+          fi
+
+      # Published to code scanning with every severity, so the LOW/MEDIUM backlog
+      # stays visible without being able to fail the build. `severity` is left
+      # unset on purpose: the action would drop it anyway, and saying so here is
+      # cheaper than pretending the filter works.
+      - name: Build the code scanning report
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: bizflow:scan
+          format: sarif
+          output: trivy-results.sarif
+          ignore-unfixed: true
+          exit-code: 0
+
       - name: Upload Trivy report
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: trivy-results.sarif
