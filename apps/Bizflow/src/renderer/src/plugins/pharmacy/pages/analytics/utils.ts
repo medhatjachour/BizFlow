@@ -1,5 +1,8 @@
 import { DateRange, DateRangePreset, SalesReportData, InventoryReportData } from './types'
 
+/** `t()` from the language context, injected so report exports follow the UI language. */
+type Translator = (key: string, params?: Record<string, unknown>) => string
+
 const pad = (n: number) => String(n).padStart(2, '0')
 export const formatIsoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 
@@ -43,43 +46,43 @@ export function computePresetDateRange(preset: DateRangePreset): DateRange {
   return { from: formatIsoDate(d), to: todayStr }
 }
 
-export function buildSalesExportCSV(sales: SalesReportData, range: DateRange) {
+export function buildSalesExportCSV(sales: SalesReportData, range: DateRange, t: Translator) {
   const headers = [
-    ['PHARMACY EXECUTIVE SALES & P&L REPORT', `Timeline: ${range.from} to ${range.to}`],
-    ['Generated At', new Date().toLocaleString()],
+    [t('phAnCsvSalesTitle'), t('phAnCsvTimeline', { from: range.from, to: range.to })],
+    [t('phAnCsvGeneratedAt'), new Date().toLocaleString()],
     [],
-    ['EXECUTIVE REVENUE & PROFITABILITY METRIC', 'VALUE ($ / %)'],
-    ['Gross Revenue', sales.revenue.toFixed(2)],
-    ['Cost of Goods Sold (COGS)', sales.cogs.toFixed(2)],
-    ['Gross Operating Profit', sales.grossProfit.toFixed(2)],
-    ['Net Margin (%)', `${(sales.margin || 0).toFixed(2)}%`],
-    ['Total Transactions', sales.saleCount],
-    ['Units Sold Across All Lines', sales.unitsSold],
-    ['Cash / Tender Collected', sales.collected.toFixed(2)],
-    ['Outstanding Receivables', sales.outstanding.toFixed(2)],
+    [t('phAnCsvRevenueHeader'), t('phAnCsvValueHeader')],
+    [t('phAnGrossRevenue'), sales.revenue.toFixed(2)],
+    [t('phAnCogsSold'), sales.cogs.toFixed(2)],
+    [t('phAnGrossOperatingProfit'), sales.grossProfit.toFixed(2)],
+    [t('phAnNetMargin'), `${(sales.margin || 0).toFixed(2)}%`],
+    [t('phAnTotalTransactions'), sales.saleCount],
+    [t('phAnUnitsAcrossLines'), sales.unitsSold],
+    [t('phAnCashCollected'), sales.collected.toFixed(2)],
+    [t('phAnOutstandingReceivables'), sales.outstanding.toFixed(2)],
     [],
-    ['TOP PERFORMING MEDICINES BY REVENUE', 'UNITS SOLD', 'GROSS REVENUE ($)'],
+    [t('phAnTopMedicinesHeader'), t('phAnCsvUnitsSoldHeader'), t('phAnCsvGrossRevenueHeader')],
     ...(sales.topProducts ?? []).map(p => [p.name, p.units, p.revenue.toFixed(2)]),
   ]
   return headers
 }
 
-export function buildInventoryExportCSV(inv: InventoryReportData) {
+export function buildInventoryExportCSV(inv: InventoryReportData, t: Translator) {
   const headers = [
-    ['PHARMACY INVENTORY & ASSET VALUATION AUDIT', new Date().toLocaleString()],
+    [t('phAnCsvInventoryTitle'), new Date().toLocaleString()],
     [],
-    ['INVENTORY ASSET METRIC', 'VALUE'],
-    ['Total Catalog SKUs', inv.totalProducts],
-    ['Total Inventory Cost Value ($)', inv.stockValue.toFixed(2)],
-    ['Potential Retail Valuation ($)', inv.retailValue.toFixed(2)],
-    ['Low Stock Alerts', inv.lowStock],
-    ['Out of Stock SKUs', inv.outOfStock],
-    ['Expired Batches Count', inv.expiredBatches],
-    ['Expired Stock Loss ($)', inv.expiredValue.toFixed(2)],
-    ['Expiring in 30 Days (At Risk)', inv.expiringSoon],
-    ['Expiring Stock Value ($)', inv.expiringValue.toFixed(2)],
+    [t('phAnCsvInventoryMetric'), t('phAnCsvValue')],
+    [t('phAnTotalCatalogSkus'), inv.totalProducts],
+    [t('phAnTotalInventoryCost'), inv.stockValue.toFixed(2)],
+    [t('phAnPotentialRetailValuation'), inv.retailValue.toFixed(2)],
+    [t('phAnLowStockAlerts'), inv.lowStock],
+    [t('phAnOutOfStockSkus'), inv.outOfStock],
+    [t('phAnExpiredBatchesPlain'), inv.expiredBatches],
+    [t('phAnExpiredStockLoss'), inv.expiredValue.toFixed(2)],
+    [t('phAnExpiringIn30'), inv.expiringSoon],
+    [t('phAnExpiringStockValue'), inv.expiringValue.toFixed(2)],
     [],
-    ['CATEGORY BREAKDOWN', 'PRODUCT COUNT', 'TOTAL ASSET VALUE ($)'],
+    [t('phAnCsvCategoryBreakdown'), t('phAnCsvProductCount'), t('phAnCsvTotalAssetValue')],
     ...(inv.byCategory ?? []).map(c => [c.category, c.count, c.value.toFixed(2)]),
   ]
   return headers

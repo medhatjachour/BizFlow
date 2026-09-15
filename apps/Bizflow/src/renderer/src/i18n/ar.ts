@@ -1,5 +1,6 @@
 // Arabic translations — part of the i18n dictionary.
-// Split into ./ar.part.N files for maintainability; merged here.
+// Split into ./ar.part.N files per domain, plus the merged ./ar.employee
+// (HR) and ./ar.settings dictionaries; merged here.
 // eslint-disable-next-line
 import { arPart0 } from './ar.part.0'
 import { arPart1 } from './ar.part.1'
@@ -11,14 +12,8 @@ import { arPart6 } from './ar.part.6'
 import { arPart7 } from './ar.part.7'
 import { arPart8 } from './ar.part.8'
 import { arPart9 } from './ar.part.9'
-import { arPart10 } from './ar.part.10'
-import { arPart11 } from './ar.part.11'
-import { arPart12 } from './ar.part.12'
-import { arPart13 } from './ar.part.13'
-import { arPart14 } from './ar.part.14'
-import { arPart15 } from './ar.part.15'
-import { arPart16 } from './ar.part.16'
-import { arPart17 } from './ar.part.17'
+import { arEmployee } from './ar.employee'
+import { arSettings } from './ar.settings'
 
 export const ar = {
   ...arPart0,
@@ -31,12 +26,6 @@ export const ar = {
   ...arPart7,
   ...arPart8,
   ...arPart9,
-  ...arPart10,
-  ...arPart11,
-  ...arPart12,
-  ...arPart13,
-  ...arPart14,
-  ...arPart15,
-  ...arPart16,
-  ...arPart17,
+  ...arEmployee,
+  ...arSettings,
 }

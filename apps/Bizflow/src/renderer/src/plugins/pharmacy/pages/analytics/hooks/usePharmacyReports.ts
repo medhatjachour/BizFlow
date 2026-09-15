@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { pharma } from '../../components/_shared'
 import { ReportViewType, DateRange, SalesReportData, InventoryReportData } from '../types'
 import { computePresetDateRange } from '../utils'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 export function usePharmacyReports(toast: any) {
+  const { t } = useLanguage()
   const [view, setView] = useState<ReportViewType>('sales')
   const [range, setRange] = useState<DateRange>(() => computePresetDateRange('month'))
   const [sales, setSales] = useState<SalesReportData | null>(null)
@@ -21,11 +23,11 @@ export function usePharmacyReports(toast: any) {
         setInv(data ?? null)
       }
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to generate report metrics')
+      toast.error(err?.message || t('phAnLoadFailed'))
     } finally {
       setLoading(false)
     }
-  }, [view, range.from, range.to, toast])
+  }, [view, range.from, range.to, toast, t])
 
   useEffect(() => {
     loadData()

@@ -6,7 +6,7 @@
  * production, and only an Arabic-speaking user notices. Two things guard that:
  *
  *   1. every key the module references must resolve in *both* dictionaries;
- *   2. no HR key may be defined twice across the dictionary parts, because a
+ *   2. no HR key may be defined twice across the dictionary files, because a
  *      spread later in the file silently wins and the earlier string disappears;
  *   3. no screen may branch on the language to pick its own copy, and no screen
  *      may format a date or a figure without going through `ui/hrFormat.ts`.
@@ -21,6 +21,8 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
+import { arEmployee } from '../../renderer/src/i18n/ar.employee'
+import { enEmployee } from '../../renderer/src/i18n/en.employee'
 import { translations } from '../../renderer/src/i18n/translations'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -39,10 +41,30 @@ function filesUnder(dir: string, filter: (name: string) => boolean): string[] {
 }
 
 const hrFiles = filesUnder(hrDir, name => /\.tsx?$/.test(name))
-const partFiles = filesUnder(i18nDir, name => /\.part\.\d+\.ts$/.test(name))
+// The numbered parts, plus the merged per-domain dictionaries: HR copy lives in
+// `{en,ar}.employee.ts` and must not be declared a second time anywhere else.
+const dictionaryFiles = filesUnder(
+  i18nDir,
+  name => /\.part\.\d+\.ts$/.test(name) || /\.(employee|settings)\.ts$/.test(name)
+)
 
 const en = translations.en as Record<string, string | undefined>
 const ar = translations.ar as Record<string, string | undefined>
+
+/** Arabic letters — used to catch copy filed under the wrong language. */
+const ARABIC_SCRIPT = /[\u0600-\u06FF]/
+
+/**
+ * Keys whose copy is deliberately the same in both languages: a sample address
+ * or a score range carries no prose, so the "an Arabic file holds Arabic
+ * characters" rule steps around it.
+ */
+const TECHNICAL_EXAMPLES: Record<string, string> = {
+  emailPlaceholder: 'a sample address, not prose',
+  phonePlaceholder: 'a sample phone number, not prose',
+  empFormEmailPlaceholder: 'a sample address, not prose',
+  empFormScorePlaceholder: 'a score range, not prose'
+}
 
 /** The namespaces this test polices: employee screens, tabs, lifecycle, panels. */
 const HR_KEY_PREFIX = '(?:emp|tab|lc|hr)'
@@ -59,7 +81,7 @@ function referencedKeys(source: string): string[] {
 describe('HR screen translations', () => {
   it('reads every HR source file it is supposed to police', () => {
     expect(hrFiles.length).toBeGreaterThan(10)
-    expect(partFiles.length).toBeGreaterThan(5)
+    expect(dictionaryFiles.length).toBeGreaterThan(20)
   })
 
   const referenced = (() => {
@@ -96,10 +118,10 @@ describe('HR screen translations', () => {
 })
 
 describe('HR dictionary integrity', () => {
-  it('defines each HR key exactly once per language across the dictionary parts', () => {
+  it('defines each HR key exactly once per language across the dictionary files', () => {
     const seen = new Map<string, string[]>()
     const declared = new RegExp(`^\\s{2,6}'?(${HR_KEY_PREFIX}[A-Z][A-Za-z0-9]*)'?\\s*:`, 'gm')
-    for (const file of partFiles) {
+    for (const file of dictionaryFiles) {
       const name = relative(i18nDir, file)
       const language = name.split('.')[0]
       const source = readFileSync(file, 'utf8')
@@ -114,6 +136,69 @@ describe('HR dictionary integrity', () => {
       .filter(([, files]) => files.length > 1)
       .map(([id, files]) => `${id} defined in ${files.join(', ')}`)
     expect(duplicated).toEqual([])
+  })
+})
+
+/**
+ * HR copy used to be scattered over the numbered parts. It is one file per
+ * language now, and this keeps the two files honest: same key list, no empty
+ * strings, no English left standing in the Arabic file, no placeholder that
+ * exists on one side only.
+ */
+describe('The Employee dictionary ships identically in both languages', () => {
+  const keys = Object.keys(enEmployee).sort()
+
+  it('ships the same keys in both files', () => {
+    expect(Object.keys(arEmployee).sort()).toEqual(keys)
+    expect(keys.length).toBeGreaterThan(700)
+  })
+
+  it('carries copy for every key', () => {
+    const empty = keys.filter(key => enEmployee[key].trim() === '' || arEmployee[key].trim() === '')
+    expect(empty, `keys with no copy: ${empty.join(', ')}`).toEqual([])
+  })
+
+  it('actually translates every key', () => {
+    const untranslated = keys.filter(
+      key => arEmployee[key] === enEmployee[key] && !(key in TECHNICAL_EXAMPLES)
+    )
+    expect(untranslated, `keys still carrying English copy: ${untranslated.join(', ')}`).toEqual([])
+  })
+
+  it('keeps each language on its own side', () => {
+    const englishHoldingArabic = keys.filter(key => ARABIC_SCRIPT.test(enEmployee[key]))
+    expect(
+      englishHoldingArabic,
+      `English entries holding Arabic copy: ${englishHoldingArabic.join(', ')}`
+    ).toEqual([])
+
+    const arabicHoldingEnglish = keys.filter(
+      key =>
+        /[A-Za-z]/.test(enEmployee[key]) &&
+        !ARABIC_SCRIPT.test(arEmployee[key]) &&
+        !(key in TECHNICAL_EXAMPLES)
+    )
+    expect(
+      arabicHoldingEnglish,
+      `Arabic entries holding no Arabic copy: ${arabicHoldingEnglish.join(', ')}`
+    ).toEqual([])
+  })
+
+  it('declares the same placeholders in both languages', () => {
+    const placeholdersOf = (value: string): string =>
+      Array.from(
+        value.matchAll(/\{([A-Za-z_$][\w$]*)\}/g),
+        match => match[1]
+      ).join()
+    const mismatched = keys.filter(
+      key => placeholdersOf(arEmployee[key]) !== placeholdersOf(enEmployee[key])
+    )
+    expect(mismatched, `keys with differing placeholders: ${mismatched.join(', ')}`).toEqual([])
+  })
+
+  it('writes the Arabic file as UTF-8 with no byte order mark', () => {
+    const bytes = readFileSync(join(i18nDir, 'ar.employee.ts'))
+    expect([bytes[0], bytes[1], bytes[2]]).not.toEqual([0xef, 0xbb, 0xbf])
   })
 })
 

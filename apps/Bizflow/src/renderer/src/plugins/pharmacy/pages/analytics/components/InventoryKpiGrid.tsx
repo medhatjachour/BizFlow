@@ -9,55 +9,63 @@ import {
 } from 'lucide-react'
 import { InventoryReportData } from '../types'
 import { money, int } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface InventoryKpiGridProps {
   inv: InventoryReportData
 }
 
 export const InventoryKpiGrid: React.FC<InventoryKpiGridProps> = ({ inv }) => {
+  const { t } = useLanguage()
   const marginSpread =
     inv.retailValue > 0 ? Math.round(((inv.retailValue - inv.stockValue) / inv.retailValue) * 100) : 0
 
   const kpis = [
     {
-      label: 'Inventory Asset Cost',
+      id: 'assetCost',
+      label: t('phAnInventoryAssetCost'),
       value: `$${money(inv.stockValue)}`,
       sub: 'Purchase cost basis',
       icon: Boxes,
       color: 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      label: 'Potential Retail Value',
+      id: 'retailValue',
+      label: t('phAnPotentialRetailValue'),
       value: `$${money(inv.retailValue)}`,
-      sub: `+${marginSpread}% potential margin`,
+      sub: t('phAnPotentialMargin', { percent: marginSpread }),
       icon: TrendingUp,
       color: 'text-blue-600 dark:text-blue-400',
     },
     {
-      label: 'Total Active SKUs',
+      id: 'skus',
+      label: t('phAnTotalActiveSkus'),
       value: int(inv.totalProducts),
-      sub: 'Medicines & formulations',
+      sub: t('phAnMedicinesFormulations'),
       icon: Layers,
       color: 'text-violet-600 dark:text-violet-400',
     },
     {
-      label: 'Low Stock Items',
+      id: 'lowStock',
+      label: t('phAnLowStockItems'),
       value: int(inv.lowStock),
-      sub: 'Under minimum threshold',
+      sub: t('phAnUnderMinThreshold'),
       icon: AlertTriangle,
       color: inv.lowStock > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400',
     },
     {
-      label: 'Expired Loss Value',
+      id: 'expiredValue',
+      label: t('phAnExpiredLossValue'),
       value: `$${money(inv.expiredValue)}`,
-      sub: `${int(inv.expiredBatches)} expired batches`,
+      sub: t('phAnExpiredBatchesCount', { count: int(inv.expiredBatches) }),
       icon: PackageX,
       color: inv.expiredBatches > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400',
     },
     {
-      label: 'Expiring Soon (30d)',
+      id: 'expiringSoon',
+      label: t('phAnExpiringSoon30'),
       value: `$${money(inv.expiringValue)}`,
-      sub: `${int(inv.expiringSoon)} batches at risk`,
+      sub: t('phAnBatchesAtRisk', { count: int(inv.expiringSoon) }),
       icon: Clock,
       color: inv.expiringSoon > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400',
     },
@@ -67,7 +75,7 @@ export const InventoryKpiGrid: React.FC<InventoryKpiGridProps> = ({ inv }) => {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
       {kpis.map(k => (
         <div
-          key={k.label}
+          key={k.id}
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-2xs flex flex-col justify-between"
         >
           <div>

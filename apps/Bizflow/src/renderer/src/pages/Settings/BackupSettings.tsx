@@ -48,7 +48,7 @@ export default function BackupSettingsPanel({
   const { t, language } = useLanguage()
   const toast = useToast()
 
-  // Screen copy comes from the dictionaries (i18n/*.part.16.ts); this object only
+  // Screen copy comes from the dictionaries (i18n/*.settings.ts); this object only
   // keeps the JSX readable.
   
 

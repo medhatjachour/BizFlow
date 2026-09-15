@@ -25,13 +25,9 @@ import { describe, expect, it } from 'vitest'
 
 import { MODULE_REGISTRY } from '../../shared/modules'
 import { ar } from '../../renderer/src/i18n/ar'
-import { arPart14 } from '../../renderer/src/i18n/ar.part.14'
-import { arPart16 } from '../../renderer/src/i18n/ar.part.16'
-import { arPart17 } from '../../renderer/src/i18n/ar.part.17'
+import { arSettings } from '../../renderer/src/i18n/ar.settings'
 import { en } from '../../renderer/src/i18n/en'
-import { enPart14 } from '../../renderer/src/i18n/en.part.14'
-import { enPart16 } from '../../renderer/src/i18n/en.part.16'
-import { enPart17 } from '../../renderer/src/i18n/en.part.17'
+import { enSettings } from '../../renderer/src/i18n/en.settings'
 import { translate } from '../../renderer/src/i18n/translations'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -114,6 +110,17 @@ const placeholders = (value: string): string[] =>
  */
 const omittedPlaceholders: Record<string, string> = {
   permSensitiveOne: 'Arabic spells out the count (always 1) instead of printing it'
+}
+
+/**
+ * Keys whose copy is deliberately identical in both languages, with the reason.
+ * A product name and a sample address do not translate, so the "every key is
+ * translated" and "Arabic copy holds Arabic characters" rules step around these
+ * two rather than being relaxed for the whole file.
+ */
+const sameInBothLanguages: Record<string, string> = {
+  updVersionValue: 'the product name is a proper noun — only the version varies',
+  umEmailPlaceholder: 'a sample address, not prose'
 }
 
 /** Property names of a `t('key', { … })` argument, shorthand included. */
@@ -331,7 +338,7 @@ describe('lib/format.ts is the single formatting module', () => {
 // This screen was the last page in Settings that was English end to end: an
 // Arabic build rendered "Business Modules", "Enable"/"Disable", and English
 // module names, descriptions and feature bullets. Its copy now lives in two
-// halves — the chrome in `i18n/*.part.14`, the module metadata in
+// halves — the chrome in `i18n/{en,ar}.settings.ts`, the module metadata in
 // `src/shared/modules.ts` — and both halves are asserted below.
 
 const modulesScreenFile = join(settingsDir, 'ModulesSettings.tsx')
@@ -450,111 +457,83 @@ describe('Every module carries its own Arabic copy', () => {
   })
 })
 
-describe('The Modules dictionary ships identically in both languages', () => {
-  const enKeys = Object.keys(enPart14).sort()
-  const arKeys = Object.keys(arPart14).sort()
+// ─── The Settings dictionary ──────────────────────────────────────────────────
+//
+// Settings copy used to live in five parts: `part.13` (software update),
+// `part.14` (Modules), `part.15` (Users & Roles), `part.16` (Backup & Restore)
+// and `part.17` (Tax & Receipts, Email Reports). Each of those screens was
+// English-only before it moved onto dictionary keys: the last three owned a
+// hand-rolled `const i18n = { … }` lookup whose entries read
+// `t('key') || (isAr ? 'عربي' : 'English')`, which no translation tool can see
+// and no third language can translate. The five parts are one file per language
+// now — `i18n/{en,ar}.settings.ts` — so the guard that used to run over three of
+// them runs over all of them.
 
+const SETTINGS_KEYS = Object.keys(enSettings).sort()
+
+describe('The Settings dictionary ships identically in both languages', () => {
   it('ships the same keys in both files', () => {
-    expect(arKeys).toEqual(enKeys)
-    expect(enKeys.length).toBeGreaterThanOrEqual(25)
+    expect(Object.keys(arSettings).sort()).toEqual(SETTINGS_KEYS)
+    expect(SETTINGS_KEYS.length).toBeGreaterThanOrEqual(250)
   })
 
   it('actually translates every key', () => {
-    const untranslated = enKeys.filter(key => arPart14[key] === enPart14[key])
+    const untranslated = SETTINGS_KEYS.filter(
+      key => arSettings[key] === enSettings[key] && !(key in sameInBothLanguages)
+    )
     expect(untranslated, `keys still carrying English copy: ${untranslated.join(', ')}`).toEqual([])
   })
 
+  // A conversion that reads the two halves of `isAr ? 'عربي' : 'English'` in the
+  // wrong order produces files where every count above still adds up — the keys
+  // match, the values differ, nothing is empty — but the Arabic app shows
+  // English. Only looking at the script catches it.
+  it('keeps each language on its own side', () => {
+    const englishCopy = SETTINGS_KEYS.filter(key => ARABIC_SCRIPT.test(enSettings[key]))
+    expect(englishCopy, `English entries holding Arabic copy: ${englishCopy.join(', ')}`).toEqual([])
+
+    const missingArabic = SETTINGS_KEYS.filter(
+      key =>
+        /[A-Za-z]/.test(enSettings[key]) &&
+        !ARABIC_SCRIPT.test(arSettings[key]) &&
+        !(key in sameInBothLanguages)
+    )
+    expect(
+      missingArabic,
+      `Arabic entries holding no Arabic copy: ${missingArabic.join(', ')}`
+    ).toEqual([])
+  })
+
+  it('declares the same placeholders in both languages', () => {
+    const mismatched = SETTINGS_KEYS.filter(
+      key =>
+        !(key in omittedPlaceholders) &&
+        placeholders(arSettings[key]).join(',') !== placeholders(enSettings[key]).join(',')
+    )
+    expect(mismatched, `keys with differing placeholders: ${mismatched.join(', ')}`).toEqual([])
+  })
+
+  it('carries no empty string', () => {
+    const empty = SETTINGS_KEYS.filter(
+      key => enSettings[key].trim() === '' || arSettings[key].trim() === ''
+    )
+    expect(empty, `keys with no copy: ${empty.join(', ')}`).toEqual([])
+  })
+
   it('keeps everything else in the dictionary too', () => {
-    // A key added to `en.part.14` but forgotten in the merged dictionaries would
-    // fall back to the key name on screen.
-    const orphaned = enKeys.filter(key => !(key in en) || !(key in ar))
+    // A key added here but forgotten in the merged dictionaries would fall back
+    // to the key name on screen.
+    const orphaned = SETTINGS_KEYS.filter(key => !(key in en) || !(key in ar))
     expect(orphaned, `keys missing from the merged dictionaries: ${orphaned.join(', ')}`).toEqual([])
   })
 
-  it('writes the Arabic file as UTF-8 with no byte order mark', () => {
-    // A BOM on this file makes the first key `\ufeffmodsTitle` and silently
-    // blanks the whole file's first string literal.
-    const bytes = readFileSync(join(i18nSrc, 'ar.part.14.ts'))
+  it('writes the Arabic settings file as UTF-8 with no byte order mark', () => {
+    // A BOM here makes the first key `\ufeffupdTitle` and silently blanks the
+    // file's first string literal.
+    const bytes = readFileSync(join(i18nSrc, 'ar.settings.ts'))
     expect([bytes[0], bytes[1], bytes[2]]).not.toEqual([0xef, 0xbb, 0xbf])
   })
 })
-
-// ─── Settings → Backup & Restore, Tax & Receipts, Email Reports ───────────────
-//
-// These three screens each built a local `const i18n = { … }` lookup whose
-// entries were `t('key') || (isAr ? 'عربي' : 'English')` or a bare
-// `isAr ? 'عربي' : 'English'`. The `||` fallbacks were dead code — `t()` already
-// falls back to English and then to the key — and the bare ternaries could not
-// be translated without editing the screen. Both halves now live in
-// `i18n/*.part.16` (Backup) and `i18n/*.part.17` (Tax & Receipts, Email).
-
-const dictionaryParts: Array<{
-  name: string
-  part: string
-  en: Record<string, string>
-  ar: Record<string, string>
-  minKeys: number
-}> = [
-  { name: 'Backup & Restore', part: '16', en: enPart16, ar: arPart16, minKeys: 20 },
-  { name: 'Tax & Receipts and Email Reports', part: '17', en: enPart17, ar: arPart17, minKeys: 50 }
-]
-
-for (const part of dictionaryParts) {
-  describe(`The ${part.name} dictionary ships identically in both languages`, () => {
-    const enKeys = Object.keys(part.en).sort()
-    const arKeys = Object.keys(part.ar).sort()
-
-    it('ships the same keys in both files', () => {
-      expect(arKeys).toEqual(enKeys)
-      expect(enKeys.length).toBeGreaterThanOrEqual(part.minKeys)
-    })
-
-    it('actually translates every key', () => {
-      const untranslated = enKeys.filter(key => part.ar[key] === part.en[key])
-      expect(untranslated, `keys still carrying English copy: ${untranslated.join(', ')}`).toEqual([])
-    })
-
-    // A conversion that reads the two halves of `isAr ? 'عربي' : 'English'` in
-    // the wrong order produces files where every count above still adds up —
-    // the keys match, the values differ, nothing is empty — but the Arabic app
-    // shows English. Only looking at the script catches it.
-    it('keeps each language on its own side', () => {
-      const englishCopy = enKeys.filter(key => ARABIC_SCRIPT.test(part.en[key]))
-      expect(englishCopy, `English entries holding Arabic copy: ${englishCopy.join(', ')}`).toEqual([])
-
-      const missingArabic = enKeys.filter(
-        key => /[A-Za-z]/.test(part.en[key]) && !ARABIC_SCRIPT.test(part.ar[key])
-      )
-      expect(missingArabic, `Arabic entries holding no Arabic copy: ${missingArabic.join(', ')}`).toEqual([])
-    })
-
-    it('declares the same placeholders in both languages', () => {
-      const mismatched = enKeys.filter(
-        key =>
-          !(key in omittedPlaceholders) &&
-          placeholders(part.ar[key]).join(',') !== placeholders(part.en[key]).join(',')
-      )
-      expect(mismatched, `keys with differing placeholders: ${mismatched.join(', ')}`).toEqual([])
-    })
-
-    it('carries no empty string', () => {
-      const empty = enKeys.filter(key => part.en[key].trim() === '' || part.ar[key].trim() === '')
-      expect(empty, `keys with no copy: ${empty.join(', ')}`).toEqual([])
-    })
-
-    it('keeps everything else in the dictionary too', () => {
-      // A key added here but forgotten in the merged dictionaries would fall
-      // back to the key name on screen.
-      const orphaned = enKeys.filter(key => !(key in en) || !(key in ar))
-      expect(orphaned, `keys missing from the merged dictionaries: ${orphaned.join(', ')}`).toEqual([])
-    })
-
-    it('writes the Arabic file as UTF-8 with no byte order mark', () => {
-      const bytes = readFileSync(join(i18nSrc, `ar.part.${part.part}.ts`))
-      expect([bytes[0], bytes[1], bytes[2]]).not.toEqual([0xef, 0xbb, 0xbf])
-    })
-  })
-}
 
 describe('The screens moved onto those dictionaries read from them', () => {
   const movedScreens = ['BackupSettings.tsx', 'TaxReceiptSettings.tsx', 'EmailSettings.tsx']

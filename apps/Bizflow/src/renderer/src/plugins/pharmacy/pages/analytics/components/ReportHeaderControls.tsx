@@ -5,6 +5,7 @@ import { DATE_PRESETS } from '../constants'
 import { computePresetDateRange } from '../utils'
 import { inputCls } from '../../components/_shared'
 import { Button } from '../../components/ui'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface ReportHeaderControlsProps {
   view: ReportViewType
@@ -25,6 +26,8 @@ export const ReportHeaderControls: React.FC<ReportHeaderControlsProps> = ({
   onExport,
   onRefresh,
 }) => {
+  const { t } = useLanguage()
+
   return (
     <div className="flex items-center justify-between flex-wrap gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-2xs">
       {/* View Tabs */}
@@ -37,7 +40,7 @@ export const ReportHeaderControls: React.FC<ReportHeaderControlsProps> = ({
               : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          Sales & P&L
+          {t('phAnViewSales')}
         </button>
         <button
           onClick={() => onViewChange('inventory')}
@@ -47,7 +50,7 @@ export const ReportHeaderControls: React.FC<ReportHeaderControlsProps> = ({
               : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
           }`}
         >
-          Inventory & Valuation
+          {t('phAnViewInventory')}
         </button>
       </div>
 
@@ -63,7 +66,7 @@ export const ReportHeaderControls: React.FC<ReportHeaderControlsProps> = ({
                   onClick={() => onRangeChange(computePresetDateRange(p.preset))}
                   className="px-2 py-1 text-[11px] font-semibold rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700"
                 >
-                  {p.label}
+                  {t(p.labelKey)}
                 </button>
               ))}
             </div>
@@ -92,13 +95,13 @@ export const ReportHeaderControls: React.FC<ReportHeaderControlsProps> = ({
           onClick={onRefresh}
           disabled={loading}
           className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
-          title="Refresh Data"
+          title={t('phRefreshData')}
         >
           <RefreshCw size={14} className={loading ? 'animate-spin text-emerald-500' : ''} />
         </button>
 
         <Button variant="secondary" size="sm" icon={Download} onClick={onExport}>
-          Export CSV
+          {t('phExportCSV')}
         </Button>
       </div>
     </div>

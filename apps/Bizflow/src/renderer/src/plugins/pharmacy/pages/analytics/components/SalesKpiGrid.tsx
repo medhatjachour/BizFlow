@@ -9,55 +9,63 @@ import {
 } from 'lucide-react'
 import { SalesReportData } from '../types'
 import { money, int } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface SalesKpiGridProps {
   sales: SalesReportData
 }
 
 export const SalesKpiGrid: React.FC<SalesKpiGridProps> = ({ sales }) => {
+  const { t } = useLanguage()
   const isHealthyMargin = (sales.margin || 0) >= 20
   const avgPerBasket = sales.saleCount > 0 ? sales.revenue / sales.saleCount : 0
 
   const kpis = [
     {
-      label: 'Gross Revenue',
+      id: 'revenue',
+      label: t('phAnGrossRevenue'),
       value: `$${money(sales.revenue)}`,
-      sub: `${int(sales.unitsSold)} units sold`,
+      sub: t('phAnUnitsSold', { count: int(sales.unitsSold) }),
       icon: TrendingUp,
       color: 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      label: 'Cost of Goods (COGS)',
+      id: 'cogs',
+      label: t('phAnCogsLabel'),
       value: `$${money(sales.cogs)}`,
-      sub: 'Purchase cost basis',
+      sub: t('phAnPurchaseCostBasis'),
       icon: Coins,
       color: 'text-orange-500 dark:text-orange-400',
     },
     {
-      label: 'Gross Operating Profit',
+      id: 'profit',
+      label: t('phAnGrossOperatingProfit'),
       value: `$${money(sales.grossProfit)}`,
-      sub: 'Net revenue after product cost',
+      sub: t('phAnNetAfterCost'),
       icon: DollarSign,
       color: 'text-blue-600 dark:text-blue-400',
     },
     {
-      label: 'Profit Margin',
+      id: 'margin',
+      label: t('phAnProfitMargin'),
       value: `${(sales.margin || 0).toFixed(1)}%`,
-      sub: isHealthyMargin ? 'Target met (>20%)' : 'Below target (<20%)',
+      sub: isHealthyMargin ? t('phAnTargetMet') : t('phAnBelowTarget'),
       icon: Activity,
       color: isHealthyMargin ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400',
     },
     {
-      label: 'Total Orders',
+      id: 'orders',
+      label: t('phAnTotalOrders'),
       value: int(sales.saleCount),
-      sub: `Avg: $${money(avgPerBasket)} / sale`,
+      sub: t('phAnAvgPerSale', { amount: `$${money(avgPerBasket)}` }),
       icon: ShoppingBag,
       color: 'text-violet-600 dark:text-violet-400',
     },
     {
-      label: 'Pending Receivables',
+      id: 'receivables',
+      label: t('phAnPendingReceivables'),
       value: `$${money(sales.outstanding)}`,
-      sub: `$${money(sales.collected)} collected`,
+      sub: t('phAnCollected', { amount: `$${money(sales.collected)}` }),
       icon: Wallet,
       color: sales.outstanding > 0.005 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400',
     },
@@ -67,7 +75,7 @@ export const SalesKpiGrid: React.FC<SalesKpiGridProps> = ({ sales }) => {
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
       {kpis.map(k => (
         <div
-          key={k.label}
+          key={k.id}
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-2xs flex flex-col justify-between"
         >
           <div>

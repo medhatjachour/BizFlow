@@ -2,12 +2,14 @@ import React from 'react'
 import { PieChart, ArrowUpRight } from 'lucide-react'
 import { SalesReportData } from '../types'
 import { money } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface ProfitMarginsBreakdownProps {
   sales: SalesReportData
 }
 
 export const ProfitMarginsBreakdown: React.FC<ProfitMarginsBreakdownProps> = ({ sales }) => {
+  const { t } = useLanguage()
   const cogsShare = sales.revenue > 0 ? (sales.cogs / sales.revenue) * 100 : 0
   const profitShare = sales.revenue > 0 ? (sales.grossProfit / sales.revenue) * 100 : 0
 
@@ -16,10 +18,13 @@ export const ProfitMarginsBreakdown: React.FC<ProfitMarginsBreakdownProps> = ({ 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <PieChart size={16} className="text-blue-500" />
-          <h3 className="font-bold text-xs text-slate-800 dark:text-slate-100">Revenue & Cost Structure</h3>
+          <h3 className="font-bold text-xs text-slate-800 dark:text-slate-100">
+            {t('phAnRevenueCostStructure')}
+          </h3>
         </div>
         <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-0.5">
-          <ArrowUpRight size={12} /> {profitShare.toFixed(1)}% Gross Margin
+          <ArrowUpRight size={12} />{' '}
+          {t('phAnGrossMarginSuffix', { percent: profitShare.toFixed(1) })}
         </span>
       </div>
 
@@ -29,12 +34,12 @@ export const ProfitMarginsBreakdown: React.FC<ProfitMarginsBreakdownProps> = ({ 
           <div
             className="h-full bg-emerald-500 rounded-l-lg transition-all"
             style={{ width: `${profitShare}%` }}
-            title={`Gross Profit: $${money(sales.grossProfit)}`}
+            title={`${t('phAnGrossProfitLabel')}: $${money(sales.grossProfit)}`}
           />
           <div
             className="h-full bg-orange-400 rounded-r-lg transition-all"
             style={{ width: `${cogsShare}%` }}
-            title={`COGS: $${money(sales.cogs)}`}
+            title={`${t('phAnCogsShort')}: $${money(sales.cogs)}`}
           />
         </div>
 
@@ -42,14 +47,16 @@ export const ProfitMarginsBreakdown: React.FC<ProfitMarginsBreakdownProps> = ({ 
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <span className="text-slate-600 dark:text-slate-300">
-              Gross Profit: <strong>${money(sales.grossProfit)}</strong> ({profitShare.toFixed(1)}%)
+              {t('phAnGrossProfitLabel')}: <strong>${money(sales.grossProfit)}</strong>{' '}
+              {t('phAnShareParenthetical', { percent: profitShare.toFixed(1) })}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-orange-400" />
             <span className="text-slate-600 dark:text-slate-300">
-              Product COGS: <strong>${money(sales.cogs)}</strong> ({cogsShare.toFixed(1)}%)
+              {t('phAnProductCogsLabel')}: <strong>${money(sales.cogs)}</strong>{' '}
+              {t('phAnShareParenthetical', { percent: cogsShare.toFixed(1) })}
             </span>
           </div>
         </div>

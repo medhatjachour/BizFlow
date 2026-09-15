@@ -2,17 +2,19 @@ import React from 'react'
 import { Award, Package } from 'lucide-react'
 import { TopProductMetric } from '../types'
 import { money, int } from '../../components/_shared'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface TopProductsPerformanceProps {
   products: TopProductMetric[]
 }
 
 export const TopProductsPerformance: React.FC<TopProductsPerformanceProps> = ({ products }) => {
+  const { t } = useLanguage()
   if (!products || products.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center text-slate-400">
         <Package size={28} className="mx-auto mb-2 opacity-30" />
-        <p className="text-xs font-medium">No sales recorded for this selected time window.</p>
+        <p className="text-xs font-medium">{t('phAnNoSalesWindow')}</p>
       </div>
     )
   }
@@ -25,10 +27,12 @@ export const TopProductsPerformance: React.FC<TopProductsPerformanceProps> = ({ 
         <div className="flex items-center gap-2">
           <Award size={16} className="text-amber-500" />
           <h3 className="font-bold text-xs text-slate-800 dark:text-slate-100">
-            Top Revenue Generating Products
+            {t('phAnTopRevenueProducts')}
           </h3>
         </div>
-        <span className="text-[10px] text-slate-400 font-semibold">{products.length} Products Ranked</span>
+        <span className="text-[10px] text-slate-400 font-semibold">
+          {t('phAnProductsRanked', { count: products.length })}
+        </span>
       </div>
 
       <div className="space-y-2.5">
@@ -53,7 +57,7 @@ export const TopProductsPerformance: React.FC<TopProductsPerformanceProps> = ({ 
                     {i + 1}
                   </span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{p.name}</span>
-                  <span className="text-[10px] text-slate-400 shrink-0">({int(p.units)} units)</span>
+                  <span className="text-[10px] text-slate-400 shrink-0">{t('phAnUnitsParenthetical', { count: int(p.units) })}</span>
                 </div>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
                   ${money(p.revenue)}

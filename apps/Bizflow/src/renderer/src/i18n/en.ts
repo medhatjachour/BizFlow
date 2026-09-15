@@ -1,7 +1,8 @@
 // English translations — part of the i18n dictionary.
-// Split into ./en.part.N files for maintainability; merged here.
+// Split into ./en.part.N files per domain, plus the merged ./en.employee
+// (HR) and ./en.settings dictionaries; merged here.
 // eslint-disable-next-line
-import { enPart0 } from './en.part.0' 
+import { enPart0 } from './en.part.0'
 import { enPart1 } from './en.part.1'
 import { enPart2 } from './en.part.2'
 import { enPart3 } from './en.part.3'
@@ -11,14 +12,8 @@ import { enPart6 } from './en.part.6'
 import { enPart7 } from './en.part.7'
 import { enPart8 } from './en.part.8'
 import { enPart9 } from './en.part.9'
-import { enPart10 } from './en.part.10'
-import { enPart11 } from './en.part.11'
-import { enPart12 } from './en.part.12'
-import { enPart13 } from './en.part.13'
-import { enPart14 } from './en.part.14'
-import { enPart15 } from './en.part.15'
-import { enPart16 } from './en.part.16'
-import { enPart17 } from './en.part.17'
+import { enEmployee } from './en.employee'
+import { enSettings } from './en.settings'
 
 export const en = {
   ...enPart0,
@@ -31,12 +26,6 @@ export const en = {
   ...enPart7,
   ...enPart8,
   ...enPart9,
-  ...enPart10,
-  ...enPart11,
-  ...enPart12,
-  ...enPart13,
-  ...enPart14,
-  ...enPart15,
-  ...enPart16,
-  ...enPart17,
+  ...enEmployee,
+  ...enSettings,
 }

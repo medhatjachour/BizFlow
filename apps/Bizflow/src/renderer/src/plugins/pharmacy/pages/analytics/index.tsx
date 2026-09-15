@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { downloadCSV } from '../components/_shared'
 
 import { usePharmacyReports } from './hooks/usePharmacyReports'
@@ -14,6 +15,7 @@ import { buildSalesExportCSV, buildInventoryExportCSV } from './utils'
 
 export default function PharmacyReports() {
   const toast = useToast()
+  const { t } = useLanguage()
 
   const {
     view,
@@ -28,15 +30,15 @@ export default function PharmacyReports() {
 
   const handleExportReport = () => {
     if (view === 'sales' && sales) {
-      const csvData = buildSalesExportCSV(sales, range)
+      const csvData = buildSalesExportCSV(sales, range, t)
       downloadCSV(csvData, `pharmacy-sales-report-${range.from}_${range.to}.csv`)
-      toast.success('Sales & Profitability report exported')
+      toast.success(t('phAnExportSalesToast'))
     } else if (view === 'inventory' && inv) {
-      const csvData = buildInventoryExportCSV(inv)
+      const csvData = buildInventoryExportCSV(inv, t)
       downloadCSV(csvData, `pharmacy-inventory-valuation-${new Date().toISOString().slice(0, 10)}.csv`)
-      toast.success('Inventory valuation audit report exported')
+      toast.success(t('phAnExportInventoryToast'))
     } else {
-      toast.error('No report data available to export')
+      toast.error(t('phAnExportNoData'))
     }
   }
 
@@ -56,7 +58,7 @@ export default function PharmacyReports() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-28 text-slate-400">
           <Loader2 className="h-8 w-8 animate-spin text-emerald-500 mb-2" />
-          <p className="text-xs font-semibold">Generating analytics & financial metrics...</p>
+          <p className="text-xs font-semibold">{t('phAnLoadingMetrics')}</p>
         </div>
       ) : view === 'sales' && sales ? (
         <div className="space-y-4">
