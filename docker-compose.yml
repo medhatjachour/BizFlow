@@ -9,6 +9,10 @@ services:
         NEXT_PUBLIC_SITE_URL: https://www.bizflow.medhatjachour.tech
         ADMIN_PASSWORD: build-validation-only
         LICENSE_SECRET: build-validation-only
+        # The deploy workflow exports this on the host before `compose up --build`
+        # (see .github/workflows/deploy.yml); "unknown" is the honest answer for a
+        # hand-built image, and the smoke test rejects it in CI.
+        BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
     container_name: bizflow-app
     # Bind to loopback ONLY. nginx reaches these over the compose network by
     # service name (bizflow-app:3000 / :5180 / :8787), so publishing them on

@@ -15,6 +15,13 @@ const basePath = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Inlined at build time, so it describes the image rather than the environment
+  // the container happens to be started with: /api/version reports it and the
+  // deploy smoke test requires it to equal the commit that was pushed. Fed by the
+  // BUILD_COMMIT Docker build arg.
+  env: {
+    BUILD_COMMIT: process.env.BUILD_COMMIT ?? "unknown",
+  },
   basePath: basePath || undefined,
   assetPrefix: basePath || undefined,
   images: basePath

@@ -7,9 +7,14 @@ ARG NEXT_PUBLIC_BASE_PATH
 ARG NEXT_PUBLIC_SITE_URL
 ARG ADMIN_PASSWORD=build-validation-only
 ARG LICENSE_SECRET=build-validation-only
+# The commit this image is built from. `next.config.ts` inlines it into the bundle
+# so /api/version can report it at runtime, which lets the deploy smoke test prove
+# the container that is serving traffic was built from the commit that was pushed.
+ARG BUILD_COMMIT=unknown
 
 ENV ADMIN_PASSWORD=${ADMIN_PASSWORD} \
-    LICENSE_SECRET=${LICENSE_SECRET}
+    LICENSE_SECRET=${LICENSE_SECRET} \
+    BUILD_COMMIT=${BUILD_COMMIT}
 
 COPY package*.json ./
 COPY apps/Bizflow/package*.json ./apps/Bizflow/

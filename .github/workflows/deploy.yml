@@ -104,13 +104,32 @@ jobs:
           echo "${{ secrets.VPS_DEPLOY_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-      # Push only the app source files (not test artifacts)
+      # Ship the complete tracked tree.
+      #
+      # This used to sync an allow-list (`PATHS=(...)`), and the list drifted the
+      # way allow-lists do: 75 tracked files were never synced, including the whole
+      # top-level apps/website/src/app (the landing page, /account, /app,
+      # /download, /legal, /status, /support, robots.ts, manifest.ts,
+      # opengraph-image.tsx, globals.css), src/proxy.ts, prisma/schema.prisma and
+      # its migrations, public/, next.config.ts and every config file. The VPS then
+      # rebuilt current components and lib code against an original-clone landing
+      # page and account dashboard, so `<section id="included">` and the rebuilt
+      # /account never reached production even though every deploy was green - the
+      # smoke test only ever looked at status codes.
+      #
+      # `git archive HEAD` cannot drift: it emits exactly what is committed. Build
+      # output, secrets and databases are untracked, so none of them can leak into
+      # the payload either, which is why no excludes are needed.
+      #
+      # NOTE: the root-domain static site is NOT synced here. It is built from the
+      # separate portfolio repository and lives in ./portfolio-dist on the host,
+      # which nginx bind-mounts (see docker-compose.yml).
       - name: Sync files to VPS
         run: |
           # A pipeline's exit status is normally that of its last command, so a
-          # failing `tar` (a path that does not exist, say) would leave this step
-          # reporting success after syncing nothing, and the build below would
-          # then deploy the previous sources. Surface it instead.
+          # failing `git archive` would leave this step reporting success after
+          # syncing nothing, and the build below would then deploy the previous
+          # sources. Surface it instead.
           set -o pipefail
 
           REMOTE="medhat@168.231.107.207"
@@ -118,79 +137,33 @@ jobs:
           # Fail fast instead of hanging for hours if the link to the VPS stalls.
           SSH="ssh -i ~/.ssh/deploy_key -o BatchMode=yes -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
 
-          $SSH $REMOTE "
-            mkdir -p \
-              $BASE/apps/Bizflow \
-              $BASE/apps/website/src/app/admin/login \
-              $BASE/apps/website/src/app/api/admin \
-              $BASE/apps/website/src/app/api/portal/login \
-              $BASE/apps/website/src/app/api/requests \
-              $BASE/apps/website/src/app/api/webhooks/stripe \
-              $BASE/apps/website/src/app/checkout/success \
-              $BASE/apps/website/src/app/plugins \
-              $BASE/apps/website/src/app/portal/login \
-              $BASE/apps/website/src/components/admin \
-              $BASE/apps/website/src/components/landing \
-              $BASE/apps/website/src/components/portal \
-              $BASE/apps/website/src/lib \
-              $BASE/docs \
-              $BASE/scripts \
-              $BASE/.github/workflows
-          "
+          # Archive the commit this run is deploying, not whatever the checkout
+          # happens to hold.
+          head=$(git rev-parse HEAD)
+          if [ "$head" != "${{ github.sha }}" ]; then
+            echo "::error::Checked out $head but this run deploys ${{ github.sha }}"
+            exit 1
+          fi
 
-          # One tar stream instead of a dozen `scp -r` calls. scp needs a round trip
-          # per file, which made this step take ~21 minutes for ~1,900 files
-          # (~38 MB at ~31 KB/s); a single compressed stream moves the same tree in
-          # seconds and removes the per-connection handshake of each separate scp.
-          #
-          # The excludes are defensive: `actions/checkout` only provides tracked
-          # files and every excluded path is gitignored. They keep the payload
-          # correct if this job ever grows a build step, and they mirror what the
-          # root .dockerignore already strips out of the build context.
-          #
-          # Every path is listed in repo-relative form, so extracting at $BASE
-          # reproduces exactly the layout the previous scp calls created.
-          #
-          # Root infra
-          # NOTE: the root-domain static site is NOT synced here. It is built from
-          # the separate portfolio repository and lives in ./portfolio-dist on the
-          # host, which nginx bind-mounts (see docker-compose.yml).
-          # The root manifests and .dockerignore MUST be synced: the container build
-          # installs from them, and a stale root package.json (which used to declare
-          # npm `workspaces`) made the VPS build context differ from the repo.
-          PATHS=(
-            # Root infra
-            Dockerfile docker-compose.yml nginx.conf
-            package.json package-lock.json .dockerignore
-            # BizFlow bridge, web UI, schemas, and build configuration
-            apps/Bizflow
-            # Website source
-            apps/website/src/app/admin
-            apps/website/src/app/api
-            apps/website/src/app/plugins
-            apps/website/src/app/portal
-            apps/website/src/app/checkout
-            apps/website/src/app/layout.tsx
-            apps/website/src/app/sitemap.ts
-            apps/website/src/components
-            apps/website/src/lib
-            apps/website/package.json
-            apps/website/package-lock.json
-            # Scripts & docs
-            scripts
-            docs/DOWNLOAD_FLOW_AND_RELEASES.md
-            .github/workflows/trivy-container.yml
-          )
+          # Start from an empty stage: the count check below must measure this
+          # payload, not leftovers from an earlier run.
+          $SSH $REMOTE "rm -rf $BASE && mkdir -p $BASE"
 
-          tar -czf - \
-            --exclude='*/node_modules' \
-            --exclude='*/dist' \
-            --exclude='*/out' \
-            --exclude='*/.next' \
-            "${PATHS[@]}" \
-          | $SSH $REMOTE "tar -xzf - -C $BASE"
+          # One compressed stream. The per-file `scp -r` this replaced needed a
+          # round trip per file and took ~21 minutes for ~1,900 files; a single
+          # stream moves the same tree in seconds.
+          git archive --format=tar HEAD | gzip -6 | $SSH $REMOTE "tar -xzf - -C $BASE"
 
-          echo "Synced $(git ls-files -- "${PATHS[@]}" | wc -l) tracked files to $BASE"
+          # Completeness guard. The stale-source bug stayed invisible for so long
+          # because nothing compared what was sent with what was committed: a
+          # partial payload silently left older files in place for `cp -a` to keep.
+          expected=$(git ls-files | wc -l)
+          actual=$($SSH $REMOTE "find $BASE -type f | wc -l")
+          echo "Synced $actual of $expected tracked files to $BASE"
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::Incomplete deploy payload: $actual of $expected tracked files reached $BASE"
+            exit 1
+          fi
 
       - name: Apply & rebuild on VPS
         id: apply
@@ -202,7 +175,20 @@ jobs:
             medhat@168.231.107.207 "
             set -e
             cd /home/medhat/bizflow
+
+            # `cp -a` overlays; it never deletes. A route file deleted from the repo
+            # would otherwise keep being served by every later build, so the website
+            # source trees are cleared and restored wholesale from the payload.
+            # Everything under them is tracked - runtime data lives in the
+            # bizflow-data volume, secrets in .env and TLS in ./ssl, none of which
+            # the payload touches.
+            rm -rf apps/website/src apps/website/tests
             cp -a /tmp/bizflow-ci-deploy/. .
+
+            # Baked into the image at build time (Docker build arg -> next.config
+            # `env`), so the smoke test can prove the container answering requests
+            # was built from this commit rather than from stale sources.
+            export BUILD_COMMIT='${{ github.sha }}'
 
             echo '--- pre-deploy data backup ---'
             # Fail-safe: refuse to deploy without a restore point. If this breaks,
@@ -226,6 +212,10 @@ jobs:
               sleep 5
             done
             docker inspect -f 'STATUS={{.State.Health.Status}}' bizflow-app
+
+            # Record what the running container says it was built from. The smoke
+            # test asserts this, so a mismatch fails the run and rolls back.
+            echo \"RUNTIME_VERSION=\$(curl -s http://127.0.0.1:3000/api/version || true)\"
           "
 
       - name: Smoke test
@@ -245,11 +235,27 @@ jobs:
           check "$BASE/admin/login"          ADMIN_LOGIN
           check "$BASE/portal/login"         PORTAL_LOGIN
           check "$BASE/api/prices"           PRICES_API
+          check "$BASE/api/version"          VERSION_API
           check "$ROOT/"                     ROOT_HOME
           check "$ROOT/favicon.ico"          ROOT_FAVICON
           check "$ROOT/profile.png"          ROOT_PROFILE
           # Missing hashed assets must return 404, not the SPA fallback HTML.
           expect "$ROOT/assets/does-not-exist.js" ROOT_ASSET_404 404
+
+          # A 200 is not evidence of freshness. The deploy that shipped a landing
+          # page missing its newest section answered every one of the checks above
+          # correctly, because the image had been rebuilt from stale sources. So
+          # require the running build to name the commit that was pushed: the value
+          # is inlined at image build time from the BUILD_COMMIT build arg, which
+          # makes it a property of the build rather than of the environment the
+          # container was started in, and therefore something an old image cannot
+          # claim.
+          running=$(curl -s "$BASE/api/version" | tr -d ' ' | grep -o '"commit":"[^"]*"' | cut -d: -f2 | tr -d '"')
+          echo "RUNNING_COMMIT=$running"
+          if [ "$running" != "${{ github.sha }}" ]; then
+            echo "::error::The deployed container reports commit '$running' but this run deploys '${{ github.sha }}' - the image was not built from this commit"
+            exit 1
+          fi
 
       # Safety net: if the deploy happened but verification failed, put the
       # previous image back. Guarded on the apply step so a failure during
