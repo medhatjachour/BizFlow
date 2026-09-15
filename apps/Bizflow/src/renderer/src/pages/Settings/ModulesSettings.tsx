@@ -6,8 +6,10 @@
  */
 
 import { useState, useEffect } from 'react'
-import { MODULE_REGISTRY, formatLicensePrice } from '@/shared/modules'
+import { MODULE_REGISTRY, formatLicensePrice, moduleMetaText } from '@/shared/modules'
 import { useEnabledModules, useRefreshModules } from '../../hooks/useModuleEnabled'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { useToast } from '../../contexts/ToastContext'
 import { Check, RefreshCw, Power, PowerOff, ChevronDown, ChevronUp, Database } from 'lucide-react'
 
 /** Map of module id → build-time flag. Only bundled plugins are shown. */
@@ -58,6 +60,18 @@ const COLOR_MAP: Record<string, { ring: string; bg: string; icon: string; badge:
     icon:  'bg-violet-100      dark:bg-violet-900/40 text-violet-700 dark:text-violet-300',
     badge: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
   },
+  orange: {
+    ring:  'border-orange-300  dark:border-orange-700',
+    bg:    'bg-orange-50        dark:bg-orange-900/20',
+    icon:  'bg-orange-100      dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',
+    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+  },
+  emerald: {
+    ring:  'border-emerald-300  dark:border-emerald-700',
+    bg:    'bg-emerald-50        dark:bg-emerald-900/20',
+    icon:  'bg-emerald-100      dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
+    badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  },
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -66,7 +80,17 @@ const STATUS_BADGE: Record<string, string> = {
   future:  'bg-slate-100  text-slate-600  dark:bg-slate-700     dark:text-slate-400',
 }
 
+/** Registry status → the i18n key that names it on screen. */
+const STATUS_LABEL_KEY: Record<string, string> = {
+  active: 'modsStatusActive',
+  planned: 'modsStatusPlanned',
+  future: 'modsStatusFuture',
+}
+
 export default function ModulesSettings() {
+  const { t, language } = useLanguage()
+  const toast = useToast()
+  const isAr = language === 'ar'
   const enabledIds = useEnabledModules()
   const refreshModules = useRefreshModules()
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
@@ -95,6 +119,7 @@ export default function ModulesSettings() {
       setRestartNeeded(true)
     } catch (err) {
       console.error('Failed to toggle module', moduleId, err)
+      toast.error(t('modsToggleFailed'))
     } finally {
       setSaving(null)
     }
@@ -102,7 +127,14 @@ export default function ModulesSettings() {
 
   async function handleRelaunch() {
     setRelaunching(true)
-    await window.api.modules.relaunch()
+    try {
+      await window.api.modules.relaunch()
+    } catch (err) {
+      // A failed relaunch used to leave the button spinning and disabled forever.
+      console.error('Failed to relaunch app', err)
+      setRelaunching(false)
+      toast.error(t('modsRelaunchFailed'))
+    }
   }
 
   function toggleExpand(id: string) {
@@ -120,11 +152,10 @@ export default function ModulesSettings() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">Business Modules</h2>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Enable the modules that match your business type. Disabled modules are hidden from the menu
-          but their data is preserved — you can re-enable at any time without losing anything.
-        </p>
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
+          {t('modsTitle')}
+        </h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{t('modsLead')}</p>
       </div>
 
       {/* Restart banner */}
@@ -133,10 +164,10 @@ export default function ModulesSettings() {
           <div className="flex items-center gap-3">
             <RefreshCw className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Restart required</p>
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                Module changes are saved. Restart the app to activate them.
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                {t('modsRestartTitle')}
               </p>
+              <p className="text-xs text-amber-600 dark:text-amber-400">{t('modsRestartBody')}</p>
             </div>
           </div>
           <button
@@ -145,7 +176,7 @@ export default function ModulesSettings() {
             className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
           >
             <RefreshCw className={`w-4 h-4 ${relaunching ? 'animate-spin' : ''}`} />
-            {relaunching ? 'Restarting…' : 'Restart Now'}
+            {relaunching ? t('modsRestarting') : t('modsRestartNow')}
           </button>
         </div>
       )}
@@ -153,8 +184,8 @@ export default function ModulesSettings() {
       {/* No bundled plugins */}
       {noBundled && (
         <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-          <p className="text-lg font-medium mb-1">No modules bundled</p>
-          <p className="text-sm">This build was compiled without optional modules. Rebuild with ENABLED_MODULES to include them.</p>
+          <p className="text-lg font-medium mb-1">{t('modsNoBundledTitle')}</p>
+          <p className="text-sm">{t('modsNoBundledBody')}</p>
         </div>
       )}
 
@@ -165,6 +196,7 @@ export default function ModulesSettings() {
           const isSaving = saving === mod.id
           const isExpanded = expanded.has(mod.id)
           const colors = COLOR_MAP[mod.color] ?? COLOR_MAP.blue
+          const text = moduleMetaText(mod, isAr)
 
           return (
             <div
@@ -185,25 +217,25 @@ export default function ModulesSettings() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="font-semibold text-slate-900 dark:text-white">{mod.name}</span>
+                    <span className="font-semibold text-slate-900 dark:text-white">{text.name}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_BADGE[mod.status]}`}>
-                      {mod.status}
+                      {t(STATUS_LABEL_KEY[mod.status] ?? 'modsStatusActive')}
                     </span>
                     {isEnabled && (
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors.badge}`}>
-                        Active
+                        {t('modsActiveBadge')}
                       </span>
                     )}
                     <span
-                      title="One-time license price"
+                      title={t('modsPriceHint')}
                       className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
                     >
                       {formatLicensePrice(mod.price)}{' '}
-                      <span className="opacity-60">one-time</span>
+                      <span className="opacity-60">{t('modsOneTime')}</span>
                     </span>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">
-                    {mod.description}
+                    {text.description}
                   </p>
                 </div>
 
@@ -213,7 +245,9 @@ export default function ModulesSettings() {
                   <button
                     onClick={() => toggleExpand(mod.id)}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                    title="Show details"
+                    title={t('modsShowDetails')}
+                    aria-label={t('modsShowDetails')}
+                    aria-expanded={isExpanded}
                   >
                     {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                   </button>
@@ -235,7 +269,7 @@ export default function ModulesSettings() {
                     ) : (
                       <Power size={16} />
                     )}
-                    {isSaving ? 'Saving…' : isEnabled ? 'Disable' : 'Enable'}
+                    {isSaving ? t('modsSaving') : isEnabled ? t('modsDisable') : t('modsEnable')}
                   </button>
                 </div>
               </div>
@@ -246,10 +280,10 @@ export default function ModulesSettings() {
                   {/* Feature list */}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
-                      What's included
+                      {t('modsIncluded')}
                     </p>
                     <ul className="space-y-1.5">
-                      {mod.features.map(f => (
+                      {text.features.map(f => (
                         <li key={f} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                           <Check size={14} className="mt-0.5 text-emerald-500 flex-shrink-0" />
                           {f}
@@ -261,7 +295,7 @@ export default function ModulesSettings() {
                   {/* Data info */}
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
-                      Data tables
+                      {t('modsDataTables')}
                     </p>
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {mod.models.map(m => (
@@ -276,9 +310,9 @@ export default function ModulesSettings() {
                     </div>
                     <p className="text-xs text-slate-400 dark:text-slate-500 flex items-start gap-1.5">
                       <span className="text-emerald-500 mt-0.5">✓</span>
-                      Disabling this module hides the menu and UI but{' '}
-                      <strong className="text-slate-600 dark:text-slate-300">never deletes your data</strong>.
-                      Re-enable at any time to get it back.
+                      {t('modsSafetyLead')}{' '}
+                      <strong className="text-slate-600 dark:text-slate-300">{t('modsSafetyStrong')}</strong>
+                      {t('modsSafetyTail')}
                     </p>
                   </div>
                 </div>
@@ -291,16 +325,16 @@ export default function ModulesSettings() {
       {/* Coming soon */}
       <div className="mt-8">
         <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
-          Coming soon
+          {t('modsComingSoon')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { icon: '🚚', name: 'Delivery', desc: 'Driver dispatch, zones, order tracking' },
-            { icon: '🎁', name: 'Loyalty & CRM', desc: 'Points, tiers, birthday rewards' },
-            { icon: '🏪', name: 'Multi-Branch', desc: 'Shared inventory across locations' },
+            { icon: '🚚', key: 'Delivery', name: t('modsComingDelivery'), desc: t('modsComingDeliveryDesc') },
+            { icon: '🎁', key: 'Loyalty', name: t('modsComingLoyalty'), desc: t('modsComingLoyaltyDesc') },
+            { icon: '🏪', key: 'Branch', name: t('modsComingBranch'), desc: t('modsComingBranchDesc') },
           ].map(item => (
             <div
-              key={item.name}
+              key={item.key}
               className="flex items-center gap-3 p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"
             >
               <span className="text-2xl">{item.icon}</span>

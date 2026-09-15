@@ -141,22 +141,11 @@ export interface LicenseStrings {
   securityBody: string
 }
 
-const moduleNamesAr: Record<string, string> = {
-  commerce: 'المتجر',
-  bakery: 'المخبز',
-  restaurant: 'المطعم',
-  warehouse: 'المستودع',
-  clinic: 'العيادة',
-  vet: 'العيادة البيطرية',
-  gym: 'الصالة الرياضية',
-  pharmacy: 'الصيدلية',
-  coffee: 'المقهى',
-}
-
-/** Arabic name for a module id, falling back to the registry's English name. */
-export function moduleNameAr(moduleId: string, fallback: string): string {
-  return moduleNamesAr[moduleId] ?? fallback
-}
+/**
+ * Arabic name for a module id. Delegates to the module registry so the Arabic
+ * names live in exactly one place (`nameAr` in src/shared/modules.ts).
+ */
+export { moduleNameAr } from '@/shared/modules'
 
 const ar: LicenseStrings = {
   gateTitleTrialEnded: 'انتهت فترة التجربة المجانية',

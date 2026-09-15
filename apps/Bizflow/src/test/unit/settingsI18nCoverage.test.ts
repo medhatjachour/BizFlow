@@ -21,8 +21,15 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
+import { MODULE_REGISTRY } from '../../shared/modules'
+import { ar } from '../../renderer/src/i18n/ar'
+import { arPart14 } from '../../renderer/src/i18n/ar.part.14'
+import { en } from '../../renderer/src/i18n/en'
+import { enPart14 } from '../../renderer/src/i18n/en.part.14'
+
 const here = dirname(fileURLToPath(import.meta.url))
 const rendererSrc = join(here, '..', '..', 'renderer', 'src')
+const i18nSrc = join(rendererSrc, 'i18n')
 
 function filesUnder(dir: string): string[] {
   const found: string[] = []
@@ -157,5 +164,150 @@ describe('lib/format.ts is the single formatting module', () => {
     expect(source).toMatch(/export function formatDate/)
     expect(source).toMatch(/export function formatTime/)
     expect(source).toMatch(/export function formatCount/)
+  })
+})
+
+// ─── Settings → Modules ──────────────────────────────────────────────────────
+//
+// This screen was the last page in Settings that was English end to end: an
+// Arabic build rendered "Business Modules", "Enable"/"Disable", and English
+// module names, descriptions and feature bullets. Its copy now lives in two
+// halves — the chrome in `i18n/*.part.14`, the module metadata in
+// `src/shared/modules.ts` — and both halves are asserted below.
+
+const modulesScreenFile = join(settingsDir, 'ModulesSettings.tsx')
+const modulesScreen = stripComments(readFileSync(modulesScreenFile, 'utf8'))
+
+/** Latin copy sitting between two tags, e.g. `>Software update<`. */
+const JSX_TEXT_COPY = />\s*([A-Za-z][A-Za-z0-9 ,.'&()/-]*[A-Za-z0-9.?!])\s*</
+/** Copy in a user-visible attribute instead of a `t()` call. */
+const LITERAL_COPY_ATTR = /\b(title|placeholder|aria-label|alt|label)="[^"]*[A-Za-z]{2}/
+
+/** All matches of `pattern` (applied fresh, so lastIndex never leaks). */
+function matches(source: string, pattern: RegExp): string[][] {
+  const found: string[][] = []
+  const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`)
+  let match: RegExpExecArray | null
+  while ((match = re.exec(source)) !== null) {
+    found.push(match.slice())
+    if (match.index === re.lastIndex) re.lastIndex++
+  }
+  return found
+}
+
+function jsxCopyOffenders(source: string): string[] {
+  const offenders = matches(source, JSX_TEXT_COPY).map(m => m[1].trim())
+  source.split('\n').forEach((line, index) => {
+    if (LITERAL_COPY_ATTR.test(line)) offenders.push(`line ${index + 1}: ${line.trim()}`)
+  })
+  return offenders
+}
+
+/** Every `mods…` dictionary key the screen references, from `t()` or a map. */
+const moduleScreenKeys = [
+  ...new Set(matches(modulesScreen, /'(mods[A-Za-z0-9]*)'/).map(m => m[1])),
+].sort()
+
+/** The palette the screen can actually render. */
+const paletteSource = modulesScreen.slice(
+  modulesScreen.indexOf('const COLOR_MAP'),
+  modulesScreen.indexOf('\n}', modulesScreen.indexOf('const COLOR_MAP'))
+)
+const COLOR_PALETTE = matches(paletteSource, /^\s{2}([a-z]+):\s*\{/m).map(m => m[1])
+
+describe('The Modules screen is translated, not just translated-looking', () => {
+  it('scans the screen it is supposed to police', () => {
+    expect(modulesScreen).toContain('moduleMetaText')
+    expect(moduleScreenKeys.length).toBeGreaterThanOrEqual(20)
+  })
+
+  it('would notice English copy if it came back', () => {
+    // Non-vacuity: the pattern must catch the exact shape of the regression.
+    expect(jsxCopyOffenders('<p title="Show details">Software update</p>')).toEqual([
+      'Software update',
+      'line 1: <p title="Show details">Software update</p>',
+    ])
+    expect(jsxCopyOffenders('<p>{t(\'modsTitle\')}</p>')).toEqual([])
+  })
+
+  it('leaves no English literal in JSX text or in a visible attribute', () => {
+    expect(jsxCopyOffenders(modulesScreen)).toEqual([])
+  })
+
+  it('resolves every key it renders in both dictionaries', () => {
+    const missing = moduleScreenKeys.filter(
+      key => typeof en[key] !== 'string' || typeof ar[key] !== 'string' || ar[key] === ''
+    )
+    expect(missing, `keys with no English or Arabic copy: ${missing.join(', ')}`).toEqual([])
+  })
+
+  it('renders every registry colour through a palette entry that exists', () => {
+    // `gym` asked for `orange` and `pharmacy` for `emerald` while the map only
+    // had six colours, so both silently rendered as blue.
+    expect(COLOR_PALETTE.length).toBeGreaterThanOrEqual(6)
+    const unmapped = Object.values(MODULE_REGISTRY)
+      .filter(meta => !COLOR_PALETTE.includes(meta.color))
+      .map(meta => `${meta.id} → ${meta.color}`)
+    expect(unmapped, `colours with no COLOR_MAP entry: ${unmapped.join(', ')}`).toEqual([])
+  })
+})
+
+describe('Every module carries its own Arabic copy', () => {
+  const entries = Object.values(MODULE_REGISTRY)
+
+  it('covers the whole registry', () => {
+    expect(entries.length).toBeGreaterThanOrEqual(9)
+  })
+
+  it('names and describes each module in Arabic', () => {
+    for (const meta of entries) {
+      expect(meta.nameAr, `${meta.id} has no Arabic name`).toBeTruthy()
+      expect(meta.descriptionAr, `${meta.id} has no Arabic description`).toBeTruthy()
+      expect(meta.nameAr, `${meta.id} reused the English name`).not.toBe(meta.name)
+      expect(meta.descriptionAr, `${meta.id} reused the English description`).not.toBe(
+        meta.description
+      )
+    }
+  })
+
+  it('keeps the Arabic feature list the same length as the English one', () => {
+    for (const meta of entries) {
+      expect(
+        meta.featuresAr.length,
+        `${meta.id}: ${meta.features.length} English features vs ${meta.featuresAr.length} Arabic`
+      ).toBe(meta.features.length)
+      for (const feature of meta.featuresAr) {
+        expect(feature.trim(), `${meta.id} has an empty Arabic feature`).not.toBe('')
+      }
+    }
+  })
+})
+
+describe('The Modules dictionary ships identically in both languages', () => {
+  const enKeys = Object.keys(enPart14).sort()
+  const arKeys = Object.keys(arPart14).sort()
+
+  it('ships the same keys in both files', () => {
+    expect(arKeys).toEqual(enKeys)
+    expect(enKeys.length).toBeGreaterThanOrEqual(25)
+  })
+
+  it('actually translates every key', () => {
+    const untranslated = enKeys.filter(key => arPart14[key] === enPart14[key])
+    expect(untranslated, `keys still carrying English copy: ${untranslated.join(', ')}`).toEqual([])
+  })
+
+  it('keeps everything else in the dictionary too', () => {
+    // A key added to `en.part.14` but forgotten in the merged dictionaries would
+    // fall back to the key name on screen.
+    const orphaned = enKeys.filter(key => !(key in en) || !(key in ar))
+    expect(orphaned, `keys missing from the merged dictionaries: ${orphaned.join(', ')}`).toEqual([])
+  })
+
+  it('writes the Arabic file as UTF-8 with no byte order mark', () => {
+    // A BOM on this file makes the first key `\ufeffmodsTitle` and silently
+    // blanks the whole file's first string literal.
+    const bytes = readFileSync(join(i18nSrc, 'ar.part.14.ts'))
+    expect([bytes[0], bytes[1], bytes[2]]).not.toEqual([0xef, 0xbb, 0xbf])
   })
 })

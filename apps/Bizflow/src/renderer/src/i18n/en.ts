@@ -15,6 +15,7 @@ import { enPart10 } from './en.part.10'
 import { enPart11 } from './en.part.11'
 import { enPart12 } from './en.part.12'
 import { enPart13 } from './en.part.13'
+import { enPart14 } from './en.part.14'
 
 export const en = {
   ...enPart0,
@@ -31,4 +32,5 @@ export const en = {
   ...enPart11,
   ...enPart12,
   ...enPart13,
+  ...enPart14,
 }
