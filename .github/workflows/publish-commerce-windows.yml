@@ -47,10 +47,8 @@ jobs:
           Copy-Item $source.FullName dist/BizFlow-Commerce-windows.exe -Force
 
       - name: Publish asset
-        uses: softprops/action-gh-release@v2
+        uses: ./.github/actions/publish-release-asset
         with:
-          tag_name: downloads-latest
-          name: BizFlow Downloads
-          prerelease: false
-          make_latest: true
-          files: apps/Bizflow/dist/BizFlow-Commerce-windows.exe
+          tag: downloads-latest
+          title: BizFlow Downloads
+          file: apps/Bizflow/dist/BizFlow-Commerce-windows.exe

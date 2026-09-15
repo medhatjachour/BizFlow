@@ -117,14 +117,11 @@ jobs:
           "ASSET_PATH=$target" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Publish Windows asset
-        uses: softprops/action-gh-release@v2
+        uses: ./.github/actions/publish-release-asset
         with:
-          tag_name: downloads-latest
-          name: BizFlow Downloads
-          prerelease: false
-          make_latest: true
-          files: |
-            apps/Bizflow/${{ env.ASSET_PATH }}
+          tag: downloads-latest
+          title: BizFlow Downloads
+          file: apps/Bizflow/${{ env.ASSET_PATH }}
 
   mac:
     runs-on: macos-latest
@@ -235,14 +232,11 @@ jobs:
           echo "ASSET_PATH=$target" >> "$GITHUB_ENV"
 
       - name: Publish macOS asset
-        uses: softprops/action-gh-release@v2
+        uses: ./.github/actions/publish-release-asset
         with:
-          tag_name: downloads-latest
-          name: BizFlow Downloads
-          prerelease: false
-          make_latest: true
-          files: |
-            apps/Bizflow/${{ env.ASSET_PATH }}
+          tag: downloads-latest
+          title: BizFlow Downloads
+          file: apps/Bizflow/${{ env.ASSET_PATH }}
 
   linux:
     runs-on: ubuntu-latest
@@ -316,11 +310,8 @@ jobs:
           echo "ASSET_PATH=$target" >> "$GITHUB_ENV"
 
       - name: Publish Linux asset
-        uses: softprops/action-gh-release@v2
+        uses: ./.github/actions/publish-release-asset
         with:
-          tag_name: downloads-latest
-          name: BizFlow Downloads
-          prerelease: false
-          make_latest: true
-          files: |
-            apps/Bizflow/${{ env.ASSET_PATH }}
+          tag: downloads-latest
+          title: BizFlow Downloads
+          file: apps/Bizflow/${{ env.ASSET_PATH }}

@@ -1,0 +1,96 @@
+# Publishes one installer to the shared `downloads-latest` release.
+#
+# Why this exists instead of softprops/action-gh-release: that action updates the
+# release *before* it uploads, and has no retry on that call. A single transient
+# GitHub API error there fails the whole job. Run #47 of "Publish Commerce
+# Windows Installer" died exactly there -
+#   Found release BizFlow Downloads (with id=365844305)
+#   Unexpected error fetching GitHub release for tag refs/heads/main: HttpError
+# - while sibling jobs published to the same release minutes later, and the same
+# workflow had succeeded six hours earlier.
+#
+# `gh release upload --clobber` does the one thing we actually need (put this
+# file on that release, replacing any older copy) and this wrapper retries it,
+# then asks GitHub whether the asset really is there.
+name: Publish a release asset
+description: Idempotently upload one installer to the shared downloads release, with retries.
+
+inputs:
+  tag:
+    description: Release tag to publish into.
+    required: true
+  file:
+    description: Path of the asset to upload, relative to the repository root.
+    required: true
+  title:
+    description: Release title, used only when the release still has to be created.
+    required: false
+    default: BizFlow Downloads
+
+runs:
+  using: composite
+  steps:
+    - name: Upload to ${{ inputs.tag }}
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        $tag = '${{ inputs.tag }}'
+        $title = '${{ inputs.title }}'
+
+        $asset = '${{ inputs.file }}'
+        if (-not [System.IO.Path]::IsPathRooted($asset)) {
+          $asset = Join-Path $env:GITHUB_WORKSPACE $asset
+        }
+        if (-not (Test-Path -LiteralPath $asset)) {
+          Write-Host "::error::The asset to publish is missing: $asset"
+          exit 1
+        }
+        $name = Split-Path -Leaf $asset
+
+        function Test-Release {
+          gh release view $tag --json id --jq '.id' *> $null
+          return $LASTEXITCODE -eq 0
+        }
+
+        if (-not (Test-Release)) {
+          Write-Host "Release $tag does not exist yet, creating it."
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            gh release create $tag --title $title --latest --notes 'Installers for every BizFlow module.'
+            if ($LASTEXITCODE -eq 0) { break }
+            Write-Host "::warning::Could not create release $tag (attempt $attempt of 3)."
+            Start-Sleep -Seconds (10 * $attempt)
+          }
+          if (-not (Test-Release)) {
+            Write-Host "::error::Release $tag could not be created."
+            exit 1
+          }
+        }
+
+        $published = $false
+        for ($attempt = 1; $attempt -le 5; $attempt++) {
+          gh release upload $tag $asset --clobber
+          if ($LASTEXITCODE -eq 0) { $published = $true; break }
+          Write-Host "::warning::Uploading $name failed (attempt $attempt of 5)."
+          Start-Sleep -Seconds (10 * $attempt)
+        }
+        if (-not $published) {
+          Write-Host "::error::Could not upload $name to release $tag after 5 attempts."
+          exit 1
+        }
+
+        # An exit code of 0 is not proof the asset is on the release. Ask GitHub.
+        $assets = @()
+        for ($attempt = 1; $attempt -le 3; $attempt++) {
+          $assets = @(gh release view $tag --json assets --jq '.assets[].name')
+          if ($LASTEXITCODE -eq 0 -and ($assets -contains $name)) { break }
+          Start-Sleep -Seconds 5
+        }
+        if (-not ($assets -contains $name)) {
+          Write-Host "::error::$name is not listed on release $tag even though the upload reported success."
+          exit 1
+        }
+
+        Write-Host "$name published to https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$tag"
+        Write-Host "Release $tag now holds $($assets.Count) assets:"
+        $assets | Sort-Object | ForEach-Object { Write-Host "  $_" }
