@@ -51,7 +51,10 @@ RUN npm run build:site
 
 # ── Stage 2: Runner — minimal production image ─────────────────────────────────
 FROM node:20-alpine AS runner
-RUN apk add --no-cache dumb-init openssl
+# --upgrade takes the current `openssl` from the release branch instead of whatever
+# revision the base image was built against (3.5.7-r0 shipped with CVEs that are
+# fixed in 3.5.8-r0). The Prisma query engine needs libssl, so it stays installed.
+RUN apk add --no-cache --upgrade dumb-init openssl
 WORKDIR /app
 
 ARG NEXT_PUBLIC_BASE_PATH
@@ -69,6 +72,18 @@ COPY scripts/container-entrypoint.sh ./scripts/container-entrypoint.sh
 RUN npm --prefix apps/Bizflow install --omit=dev --legacy-peer-deps --ignore-scripts \
  && npm --prefix apps/website install --omit=dev --legacy-peer-deps --ignore-scripts \
  && npm cache clean --force
+
+# npm is a build tool and ships its own dependency tree (`tar`, `pacote`, `sigstore`,
+# `ip-address`, `glob`…), which is the largest single source of vulnerabilities in this
+# image and none of it is reachable at runtime: no process here installs anything, and
+# the entrypoint runs each app's Prisma CLI by path, never through `npx`. Removing it
+# takes out a CRITICAL `tar` advisory and roughly a dozen HIGH ones, and shrinks the image.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+ && node -e "if (typeof require !== 'function') process.exit(1)" \
+ && test ! -e /usr/local/bin/npm \
+ && test ! -e /usr/local/bin/npx
 
 # Fail the build - not the container - if a runtime dependency went missing.
 # These are the bridge's real runtime externals (see web/build-server.mjs): they are

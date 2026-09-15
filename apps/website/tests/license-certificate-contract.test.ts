@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import type { ActivationCertificate } from "@/lib/license";
+
 /**
  * Lock the activation-certificate contract between the website (which signs) and
  * the desktop app (which verifies).
@@ -61,8 +63,17 @@ function desktopActivationFields(): string[] {
     .filter((name): name is string => Boolean(name) && name !== "signature");
 }
 
-/** Exactly the certificate `POST /api/license/validate` returns. */
-function buildCertificate(overrides: Record<string, unknown> = {}) {
+/**
+ * Exactly the certificate `POST /api/license/validate` returns.
+ *
+ * It is also handed to `desktopVerifies`, which models the desktop's JSON bag, so
+ * the return type has to satisfy both. The explicit annotation is load-bearing:
+ * without it object-literal widening turns `version` into `number`, and `version: 2`
+ * is part of the signed payload's contract.
+ */
+function buildCertificate(
+  overrides: Partial<ActivationCertificate> = {},
+): ActivationCertificate & Record<string, unknown> {
   const now = new Date();
   return {
     version: 2,
