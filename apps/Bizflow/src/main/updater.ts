@@ -18,6 +18,7 @@ import { app, dialog, ipcMain, type BrowserWindow } from 'electron'
 // interop (named imports break under electron-vite's bundler).
 import electronUpdater from 'electron-updater'
 import { createLogger } from './utils/logger'
+import { dialogButtons, mainT } from './i18n'
 
 const { autoUpdater } = electronUpdater
 const log = createLogger('Updater')
@@ -84,16 +85,20 @@ export function setupAutoUpdater(mainWindow: BrowserWindow): void {
   autoUpdater.on('update-downloaded', async (info) => {
     log.info('Update downloaded:', info.version)
     send('update:downloaded', { version: info.version })
+    const ready = dialogButtons([mainT('updReadyNow'), mainT('updReadyLater')], {
+      defaultIndex: 0,
+      cancelIndex: 1
+    })
     const { response } = await dialog.showMessageBox(mainWindow, {
       type: 'info',
-      buttons: ['Restart now', 'Later'],
-      defaultId: 0,
-      cancelId: 1,
-      title: 'Update ready',
-      message: `BizFlow ${info.version} has been downloaded.`,
-      detail: 'Restart to install it now. Your data and settings are preserved.'
+      buttons: ready.buttons,
+      defaultId: ready.defaultId,
+      cancelId: ready.cancelId,
+      title: mainT('updReadyTitle'),
+      message: mainT('updReadyMessage', { version: info.version }),
+      detail: mainT('updReadyDetail')
     })
-    if (response === 0) {
+    if (response === ready.indexOf(0)) {
       // isSilent = false (show the brief installer), isForceRunAfter = true (relaunch).
       autoUpdater.quitAndInstall(false, true)
     }

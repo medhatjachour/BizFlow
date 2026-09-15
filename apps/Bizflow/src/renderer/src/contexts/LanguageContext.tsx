@@ -26,6 +26,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     } else {
       document.documentElement.dir = 'ltr'
     }
+
+    // Native dialogs are drawn by the main process, which cannot read this
+    // localStorage value — report the choice so they match the UI language.
+    window.api?.language?.set(language)?.catch(() => {})
   }, [language])
 
   const setLanguage = (lang: Language) => {

@@ -352,6 +352,11 @@ const api = {
       ipcRenderer.invoke('module:setEnabled', { moduleId, enabled }),
     relaunch: (): Promise<void> => ipcRenderer.invoke('module:relaunch'),
   },
+  // Lets the main process draw its native dialogs in the language the user picked
+  language: {
+    get: (): Promise<'ar' | 'en'> => ipcRenderer.invoke('app:getLanguage'),
+    set: (language: 'ar' | 'en'): Promise<'ar' | 'en'> => ipcRenderer.invoke('app:setLanguage', language)
+  },
   // Device license activation / revalidation
   license: {
     getDeviceFingerprint: () => ipcRenderer.invoke('license:getDeviceFingerprint'),

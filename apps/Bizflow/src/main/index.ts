@@ -18,6 +18,7 @@ import {
 import { initializeDatabase } from './database/init'
 import { MigrationManager } from './services/MigrationManager'
 import { setupAutoUpdater } from './updater'
+import { dialogButtons, mainT, registerLanguageIpc } from './i18n'
 // Static imports — fixes "dynamically and statically imported" Vite warnings
 import { EmailReportService } from './services/EmailReportService'
 import { InstallmentPlanService } from './services/InstallmentPlanService'
@@ -321,16 +322,21 @@ function createWindow(): BrowserWindow {
     const win = mainWindow
     if (!win) return
 
-    const choice = dialog.showMessageBoxSync(win, {
+    const quitButtons = dialogButtons(
+      [mainT('backupQuitYes'), mainT('backupQuitNo'), mainT('backupQuitCancel')],
+      { defaultIndex: 0, cancelIndex: 2 }
+    )
+    const choiceIdx = dialog.showMessageBoxSync(win, {
       type: 'question',
-      buttons: ['Back up & Quit', 'Quit without backup', 'Cancel'],
-      defaultId: 0,
-      cancelId: 2,
+      buttons: quitButtons.buttons,
+      defaultId: quitButtons.defaultId,
+      cancelId: quitButtons.cancelId,
       noLink: true,
-      title: 'Back up before closing?',
-      message: 'Do you want to back up your data before closing BizFlow?',
-      detail: 'A copy of your database will be saved so you can restore it later.'
+      title: mainT('backupQuitTitle'),
+      message: mainT('backupQuitMessage'),
+      detail: mainT('backupQuitDetail')
     })
+    const choice = quitButtons.indexOf(choiceIdx)
     if (choice === 2) {
       // Cancel — keep the app open.
       e.preventDefault()
@@ -364,10 +370,10 @@ function createWindow(): BrowserWindow {
         if (!res.success) {
           dialog.showMessageBoxSync(win, {
             type: 'error',
-            title: 'Backup failed',
+            title: mainT('backupFailedTitle'),
             noLink: true,
-            message: 'Could not create a backup.',
-            detail: res.error + '\n\nThe app will now close.'
+            message: mainT('backupFailedMessage'),
+            detail: mainT('backupFailedDetail', { error: res.error ?? '' })
           })
         } else {
           mainLog.info('Backup-on-close saved to ' + res.data.path)
@@ -610,6 +616,9 @@ app.whenReady().then(async () => {
 
     // Start checking for updates (no-op in development / unpackaged builds).
     setupAutoUpdater(mainWindow)
+
+    // Keep the language the native dialogs use in step with the UI.
+    registerLanguageIpc()
   } catch (error) {
     mainLog.error('Setup failed:', error)
     // Don't leave a hidden demo window keeping the app alive after a failure.

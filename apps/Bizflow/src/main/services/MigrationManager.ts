@@ -18,6 +18,7 @@ import { execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { createLogger } from '../utils/logger'
+import { dialogButtons, mainT } from '../i18n'
 
 const log = createLogger('Migration')
 
@@ -310,22 +311,26 @@ export class MigrationManager {
         backupPath = await this.backupDatabase()
       } catch (error: any) {
         log.error('[Migration] Failed to create backup:', error)
-        throw new Error('Cannot proceed without backup. Please ensure you have write permissions.')
+        throw new Error(mainT('migBackupFailed'))
       }
 
       // Step 4: Ask user for confirmation
+      const requiredButtons = dialogButtons([mainT('migRequiredNow'), mainT('migRequiredExit')], {
+        defaultIndex: 0,
+        cancelIndex: 1
+      })
       const response = await dialog.showMessageBox(mainWindow, {
         type: 'info',
-        title: 'Database Update Required',
-        message: 'This new version requires updating your database.',
-        detail: `Your data will be preserved. A backup has been created automatically.\n\nBackup location: ${backupPath}\n\nThis may take a few moments. Do not close the application during this process.`,
-        buttons: ['Update Now', 'Exit'],
-        defaultId: 0,
-        cancelId: 1,
+        title: mainT('migRequiredTitle'),
+        message: mainT('migRequiredMessage'),
+        detail: mainT('migRequiredDetail', { path: backupPath }),
+        buttons: requiredButtons.buttons,
+        defaultId: requiredButtons.defaultId,
+        cancelId: requiredButtons.cancelId,
         noLink: true
       })
 
-      if (response.response === 1) {
+      if (response.response === requiredButtons.indexOf(1)) {
         log.info('[Migration] ❌ User cancelled migration')
         app.quit()
         return false
@@ -353,10 +358,10 @@ export class MigrationManager {
 
       await dialog.showMessageBox(mainWindow, {
         type: 'info',
-        title: 'Update Complete',
-        message: 'Your database has been successfully updated!',
-        detail: 'All your data has been preserved and the application is ready to use.',
-        buttons: ['OK']
+        title: mainT('migDoneTitle'),
+        message: mainT('migDoneMessage'),
+        detail: mainT('migDoneDetail'),
+        buttons: [mainT('migOk')]
       })
 
       return true
@@ -367,37 +372,45 @@ export class MigrationManager {
       mainWindow.webContents.send('migration:failed', error.message)
 
       // Show error dialog with restore option
+      const failedButtons = dialogButtons([mainT('migFailRestore'), mainT('migFailExit')], {
+        defaultIndex: 0,
+        cancelIndex: 1
+      })
       const response = await dialog.showMessageBox(mainWindow, {
         type: 'error',
-        title: 'Update Failed',
-        message: 'The database update failed.',
-        detail: `Error: ${error.message}\n\nWould you like to restore from the backup? Your data will be safe and you can try updating again later.`,
-        buttons: ['Restore Backup', 'Exit'],
-        defaultId: 0,
-        cancelId: 1
+        title: mainT('migFailTitle'),
+        message: mainT('migFailMessage'),
+        detail: mainT('migFailDetail', { error: error.message }),
+        buttons: failedButtons.buttons,
+        defaultId: failedButtons.defaultId,
+        cancelId: failedButtons.cancelId
       })
 
       // Attempt to restore if user wants
-      if (response.response === 0 && backupPath) {
+      if (response.response === failedButtons.indexOf(0) && backupPath) {
         try {
           await this.restoreFromBackup(backupPath)
 
           await dialog.showMessageBox(mainWindow, {
             type: 'info',
-            title: 'Backup Restored',
-            message: 'Your database has been restored to its previous state.',
-            detail: 'Please contact support before trying to update again.',
-            buttons: ['OK']
+            title: mainT('migRestoredTitle'),
+            message: mainT('migRestoredMessage'),
+            detail: mainT('migRestoredDetail'),
+            buttons: [mainT('migOk')]
           })
         } catch (restoreError: any) {
           log.error('[Migration] ❌ Restore also failed:', restoreError)
 
           await dialog.showMessageBox(mainWindow, {
             type: 'error',
-            title: 'Critical Error',
-            message: 'Failed to restore backup.',
-            detail: `Original error: ${error.message}\nRestore error: ${restoreError.message}\n\nBackup location: ${backupPath}\n\nPlease restore manually or contact support.`,
-            buttons: ['OK']
+            title: mainT('migCriticalTitle'),
+            message: mainT('migCriticalMessage'),
+            detail: mainT('migCriticalDetail', {
+              error: error.message,
+              restoreError: restoreError.message,
+              path: backupPath ?? ''
+            }),
+            buttons: [mainT('migOk')]
           })
         }
       }

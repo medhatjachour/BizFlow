@@ -493,6 +493,11 @@ interface API {
     setEnabled: (moduleId: string, enabled: boolean) => Promise<void>
     relaunch: () => Promise<void>
   }
+  /** Mirrors the UI language into the main process for its native dialogs. */
+  language: {
+    get: () => Promise<'ar' | 'en'>
+    set: (language: 'ar' | 'en') => Promise<'ar' | 'en'>
+  }
   license: {
     getDeviceFingerprint: () => Promise<{
       deviceFingerprint: string
