@@ -96,10 +96,10 @@ model RestaurantIngredient {
   id               String                    @id @default(uuid())
   name             String
   category         String                    @default("General") // Meats, Dairy, Produce, Dry Goods, etc.
-  unit             String                    @default("g")       // Standard base unit: g, ml, pcs
-  currentStock     Float                     @default(0)
-  minStockAlert    Float                     @default(500)
-  costPerUnit      Float                     @default(0)         // Purchase cost per base unit
+  unit             String                    @default("g")       // Declared UoM: kg, g, L, ml, pcs, can, bottle
+  currentStock     Float                     @default(0)         // Expressed in `unit`
+  minStockAlert    Float                     @default(500)       // Expressed in `unit`
+  costPerUnit      Float                     @default(0)         // Purchase cost per one `unit`
   supplierName     String?
   notes            String?
   isActive         Boolean                   @default(true)
@@ -147,8 +147,8 @@ model RecipeIngredientRestaurant {
   recipe       MenuItemRecipe       @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   ingredientId String
   ingredient   RestaurantIngredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
-  quantity     Float                // Amount in standard base unit
-  unit         String               // Matching unit (e.g. g, ml, pcs)
+  quantity     Float                // Amount in the line's own `unit`
+  unit         String               // Must share a family with the ingredient's unit (e.g. g vs kg)
   notes        String?
 
   @@index([recipeId])

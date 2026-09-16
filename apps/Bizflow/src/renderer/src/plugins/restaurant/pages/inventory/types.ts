@@ -1,3 +1,14 @@
+export interface IngredientRecipeUsage {
+  id: string
+  quantity: number
+  unit: string
+  recipe?: {
+    id: string
+    yieldCount: number
+    menuItem?: { id: string; name: string } | null
+  } | null
+}
+
 export interface IngredientData {
   id: string
   name: string
@@ -11,6 +22,8 @@ export interface IngredientData {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  /** Which recipes consume this ingredient — drives the delete guard copy. */
+  recipeUsages?: IngredientRecipeUsage[]
 }
 
 export interface IngredientFormData {

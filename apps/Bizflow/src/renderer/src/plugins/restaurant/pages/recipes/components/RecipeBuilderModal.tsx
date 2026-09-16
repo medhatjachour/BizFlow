@@ -3,6 +3,11 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { X, Plus, Trash2, Percent } from 'lucide-react'
 import { MenuItemRecipeData, RecipeFormData } from '../types'
 import { sounds } from '../../utils/sound'
+import {
+  computeRecipeBatchCost,
+  computePortionCost,
+  sameUnitFamily
+} from '@/shared/restaurantUnits'
 
 interface Props {
   isOpen: boolean
@@ -28,6 +33,7 @@ export const RecipeBuilderModal: React.FC<Props> = ({
     Array<{ ingredientId: string; quantity: number; unit: string; notes?: string }>
   >([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
 
   useEffect(() => {
     if (editingRecipe) {
@@ -50,17 +56,29 @@ export const RecipeBuilderModal: React.FC<Props> = ({
     }
   }, [editingRecipe, isOpen, menuItems])
 
-  // Live Food Cost Calculation
-  const selectedItem = useMemo(() => menuItems.find((m) => m.id === menuItemId), [menuItems, menuItemId])
+  // Live Food Cost Calculation — the exact helpers the backend prices with, so
+  // the preview and the `menuItem.cost` that gets stored can never disagree.
+  const selectedItem = useMemo(
+    () => menuItems.find((m) => m.id === menuItemId),
+    [menuItems, menuItemId]
+  )
 
-  const calculatedCost = useMemo(() => {
-    const totalBatch = ingredients.reduce((sum, item) => {
-      const ing = ingredientsList.find((i) => i.id === item.ingredientId)
-      const costPerUnit = ing?.costPerUnit || 0
-      return sum + (Number(item.quantity) || 0) * costPerUnit
-    }, 0)
-    return totalBatch / Math.max(1, yieldCount)
-  }, [ingredients, ingredientsList, yieldCount])
+  const batchCost = useMemo(
+    () =>
+      computeRecipeBatchCost(
+        ingredients.map((row) => ({
+          quantity: Number(row.quantity) || 0,
+          unit: row.unit,
+          ingredient: ingredientsList.find((i) => i.id === row.ingredientId)
+        }))
+      ),
+    [ingredients, ingredientsList]
+  )
+
+  const calculatedCost = useMemo(
+    () => computePortionCost(batchCost, yieldCount),
+    [batchCost, yieldCount]
+  )
 
   const foodCostPercent = useMemo(() => {
     if (!selectedItem?.price || selectedItem.price <= 0) return 0
@@ -99,28 +117,62 @@ export const RecipeBuilderModal: React.FC<Props> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!menuItemId || !ingredients.length) {
+    setFormError('')
+    if (!menuItemId) {
       sounds.playError()
-      alert('Please select a target menu dish and add at least one ingredient.')
+      setFormError('Pick the menu dish this recipe belongs to.')
+      return
+    }
+    if (!ingredients.length) {
+      sounds.playError()
+      setFormError('Add at least one ingredient — a recipe with no lines costs nothing.')
+      return
+    }
+    const blankRow = ingredients.findIndex((row) => !(Number(row.quantity) > 0))
+    if (blankRow >= 0) {
+      sounds.playError()
+      setFormError(`Line ${blankRow + 1} needs a quantity greater than zero.`)
+      return
+    }
+    // Mass and volume cannot be inter-converted, so the backend rejects a
+    // mismatched line. Catching it here keeps the user on the form.
+    const mismatched = ingredients.findIndex((row) => {
+      const ing = ingredientsList.find((i) => i.id === row.ingredientId)
+      return ing ? !sameUnitFamily(row.unit, ing.unit) : false
+    })
+    if (mismatched >= 0) {
+      const ing = ingredientsList.find((i) => i.id === ingredients[mismatched].ingredientId)
+      sounds.playError()
+      setFormError(
+        `Line ${mismatched + 1}: ${ing?.name} is measured in ${ing?.unit}, which cannot be ` +
+          `converted from ${ingredients[mismatched].unit}.`
+      )
       return
     }
     setIsSubmitting(true)
     try {
-      sounds.playSuccess()
       const ok = await onSave({
         menuItemId,
         yieldCount,
         prepNotes,
         ingredients
       })
-      if (ok) onClose()
+      if (ok) {
+        sounds.playSuccess()
+        onClose()
+      } else {
+        // The page owns the failure banner, but it sits behind this modal, so
+        // surface the failure here too or the save looks like a no-op.
+        sounds.playError()
+        setFormError('The recipe could not be saved. Please try again.')
+      }
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in duration-150 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <form
         onSubmit={handleSubmit}
         className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-800"
@@ -175,21 +227,33 @@ export const RecipeBuilderModal: React.FC<Props> = ({
         </div>
 
         {/* Live Food Cost Telemetry Strip */}
-        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid grid-cols-2 sm:grid-cols-3 gap-2 text-center text-xs">
+        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
           <div>
-            <span className="text-[10px] font-black uppercase text-slate-400 block">Selling Price</span>
+            <span className="text-[10px] font-black uppercase text-slate-400 block">
+              Selling Price
+            </span>
             <span className="font-black text-slate-900 dark:text-white">
               ${selectedItem?.price?.toFixed(2) || '0.00'}
             </span>
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase text-slate-400 block">Calculated Cost</span>
-            <span className="font-black text-emerald-600">
-              ${calculatedCost.toFixed(2)}
+            <span className="text-[10px] font-black uppercase text-slate-400 block">
+              Batch Cost
+            </span>
+            <span className="font-black text-slate-900 dark:text-white">
+              ${batchCost.toFixed(2)}
             </span>
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase text-slate-400 block">Food Cost %</span>
+            <span className="text-[10px] font-black uppercase text-slate-400 block">
+              Cost / Portion
+            </span>
+            <span className="font-black text-emerald-600">${calculatedCost.toFixed(2)}</span>
+          </div>
+          <div>
+            <span className="text-[10px] font-black uppercase text-slate-400 block">
+              Food Cost %
+            </span>
             <span
               className={`font-black flex items-center justify-center gap-0.5 ${
                 foodCostPercent <= 30
@@ -204,6 +268,12 @@ export const RecipeBuilderModal: React.FC<Props> = ({
             </span>
           </div>
         </div>
+
+        {formError && (
+          <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold">
+            {formError}
+          </div>
+        )}
 
         {/* Ingredients Matrix */}
         <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">

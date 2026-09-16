@@ -1,121 +1,115 @@
-import { useState } from 'react'
-import { TableFormData, QuickSeatFormData, TransferFormData, MergeFormData } from '../types'
+import { useCallback, useState } from 'react'
+import { TableFormData, TransferFormData, MergeFormData } from '../types'
 
+/**
+ * Floor-plan write operations. Every failure surfaces through `actionError` so the
+ * page can show an in-app message instead of a blocking native dialog.
+ */
 export function useTableActions(onSuccess: () => void) {
   const [submitting, setSubmitting] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
 
-  const saveTable = async (data: TableFormData, editingId?: string) => {
-    setSubmitting(true)
-    setActionError(null)
-    try {
-      if (editingId) {
-        await window.api.restaurant.updateTable({
-          id: editingId,
-          number: Number(data.number),
-          name: data.name || undefined,
-          capacity: Number(data.capacity),
-          section: data.section || 'Main Hall',
-          shape: data.shape,
-          status: data.status
-        })
-      } else {
-        await window.api.restaurant.createTable({
-          number: Number(data.number),
-          name: data.name || undefined,
-          capacity: Number(data.capacity),
-          section: data.section || 'Main Hall',
-          shape: data.shape
-        })
-      }
-      onSuccess()
-      return true
-    } catch (err: any) {
-      setActionError(err?.message || 'Failed to save table')
-      return false
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const changeStatus = async (id: string, status: string) => {
-    try {
-      await window.api.restaurant.updateTable({ id, status })
-      onSuccess()
-    } catch (err: any) {
-      alert(err?.message || 'Failed to update table status')
-    }
-  }
-
-  const quickSeat = async (data: QuickSeatFormData) => {
-    setSubmitting(true)
-    setActionError(null)
-    try {
-      // Stamp the drawer session the same way the POS does, otherwise checks
-      // seated from the floor plan never roll up into the shift's Z-report.
-      let shift: any = null
+  const saveTable = useCallback(
+    async (data: TableFormData, editingId?: string) => {
+      setSubmitting(true)
+      setActionError(null)
       try {
-        shift = await window.api.restaurant.getActiveShift()
-      } catch {
-        shift = null
+        if (editingId) {
+          await window.api.restaurant.updateTable({
+            id: editingId,
+            number: Number(data.number),
+            name: data.name || undefined,
+            capacity: Number(data.capacity),
+            section: data.section || 'Main Hall',
+            shape: data.shape,
+            status: data.status
+          })
+        } else {
+          await window.api.restaurant.createTable({
+            number: Number(data.number),
+            name: data.name || undefined,
+            capacity: Number(data.capacity),
+            section: data.section || 'Main Hall',
+            shape: data.shape
+          })
+        }
+        onSuccess()
+        return true
+      } catch (err: any) {
+        setActionError(err?.message || 'Failed to save table')
+        return false
+      } finally {
+        setSubmitting(false)
       }
-      await window.api.restaurant.openOrder({
-        tableId: data.tableId,
-        guestCount: Number(data.guestCount || 1),
-        serverName: data.serverName || shift?.serverName || 'Staff',
-        serverId: shift?.serverId,
-        shiftId: shift?.id,
-        notes: data.notes || ''
-      })
-      onSuccess()
-      return true
-    } catch (err: any) {
-      setActionError(err?.message || 'Failed to seat table')
-      return false
-    } finally {
-      setSubmitting(false)
-    }
-  }
+    },
+    [onSuccess]
+  )
 
-  const transferTable = async (data: TransferFormData) => {
-    setSubmitting(true)
-    setActionError(null)
-    try {
-      await window.api.restaurant.transferTable(data)
-      onSuccess()
-      return true
-    } catch (err: any) {
-      setActionError(err?.message || 'Failed to transfer table')
-      return false
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const changeStatus = useCallback(
+    async (id: string, status: string) => {
+      setActionError(null)
+      try {
+        await window.api.restaurant.updateTable({ id, status })
+        onSuccess()
+        return true
+      } catch (err: any) {
+        setActionError(err?.message || 'Failed to update table status')
+        return false
+      }
+    },
+    [onSuccess]
+  )
 
-  const mergeTables = async (data: MergeFormData) => {
-    setSubmitting(true)
-    setActionError(null)
-    try {
-      await window.api.restaurant.mergeTables(data)
-      onSuccess()
-      return true
-    } catch (err: any) {
-      setActionError(err?.message || 'Failed to merge tables')
-      return false
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const transferTable = useCallback(
+    async (data: TransferFormData) => {
+      setSubmitting(true)
+      setActionError(null)
+      try {
+        await window.api.restaurant.transferTable(data)
+        onSuccess()
+        return true
+      } catch (err: any) {
+        setActionError(err?.message || 'Failed to transfer table')
+        return false
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    [onSuccess]
+  )
 
-  const deleteTable = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this table from the floor plan?')) return
-    try {
-      await window.api.restaurant.deleteTable(id)
-      onSuccess()
-    } catch (err: any) {
-      alert(err?.message || 'Failed to delete table')
-    }
-  }
+  const mergeTables = useCallback(
+    async (data: MergeFormData) => {
+      setSubmitting(true)
+      setActionError(null)
+      try {
+        await window.api.restaurant.mergeTables(data)
+        onSuccess()
+        return true
+      } catch (err: any) {
+        setActionError(err?.message || 'Failed to merge tables')
+        return false
+      } finally {
+        setSubmitting(false)
+      }
+    },
+    [onSuccess]
+  )
+
+  const deleteTable = useCallback(
+    async (id: string) => {
+      setActionError(null)
+      try {
+        await window.api.restaurant.deleteTable(id)
+        onSuccess()
+        return true
+      } catch (err: any) {
+        setActionError(err?.message || 'Failed to delete table')
+        return false
+      }
+    },
+    [onSuccess]
+  )
 
   return {
     submitting,
@@ -123,7 +117,6 @@ export function useTableActions(onSuccess: () => void) {
     setActionError,
     saveTable,
     changeStatus,
-    quickSeat,
     transferTable,
     mergeTables,
     deleteTable

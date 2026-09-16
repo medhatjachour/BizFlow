@@ -644,7 +644,6 @@ interface API {
       seatNumbers: number[]
     }) => Promise<any>
     getShiftHistory: (opts?: any) => Promise<any>
-    getWasteAnalytics: (opts?: any) => Promise<any>
     updateOrderItem: (data: any) => Promise<any>
     fireCourse: (data: { orderId: string; course: CourseType }) => Promise<any>
     applyDiscount: (data: {
@@ -699,9 +698,21 @@ interface API {
       ingredientId: string
       type: any
       quantity: number
+      /** Unit the quantity is expressed in. Defaults to the ingredient's own unit. */
+      unit?: string
       unitCost?: number
       notes?: string
+      referenceId?: string
     }) => Promise<any>
+    getIngredientUsage: (ingredientId: string) => Promise<
+      Array<{
+        recipeId: string
+        menuItemId?: string
+        menuItemName: string
+        quantity: number
+        unit: string
+      }>
+    >
     deleteIngredient: (id: string) => Promise<any>
     getRecipes: () => Promise<any>
     saveRecipe: (data: {
@@ -727,6 +738,12 @@ interface API {
       notes?: string | null
     }) => Promise<any>
     deleteWasteLog: (id: string) => Promise<any>
+    getWasteAnalytics: (options?: { startDate?: string; endDate?: string }) => Promise<{
+      totalEntries: number
+      totalLoss: number
+      reasonBreakdown: Record<string, { count: number; totalCost: number }>
+      topLossItems: Array<{ name: string; quantity: number; unit: string; totalCost: number }>
+    }>
   }
   warehouse: {
     getLocations: (options?: any) => Promise<any>

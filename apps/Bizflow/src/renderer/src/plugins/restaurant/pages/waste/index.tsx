@@ -1,19 +1,35 @@
 // src/pages/waste/index.tsx
 import { useState } from 'react'
-import { Plus, RefreshCw, AlertCircle, Trash2, DollarSign, TrendingDown, Package, Search } from 'lucide-react'
+import {
+  Plus,
+  RefreshCw,
+  AlertCircle,
+  Trash2,
+  DollarSign,
+  TrendingDown,
+  Package,
+  Search
+} from 'lucide-react'
 import { useWasteManagement } from './hooks/useWasteManagement'
 import { WasteReasonBreakdown } from './components/WasteReasonBreakdown'
 import { LogWasteModal } from './components/LogWasteModal'
 import { sounds } from '../utils/sound'
 import { KpiSection } from '@renderer/components/ui/KpiVisibility'
+import { formatCurrency } from '../menu/utils'
+import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 
 export default function KitchenWasteLogPage() {
   const {
     logs,
+    allLogCount,
     ingredients,
     analytics,
     loading,
     error,
+    actionError,
+    clearActionError,
     reasonFilter,
     setReasonFilter,
     searchQuery,
@@ -23,10 +39,28 @@ export default function KitchenWasteLogPage() {
     deleteWaste
   } = useWasteManagement()
 
+  const { success } = useToast()
+  const { t } = useLanguage()
+
   const [showModal, setShowModal] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  const isFiltered = reasonFilter !== 'ALL' || searchQuery.trim().length > 0
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    const ok = await deleteWaste(pendingDelete.id)
+    setDeleting(false)
+    if (ok) {
+      setPendingDelete(null)
+      success(t('restWasteDeleted') || 'Entry removed and the stock returned to the pantry.')
+    }
+  }
 
   return (
-    <div className="space-y-4 pb-12 select-none">
+    <div className="space-y-4 pb-12">
       {/* ─── Financial Shrinkage KPI Banner ───────────────────────── */}
       <KpiSection sectionKey="restaurant:waste-KpiStrip">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -150,14 +184,34 @@ export default function KitchenWasteLogPage() {
         </div>
       )}
 
+      {actionError && (
+        <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-bold flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {actionError}
+          </span>
+          <button
+            onClick={clearActionError}
+            className="text-[11px] font-bold underline decoration-dotted shrink-0"
+          >
+            {t('restDismiss') || 'Dismiss'}
+          </button>
+        </div>
+      )}
+
       {/* ─── Detailed Loss Ledger Table ───────────────────────────── */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
           {logs.map((log) => (
-            <div key={log.id} className="p-4 flex items-center justify-between text-xs gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-black text-slate-900 dark:text-white text-sm">{log.itemName}</span>
+            <div
+              key={log.id}
+              className="p-4 flex flex-wrap items-center justify-between gap-3 text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
+            >
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-black text-slate-900 dark:text-white text-sm">
+                    {log.itemName}
+                  </span>
                   <span className="px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-bold text-[10px] capitalize">
                     {log.reason.replace('_', ' ')}
                   </span>
@@ -167,20 +221,20 @@ export default function KitchenWasteLogPage() {
                   {new Date(log.createdAt).toLocaleString()}
                 </div>
                 {log.notes && (
-                  <div className="text-[11px] text-slate-500 italic mt-0.5">
-                    "{log.notes}"
-                  </div>
+                  <div className="text-[11px] text-slate-500 italic mt-0.5">"{log.notes}"</div>
                 )}
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="font-black text-rose-600 dark:text-rose-400 text-base">
-                  -${log.costLoss.toFixed(2)}
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="font-black text-rose-600 dark:text-rose-400 text-base tabular-nums">
+                  -{formatCurrency(log.costLoss)}
                 </span>
                 <button
                   type="button"
-                  onClick={() => deleteWaste(log.id)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 transition-colors"
+                  aria-label={t('restWasteDeleteTitle') || 'Remove waste entry'}
+                  title={t('restWasteDeleteTitle') || 'Remove waste entry'}
+                  onClick={() => setPendingDelete({ id: log.id, name: log.itemName })}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -189,8 +243,25 @@ export default function KitchenWasteLogPage() {
           ))}
 
           {logs.length === 0 && !loading && (
-            <div className="py-16 text-center text-slate-400 text-xs font-semibold">
-              No waste or spoilage entries recorded.
+            <div className="py-16 text-center space-y-2">
+              <p className="text-slate-400 text-xs font-semibold">
+                {isFiltered
+                  ? t('restWasteNoMatch') || 'No waste entries match the current filter.'
+                  : t('restWasteEmpty') || 'No waste or spoilage entries recorded yet.'}
+              </p>
+              {isFiltered && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReasonFilter('ALL')
+                    setSearchQuery('')
+                  }}
+                  className="text-[11px] font-bold text-rose-600 dark:text-rose-400 underline decoration-dotted"
+                >
+                  {t('restWasteClearFilter', { count: String(allLogCount) }) ||
+                    `Clear filters to see all ${allLogCount} entries`}
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -201,6 +272,21 @@ export default function KitchenWasteLogPage() {
         onClose={() => setShowModal(false)}
         ingredients={ingredients}
         onLog={logWaste}
+      />
+
+      <ConfirmDialog
+        isOpen={!!pendingDelete}
+        title={t('restWasteDeleteTitle') || 'Remove waste entry'}
+        message={
+          pendingDelete
+            ? t('restWasteDeleteNamed', { name: pendingDelete.name }) ||
+              `Remove this ${pendingDelete.name} entry? The quantity goes back into pantry stock.`
+            : ''
+        }
+        danger
+        busy={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   )

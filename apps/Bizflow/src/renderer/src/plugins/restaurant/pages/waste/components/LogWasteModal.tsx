@@ -1,8 +1,10 @@
 // src/pages/waste/components/LogWasteModal.tsx
 import React, { useState, useMemo } from 'react'
-import { X, Trash2, DollarSign } from 'lucide-react'
+import { X, Trash2, DollarSign, AlertCircle } from 'lucide-react'
 import { WasteFormData } from '../types'
 import { sounds } from '../../utils/sound'
+import { formatCurrency } from '../../menu/utils'
+import { convertBetweenUnits, roundMoney } from '@/shared/restaurantUnits'
 
 interface Props {
   isOpen: boolean
@@ -30,6 +32,7 @@ export const LogWasteModal: React.FC<Props> = ({ isOpen, onClose, ingredients, o
     notes: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
 
   // Live estimated cost calculation
   const selectedIng = useMemo(
@@ -37,10 +40,22 @@ export const LogWasteModal: React.FC<Props> = ({ isOpen, onClose, ingredients, o
     [ingredients, form.ingredientId]
   )
 
-  const estimatedLoss = useMemo(() => {
+  // Mirrors handlers/waste.ts: the loss is valued at the pantry's price for the
+  // ingredient's own unit, so a 200 g scrap of something priced per kg costs a
+  // fifth of the kg price rather than 200 times it.
+  const deductedQty = useMemo(() => {
     if (!selectedIng) return 0
-    return (Number(form.quantity) || 0) * (selectedIng.costPerUnit || 0)
-  }, [selectedIng, form.quantity])
+    return roundMoney(convertBetweenUnits(Number(form.quantity) || 0, form.unit, selectedIng.unit))
+  }, [selectedIng, form.quantity, form.unit])
+
+  const estimatedLoss = useMemo(
+    () => (selectedIng ? roundMoney(deductedQty * (selectedIng.costPerUnit || 0)) : 0),
+    [selectedIng, deductedQty]
+  )
+
+  // The handler clamps stock at zero, so warn before the user silently loses the
+  // difference between what they are logging and what is actually on the shelf.
+  const exceedsStock = Boolean(selectedIng) && deductedQty > selectedIng.currentStock
 
   if (!isOpen) return null
 
@@ -61,22 +76,29 @@ export const LogWasteModal: React.FC<Props> = ({ isOpen, onClose, ingredients, o
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError('')
     if (!form.itemName || Number(form.quantity) <= 0) {
       sounds.playError()
+      setFormError('Pick the wasted item and enter a quantity greater than zero.')
       return
     }
     setIsSubmitting(true)
     try {
-      sounds.playSuccess()
       const ok = await onLog(form)
-      if (ok) onClose()
+      if (ok) {
+        sounds.playSuccess()
+        onClose()
+      } else {
+        sounds.playError()
+        setFormError('The waste entry could not be saved. Please try again.')
+      }
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in duration-150 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4 animate-in fade-in duration-150">
       <form
         onSubmit={handleSubmit}
         className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md p-6 space-y-4 border border-slate-200 dark:border-slate-800"
@@ -90,7 +112,9 @@ export const LogWasteModal: React.FC<Props> = ({ isOpen, onClose, ingredients, o
               <h3 className="text-base font-black text-slate-900 dark:text-white">
                 Log Food Waste & Spoilage
               </h3>
-              <p className="text-xs text-slate-400">Deducts inventory stock & records loss expense</p>
+              <p className="text-xs text-slate-400">
+                Deducts inventory stock & records loss expense
+              </p>
             </div>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -104,7 +128,17 @@ export const LogWasteModal: React.FC<Props> = ({ isOpen, onClose, ingredients, o
             <span>Direct COGS Shrinkage:</span>
             <span className="text-base font-black flex items-center">
               <DollarSign className="w-4 h-4" />
-              {estimatedLoss.toFixed(2)}
+              {formatCurrency(estimatedLoss)}
+            </span>
+          </div>
+        )}
+
+        {exceedsStock && (
+          <div className="flex items-start gap-2 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+            <span>
+              Only {selectedIng.currentStock} {selectedIng.unit} is on hand. Stock will be recorded
+              at zero and the shortfall stays visible in the ledger.
             </span>
           </div>
         )}
@@ -206,6 +240,13 @@ export const LogWasteModal: React.FC<Props> = ({ isOpen, onClose, ingredients, o
             className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white px-3 py-2 text-xs font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
           />
         </label>
+
+        {formError && (
+          <div className="flex items-start gap-2 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 px-3 py-2 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+            <span>{formError}</span>
+          </div>
+        )}
 
         <div className="flex gap-2 pt-2">
           <button

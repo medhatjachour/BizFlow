@@ -6,7 +6,7 @@ import { formatCurrency, isStockLow } from '../utils'
 import { sounds } from '../../utils/sound'
 
 interface Props {
-  ingredient: IngredientData & { recipeUsages?: Array<{ recipe: { menuItem: { name: string } } }> }
+  ingredient: IngredientData
   onAdjustStock: (ing: IngredientData) => void
   onEdit: (ing: IngredientData) => void
   onDelete: (id: string) => void
@@ -19,7 +19,8 @@ export const IngredientCard: React.FC<Props> = ({
   onDelete
 }) => {
   const low = isStockLow(ingredient.currentStock, ingredient.minStockAlert)
-  const linkedDishes = ingredient.recipeUsages?.map((u) => u.recipe?.menuItem?.name).filter(Boolean) || []
+  const linkedDishes =
+    ingredient.recipeUsages?.map((u) => u.recipe?.menuItem?.name).filter(Boolean) || []
 
   return (
     <div

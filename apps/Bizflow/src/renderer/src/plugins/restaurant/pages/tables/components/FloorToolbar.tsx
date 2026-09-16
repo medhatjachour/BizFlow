@@ -1,12 +1,6 @@
 import React from 'react'
-import {
-  Plus,
-  RefreshCw,
-  Search,
-  LayoutGrid,
-  MapPin,
-  Layers
-} from 'lucide-react'
+import { Plus, RefreshCw, Search, LayoutGrid, MapPin, Layers } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { TableStatus } from '../types'
 import { TABLE_STATUS_CONFIG } from '../constants'
 
@@ -49,6 +43,8 @@ export const FloorToolbar: React.FC<Props> = ({
   onRefresh,
   loading
 }) => {
+  const { t } = useLanguage()
+
   return (
     <div className="space-y-3">
       {/* Upper Bar: Section Badges, View Toggle & Action Buttons */}
@@ -63,7 +59,7 @@ export const FloorToolbar: React.FC<Props> = ({
                 : 'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
-            All Areas ({stats.total})
+            {t('restFloorAllAreas', { count: stats.total })}
           </button>
           {sections.map((sec) => (
             <button
@@ -84,13 +80,14 @@ export const FloorToolbar: React.FC<Props> = ({
         <div className="flex items-center gap-2">
           {/* Search Box */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute start-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search table..."
+              placeholder={t('restFloorSearchPlaceholder')}
+              aria-label={t('restFloorSearchPlaceholder')}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 w-32 sm:w-44 transition-all"
+              className="ps-8 pe-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500/30 w-28 sm:w-44 transition-all"
             />
           </div>
 
@@ -98,7 +95,8 @@ export const FloorToolbar: React.FC<Props> = ({
           <div className="flex items-center bg-slate-100 dark:bg-slate-700/50 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
             <button
               onClick={() => onToggleViewMode('grid')}
-              title="Grid View"
+              title={t('restFloorViewGrid')}
+              aria-label={t('restFloorViewGrid')}
               className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
                 viewMode === 'grid'
                   ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
@@ -109,7 +107,8 @@ export const FloorToolbar: React.FC<Props> = ({
             </button>
             <button
               onClick={() => onToggleViewMode('canvas')}
-              title="Spatial Floor Map"
+              title={t('restFloorViewMap')}
+              aria-label={t('restFloorViewMap')}
               className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
                 viewMode === 'canvas'
                   ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-sm'
@@ -124,6 +123,8 @@ export const FloorToolbar: React.FC<Props> = ({
           <button
             onClick={onRefresh}
             disabled={loading}
+            title={t('restFloorRefresh')}
+            aria-label={t('restFloorRefresh')}
             className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-amber-500' : ''}`} />
@@ -135,7 +136,7 @@ export const FloorToolbar: React.FC<Props> = ({
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-orange-500/25 transition-all"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>New Table</span>
+            <span>{t('restTableNew')}</span>
           </button>
         </div>
       </div>
@@ -144,7 +145,7 @@ export const FloorToolbar: React.FC<Props> = ({
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
         <button
           onClick={() => onSelectStatus('ALL')}
-          className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
+          className={`flex items-center justify-between p-2.5 rounded-xl border text-start transition-all ${
             statusFilter === 'ALL'
               ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 dark:border-amber-700 shadow-xs'
               : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
@@ -152,32 +153,38 @@ export const FloorToolbar: React.FC<Props> = ({
         >
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-slate-500" />
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Total</span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              {t('restFloorTotal')}
+            </span>
           </div>
           <span className="text-xs font-bold text-slate-900 dark:text-white">{stats.total}</span>
         </button>
 
-        {(['available', 'occupied', 'billing', 'reserved', 'cleaning'] as TableStatus[]).map((st) => {
-          const cfg = TABLE_STATUS_CONFIG[st]
-          const count = stats[st]
-          return (
-            <button
-              key={st}
-              onClick={() => onSelectStatus(st)}
-              className={`flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${
-                statusFilter === st
-                  ? `${cfg.bg} ${cfg.border} ring-1 ring-amber-500/20 shadow-xs`
-                  : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{cfg.label}</span>
-              </div>
-              <span className={`text-xs font-bold ${cfg.text}`}>{count}</span>
-            </button>
-          )
-        })}
+        {(['available', 'occupied', 'billing', 'reserved', 'cleaning'] as TableStatus[]).map(
+          (st) => {
+            const cfg = TABLE_STATUS_CONFIG[st]
+            const count = stats[st]
+            return (
+              <button
+                key={st}
+                onClick={() => onSelectStatus(st)}
+                className={`flex items-center justify-between p-2.5 rounded-xl border text-start transition-all ${
+                  statusFilter === st
+                    ? `${cfg.bg} ${cfg.border} ring-1 ring-amber-500/20 shadow-xs`
+                    : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700/60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    {t(cfg.labelKey)}
+                  </span>
+                </div>
+                <span className={`text-xs font-bold ${cfg.text}`}>{count}</span>
+              </button>
+            )
+          }
+        )}
       </div>
     </div>
   )

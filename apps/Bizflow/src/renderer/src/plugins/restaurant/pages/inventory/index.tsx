@@ -6,13 +6,17 @@ import { IngredientCard } from './components/IngredientCard'
 import { IngredientFormModal } from './components/IngredientFormModal'
 import { AdjustStockModal } from './components/AdjustStockModal'
 import { IngredientData } from './types'
-
+import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 export default function RestaurantInventoryPage() {
   const {
     ingredients,
     categories,
     loading,
     error,
+    actionError,
+    clearActionError,
     stats,
     selectedCategory,
     setSelectedCategory,
@@ -26,9 +30,14 @@ export default function RestaurantInventoryPage() {
     deleteIngredient
   } = useInventory()
 
+  const { success } = useToast()
+  const { t } = useLanguage()
+
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingIngredient, setEditingIngredient] = useState<IngredientData | null>(null)
   const [adjustingIngredient, setAdjustingIngredient] = useState<IngredientData | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<IngredientData | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const handleOpenAdd = () => {
     setEditingIngredient(null)
@@ -38,6 +47,22 @@ export default function RestaurantInventoryPage() {
   const handleOpenEdit = (ing: IngredientData) => {
     setEditingIngredient(ing)
     setShowAddModal(true)
+  }
+
+  // The recipes that consume an ingredient are already eager-loaded, so we can
+  // name them up front instead of letting the delete fail with a raw error.
+  const deleteBlockers = pendingDelete?.recipeUsages ?? []
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return
+    const name = pendingDelete.name
+    setDeleting(true)
+    const ok = await deleteIngredient(pendingDelete.id)
+    setDeleting(false)
+    if (ok) {
+      setPendingDelete(null)
+      success(t('restInvDeleted', { name }) || `${name} deleted.`)
+    }
   }
 
   return (
@@ -64,6 +89,21 @@ export default function RestaurantInventoryPage() {
         </div>
       )}
 
+      {actionError && (
+        <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {actionError}
+          </span>
+          <button
+            onClick={clearActionError}
+            className="text-[11px] font-bold underline decoration-dotted shrink-0"
+          >
+            {t('restDismiss') || 'Dismiss'}
+          </button>
+        </div>
+      )}
+
       {/* Ingredients Grid */}
       {loading && ingredients.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 space-y-3">
@@ -78,7 +118,10 @@ export default function RestaurantInventoryPage() {
               ingredient={ing}
               onAdjustStock={setAdjustingIngredient}
               onEdit={handleOpenEdit}
-              onDelete={deleteIngredient}
+              onDelete={(id) => {
+                const target = ingredients.find((i) => i.id === id)
+                if (target) setPendingDelete(target)
+              }}
             />
           ))}
 
@@ -110,6 +153,35 @@ export default function RestaurantInventoryPage() {
         onClose={() => setAdjustingIngredient(null)}
         ingredient={adjustingIngredient}
         onAdjust={adjustStock}
+      />
+
+      <ConfirmDialog
+        isOpen={!!pendingDelete}
+        title={t('restInvDeleteTitle') || 'Delete ingredient'}
+        message={
+          pendingDelete
+            ? deleteBlockers.length > 0
+              ? t('restInvDeleteInUse', {
+                  name: pendingDelete.name,
+                  count: String(deleteBlockers.length),
+                  dishes: deleteBlockers
+                    .map((u) => u.recipe?.menuItem?.name)
+                    .filter(Boolean)
+                    .join(', ')
+                }) ||
+                `${pendingDelete.name} is still used by ${deleteBlockers.length} recipe(s): ` +
+                  `${deleteBlockers
+                    .map((u) => u.recipe?.menuItem?.name)
+                    .filter(Boolean)
+                    .join(', ')}. Remove it from those recipes first.`
+              : t('restInvDeleteNamed', { name: pendingDelete.name }) ||
+                `Delete ${pendingDelete.name}? Its stock history goes with it and this cannot be undone.`
+            : ''
+        }
+        danger
+        busy={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   )

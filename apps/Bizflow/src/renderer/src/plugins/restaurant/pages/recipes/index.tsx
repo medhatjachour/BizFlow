@@ -4,6 +4,9 @@ import { useRecipes } from './hooks/useRecipes'
 import { RecipeCard } from './components/RecipeCard'
 import { RecipeBuilderModal } from './components/RecipeBuilderModal'
 import { MenuItemRecipeData } from './types'
+import { useToast } from '@renderer/contexts/ToastContext'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
+import ConfirmDialog from '@renderer/components/ui/ConfirmDialog'
 
 export default function RecipesPage() {
   const {
@@ -12,13 +15,20 @@ export default function RecipesPage() {
     ingredients,
     loading,
     error,
+    actionError,
+    clearActionError,
     refreshRecipes,
     saveRecipe,
     deleteRecipe
   } = useRecipes()
 
+  const { success } = useToast()
+  const { t } = useLanguage()
+
   const [showModal, setShowModal] = useState(false)
   const [editingRecipe, setEditingRecipe] = useState<MenuItemRecipeData | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<MenuItemRecipeData | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const handleOpenAdd = () => {
     setEditingRecipe(null)
@@ -30,23 +40,37 @@ export default function RecipesPage() {
     setShowModal(true)
   }
 
+  const handleConfirmDelete = async () => {
+    if (!pendingDelete) return
+    setDeleting(true)
+    const ok = await deleteRecipe(pendingDelete.id)
+    setDeleting(false)
+    if (ok) {
+      setPendingDelete(null)
+      success(t('restRecipeDeleted') || 'Recipe removed — the dish is no longer auto-costed.')
+    }
+  }
+
   return (
     <div className="space-y-4 pb-12">
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/60 shadow-xs">
         <div>
           <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight">
-            Recipe Bill of Materials (BOM)
+            {t('restRecipeTitle') || 'Recipe & costing'}
           </h3>
           <p className="text-xs text-slate-400">
-            Map menu items to raw ingredients for automated stock depletion and real-time food costing.
+            {t('restRecipeSubtitlePlain') ||
+              'Map menu items to raw ingredients to get automated stock depletion and real-time food costing.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <button
-            onClick={refreshRecipes}
+            onClick={() => refreshRecipes()}
             disabled={loading}
+            aria-label={t('refresh') || 'Refresh'}
+            title={t('refresh') || 'Refresh'}
             className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-amber-500' : ''}`} />
@@ -56,7 +80,7 @@ export default function RecipesPage() {
             className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl text-xs font-bold shadow-xs shadow-orange-500/25"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Create Recipe BOM</span>
+            <span>{t('restRecipeCreate') || 'Create recipe'}</span>
           </button>
         </div>
       </div>
@@ -68,11 +92,28 @@ export default function RecipesPage() {
         </div>
       )}
 
+      {actionError && (
+        <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {actionError}
+          </span>
+          <button
+            onClick={clearActionError}
+            className="text-[11px] font-bold underline decoration-dotted shrink-0"
+          >
+            {t('restDismiss') || 'Dismiss'}
+          </button>
+        </div>
+      )}
+
       {/* Recipes Grid */}
       {loading && recipes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 space-y-3">
           <RefreshCw className="animate-spin text-amber-500 w-8 h-8" />
-          <p className="text-xs font-bold text-slate-400">Loading recipe mappings...</p>
+          <p className="text-xs font-bold text-slate-400">
+            {t('restRecipeLoading') || 'Loading recipe mappings…'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -81,7 +122,10 @@ export default function RecipesPage() {
               key={rec.id}
               recipe={rec}
               onEdit={handleOpenEdit}
-              onDelete={deleteRecipe}
+              onDelete={(id) => {
+                const target = recipes.find((r) => r.id === id)
+                if (target) setPendingDelete(target)
+              }}
             />
           ))}
 
@@ -89,10 +133,11 @@ export default function RecipesPage() {
             <div className="col-span-full py-20 text-center rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-white/40 dark:bg-slate-900/20 space-y-2">
               <Utensils className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
               <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                No Recipe BOMs Configured
+                {t('restRecipeEmptyTitle') || 'No recipes configured yet'}
               </h3>
               <p className="text-xs text-slate-400">
-                Link raw ingredients to menu dishes to enable automated stock deduction.
+                {t('restRecipeEmptyBody') ||
+                  'Link raw ingredients to menu dishes to enable automated stock deduction.'}
               </p>
             </div>
           )}
@@ -107,6 +152,21 @@ export default function RecipesPage() {
         menuItems={menuItems}
         ingredientsList={ingredients}
         onSave={saveRecipe}
+      />
+
+      <ConfirmDialog
+        isOpen={!!pendingDelete}
+        title={t('restRecipeDelete') || 'Remove recipe'}
+        message={
+          pendingDelete
+            ? t('restRecipeDeleteNamed', { name: pendingDelete.menuItem?.name || '' }) ||
+              `Remove the recipe for ${pendingDelete.menuItem?.name || 'this dish'}? Stock will stop deducting for it.`
+            : ''
+        }
+        danger
+        busy={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
       />
     </div>
   )

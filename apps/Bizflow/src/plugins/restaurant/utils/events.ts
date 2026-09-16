@@ -9,6 +9,10 @@ export type RestaurantEventType =
   | 'kds:item_bumped'
   | 'kds:ticket_bumped'
   | 'inventory:low_stock'
+  | 'inventory:updated'
+  | 'menu:updated'
+  | 'waste:logged'
+  | 'waste:deleted'
   | 'shift:changed'
 
 export function broadcastRestaurantEvent(event: RestaurantEventType, payload: any) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { X} from 'lucide-react'
+import { X } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { RestaurantTableData, TableFormData } from '../../types'
 import { SHAPE_OPTIONS, DEFAULT_SECTIONS } from '../../constants'
 
@@ -18,6 +19,7 @@ export const TableFormModal: React.FC<Props> = ({
   editingTable,
   existingSections
 }) => {
+  const { t } = useLanguage()
   const [form, setForm] = useState<TableFormData>({
     number: '',
     name: '',
@@ -70,29 +72,38 @@ export const TableFormModal: React.FC<Props> = ({
       >
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
           <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-            {editingTable ? 'Edit Table Details' : 'Add New Dining Table'}
+            {editingTable ? t('restTableModalEditTitle') : t('restTableModalAddTitle')}
           </h3>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('restTableDrawerClose')}
+            className="text-slate-400 hover:text-slate-600"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Table Number *</span>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              {t('restTableFieldNumber')}
+            </span>
             <input
               type="number"
               required
               min="1"
               value={form.number}
               onChange={(e) => setForm((f) => ({ ...f, number: e.target.value }))}
-              placeholder="e.g. 12"
+              placeholder={t('restTableFieldNumberPlaceholder')}
               className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none font-bold"
             />
           </label>
 
           <label className="block">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Capacity (Seats) *</span>
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              {t('restTableFieldCapacity')}
+            </span>
             <input
               type="number"
               required
@@ -105,25 +116,29 @@ export const TableFormModal: React.FC<Props> = ({
         </div>
 
         <label className="block">
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Display Label (Optional)</span>
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            {t('restTableFieldLabel')}
+          </span>
           <input
             type="text"
             value={form.name}
             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            placeholder="e.g. Patio Booth A"
+            placeholder={t('restTableFieldLabelPlaceholder')}
             className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
           />
         </label>
 
         <label className="block">
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Section / Dining Area *</span>
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            {t('restTableFieldSection')}
+          </span>
           <input
             type="text"
             list="section-options"
             required
             value={form.section}
             onChange={(e) => setForm((f) => ({ ...f, section: e.target.value }))}
-            placeholder="Select or enter custom section"
+            placeholder={t('restTableFieldSectionPlaceholder')}
             className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
           />
           <datalist id="section-options">
@@ -136,7 +151,7 @@ export const TableFormModal: React.FC<Props> = ({
         {/* Shape Picker */}
         <div>
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-            Table Shape
+            {t('restTableFieldShape')}
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {SHAPE_OPTIONS.map((shp) => (
@@ -150,7 +165,7 @@ export const TableFormModal: React.FC<Props> = ({
                     : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/30 text-slate-600 dark:text-slate-300'
                 }`}
               >
-                {shp.label}
+                {t(shp.labelKey)}
               </button>
             ))}
           </div>
@@ -162,14 +177,14 @@ export const TableFormModal: React.FC<Props> = ({
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold shadow-md shadow-orange-500/20"
+            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold shadow-md shadow-orange-500/20 disabled:opacity-60"
           >
-            {isSubmitting ? 'Saving...' : 'Save Table'}
+            {isSubmitting ? t('restTableSaving') : t('restTableSave')}
           </button>
         </div>
       </form>

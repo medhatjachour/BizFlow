@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { X, GitMerge } from 'lucide-react'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { RestaurantTableData, MergeFormData } from '../../types'
+import { formatCurrency } from '../../../menu/utils'
 
 interface Props {
   isOpen: boolean
@@ -17,13 +19,14 @@ export const TableMergeModal: React.FC<Props> = ({
   allTables,
   onMerge
 }) => {
+  const { t } = useLanguage()
   const [targetTableId, setTargetTableId] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!isOpen || !sourceTable) return null
 
   const occupiedTables = allTables.filter(
-    (t) => t.id !== sourceTable.id && (t.status === 'occupied' || t.status === 'billing')
+    (tbl) => tbl.id !== sourceTable.id && (tbl.status === 'occupied' || tbl.status === 'billing')
   )
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,25 +50,35 @@ export const TableMergeModal: React.FC<Props> = ({
               <GitMerge className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black text-slate-900 dark:text-white">Merge Tables</h3>
-              <p className="text-xs text-slate-400">Combine check into another active table</p>
+              <h3 className="text-base font-black text-slate-900 dark:text-white">
+                {t('restTableMergeTitle')}
+              </h3>
+              <p className="text-xs text-slate-400">{t('restTableMergeSubtitle')}</p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('restTableDrawerClose')}
+            className="text-slate-400 hover:text-slate-600"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-700/40 text-xs space-y-1">
-          <span className="text-slate-400 block">Merging Table:</span>
+          <span className="text-slate-400 block">{t('restTableMergeSource')}</span>
           <span className="font-bold text-slate-800 dark:text-slate-200">
-            Table #{sourceTable.number} ({sourceTable.orders?.[0]?.items.length || 0} items)
+            {t('restTableMergeSourceValue', {
+              number: sourceTable.number,
+              count: sourceTable.orders?.[0]?.items.length || 0
+            })}
           </span>
         </div>
 
         <label className="block">
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-            Merge Into Table (Target Order) *
+            {t('restTableMergeTarget')}
           </span>
           <select
             required
@@ -73,10 +86,14 @@ export const TableMergeModal: React.FC<Props> = ({
             onChange={(e) => setTargetTableId(e.target.value)}
             className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:outline-none"
           >
-            <option value="">Select target occupied table...</option>
-            {occupiedTables.map((t) => (
-              <option key={t.id} value={t.id}>
-                Table #{t.number} ({t.section} • Order Total: ${t.orders?.[0]?.total.toFixed(2) || '0.00'})
+            <option value="">{t('restTableMergeTargetPlaceholder')}</option>
+            {occupiedTables.map((tbl) => (
+              <option key={tbl.id} value={tbl.id}>
+                {t('restTableMergeOption', {
+                  number: tbl.number,
+                  section: tbl.section,
+                  amount: formatCurrency(tbl.orders?.[0]?.total || 0)
+                })}
               </option>
             ))}
           </select>
@@ -88,14 +105,14 @@ export const TableMergeModal: React.FC<Props> = ({
             onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             type="submit"
             disabled={!targetTableId || isSubmitting}
             className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md shadow-purple-500/20 disabled:opacity-50"
           >
-            {isSubmitting ? 'Merging...' : 'Merge Orders'}
+            {isSubmitting ? t('restTableMerging') : t('restTableMergeAction')}
           </button>
         </div>
       </form>

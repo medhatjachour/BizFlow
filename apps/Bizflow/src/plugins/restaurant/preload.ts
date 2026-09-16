@@ -66,6 +66,8 @@ export const restaurantPreload = {
   getStockMovements: (ingredientId?: string) =>
     ipcRenderer.invoke('restaurant:getStockMovements', ingredientId),
   deleteIngredient: (id: string) => ipcRenderer.invoke('restaurant:deleteIngredient', id),
+  getIngredientUsage: (ingredientId: string) =>
+    ipcRenderer.invoke('restaurant:getIngredientUsage', ingredientId),
 
   // ─── Recipes & Food Costing ──────────────────────────────────────────────────
   getRecipes: () => ipcRenderer.invoke('restaurant:getRecipes'),

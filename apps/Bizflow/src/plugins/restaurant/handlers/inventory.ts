@@ -1,9 +1,23 @@
 import { ipcMain } from 'electron'
 import { createLogger } from '../../../main/utils/logger'
-import { roundMoney, convertToBaseUnit } from '../utils/mathEngine'
+import { roundMoney, convertBetweenUnits, sameUnitFamily } from '../utils/mathEngine'
 import { broadcastRestaurantEvent } from '../utils/events'
+import { refreshMenuItemsUsingIngredient } from '../utils/costing'
 
 const log = createLogger('Restaurant:Inventory')
+
+/**
+ * `RestaurantIngredient.unit` is the ingredient's own unit of measure and the
+ * unit every stored number is expressed in — `currentStock`, `minStockAlert`
+ * and `costPerUnit` all share it. Nothing is normalised to a hidden base unit
+ * on the way in: the till, the recipe editor and the pantry screen all read the
+ * declared unit back, so storing grams under a `kg` label (or the reverse)
+ * makes every downstream number wrong by the conversion factor.
+ */
+function resolveUnit(unit?: string | null, fallback = 'g'): string {
+  const value = (unit || '').trim()
+  return value || fallback
+}
 
 export function registerInventoryHandlers(prisma: any) {
   ipcMain.handle(
@@ -22,35 +36,31 @@ export function registerInventoryHandlers(prisma: any) {
       }
     ) => {
       return await prisma.$transaction(async (tx: any) => {
-        const { normalizedQty: baseStock } = convertToBaseUnit(
-          Number(data.currentStock || 0),
-          data.unit || 'g'
-        )
-        const { normalizedQty: baseAlert } = convertToBaseUnit(
-          Number(data.minStockAlert || 500),
-          data.unit || 'g'
-        )
+        const unit = resolveUnit(data.unit)
+        const stock = roundMoney(Math.max(0, Number(data.currentStock || 0)))
+        const alert = roundMoney(Math.max(0, Number(data.minStockAlert || 0)))
 
         const ingredient = await tx.restaurantIngredient.create({
           data: {
             name: data.name,
             category: data.category || 'General',
-            unit: data.unit || 'g',
-            currentStock: roundMoney(baseStock),
-            minStockAlert: roundMoney(baseAlert),
+            unit,
+            currentStock: stock,
+            minStockAlert: alert,
             costPerUnit: roundMoney(Number(data.costPerUnit || 0)),
             supplierName: data.supplierName || null,
             notes: data.notes || null
           }
         })
 
-        if (baseStock > 0) {
+        if (stock > 0) {
           await tx.ingredientStockMovement.create({
             data: {
               ingredientId: ingredient.id,
               type: 'restock',
-              quantity: roundMoney(baseStock),
+              quantity: stock,
               unitCost: ingredient.costPerUnit,
+              referenceId: ingredient.id,
               notes: 'Initial inventory entry'
             }
           })
@@ -69,8 +79,10 @@ export function registerInventoryHandlers(prisma: any) {
         ingredientId: string
         type: 'restock' | 'manual_adjustment'
         quantity: number
+        unit?: string
         unitCost?: number
         notes?: string
+        referenceId?: string
       }
     ) => {
       return await prisma.$transaction(async (tx: any) => {
@@ -79,12 +91,28 @@ export function registerInventoryHandlers(prisma: any) {
         })
         if (!ingredient) throw new Error('Ingredient not found')
 
-        const qtyDelta = roundMoney(Number(data.quantity))
-        const newStock = roundMoney(
-          data.type === 'manual_adjustment'
-            ? Math.max(0, qtyDelta)
-            : Math.max(0, ingredient.currentStock + qtyDelta)
+        const priceChanged =
+          data.unitCost !== undefined &&
+          roundMoney(Number(data.unitCost)) !== ingredient.costPerUnit
+
+        // Callers may express the movement in whatever unit is convenient
+        // (receiving a 25 kg sack against an ingredient stocked in grams), so
+        // bring it into the ingredient's own unit before touching the ledger.
+        const movementUnit = data.unit ? resolveUnit(data.unit) : ingredient.unit
+        if (data.unit && !sameUnitFamily(movementUnit, ingredient.unit)) {
+          throw new Error(
+            `Cannot adjust ${ingredient.name} in ${movementUnit}: stock is tracked in ${ingredient.unit}`
+          )
+        }
+
+        const qtyDelta = roundMoney(
+          convertBetweenUnits(Number(data.quantity), movementUnit, ingredient.unit)
         )
+
+        const newStock =
+          data.type === 'manual_adjustment'
+            ? roundMoney(Math.max(0, qtyDelta))
+            : roundMoney(Math.max(0, ingredient.currentStock + qtyDelta))
 
         const movementQty =
           data.type === 'manual_adjustment'
@@ -110,13 +138,25 @@ export function registerInventoryHandlers(prisma: any) {
               data.unitCost !== undefined
                 ? roundMoney(Number(data.unitCost))
                 : ingredient.costPerUnit,
+            referenceId: data.referenceId || null,
             notes: data.notes || null
           }
         })
 
+        // A new purchase price must flow through to every dish built from this
+        // ingredient, otherwise menu margins silently drift.
+        if (priceChanged) {
+          const menuItemIds = await refreshMenuItemsUsingIngredient(tx, data.ingredientId)
+          for (const menuItemId of menuItemIds) {
+            broadcastRestaurantEvent('menu:updated', { id: menuItemId })
+          }
+        }
+
         if (newStock <= ingredient.minStockAlert) {
           broadcastRestaurantEvent('inventory:low_stock', updated)
         }
+
+        broadcastRestaurantEvent('inventory:updated', updated)
 
         return updated
       })
@@ -146,18 +186,48 @@ export function registerInventoryHandlers(prisma: any) {
 
         // Stock levels never move through this path — they are audited through
         // adjustStock so every change leaves a stock movement behind.
-        const nextUnit = data.unit || current.unit
-        const nextAlert = data.minStockAlert !== undefined ? Number(data.minStockAlert) : null
+        const nextUnit =
+          data.unit !== undefined ? resolveUnit(data.unit, current.unit) : current.unit
+        const unitChanged = nextUnit !== current.unit
+
+        if (unitChanged && !sameUnitFamily(nextUnit, current.unit)) {
+          throw new Error(
+            `Cannot switch ${current.name} from ${current.unit} to ${nextUnit}: these measure different things`
+          )
+        }
+
+        const priceChanged =
+          data.costPerUnit !== undefined &&
+          roundMoney(Number(data.costPerUnit)) !== current.costPerUnit
+
+        // Re-labelling the unit means the stored figures now mean something
+        // else, so carry the physical quantity across instead of reinterpreting
+        // "10" from kilograms into grams.
+        const restatedStock = unitChanged
+          ? roundMoney(convertBetweenUnits(current.currentStock, current.unit, nextUnit))
+          : null
+        const restatedAlert = unitChanged
+          ? roundMoney(convertBetweenUnits(current.minStockAlert, current.unit, nextUnit))
+          : null
+
+        // A caller that has not restated the threshold itself sends the
+        // pre-change figure untouched — detect that and restate it here, so the
+        // alert can never silently change meaning with the unit.
+        const nextAlert =
+          data.minStockAlert !== undefined
+            ? unitChanged && roundMoney(Number(data.minStockAlert)) === current.minStockAlert
+              ? restatedAlert
+              : roundMoney(Math.max(0, Number(data.minStockAlert)))
+            : restatedAlert
 
         const updated = await tx.restaurantIngredient.update({
           where: { id: data.id },
           data: {
             ...(data.name !== undefined ? { name: data.name.trim() } : {}),
             ...(data.category !== undefined ? { category: data.category } : {}),
-            ...(data.unit !== undefined ? { unit: nextUnit } : {}),
-            ...(nextAlert !== null
-              ? { minStockAlert: roundMoney(convertToBaseUnit(nextAlert, nextUnit).normalizedQty) }
-              : {}),
+            ...(unitChanged ? { unit: nextUnit } : {}),
+            ...(restatedStock !== null ? { currentStock: restatedStock } : {}),
+            ...(nextAlert !== null ? { minStockAlert: nextAlert } : {}),
             ...(data.costPerUnit !== undefined
               ? { costPerUnit: roundMoney(Number(data.costPerUnit)) }
               : {}),
@@ -166,9 +236,18 @@ export function registerInventoryHandlers(prisma: any) {
           }
         })
 
+        if (priceChanged) {
+          const menuItemIds = await refreshMenuItemsUsingIngredient(tx, data.id)
+          for (const menuItemId of menuItemIds) {
+            broadcastRestaurantEvent('menu:updated', { id: menuItemId })
+          }
+        }
+
         if (updated.currentStock <= updated.minStockAlert) {
           broadcastRestaurantEvent('inventory:low_stock', updated)
         }
+
+        broadcastRestaurantEvent('inventory:updated', updated)
 
         return updated
       })
@@ -213,12 +292,53 @@ export function registerInventoryHandlers(prisma: any) {
     }
   })
 
+  // ─── Which dishes would break if this ingredient disappeared ───────────────
+  ipcMain.handle('restaurant:getIngredientUsage', async (_e, ingredientId: string) => {
+    try {
+      const usages = await prisma.recipeIngredientRestaurant.findMany({
+        where: { ingredientId },
+        include: { recipe: { include: { menuItem: true } } }
+      })
+
+      return usages.map((u: any) => ({
+        recipeId: u.recipeId,
+        menuItemId: u.recipe?.menuItemId,
+        menuItemName: u.recipe?.menuItem?.name || 'Unnamed dish',
+        quantity: u.quantity,
+        unit: u.unit
+      }))
+    } catch (err) {
+      log.error('getIngredientUsage error', err)
+      throw err
+    }
+  })
+
   ipcMain.handle('restaurant:deleteIngredient', async (_e, id: string) => {
     try {
-      return await prisma.restaurantIngredient.update({
+      // Soft-deleting an ingredient that still backs a recipe removes it from
+      // the pantry screen (getIngredients filters isActive) while the recipe
+      // keeps pointing at it, leaving a bill of materials nobody can edit.
+      // Refuse instead, and name the dishes in the way.
+      const usages = await prisma.recipeIngredientRestaurant.findMany({
+        where: { ingredientId: id },
+        include: { recipe: { include: { menuItem: true } } }
+      })
+
+      if (usages.length > 0) {
+        const dishNames = Array.from(
+          new Set<string>(usages.map((u: any) => u.recipe?.menuItem?.name || 'Unnamed dish'))
+        )
+        throw new Error(
+          `This ingredient is used by ${dishNames.length} recipe(s): ${dishNames.join(', ')}. Remove it from those recipes first.`
+        )
+      }
+
+      const deleted = await prisma.restaurantIngredient.update({
         where: { id },
         data: { isActive: false }
       })
+      broadcastRestaurantEvent('inventory:updated', deleted)
+      return deleted
     } catch (err) {
       log.error('deleteIngredient error', err)
       throw err

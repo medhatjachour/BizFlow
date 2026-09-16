@@ -1,37 +1,71 @@
 // src/pages/tables/hooks/useFloorPlan.ts
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { RestaurantTableData, TableStatus } from '../types'
+
+const VIEW_MODE_KEY = 'bizflow.restaurant.tables.viewMode'
+
+/** Background refetches are coalesced so a busy POS does not refetch per keystroke. */
+const REFRESH_DEBOUNCE_MS = 350
+
+const readViewMode = (): 'grid' | 'canvas' => {
+  try {
+    return localStorage.getItem(VIEW_MODE_KEY) === 'canvas' ? 'canvas' : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
 
 export function useFloorPlan() {
   const [tables, setTables] = useState<RestaurantTableData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'canvas'>('grid')
+  const [viewMode, setViewModeState] = useState<'grid' | 'canvas'>(readViewMode)
   const [selectedSection, setSelectedSection] = useState<string>('ALL')
   const [statusFilter, setStatusFilter] = useState<TableStatus | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTable, setSelectedTable] = useState<RestaurantTableData | null>(null)
 
-  const loadTables = useCallback(async () => {
-    setLoading(true)
-    setError('')
+  // The drawer's target is tracked in a ref so that opening/closing it never
+  // rebuilds `loadTables` — otherwise every one of the four event subscriptions
+  // below would tear down and re-register on each drawer interaction.
+  const selectedTableIdRef = useRef<string | null>(null)
+  selectedTableIdRef.current = selectedTable?.id ?? null
+
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const loadTables = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
     try {
       const data = await window.api.restaurant.getTables()
       setTables(data || [])
-      if (selectedTable) {
-        const fresh = (data || []).find((t: RestaurantTableData) => t.id === selectedTable.id)
-        setSelectedTable(fresh || null)
+      setError('')
+      const keepId = selectedTableIdRef.current
+      if (keepId) {
+        const fresh = (data || []).find((t: RestaurantTableData) => t.id === keepId)
+        setSelectedTable((curr) => (curr && fresh ? { ...curr, ...fresh } : curr))
       }
     } catch (err: any) {
-      setError(err?.message || 'Failed to fetch floor layout')
+      if (!silent) setError(err?.message || 'Failed to fetch floor layout')
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
-  }, [selectedTable])
+  }, [])
 
   useEffect(() => {
     loadTables()
-  }, [])
+    return () => {
+      if (refreshTimer.current) clearTimeout(refreshTimer.current)
+    }
+  }, [loadTables])
+
+  /** Coalesced background refresh for events that do not carry a full table row. */
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimer.current) clearTimeout(refreshTimer.current)
+    refreshTimer.current = setTimeout(() => {
+      refreshTimer.current = null
+      void loadTables(true)
+    }, REFRESH_DEBOUNCE_MS)
+  }, [loadTables])
 
   // Real-Time Event Bus Subscriptions: Update UI instantly when any table changes
   useEffect(() => {
@@ -44,17 +78,9 @@ export function useFloorPlan() {
       )
     })
 
-    const unsubOrderCreated = window.api.restaurant.onEvent('order:created', () => {
-      loadTables()
-    })
-
-    const unsubOrderUpdated = window.api.restaurant.onEvent('order:updated', () => {
-      loadTables()
-    })
-
-    const unsubOrderSettled = window.api.restaurant.onEvent('order:settled', () => {
-      loadTables()
-    })
+    const unsubOrderCreated = window.api.restaurant.onEvent('order:created', scheduleRefresh)
+    const unsubOrderUpdated = window.api.restaurant.onEvent('order:updated', scheduleRefresh)
+    const unsubOrderSettled = window.api.restaurant.onEvent('order:settled', scheduleRefresh)
 
     return () => {
       unsubTable()
@@ -62,7 +88,16 @@ export function useFloorPlan() {
       unsubOrderUpdated()
       unsubOrderSettled()
     }
-  }, [loadTables])
+  }, [scheduleRefresh])
+
+  const setViewMode = useCallback((mode: 'grid' | 'canvas') => {
+    setViewModeState(mode)
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, mode)
+    } catch {
+      /* storage unavailable — the in-memory mode still applies */
+    }
+  }, [])
 
   const sections = useMemo(() => {
     const list = tables.map((t) => t.section).filter(Boolean)
@@ -99,14 +134,28 @@ export function useFloorPlan() {
     })
   }, [tables, selectedSection, statusFilter, searchQuery])
 
-  const updatePosition = async (id: string, posX: number, posY: number) => {
-    setTables((prev) => prev.map((t) => (t.id === id ? { ...t, posX, posY } : t)))
-    try {
-      await window.api.restaurant.updateTablePosition({ id, posX, posY })
-    } catch {
-      loadTables()
-    }
-  }
+  /**
+   * Optimistically moves a tile and rolls the single row back if the write
+   * fails. Returns whether the position was persisted so the canvas can toast.
+   */
+  const updatePosition = useCallback(
+    async (id: string, posX: number, posY: number): Promise<boolean> => {
+      const previous = tables.find((t) => t.id === id)
+      setTables((prev) => prev.map((t) => (t.id === id ? { ...t, posX, posY } : t)))
+      try {
+        await window.api.restaurant.updateTablePosition({ id, posX, posY })
+        return true
+      } catch {
+        if (previous) {
+          setTables((prev) =>
+            prev.map((t) => (t.id === id ? { ...t, posX: previous.posX, posY: previous.posY } : t))
+          )
+        }
+        return false
+      }
+    },
+    [tables]
+  )
 
   return {
     tables,

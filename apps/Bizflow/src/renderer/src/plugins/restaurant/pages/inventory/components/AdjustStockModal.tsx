@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X, Plus, RotateCcw } from 'lucide-react'
 import { IngredientData, AdjustStockFormData } from '../types'
 
@@ -15,6 +15,17 @@ export const AdjustStockModal: React.FC<Props> = ({ isOpen, onClose, ingredient,
   const [unitCost, setUnitCost] = useState('')
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // The modal is reused across ingredients, so a stale quantity or cost from the
+  // previous item would otherwise be pre-filled and silently re-applied.
+  useEffect(() => {
+    if (!isOpen) return
+    setType('restock')
+    setQuantity('10')
+    setUnitCost('')
+    setNotes('')
+    setIsSubmitting(false)
+  }, [isOpen, ingredient?.id])
 
   if (!isOpen || !ingredient) return null
 
@@ -40,7 +51,9 @@ export const AdjustStockModal: React.FC<Props> = ({ isOpen, onClose, ingredient,
       >
         <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700">
           <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-white">Adjust Pantry Stock</h3>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">
+              Adjust Pantry Stock
+            </h3>
             <p className="text-xs text-slate-400">{ingredient.name}</p>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
@@ -73,9 +86,18 @@ export const AdjustStockModal: React.FC<Props> = ({ isOpen, onClose, ingredient,
           </button>
         </div>
 
+        <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-700/40 text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center justify-between">
+          <span>Current on hand</span>
+          <span className="font-black text-slate-900 dark:text-white">
+            {ingredient.currentStock} {ingredient.unit}
+          </span>
+        </div>
+
         <label className="block">
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-            {type === 'restock' ? `Quantity to Add (${ingredient.unit}) *` : `Delta Adjustment (+/- ${ingredient.unit}) *`}
+            {type === 'restock'
+              ? `Quantity to Add (${ingredient.unit}) *`
+              : `Counted Stock — new absolute total (${ingredient.unit}) *`}
           </span>
           <input
             type="number"
@@ -85,12 +107,17 @@ export const AdjustStockModal: React.FC<Props> = ({ isOpen, onClose, ingredient,
             onChange={(e) => setQuantity(e.target.value)}
             className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-3 py-2 text-sm font-black focus:ring-2 focus:ring-amber-500 focus:outline-none"
           />
+          <span className="text-[10px] font-semibold text-slate-400">
+            {type === 'restock'
+              ? 'Added to the current stock.'
+              : 'Replaces the current stock — enter the number you counted, not a difference.'}
+          </span>
         </label>
 
         {type === 'restock' && (
           <label className="block">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              New Purchase Unit Cost ($)
+              New Purchase Unit Cost (per {ingredient.unit})
             </span>
             <input
               type="number"
@@ -100,11 +127,16 @@ export const AdjustStockModal: React.FC<Props> = ({ isOpen, onClose, ingredient,
               onChange={(e) => setUnitCost(e.target.value)}
               className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white px-3 py-2 text-xs font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none"
             />
+            <span className="text-[10px] font-semibold text-slate-400">
+              Changing this re-prices every dish built on this ingredient.
+            </span>
           </label>
         )}
 
         <label className="block">
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Notes / PO Reference</span>
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            Notes / PO Reference
+          </span>
           <input
             type="text"
             placeholder="e.g. Received weekly delivery invoice #4092"
