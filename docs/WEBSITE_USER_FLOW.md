@@ -48,6 +48,7 @@ machine.
 | 2 | Evaluate a module | `/plugins/[id]`, `#plugins` | What the module includes, plus the shared back office (HR, finance, expenses, reports, roles) | `components/landing/Plugins.tsx` |
 | 3 | Decide about custom features | `/#request` | Request form with a **live itemised estimate** (scope, complexity, rush, support) and an ETA | `components/landing/RequestForm.tsx` → `POST /api/requests` |
 | 4 | Download | `/download` | Pick module + OS (`windows` / `mac` / `linux`), installer starts. Deep links: `/download?module=<id>&os=<os>&autoStart=1` | `app/api/download/route.ts` |
+| 4b | Get past the OS warning | `/download` (step 3) | Per-OS instructions for the unsigned-build warning: SmartScreen *More info → Run anyway*, macOS *Privacy & Security → Open Anyway*, Linux `chmod +x` | `app/download/page.tsx` (`FIRST_RUN`) |
 | 5 | First launch | Desktop app | *"First launch starts a 14-day free trial. No licence key needed yet."* Trial clock is created and mirrored on first run | `main/ipc/handlers/license.handlers.ts` (`TRIAL_PERIOD_MS`) |
 | 6 | Work normally | Desktop app | The whole product is usable; the only difference is the trial counter | licence status `trial` |
 | 7 | Ask for a licence | In-app licence screen · `/support` · `/account` | Customer sends name, business, requested module; the app attaches device name and fingerprint automatically | `POST /api/license/request` (rate limited 8/h per IP) |
@@ -66,6 +67,21 @@ There is deliberately **no `/checkout` page in the free path** — in fact there
 no `app/checkout/page.tsx` at all, only `checkout/success` and `checkout/cancel`,
 so no visitor can be pushed into a payment form while browsing. The load harness
 records this as `GET /checkout → 404` so that adding a page there is noticed.
+
+### The one step the operating system inserts on purpose
+
+None of the installers are signed with commercial certificates yet, so every
+platform refuses the first launch: Windows shows *"Windows protected your PC"*,
+macOS says it cannot verify the developer (the `.dmg` is built with
+`CSC_IDENTITY_AUTO_DISCOVERY=false`), and a Linux AppImage arrives without the
+execute bit. That is a wall between a visitor who already decided to try the
+product and the product itself, and left unexplained it looks like malware.
+
+`/download` therefore renders an OS-aware third step with the exact click path
+per platform, and states plainly that the warning is about the publisher, not
+the download. Until real certificates are bought the honest instruction is the
+best available answer; `tests/user-flow.test.ts` fails if the guidance is
+removed for any OS.
 
 ## Licence states the customer can be in
 

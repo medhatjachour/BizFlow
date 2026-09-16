@@ -94,6 +94,27 @@ describe('download, then work for 14 days', () => {
     expect(trial, 'TRIAL_PERIOD_MS must exist').not.toBeNull()
     expect(trial![1]).toMatch(/14 \* 24 \* 60 \* 60 \* 1000/)
   })
+
+  it('walks a first-time user past the unsigned-build warning on every OS', () => {
+    // The installers are unsigned, so each OS blocks the first launch. Without
+    // these instructions the visitor concludes the download is broken.
+    const page = read('src', 'app', 'download', 'page.tsx')
+    expect(page).toContain('const FIRST_RUN: Record<OSId,')
+    for (const os of ['windows', 'mac', 'linux']) {
+      expect(page, `${os} needs first-run guidance`).toMatch(new RegExp(`^\\s{2}${os}: \\{`, 'm'))
+    }
+  })
+
+  it('gives the real click path, not vague reassurance', () => {
+    const page = read('src', 'app', 'download', 'page.tsx')
+    expect(page).toMatch(/Windows protected your PC/)
+    expect(page).toMatch(/More info, then Run anyway/)
+    expect(page).toMatch(/Privacy & Security/)
+    expect(page).toMatch(/Open Anyway/)
+    expect(page).toContain('xattr -dr com.apple.quarantine')
+    expect(page).toContain('chmod +x')
+    expect(page).toContain('--appimage-extract-and-run')
+  })
 })
 
 describe('asking for a licence and activating it', () => {

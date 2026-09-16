@@ -17,6 +17,73 @@ const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
 
 type Target = { id: string; name: string; icon: string; accent: string; price: number; tagline: string };
 
+type FirstRunStep = { title: string; body: string; code?: string };
+
+/**
+ * The installers are not signed with commercial certificates yet, so every OS
+ * shows its own "unknown publisher" warning on first launch. A visitor who hits
+ * that wall without instructions assumes the download is broken or malicious and
+ * leaves, so the exact click path is spelled out per platform.
+ */
+const FIRST_RUN: Record<OSId, { intro: string; steps: FirstRunStep[] }> = {
+  windows: {
+    intro:
+      "The installer isn't signed with a commercial Windows certificate yet, so SmartScreen shows one warning. Here's the exact click path.",
+    steps: [
+      {
+        title: "Run the installer",
+        body: "Open the .exe you just downloaded. If Windows shows \u201cWindows protected your PC\u201d, that's the unsigned-build warning, not a virus.",
+      },
+      {
+        title: "Allow it once",
+        body: "Click More info, then Run anyway. The install is per-user \u2014 no admin prompt, nothing installed system-wide.",
+      },
+      {
+        title: "Launch BizFlow",
+        body: "Open it from the Start menu. Your 14-day trial starts on first launch \u2014 no card, no account.",
+      },
+    ],
+  },
+  mac: {
+    intro:
+      "The .dmg isn't signed with a commercial Apple certificate yet, so macOS blocks the first launch. It takes about a minute to get past.",
+    steps: [
+      {
+        title: "Install",
+        body: "Open the .dmg and drag BizFlow into your Applications folder.",
+      },
+      {
+        title: "Open it once",
+        body: "Double-clicking may say Apple could not verify BizFlow. Open System Settings \u2192 Privacy & Security, scroll down and click Open Anyway next to BizFlow. On macOS 12 and older: right-click the app \u2192 Open \u2192 Open.",
+      },
+      {
+        title: "If it still refuses",
+        body: "Clear the download quarantine flag in Terminal, then open the app again:",
+        code: "xattr -dr com.apple.quarantine /Applications/BizFlow.app",
+      },
+    ],
+  },
+  linux: {
+    intro: "AppImages are a single file you run directly \u2014 no installer and no root access needed.",
+    steps: [
+      {
+        title: "Make it executable",
+        body: "AppImage downloads don't carry the execute bit:",
+        code: "chmod +x BizFlow-*-linux.AppImage",
+      },
+      {
+        title: "Run it",
+        body: "Double-click the file, or launch it from a terminal. Your 14-day trial starts on first launch.",
+      },
+      {
+        title: "If you see a FUSE error",
+        body: "Some minimal distros ship without FUSE. Extract and run instead:",
+        code: "./BizFlow-*-linux.AppImage --appimage-extract-and-run",
+      },
+    ],
+  },
+};
+
 function DownloadPageContent() {
   const searchParams = useSearchParams();
   const prices = usePrices();
@@ -52,6 +119,7 @@ function DownloadPageContent() {
   const target = targets.find((t) => t.id === moduleId)!;
   const dl = installerFor(moduleId, os);
   const item = moduleId === "suite" ? "suite" : `module:${moduleId}`;
+  const firstRun = FIRST_RUN[os];
 
   return (
     <main className="relative mx-auto min-h-screen w-full max-w-5xl px-4 pb-24 pt-28">
@@ -178,6 +246,35 @@ function DownloadPageContent() {
           <li className="flex items-center gap-2">✓ Your data stays on your device</li>
           <li className="flex items-center gap-2">✓ Free updates within the version</li>
         </ul>
+      </section>
+
+      {/* First launch — getting past the unsigned-build warning */}
+      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 sm:p-8">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-biz-500/20 text-xs font-bold text-biz-300">3</span>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-foreground/70">
+            First launch on {dl.os.name}
+          </h2>
+        </div>
+        <p className="max-w-3xl text-sm text-foreground/60">{firstRun.intro}</p>
+        <ol className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {firstRun.steps.map((s, i) => (
+            <li key={s.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-biz-300">Step {i + 1}</p>
+              <p className="mt-1 text-sm font-semibold">{s.title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-foreground/55">{s.body}</p>
+              {s.code && (
+                <code className="mt-2 block break-all rounded-lg bg-black/40 px-2 py-1.5 font-mono text-[11px] text-biz-200">
+                  {s.code}
+                </code>
+              )}
+            </li>
+          ))}
+        </ol>
+        <p className="mt-5 text-xs text-foreground/45">
+          Commercial code signing is on the roadmap. Until then these warnings are just your operating system
+          being cautious about a new publisher — nothing about the download itself.
+        </p>
       </section>
 
       {/* Try-before-download */}
