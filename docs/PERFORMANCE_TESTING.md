@@ -239,6 +239,13 @@ Four back-to-back c=10 runs on the same target:
 | 2 | 112 ms | 152 ms | 78 rps |
 | 3 | 118 ms | 180 ms | 65 rps |
 | 4 | 121 ms | 317 ms | 65 rps |
+| 5 (final sweep, 18 scenarios + journey) | 113 ms | 158 ms | 79 rps |
+
+Run 5 is the full catalogue rather than a repeat of run 4: pooled over 2 376
+samples it reports p50 113 ms, p95 158 ms, p99 239 ms, max 1.35 s, zero errors,
+10 new sockets out of 2 416 requests (0.21 %), and a journey p50 1.12 s /
+p95 1.39 s. The per-scenario p95 spread in that run was 124–198 ms, i.e. every
+scenario sat inside the flat part of the curve.
 
 **p50 is stable within ~8 %; p95 varies by up to ~2×.** One earlier window
 measured p95 1.0–1.8 s and 18 rps at c=1; it never reproduced, and a client-side
