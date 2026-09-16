@@ -60,7 +60,11 @@ jobs:
           cache-dependency-path: apps/website/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # Matches deploy.yml. `vitest@5` wants `@types/node@^22 || >=24` while the
+        # site is on Node 20 types, and a clean `npm ci` refuses to resolve that
+        # peer conflict. `--legacy-peer-deps` here means CI installs exactly what
+        # the deploy installs, so the two cannot disagree about the tree.
+        run: npm ci --workspaces=false --legacy-peer-deps
 
       - name: Generate Prisma client
         run: npx prisma generate --schema=prisma/schema.prisma
