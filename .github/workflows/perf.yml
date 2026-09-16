@@ -1,0 +1,137 @@
+name: Performance
+
+# Performance testing is NOT a pull-request gate. Two reasons:
+#
+#  1. The HTTP half measures a network target. On a shared GitHub runner the
+#     DNS/TLS handshake alone varies by seconds, so a p95 assertion would fail
+#     at random and train everyone to ignore it.
+#  2. The desktop half seeds ~24k rows, which is more than a PR needs to pay.
+#
+# So this runs on demand and nightly, and it fails loudly when a *real*
+# regression lands. The gates are the ones that are deterministic from a CI box:
+# reachability, transport failures and the HTTP error rate. Latency budgets are
+# reported but not gated here (--no-latency-gate) precisely because of the
+# handshake variance above; read the p95/p99 from the uploaded artifact, and use
+# `npm run perf:load` locally when you want the gate to fail the run.
+#
+# Manual run: GitHub UI -> Actions -> Performance -> Run workflow.
+# You can point it at any target (a preview deployment, the VPS) and pick a
+# profile. `stress`, `spike` and `soak` are deliberately not offered here;
+# run those by hand so nobody hammers production from CI by accident.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Base URL to load-test"
+        required: false
+        default: "https://www.bizflow.medhatjachour.tech"
+      profile:
+        description: "smoke | load"
+        required: false
+        default: "load"
+  schedule:
+    # 03:17 UTC nightly - off the hour so it does not collide with the deploy.
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  website:
+    name: Website + demo load test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Harness unit tests
+        working-directory: apps/website
+        run: |
+          npm ci --ignore-scripts
+          npx vitest run tests/perf-harness.test.ts
+
+      - name: Load test
+        # exit 1 = a budget was breached, exit 2 = the harness itself broke.
+        # Both fail the job. Latency is deliberately *reported* rather than
+        # gated here: on a shared runner the DNS/TCP/TLS start-up alone swings
+        # by seconds, so a p95 assertion would fail at random. Reachability,
+        # transport failures and the error rate are still hard gates, and the
+        # p95/p99 numbers land in the uploaded artifact for reading.
+        # Run the workflow with profile=load and add --gate-latency by hand
+        # (or use npm run perf:load locally) when you want the gate.
+        run: |
+          node scripts/perf/run.mjs \
+            --target "${{ github.event.inputs.target || 'https://www.bizflow.medhatjachour.tech' }}" \
+            --profile "${{ github.event.inputs.profile || 'load' }}" \
+            --no-latency-gate \
+            --label "ci-${{ github.run_number }}" \
+            --out perf-reports
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-http-${{ github.run_number }}
+          path: perf-reports/
+          if-no-files-found: warn
+          retention-days: 30
+
+  desktop:
+    name: Desktop data-layer benchmark
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/Bizflow
+    env:
+      DATABASE_URL: "file:./dev.db"
+      # 1/4 scale keeps the job near two minutes while still exercising
+      # thousands of rows, so a query that regresses into O(n) work is obvious.
+      PERF_SCALE: "0.25"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/Bizflow/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Generate Prisma client
+        run: |
+          node scripts/merge-schemas.js --all
+          npx prisma generate --schema=prisma/merged.prisma
+
+      - name: Benchmark
+        run: npm run perf:bench
+
+      - name: Render report and check budgets
+        # Back to the repo root: the reporter resolves its own paths, but the
+        # artifact directory is relative to the workspace.
+        working-directory: ${{ github.workspace }}
+        run: node scripts/perf/desktop/report.mjs
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-desktop-${{ github.run_number }}
+          path: perf-reports/
+          if-no-files-found: warn
+          retention-days: 30

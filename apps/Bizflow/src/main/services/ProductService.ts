@@ -150,7 +150,7 @@ export class ProductService {
       }
 
       if (query.category) {
-        options.where = { ...options.where, category: query.category }
+        options.where = { ...options.where, categoryId: query.category }
       }
 
       if (query.storeId) {

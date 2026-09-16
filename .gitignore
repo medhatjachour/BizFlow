@@ -133,3 +133,7 @@ license-private.pem
 # Keep env templates in the repo so new contributors can bootstrap.
 !.env.example
 !**/.env.example
+
+# Performance-harness output (generated: raw samples, scaling charts, desktop bench report).
+# The harness itself lives in scripts/perf/ and is committed; only its results are ignored.
+perf-reports/

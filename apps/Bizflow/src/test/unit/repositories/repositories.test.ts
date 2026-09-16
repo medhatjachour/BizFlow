@@ -20,7 +20,8 @@ const mockPrisma = {
     count: vi.fn()
   },
   productVariant: {
-    update: vi.fn()
+    update: vi.fn(),
+    groupBy: vi.fn()
   },
   category: {
     findMany: vi.fn(),
@@ -221,7 +222,9 @@ describe('Repository Tests', () => {
             OR: [
               { name: { contains: 'test' } },
               { baseSKU: { contains: 'test' } },
-              { category: { contains: 'test' } },
+              // `category` is a relation: Prisma rejects a scalar `contains`
+              // on it, which used to make every search throw.
+              { category: { name: { contains: 'test' } } },
               { description: { contains: 'test' } }
             ]
           },
@@ -453,12 +456,30 @@ describe('Repository Tests', () => {
           ]
         }
 
-        mockPrisma.product.findMany.mockResolvedValue([lowStockProduct, normalStockProduct])
+        // The filter is pushed into the variant table; only the matching
+        // products are read afterwards.
+        mockPrisma.productVariant.groupBy.mockResolvedValue([
+          { productId: 'prod-1', _sum: { stock: 8 } },
+          { productId: 'prod-2', _sum: { stock: 20 } }
+        ])
+        mockPrisma.product.findMany.mockResolvedValue([lowStockProduct])
 
         const result = await productRepo.findLowStock(10)
 
         expect(result).toHaveLength(1)
         expect(result[0]).toEqual(lowStockProduct)
+        expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { id: { in: ['prod-1'] } } })
+        )
+      })
+
+      it('should not query products when nothing is below the threshold', async () => {
+        mockPrisma.productVariant.groupBy.mockResolvedValue([{ productId: 'prod-2', _sum: { stock: 99 } }])
+
+        const result = await productRepo.findLowStock(10)
+
+        expect(result).toEqual([])
+        expect(mockPrisma.product.findMany).not.toHaveBeenCalled()
       })
     })
 
@@ -479,12 +500,19 @@ describe('Repository Tests', () => {
           ]
         }
 
-        mockPrisma.product.findMany.mockResolvedValue([outOfStockProduct, inStockProduct])
+        mockPrisma.productVariant.groupBy.mockResolvedValue([
+          { productId: 'prod-1', _sum: { stock: 0 } },
+          { productId: 'prod-2', _sum: { stock: 5 } }
+        ])
+        mockPrisma.product.findMany.mockResolvedValue([outOfStockProduct])
 
         const result = await productRepo.findOutOfStock()
 
         expect(result).toHaveLength(1)
         expect(result[0]).toEqual(outOfStockProduct)
+        expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: { id: { in: ['prod-1'] } } })
+        )
       })
     })
 

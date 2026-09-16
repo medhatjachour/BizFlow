@@ -25,7 +25,11 @@
     "dev": "concurrently -k -n bridge,ui,site -c blue,green,magenta \"npm:dev:bridge\" \"npm:dev:ui\" \"npm:dev:site\"",
     "build:site": "npm --prefix apps/website run build",
     "lint": "npm --prefix apps/Bizflow run lint && npm --prefix apps/website run lint",
-    "typecheck": "npm --prefix apps/Bizflow run typecheck"
+    "typecheck": "npm --prefix apps/Bizflow run typecheck",
+    "perf:load": "node scripts/perf/run.mjs",
+    "perf:desktop": "npm --prefix apps/Bizflow run perf:bench && node scripts/perf/desktop/report.mjs",
+    "perf:compare": "node scripts/perf/compare.mjs",
+    "perf": "npm run perf:desktop && npm run perf:load"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

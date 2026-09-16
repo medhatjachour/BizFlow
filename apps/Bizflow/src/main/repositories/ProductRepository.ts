@@ -112,6 +112,9 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
 
   /**
    * Search products
+   *
+   * `category` is a relation, so it has to be filtered through the relation
+   * field — a scalar `contains` on it is rejected by Prisma.
    */
   async search(query: string): Promise<ProductWithRelations[]> {
     return this.findAll({
@@ -119,7 +122,7 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
         OR: [
           { name: { contains: query } },
           { baseSKU: { contains: query } },
-          { category: { contains: query } },
+          { category: { name: { contains: query } } },
           { description: { contains: query } }
         ]
       },
@@ -260,26 +263,46 @@ export class ProductRepository implements IRepository<ProductWithRelations> {
 
   /**
    * Get products with low stock
+   *
+   * The filter is evaluated over the variant table and only the matching
+   * products are then loaded. The earlier implementation read the *entire*
+   * catalogue - with variants and images - to filter in memory, which is
+   * unbounded work (and megabytes of image blobs) for a list that is normally a
+   * handful of rows.
    */
   async findLowStock(threshold: number = 10): Promise<ProductWithRelations[]> {
-    const products = await this.findAll()
-    
-    return products.filter(product => {
-      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
-      return totalStock <= threshold && totalStock > 0
-    })
+    const ids = await this.productIdsByTotalStock((total) => total > 0 && total <= threshold)
+
+    return this.findAllByIds(ids)
   }
 
   /**
    * Get out of stock products
    */
   async findOutOfStock(): Promise<ProductWithRelations[]> {
-    const products = await this.findAll()
-    
-    return products.filter(product => {
-      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0)
-      return totalStock === 0
+    const ids = await this.productIdsByTotalStock((total) => total === 0)
+
+    return this.findAllByIds(ids)
+  }
+
+  /** Product ids whose summed variant stock satisfies `matches`. */
+  private async productIdsByTotalStock(
+    matches: (totalStock: number) => boolean
+  ): Promise<string[]> {
+    const grouped = await this.prisma.productVariant.groupBy({
+      by: ['productId'],
+      _sum: { stock: true }
     })
+
+    return grouped
+      .filter((row) => matches(row._sum.stock ?? 0))
+      .map((row) => row.productId)
+  }
+
+  private findAllByIds(ids: string[]): Promise<ProductWithRelations[]> {
+    if (ids.length === 0) return Promise.resolve([])
+
+    return this.findAll({ where: { id: { in: ids } } })
   }
 
   /**
