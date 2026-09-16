@@ -2,7 +2,9 @@
 
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useEffect } from "react";
 import { PLUGINS, getPlugin } from "@/lib/plugins";
+import { track } from "@/lib/analytics";
 import ModuleFrame from "./ModuleFrame";
 
 export default function Desktop() {
@@ -10,6 +12,17 @@ export default function Desktop() {
   const searchParams = useSearchParams();
   const requestedModuleId = searchParams.get("module");
   const activePlugin = getPlugin(requestedModuleId ?? "") ?? PLUGINS[0];
+  const activeModuleId = activePlugin?.id;
+
+  // Funnel: the demo is the strongest differentiator on the site, so its open
+  // and each module the visitor explores are tracked separately.
+  useEffect(() => {
+    track("demo_open");
+  }, []);
+
+  useEffect(() => {
+    if (activeModuleId) track("demo_module_view", { module: activeModuleId });
+  }, [activeModuleId]);
 
   if (!activePlugin) return null;
 

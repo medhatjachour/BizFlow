@@ -11,6 +11,7 @@ import {
   type RequestType,
 } from "@/lib/pricing";
 import { withBasePath } from "@/lib/site";
+import { track } from "@/lib/analytics";
 
 /**
  * Guest request / quote form. A visitor can ask for an update to an existing
@@ -166,9 +167,21 @@ export default function RequestForm() {
         target: String(data.notificationTarget ?? ""),
       });
       setStatus("done");
+      // The lead itself is the conversion; `notified` says whether the email
+      // actually left the server, so a silent mail outage shows up as a drop in
+      // this event's notified:true share rather than as lost customers.
+      track("custom_request_submitted", {
+        type,
+        moduleId: type === "update" ? moduleId || "none" : "none",
+        complexity,
+        rush,
+        support,
+        notified: Boolean(data.notified),
+      });
     } catch (err) {
       setError((err as Error).message);
       setStatus("error");
+      track("custom_request_failed", { type, complexity });
     }
   };
 

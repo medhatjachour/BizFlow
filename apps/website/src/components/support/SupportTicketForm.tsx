@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Feedback from "@/components/Feedback";
 import { withBasePath } from "@/lib/site";
+import { track } from "@/lib/analytics";
 
 type CreateTicketResponse = {
   ok: boolean;
@@ -52,9 +53,14 @@ export default function SupportTicketForm() {
 
       const data = (await res.json()) as CreateTicketResponse;
       setResult(data);
+      // The support form is how a trial user actually asks for a licence key,
+      // so a ticket is a buying signal, not just a help request.
       if (res.ok) {
         setSubject("");
         setMessage("");
+        track("support_ticket_submitted", { category, priority });
+      } else {
+        track("support_ticket_failed", { category });
       }
     } catch {
       setResult({ ok: false, requestId: "n/a", error: "Network error" });

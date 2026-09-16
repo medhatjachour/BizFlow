@@ -109,3 +109,44 @@ Its reported p95 is literally "how long the whole journey takes a real visitor",
 and each step is reported separately so a slow step is attributable. See
 [PERFORMANCE_TESTING.md](./PERFORMANCE_TESTING.md) for the harness and the
 measured numbers.
+
+## Measuring the funnel
+
+Speed is only half the story: a fast journey that nobody completes is still no
+revenue. The site therefore reports each step below, and the whole set is
+switched on by **two environment variables** — `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`
+(cookieless, recommended) and/or `NEXT_PUBLIC_GA_ID`. Until one of them is set,
+`ANALYTICS_ENABLED` is `false`, no script loads, **no consent banner renders**,
+and every `track()` call is a no-op.
+
+| # | Funnel step | Event | Properties | Where it is fired |
+|---|-------------|-------|------------|-------------------|
+| 0 | Landed | *(pageview — provider-side)* | — | `/` |
+| 1 | Opened the demo | `demo_open` | — | `components/desktop/Desktop.tsx` |
+| 2 | Explored a module | `demo_module_view` | `module` | `components/desktop/Desktop.tsx` |
+| 3 | Asked for custom features | `custom_request_submitted` | `type, moduleId, complexity, rush, support, notified` | `components/landing/RequestForm.tsx` |
+| 3b | Request failed | `custom_request_failed` | `type, complexity` | same |
+| 4 | Asked for a licence | `support_ticket_submitted` | `category, priority` | `components/support/SupportTicketForm.tsx` |
+| 4b | Ticket failed | `support_ticket_failed` | `category` | same |
+| 5 | Started a download | `download_start` | `module, os` | `components/DownloadButton.tsx` |
+| 5b | Download deep-link / fallback | `download_request`, `download_fallback` | `module, os` | same |
+| 6 | Optional: paid by card | `checkout_start`, `checkout_redirect`, `checkout_fallback` | `item` | `components/BuyButton.tsx` |
+
+Two details matter more than the rest:
+
+- **`notified` on `custom_request_submitted`.** The request form is the highest
+  value lead on the site, and the API returns whether the notification email
+  actually left the server. Charting the share of `notified: false` turns a
+  silent mail outage into a visible number instead of a customer who asked for a
+  quote and never heard back. Verified against the live site: the transport falls
+  back to direct-to-MX on port 25 from the VPS, which many providers block and
+  which has no SPF/DKIM alignment, so it is worth sending one real request and
+  confirming where it lands before spending on traffic.
+- **No event fires without consent.** `getConsent() !== "granted"` returns early
+  in `src/lib/analytics.ts`, and the banner only renders when a provider is
+  configured. Declining analytics never disables a feature.
+
+`apps/website/tests/funnel-events.test.ts` asserts that each step still reports
+itself, that `track()` is gated on consent, and that the provider loader stays
+dormant when nothing is configured — so a refactor cannot quietly drop a step
+out of the funnel.
