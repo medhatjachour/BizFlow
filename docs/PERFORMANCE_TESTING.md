@@ -368,6 +368,24 @@ reading. The deterministic parts are additionally pinned by the website unit
 tests (`perf-harness.test.ts`, `user-flow.test.ts`) — percentile maths, budget
 logic, safety rules and the user-flow contract.
 
+### Which workflows a push to `main` actually starts
+
+The count depends on what changed, which is worth knowing before reading a red
+run as a site outage:
+
+| Changed paths | Workflows started |
+|---------------|-------------------|
+| `docs/**` only | 2 — `build-windows.yml`, `deploy.yml` |
+| `apps/website/**` | 3 — the two above plus `trivy-container.yml` |
+| `apps/Bizflow/**` | 6 — the two above plus `ci.yml`, `publish-commerce-installers.yml`, `publish-commerce-windows.yml`, `trivy-container.yml` |
+| `Dockerfile` / `docker-compose.yml` | 3 — `build-windows.yml`, `deploy.yml`, `trivy-container.yml` |
+
+`build-windows.yml` and `deploy.yml` have no path filter, so they run for every
+push — including a docs-only commit, which still redeploys the live site.
+`ci.yml` is scoped to `apps/Bizflow/**`, and `ci-website.yml` mirrors it for
+`apps/website/**`; `build-desktop-release.yml` and `perf.yml` never run on push
+(`workflow_dispatch` and a nightly cron respectively).
+
 ## 5. Where the numbers come from
 
 Raw reports are written to `perf-reports/` (git-ignored, since they are build
