@@ -78,29 +78,54 @@ export const ThermalPrinter = {
   },
 
   /**
-   * Generates End-of-Shift Z-Report for daily drawer reconciliation
+   * Generates End-of-Shift Z-Report for daily drawer reconciliation.
+   *
+   * Kept in sync with `getZReportData`; the on-screen report lives in
+   * `pages/shifts/components/ZReportModal.tsx`.
    */
   buildZReport(data: ZReportData): string {
+    const money = (n: number | null | undefined): string => `$${(n ?? 0).toFixed(2)}`
+
     let text = `\n================================\n`
     text += `     DAILY Z-REPORT AUDIT       \n`
     text += `Shift #${data.shift.id.slice(0, 8)}\n`
-    text += `Cashier: ${data.shift.serverName}\n`
-    text += `Opened:  ${new Date(data.shift.openedAt).toLocaleTimeString()}\n`
+    text += `Server: ${data.shift.serverName}\n`
+    text += `Opened: ${new Date(data.shift.openedAt).toLocaleTimeString()}\n`
     if (data.shift.closedAt) {
-      text += `Closed:  ${new Date(data.shift.closedAt).toLocaleTimeString()}\n`
+      text += `Closed: ${new Date(data.shift.closedAt).toLocaleTimeString()}\n`
     }
     text += `--------------------------------\n`
-    text += `Total Checks Settled:  ${data.ordersCount}\n`
-    text += `Opening Drawer Float:  $${data.startCash.toFixed(2)}\n`
-    text += `Gross Sales:           $${data.totalSales.toFixed(2)}\n`
-    text += `Tips Pool:             $${data.totalTips.toFixed(2)}\n`
+    text += `Checks Settled:        ${data.ordersCount}\n`
+    text += `Gross Sales:           ${money(data.grossSales)}\n`
+    text += `Discounts:            -${money(data.totalDiscounts)}\n`
+    text += `Net Sales:             ${money(data.netSales)}\n`
+    text += `Tips Pool:             ${money(data.totalTips)}\n`
+    text += `  Cash Tips:           ${money(data.cashTips)}\n`
+    text += `  Card Tips:           ${money(data.cardTips)}\n`
     text += `--------------------------------\n`
     text += `PAYMENT SUMMARY:\n`
-    Object.entries(data.paymentBreakdown).forEach(([method, amt]) => {
-      text += `* ${method.toUpperCase()}: $${amt.toFixed(2)}\n`
-    })
+    const tenders = Object.entries(data.paymentBreakdown || {})
+    if (tenders.length === 0) {
+      text += `  (no tenders recorded)\n`
+    } else {
+      tenders.forEach(([method, amt]) => {
+        text += `* ${method.toUpperCase()}: ${money(amt as number)}\n`
+      })
+    }
     text += `--------------------------------\n`
-    text += `Counted Cash:          $${(data.endCash || 0).toFixed(2)}\n`
+    text += `CASH DRAWER:\n`
+    text += `Opening Float:         ${money(data.startCash)}\n`
+    text += `Cash Sales:            ${money(data.cashSales)}\n`
+    text += `Expected Cash:         ${money(data.expectedCash)}\n`
+    text += `Counted Cash:          ${money(data.endCash)}\n`
+    text += `Variance:              ${money(data.variance)}\n`
+    if (data.openChecksCount > 0) {
+      text += `--------------------------------\n`
+      text += `OPEN CHECKS (not revenue): ${data.openChecksCount} · ${money(data.openChecksTotal)}\n`
+    }
+    if (data.voidedLineCount > 0) {
+      text += `Voids: ${data.voidedOrdersCount} check(s) · ${data.voidedLineCount} line(s) · ${money(data.voidedOrdersTotal)}\n`
+    }
     text += `================================\n\n\n`
     return text
   }

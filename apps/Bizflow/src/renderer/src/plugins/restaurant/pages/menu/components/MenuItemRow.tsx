@@ -1,17 +1,10 @@
 // src/pages/menu/components/MenuItemRow.tsx
 import React from 'react'
-import {
-  Clock,
-  Edit2,
-  Trash2,
-  ToggleLeft,
-  ToggleRight,
-  Package,
-  Utensils
-} from 'lucide-react'
+import { Clock, Edit2, Trash2, ToggleLeft, ToggleRight, Package, Utensils } from 'lucide-react'
 import { MenuItemData } from '../types'
 import { analyzeDishFinancials, calculateAvailablePortions, formatCurrency } from '../utils'
 import { sounds } from '../../utils/sound'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   item: MenuItemData
@@ -28,13 +21,14 @@ export const MenuItemRow: React.FC<Props> = ({
   onOpenCostBreakdown,
   onDelete
 }) => {
+  const { t } = useLanguage()
   const financials = analyzeDishFinancials(item.price, item.cost)
   const { availablePortions } = calculateAvailablePortions(item)
   const hasRecipe = Boolean(item.recipe?.ingredients?.length)
 
   return (
     <div
-      className={`group p-4 rounded-3xl border transition-all flex items-center justify-between gap-4 ${
+      className={`group p-3 sm:p-4 rounded-3xl border transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 ${
         item.isAvailable
           ? 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-amber-400 shadow-xs'
           : 'bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60'
@@ -62,19 +56,21 @@ export const MenuItemRow: React.FC<Props> = ({
               }`}
             >
               <Package className="w-3 h-3" />
-              {availablePortions === 0 ? '0 in stock' : `${availablePortions} left`}
+              {availablePortions === 0
+                ? t('restMenuPortionsOut')
+                : t('restMenuLeftStock', { count: availablePortions })}
             </span>
           )}
 
           {!hasRecipe && (
             <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px] font-bold">
-              No Recipe BOM
+              {t('restMenuNoRecipeBadge')}
             </span>
           )}
 
           {!item.isAvailable && (
             <span className="px-2 py-0.5 rounded-lg bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[10px] font-black uppercase">
-              86'd Out of Stock
+              {t('restMenuUnavailable')}
             </span>
           )}
         </div>
@@ -83,9 +79,10 @@ export const MenuItemRow: React.FC<Props> = ({
           <p className="text-xs text-slate-400 line-clamp-1">{item.description}</p>
         )}
 
-        <div className="text-[11px] text-slate-400 flex items-center gap-3 pt-0.5">
+        <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap pt-0.5">
           <span className="flex items-center gap-1 font-medium">
-            <Clock className="w-3 h-3" /> {item.preparationTime}m prep
+            <Clock className="w-3 h-3" />{' '}
+            {t('restMenuPrepMinutes', { count: item.preparationTime })}
           </span>
           <span>•</span>
           <button
@@ -96,13 +93,15 @@ export const MenuItemRow: React.FC<Props> = ({
             }}
             className="text-amber-600 dark:text-amber-400 font-bold hover:underline flex items-center gap-1"
           >
-            <Utensils className="w-3 h-3" /> View Ingredient BOM (${item.cost.toFixed(2)} cost)
+            <Utensils className="w-3 h-3" />
+            {t('restMenuCostBreakdownOpen')}{' '}
+            {t('restMenuCostBreakdownCost', { amount: formatCurrency(item.cost) })}
           </button>
         </div>
       </div>
 
       {/* ─── Financial Margin Card ────────────────────────────────── */}
-      <div className="text-right shrink-0">
+      <div className="flex sm:block items-center justify-between shrink-0 text-left sm:text-right">
         <div className="text-base font-black text-slate-900 dark:text-white">
           {formatCurrency(item.price)}
         </div>
@@ -115,24 +114,32 @@ export const MenuItemRow: React.FC<Props> = ({
                 : 'text-rose-600 dark:text-rose-400'
           }`}
         >
-          {financials.costPercent}% Cost (+{formatCurrency(financials.profit)} Profit)
+          {t('restMenuRowCostProfit', {
+            percent: financials.costPercent,
+            profit: formatCurrency(financials.profit)
+          })}
         </div>
       </div>
 
       {/* ─── Action Controls ──────────────────────────────────────── */}
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
         <button
           type="button"
           onClick={() => {
             sounds.playBump()
             onToggle86(item.id)
           }}
-          className={`p-1.5 rounded-xl transition-colors ${
+          className={`p-2 sm:p-1.5 rounded-xl transition-colors ${
             item.isAvailable ? 'text-emerald-500 hover:bg-emerald-50' : 'text-slate-400'
           }`}
-          title={item.isAvailable ? '86 Out of Stock' : 'Mark Available'}
+          aria-label={item.isAvailable ? t('restMenuAction86') : t('restMenuActionAvailable')}
+          title={item.isAvailable ? t('restMenuAction86') : t('restMenuActionAvailable')}
         >
-          {item.isAvailable ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
+          {item.isAvailable ? (
+            <ToggleRight className="w-6 h-6" />
+          ) : (
+            <ToggleLeft className="w-6 h-6" />
+          )}
         </button>
 
         <button
@@ -142,7 +149,8 @@ export const MenuItemRow: React.FC<Props> = ({
             onEdit(item)
           }}
           className="p-2 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100"
-          title="Edit Dish & Modifiers"
+          aria-label={t('restMenuActionEdit')}
+          title={t('restMenuActionEdit')}
         >
           <Edit2 className="w-4 h-4" />
         </button>
@@ -151,7 +159,8 @@ export const MenuItemRow: React.FC<Props> = ({
           type="button"
           onClick={() => onDelete(item.id)}
           className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-          title="Delete Dish"
+          aria-label={t('restMenuActionDelete')}
+          title={t('restMenuActionDelete')}
         >
           <Trash2 className="w-4 h-4" />
         </button>

@@ -26,13 +26,31 @@ interface SettleResult {
   isFullyPaid: boolean
 }
 
+export interface ActiveShiftInfo {
+  id: string
+  serverId: string
+  serverName: string
+  startCash: number
+}
+
 interface RestaurantContextType {
-  currentView: 'floor' | 'pos' | 'kds' | 'sales' | 'menu' | 'inventory' | 'shifts' | 'waste' | 'reservations'
+  currentView:
+    | 'floor'
+    | 'pos'
+    | 'kds'
+    | 'sales'
+    | 'menu'
+    | 'inventory'
+    | 'shifts'
+    | 'waste'
+    | 'reservations'
   setCurrentView: (view: any) => void
 
   activeTable: RestaurantTableData | null
   activeOrderId: string | null
   activeOrderData: any | null
+  activeShift: ActiveShiftInfo | null
+  refreshActiveShift: () => Promise<ActiveShiftInfo | null>
 
   openTableInPos: (table: RestaurantTableData, guestCount?: number) => Promise<void>
   openQuickCheckInPos: (type: 'takeout' | 'bar_tab' | 'delivery') => Promise<void>
@@ -58,8 +76,15 @@ interface RestaurantContextType {
   // Send to Kitchen & Settlement
   isSendingToKitchen: boolean
   sendDraftsToKitchen: () => Promise<boolean>
-  processOrderPayment: (amount: number, method: string, reference?: string, tip?: number) => Promise<SettleResult>
+  processOrderPayment: (
+    amount: number,
+    method: string,
+    reference?: string,
+    tip?: number
+  ) => Promise<SettleResult>
   applyOrderDiscount: (type: 'percentage' | 'fixed', amount: number) => Promise<void>
+  voidLineItem: (itemId: string, voidReason: string) => Promise<boolean>
+  voidActiveOrder: (voidReason: string) => Promise<boolean>
   refreshActiveOrder: () => Promise<void>
   clearActiveSession: () => void
 }
@@ -67,14 +92,45 @@ interface RestaurantContextType {
 const RestaurantContext = createContext<RestaurantContextType | null>(null)
 
 export const RestaurantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentView, setCurrentView] = useState<'floor' | 'pos' | 'kds' | 'sales' | 'menu' | 'inventory' | 'shifts' | 'waste' | 'reservations'>('floor')
+  const [currentView, setCurrentView] = useState<
+    'floor' | 'pos' | 'kds' | 'sales' | 'menu' | 'inventory' | 'shifts' | 'waste' | 'reservations'
+  >('floor')
   const [activeTable, setActiveTable] = useState<RestaurantTableData | null>(null)
   const [activeOrderId, setActiveOrderId] = useState<string | null>(null)
   const [activeOrderData, setActiveOrderData] = useState<any | null>(null)
+  const [activeShift, setActiveShift] = useState<ActiveShiftInfo | null>(null)
 
   const [draftItems, setDraftItems] = useState<DraftCartItem[]>([])
   const [activeSeat, setActiveSeat] = useState<number>(1)
   const [isSendingToKitchen, setIsSendingToKitchen] = useState(false)
+
+  // Every order must be stamped with the open drawer session, otherwise the
+  // shift's Z-report (which filters on serverId/shiftId) reports zero sales.
+  const refreshActiveShift = useCallback(async (): Promise<ActiveShiftInfo | null> => {
+    try {
+      const shift = await window.api.restaurant.getActiveShift()
+      if (shift) {
+        const info: ActiveShiftInfo = {
+          id: shift.id,
+          serverId: shift.serverId,
+          serverName: shift.serverName,
+          startCash: shift.startCash
+        }
+        setActiveShift(info)
+        return info
+      }
+      setActiveShift(null)
+      return null
+    } catch (e) {
+      console.error(e)
+      setActiveShift(null)
+      return null
+    }
+  }, [])
+
+  useEffect(() => {
+    refreshActiveShift()
+  }, [refreshActiveShift])
 
   // Fetch full order data from backend
   const refreshActiveOrder = useCallback(async () => {
@@ -110,10 +166,13 @@ export const RestaurantProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setActiveOrderId(existingOrder.id)
     } else {
       try {
+        const shift = activeShift ?? (await refreshActiveShift())
         const newOrder = await window.api.restaurant.openOrder({
           tableId: table.id,
           guestCount,
-          serverName: 'Server',
+          serverName: shift?.serverName || 'Server',
+          serverId: shift?.serverId || null,
+          shiftId: shift?.id || null,
           orderType: 'dine_in'
         })
         setActiveOrderId(newOrder.id)
@@ -134,10 +193,13 @@ export const RestaurantProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setActiveSeat(1)
 
     try {
+      const shift = activeShift ?? (await refreshActiveShift())
       const newOrder = await window.api.restaurant.openOrder({
         tableId: null,
         guestCount: 1,
-        serverName: 'Cashier',
+        serverName: shift?.serverName || 'Cashier',
+        serverId: shift?.serverId || null,
+        shiftId: shift?.id || null,
         orderType: type
       })
       setActiveOrderId(newOrder.id)
@@ -187,12 +249,18 @@ export const RestaurantProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     const unitPrice = item.price + extraDelta
 
     // Sort modifiers for accurate comparison
-    const sortedModKey = modifiers.map((m) => `${m.name}_${m.priceDelta}`).sort().join('|')
+    const sortedModKey = modifiers
+      .map((m) => `${m.name}_${m.priceDelta}`)
+      .sort()
+      .join('|')
 
     setDraftItems((prev) => {
       // Find matching existing line item in draft cart
       const existingIdx = prev.findIndex((d) => {
-        const dModKey = d.modifiers.map((m) => `${m.name}_${m.priceDelta}`).sort().join('|')
+        const dModKey = d.modifiers
+          .map((m) => `${m.name}_${m.priceDelta}`)
+          .sort()
+          .join('|')
         return (
           d.menuItemId === item.id &&
           d.seatNumber === seatNumber &&
@@ -239,7 +307,9 @@ export const RestaurantProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       setDraftItems((prev) => prev.filter((i) => i.clientId !== clientId))
     } else {
       setDraftItems((prev) =>
-        prev.map((i) => (i.clientId === clientId ? { ...i, quantity: qty, totalPrice: i.unitPrice * qty } : i))
+        prev.map((i) =>
+          i.clientId === clientId ? { ...i, quantity: qty, totalPrice: i.unitPrice * qty } : i
+        )
       )
     }
   }
@@ -331,8 +401,46 @@ export const RestaurantProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   const applyOrderDiscount = async (type: 'percentage' | 'fixed', amount: number) => {
     if (!activeOrderId) return
-    await window.api.restaurant.applyDiscount({ orderId: activeOrderId, discountType: type, discountAmount: amount })
+    await window.api.restaurant.applyDiscount({
+      orderId: activeOrderId,
+      discountType: type,
+      discountAmount: amount
+    })
     await refreshActiveOrder()
+  }
+
+  // Void a single line, whether or not it was already fired to the kitchen.
+  const voidLineItem = async (itemId: string, voidReason: string): Promise<boolean> => {
+    if (!activeOrderId) return false
+    try {
+      sounds.playBump()
+      await window.api.restaurant.removeOrderItem({ itemId, voidReason })
+      await refreshActiveOrder()
+      return true
+    } catch (err: any) {
+      sounds.playError()
+      alert(err?.message || 'Failed to void item')
+      return false
+    }
+  }
+
+  // Void the whole check (walkout, comp, mis-ring) and free the table.
+  const voidActiveOrder = async (voidReason: string): Promise<boolean> => {
+    if (!activeOrderId) return false
+    try {
+      await window.api.restaurant.closeOrder({
+        orderId: activeOrderId,
+        status: 'voided',
+        voidReason,
+        notes: voidReason
+      })
+      await refreshActiveOrder()
+      return true
+    } catch (err: any) {
+      sounds.playError()
+      alert(err?.message || 'Failed to void check')
+      return false
+    }
   }
 
   return (
@@ -358,6 +466,10 @@ export const RestaurantProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         sendDraftsToKitchen,
         processOrderPayment,
         applyOrderDiscount,
+        voidLineItem,
+        voidActiveOrder,
+        activeShift,
+        refreshActiveShift,
         refreshActiveOrder,
         clearActiveSession
       }}

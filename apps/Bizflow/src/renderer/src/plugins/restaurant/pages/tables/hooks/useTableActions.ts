@@ -51,10 +51,20 @@ export function useTableActions(onSuccess: () => void) {
     setSubmitting(true)
     setActionError(null)
     try {
+      // Stamp the drawer session the same way the POS does, otherwise checks
+      // seated from the floor plan never roll up into the shift's Z-report.
+      let shift: any = null
+      try {
+        shift = await window.api.restaurant.getActiveShift()
+      } catch {
+        shift = null
+      }
       await window.api.restaurant.openOrder({
         tableId: data.tableId,
         guestCount: Number(data.guestCount || 1),
-        serverName: data.serverName || 'Staff',
+        serverName: data.serverName || shift?.serverName || 'Staff',
+        serverId: shift?.serverId,
+        shiftId: shift?.id,
         notes: data.notes || ''
       })
       onSuccess()

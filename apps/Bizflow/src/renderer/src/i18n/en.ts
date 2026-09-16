@@ -13,6 +13,7 @@ import { enPart7 } from './en.part.7'
 import { enPart8 } from './en.part.8'
 import { enPart9 } from './en.part.9'
 import { enEmployee } from './en.employee'
+import { enRestaurant } from './en.restaurant'
 import { enSettings } from './en.settings'
 
 export const en = {
@@ -28,4 +29,5 @@ export const en = {
   ...enPart9,
   ...enEmployee,
   ...enSettings,
+  ...enRestaurant
 }

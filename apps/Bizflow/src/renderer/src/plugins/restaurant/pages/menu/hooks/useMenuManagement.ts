@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { MenuItemData, MenuItemFormData } from '../types'
+import { MenuItemData, MenuItemFormData, RestaurantIngredientData } from '../types'
 
 export function useMenuManagement() {
   const [items, setItems] = useState<MenuItemData[]>([])
+  const [ingredients, setIngredients] = useState<RestaurantIngredientData[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL')
@@ -23,9 +24,21 @@ export function useMenuManagement() {
     }
   }, [])
 
+  // Loaded alongside the menu because the recipe editor costs lines against the
+  // ingredient's own unit and purchase price.
+  const loadIngredients = useCallback(async () => {
+    try {
+      const data = await window.api.restaurant.getIngredients()
+      setIngredients(data || [])
+    } catch {
+      setIngredients([])
+    }
+  }, [])
+
   useEffect(() => {
     loadItems()
-  }, [loadItems])
+    loadIngredients()
+  }, [loadItems, loadIngredients])
 
   const categories = useMemo(() => {
     const set = new Set(items.map((i) => i.category).filter(Boolean))
@@ -76,9 +89,7 @@ export function useMenuManagement() {
 
   const toggleItem86 = async (id: string) => {
     // Optimistic local update
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, isAvailable: !i.isAvailable } : i))
-    )
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, isAvailable: !i.isAvailable } : i)))
     try {
       await window.api.restaurant.toggleItem86(id)
     } catch {
@@ -134,10 +145,42 @@ export function useMenuManagement() {
     }
   }
 
+  /**
+   * Persists a recipe BOM. The main process re-derives `menuItem.cost` from these
+   * lines, so the menu has to be re-read afterwards to show the new food cost.
+   */
+  const saveRecipe = async (
+    menuItemId: string,
+    payload: {
+      yieldCount: number
+      prepNotes: string
+      ingredients: Array<{ ingredientId: string; quantity: number; unit: string; notes?: string }>
+    }
+  ) => {
+    try {
+      await window.api.restaurant.saveRecipe({ menuItemId, ...payload })
+      await loadItems()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const deleteRecipe = async (recipeId: string) => {
+    try {
+      await window.api.restaurant.deleteRecipe(recipeId)
+      await loadItems()
+      return true
+    } catch {
+      return false
+    }
+  }
+
   return {
     items: filteredItems,
     groupedByCategory,
     categories,
+    ingredients,
     loading,
     error,
     stats,
@@ -152,6 +195,8 @@ export function useMenuManagement() {
     refreshMenu: loadItems,
     toggleItem86,
     saveItem,
-    deleteItem
+    deleteItem,
+    saveRecipe,
+    deleteRecipe
   }
 }

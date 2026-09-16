@@ -12,9 +12,11 @@ import { ReceiptThermalPreview } from './components/ReceiptThermalPreview'
 import { useRestaurant } from '../../context/RestaurantContext'
 import { PosMenuItem } from './types'
 import { sounds } from '../utils/sound'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 import { CheckCircle2, Printer, ArrowLeft } from 'lucide-react'
 
 export default function PosOrderPadPage() {
+  const { t } = useLanguage()
   const {
     activeOrderData,
     activeSeat,
@@ -108,15 +110,15 @@ export default function PosOrderPadPage() {
 
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Check Settled Successfully!
+                {t('restPosSettledTitle')}
               </h3>
-              <p className="text-xs text-slate-400 mt-1">Payment processed and table cleared.</p>
+              <p className="text-xs text-slate-400 mt-1">{t('restPosSettledBody')}</p>
             </div>
 
             {settledChangeDue > 0 && (
               <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700">
                 <span className="text-[10px] font-black uppercase text-amber-800 dark:text-amber-300 tracking-wider block">
-                  Change Due to Patron
+                  {t('restPosChangeDue')}
                 </span>
                 <span className="text-2xl font-black text-amber-700 dark:text-amber-400 block mt-0.5">
                   ${settledChangeDue.toFixed(2)}
@@ -131,7 +133,7 @@ export default function PosOrderPadPage() {
                 className="py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs font-black flex items-center justify-center gap-1.5 hover:bg-slate-200"
               >
                 <Printer className="w-4 h-4" />
-                <span>Print Check</span>
+                <span>{t('restPosPrintCheck')}</span>
               </button>
 
               <button
@@ -140,7 +142,7 @@ export default function PosOrderPadPage() {
                 className="py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>Back to Floor</span>
+                <span>{t('restPosBackToFloor')}</span>
               </button>
             </div>
           </div>
@@ -161,10 +163,13 @@ export default function PosOrderPadPage() {
         onClose={() => setShowSplitCheck(false)}
         order={activeOrderData}
         onSplitBySeats={async (seats) => {
-          if (activeOrderData) {
-            await window.api.restaurant.splitCheckBySeat({ orderId: activeOrderData.id, seatNumbers: seats })
-            await refreshActiveOrder()
-          }
+          if (!activeOrderData) return
+          const result = await window.api.restaurant.splitCheckBySeat({
+            sourceOrderId: activeOrderData.id,
+            seatNumbers: seats
+          })
+          await refreshActiveOrder()
+          return result
         }}
       />
 

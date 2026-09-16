@@ -6,93 +6,174 @@ import { broadcastRestaurantEvent } from '../utils/events'
 const log = createLogger('Restaurant:Inventory')
 
 export function registerInventoryHandlers(prisma: any) {
+  ipcMain.handle(
+    'restaurant:createIngredient',
+    async (
+      _e,
+      data: {
+        name: string
+        category: string
+        unit: string
+        currentStock: number
+        minStockAlert: number
+        costPerUnit: number
+        supplierName?: string
+        notes?: string
+      }
+    ) => {
+      return await prisma.$transaction(async (tx: any) => {
+        const { normalizedQty: baseStock } = convertToBaseUnit(
+          Number(data.currentStock || 0),
+          data.unit || 'g'
+        )
+        const { normalizedQty: baseAlert } = convertToBaseUnit(
+          Number(data.minStockAlert || 500),
+          data.unit || 'g'
+        )
 
-  ipcMain.handle('restaurant:createIngredient', async (_e, data: {
-    name: string
-    category: string
-    unit: string
-    currentStock: number
-    minStockAlert: number
-    costPerUnit: number
-    supplierName?: string
-    notes?: string
-  }) => {
-    return await prisma.$transaction(async (tx: any) => {
-      const { normalizedQty: baseStock } = convertToBaseUnit(Number(data.currentStock || 0), data.unit || 'g')
-      const { normalizedQty: baseAlert } = convertToBaseUnit(Number(data.minStockAlert || 500), data.unit || 'g')
-
-      const ingredient = await tx.restaurantIngredient.create({
-        data: {
-          name: data.name,
-          category: data.category || 'General',
-          unit: data.unit || 'g',
-          currentStock: roundMoney(baseStock),
-          minStockAlert: roundMoney(baseAlert),
-          costPerUnit: roundMoney(Number(data.costPerUnit || 0)),
-          supplierName: data.supplierName || null,
-          notes: data.notes || null
-        }
-      })
-
-      if (baseStock > 0) {
-        await tx.ingredientStockMovement.create({
+        const ingredient = await tx.restaurantIngredient.create({
           data: {
-            ingredientId: ingredient.id,
-            type: 'restock',
-            quantity: roundMoney(baseStock),
-            unitCost: ingredient.costPerUnit,
-            notes: 'Initial inventory entry'
+            name: data.name,
+            category: data.category || 'General',
+            unit: data.unit || 'g',
+            currentStock: roundMoney(baseStock),
+            minStockAlert: roundMoney(baseAlert),
+            costPerUnit: roundMoney(Number(data.costPerUnit || 0)),
+            supplierName: data.supplierName || null,
+            notes: data.notes || null
           }
         })
-      }
 
-      return ingredient
-    })
-  })
-
-  ipcMain.handle('restaurant:adjustStock', async (_e, data: {
-    ingredientId: string
-    type: 'restock' | 'manual_adjustment'
-    quantity: number
-    unitCost?: number
-    notes?: string
-  }) => {
-    return await prisma.$transaction(async (tx: any) => {
-      const ingredient = await tx.restaurantIngredient.findUnique({ where: { id: data.ingredientId } })
-      if (!ingredient) throw new Error('Ingredient not found')
-
-      const qtyDelta = roundMoney(Number(data.quantity))
-      const newStock = roundMoney(
-        data.type === 'manual_adjustment' ? Math.max(0, qtyDelta) : Math.max(0, ingredient.currentStock + qtyDelta)
-      )
-
-      const movementQty = data.type === 'manual_adjustment' ? roundMoney(newStock - ingredient.currentStock) : qtyDelta
-
-      const updated = await tx.restaurantIngredient.update({
-        where: { id: data.ingredientId },
-        data: {
-          currentStock: newStock,
-          ...(data.unitCost !== undefined ? { costPerUnit: roundMoney(Number(data.unitCost)) } : {})
+        if (baseStock > 0) {
+          await tx.ingredientStockMovement.create({
+            data: {
+              ingredientId: ingredient.id,
+              type: 'restock',
+              quantity: roundMoney(baseStock),
+              unitCost: ingredient.costPerUnit,
+              notes: 'Initial inventory entry'
+            }
+          })
         }
-      })
 
-      await tx.ingredientStockMovement.create({
-        data: {
-          ingredientId: data.ingredientId,
-          type: data.type,
-          quantity: movementQty,
-          unitCost: data.unitCost !== undefined ? roundMoney(Number(data.unitCost)) : ingredient.costPerUnit,
-          notes: data.notes || null
-        }
+        return ingredient
       })
+    }
+  )
 
-      if (newStock <= ingredient.minStockAlert) {
-        broadcastRestaurantEvent('inventory:low_stock', updated)
+  ipcMain.handle(
+    'restaurant:adjustStock',
+    async (
+      _e,
+      data: {
+        ingredientId: string
+        type: 'restock' | 'manual_adjustment'
+        quantity: number
+        unitCost?: number
+        notes?: string
       }
+    ) => {
+      return await prisma.$transaction(async (tx: any) => {
+        const ingredient = await tx.restaurantIngredient.findUnique({
+          where: { id: data.ingredientId }
+        })
+        if (!ingredient) throw new Error('Ingredient not found')
 
-      return updated
-    })
-  })
+        const qtyDelta = roundMoney(Number(data.quantity))
+        const newStock = roundMoney(
+          data.type === 'manual_adjustment'
+            ? Math.max(0, qtyDelta)
+            : Math.max(0, ingredient.currentStock + qtyDelta)
+        )
+
+        const movementQty =
+          data.type === 'manual_adjustment'
+            ? roundMoney(newStock - ingredient.currentStock)
+            : qtyDelta
+
+        const updated = await tx.restaurantIngredient.update({
+          where: { id: data.ingredientId },
+          data: {
+            currentStock: newStock,
+            ...(data.unitCost !== undefined
+              ? { costPerUnit: roundMoney(Number(data.unitCost)) }
+              : {})
+          }
+        })
+
+        await tx.ingredientStockMovement.create({
+          data: {
+            ingredientId: data.ingredientId,
+            type: data.type,
+            quantity: movementQty,
+            unitCost:
+              data.unitCost !== undefined
+                ? roundMoney(Number(data.unitCost))
+                : ingredient.costPerUnit,
+            notes: data.notes || null
+          }
+        })
+
+        if (newStock <= ingredient.minStockAlert) {
+          broadcastRestaurantEvent('inventory:low_stock', updated)
+        }
+
+        return updated
+      })
+    }
+  )
+
+  ipcMain.handle(
+    'restaurant:updateIngredient',
+    async (
+      _e,
+      data: {
+        id: string
+        name?: string
+        category?: string
+        unit?: string
+        minStockAlert?: number
+        costPerUnit?: number
+        supplierName?: string
+        notes?: string
+      }
+    ) => {
+      return await prisma.$transaction(async (tx: any) => {
+        if (!data?.id) throw new Error('Ingredient id is required')
+
+        const current = await tx.restaurantIngredient.findUnique({ where: { id: data.id } })
+        if (!current) throw new Error('Ingredient not found')
+
+        // Stock levels never move through this path — they are audited through
+        // adjustStock so every change leaves a stock movement behind.
+        const nextUnit = data.unit || current.unit
+        const nextAlert = data.minStockAlert !== undefined ? Number(data.minStockAlert) : null
+
+        const updated = await tx.restaurantIngredient.update({
+          where: { id: data.id },
+          data: {
+            ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+            ...(data.category !== undefined ? { category: data.category } : {}),
+            ...(data.unit !== undefined ? { unit: nextUnit } : {}),
+            ...(nextAlert !== null
+              ? { minStockAlert: roundMoney(convertToBaseUnit(nextAlert, nextUnit).normalizedQty) }
+              : {}),
+            ...(data.costPerUnit !== undefined
+              ? { costPerUnit: roundMoney(Number(data.costPerUnit)) }
+              : {}),
+            ...(data.supplierName !== undefined ? { supplierName: data.supplierName || null } : {}),
+            ...(data.notes !== undefined ? { notes: data.notes || null } : {})
+          }
+        })
+
+        if (updated.currentStock <= updated.minStockAlert) {
+          broadcastRestaurantEvent('inventory:low_stock', updated)
+        }
+
+        return updated
+      })
+    }
+  )
 
   ipcMain.handle('restaurant:getStockMovements', async (_e, ingredientId?: string) => {
     try {
@@ -111,26 +192,26 @@ export function registerInventoryHandlers(prisma: any) {
     }
   })
   // In src/restaurant/handlers/inventory.ts -> getIngredients handler:
-ipcMain.handle('restaurant:getIngredients', async () => {
-  try {
-    return await prisma.restaurantIngredient.findMany({
-      where: { isActive: true },
-      include: {
-        recipeUsages: {
-          include: {
-            recipe: {
-              include: { menuItem: true }
+  ipcMain.handle('restaurant:getIngredients', async () => {
+    try {
+      return await prisma.restaurantIngredient.findMany({
+        where: { isActive: true },
+        include: {
+          recipeUsages: {
+            include: {
+              recipe: {
+                include: { menuItem: true }
+              }
             }
           }
-        }
-      },
-      orderBy: [{ category: 'asc' }, { name: 'asc' }]
-    })
-  } catch (err) {
-    log.error('getIngredients error', err)
-    throw err
-  }
-})
+        },
+        orderBy: [{ category: 'asc' }, { name: 'asc' }]
+      })
+    } catch (err) {
+      log.error('getIngredients error', err)
+      throw err
+    }
+  })
 
   ipcMain.handle('restaurant:deleteIngredient', async (_e, id: string) => {
     try {

@@ -56,17 +56,29 @@ export function useInventory() {
   const saveIngredient = async (data: IngredientFormData, editingId?: string) => {
     try {
       if (editingId) {
+        const before = ingredients.find((i) => i.id === editingId)
+        const nextStock = Number(data.currentStock)
         await window.api.restaurant.updateIngredient({
           id: editingId,
           name: data.name,
           category: data.category,
           unit: data.unit,
-          currentStock: Number(data.currentStock),
           minStockAlert: Number(data.minStockAlert),
           costPerUnit: Number(data.costPerUnit),
           ...(data.supplierName ? { supplierName: data.supplierName } : {}),
           ...(data.notes ? { notes: data.notes } : {})
         })
+        // Stock only ever moves through adjustStock so every change leaves a
+        // movement row behind. Writing currentStock directly from this form
+        // would silently overwrite the on-hand count with no audit record.
+        if (before && Number.isFinite(nextStock) && nextStock !== before.currentStock) {
+          await window.api.restaurant.adjustStock({
+            ingredientId: editingId,
+            type: 'manual_adjustment',
+            quantity: nextStock,
+            notes: 'Corrected from the ingredient editor'
+          })
+        }
       } else {
         await window.api.restaurant.createIngredient({
           name: data.name,

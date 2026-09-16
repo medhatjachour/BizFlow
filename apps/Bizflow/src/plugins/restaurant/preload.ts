@@ -35,11 +35,11 @@ export const restaurantPreload = {
   openOrder: (data: any) => ipcRenderer.invoke('restaurant:openOrder', data),
   addOrderItem: (data: any) => ipcRenderer.invoke('restaurant:addOrderItem', data),
   updateOrderItem: (data: any) => ipcRenderer.invoke('restaurant:updateOrderItem', data),
-  removeOrderItem: (data: { itemId: string; voidReason?: string }) =>
+  removeOrderItem: (data: { itemId: string; voidReason?: string } | string) =>
     ipcRenderer.invoke('restaurant:removeOrderItem', data),
   fireCourse: (data: { orderId: string; course: string }) =>
     ipcRenderer.invoke('restaurant:fireCourse', data),
-  splitCheckBySeat: (data: { sourceOrderId: string; seatNumbers: number[] }) =>
+  splitCheckBySeat: (data: { sourceOrderId?: string; orderId?: string; seatNumbers: number[] }) =>
     ipcRenderer.invoke('restaurant:splitCheckBySeat', data),
   applyDiscount: (data: any) => ipcRenderer.invoke('restaurant:applyDiscount', data),
   processPayment: (data: any) => ipcRenderer.invoke('restaurant:processPayment', data),
@@ -61,6 +61,7 @@ export const restaurantPreload = {
   // ─── Inventory, Pantry & BOM ─────────────────────────────────────────────────
   getIngredients: () => ipcRenderer.invoke('restaurant:getIngredients'),
   createIngredient: (data: any) => ipcRenderer.invoke('restaurant:createIngredient', data),
+  updateIngredient: (data: any) => ipcRenderer.invoke('restaurant:updateIngredient', data),
   adjustStock: (data: any) => ipcRenderer.invoke('restaurant:adjustStock', data),
   getStockMovements: (ingredientId?: string) =>
     ipcRenderer.invoke('restaurant:getStockMovements', ingredientId),
@@ -81,7 +82,12 @@ export const restaurantPreload = {
   getReservations: (opts?: any) => ipcRenderer.invoke('restaurant:getReservations', opts),
   createReservation: (data: any) => ipcRenderer.invoke('restaurant:createReservation', data),
   updateReservation: (data: any) => ipcRenderer.invoke('restaurant:updateReservation', data),
-  seatReservation: (data: any) => ipcRenderer.invoke('restaurant:seatReservation', data),
+  seatReservation: (data: {
+    id?: string
+    reservationId?: string
+    tableId?: string
+    serverName?: string
+  }) => ipcRenderer.invoke('restaurant:seatReservation', data),
   deleteReservation: (id: string) => ipcRenderer.invoke('restaurant:deleteReservation', id),
 
   // ─── Overview & Reports ──────────────────────────────────────────────────────

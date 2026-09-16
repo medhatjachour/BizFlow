@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react'
 import { X, CreditCard, Banknote, Smartphone, Gift, CheckCircle2 } from 'lucide-react'
 import { PosOrder } from '../types'
 import { sounds } from '../../utils/sound'
+import { useLanguage } from '@renderer/contexts/LanguageContext'
 
 interface Props {
   isOpen: boolean
@@ -13,11 +14,13 @@ interface Props {
 }
 
 const METHODS = [
-  { id: 'cash', label: 'Cash Tender', icon: Banknote },
-  { id: 'card', label: 'Credit / Debit', icon: CreditCard },
-  { id: 'apple_pay', label: 'Contactless', icon: Smartphone },
-  { id: 'voucher', label: 'Gift Voucher', icon: Gift }
+  { id: 'cash', labelKey: 'restPosMethodCash', icon: Banknote },
+  { id: 'card', labelKey: 'restPosMethodCard', icon: CreditCard },
+  { id: 'apple_pay', labelKey: 'restPosMethodContactless', icon: Smartphone },
+  { id: 'voucher', labelKey: 'restPosMethodVoucher', icon: Gift }
 ]
+
+const round2 = (n: number): number => Math.round(n * 100) / 100
 
 export const PaymentSplitModal: React.FC<Props> = ({
   isOpen,
@@ -26,12 +29,13 @@ export const PaymentSplitModal: React.FC<Props> = ({
   onProcessPayment,
   onSettlementSuccess
 }) => {
+  const { t } = useLanguage()
   // Every hook runs before the early return. `tenderAmount` is seeded from the
   // order's balance, so the caller mounts this modal only once an order exists.
   // Previously the guard came first, which made the hook count change from 0 to
   // 6 as soon as the cashier tapped Pay.
   const alreadyPaid = (order?.payments || []).reduce((s, p) => s + p.amount, 0)
-  const remainingBalance = Math.max(0, Math.round(((order?.total ?? 0) - alreadyPaid) * 100) / 100)
+  const remainingBalance = Math.max(0, round2((order?.total ?? 0) - alreadyPaid))
 
   const [method, setMethod] = useState('cash')
   const [tipRate, setTipRate] = useState<number>(0)
@@ -40,15 +44,22 @@ export const PaymentSplitModal: React.FC<Props> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const tipValue = useMemo(() => {
-    if (customTip) return Number(customTip) || 0
-    return Math.round(remainingBalance * tipRate * 100) / 100
+    if (customTip) return Math.max(0, Number(customTip) || 0)
+    return round2(remainingBalance * tipRate)
   }, [customTip, tipRate, remainingBalance])
 
   if (!isOpen || !order) return null
 
-  const totalRequired = Math.round((remainingBalance + tipValue) * 100) / 100
+  const totalRequired = round2(remainingBalance + tipValue)
   const tenderNumber = Number(tenderAmount) || totalRequired
-  const changeDue = method === 'cash' ? Math.max(0, Math.round((tenderNumber - totalRequired) * 100) / 100) : 0
+  // The tender is split explicitly: `amount` is principal-only and `tipAmount`
+  // carries the gratuity. The old code folded the tip into a cash payment's
+  // amount *and* sent it again as tipAmount, so a cash bill with a tip was
+  // double-counted against the check.
+  const principalApplied = round2(Math.min(tenderNumber, remainingBalance))
+  const tipApplied = round2(Math.min(tipValue, Math.max(0, tenderNumber - principalApplied)))
+  const changeDue =
+    method === 'cash' ? round2(Math.max(0, tenderNumber - principalApplied - tipApplied)) : 0
 
   const handleExactCash = () => {
     sounds.playBump()
@@ -64,8 +75,7 @@ export const PaymentSplitModal: React.FC<Props> = ({
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      const payAmount = method === 'cash' ? Math.min(tenderNumber, totalRequired) : tenderNumber
-      const result = await onProcessPayment(payAmount, method, undefined, tipValue)
+      const result = await onProcessPayment(principalApplied, method, undefined, tipApplied)
 
       if (result?.isFullyPaid || result?.remaining <= 0.001) {
         sounds.playSuccess()
@@ -93,12 +103,20 @@ export const PaymentSplitModal: React.FC<Props> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-white">Check Settlement</h3>
+            <h3 className="text-base font-black text-slate-900 dark:text-white">
+              {t('restPosSettleTitle')}
+            </h3>
             <p className="text-xs text-slate-400">
-              Check #{order.orderNumber || '1'} • {order.table ? `Table #${order.table.number}` : 'Counter Tab'}
+              {t('restPosCheckLabel', { number: order.orderNumber || '1' })} •{' '}
+              {order.table ? `${t('restPosTable')} #${order.table.number}` : t('restPosCounterTab')}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600"
+            aria-label={t('restPosCancel')}
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -106,14 +124,22 @@ export const PaymentSplitModal: React.FC<Props> = ({
         {/* Due Banner */}
         <div className="p-4 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-center">
           <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">
-            Total Balance Due
+            {t('restPosBalanceDueTotal')}
           </span>
           <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400 my-0.5">
             ${totalRequired.toFixed(2)}
           </div>
           {alreadyPaid > 0 && (
             <span className="text-[11px] font-bold text-slate-400">
-              Partial paid: ${alreadyPaid.toFixed(2)} / ${order.total.toFixed(2)}
+              {t('restPosPartialPaid', {
+                paid: `$${alreadyPaid.toFixed(2)}`,
+                total: `$${order.total.toFixed(2)}`
+              })}
+            </span>
+          )}
+          {tipValue > 0 && (
+            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 block mt-1">
+              {t('restPosAppliedTip', { amount: `$${tipValue.toFixed(2)}` })}
             </span>
           )}
         </div>
@@ -138,7 +164,7 @@ export const PaymentSplitModal: React.FC<Props> = ({
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                <span>{m.label}</span>
+                <span>{t(m.labelKey)}</span>
               </button>
             )
           })}
@@ -147,7 +173,7 @@ export const PaymentSplitModal: React.FC<Props> = ({
         {/* Gratuity / Tip Presets */}
         <div>
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
-            Server Gratuity
+            {t('restPosGratuity')}
           </span>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
             {[0, 0.1, 0.15, 0.2].map((r) => (
@@ -165,7 +191,7 @@ export const PaymentSplitModal: React.FC<Props> = ({
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                 }`}
               >
-                {r === 0 ? 'No Tip' : `${r * 100}%`}
+                {r === 0 ? t('restPosNoTip') : `${r * 100}%`}
               </button>
             ))}
           </div>
@@ -175,9 +201,13 @@ export const PaymentSplitModal: React.FC<Props> = ({
         {method === 'cash' && (
           <div className="space-y-1.5">
             <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
-              <span>Quick Cash Presets</span>
-              <button type="button" onClick={handleExactCash} className="text-[11px] text-amber-600 hover:underline">
-                Exact Total (${totalRequired.toFixed(2)})
+              <span>{t('restPosQuickCash')}</span>
+              <button
+                type="button"
+                onClick={handleExactCash}
+                className="text-[11px] text-amber-600 hover:underline"
+              >
+                {t('restPosExactTotal', { amount: `$${totalRequired.toFixed(2)}` })}
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-1.5">
@@ -198,7 +228,7 @@ export const PaymentSplitModal: React.FC<Props> = ({
         {/* Tendered Input */}
         <div>
           <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-            Amount Tendered ($)
+            {t('restPosAmountTendered')} ($)
           </span>
           <input
             type="number"
@@ -208,12 +238,20 @@ export const PaymentSplitModal: React.FC<Props> = ({
             onChange={(e) => setTenderAmount(e.target.value)}
             className="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-4 py-3 text-lg font-black text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
           />
+          {method === 'cash' && tenderNumber > 0 && (
+            <span className="text-[11px] font-bold text-slate-400 block mt-1">
+              {t('restPosAppliedPrincipal', { amount: `$${principalApplied.toFixed(2)}` })}
+              {tipApplied > 0
+                ? ` • ${t('restPosAppliedTip', { amount: `$${tipApplied.toFixed(2)}` })}`
+                : ''}
+            </span>
+          )}
         </div>
 
         {/* Change Due Display */}
         {method === 'cash' && changeDue > 0 && (
           <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 text-xs font-black text-amber-800 dark:text-amber-300 flex justify-between items-center">
-            <span>Change Due to Patron:</span>
+            <span>{t('restPosChangeDue')}:</span>
             <span className="text-lg font-black">${changeDue.toFixed(2)}</span>
           </div>
         )}
@@ -224,15 +262,15 @@ export const PaymentSplitModal: React.FC<Props> = ({
             onClick={onClose}
             className="flex-1 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold"
           >
-            Cancel
+            {t('restPosCancel')}
           </button>
           <button
             type="submit"
-            disabled={isSubmitting || tenderNumber <= 0}
-            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+            disabled={isSubmitting || principalApplied <= 0}
+            className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-black shadow-md shadow-emerald-500/20 flex items-center justify-center gap-1.5 active:scale-95 transition-transform disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{isSubmitting ? 'Settling...' : 'Complete Payment'}</span>
+            <span>{isSubmitting ? t('restPosSettling') : t('restPosCompletePayment')}</span>
           </button>
         </div>
       </form>

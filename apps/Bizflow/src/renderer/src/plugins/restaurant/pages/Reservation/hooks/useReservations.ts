@@ -11,6 +11,7 @@ export function useReservations() {
   const [filterDate, setFilterDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -59,6 +60,13 @@ export function useReservations() {
     return { total, confirmed, seated, pending, completed, totalGuests }
   }, [reservations])
 
+  // Bookings sorted by service time, used by the timeline agenda view.
+  const timelineReservations = useMemo(() => {
+    return [...filteredReservations].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
+  }, [filteredReservations])
+
   const saveReservation = async (data: ReservationFormData, editingId?: string) => {
     try {
       if (editingId) {
@@ -99,7 +107,7 @@ export function useReservations() {
   const seatReservation = async (id: string, tableId?: string) => {
     try {
       sounds.playSuccess()
-      await window.api.restaurant.seatReservation({ reservationId: id, tableId })
+      await window.api.restaurant.seatReservation({ id, tableId })
       loadData()
       return true
     } catch (err: any) {
@@ -134,6 +142,7 @@ export function useReservations() {
 
   return {
     reservations: filteredReservations,
+    timelineReservations,
     tables,
     loading,
     error,
@@ -143,6 +152,8 @@ export function useReservations() {
     setStatusFilter,
     searchQuery,
     setSearchQuery,
+    viewMode,
+    setViewMode,
     stats,
     refreshReservations: loadData,
     saveReservation,

@@ -1,5 +1,10 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
-import type { Capability, PluginPermissionCatalog, PluginRoleAssignments, Scope } from '../shared/permissions'
+import type {
+  Capability,
+  PluginPermissionCatalog,
+  PluginRoleAssignments,
+  Scope
+} from '../shared/permissions'
 
 export interface ManagedRole {
   key: string
@@ -53,14 +58,35 @@ export interface LicenseState {
 
 interface API {
   permissions: {
-    getRoles: () => Promise<Record<string, { capabilities: Capability[]; isDefault: boolean; isWildcard: boolean }>>
-    setRole: (role: string, capabilities: Capability[]) => Promise<{ success: boolean; capabilities: Capability[] }>
-    bindSession: (user: { id: string; username: string; role: string; pluginRoles?: PluginRoleAssignments } | null) => Promise<{ capabilities: Capability[]; isWildcard: boolean }>
+    getRoles: () => Promise<
+      Record<string, { capabilities: Capability[]; isDefault: boolean; isWildcard: boolean }>
+    >
+    setRole: (
+      role: string,
+      capabilities: Capability[]
+    ) => Promise<{ success: boolean; capabilities: Capability[] }>
+    bindSession: (
+      user: {
+        id: string
+        username: string
+        role: string
+        pluginRoles?: PluginRoleAssignments
+      } | null
+    ) => Promise<{ capabilities: Capability[]; isWildcard: boolean }>
   }
   roles: {
     list: (scope?: Scope) => Promise<ManagedRole[]>
-    create: (input: { key?: string; label: string; scope: Scope; description?: string; capabilities?: Capability[] }) => Promise<ManagedRole>
-    update: (key: string, patch: { label?: string; description?: string | null; capabilities?: Capability[] }) => Promise<ManagedRole>
+    create: (input: {
+      key?: string
+      label: string
+      scope: Scope
+      description?: string
+      capabilities?: Capability[]
+    }) => Promise<ManagedRole>
+    update: (
+      key: string,
+      patch: { label?: string; description?: string | null; capabilities?: Capability[] }
+    ) => Promise<ManagedRole>
     remove: (key: string) => Promise<{ success: boolean }>
     reset: (key: string) => Promise<ManagedRole>
   }
@@ -603,7 +629,7 @@ interface API {
     getOrder: (id: string) => Promise<any>
     openOrder: (data: any) => Promise<any>
     addOrderItem: (data: any) => Promise<any>
-    removeOrderItem: (id: string) => Promise<any>
+    removeOrderItem: (data: { itemId: string; voidReason?: string } | string) => Promise<any>
     updateOrderItemStatus: (data: any) => Promise<any>
     closeOrder: (data: any) => Promise<any>
     getOverview: () => Promise<any>
@@ -612,7 +638,11 @@ interface API {
     transferTable: (data: any) => Promise<any>
     getTableActivityLogs: (tableId: string) => Promise<any>
     onEvent: (event: string, callback: (data?: any) => void) => () => void
-    splitCheckBySeat: (data: { orderId: string; seatNumbers: number[] }) => Promise<any>
+    splitCheckBySeat: (data: {
+      sourceOrderId?: string
+      orderId?: string
+      seatNumbers: number[]
+    }) => Promise<any>
     getShiftHistory: (opts?: any) => Promise<any>
     getWasteAnalytics: (opts?: any) => Promise<any>
     updateOrderItem: (data: any) => Promise<any>
@@ -632,7 +662,13 @@ interface API {
     getKdsActiveTickets: (station?: string) => Promise<KdsTicket[]>
     bumpKdsItem: (itemId: string) => Promise<void>
     bumpKdsTicket: (orderId: string) => Promise<void>
-    seatReservation: (data: { reservationId: string; tableId?: string }) => Promise<void>
+    seatReservation: (data: {
+      id?: string
+      reservationId?: string
+      /** Omit to seat the guest at the table already stored on the reservation. */
+      tableId?: string
+      serverName?: string
+    }) => Promise<void>
     toggleItem86: (id: string) => Promise<void>
     getActiveShift: () => Promise<any>
     openShift: (data: { serverId: string; serverName: string; startCash: number }) => Promise<any>
@@ -641,14 +677,13 @@ interface API {
     getIngredients: () => Promise<any>
     updateIngredient: (data: {
       id: string
-      name: string
-      category: string
-      unit: string
-      currentStock: number
-      minStockAlert: number
+      name?: string
+      category?: string
+      unit?: string
+      minStockAlert?: number
       supplierName?: string
       notes?: string
-      costPerUnit: number
+      costPerUnit?: number
     }) => Promise<any>
     createIngredient: (data: {
       name: string

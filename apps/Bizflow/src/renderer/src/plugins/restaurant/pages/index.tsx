@@ -20,7 +20,6 @@ import {
   ChevronRight,
   ArrowDown,
   Info,
-  ChefHat,
   Flame,
   CheckCircle2,
   Clock
@@ -244,7 +243,6 @@ function RestaurantPageContent() {
       {/* ── Top Navigation & Command Bar ───────────────────────────────────── */}
       <header className="flex-shrink-0 pb-1 w-full">
         <div className="w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-xs backdrop-blur-md">
-          
           {/* Top Row: Brand & Controls */}
           {!isFullscreenMode && (
             <div className="px-3.5 py-2 flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 gap-3">
@@ -271,7 +269,9 @@ function RestaurantPageContent() {
                   title="Restaurant Workflow & Keyboard Shortcuts (F1)"
                 >
                   <Info className="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" />
-                  <span className="hidden sm:inline">{t('restaurantHowItWorks') || 'How It Works'}</span>
+                  <span className="hidden sm:inline">
+                    {t('restaurantHowItWorks') || 'How It Works'}
+                  </span>
                   <kbd className="hidden md:inline px-1 py-0.2 rounded text-[9px] font-mono bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600">
                     F1
                   </kbd>
@@ -389,17 +389,32 @@ function RestaurantPageContent() {
         {activeTab === 'overview' && can(pluginTabCapability('restaurant', 'overview')!) && (
           <OverviewAndKdsPage onNavigate={(v) => setCurrentView(v as any)} />
         )}
-        {activeTab === 'tables' && can(pluginTabCapability('restaurant', 'tables')!) && <TablesTab />}
-        {activeTab === 'orders' && can(pluginTabCapability('restaurant', 'orders')!) && <OrdersTab />}
-        {activeTab === 'sales' && can(pluginTabCapability('restaurant', 'sales')!) && <SalesHistoryTab />}
-        {activeTab === 'reservations' && can(pluginTabCapability('restaurant', 'reservations')!) && (
-          <ReservationsTab onNavigateToFloor={() => setCurrentView('floor')} />
+        {activeTab === 'tables' && can(pluginTabCapability('restaurant', 'tables')!) && (
+          <TablesTab />
         )}
+        {activeTab === 'orders' && can(pluginTabCapability('restaurant', 'orders')!) && (
+          <OrdersTab />
+        )}
+        {activeTab === 'sales' && can(pluginTabCapability('restaurant', 'sales')!) && (
+          <SalesHistoryTab />
+        )}
+        {activeTab === 'reservations' &&
+          can(pluginTabCapability('restaurant', 'reservations')!) && (
+            <ReservationsTab onNavigateToFloor={() => setCurrentView('floor')} />
+          )}
         {activeTab === 'menu' && can(pluginTabCapability('restaurant', 'menu')!) && <MenuTab />}
-        {activeTab === 'inventory' && can(pluginTabCapability('restaurant', 'inventory')!) && <RestaurantInventoryPage />}
-        {activeTab === 'recipes' && can(pluginTabCapability('restaurant', 'recipes')!) && <RecipesPage />}
-        {activeTab === 'shifts' && can(pluginTabCapability('restaurant', 'shifts')!) && <StaffShiftsPage />}
-        {activeTab === 'waste' && can(pluginTabCapability('restaurant', 'waste')!) && <KitchenWasteLogPage />}
+        {activeTab === 'inventory' && can(pluginTabCapability('restaurant', 'inventory')!) && (
+          <RestaurantInventoryPage />
+        )}
+        {activeTab === 'recipes' && can(pluginTabCapability('restaurant', 'recipes')!) && (
+          <RecipesPage />
+        )}
+        {activeTab === 'shifts' && can(pluginTabCapability('restaurant', 'shifts')!) && (
+          <StaffShiftsPage />
+        )}
+        {activeTab === 'waste' && can(pluginTabCapability('restaurant', 'waste')!) && (
+          <KitchenWasteLogPage />
+        )}
       </main>
 
       {/* ── Restaurant Operational Journey & Shortcuts Modal ─────────────── */}
@@ -418,28 +433,36 @@ function RestaurantJourneyModal({ onClose }: { onClose: () => void }) {
     {
       step: '01',
       title: t('restHowStep1Title') || 'Setup Ingredients, Recipes & Menu',
-      desc: t('restHowStep1Desc') || 'Add pantry ingredients, attach them to recipe cards for auto-costing, and organize your sellable dishes into menu categories.',
+      desc:
+        t('restHowStep1Desc') ||
+        'Add pantry ingredients, attach them to recipe cards for auto-costing, and organize your sellable dishes into menu categories.',
       tip: t('restHowStep1Tip') || 'Recipes automatically deduct ingredients when orders are sent.',
       icon: <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
     },
     {
       step: '02',
       title: t('restHowStep2Title') || 'Seat Guests & Take Orders (POS / Tables)',
-      desc: t('restHowStep2Desc') || 'Select an active table on the floor plan or open a quick takeaway ticket. Tap menu items, apply modifiers/notes, and send order.',
+      desc:
+        t('restHowStep2Desc') ||
+        'Select an active table on the floor plan or open a quick takeaway ticket. Tap menu items, apply modifiers/notes, and send order.',
       tip: t('restHowStep2Tip') || 'Kitchen tickets (KOT) print or appear on KDS immediately.',
       icon: <Table2 className="w-4 h-4 text-orange-600 dark:text-orange-400" />
     },
     {
       step: '03',
       title: t('restHowStep3Title') || 'Live Kitchen Display (KDS) & Cooking',
-      desc: t('restHowStep3Desc') || 'Chefs view incoming orders in real time. Bump tickets to "Cooking" and "Ready to Serve" as dishes finish on the line.',
+      desc:
+        t('restHowStep3Desc') ||
+        'Chefs view incoming orders in real time. Bump tickets to "Cooking" and "Ready to Serve" as dishes finish on the line.',
       tip: t('restHowStep3Tip') || 'Audible bell chime rings when new orders arrive.',
       icon: <Flame className="w-4 h-4 text-blue-600 dark:text-blue-400" />
     },
     {
       step: '04',
       title: t('restHowStep4Title') || 'Checkout, Bill Settlement & Shifts',
-      desc: t('restHowStep4Desc') || 'Split or close table checks with cash, card, or room charge. Print receipts and reconcile cash drawers at shift close.',
+      desc:
+        t('restHowStep4Desc') ||
+        'Split or close table checks with cash, card, or room charge. Print receipts and reconcile cash drawers at shift close.',
       tip: t('restHowStep4Tip') || 'Sales and margins update live in Reports.',
       icon: <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
     }
@@ -472,10 +495,10 @@ function RestaurantJourneyModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                {t('restaurantJourneyTitle') || 'Restaurant Service & Kitchen Lifecycle'}
+                {t('restaurantJourneyTitle')}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {t('restaurantJourneySubtitle') || 'Step-by-step operational workflow from recipe costing to KDS & table checkout.'}
+                {t('restaurantJourneySubtitle')}
               </p>
             </div>
           </div>
@@ -532,7 +555,8 @@ function RestaurantJourneyModal({ onClose }: { onClose: () => void }) {
                 {t('restDineInFlow') || 'Dine-In Table Service'}
               </p>
               <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-                {t('restDineInDesc') || 'Assign table number, send multiple rounds of orders (drinks, mains, desserts), and split check at departure.'}
+                {t('restDineInDesc') ||
+                  'Assign table number, send multiple rounds of orders (drinks, mains, desserts), and split check at departure.'}
               </p>
             </div>
 
@@ -542,7 +566,8 @@ function RestaurantJourneyModal({ onClose }: { onClose: () => void }) {
                 {t('restQuickTakeawayFlow') || 'Quick Takeaway & Delivery'}
               </p>
               <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
-                {t('restQuickTakeawayDesc') || 'Immediate payment at cashier, customer buzzer or name ticket printed, and fast bag packing.'}
+                {t('restQuickTakeawayDesc') ||
+                  'Immediate payment at cashier, customer buzzer or name ticket printed, and fast bag packing.'}
               </p>
             </div>
           </div>
@@ -551,19 +576,23 @@ function RestaurantJourneyModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <div className="rounded-xl border border-rose-200 dark:border-rose-800/60 bg-rose-50/70 dark:bg-rose-950/20 p-3">
               <p className="text-xs font-bold text-rose-800 dark:text-rose-300 mb-1 flex items-center gap-1.5">
-                <Trash className="h-3.5 w-3.5 text-rose-600" /> {t('restaurantWasteTab') || 'Waste & Spoilage Log'}
+                <Trash className="h-3.5 w-3.5 text-rose-600" />{' '}
+                {t('restaurantWasteTab') || 'Waste & Spoilage Log'}
               </p>
               <p className="text-[11px] leading-relaxed text-rose-700 dark:text-rose-400">
-                {t('restWasteDesc') || 'Log expired prep, burned pans, or customer returns to keep actual food cost accurate.'}
+                {t('restWasteDesc') ||
+                  'Log expired prep, burned pans, or customer returns to keep actual food cost accurate.'}
               </p>
             </div>
 
             <div className="rounded-xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/70 dark:bg-purple-950/20 p-3">
               <p className="text-xs font-bold text-purple-800 dark:text-purple-300 mb-1 flex items-center gap-1.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-purple-600" /> {t('restaurantShiftsTab') || 'Staff Shifts & Till Float'}
+                <ShieldCheck className="h-3.5 w-3.5 text-purple-600" />{' '}
+                {t('restaurantShiftsTab') || 'Staff Shifts & Till Float'}
               </p>
               <p className="text-[11px] leading-relaxed text-purple-700 dark:text-purple-400">
-                {t('restShiftsDesc') || 'Track waiter cash floats, clock-in hours, tips distribution, and end-of-shift cash drops.'}
+                {t('restShiftsDesc') ||
+                  'Track waiter cash floats, clock-in hours, tips distribution, and end-of-shift cash drops.'}
               </p>
             </div>
           </div>
@@ -571,7 +600,8 @@ function RestaurantJourneyModal({ onClose }: { onClose: () => void }) {
           {/* Service Hotkeys */}
           <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 p-3.5">
             <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200 mb-2 flex items-center gap-1.5">
-              <Keyboard className="w-4 h-4 text-orange-600 dark:text-orange-400" /> POS & Kitchen Shortcuts
+              <Keyboard className="w-4 h-4 text-orange-600 dark:text-orange-400" /> POS & Kitchen
+              Shortcuts
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {shortcuts.map((sc, i) => (
@@ -594,7 +624,11 @@ function RestaurantJourneyModal({ onClose }: { onClose: () => void }) {
         {/* Modal Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 flex items-center justify-between">
           <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            Press <kbd className="font-mono text-[10px] px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800">Alt + 1..0</kbd> to jump between tabs
+            Press{' '}
+            <kbd className="font-mono text-[10px] px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800">
+              Alt + 1..0
+            </kbd>{' '}
+            to jump between tabs
           </span>
           <button
             type="button"

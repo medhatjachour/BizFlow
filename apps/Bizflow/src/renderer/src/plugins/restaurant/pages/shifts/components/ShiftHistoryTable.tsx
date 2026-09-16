@@ -1,6 +1,6 @@
 // src/pages/shifts/components/ShiftHistoryTable.tsx
 import React from 'react'
-import { FileSpreadsheet, CheckCircle2, DollarSign, Clock, Users, ArrowUpRight } from 'lucide-react'
+import { FileSpreadsheet, CheckCircle2, Clock, Users, ArrowUpRight } from 'lucide-react'
 import { RestaurantShiftData } from '../types'
 import { formatCurrency, formatShiftDuration } from '../utils'
 import { sounds } from '../../utils/sound'
@@ -18,7 +18,9 @@ export const ShiftHistoryTable: React.FC<Props> = ({ shifts, onViewZReport }) =>
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
             Shift Audit History & Reconciliation Log
           </h3>
-          <p className="text-xs text-slate-400">Past cashier sessions, float amounts, and settled totals</p>
+          <p className="text-xs text-slate-400">
+            Past cashier sessions, float amounts, and settled totals
+          </p>
         </div>
       </div>
 
@@ -41,7 +43,10 @@ export const ShiftHistoryTable: React.FC<Props> = ({ shifts, onViewZReport }) =>
               const isClosed = s.status === 'closed'
 
               return (
-                <tr key={s.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                <tr
+                  key={s.id}
+                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                >
                   {/* Staff Info */}
                   <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
                     <div className="flex items-center gap-2">
@@ -51,7 +56,11 @@ export const ShiftHistoryTable: React.FC<Props> = ({ shifts, onViewZReport }) =>
                       <div>
                         <span className="block">{s.serverName}</span>
                         <span className="text-[10px] font-medium text-slate-400">
-                          {new Date(s.openedAt).toLocaleDateString()} at {new Date(s.openedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(s.openedAt).toLocaleDateString()} at{' '}
+                          {new Date(s.openedAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
                         </span>
                       </div>
                     </div>
