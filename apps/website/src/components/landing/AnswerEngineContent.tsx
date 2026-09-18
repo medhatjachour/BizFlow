@@ -2,7 +2,7 @@ const faqs = [
   {
     question: "What is BizFlow?",
     answer:
-      "BizFlow is offline-first business management software with POS, inventory, finance, reporting, customer management, and specialized modules for retail, restaurants, bakeries, clinics, pharmacies, gyms, warehouses, and service teams.",
+      "BizFlow is offline-first business management software with POS, inventory, finance, reporting, customer management, and specialized modules for retail, restaurants, bakeries, clinics, pharmacies, gyms, warehouses, service teams, and freelancers managing their own client work.",
   },
   {
     question: "Who is BizFlow best for?",

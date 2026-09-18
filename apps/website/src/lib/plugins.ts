@@ -303,6 +303,36 @@ export const PLUGINS: BizPlugin[] = [
     ],
     downloadEnv: "NEXT_PUBLIC_DL_GYM",
   },
+  {
+    id: "personal",
+    name: "Personal Work",
+    tagline: "Solo Work OS",
+    description:
+      "A solo operator's work OS — scope-guarded projects, stage-gated delivery, a Daily 3 focus board, deep-work timer, invoice milestones and rate engineering.",
+    longDescription:
+      "Run everything alone without losing track of the money. Set baseline deliverables per project, price every change request before you touch the work, let client delays push deadlines automatically, and keep the important work in front of you with a Daily 3 board.",
+    icon: "🧑‍💻",
+    accent: "from-violet-400 to-purple-600",
+    route: "/personal",
+    bestFor: "Freelancers, consultants & solo operators",
+    price: 100,
+    highlights: [
+      { value: "Daily 3", label: "focus board" },
+      { value: "0", label: "unpriced extras" },
+      { value: "real", label: "hourly rate" },
+    ],
+    features: [
+      "Scope-creep guard: log, price and quote extra work",
+      "Stage-gated delivery pipeline with payment locks",
+      "Client bottleneck tracker that shifts deadlines",
+      "Daily 3 priority board with a deep-work timer",
+      "Invoices with split milestones and unearned cash",
+      "Minimum hourly rate & floor-price calculator",
+      "Retainers, subscription audit, expenses & tax vault",
+      "Capacity heatmap, blackout dates & real hourly rate",
+    ],
+    downloadEnv: "NEXT_PUBLIC_DL_PERSONAL",
+  },
 ];
 
 export const getPlugin = (id: string) => PLUGINS.find((p) => p.id === id);

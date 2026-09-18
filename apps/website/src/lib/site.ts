@@ -19,7 +19,7 @@ export const siteConfig = {
   name: "BizFlow",
   title: "BizFlow POS, Inventory & Business Management Software",
   description:
-    "BizFlow is offline-first POS, inventory, finance, and business management software for retail shops, restaurants, bakeries, clinics, pharmacies, gyms, warehouses, and service teams. Try modules in your browser, then download the desktop app with one-time pricing.",
+    "BizFlow is offline-first POS, inventory, finance, and business management software for retail shops, restaurants, bakeries, clinics, pharmacies, gyms, warehouses, service teams, and freelancers running their own client work. Try modules in your browser, then download the desktop app with one-time pricing.",
   url: siteUrl,
   ogImageAlt: "BizFlow POS and business management software modules",
   founder: "Medhat Jachour",

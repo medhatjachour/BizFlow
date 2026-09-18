@@ -95,6 +95,7 @@ const PLUGIN_DEPTH = [
   "Vet: owners, pets, appointments, medicines, follow-ups",
   "Gym: plans, subscriptions, check-ins, lockers, coaches",
   "Pharmacy: batch & expiry tracking, purchase orders",
+  "Personal Work: projects, delivery pipeline, focus timer, invoices, capacity",
 ];
 
 export default function IncludedInEveryModule() {

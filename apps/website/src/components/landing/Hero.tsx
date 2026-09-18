@@ -53,7 +53,7 @@ export default function Hero() {
           variants={item}
           className="mt-6 max-w-2xl text-pretty text-lg text-foreground/70 sm:text-xl"
         >
-          BizFlow is a modular, offline-first management system for <strong className="font-semibold text-foreground">Retail, Bakery, Restaurant, Coffee, Pharmacy, Clinic, Vet, Gym & Warehouse</strong>.
+          BizFlow is a modular, offline-first management system for <strong className="font-semibold text-foreground">Retail, Bakery, Restaurant, Coffee, Pharmacy, Clinic, Vet, Gym, Warehouse & Personal Work</strong>.
           Every module already includes the full back office — <strong className="font-semibold text-foreground">employees &amp; HR, finance, expenses, reports and role-based access</strong> — so there is nothing extra to buy. Open it in your browser with real data first, then commission any feature your business still needs.
         </motion.p>
 

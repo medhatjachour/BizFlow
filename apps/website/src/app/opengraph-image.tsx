@@ -58,7 +58,7 @@ export default function OpengraphImage() {
           </div>
           <div style={{ fontSize: 30, color: "rgba(232,238,251,0.72)", maxWidth: 900 }}>
             POS, inventory & finance — plus modules for bakeries, restaurants,
-            clinics, vets and gyms. Try it live in your browser.
+            clinics, vets, gyms and solo freelancers. Try it live in your browser.
           </div>
         </div>
 
