@@ -67,6 +67,7 @@ jobs:
           - vet
           - pharmacy
           - gym
+          - personal
     defaults:
       run:
         working-directory: apps/Bizflow
@@ -108,6 +109,7 @@ jobs:
             "vet" { "VetClinic" }
             "pharmacy" { "Pharmacy" }
             "gym" { "Gym" }
+            "personal" { "PersonalWork" }
             default { (Get-Culture).TextInfo.ToTitleCase($module) }
           }
           $source = Get-ChildItem dist -Filter *.exe | Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -142,6 +144,7 @@ jobs:
           - vet
           - pharmacy
           - gym
+          - personal
     defaults:
       run:
         working-directory: apps/Bizflow
@@ -223,6 +226,7 @@ jobs:
             vet) slug="VetClinic" ;;
             pharmacy) slug="Pharmacy" ;;
             gym) slug="Gym" ;;
+            personal) slug="PersonalWork" ;;
             *) slug="${module^}" ;;
           esac
           source="$(ls -t dist/*.dmg | head -n1)"
@@ -261,6 +265,7 @@ jobs:
           - vet
           - pharmacy
           - gym
+          - personal
     defaults:
       run:
         working-directory: apps/Bizflow
@@ -301,6 +306,7 @@ jobs:
             vet) slug="VetClinic" ;;
             pharmacy) slug="Pharmacy" ;;
             gym) slug="Gym" ;;
+            personal) slug="PersonalWork" ;;
             *) slug="${module^}" ;;
           esac
           source="$(ls -t dist/*.AppImage | head -n1)"
