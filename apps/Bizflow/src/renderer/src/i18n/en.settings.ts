@@ -275,6 +275,24 @@ export const enSettings = {
   bkCreated: 'Backup saved: {name}',
   bkRestored: 'Backup restored successfully! Please restart the application.',
   bkRemoved: 'Backup removed',
+  // ── Encrypted backups ───────────────────────────────────────────────────
+  bkEncTitle: 'Encrypt Backups',
+  bkEncDesc:
+    'Wraps every new backup in AES-256 encryption, so a copy kept in a synced folder or on a USB drive is useless without your passphrase.',
+  bkEncToggleLabel: 'Encrypt new backups',
+  bkEncPassphrasePlaceholder: 'Passphrase',
+  bkEncSetPassphrase: 'Save passphrase',
+  bkEncStored: 'A passphrase is stored in this device’s keychain.',
+  bkEncNeedsPassphrase: 'Enter a passphrase first.',
+  bkEncSaved: 'Encryption settings saved',
+  bkEncSaveFailed: 'Could not save encryption settings',
+  bkEncUnsupported:
+    'This system does not provide secure credential storage, so backups cannot be encrypted on it.',
+  bkEncRemovePassphrase: 'Forget passphrase',
+  bkEncBadge: 'Encrypted',
+  bkEncPromptTitle: 'Encrypted Backup',
+  bkEncPromptDesc: 'Enter this backup’s passphrase to restore it.',
+  bkEncWrongPassphrase: 'That passphrase cannot decrypt this backup.',
 
   // Settings → Tax & Receipts, and Settings → Email Reports. Both screens carried
   // the same hand-rolled two-language lookup object as Backup & Restore, so their

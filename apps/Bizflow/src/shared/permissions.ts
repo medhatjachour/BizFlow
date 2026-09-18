@@ -196,6 +196,30 @@ export const PLUGIN_REGISTRY = [
       { id: 'refund',    label: 'Issue refunds',  capability: 'coffee_refund',    kind: 'action', parentId: 'sales' },
     ],
   },
+  {
+    id: 'personal',
+    label: 'Personal Work',
+    access: 'access_personal',
+    entries: [
+      { id: 'overview',   label: 'Overview',                capability: 'personal_overview',   kind: 'page', viewer: true },
+      { id: 'clients',    label: 'Clients',                 capability: 'personal_clients',    kind: 'page' },
+      { id: 'projects',   label: 'Projects and pipeline',   capability: 'personal_projects',   kind: 'page' },
+      { id: 'requests',   label: 'Change requests',         capability: 'personal_requests',   kind: 'page' },
+      { id: 'waits',      label: 'Client waits',            capability: 'personal_waits',      kind: 'page' },
+      { id: 'tasks',      label: 'Daily 3 and tasks',       capability: 'personal_tasks',      kind: 'page' },
+      { id: 'focus',      label: 'Focus timer',             capability: 'personal_focus',      kind: 'page' },
+      { id: 'worklog',    label: 'Work log and standup',    capability: 'personal_worklog',    kind: 'page', viewer: true },
+      { id: 'invoices',   label: 'Invoices and escrow',     capability: 'personal_invoices',   kind: 'page' },
+      { id: 'finance',    label: 'Rates and running costs', capability: 'personal_finance',    kind: 'page' },
+      { id: 'capacity',   label: 'Capacity and time off',   capability: 'personal_capacity',   kind: 'page' },
+      { id: 'playbook',   label: 'Client playbook',         capability: 'personal_playbook',   kind: 'page' },
+      { id: 'notes',      label: 'Scratchpad',              capability: 'personal_notes',      kind: 'page' },
+      { id: 'discount',   label: 'Apply invoice discounts', capability: 'personal_discount',   kind: 'action', parentId: 'invoices' },
+      { id: 'refund',     label: 'Issue refunds',           capability: 'personal_refund',     kind: 'action', parentId: 'invoices' },
+      { id: 'void-invoice', label: 'Void invoices',         capability: 'personal_void_sale',  kind: 'action', parentId: 'invoices' },
+      { id: 'write-off',  label: 'Write off bad debt',      capability: 'personal_write_off',  kind: 'action', parentId: 'invoices' },
+    ],
+  },
 ] as const
 
 type RegistryPlugin = (typeof PLUGIN_REGISTRY)[number]
@@ -341,6 +365,7 @@ const STAFF_ENTRIES: Record<PluginId, string[]> = {
   gym:        ['attendance', 'trainees', 'walkins', 'subscriptions'],
   pharmacy:   ['dashboard', 'pos', 'sales', 'customers'],
   coffee:     ['pos', 'tables', 'sales', 'customers'],
+  personal:   ['overview', 'clients', 'projects', 'requests', 'waits', 'tasks', 'focus', 'worklog', 'playbook', 'notes'],
 }
 
 const EXTRA_PLUGIN_ROLES: Partial<Record<PluginId, Array<{ key: string; label: string; entries: string[] }>>> = {
@@ -357,6 +382,11 @@ const EXTRA_PLUGIN_ROLES: Partial<Record<PluginId, Array<{ key: string; label: s
   pharmacy: [
     { key: 'pharmacy_cashier',           label: 'Cashier',           entries: ['dashboard', 'pos', 'sales'] },
     { key: 'pharmacy_inventory_manager', label: 'Inventory Manager', entries: ['products', 'inventory', 'suppliers', 'orders'] },
+  ],
+  personal: [
+    { key: 'personal_producer', label: 'Producer', entries: ['overview', 'clients', 'projects', 'requests', 'waits', 'tasks', 'focus', 'worklog'] },
+    { key: 'personal_billing',  label: 'Billing',  entries: ['overview', 'clients', 'invoices', 'finance', 'requests'] },
+    { key: 'personal_tracker',  label: 'Time Tracker', entries: ['tasks', 'focus', 'worklog', 'capacity'] },
   ],
 }
 

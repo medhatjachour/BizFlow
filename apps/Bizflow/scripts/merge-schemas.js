@@ -83,6 +83,12 @@ const MODULE_REGISTRY = {
       ]
     }
   },
+  personal: {
+    // Standalone: the personal workspace belongs to a single operator and
+    // keeps no relation to the kernel User model.
+    file: 'schema.prisma',
+    injectFields: {}
+  },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

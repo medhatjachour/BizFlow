@@ -18,7 +18,9 @@ import {
   FolderOpen,
   ShieldAlert,
   FileCheck,
-  FileX
+  FileX,
+  Lock,
+  KeyRound
 } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useToast } from '../../contexts/ToastContext'
@@ -31,7 +33,14 @@ interface Backup {
   path: string
   size: number
   createdAt: string
+  encrypted?: boolean
   missing?: boolean
+}
+
+interface EncryptionSettings {
+  supported: boolean
+  enabled: boolean
+  hasPassphrase: boolean
 }
 
 interface BackupSettingsProps {
@@ -63,9 +72,20 @@ export default function BackupSettingsPanel({
   const [promptOnClose, setPromptOnClose] = useState(true)
   const [closeBackupDir, setCloseBackupDir] = useState<string | null>(null)
 
+  // Backup encryption. The passphrase itself lives in the OS keychain, so the
+  // renderer only ever holds what the user is typing right now.
+  const [encSettings, setEncSettings] = useState<EncryptionSettings>({
+    supported: true,
+    enabled: false,
+    hasPassphrase: false
+  })
+  const [passphraseDraft, setPassphraseDraft] = useState('')
+
   // Modal Dialog States
   const [restoreModalBackup, setRestoreModalBackup] = useState<Backup | null>(null)
   const [deleteModalBackup, setDeleteModalBackup] = useState<Backup | null>(null)
+  const [passphrasePath, setPassphrasePath] = useState<string | null>(null)
+  const [restoreError, setRestoreError] = useState<string | null>(null)
 
   // IPC Safe Wrapper
   const invokeIPC = async (channel: string, ...args: any[]) => {
@@ -81,7 +101,7 @@ export default function BackupSettingsPanel({
     onChange({ ...settings, [field]: value })
   }
 
-  // Load close-backup preferences
+  // Load close-backup preferences and encryption settings
   useEffect(() => {
     ;(async () => {
       try {
@@ -93,8 +113,58 @@ export default function BackupSettingsPanel({
       } catch (error) {
         logger.error('Failed to load close-backup prefs:', error)
       }
+
+      try {
+        const enc = await invokeIPC('backup:get-encryption')
+        if (enc?.success) setEncSettings(enc.data)
+      } catch (error) {
+        logger.error('Failed to load backup encryption settings:', error)
+      }
     })()
   }, [])
+
+  const saveEncryption = async (next: {
+    enabled?: boolean
+    passphrase?: string | null
+  }): Promise<void> => {
+    try {
+      const result = await invokeIPC('backup:set-encryption', next)
+      if (!result?.success) {
+        toast.error(result?.error || t('bkEncSaveFailed'))
+        return
+      }
+      setEncSettings(result.data)
+      setPassphraseDraft('')
+      toast.success(t('bkEncSaved'))
+    } catch (error) {
+      logger.error('Failed to save encryption settings:', error)
+      toast.error(t('bkEncSaveFailed'))
+    }
+  }
+
+  const handleSavePassphrase = async () => {
+    if (!passphraseDraft) {
+      toast.error(t('bkEncNeedsPassphrase'))
+      return
+    }
+    await saveEncryption({ passphrase: passphraseDraft })
+  }
+
+  const handleToggleEncryption = async () => {
+    if (!encSettings.enabled && !encSettings.hasPassphrase && !passphraseDraft) {
+      toast.error(t('bkEncNeedsPassphrase'))
+      return
+    }
+    await saveEncryption({
+      ...(passphraseDraft ? { passphrase: passphraseDraft } : {}),
+      enabled: !encSettings.enabled
+    })
+  }
+
+  const handleForgetPassphrase = async () => {
+    // Encryption cannot survive without a passphrase, so both go together.
+    await saveEncryption({ passphrase: null, enabled: false })
+  }
 
   const saveClosePrefs = async (next: { promptOnClose?: boolean; backupDir?: string | null }) => {
     try {
@@ -177,15 +247,28 @@ export default function BackupSettingsPanel({
   }
 
   // Execute Restore
-  const executeRestore = async (backupPath: string) => {
+  const executeRestore = async (backupPath: string, passphrase?: string) => {
     try {
       setRestoringPath(backupPath)
       setRestoreModalBackup(null)
-      toast.info(t('bkRestoring'))
+      setRestoreError(null)
+      if (!passphrase) toast.info(t('bkRestoring'))
 
-      const result = await invokeIPC('backup:restore', backupPath)
+      const result = await invokeIPC(
+        'backup:restore',
+        backupPath,
+        passphrase ? { passphrase } : undefined
+      )
+
       if (result?.success) {
+        setPassphrasePath(null)
+        setPassphraseDraft('')
         toast.success(t('bkRestored'))
+      } else if (result?.code === 'passphrase-required') {
+        // The backup is encrypted and no passphrase could be supplied silently.
+        setPassphrasePath(backupPath)
+      } else if (result?.code === 'wrong-passphrase') {
+        setRestoreError(result.error || t('bkEncWrongPassphrase'))
       } else {
         toast.error(result?.error || t('bkRestoreFailed'))
       }
@@ -195,6 +278,14 @@ export default function BackupSettingsPanel({
     } finally {
       setRestoringPath(null)
     }
+  }
+
+  const submitPassphrase = async () => {
+    if (!passphrasePath || !passphraseDraft) {
+      toast.error(t('bkEncNeedsPassphrase'))
+      return
+    }
+    await executeRestore(passphrasePath, passphraseDraft)
   }
 
   // Pick external DB file to restore
@@ -426,7 +517,100 @@ export default function BackupSettingsPanel({
         )}
       </div>
 
-      {/* 4. All Backups Registry List */}
+      {/* 4. Backup Encryption */}
+      <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 min-w-0 me-4">
+            <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+              <Lock className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-semibold text-slate-900 dark:text-white text-base">
+                {t('bkEncTitle')}
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                {t('bkEncDesc')}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            role="switch"
+            aria-checked={encSettings.enabled}
+            aria-label={t('bkEncToggleLabel')}
+            disabled={!encSettings.supported}
+            onClick={handleToggleEncryption}
+            className={`relative inline-flex h-7 w-12 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed ${
+              encSettings.enabled ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-700'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                encSettings.enabled ? 'ltr:translate-x-5 rtl:-translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        {!encSettings.supported && (
+          <div className="flex items-start gap-2 pt-4 border-t border-slate-100 dark:border-slate-700/80 text-xs sm:text-sm text-amber-600 dark:text-amber-400">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{t('bkEncUnsupported')}</span>
+          </div>
+        )}
+
+        {encSettings.supported && (
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-700/80 space-y-3 animate-in fade-in duration-200">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {encSettings.hasPassphrase ? t('bkEncToggleLabel') : t('bkEncSetPassphrase')}
+            </label>
+            {encSettings.hasPassphrase ? (
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0 flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/50">
+                  <KeyRound className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                    {t('bkEncStored')}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleForgetPassphrase}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-medium rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{t('bkEncRemovePassphrase')}</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={passphraseDraft}
+                  onChange={(e) => setPassphraseDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSavePassphrase()
+                  }}
+                  placeholder={t('bkEncPassphrasePlaceholder')}
+                  className="flex-1 min-w-0 px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={handleSavePassphrase}
+                  disabled={!passphraseDraft}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-medium rounded-xl bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>{t('bkEncSetPassphrase')}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 5. All Backups Registry List */}
       <div className="p-6 rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
           <div>
@@ -506,9 +690,17 @@ export default function BackupSettingsPanel({
                       </span>
                     </div>
 
-                    <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 shrink-0">
-                      {formatFileSize(backup.size)}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {backup.encrypted && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300">
+                          <Lock className="w-3 h-3" />
+                          {t('bkEncBadge')}
+                        </span>
+                      )}
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                        {formatFileSize(backup.size)}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Metadata Row */}
@@ -671,6 +863,80 @@ export default function BackupSettingsPanel({
               >
                 <Trash2 className="w-4 h-4" />
                 <span>{t('bkDelete')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Modal: Passphrase for an encrypted backup */}
+      {passphrasePath && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+            <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                {t('bkEncPromptTitle')}
+              </h3>
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              {t('bkEncPromptDesc')}
+            </p>
+
+            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900 text-xs font-mono text-slate-700 dark:text-slate-300 break-all" dir="ltr">
+              {passphrasePath}
+            </div>
+
+            <input
+              type="password"
+              autoFocus
+              autoComplete="current-password"
+              value={passphraseDraft}
+              onChange={(e) => {
+                setPassphraseDraft(e.target.value)
+                setRestoreError(null)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submitPassphrase()
+              }}
+              placeholder={t('bkEncPassphrasePlaceholder')}
+              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+
+            {restoreError && (
+              <p role="alert" className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{restoreError}</span>
+              </p>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setPassphrasePath(null)
+                  setPassphraseDraft('')
+                  setRestoreError(null)
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={submitPassphrase}
+                disabled={!passphraseDraft || restoringPath === passphrasePath}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-primary hover:bg-primary/90 text-white transition-colors shadow-sm disabled:opacity-50"
+              >
+                {restoringPath === passphrasePath ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )}
+                <span>{t('bkRestore')}</span>
               </button>
             </div>
           </div>

@@ -19,6 +19,9 @@ import { initializeDatabase } from './database/init'
 import { MigrationManager } from './services/MigrationManager'
 import { setupAutoUpdater } from './updater'
 import { dialogButtons, mainT, registerLanguageIpc } from './i18n'
+import { destroyTray, setupTray } from './tray'
+import { openQuickCapture, setupQuickCapture, teardownQuickCapture } from './quick-capture'
+import { setupQuietHook, teardownQuietHook } from './focus-quiet'
 // Static imports — fixes "dynamically and statically imported" Vite warnings
 import { EmailReportService } from './services/EmailReportService'
 import { InstallmentPlanService } from './services/InstallmentPlanService'
@@ -619,6 +622,14 @@ app.whenReady().then(async () => {
 
     // Keep the language the native dialogs use in step with the UI.
     registerLanguageIpc()
+
+    // Personal work OS desktop perks: a global capture shortcut, a tray widget
+    // that surfaces the running timer and the next delivery deadline, and the
+    // do-not-disturb hook fired on the edges of a deep-work session.
+    // All three no-op when the personal module is not enabled.
+    setupQuickCapture()
+    setupTray({ onQuickCapture: openQuickCapture })
+    setupQuietHook()
   } catch (error) {
     mainLog.error('Setup failed:', error)
     // Don't leave a hidden demo window keeping the app alive after a failure.
@@ -657,6 +668,11 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', async () => {
+  // Release the global accelerator and stop the tray refresh interval so
+  // neither can fire while the process is tearing down.
+  teardownQuickCapture()
+  teardownQuietHook()
+  destroyTray()
   // Stop cron job to prevent callbacks firing after process teardown
   if (dailyEmailCronTask) {
     mainLog.info('Stopping daily email cron task...')

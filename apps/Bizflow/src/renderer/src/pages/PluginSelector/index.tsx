@@ -24,6 +24,7 @@ export default function PluginSelector() {
   const gymEnabled = useModuleEnabled(MODULE_IDS.GYM)
   const pharmacyEnabled = useModuleEnabled(MODULE_IDS.PHARMACY)
   const coffeeEnabled = useModuleEnabled(MODULE_IDS.COFFEE)
+  const personalEnabled = useModuleEnabled(MODULE_IDS.PERSONAL)
 
   // Build enabled plugins list
   const enabledPlugins = Object.values(MODULE_REGISTRY).filter(plugin =>
@@ -35,7 +36,8 @@ export default function PluginSelector() {
     (plugin.id === 'vet' && vetEnabled) ||
     (plugin.id === 'gym' && gymEnabled) ||
     (plugin.id === 'pharmacy' && pharmacyEnabled) ||
-    (plugin.id === 'coffee' && coffeeEnabled)
+    (plugin.id === 'coffee' && coffeeEnabled) ||
+    (plugin.id === 'personal' && personalEnabled)
   )
 
   const handleSelectPlugin = (pluginId: string) => {
@@ -49,6 +51,7 @@ export default function PluginSelector() {
       'gym': '/gym',
       'pharmacy': '/pharmacy',
       'coffee': '/coffee',
+      'personal': '/personal',
     }
     navigate(routeMap[pluginId] || '/dashboard')
   }

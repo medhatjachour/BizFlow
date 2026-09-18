@@ -258,6 +258,24 @@ export const arSettings = {
   bkCreated: 'تم حفظ النسخة: {name}',
   bkRestored: 'تمت استعادة النسخة بنجاح! يرجى إعادة تشغيل البرنامج.',
   bkRemoved: 'تم حذف النسخة بنجاح',
+  // ── Encrypted backups ───────────────────────────────────────────────────
+  bkEncTitle: 'تشفير النسخ الاحتياطية',
+  bkEncDesc:
+    'يُشفّر كل نسخة احتياطية جديدة بمعيار AES-256، فأي نسخة تُحفظ في مجلد متزامن أو على ذاكرة USB تبقى بلا قيمة بدون عبارة المرور.',
+  bkEncToggleLabel: 'تشفير النسخ الجديدة',
+  bkEncPassphrasePlaceholder: 'عبارة المرور',
+  bkEncSetPassphrase: 'حفظ عبارة المرور',
+  bkEncStored: 'عبارة المرور محفوظة في مخزن مفاتيح هذا الجهاز.',
+  bkEncNeedsPassphrase: 'أدخل عبارة المرور أولاً.',
+  bkEncSaved: 'تم حفظ إعدادات التشفير',
+  bkEncSaveFailed: 'تعذّر حفظ إعدادات التشفير',
+  bkEncUnsupported:
+    'هذا النظام لا يوفّر مخزناً آمناً لبيانات الاعتماد، لذا لا يمكن تشفير النسخ الاحتياطية عليه.',
+  bkEncRemovePassphrase: 'حذف عبارة المرور',
+  bkEncBadge: 'مشفّرة',
+  bkEncPromptTitle: 'نسخة احتياطية مشفّرة',
+  bkEncPromptDesc: 'أدخل عبارة مرور هذه النسخة لاستعادتها.',
+  bkEncWrongPassphrase: 'هذه العبارة لا يمكنها فك تشفير هذه النسخة.',
 
   // Settings → Tax & Receipts, and Settings → Email Reports. See the English file
   // for why these screens' hand-rolled two-language lookup objects were replaced

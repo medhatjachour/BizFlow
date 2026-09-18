@@ -102,6 +102,17 @@ const TAB_INFO: Record<string, TabInfo> = {
   locations: { label: 'Locations', keywords: ['warehouses', 'sites', 'مواقع'] },
   transfers: { label: 'Transfers', keywords: ['move stock', 'between locations', 'نقل'] },
   operations: { label: 'Operations', keywords: ['tasks', 'work', 'عمليات'] },
+  clients: { label: 'Clients', keywords: ['customers', 'accounts', 'عملاء'] },
+  projects: { label: 'Projects', keywords: ['jobs', 'delivery', 'milestones', 'مشاريع'] },
+  requests: { label: 'Change Requests', keywords: ['scope creep', 'extra work', 'quote', 'طلبات تغيير'] },
+  waits: { label: 'Client Bottlenecks', keywords: ['waiting for client', 'delays', 'انتظار العميل'] },
+  tasks: { label: 'Daily 3 & Tasks', keywords: ['todo', 'priorities', 'backlog', 'مهام'] },
+  focus: { label: 'Focus Timer', keywords: ['pomodoro', 'deep work', 'timer', 'تركيز'] },
+  worklog: { label: 'Daily Work Log', keywords: ['standup', 'summary', 'hours', 'سجل العمل'] },
+  invoices: { label: 'Invoices & Payments', keywords: ['billing', 'deposit', 'escrow', 'فواتير'] },
+  capacity: { label: 'Capacity & Blackouts', keywords: ['heatmap', 'workload', 'vacation', 'طاقة'] },
+  playbook: { label: 'Client Playbook', keywords: ['templates', 'scripts', 'emails', 'نصوص'] },
+  notes: { label: 'Notes', keywords: ['scratchpad', 'docs', 'links', 'ملاحظات'] },
 }
 
 /** Every module page, using the exact tab ids the plugins register. */
@@ -115,6 +126,7 @@ const MODULE_TABS: Record<ModuleId, string[]> = {
   [MODULE_IDS.GYM]: ['attendance', 'trainees', 'coaches', 'subscriptions', 'walkins', 'plans', 'lockers', 'programs'],
   [MODULE_IDS.PHARMACY]: ['dashboard', 'pos', 'products', 'inventory', 'sales', 'customers', 'suppliers', 'orders', 'reports'],
   [MODULE_IDS.COFFEE]: ['pos', 'tables', 'products', 'inventory', 'incoming', 'expenses', 'sales', 'shifts', 'customers', 'reports', 'finance'],
+  [MODULE_IDS.PERSONAL]: ['overview', 'clients', 'projects', 'requests', 'waits', 'tasks', 'focus', 'worklog', 'invoices', 'finance', 'capacity', 'playbook', 'notes'],
 }
 
 /* -------------------------------------------------------------------------- */

@@ -52,6 +52,7 @@ declare const __PLUGIN_VET__: boolean | undefined
 declare const __PLUGIN_GYM__: boolean | undefined
 declare const __PLUGIN_PHARMACY__: boolean | undefined
 declare const __PLUGIN_COFFEE__: boolean | undefined
+declare const __PLUGIN_PERSONAL__: boolean | undefined
 
 const VALID_PLUGINS: PluginId[] = [
   'commerce',
@@ -62,7 +63,8 @@ const VALID_PLUGINS: PluginId[] = [
   'vet',
   'gym',
   'pharmacy',
-  'coffee'
+  'coffee',
+  'personal'
 ]
 
 // Tab visibility configuration per plugin
@@ -88,7 +90,8 @@ const PLUGIN_TAB_CONFIG: Record<PluginId, SettingsTab[]> = {
   restaurant: ['general', 'users', 'tax', 'backup'],
   warehouse: ['general', 'users', 'backup'],
   pharmacy: ['general', 'categories', 'tax', 'backup'],
-  coffee: ['general', 'users', 'tax', 'backup']
+  coffee: ['general', 'users', 'tax', 'backup'],
+  personal: ['general', 'users', 'tax', 'backup']
 }
 
 function resolveBundledSinglePlugin(): PluginId | null {
@@ -101,7 +104,8 @@ function resolveBundledSinglePlugin(): PluginId | null {
     [typeof __PLUGIN_VET__ !== 'undefined' ? __PLUGIN_VET__ : false, 'vet'],
     [typeof __PLUGIN_GYM__ !== 'undefined' ? __PLUGIN_GYM__ : false, 'gym'],
     [typeof __PLUGIN_PHARMACY__ !== 'undefined' ? __PLUGIN_PHARMACY__ : false, 'pharmacy'],
-    [typeof __PLUGIN_COFFEE__ !== 'undefined' ? __PLUGIN_COFFEE__ : false, 'coffee']
+    [typeof __PLUGIN_COFFEE__ !== 'undefined' ? __PLUGIN_COFFEE__ : false, 'coffee'],
+    [typeof __PLUGIN_PERSONAL__ !== 'undefined' ? __PLUGIN_PERSONAL__ : false, 'personal']
   ]
   const bundled = flags.filter(([flag]) => Boolean(flag)).map(([, id]) => id)
   return bundled.length === 1 ? bundled[0] : null

@@ -63,7 +63,36 @@ const STRINGS = {
     migCriticalMessage: 'Failed to restore backup.',
     migCriticalDetail:
       'Original error: {error}\nRestore error: {restoreError}\n\nBackup location: {path}\n\nPlease restore manually or contact support.',
-    migOk: 'OK'
+    migOk: 'OK',
+    // Personal work OS tray widget (tray.ts)
+    trayShow: 'Open BizFlow',
+    trayQuickCapture: 'Quick capture…',
+    trayQuit: 'Quit BizFlow',
+    trayTooltipIdle: 'BizFlow — Personal Work OS',
+    trayTooltipFocus: 'Focusing: {task}',
+    trayTooltipDeadline: 'Next: {project} — {when}',
+    trayTooltipEmpty: 'No timer running, nothing due',
+    trayNoTimer: 'No timer running',
+    trayNoDeadline: 'Nothing due',
+    trayTimerTitle: 'Focus timer',
+    trayDeadlineTitle: 'Next deadline',
+    trayDueNow: 'due now',
+    trayInMinutes: 'in {count} min',
+    trayInHours: 'in {count} h',
+    trayInDays: 'in {count} d',
+    trayOverdueMinutes: 'overdue by {count} min',
+    trayOverdueHours: 'overdue by {count} h',
+    trayOverdueDays: 'overdue by {count} d',
+    trayElapsedMinutes: '{minutes} min elapsed',
+    trayElapsedHours: '{hours} h elapsed',
+    trayElapsedHoursMinutes: '{hours} h {minutes} min elapsed',
+    trayUntitled: 'Untitled',
+    // Encrypted backups (backup.handlers.ts)
+    backupEncUnsupported: 'Backup encryption is not available on this system.',
+    backupEncWrongPassphrase: 'That passphrase cannot decrypt this backup.',
+    backupEncPromptMessage: 'This backup is encrypted. Enter its passphrase to restore it.',
+    backupEncMissingPassphrase:
+      'Backup encryption is on but no passphrase is stored. Set one in Settings before backing up.'
   },
   ar: {
     // Update-ready prompt (updater.ts)
@@ -106,7 +135,36 @@ const STRINGS = {
     migCriticalMessage: 'تعذّرت استعادة النسخة الاحتياطية.',
     migCriticalDetail:
       'الخطأ الأصلي: {error}\nخطأ الاستعادة: {restoreError}\n\nموقع النسخة الاحتياطية: {path}\n\nيُرجى الاستعادة يدوياً أو التواصل مع الدعم.',
-    migOk: 'حسناً'
+    migOk: 'حسناً',
+    // Personal work OS tray widget (tray.ts)
+    trayShow: 'فتح BizFlow',
+    trayQuickCapture: 'التقاط سريع…',
+    trayQuit: 'إنهاء BizFlow',
+    trayTooltipIdle: 'BizFlow — نظام العمل الشخصي',
+    trayTooltipFocus: 'التركيز على: {task}',
+    trayTooltipDeadline: 'التالي: {project} — {when}',
+    trayTooltipEmpty: 'لا يوجد مؤقت ولا مواعيد قريبة',
+    trayNoTimer: 'لا يوجد مؤقت يعمل',
+    trayNoDeadline: 'لا يوجد تسليم قريب',
+    trayTimerTitle: 'مؤقت التركيز',
+    trayDeadlineTitle: 'التسليم التالي',
+    trayDueNow: 'مستحق الآن',
+    trayInMinutes: 'خلال {count} د',
+    trayInHours: 'خلال {count} س',
+    trayInDays: 'خلال {count} ي',
+    trayOverdueMinutes: 'متأخر بـ {count} د',
+    trayOverdueHours: 'متأخر بـ {count} س',
+    trayOverdueDays: 'متأخر بـ {count} ي',
+    trayElapsedMinutes: 'مضى {minutes} د',
+    trayElapsedHours: 'مضى {hours} س',
+    trayElapsedHoursMinutes: 'مضى {hours} س {minutes} د',
+    trayUntitled: 'بدون عنوان',
+    // Encrypted backups (backup.handlers.ts)
+    backupEncUnsupported: 'تشفير النسخ الاحتياطية غير متاح على هذا النظام.',
+    backupEncWrongPassphrase: 'هذه العبارة السرية لا يمكنها فك تشفير هذه النسخة الاحتياطية.',
+    backupEncPromptMessage: 'هذه النسخة الاحتياطية مشفّرة. أدخل عبارتها السرية لاستعادتها.',
+    backupEncMissingPassphrase:
+      'تشفير النسخ الاحتياطية مُفعّل لكن لا توجد عبارة سرية محفوظة. عيّن واحدة من الإعدادات قبل النسخ الاحتياطي.'
   }
 } as const
 

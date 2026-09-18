@@ -255,6 +255,7 @@ describe('plugin responsiveness', () => {
       'coffee',
       'commerce',
       'gym',
+      'personal',
       'pharmacy',
       'restaurant',
       'vet',

@@ -32,6 +32,7 @@ import VetPlugin from '../../../plugins/vet/index'
 import GymPlugin from '../../../plugins/gym/index'
 import PharmacyPlugin from '../../../plugins/pharmacy/index'
 import CoffeePlugin from '../../../plugins/coffee/index'
+import PersonalPlugin from '../../../plugins/personal/index'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Database')
@@ -51,6 +52,7 @@ const ALL_PLUGINS: IPlugin[] = [
   ...(__PLUGIN_GYM__        ? [GymPlugin]        : []),
   ...(__PLUGIN_PHARMACY__   ? [PharmacyPlugin]   : []),
   ...(__PLUGIN_COFFEE__     ? [CoffeePlugin]     : []),
+  ...(__PLUGIN_PERSONAL__   ? [PersonalPlugin]   : []),
 ]
 
 // Prisma client — initialised lazily via initializePrisma() so it never
@@ -129,6 +131,7 @@ export async function initializePrisma(): Promise<void> {
         if (__PLUGIN_GYM__)         ['GymCoach','GymTrainee','GymPlan','GymSubscription','GymFreeze','GymWalkSession','GymExpense','GymMeasurement','GymGoal','GymLocker','GymLockerAssignment','GymProgram','GymProgramDay','GymProgramExercise','GymProgramAssignment','GymShift'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_PHARMACY__)    ['PharmacyProduct','PharmacyBatch','PharmacySale','PharmacySaleItem','PharmacySupplier','PharmacyPurchaseOrder','PharmacyPurchaseOrderItem','PharmacyCustomer','PharmacyStockAudit'].forEach(t => EXPECTED.add(t))
         if (__PLUGIN_COFFEE__)      ['CoffeeCategory','CoffeeProduct','CoffeeStockMovement','CoffeeIncomingReceipt','CoffeeIncomingReceiptItem','CoffeeTable','CoffeeOrder','CoffeeOrderItem','CoffeeShift','CoffeeCustomer','CoffeeExpense','CoffeeTransitReceipt','CoffeeTransitReceiptItem'].forEach(t => EXPECTED.add(t))
+        if (__PLUGIN_PERSONAL__)    ['PersonalClient','PersonalProject','PersonalDeliverable','PersonalStageEvent','PersonalChangeRequest','PersonalWaitLog','PersonalChecklistTemplate','PersonalChecklistItem','PersonalTask','PersonalFocusSession','PersonalWorkLog','PersonalExpense','PersonalSubscription','PersonalRetainer','PersonalRetainerUsage','PersonalRateProfile','PersonalTaxVaultEntry','PersonalBlackout','PersonalWorkload','PersonalScript','PersonalNote','PersonalInvoice','PersonalPayment'].forEach(t => EXPECTED.add(t))
         const allTables: { name: string }[] = await prisma.$queryRawUnsafe(
           `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
         )

@@ -57,6 +57,7 @@ const WIRED: Record<string, number> = {
   coffee: 9,
   commerce: 9,
   gym: 11,
+  personal: 13,
   pharmacy: 10,
   restaurant: 8,
   vet: 15,

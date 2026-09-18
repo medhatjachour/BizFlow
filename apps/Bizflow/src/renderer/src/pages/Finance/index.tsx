@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useEffect, lazy, Suspense } from 'react'
-import { TrendingUp, ShoppingCart, Croissant, UtensilsCrossed, Warehouse, Stethoscope, PawPrint, Dumbbell, Pill } from 'lucide-react'
+import { TrendingUp, ShoppingCart, Croissant, UtensilsCrossed, Warehouse, Stethoscope, PawPrint, Dumbbell, Pill, Briefcase } from 'lucide-react'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useModuleEnabled } from '@renderer/hooks/useModuleEnabled'
 import NoPluginsFinanceKernel from './components/NoPluginsFinanceKernel'
@@ -23,6 +23,7 @@ const VetFinanceSection        = lazy(() => import('@renderer/plugins/vet/financ
 const GymFinanceSection        = lazy(() => import('@renderer/plugins/gym/finance/'))
 const PharmacyFinanceSection   = lazy(() => import('@renderer/plugins/pharmacy/finance/PharmacyFinanceSection'))
 const FinanceTab = lazy(() => import('@renderer/plugins/coffee/pages/finance/FinanceTab'))
+const PersonalFinanceTab = lazy(() => import('@renderer/plugins/personal/pages/finance/FinanceTab'))
 
 const SectionFallback: React.FC = () => (
   <div className="space-y-4 animate-pulse">
@@ -34,7 +35,7 @@ const SectionFallback: React.FC = () => (
   </div>
 )
 
-type PluginId = 'commerce' | 'bakery' | 'restaurant' | 'warehouse' | 'clinic' | 'vet' | 'gym' | 'pharmacy' | 'coffee'
+type PluginId = 'commerce' | 'bakery' | 'restaurant' | 'warehouse' | 'clinic' | 'vet' | 'gym' | 'pharmacy' | 'coffee' | 'personal'
 
 const PLUGIN_TAB_DEFS: { id: PluginId; labelKey: string; icon: React.ElementType; activeClass: string; hoverClass: string }[] = [
   { id: 'commerce',   labelKey: 'pluginCommerce',   icon: ShoppingCart,    activeClass: 'bg-indigo-600 text-white shadow-md', hoverClass: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' },
@@ -46,6 +47,7 @@ const PLUGIN_TAB_DEFS: { id: PluginId; labelKey: string; icon: React.ElementType
   { id: 'gym',        labelKey: 'pluginGym',        icon: Dumbbell,        activeClass: 'bg-orange-500 text-white shadow-md', hoverClass: 'hover:bg-orange-50 dark:hover:bg-orange-900/20 text-orange-700 dark:text-orange-300' },
   { id: 'pharmacy',   labelKey: 'pluginPharmacy',   icon: Pill,            activeClass: 'bg-emerald-600 text-white shadow-md', hoverClass: 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' },
   { id: 'coffee',     labelKey: 'pluginCoffee',    icon: TrendingUp,     activeClass: 'bg-indigo-600 text-white shadow-md', hoverClass: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' },
+  { id: 'personal',   labelKey: 'personal',        icon: Briefcase,      activeClass: 'bg-violet-600 text-white shadow-md', hoverClass: 'hover:bg-violet-50 dark:hover:bg-violet-900/20 text-violet-700 dark:text-violet-300' },
 ]
 
 const Finance: React.FC = () => {
@@ -60,6 +62,7 @@ const Finance: React.FC = () => {
   const isGym        = useModuleEnabled('gym')
   const isPharmacy   = useModuleEnabled('pharmacy')
   const isCoffee   = useModuleEnabled('coffee')
+  const isPersonal = useModuleEnabled('personal')
 
   const PLUGIN_TABS = PLUGIN_TAB_DEFS.map(p => ({ ...p, label: t(p.labelKey) }))
 
@@ -72,7 +75,8 @@ const Finance: React.FC = () => {
     (p.id === 'vet'        && __PLUGIN_VET__    && isVet)    ||
     (p.id === 'gym'        && isGym) ||
     (p.id === 'pharmacy'   && __PLUGIN_PHARMACY__ && isPharmacy) ||
-    (p.id === 'coffee'     && __PLUGIN_COFFEE__   && isCoffee)
+    (p.id === 'coffee'     && __PLUGIN_COFFEE__   && isCoffee) ||
+    (p.id === 'personal'   && __PLUGIN_PERSONAL__ && isPersonal)
   )
 
   const anyActive = enabledPlugins.length > 0
@@ -84,7 +88,7 @@ const Finance: React.FC = () => {
     if (!activePlugin || !enabledPlugins.find(p => p.id === activePlugin)) {
       setActivePlugin(enabledPlugins[0].id)
     }
-  }, [isCommerce, isBakery, isRestaurant, isWarehouse, isClinic, isVet, isGym, isPharmacy])
+  }, [isCommerce, isBakery, isRestaurant, isWarehouse, isClinic, isVet, isGym, isPharmacy, isCoffee, isPersonal])
 
   return (
     <div className="p-6 space-y-6">
@@ -137,6 +141,7 @@ const Finance: React.FC = () => {
           {activePlugin === 'gym'        && <GymFinanceSection />}
           {activePlugin === 'pharmacy'   && <PharmacyFinanceSection />}
           {activePlugin === 'coffee'     && <FinanceTab />}
+          {activePlugin === 'personal'   && <PersonalFinanceTab />}
         </Suspense>
       )}
     </div>

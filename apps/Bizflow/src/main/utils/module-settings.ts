@@ -82,6 +82,7 @@ export function getEnabledModuleIds(): string[] {
   if (__PLUGIN_GYM__)        defaults.push('gym')
   if (__PLUGIN_PHARMACY__)   defaults.push('pharmacy')
   if (__PLUGIN_COFFEE__)     defaults.push('coffee')
+  if (__PLUGIN_PERSONAL__)   defaults.push('personal')
   return defaults.length > 0 ? defaults : ['commerce']
 }
 

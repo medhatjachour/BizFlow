@@ -2,22 +2,36 @@ import React from 'react'
 import { Loader2 } from 'lucide-react'
 
 type ButtonVariant = 'primary' | 'secondary' | 'success' | 'danger'
+type ButtonSize = 'xs' | 'sm' | 'md'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
+  /**
+   * Control height. `md` is the app default; `sm` and `xs` follow the same
+   * scale as the HR module's primitives for dense data screens.
+   * Approximate rendered heights: xs 24px, sm 32px, md 40px.
+   */
+  size?: ButtonSize
   loading?: boolean
   children: React.ReactNode
+}
+
+const SIZE_CLASSES: Record<ButtonSize, string> = {
+  xs: 'gap-1 rounded-md px-2 py-1 text-xs',
+  sm: 'gap-1.5 rounded-lg px-3 py-1.5 text-sm',
+  md: 'gap-2 rounded-xl px-4 py-2.5 text-sm'
 }
 
 export default function Button({
   children,
   variant = 'primary',
+  size = 'md',
   loading = false,
   disabled,
   className = '',
   ...props
 }: ButtonProps) {
-  const baseClasses = 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors'
+  const baseClasses = `inline-flex items-center justify-center font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors ${SIZE_CLASSES[size]}`
 
   const variantClasses = {
     // Primary follows the active module's accent (see --accent in main.css).
@@ -35,7 +49,11 @@ export default function Button({
       disabled={isDisabled}
       className={`${baseClasses} ${variantClasses[variant]} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     >
-      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+      {loading && (
+        <Loader2
+          className={`${size === 'md' ? 'w-4 h-4 mr-2' : 'w-3.5 h-3.5 mr-1.5'} animate-spin`}
+        />
+      )}
       {children}
     </button>
   )

@@ -12,6 +12,8 @@ type ConfirmDialogProps = {
   busy?: boolean
   onConfirm: () => void
   onCancel: () => void
+  /** Tighter chrome for dense screens. Defaults to false. */
+  dense?: boolean
 }
 
 /**
@@ -20,17 +22,17 @@ type ConfirmDialogProps = {
  */
 export default function ConfirmDialog({
   isOpen, title, message, confirmLabel, cancelLabel,
-  danger = true, busy = false, onConfirm, onCancel,
+  danger = true, busy = false, onConfirm, onCancel, dense = false,
 }: Readonly<ConfirmDialogProps>): JSX.Element | null {
   const { t } = useLanguage()
   if (!isOpen) return null
 
   return (
-    <Modal isOpen={isOpen} onClose={onCancel} title={title ?? (t('confirm') ?? 'Confirm')} size="sm">
-      <div className="space-y-5">
+    <Modal isOpen={isOpen} onClose={onCancel} title={title ?? (t('confirm') ?? 'Confirm')} size="sm" dense={dense}>
+      <div className={dense ? 'space-y-4' : 'space-y-5'}>
         <div className="flex items-start gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-            <AlertTriangle className={danger ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'} size={20} />
+          <div className={`${dense ? 'w-9 h-9 rounded-lg' : 'w-10 h-10 rounded-xl'} flex items-center justify-center shrink-0 ${danger ? 'bg-red-100 dark:bg-red-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
+            <AlertTriangle className={danger ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'} size={dense ? 18 : 20} />
           </div>
           <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed pt-1.5 whitespace-pre-wrap">{message}</p>
         </div>
@@ -38,14 +40,14 @@ export default function ConfirmDialog({
           <button
             onClick={onCancel}
             disabled={busy}
-            className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+            className={`${dense ? 'px-3 py-1.5' : 'px-4 py-2'} rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50`}
           >
             {cancelLabel ?? (t('cancel') ?? 'Cancel')}
           </button>
           <button
             onClick={onConfirm}
             disabled={busy}
-            className={`px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-colors ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90'}`}
+            className={`${dense ? 'px-3 py-1.5' : 'px-4 py-2'} rounded-lg text-sm font-medium text-white disabled:opacity-50 transition-colors ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-primary hover:bg-primary/90'}`}
           >
             {confirmLabel ?? (t('delete') ?? 'Delete')}
           </button>

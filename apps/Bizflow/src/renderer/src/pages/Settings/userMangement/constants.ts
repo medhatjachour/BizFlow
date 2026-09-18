@@ -17,6 +17,7 @@ export const BUNDLED_PLUGIN_FLAGS: Record<string, boolean> = {
   gym: typeof __PLUGIN_GYM__ !== 'undefined' && __PLUGIN_GYM__,
   pharmacy: typeof __PLUGIN_PHARMACY__ !== 'undefined' && __PLUGIN_PHARMACY__,
   coffee: typeof __PLUGIN_COFFEE__ !== 'undefined' && __PLUGIN_COFFEE__,
+  personal: typeof __PLUGIN_PERSONAL__ !== 'undefined' && __PLUGIN_PERSONAL__,
 }
 
 /** Built-in fallback list; the UI merges in custom roles fetched from the DB. */

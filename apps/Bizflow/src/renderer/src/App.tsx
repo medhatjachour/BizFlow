@@ -13,6 +13,7 @@ import { ModuleProvider } from './contexts/ModuleContext'
 import PageLoader from './components/ui/PageLoader'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import CommandPalette from './components/CommandPalette'
+import QuickCapture from './components/QuickCapture'
 import { MigrationProgress } from './components/MigrationProgress'
 import LicenseGate from './components/LicenseGate'
 import useKeyboardShortcuts from './hooks/useKeyboardShortcuts'
@@ -41,6 +42,7 @@ const VetPatientProfile = __PLUGIN_VET__ ? lazy(() => import('@renderer/plugins/
 const Gym             = __PLUGIN_GYM__ ? lazy(() => import('./plugins/gym/index')) : null
 const Pharmacy        = __PLUGIN_PHARMACY__ ? lazy(() => import('./plugins/pharmacy/pages/index')) : null
 const Coffee          = __PLUGIN_COFFEE__ ? lazy(() => import('./plugins/coffee/pages/index')) : null
+const Personal        = __PLUGIN_PERSONAL__ ? lazy(() => import('./plugins/personal/pages/index')) : null
 
 function RouteErrorBoundary({ name, children }: { name: string; children: ReactNode }) {
   return (
@@ -84,6 +86,7 @@ function AppContent() {
   const gymEnabled = useModuleEnabled(MODULE_IDS.GYM)
   const pharmacyEnabled = useModuleEnabled(MODULE_IDS.PHARMACY)
   const coffeeEnabled   = useModuleEnabled(MODULE_IDS.COFFEE)
+  const personalEnabled = useModuleEnabled(MODULE_IDS.PERSONAL)
   const isClinicStaff = user?.role === 'clinic_staff'
 
   useKeyboardShortcuts([
@@ -101,6 +104,7 @@ function AppContent() {
         <MigrationProgress />
       </ErrorBoundary>
       <CommandPalette isOpen={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+      {__PLUGIN_PERSONAL__ && personalEnabled && <QuickCapture />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -391,6 +395,20 @@ function AppContent() {
               }
             />
           )}
+          {__PLUGIN_PERSONAL__ && personalEnabled && Personal && (
+            <Route
+              path="/personal"
+              element={
+                <RequireAuth>
+                  <RootLayoutWrapper>
+                    <RouteErrorBoundary name="Personal Work">
+                      <Personal />
+                    </RouteErrorBoundary>
+                  </RootLayoutWrapper>
+                </RequireAuth>
+              }
+            />
+          )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
@@ -458,6 +476,7 @@ const PLUGIN_ROUTE_CAPABILITIES: Record<string, Capability> = {
   gym: 'access_gym',
   pharmacy: 'access_pharmacy',
   coffee: 'access_coffee',
+  personal: 'access_personal',
 }
 
 function PluginAccessDenied() {

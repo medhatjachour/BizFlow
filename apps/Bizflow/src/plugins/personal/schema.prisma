@@ -1,0 +1,502 @@
+// ─── Personal Work Plugin – Schema ───────────────────────────────────────────
+// Module: personal
+// Use Case: A solo operator's work OS — clients, scope-guarded projects with a
+//           stage-gated delivery pipeline, client-bottleneck tracking, change
+//           requests, Daily-3 tasks, deep-work timer, invoices with milestone
+//           escrow, expenses/subscriptions/retainers, rate engineering, tax
+//           vault, capacity & blackout planning, client scripts and notes.
+//
+// NOTE: Merged into prisma/merged.prisma at build time via merge-schemas.js
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Clients ────────────────────────────────────────────────────────────────
+
+model PersonalClient {
+  id                    String   @id @default(uuid())
+  name                  String
+  company               String?
+  email                 String?
+  phone                 String?
+  timezone              String?
+  currency              String   @default("USD")
+  defaultHourlyRate     Float?
+  defaultDepositPercent Float    @default(50)
+  paymentTermsDays      Int      @default(14)
+  /// Private working-style notes, e.g. "Prefers Loom over long emails".
+  workingStyleNotes     String?
+  /// Private red flags, e.g. "Slow payer — invoice early".
+  redFlags              String?
+  isArchived            Boolean  @default(false)
+  projects              PersonalProject[]
+  invoices              PersonalInvoice[]
+  retainers             PersonalRetainer[]
+  tasks                 PersonalTask[]
+  notes                 PersonalNote[]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([name])
+  @@index([isArchived])
+}
+
+// ─── Projects & delivery pipeline ───────────────────────────────────────────
+
+model PersonalProject {
+  id              String   @id @default(uuid())
+  code            String   @unique
+  clientId        String?
+  client          PersonalClient? @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  title           String
+  summary         String?
+  /// lead | active | paused | delivered | closed
+  status          String   @default("lead")
+  /// Stage-gated pipeline: brief_approved | deposit_received | draft_staging |
+  /// feedback_locked | final_payment_received | assets_handed_over
+  stage           String   @default("brief_approved")
+  /// fixed | hourly | retainer
+  pricingType     String   @default("fixed")
+  currency        String   @default("USD")
+  agreedAmount    Float    @default(0)
+  hourlyRate      Float?
+  depositPercent  Float    @default(50)
+  startDate       DateTime?
+  dueDate         DateTime?
+  /// dueDate shifted forward by every logged client delay.
+  adjustedDueDate DateTime?
+  deliveredAt     DateTime?
+  closedAt        DateTime?
+  estimatedHours  Float    @default(0)
+  maxHoursPerWeek Float?
+  notes           String?
+  deliverables    PersonalDeliverable[]
+  changeRequests  PersonalChangeRequest[]
+  waits           PersonalWaitLog[]
+  stageEvents     PersonalStageEvent[]
+  checklistItems  PersonalChecklistItem[]
+  tasks           PersonalTask[]
+  focusSessions   PersonalFocusSession[]
+  invoices        PersonalInvoice[]
+  expenses        PersonalExpense[]
+  workloads       PersonalWorkload[]
+  noteEntries     PersonalNote[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([status])
+  @@index([stage])
+  @@index([dueDate])
+}
+
+/// Baseline scope lines — the contract you quote against when scope creep hits.
+model PersonalDeliverable {
+  id         String   @id @default(uuid())
+  projectId  String
+  project    PersonalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title      String
+  quantity   Float    @default(1)
+  unit       String   @default("item")
+  /// false → explicitly out of scope, tracked so it can become a change request.
+  isIncluded Boolean  @default(true)
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model PersonalStageEvent {
+  id        String   @id @default(uuid())
+  projectId String
+  project   PersonalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage     String
+  note      String?
+  enteredAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+/// Scope-creep guard: extra work is logged, priced and quoted before it starts.
+model PersonalChangeRequest {
+  id             String   @id @default(uuid())
+  projectId      String
+  project        PersonalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  estimatedHours Float    @default(0)
+  hourlyRate     Float    @default(0)
+  extraCost      Float    @default(0)
+  extraDays      Int      @default(0)
+  /// draft | quoted | approved | declined | invoiced
+  status         String   @default("draft")
+  quoteText      String?
+  quotedAt       DateTime?
+  decidedAt      DateTime?
+  decisionNote   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+/// Client bottleneck tracker — days spent waiting on the client.
+model PersonalWaitLog {
+  id            String   @id @default(uuid())
+  projectId     String
+  project       PersonalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  /// assets | copy | credentials | review | payment | other
+  reason        String   @default("assets")
+  startedAt     DateTime @default(now())
+  endedAt       DateTime?
+  days          Int      @default(0)
+  shiftDeadline Boolean  @default(true)
+  /// Days actually pushed onto the delivery deadline when the wait ended.
+  appliedDays   Int      @default(0)
+  note          String?
+  createdAt     DateTime @default(now())
+
+  @@index([projectId])
+  @@index([endedAt])
+}
+
+/// Pre-flight delivery checklist templates (developer / photographer / designer).
+model PersonalChecklistTemplate {
+  id         String   @id @default(uuid())
+  name       String
+  profession String   @default("general")
+  isDefault  Boolean  @default(false)
+  /// JSON array of item labels.
+  itemsJson  String   @default("[]")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([profession])
+}
+
+model PersonalChecklistItem {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      PersonalProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label        String
+  category     String   @default("general")
+  isDone       Boolean  @default(false)
+  doneAt       DateTime?
+  isBlocking   Boolean  @default(true)
+  displayOrder Int      @default(0)
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// ─── Daily work OS ──────────────────────────────────────────────────────────
+
+model PersonalTask {
+  id              String   @id @default(uuid())
+  projectId       String?
+  project         PersonalProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  clientId        String?
+  client          PersonalClient?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  title           String
+  notes           String?
+  /// backlog | today | in_progress | blocked | done | cancelled
+  status          String   @default("backlog")
+  /// deliverable | admin | sales | learning
+  type            String   @default("deliverable")
+  priority        Int      @default(3)
+  estimateMinutes Int      @default(0)
+  dueDate         DateTime?
+  /// The Daily 3 — only three of these are allowed at a time.
+  isDailyThree    Boolean  @default(false)
+  isBillable      Boolean  @default(true)
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
+  @@index([isDailyThree])
+  @@index([projectId])
+}
+
+model PersonalFocusSession {
+  id             String   @id @default(uuid())
+  projectId      String?
+  project        PersonalProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  clientId       String?
+  taskId         String?
+  /// flow | pomodoro | manual | break
+  kind           String   @default("flow")
+  startedAt      DateTime
+  endedAt        DateTime?
+  plannedMinutes Int      @default(50)
+  actualMinutes  Int      @default(0)
+  billable       Boolean  @default(true)
+  interruptions  Int      @default(0)
+  note           String?
+  createdAt      DateTime @default(now())
+
+  @@index([projectId])
+  @@index([startedAt])
+  @@index([billable])
+}
+
+model PersonalWorkLog {
+  id              String   @id @default(uuid())
+  /// Day bucket (stored at local midnight).
+  day             DateTime @unique
+  /// JSON arrays of strings.
+  completedJson   String   @default("[]")
+  nextJson        String   @default("[]")
+  summary         String?
+  notes           String?
+  focusMinutes    Int      @default(0)
+  billableMinutes Int      @default(0)
+  mood            String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ─── Money ──────────────────────────────────────────────────────────────────
+
+model PersonalInvoice {
+  id        String   @id @default(uuid())
+  number    String   @unique
+  clientId  String?
+  client    PersonalClient?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   PersonalProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// deposit | milestone | final | retainer | change_request
+  kind      String   @default("milestone")
+  /// draft | sent | partial | paid | overdue | void
+  status    String   @default("draft")
+  currency  String   @default("USD")
+  amount    Float    @default(0)
+  taxRate   Float    @default(0)
+  discount  Float    @default(0)
+  issuedAt  DateTime @default(now())
+  dueAt     DateTime?
+  paidAt    DateTime?
+  notes     String?
+  payments  PersonalPayment[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([dueAt])
+  @@index([projectId])
+  @@index([clientId])
+}
+
+model PersonalPayment {
+  id           String   @id @default(uuid())
+  invoiceId    String
+  invoice      PersonalInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount       Float
+  paidAt       DateTime @default(now())
+  method       String   @default("bank")
+  reference    String?
+  /// Deposit money is earned only when the work it funds is delivered.
+  isDeposit    Boolean  @default(false)
+  note         String?
+  refundedAt   DateTime?
+  refundAmount Float?
+  createdAt    DateTime @default(now())
+
+  @@index([invoiceId])
+  @@index([paidAt])
+}
+
+model PersonalExpense {
+  id            String   @id @default(uuid())
+  projectId     String?
+  project       PersonalProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  description   String
+  category      String   @default("software")
+  vendor        String?
+  amount        Float    @default(0)
+  currency      String   @default("USD")
+  spentAt       DateTime @default(now())
+  isBillable    Boolean  @default(false)
+  paymentMethod String   @default("card")
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([spentAt])
+  @@index([projectId])
+}
+
+/// Software subscription audit — every tool that eats into your rate.
+model PersonalSubscription {
+  id            String   @id @default(uuid())
+  name          String
+  vendor        String?
+  amount        Float    @default(0)
+  currency      String   @default("USD")
+  /// monthly | quarterly | yearly | weekly
+  billingCycle  String   @default("monthly")
+  category      String   @default("software")
+  nextRenewalAt DateTime?
+  autoRenew     Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  isEssential   Boolean  @default(true)
+  lastUsedAt    DateTime?
+  /// daily | weekly | monthly | rarely
+  usageLevel    String   @default("weekly")
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([nextRenewalAt])
+  @@index([category])
+}
+
+model PersonalRetainer {
+  id              String   @id @default(uuid())
+  clientId        String
+  client          PersonalClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name            String
+  monthlyAmount   Float    @default(0)
+  currency        String   @default("USD")
+  hoursIncluded   Float    @default(0)
+  hoursUsed       Float    @default(0)
+  rolloverEnabled Boolean  @default(false)
+  rolloverHours   Float    @default(0)
+  periodStart     DateTime @default(now())
+  nextResetAt     DateTime?
+  isActive        Boolean  @default(true)
+  notes           String?
+  usages          PersonalRetainerUsage[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([clientId])
+  @@index([isActive])
+}
+
+model PersonalRetainerUsage {
+  id         String   @id @default(uuid())
+  retainerId String
+  retainer   PersonalRetainer @relation(fields: [retainerId], references: [id], onDelete: Cascade)
+  minutes    Int      @default(0)
+  usedAt     DateTime @default(now())
+  note       String?
+  isRollover Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([retainerId])
+}
+
+/// Single-row settings: cost base → baseline hourly rate and floor price.
+model PersonalRateProfile {
+  id                         String   @id @default("default")
+  currency                   String   @default("USD")
+  monthlyLivingCost          Float    @default(0)
+  monthlyTaxes               Float    @default(0)
+  monthlySoftware            Float    @default(0)
+  monthlySavings             Float    @default(0)
+  monthlyOther               Float    @default(0)
+  targetBillableHoursPerWeek Float    @default(25)
+  workingWeeksPerYear        Int      @default(46)
+  billableUtilisation        Float    @default(0.7)
+  taxReservePercent          Float    @default(25)
+  weeklyCapacityHours        Float    @default(40)
+  maxClientHoursPerWeek      Float    @default(30)
+  minimumProjectPrice        Float    @default(0)
+  updatedAt                  DateTime @updatedAt
+}
+
+model PersonalTaxVaultEntry {
+  id         String   @id @default(uuid())
+  /// invoice | manual | withdrawal
+  sourceType String   @default("invoice")
+  invoiceId  String?
+  paymentId  String?
+  amount     Float    @default(0)
+  rate       Float    @default(0)
+  reservedAt DateTime @default(now())
+  releasedAt DateTime?
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([reservedAt])
+}
+
+// ─── Burnout defense ────────────────────────────────────────────────────────
+
+model PersonalBlackout {
+  id             String   @id @default(uuid())
+  title          String
+  /// vacation | personal | study | holiday | sick
+  kind           String   @default("vacation")
+  startDate      DateTime
+  endDate        DateTime
+  blocksDelivery Boolean  @default(true)
+  note           String?
+  createdAt      DateTime @default(now())
+
+  @@index([startDate])
+  @@index([endDate])
+}
+
+/// Planned/actual minutes per day per project — the capacity heatmap source.
+model PersonalWorkload {
+  id             String   @id @default(uuid())
+  projectId      String?
+  project        PersonalProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  day            DateTime
+  plannedMinutes Int      @default(0)
+  actualMinutes  Int      @default(0)
+  isCommitted    Boolean  @default(true)
+  note           String?
+  createdAt      DateTime @default(now())
+
+  @@index([day])
+  @@index([projectId])
+}
+
+// ─── Playbook & scratchpad ──────────────────────────────────────────────────
+
+model PersonalScript {
+  id              String   @id @default(uuid())
+  title           String
+  /// deposit_request | scope_creep | late_feedback | overdue_1 | overdue_2 |
+  /// overdue_3 | kickoff | delivery | handover | general
+  category        String   @default("general")
+  tone            String   @default("polite")
+  level           Int      @default(1)
+  body            String
+  /// JSON array of `{placeholder}` keys used by the body.
+  placeholderKeys String   @default("[]")
+  language        String   @default("en")
+  isBuiltIn       Boolean  @default(false)
+  usageCount      Int      @default(0)
+  lastUsedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category])
+}
+
+model PersonalNote {
+  id        String   @id @default(uuid())
+  projectId String?
+  project   PersonalProject? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  clientId  String?
+  client    PersonalClient?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  title     String
+  content   String   @default("")
+  /// note | credential | brand | link
+  kind      String   @default("note")
+  isPinned  Boolean  @default(false)
+  tags      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([kind])
+  @@index([isPinned])
+}

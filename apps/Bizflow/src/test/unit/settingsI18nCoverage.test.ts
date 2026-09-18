@@ -103,13 +103,16 @@ const placeholders = (value: string): string[] =>
   [...value.matchAll(/\{([A-Za-z_$][\w$]*)\}/g)].map(m => m[1])
 
 /**
- * Keys whose template deliberately drops a placeholder in one language, with
- * the reason. `permSensitiveOne` is only rendered when the count is exactly 1
- * (`PermissionMatrix.tsx` branches on `page.actions.length === 1`), and Arabic
- * writes that as a word — `إجراء حساس واحد` — rather than as a numeral.
+ * Keys a call site may leave unfilled, with the reason. `permSensitiveOne` is
+ * only rendered when the count is exactly 1 (`PermissionMatrix.tsx` branches on
+ * `page.actions.length === 1`), and Arabic writes that as a word —
+ * `إجراء حساس واحد` — rather than as a numeral. `pwBodyHint` goes the other way:
+ * it *documents* the variable syntax, so `{client}` and friends are the copy the
+ * operator is being taught to type, not parameters to substitute.
  */
 const omittedPlaceholders: Record<string, string> = {
-  permSensitiveOne: 'Arabic spells out the count (always 1) instead of printing it'
+  permSensitiveOne: 'Arabic spells out the count (always 1) instead of printing it',
+  pwBodyHint: 'the helper text teaches the {client}/{project}/{amount} syntax, so the braces are the copy'
 }
 
 /**

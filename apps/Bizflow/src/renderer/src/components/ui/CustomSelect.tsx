@@ -12,6 +12,11 @@ interface CustomSelectProps {
   options: SelectOption[];
   placeholder?: string;
   className?: string;
+  /**
+   * Control height. `md` is the app default (~50px); `sm` is the dense variant
+   * (~36px) used by data-heavy screens, matching the HR module's field scale.
+   */
+  size?: 'sm' | 'md';
 }
 
 export default function CustomSelect({ 
@@ -19,7 +24,8 @@ export default function CustomSelect({
   onChange, 
   options, 
   placeholder = "Select an option",
-  className = "" 
+  className = "",
+  size = 'md'
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
@@ -88,6 +94,7 @@ export default function CustomSelect({
   }, [focusedIndex, isOpen]);
 
   const selectedOption = options.find(opt => opt.value === value);
+  const dense = size === 'sm';
 
   return (
     <div className={`relative w-full ${className}`} ref={dropdownRef}>
@@ -95,7 +102,9 @@ export default function CustomSelect({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-4 py-3 text-left bg-white border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm cursor-pointer transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 dark:bg-slate-800 dark:text-white"
+        className={`flex items-center justify-between w-full text-left bg-white border border-slate-200 dark:border-slate-700 shadow-sm cursor-pointer transition-all duration-200 hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] focus:border-[color:var(--accent)] dark:bg-slate-800 dark:text-white ${
+          dense ? 'px-3 py-2 text-sm rounded-lg' : 'px-4 py-3 rounded-xl'
+        }`}
       >
         <span className={`truncate ${!selectedOption ? 'text-slate-400 dark:text-slate-500' : ''}`}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -109,7 +118,9 @@ export default function CustomSelect({
       {/* Instead of unmounting, we use CSS to animate opacity and scale for a smooth UX */}
       <ul 
         ref={listRef}
-        className={`absolute z-20 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg overflow-auto max-h-60 origin-top transition-all duration-200 ease-out ${
+        className={`absolute z-20 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg overflow-auto origin-top transition-all duration-200 ease-out ${
+          dense ? 'rounded-lg max-h-56' : 'rounded-xl max-h-60'
+        } ${
           isOpen 
             ? 'opacity-100 scale-100 pointer-events-auto' 
             : 'opacity-0 scale-95 pointer-events-none'
@@ -127,9 +138,11 @@ export default function CustomSelect({
                 setIsOpen(false);
               }}
               onMouseEnter={() => setFocusedIndex(index)}
-              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors duration-150 ${
+              className={`flex items-center justify-between cursor-pointer transition-colors duration-150 ${
+                dense ? 'px-3 py-2 text-sm' : 'px-4 py-3'
+              } ${
                 isSelected 
-                  ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-medium' 
+                  ? 'bg-[color:var(--accent-tint)] text-[color:var(--accent-text)] font-medium' 
                   : isFocused 
                     ? 'bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white'
                     : 'text-slate-700 dark:text-slate-300'

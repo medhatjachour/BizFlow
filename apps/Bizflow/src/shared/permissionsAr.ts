@@ -123,7 +123,23 @@ export const ENTRY_LABELS_AR: Record<string, string> = {
   'Void or cancel orders': 'إلغاء الطلبات',
   'Void sales': 'إلغاء المبيعات',
   'Walk-ins': 'الزيارات المباشرة',
-  Waste: 'الهالك'
+  Waste: 'الهالك',
+  // Personal Work
+  Clients: 'العملاء',
+  'Projects and pipeline': 'المشاريع ومسار التسليم',
+  'Change requests': 'طلبات التغيير',
+  'Client waits': 'انتظار العميل',
+  'Daily 3 and tasks': 'المهام الثلاث اليومية والمهام',
+  'Focus timer': 'مؤقّت التركيز',
+  'Work log and standup': 'سجل العمل والتقرير اليومي',
+  'Invoices and escrow': 'الفواتير والدفعات',
+  'Rates and running costs': 'الأسعار والتكاليف الجارية',
+  'Capacity and time off': 'الطاقة وأيام الإجازة',
+  'Client playbook': 'دليل التعامل مع العملاء',
+  Scratchpad: 'المفكرة',
+  'Apply invoice discounts': 'تطبيق خصومات الفواتير',
+  'Void invoices': 'إلغاء الفواتير',
+  'Write off bad debt': 'شطب الديون المعدومة',
 }
 
 /** Every capability the model declares, translated. */
@@ -200,7 +216,10 @@ export const ROLE_LABELS_AR: Record<string, string> = {
   coffee_inventory_manager: 'مدير المخزون',
   coffee_shift_manager: 'مدير الوردية',
   pharmacy_cashier: 'كاشير',
-  pharmacy_inventory_manager: 'مدير المخزون'
+  pharmacy_inventory_manager: 'مدير المخزون',
+  personal_producer: 'منتِج',
+  personal_billing: 'الفوترة',
+  personal_tracker: 'متتبّع الوقت'
 }
 
 export const ROLE_DESCRIPTIONS_AR: Record<string, string> = {

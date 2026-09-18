@@ -11,10 +11,17 @@
    itself automatically per plugin. Default = primary teal.
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
+  /* Corner radius. tailwind.config.js maps `rounded-lg` to var(--radius) and
+     derives md/sm from it (shadcn convention), so this token must exist or
+     every rounded-lg/md/sm element collapses to square corners. */
+  --radius: 0.5rem;           /* rounded-lg = 8px, md = 6px, sm = 4px */
   --accent: #0891b2;          /* primary teal */
   --accent-strong: #0e7490;   /* hover / solid */
   --accent-soft: #ecfeff;     /* tinted background */
   --accent-contrast: #ffffff; /* text on accent */
+  --accent-text: #0c6b85;     /* accent legible as text on a light surface */
+  --accent-tint: rgb(8 145 178 / 12%);  /* translucent accent wash */
+  --accent-line: rgb(8 145 178 / 32%);  /* translucent accent border */
 }
 [data-plugin='vet']        { --accent: #8b5cf6; --accent-strong: #7c3aed; --accent-soft: #f5f3ff; }
 [data-plugin='pharmacy']   { --accent: #10b981; --accent-strong: #059669; --accent-soft: #ecfdf5; }
@@ -24,6 +31,24 @@
 [data-plugin='restaurant'] { --accent: #f43f5e; --accent-strong: #e11d48; --accent-soft: #fff1f2; }
 [data-plugin='warehouse']  { --accent: #0ea5e9; --accent-strong: #0284c7; --accent-soft: #f0f9ff; }
 [data-plugin='commerce']   { --accent: #0891b2; --accent-strong: #0e7490; --accent-soft: #ecfeff; }
+[data-plugin='personal']   { --accent: #6366f1; --accent-strong: #4f46e5; --accent-soft: #eef2ff; }
+
+/* Derived accent tokens. Declared on `[data-plugin]` — the <body> that also
+   carries the plugin's colour — rather than on :root, because a custom property
+   that references var(--accent) resolves against the element it is declared on.
+   Declaring these on :root would bake in the teal default for every plugin. */
+[data-plugin] {
+  --accent-text: color-mix(in srgb, var(--accent) 88%, #0f172a);
+  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-line: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+/* Dark surfaces need the opposite correction: a lightened, desaturated accent
+   so accent text and washes stay legible on slate-900. */
+.dark [data-plugin] {
+  --accent-text: color-mix(in srgb, var(--accent) 62%, #ffffff);
+  --accent-tint: color-mix(in srgb, var(--accent) 18%, transparent);
+  --accent-line: color-mix(in srgb, var(--accent) 45%, transparent);
+}
 
 /* Global base styles */
 @layer base {

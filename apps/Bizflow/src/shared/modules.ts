@@ -22,7 +22,8 @@ export const MODULE_IDS = {
   VET: 'vet',
   GYM: 'gym',
   PHARMACY: 'pharmacy',
-  COFFEE: 'coffee'
+  COFFEE: 'coffee',
+  PERSONAL: 'personal'
 } as const
 
 export type ModuleId = (typeof MODULE_IDS)[keyof typeof MODULE_IDS]
@@ -334,6 +335,53 @@ export const MODULE_REGISTRY: Record<ModuleId, ModuleMeta> = {
     ipcPrefix: 'coffee',
     routePrefix: '/coffee',
     price: 199
+  },
+  [MODULE_IDS.PERSONAL]: {
+    id: MODULE_IDS.PERSONAL,
+    name: 'Personal Work',
+    nameAr: 'العمل الشخصي',
+    description:
+      'A solo operator\'s work OS — scope-guarded projects with a stage-gated delivery pipeline, client bottleneck tracking, Daily 3 focus board, deep-work timer, invoices with milestone escrow, rate engineering, capacity planning and client scripts.',
+    descriptionAr:
+      'نظام عمل للأفراد والمستقلين — مشاريع محمية من توسّع النطاق مع مسار تسليم مُقفَل بالمراحل، تتبّع تعطّل العميل، لوحة «ثلاثة مهام يومياً»، مؤقّت عمل عميق، فواتير مع حجز الدفعات، هندسة الأجر، تخطيط الطاقة، ونصوص تواصل جاهزة.',
+    features: [
+      'Stage-gated delivery pipeline with payment locks',
+      'Scope-creep guard: log, price and quote extra work',
+      'Client bottleneck tracker that shifts deadlines automatically',
+      'Per-profession pre-flight delivery checklists',
+      'Daily 3 priority board with a built-in deep-work timer',
+      'Invoices with split milestones and unearned-cash tracking',
+      'Minimum hourly rate & quote calculator with floor price',
+      'Subscription audit, retainers, expenses and tax vault',
+      'Capacity heatmap, blackout dates and real hourly rate analysis',
+      'One-click client scripts and a per-project scratchpad',
+    ],
+    featuresAr: [
+      'مسار تسليم مُقفَل بالمراحل مع قيود الدفع',
+      'حماية من توسّع النطاق: تسجيل وتسعير وإرسال عرض للعمل الإضافي',
+      'تتبّع تعطّل العميل مع تعديل المواعيد تلقائياً',
+      'قوائم فحص ما قبل التسليم لكل تخصص',
+      'لوحة «ثلاثة مهام يومياً» مع مؤقّت عمل عميق مدمج',
+      'فواتير بمراحل دفع متعددة وتتبّع النقد غير المكتسب',
+      'حاسبة الحد الأدنى لأجر الساعة وسعر العرض',
+      'تدقيق الاشتراكات والاتفاقيات الشهرية والمصروفات وخزنة الضرائب',
+      'خريطة حِمل الطاقة وأيام الإجازة وتحليل الأجر الفعلي',
+      'نصوص تواصل جاهزة بضغطة واحدة ولوحة ملاحظات لكل مشروع',
+    ],
+    icon: '🧑‍💻',
+    color: 'violet',
+    status: 'active',
+    models: [
+      'PersonalClient', 'PersonalProject', 'PersonalDeliverable', 'PersonalStageEvent',
+      'PersonalChangeRequest', 'PersonalWaitLog', 'PersonalChecklistTemplate', 'PersonalChecklistItem',
+      'PersonalTask', 'PersonalFocusSession', 'PersonalWorkLog', 'PersonalExpense',
+      'PersonalSubscription', 'PersonalRetainer', 'PersonalRetainerUsage', 'PersonalRateProfile',
+      'PersonalTaxVaultEntry', 'PersonalBlackout', 'PersonalWorkload', 'PersonalScript',
+      'PersonalNote', 'PersonalInvoice', 'PersonalPayment'
+    ],
+    ipcPrefix: 'personal',
+    routePrefix: '/personal',
+    price: 249
   }
 }
 

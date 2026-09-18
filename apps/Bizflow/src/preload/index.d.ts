@@ -5,6 +5,7 @@ import type {
   PluginRoleAssignments,
   Scope
 } from '../shared/permissions'
+import type { PersonalPreload } from '../plugins/personal/preload'
 
 export interface ManagedRole {
   key: string
@@ -525,6 +526,13 @@ interface API {
   language: {
     get: () => Promise<'ar' | 'en'>
     set: (language: 'ar' | 'en') => Promise<'ar' | 'en'>
+  }
+  /**
+   * Personal work OS quick capture. Fires when the global shortcut or the tray
+   * menu item asks for the capture panel; returns an unsubscribe function.
+   */
+  quickCapture: {
+    onOpen: (cb: () => void) => () => void
   }
   license: {
     getDeviceFingerprint: () => Promise<{
@@ -1395,6 +1403,7 @@ interface API {
       search: (query: string) => Promise<any[]>
     }
   }
+  personal: PersonalPreload
 }
 
 declare global {

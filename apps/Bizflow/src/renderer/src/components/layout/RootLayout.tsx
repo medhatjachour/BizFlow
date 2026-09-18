@@ -26,6 +26,7 @@ import {
   Dumbbell,
   Pill,
   Coffee,
+  Briefcase,
   HelpCircle
 } from 'lucide-react'
 import LocalIcon from '../../assets/icon.png'
@@ -95,7 +96,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const pluginRoutes = [
-    'commerce', 'vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'coffee'
+    'commerce', 'vet', 'pharmacy', 'clinic', 'gym', 'bakery', 'restaurant', 'warehouse', 'coffee', 'personal'
   ]
   const { logout, can } = useAuth()
 
@@ -128,6 +129,7 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
   const clinicEnabled = useModuleEnabled(MODULE_IDS.CLINIC)
   const commerceEnabled = useModuleEnabled(MODULE_IDS.COMMERCE)
   const coffeeEnabled = useModuleEnabled(MODULE_IDS.COFFEE)
+  const personalEnabled = useModuleEnabled(MODULE_IDS.PERSONAL)
 
   const dashboardIdx = navigation.findIndex(n => n.href === '/dashboard')
   const employeesIdx = navigation.findIndex(n => n.href === '/employees')
@@ -208,6 +210,14 @@ export default function RootLayout({ children, userRole }: RootLayoutProps) {
       icon: Coffee,
       roles: ['admin', 'manager', 'coffee_staff'],
       capability: 'access_coffee' as Capability
+    }] : []),
+    ...(__PLUGIN_PERSONAL__ && personalEnabled ? [{
+      name: 'Personal Work',
+      translationKey: 'personal',
+      href: '/personal',
+      icon: Briefcase,
+      roles: ['admin', 'manager', 'personal_producer', 'personal_billing', 'personal_tracker'],
+      capability: 'access_personal' as Capability
     }] : []),
     ...navigation.slice(employeesIdx + 1).filter(n =>
       (n.href !== '/customers' || commerceEnabled) &&

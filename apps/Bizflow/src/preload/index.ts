@@ -10,6 +10,7 @@ import { vetPreload } from '../plugins/vet/preload'
 import { gymPreload } from '../plugins/gym/preload'
 import { pharmacyPreload } from '../plugins/pharmacy/preload'
 import { coffeePreload } from '../plugins/coffee/preload'
+import { personalPreload } from '../plugins/personal/preload'
 
 // Custom APIs for renderer
 const api = {
@@ -358,6 +359,15 @@ const api = {
     get: (): Promise<'ar' | 'en'> => ipcRenderer.invoke('app:getLanguage'),
     set: (language: 'ar' | 'en'): Promise<'ar' | 'en'> => ipcRenderer.invoke('app:setLanguage', language)
   },
+  // Personal work OS quick capture - the global shortcut and the tray menu item
+  // both ask the renderer to open its capture panel through this channel.
+  quickCapture: {
+    onOpen: (cb: () => void): (() => void) => {
+      const handler = (): void => cb()
+      ipcRenderer.on('quick-capture:open', handler)
+      return () => ipcRenderer.removeListener('quick-capture:open', handler)
+    }
+  },
   // Device license activation / revalidation
   license: {
     getDeviceFingerprint: () => ipcRenderer.invoke('license:getDeviceFingerprint'),
@@ -407,7 +417,8 @@ const api = {
   vet: vetPreload,
   gym: typeof __PLUGIN_GYM__ !== 'undefined' && __PLUGIN_GYM__ ? gymPreload : undefined,
   pharmacy: typeof __PLUGIN_PHARMACY__ !== 'undefined' && __PLUGIN_PHARMACY__ ? pharmacyPreload : undefined,
-  coffee:   typeof __PLUGIN_COFFEE__   !== 'undefined' && __PLUGIN_COFFEE__   ? coffeePreload   : undefined
+  coffee:   typeof __PLUGIN_COFFEE__   !== 'undefined' && __PLUGIN_COFFEE__   ? coffeePreload   : undefined,
+  personal: typeof __PLUGIN_PERSONAL__ !== 'undefined' && __PLUGIN_PERSONAL__ ? personalPreload : undefined
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

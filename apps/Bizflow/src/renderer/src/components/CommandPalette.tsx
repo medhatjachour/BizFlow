@@ -162,6 +162,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
   const gym = useModuleEnabled(MODULE_IDS.GYM)
   const pharmacy = useModuleEnabled(MODULE_IDS.PHARMACY)
   const coffee = useModuleEnabled(MODULE_IDS.COFFEE)
+  const personal = useModuleEnabled(MODULE_IDS.PERSONAL)
 
   const enabledModules = useMemo(() => {
     const out: ModuleId[] = []
@@ -174,8 +175,9 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
     if (__PLUGIN_GYM__ && gym) out.push(MODULE_IDS.GYM)
     if (__PLUGIN_PHARMACY__ && pharmacy) out.push(MODULE_IDS.PHARMACY)
     if (__PLUGIN_COFFEE__ && coffee) out.push(MODULE_IDS.COFFEE)
+    if (__PLUGIN_PERSONAL__ && personal) out.push(MODULE_IDS.PERSONAL)
     return out
-  }, [commerce, bakery, restaurant, warehouse, clinic, vet, gym, pharmacy, coffee])
+  }, [commerce, bakery, restaurant, warehouse, clinic, vet, gym, pharmacy, coffee, personal])
 
   /**
    * Commands the user is allowed to run. Settings entries are gated here rather

@@ -7,9 +7,14 @@ type ModalProps = {
   title: string
   children: React.ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
+  /**
+   * Tighter chrome (header padding, title size, body padding) for data-entry
+   * dialogs. Defaults to false so existing callers are unchanged.
+   */
+  dense?: boolean
 }
 
-export default function Modal({ isOpen, onClose, title, children, size = 'md' }: Readonly<ModalProps>): JSX.Element | null {
+export default function Modal({ isOpen, onClose, title, children, size = 'md', dense = false }: Readonly<ModalProps>): JSX.Element | null {
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   const previouslyFocused = useRef<HTMLElement | null>(null)
@@ -102,17 +107,28 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
         tabIndex={-1}
         className={`glass-card ${sizeClasses[size]} w-full max-h-[90vh] overflow-hidden animate-scale-up relative z-[52] focus:outline-none`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-          <h2 id={titleId} className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h2>
+        <div
+          className={`flex items-center justify-between border-b border-slate-200 dark:border-slate-700 ${
+            dense ? 'px-5 py-3' : 'p-6'
+          }`}
+        >
+          <h2
+            id={titleId}
+            className={`${dense ? 'text-base font-semibold' : 'text-2xl font-bold'} text-slate-900 dark:text-white`}
+          >
+            {title}
+          </h2>
           <button
             onClick={onClose}
             aria-label="Close dialog"
-            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]"
+            className={`rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] ${
+              dense ? 'p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700' : 'p-2 hover:bg-slate-100 dark:hover:bg-slate-700'
+            }`}
           >
-            <X size={24} />
+            <X size={dense ? 18 : 24} />
           </button>
         </div>
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+        <div className={`overflow-y-auto ${dense ? 'p-5 max-h-[calc(90vh-104px)]' : 'p-6 max-h-[calc(90vh-140px)]'}`}>
           {children}
         </div>
       </div>
