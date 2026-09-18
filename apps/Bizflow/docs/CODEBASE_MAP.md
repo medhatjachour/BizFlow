@@ -29,6 +29,15 @@
 |---|---|
 | `src/main/index.ts` | App entry: BrowserWindow, initDatabase(), migration, registerAllHandlers(), daily email cron (11 PM), auto-updater |
 
+### Desktop Perks (Personal plugin)
+
+| File | Purpose |
+|---|---|
+| `src/main/tray.ts` | System tray quick-widget — running focus timer + next delivery deadline; created only while the `personal` module is compiled in and enabled |
+| `src/main/tray-status.ts` | Selection/formatting rules behind the tray widget; Electron- and Prisma-free so they are unit tested |
+| `src/main/quick-capture.ts` | Registers the global `Ctrl/Cmd + Shift + Space` accelerator and focuses the existing window on it |
+| `src/main/focus-quiet.ts` | Do-Not-Disturb trigger on focus-session edges: runs an operator-configured command with tokenised args (never a shell) and refuses metacharacters and re-parsers |
+
 ### Database
 
 | File | Purpose |
@@ -117,6 +126,8 @@ Each file registers a set of `ipcMain.handle()` channels.
 |---|---|
 | `src/main/utils/logger.ts` | electron-log setup, `createLogger(namespace)` factory |
 | `src/main/utils/module-settings.ts` | Read/write `bizflow-settings.json` from userData |
+| `src/main/backup-crypto.ts` | AES-256-GCM backup encryption with a scrypt-derived key; Electron-free so it is unit tested |
+| `src/main/backup-path.ts` | Validates caller-supplied backup paths before they reach the file system — refuses UNC/device paths, non-backup extensions and the live database |
 
 ---
 
@@ -161,6 +172,7 @@ src/plugins/<name>/
 | Restaurant | `src/plugins/restaurant/` | RestaurantTable, TableReservation, MenuItem, DineInOrder, DineInOrderItem |
 | Warehouse | `src/plugins/warehouse/` | WarehouseLocation, WarehouseStock, StockTransfer, StockTransferItem |
 | Commerce | `src/plugins/commerce/` | No new tables — enhanced kernel handlers |
+| Personal | `src/plugins/personal/` | 23 tables: PersonalClient, PersonalProject, PersonalDeliverable, PersonalStageEvent, PersonalChangeRequest, PersonalWaitLog, PersonalChecklistTemplate/PersonalChecklistItem, PersonalTask, PersonalFocusSession, PersonalWorkLog, PersonalWorkload, PersonalBlackout, PersonalInvoice, PersonalPayment, PersonalExpense, PersonalRetainer/PersonalRetainerUsage, PersonalSubscription, PersonalTaxVaultEntry, PersonalRateProfile, PersonalScript, PersonalNote. Docs: `docs/Plugins/Personal.md` |
 
 ---
 
@@ -247,6 +259,7 @@ window.api = {
 | `components/DiscountModal.tsx` | POS discount application |
 | `components/PaymentPlan.tsx` | Payment plan selector |
 | `components/KeyboardShortcutsHelp.tsx` | Keyboard shortcuts reference overlay |
+| `components/QuickCapture.tsx` | Quick-capture panel for the Personal plugin, shown by the global `Ctrl/Cmd + Shift + Space` shortcut |
 | `components/forms/` | Form primitive components |
 | `components/ui/` | Primitive UI (Button, Input, Badge, Card, etc.) |
 
@@ -349,11 +362,40 @@ window.api = {
 | `components/InventoryTab.tsx` | Stock per location, adjust stock, low-stock filter |
 | `components/TransfersTab.tsx` | Create and track stock transfers between locations |
 
+#### Personal — `src/renderer/src/plugins/personal/pages/`
+
+The freelancer "work OS": 13 permission-filtered tabs, one IPC domain per handler.
+
+| File | Purpose |
+|---|---|
+| `index.tsx` | Shell: tab strip + badges, keyboard map (`Alt + 1..0`, `Ctrl/Cmd + PageUp/PageDown`, `F1`, `Ctrl/Cmd + K`), workflow guide, command palette, fullscreen mode |
+| `overview/OverviewTab.tsx` | "Daily 3" board, at-risk deliveries, capacity and money glance |
+| `clients/ClientsTab.tsx` | Roster with payment behaviour, working-style notes and red flags |
+| `projects/ProjectsTab.tsx` | Stage-gated delivery pipeline, deliverables and stage events |
+| `requests/RequestsTab.tsx` | Change-request tracker with extra cost/days and a one-click quote |
+| `waits/WaitsTab.tsx` | "Waiting for client" log that pushes deadlines out by the lost days |
+| `tasks/TasksTab.tsx` | Backlog with bulk actions, saved filter views and undo |
+| `focus/FocusTab.tsx` | Deep-work timer bound to a milestone, session history |
+| `focus/QuietModePanel.tsx` | Do-Not-Disturb trigger settings and the quiet-mode report |
+| `worklog/WorklogTab.tsx` | Daily work log and the auto-generated stand-up summary |
+| `capacity/CapacityTab.tsx` | Workload heatmap, blackout dates, vacation shield |
+| `invoices/InvoicesTab.tsx` | Invoice register, late-fee scan, document studio, refunds/voids |
+| `finance/FinanceTab.tsx` | Retainers, subscription audit, tax vault, price card, renewals |
+| `playbook/PlaybookTab.tsx` | Canned client-message scripts with one-click copy |
+| `notes/NotesTab.tsx` | Per-project scratchpad and markdown notes |
+| `components/base.ts` | Plugin-local class tokens (`CARD`, `CARD_HEADER`, `MICRO_LABEL`, `META_TEXT`, `ROW_SHELL`, `FOCUS_RING`, `HOVER_ROW`) |
+| `components/` | Plugin-local design system — `PageHeader`, `MetricStrip`, `StatCard`, `SectionCard`, `StatusPill`, `FormSection`/`ModalFooter`/`DangerZone`, `Toolbar`, `ListRow`, `KeyValueList`, `Stepper`, `BreakdownList`, `EmptyState`, `Skeleton`, `ProgressBar`, `FilterPresets`, `UndoStrip`, `PersonalCommandPalette` |
+| `hooks/` | `useAsync`, `useFilterPresets`, `useIntent`, `useIssuerProfile`, `useQuietMode`, `useQuietRuntime`, `useUndoBar` |
+
+Conventions (spacing, colours, loading/empty states, motion, keyboard) are documented in [`docs/Plugins/Personal.md`](Plugins/Personal.md).
+
 ### i18n
 
 | File | Purpose |
 |---|---|
-| `src/renderer/src/i18n/translations.ts` | ALL translation strings. Flat objects `en` and `ar`. Both must be updated together. Type `Language = 'en' | 'ar'`. |
+| `src/renderer/src/i18n/translations.ts` | Combines `en`/`ar` and keeps the public shape; also exports `translate(language, key, params)` for use outside React. Dictionary strings live in the `en.part.N` / `ar.part.N` domain files plus `en.employee`, `en.settings`, `en.restaurant` (see below). Type `Language = 'en' | 'ar'`. |
+| `src/renderer/src/i18n/en.part.0..10.ts`, `ar.part.0..10.ts` | Per-domain dictionary parts; both languages must always be updated together |
+| `src/renderer/src/i18n/en.part.10.ts`, `ar.part.10.ts` | Personal (work OS) strings — `pw…` keys |
 
 ### Hooks
 
@@ -425,3 +467,4 @@ window.api = {
 | `FEATURE_IMPLEMENTATION_PLAN.md` | Feature roadmap (partly outdated) |
 | `SEED_REFACTOR.md` | Development seed description |
 | `TYPE_CONSOLIDATION_SUMMARY.md` | Type system consolidation history |
+| `Plugins/Personal.md` | Personal work OS — features, data model, IPC surface, UI conventions, loading/empty states, motion, keyboard map, seeding (`npm run prisma:seed:personal`) |
