@@ -2390,6 +2390,30 @@ var PLUGIN_REGISTRY = [
       { id: "void-sale", label: "Void sales", capability: "coffee_void_sale", kind: "action", parentId: "pos" },
       { id: "refund", label: "Issue refunds", capability: "coffee_refund", kind: "action", parentId: "sales" }
     ]
+  },
+  {
+    id: "personal",
+    label: "Personal Work",
+    access: "access_personal",
+    entries: [
+      { id: "overview", label: "Overview", capability: "personal_overview", kind: "page", viewer: true },
+      { id: "clients", label: "Clients", capability: "personal_clients", kind: "page" },
+      { id: "projects", label: "Projects and pipeline", capability: "personal_projects", kind: "page" },
+      { id: "requests", label: "Change requests", capability: "personal_requests", kind: "page" },
+      { id: "waits", label: "Client waits", capability: "personal_waits", kind: "page" },
+      { id: "tasks", label: "Daily 3 and tasks", capability: "personal_tasks", kind: "page" },
+      { id: "focus", label: "Focus timer", capability: "personal_focus", kind: "page" },
+      { id: "worklog", label: "Work log and standup", capability: "personal_worklog", kind: "page", viewer: true },
+      { id: "invoices", label: "Invoices and escrow", capability: "personal_invoices", kind: "page" },
+      { id: "finance", label: "Rates and running costs", capability: "personal_finance", kind: "page" },
+      { id: "capacity", label: "Capacity and time off", capability: "personal_capacity", kind: "page" },
+      { id: "playbook", label: "Client playbook", capability: "personal_playbook", kind: "page" },
+      { id: "notes", label: "Scratchpad", capability: "personal_notes", kind: "page" },
+      { id: "discount", label: "Apply invoice discounts", capability: "personal_discount", kind: "action", parentId: "invoices" },
+      { id: "refund", label: "Issue refunds", capability: "personal_refund", kind: "action", parentId: "invoices" },
+      { id: "void-invoice", label: "Void invoices", capability: "personal_void_sale", kind: "action", parentId: "invoices" },
+      { id: "write-off", label: "Write off bad debt", capability: "personal_write_off", kind: "action", parentId: "invoices" }
+    ]
   }
 ];
 var ALL_PLUGIN_IDS = PLUGIN_REGISTRY.map((plugin) => plugin.id);
@@ -2467,7 +2491,8 @@ var STAFF_ENTRIES = {
   vet: ["owners", "sessions", "appointments", "followups", "sales", "salesHistory"],
   gym: ["attendance", "trainees", "walkins", "subscriptions"],
   pharmacy: ["dashboard", "pos", "sales", "customers"],
-  coffee: ["pos", "tables", "sales", "customers"]
+  coffee: ["pos", "tables", "sales", "customers"],
+  personal: ["overview", "clients", "projects", "requests", "waits", "tasks", "focus", "worklog", "playbook", "notes"]
 };
 var EXTRA_PLUGIN_ROLES = {
   commerce: [
@@ -2483,6 +2508,11 @@ var EXTRA_PLUGIN_ROLES = {
   pharmacy: [
     { key: "pharmacy_cashier", label: "Cashier", entries: ["dashboard", "pos", "sales"] },
     { key: "pharmacy_inventory_manager", label: "Inventory Manager", entries: ["products", "inventory", "suppliers", "orders"] }
+  ],
+  personal: [
+    { key: "personal_producer", label: "Producer", entries: ["overview", "clients", "projects", "requests", "waits", "tasks", "focus", "worklog"] },
+    { key: "personal_billing", label: "Billing", entries: ["overview", "clients", "invoices", "finance", "requests"] },
+    { key: "personal_tracker", label: "Time Tracker", entries: ["tasks", "focus", "worklog", "capacity"] }
   ]
 };
 var PLUGIN_ROLE_DEFINITIONS = PLUGIN_REGISTRY.flatMap((plugin) => [
@@ -3550,26 +3580,176 @@ var DEFAULT_ONBOARDING_TASKS = [
   { title: "Line manager introduced to the team", category: "other", required: false }
 ];
 
-// src/main/ipc/handlers/employees.handlers.ts
-var log7 = createLogger("Employees");
-function employeeDocsDir() {
-  const dir = import_node_path4.default.join(app.getPath("userData"), "employee-documents");
-  import_node_fs3.default.mkdirSync(dir, { recursive: true });
-  return dir;
-}
-var EMPLOYEE_INCLUDE = {
-  attendance: { orderBy: { date: "desc" }, take: 90 },
-  documents: { orderBy: { uploadedAt: "desc" } },
-  activityLogs: { orderBy: { createdAt: "desc" }, take: 50 },
-  payrollRecords: { orderBy: [{ year: "desc" }, { month: "desc" }], take: 24 },
-  shifts: { orderBy: { date: "desc" }, take: 60 },
-  overtimeRecords: { orderBy: { date: "desc" }, take: 60 },
-  leaveRecords: { orderBy: { startDate: "desc" }, take: 60 },
-  checklistItems: { orderBy: [{ phase: "asc" }, { sortOrder: "asc" }] },
-  manager: { select: { id: true, name: true, role: true, avatarUrl: true } },
-  reports: { select: { id: true, name: true, role: true, status: true, avatarUrl: true }, orderBy: { name: "asc" } }
+// src/shared/hrPayrollRun.ts
+var PAYROLL_RUN_TRANSITIONS = {
+  approve: {
+    from: ["draft"],
+    to: "approved",
+    labelKey: "empRunActionApprove",
+    hintKey: "empRunHintApprove"
+  },
+  markPaid: {
+    from: ["approved", "paid"],
+    // Idempotent on purpose: pressing it twice must not be an error.
+    to: "paid",
+    labelKey: "empRunActionMarkPaid",
+    hintKey: "empRunHintMarkPaid"
+  },
+  lock: {
+    from: ["paid"],
+    to: "locked",
+    labelKey: "empRunActionLock",
+    hintKey: "empRunHintLock"
+  },
+  reopen: {
+    from: ["approved", "paid", "locked"],
+    to: "draft",
+    labelKey: "empRunActionReopen",
+    hintKey: "empRunHintReopen"
+  }
 };
-async function ensureEmployeeColumns(prisma2) {
+function normalizeRunStatus(value) {
+  return value === "approved" || value === "paid" || value === "locked" ? value : "draft";
+}
+function nextRunStatus(current, action) {
+  const status = normalizeRunStatus(current);
+  const transition = PAYROLL_RUN_TRANSITIONS[action];
+  if (!transition.from.includes(status))
+    return null;
+  if (transition.to === status)
+    return null;
+  return transition.to;
+}
+function canEditPeriod(status) {
+  return normalizeRunStatus(status) === "draft";
+}
+
+// src/shared/hrRate.ts
+function standardHoursFor(salaryType) {
+  switch (String(salaryType).toLowerCase()) {
+    case "hourly":
+      return 1;
+    case "daily":
+      return 8;
+    case "weekly":
+      return 40;
+    case "monthly":
+      return 160;
+    default:
+      return 160;
+  }
+}
+function hourlyRateFor(salary, salaryType) {
+  const base = Number(salary) || 0;
+  if (base <= 0)
+    return 0;
+  return base / standardHoursFor(salaryType);
+}
+
+// src/shared/hrPayrollPeriod.ts
+var MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function midnightUtc(year, monthIndex, day) {
+  return new Date(Date.UTC(year, monthIndex, day));
+}
+function pad(value) {
+  return String(value).padStart(2, "0");
+}
+function isoWeekStart(year, week) {
+  const jan4 = midnightUtc(year, 0, 4);
+  const jan4Weekday = jan4.getUTCDay() || 7;
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - (jan4Weekday - 1));
+  const start = new Date(week1Monday);
+  start.setUTCDate(week1Monday.getUTCDate() + (week - 1) * 7);
+  return start;
+}
+function describePayrollPeriod(monthField, year) {
+  if (monthField >= 2e3) {
+    const m = Math.floor((monthField - 2e3) / 100);
+    const d = (monthField - 2e3) % 100;
+    return `${d} ${MONTH_SHORT[m - 1] ?? "?"} ${year}`;
+  }
+  if (monthField >= 1e3) {
+    return `Week ${monthField - 1e3} \xB7 ${year}`;
+  }
+  return `${MONTH_SHORT[monthField - 1] ?? "?"} ${year}`;
+}
+function periodTypeOf(monthField) {
+  if (monthField >= 2e3)
+    return "daily";
+  if (monthField >= 1e3)
+    return "weekly";
+  return "monthly";
+}
+function resolvePayrollPeriod(periodType, year, month, week, day) {
+  if (periodType === "weekly") {
+    const start2 = isoWeekStart(year, week);
+    const end2 = new Date(start2);
+    end2.setUTCDate(start2.getUTCDate() + 6);
+    return {
+      periodType,
+      periodKey: `${year}-W${pad(week)}`,
+      periodStart: start2.toISOString(),
+      periodEnd: end2.toISOString(),
+      label: describePayrollPeriod(1e3 + week, year)
+    };
+  }
+  if (periodType === "daily") {
+    const date = midnightUtc(year, month - 1, day);
+    return {
+      periodType,
+      periodKey: `${year}-${pad(month)}-${pad(day)}`,
+      periodStart: date.toISOString(),
+      periodEnd: date.toISOString(),
+      label: describePayrollPeriod(2e3 + month * 100 + day, year)
+    };
+  }
+  const start = midnightUtc(year, month - 1, 1);
+  const end = midnightUtc(year, month, 0);
+  return {
+    periodType: "monthly",
+    periodKey: `${year}-${pad(month)}`,
+    periodStart: start.toISOString(),
+    periodEnd: end.toISOString(),
+    label: describePayrollPeriod(month, year)
+  };
+}
+function decodePayrollPeriod(monthField, year) {
+  if (monthField >= 2e3) {
+    const month = Math.floor((monthField - 2e3) / 100);
+    const day = (monthField - 2e3) % 100;
+    return resolvePayrollPeriod("daily", year, month, 1, day);
+  }
+  if (monthField >= 1e3) {
+    const week = monthField - 1e3;
+    return resolvePayrollPeriod("weekly", year, 1, week, 1);
+  }
+  return resolvePayrollPeriod("monthly", year, Math.max(1, monthField), 1, 1);
+}
+function periodRangeOf(record) {
+  const start = record.periodStart ? new Date(record.periodStart) : null;
+  const end = record.periodEnd ? new Date(record.periodEnd) : null;
+  if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+    return { start, end };
+  }
+  const decoded = decodePayrollPeriod(record.month, record.year);
+  return { start: new Date(decoded.periodStart), end: new Date(decoded.periodEnd) };
+}
+function periodsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart.getTime() <= bEnd.getTime() && bStart.getTime() <= aEnd.getTime();
+}
+function calendarMonthSpan(startYear, startMonth, endYear, endMonth) {
+  return {
+    start: midnightUtc(startYear, startMonth - 1, 1),
+    end: midnightUtc(endYear, endMonth, 0)
+  };
+}
+
+// src/shared/hrSchema.ts
+var silent = { info: () => {
+}, warn: () => {
+} };
+async function ensureHrSchema(prisma2, logger2 = silent) {
   try {
     const cols = await prisma2.$queryRawUnsafe(`PRAGMA table_info("Employee")`);
     const present = new Set(cols.map((c) => c.name));
@@ -3586,7 +3766,54 @@ async function ensureEmployeeColumns(prisma2) {
       if (present.has(name))
         continue;
       await prisma2.$executeRawUnsafe(`ALTER TABLE "Employee" ADD COLUMN "${name}" ${type}`);
-      log7.info(`\u2705 Employee.${name} column added`);
+      logger2.info(`\u2705 Employee.${name} column added`);
+    }
+    const payrollCols = await prisma2.$queryRawUnsafe(`PRAGMA table_info("EmployeePayroll")`);
+    const payrollPresent = new Set(payrollCols.map((c) => c.name));
+    const payrollAdditive = [
+      ["periodType", `TEXT NOT NULL DEFAULT 'monthly'`],
+      ["periodKey", "TEXT"],
+      ["periodStart", "DATETIME"],
+      ["periodEnd", "DATETIME"]
+    ];
+    for (const [name, type] of payrollAdditive) {
+      if (payrollPresent.has(name))
+        continue;
+      await prisma2.$executeRawUnsafe(`ALTER TABLE "EmployeePayroll" ADD COLUMN "${name}" ${type}`);
+      logger2.info(`\u2705 EmployeePayroll.${name} column added`);
+    }
+    const unbackfilled = await prisma2.employeePayroll.findMany({
+      where: { periodStart: null },
+      select: { id: true, month: true, year: true },
+      take: 2e4
+    });
+    for (const row of unbackfilled) {
+      const period = decodePayrollPeriod(row.month, row.year);
+      await prisma2.employeePayroll.update({
+        where: { id: row.id },
+        data: {
+          periodType: period.periodType,
+          periodKey: period.periodKey,
+          periodStart: new Date(period.periodStart),
+          periodEnd: new Date(period.periodEnd)
+        }
+      });
+    }
+    if (unbackfilled.length) {
+      logger2.info(`\u2705 Backfilled period dates for ${unbackfilled.length} payroll record(s)`);
+    }
+    const docCols = await prisma2.$queryRawUnsafe(`PRAGMA table_info("EmployeeDocument")`);
+    const docPresent = new Set(docCols.map((c) => c.name));
+    const docAdditive = [
+      ["reference", "TEXT"],
+      ["issuedAt", "DATETIME"],
+      ["expiresAt", "DATETIME"]
+    ];
+    for (const [name, type] of docAdditive) {
+      if (docPresent.has(name))
+        continue;
+      await prisma2.$executeRawUnsafe(`ALTER TABLE "EmployeeDocument" ADD COLUMN "${name}" ${type}`);
+      logger2.info(`\u2705 EmployeeDocument.${name} column added`);
     }
     await prisma2.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "EmployeeChecklistItem" (
@@ -3612,10 +3839,54 @@ async function ensureEmployeeColumns(prisma2) {
     await prisma2.$executeRawUnsafe(
       `CREATE INDEX IF NOT EXISTS "EmployeeChecklistItem_employeeId_idx" ON "EmployeeChecklistItem"("employeeId")`
     );
+    await prisma2.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "PayrollRun" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "year" INTEGER NOT NULL,
+        "month" INTEGER NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'draft',
+        "headcount" INTEGER NOT NULL DEFAULT 0,
+        "grossTotal" REAL NOT NULL DEFAULT 0,
+        "netTotal" REAL NOT NULL DEFAULT 0,
+        "notes" TEXT,
+        "createdBy" TEXT,
+        "approvedBy" TEXT,
+        "approvedAt" DATETIME,
+        "lockedAt" DATETIME,
+        "reopenedBy" TEXT,
+        "reopenedAt" DATETIME,
+        "reopenReason" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL
+      )
+    `);
+    await prisma2.$executeRawUnsafe(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "PayrollRun_year_month_key" ON "PayrollRun"("year", "month")`
+    );
   } catch (err) {
-    log7.warn("Employee table migration skipped:", err);
+    logger2.warn("Employee table migration skipped:", err);
   }
 }
+
+// src/main/ipc/handlers/employees.handlers.ts
+var log7 = createLogger("Employees");
+function employeeDocsDir() {
+  const dir = import_node_path4.default.join(app.getPath("userData"), "employee-documents");
+  import_node_fs3.default.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+var EMPLOYEE_INCLUDE = {
+  attendance: { orderBy: { date: "desc" }, take: 90 },
+  documents: { orderBy: { uploadedAt: "desc" } },
+  activityLogs: { orderBy: { createdAt: "desc" }, take: 50 },
+  payrollRecords: { orderBy: [{ year: "desc" }, { month: "desc" }], take: 24 },
+  shifts: { orderBy: { date: "desc" }, take: 60 },
+  overtimeRecords: { orderBy: { date: "desc" }, take: 60 },
+  leaveRecords: { orderBy: { startDate: "desc" }, take: 60 },
+  checklistItems: { orderBy: [{ phase: "asc" }, { sortOrder: "asc" }] },
+  manager: { select: { id: true, name: true, role: true, avatarUrl: true } },
+  reports: { select: { id: true, name: true, role: true, status: true, avatarUrl: true }, orderBy: { name: "asc" } }
+};
 async function wouldCreateCycle(prisma2, id, managerId) {
   let cursor = managerId;
   const seen = /* @__PURE__ */ new Set();
@@ -3681,20 +3952,6 @@ function describeEmployeeChanges(before, patch) {
     parts.push(`${namesOnly.length} other field(s): ${namesOnly.join(", ")}`);
   return `Profile updated \u2014 ${parts.join("; ")}`;
 }
-function hourlyRateFor(salary, salaryType) {
-  if (!(salary > 0))
-    return 0;
-  switch (String(salaryType).toLowerCase()) {
-    case "hourly":
-      return salary;
-    case "daily":
-      return salary / 8;
-    case "weekly":
-      return salary / 40;
-    default:
-      return salary / 160;
-  }
-}
 function computeAttendanceSummary(attendance) {
   const total = attendance.length;
   const present = attendance.filter((a) => a.status === "present").length;
@@ -3716,7 +3973,7 @@ function computeLeaveBalance(emp) {
 }
 function registerEmployeesHandlers(prisma2) {
   if (prisma2)
-    void ensureEmployeeColumns(prisma2);
+    void ensureHrSchema(prisma2, log7);
   ipcMain.handle("employees:getAll", async () => {
     try {
       if (!prisma2)
@@ -3954,14 +4211,12 @@ function registerEmployeesHandlers(prisma2) {
       return { success: false, message: error.message };
     }
   });
-  async function computeOvertimeForMonth(employeeId, month, year) {
+  async function computeOvertimeForMonth(employeeId, start, end) {
     if (!prisma2)
       return { overtimeHours: 0, overtimePay: 0 };
-    const monthStart = new Date(year, month - 1, 1);
-    const monthEnd = new Date(year, month, 1);
     const [records, employee] = await Promise.all([
       prisma2.employeeOvertime.findMany({
-        where: { employeeId, approved: true, date: { gte: monthStart, lt: monthEnd } }
+        where: { employeeId, approved: true, date: { gte: start, lte: end } }
       }),
       prisma2.employee.findUnique({ where: { id: employeeId }, select: { salary: true, salaryType: true } })
     ]);
@@ -3973,13 +4228,11 @@ function registerEmployeesHandlers(prisma2) {
     );
     return { overtimeHours, overtimePay };
   }
-  async function countExtraShiftsForMonth(employeeId, month, year) {
+  async function countExtraShiftsForMonth(employeeId, start, end) {
     if (!prisma2)
       return 0;
-    const monthStart = new Date(year, month - 1, 1);
-    const monthEnd = new Date(year, month, 1);
     const shifts = await prisma2.employeeShift.findMany({
-      where: { employeeId, date: { gte: monthStart, lt: monthEnd } }
+      where: { employeeId, date: { gte: start, lte: end } }
     });
     const byDay = {};
     for (const s of shifts) {
@@ -3993,10 +4246,33 @@ function registerEmployeesHandlers(prisma2) {
     }
     return extras;
   }
+  function periodFromPayload(payload) {
+    const start = payload.periodStart ? new Date(payload.periodStart) : null;
+    const end = payload.periodEnd ? new Date(payload.periodEnd) : null;
+    if (start && end && !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime())) {
+      return {
+        start,
+        end,
+        periodType: String(payload.periodType ?? periodTypeOf(Number(payload.month))),
+        periodKey: String(payload.periodKey ?? `${payload.year}-${payload.month}`)
+      };
+    }
+    const decoded = decodePayrollPeriod(Number(payload.month), Number(payload.year));
+    return {
+      start: new Date(decoded.periodStart),
+      end: new Date(decoded.periodEnd),
+      periodType: decoded.periodType,
+      periodKey: decoded.periodKey
+    };
+  }
   ipcMain.handle("employees:payroll:upsert", async (_, {
     employeeId,
     month,
     year,
+    periodType,
+    periodKey,
+    periodStart,
+    periodEnd,
     baseSalary,
     regularHours,
     overtimeHours,
@@ -4015,6 +4291,17 @@ function registerEmployeesHandlers(prisma2) {
     try {
       if (!prisma2)
         return { success: false };
+      const gate = await assertPeriodOpen(Number(year), Number(month));
+      if (!gate.ok)
+        return { success: false, message: gate.message };
+      const period = periodFromPayload({
+        year: Number(year),
+        month: Number(month),
+        periodType,
+        periodKey,
+        periodStart,
+        periodEnd
+      });
       const base = baseSalary ?? 0;
       const bon = bonuses ?? 0;
       const ded = deductions ?? 0;
@@ -4024,14 +4311,14 @@ function registerEmployeesHandlers(prisma2) {
       let otHours = overtimeHours ?? null;
       let otPay = overtimePay ?? null;
       if (otPay == null) {
-        const ot = await computeOvertimeForMonth(employeeId, month, year);
+        const ot = await computeOvertimeForMonth(employeeId, period.start, period.end);
         otHours = ot.overtimeHours;
         otPay = ot.overtimePay;
       }
       let xShifts = extraShifts ?? null;
       let xPay = extraShiftPay ?? null;
       if (xPay == null) {
-        xShifts = await countExtraShiftsForMonth(employeeId, month, year);
+        xShifts = await countExtraShiftsForMonth(employeeId, period.start, period.end);
         const bonusPerShift = extraShiftBonusPerShift ?? 0;
         xPay = xShifts * bonusPerShift;
       }
@@ -4042,6 +4329,11 @@ function registerEmployeesHandlers(prisma2) {
       const nextPaidDate = isReopen ? null : paidDate ? new Date(paidDate) : existing?.paidDate ?? null;
       const data = {
         baseSalary: base,
+        // Period dates are rewritten on every save so an older row self-heals.
+        periodType: period.periodType,
+        periodKey: period.periodKey,
+        periodStart: period.start,
+        periodEnd: period.end,
         regularHours: regularHours ?? existing?.regularHours ?? 0,
         overtimeHours: otHours,
         overtimePay: otPay,
@@ -4068,20 +4360,22 @@ function registerEmployeesHandlers(prisma2) {
           performedBy: performedBy ?? null
         }
       });
+      await refreshRunTotals(Number(year), Number(month));
       return { success: true, record };
     } catch (error) {
       log7.error("Error upserting payroll:", error);
       return { success: false, message: error.message };
     }
   });
-  ipcMain.handle("employees:payroll:compute", async (_, { employeeId, month, year, baseSalary, extraShiftBonusPerShift }) => {
+  ipcMain.handle("employees:payroll:compute", async (_, { employeeId, month, year, periodStart, periodEnd, baseSalary, extraShiftBonusPerShift }) => {
     try {
       if (!prisma2)
         return null;
       const base = baseSalary ?? 0;
+      const period = periodFromPayload({ year: Number(year), month: Number(month), periodStart, periodEnd });
       const [ot, xShifts] = await Promise.all([
-        computeOvertimeForMonth(employeeId, month, year),
-        countExtraShiftsForMonth(employeeId, month, year)
+        computeOvertimeForMonth(employeeId, period.start, period.end),
+        countExtraShiftsForMonth(employeeId, period.start, period.end)
       ]);
       const bonusPerShift = extraShiftBonusPerShift ?? 0;
       const xPay = xShifts * bonusPerShift;
@@ -4117,10 +4411,20 @@ function registerEmployeesHandlers(prisma2) {
       return [];
     }
   });
-  ipcMain.handle("employees:payroll:markPaid", async (_, id) => {
+  ipcMain.handle("employees:payroll:markPaid", async (_, payload) => {
     try {
       if (!prisma2)
         return { success: false };
+      const id = typeof payload === "string" ? payload : payload?.id;
+      const performedBy = typeof payload === "string" ? null : payload?.performedBy ?? null;
+      if (!id)
+        return { success: false, message: "Missing payroll record id" };
+      const before = await prisma2.employeePayroll.findUnique({ where: { id } });
+      if (!before)
+        return { success: false, message: "Payroll record not found" };
+      const gate = await assertPeriodOpen(before.year, before.month);
+      if (!gate.ok)
+        return { success: false, message: gate.message };
       const record = await prisma2.employeePayroll.update({
         where: { id },
         data: { status: "paid", paidDate: /* @__PURE__ */ new Date() }
@@ -4130,32 +4434,245 @@ function registerEmployeesHandlers(prisma2) {
           employeeId: record.employeeId,
           action: "payroll_paid",
           details: `Payroll ${record.month}/${record.year} marked as paid`,
-          performedBy: null
+          performedBy: performedBy ?? null
         }
       });
+      await refreshRunTotals(record.year, record.month);
       return { success: true, record };
     } catch (error) {
       log7.error("Error marking payroll as paid:", error);
       return { success: false, message: error.message };
     }
   });
+  async function findRun(year, month) {
+    if (!prisma2)
+      return null;
+    try {
+      return await prisma2.payrollRun.findUnique({ where: { year_month: { year, month } } });
+    } catch {
+      return null;
+    }
+  }
+  async function assertPeriodOpen(year, month) {
+    const run = await findRun(year, month);
+    if (run && !canEditPeriod(run.status)) {
+      return {
+        ok: false,
+        message: `This period is ${run.status} and its payslips are frozen. Reopen the run before changing them.`
+      };
+    }
+    return { ok: true };
+  }
+  async function refreshRunTotals(year, month) {
+    if (!prisma2)
+      return;
+    const run = await findRun(year, month);
+    if (!run)
+      return;
+    try {
+      const agg = await prisma2.employeePayroll.aggregate({
+        where: { year, month },
+        _count: { _all: true },
+        _sum: { grossPay: true, netPay: true, deductions: true }
+      });
+      await prisma2.payrollRun.update({
+        where: { id: run.id },
+        data: {
+          headcount: agg._count?._all ?? 0,
+          grossTotal: agg._sum?.grossPay ?? 0,
+          netTotal: agg._sum?.netPay ?? 0
+        }
+      });
+    } catch (error) {
+      log7.warn("Could not refresh payroll run totals", error);
+    }
+  }
+  ipcMain.handle("employees:payrollRuns:get", async (_, { year, month }) => {
+    return findRun(Number(year), Number(month));
+  });
+  ipcMain.handle("employees:payrollRuns:ensure", async (_, { year, month, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const y = Number(year), m = Number(month);
+      let run = await findRun(y, m);
+      if (!run) {
+        run = await prisma2.payrollRun.create({
+          data: { year: y, month: m, status: "draft", createdBy: performedBy ?? null }
+        });
+      }
+      await refreshRunTotals(y, m);
+      return { success: true, run: await findRun(y, m) };
+    } catch (error) {
+      log7.error("Error creating payroll run:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:payrollRuns:approve", async (_, { year, month, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const y = Number(year), m = Number(month);
+      const run = await findRun(y, m);
+      if (!run)
+        return { success: false, message: "No payroll run for this period yet" };
+      const status = nextRunStatus(run.status, "approve");
+      if (!status)
+        return { success: false, message: `This run is already ${run.status}` };
+      const count = await prisma2.employeePayroll.count({ where: { year: y, month: m } });
+      if (!count)
+        return { success: false, message: "There is nothing to approve \u2014 no payslips in this period" };
+      await refreshRunTotals(y, m);
+      const updated = await prisma2.payrollRun.update({
+        where: { id: run.id },
+        data: { status, approvedBy: performedBy ?? null, approvedAt: /* @__PURE__ */ new Date() }
+      });
+      return { success: true, run: updated };
+    } catch (error) {
+      log7.error("Error approving payroll run:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:payrollRuns:markAllPaid", async (_, { year, month, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const y = Number(year), m = Number(month);
+      const run = await findRun(y, m);
+      if (!run)
+        return { success: false, message: "No payroll run for this period yet" };
+      const status = nextRunStatus(run.status, "markPaid");
+      if (!status) {
+        return {
+          success: false,
+          message: run.status === "draft" ? "Approve the run before paying it" : `This run is already ${run.status}`
+        };
+      }
+      const now = /* @__PURE__ */ new Date();
+      const result = await prisma2.employeePayroll.updateMany({
+        where: { year: y, month: m, status: "pending" },
+        data: { status: "paid", paidDate: now }
+      });
+      const updated = await prisma2.payrollRun.update({
+        where: { id: run.id },
+        data: { status }
+      });
+      await refreshRunTotals(y, m);
+      if (result.count) {
+        const anyRecord = await prisma2.employeePayroll.findFirst({ where: { year: y, month: m }, select: { employeeId: true } });
+        if (anyRecord) {
+          await prisma2.employeeActivityLog.create({
+            data: {
+              employeeId: anyRecord.employeeId,
+              action: "payroll_run_paid",
+              details: `${result.count} payslip(s) in ${m}/${y} marked paid`,
+              performedBy: performedBy ?? null
+            }
+          });
+        }
+      }
+      return { success: true, run: updated, paid: result.count };
+    } catch (error) {
+      log7.error("Error marking payroll run paid:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:payrollRuns:lock", async (_, { year, month, performedBy }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const y = Number(year), m = Number(month);
+      const run = await findRun(y, m);
+      if (!run)
+        return { success: false, message: "No payroll run for this period yet" };
+      const status = nextRunStatus(run.status, "lock");
+      if (!status)
+        return { success: false, message: "Only a paid run can be locked" };
+      const updated = await prisma2.payrollRun.update({
+        where: { id: run.id },
+        data: { status, lockedAt: /* @__PURE__ */ new Date(), approvedBy: performedBy ?? run.approvedBy }
+      });
+      return { success: true, run: updated };
+    } catch (error) {
+      log7.error("Error locking payroll run:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:payrollRuns:reopen", async (_, { year, month, performedBy, reason }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const y = Number(year), m = Number(month);
+      const run = await findRun(y, m);
+      if (!run)
+        return { success: false, message: "No payroll run for this period yet" };
+      const status = nextRunStatus(run.status, "reopen");
+      if (!status)
+        return { success: true, run };
+      const updated = await prisma2.payrollRun.update({
+        where: { id: run.id },
+        data: {
+          status,
+          reopenedBy: performedBy ?? null,
+          reopenedAt: /* @__PURE__ */ new Date(),
+          reopenReason: reason ? String(reason).slice(0, 500) : null
+        }
+      });
+      const anyRecord = await prisma2.employeePayroll.findFirst({ where: { year: y, month: m }, select: { employeeId: true } });
+      if (anyRecord) {
+        await prisma2.employeeActivityLog.create({
+          data: {
+            employeeId: anyRecord.employeeId,
+            action: "payroll_run_reopened",
+            details: `${m}/${y} reopened from ${run.status}${reason ? ` \xB7 ${reason}` : ""}`,
+            performedBy: performedBy ?? null
+          }
+        });
+      }
+      return { success: true, run: updated };
+    } catch (error) {
+      log7.error("Error reopening payroll run:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:payrollRuns:bankExport", async (_, { year, month }) => {
+    try {
+      if (!prisma2)
+        return { rows: [], missing: [] };
+      const y = Number(year), m = Number(month);
+      const records = await prisma2.employeePayroll.findMany({
+        where: { year: y, month: m },
+        include: { employee: { select: { name: true, bankName: true, iban: true } } },
+        orderBy: { netPay: "desc" }
+      });
+      const rows = records.map((record) => ({
+        name: record.employee?.name ?? "",
+        bankName: record.employee?.bankName ?? "",
+        iban: record.employee?.iban ?? "",
+        amount: record.netPay ?? 0,
+        reference: `SAL ${String(m).padStart(2, "0")}/${y}`,
+        status: record.status
+      }));
+      const missing = rows.filter((row) => !row.iban).map((row) => row.name);
+      return { rows, missing };
+    } catch (error) {
+      log7.error("Error building bank export:", error);
+      return { rows: [], missing: [] };
+    }
+  });
   ipcMain.handle("employees:payroll:getSummary", async (_, { startYear, startMonth, endYear, endMonth }) => {
     try {
       if (!prisma2)
         return { employees: [], totals: {} };
-      const records = await prisma2.employeePayroll.findMany({
-        where: {
-          OR: [
-            // entirely inside single year
-            ...startYear === endYear ? [{ year: startYear, month: { gte: startMonth, lte: endMonth } }] : [
-              { year: startYear, month: { gte: startMonth } },
-              { year: { gt: startYear, lt: endYear } },
-              { year: endYear, month: { lte: endMonth } }
-            ]
-          ]
-        },
+      const span = calendarMonthSpan(startYear, startMonth, endYear, endMonth);
+      const candidates = await prisma2.employeePayroll.findMany({
+        where: { year: { gte: Math.min(startYear, endYear), lte: Math.max(startYear, endYear) } },
         include: { employee: { select: { id: true, name: true, role: true, department: true } } },
         orderBy: [{ year: "asc" }, { month: "asc" }]
+      });
+      const records = candidates.filter((record) => {
+        const range = periodRangeOf(record);
+        return periodsOverlap(range.start, range.end, span.start, span.end);
       });
       const empMap = {};
       for (const r of records) {
@@ -4727,7 +5244,11 @@ function registerEmployeesHandlers(prisma2) {
       const taken = approvedAnnual.reduce((sum, row) => sum + (row.days ?? 0), 0);
       const allowance = employee.annualLeaveDays ?? 21;
       const lastDay = new Date(employee.lastWorkingDate ?? /* @__PURE__ */ new Date());
-      const ot = await computeOvertimeForMonth(employeeId, lastDay.getMonth() + 1, lastDay.getFullYear());
+      const otPeriod = periodFromPayload({
+        year: lastDay.getFullYear(),
+        month: lastDay.getMonth() + 1
+      });
+      const ot = await computeOvertimeForMonth(employeeId, otPeriod.start, otPeriod.end);
       const breakdown = computeSettlement({
         salary: employee.salary ?? 0,
         salaryType: employee.salaryType ?? "monthly",
@@ -4793,10 +5314,32 @@ function registerEmployeesHandlers(prisma2) {
       return { success: false, message: error.message };
     }
   });
-  ipcMain.handle("employees:documents:add", async (_, { employeeId, title, type, performedBy }) => {
+  function readDocumentRenewalFields(input) {
+    const reference = input?.reference ? String(input.reference).trim().slice(0, 120) : null;
+    const parseDate = (value) => {
+      if (!value)
+        return null;
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? null : d;
+    };
+    const issuedAt = parseDate(input?.issuedAt);
+    const expiresAt = parseDate(input?.expiresAt);
+    if (input?.expiresAt && !expiresAt)
+      return { ok: false, code: "invalid_expiry", message: "The expiry date is not a valid date" };
+    if (input?.issuedAt && !issuedAt)
+      return { ok: false, code: "invalid_issue", message: "The issue date is not a valid date" };
+    if (issuedAt && expiresAt && expiresAt <= issuedAt) {
+      return { ok: false, code: "expiry_before_issue", message: "The expiry date must be after the issue date" };
+    }
+    return { ok: true, data: { reference, issuedAt, expiresAt } };
+  }
+  ipcMain.handle("employees:documents:add", async (_, { employeeId, title, type, performedBy, ...rest }) => {
     try {
       if (!prisma2)
         return { success: false };
+      const renewal = readDocumentRenewalFields(rest);
+      if (!renewal.ok)
+        return { success: false, code: renewal.code, message: renewal.message };
       const picked = await dialog.showOpenDialog({
         title: "Select document to attach",
         properties: ["openFile"],
@@ -4820,7 +5363,8 @@ function registerEmployeesHandlers(prisma2) {
           employeeId,
           title: title && String(title).trim() || import_node_path4.default.basename(src),
           type: type || "other",
-          filename: import_node_path4.default.join(employeeId, storedName)
+          filename: import_node_path4.default.join(employeeId, storedName),
+          ...renewal.data
         }
       });
       await prisma2.employeeActivityLog.create({
@@ -4829,6 +5373,38 @@ function registerEmployeesHandlers(prisma2) {
       return { success: true, document: record };
     } catch (error) {
       log7.error("Error adding document:", error);
+      return { success: false, message: error.message };
+    }
+  });
+  ipcMain.handle("employees:documents:update", async (_, { id, title, type, performedBy, ...rest }) => {
+    try {
+      if (!prisma2)
+        return { success: false };
+      const existing = await prisma2.employeeDocument.findUnique({ where: { id } });
+      if (!existing)
+        return { success: false, message: "Document not found" };
+      const renewal = readDocumentRenewalFields(rest);
+      if (!renewal.ok)
+        return { success: false, code: renewal.code, message: renewal.message };
+      const record = await prisma2.employeeDocument.update({
+        where: { id },
+        data: {
+          title: title && String(title).trim() || existing.title,
+          type: type || existing.type,
+          ...renewal.data
+        }
+      });
+      await prisma2.employeeActivityLog.create({
+        data: {
+          employeeId: existing.employeeId,
+          action: "document_updated",
+          details: `Document "${record.title}" (${record.type}) updated`,
+          performedBy: performedBy ?? null
+        }
+      });
+      return { success: true, document: record };
+    } catch (error) {
+      log7.error("Error updating document:", error);
       return { success: false, message: error.message };
     }
   });
@@ -9014,6 +9590,8 @@ function getEnabledModuleIds() {
     defaults.push("pharmacy");
   if (true)
     defaults.push("coffee");
+  if (true)
+    defaults.push("personal");
   return defaults.length > 0 ? defaults : ["commerce"];
 }
 function setModuleEnabled(moduleId, enabled) {
@@ -13794,6 +14372,9 @@ var ProductRepository = class {
   }
   /**
    * Search products
+   *
+   * `category` is a relation, so it has to be filtered through the relation
+   * field — a scalar `contains` on it is rejected by Prisma.
    */
   async search(query) {
     return this.findAll({
@@ -13801,7 +14382,7 @@ var ProductRepository = class {
         OR: [
           { name: { contains: query } },
           { baseSKU: { contains: query } },
-          { category: { contains: query } },
+          { category: { name: { contains: query } } },
           { description: { contains: query } }
         ]
       },
@@ -13917,23 +14498,36 @@ var ProductRepository = class {
   }
   /**
    * Get products with low stock
+   *
+   * The filter is evaluated over the variant table and only the matching
+   * products are then loaded. The earlier implementation read the *entire*
+   * catalogue - with variants and images - to filter in memory, which is
+   * unbounded work (and megabytes of image blobs) for a list that is normally a
+   * handful of rows.
    */
   async findLowStock(threshold = 10) {
-    const products = await this.findAll();
-    return products.filter((product) => {
-      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-      return totalStock <= threshold && totalStock > 0;
-    });
+    const ids = await this.productIdsByTotalStock((total) => total > 0 && total <= threshold);
+    return this.findAllByIds(ids);
   }
   /**
    * Get out of stock products
    */
   async findOutOfStock() {
-    const products = await this.findAll();
-    return products.filter((product) => {
-      const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-      return totalStock === 0;
+    const ids = await this.productIdsByTotalStock((total) => total === 0);
+    return this.findAllByIds(ids);
+  }
+  /** Product ids whose summed variant stock satisfies `matches`. */
+  async productIdsByTotalStock(matches) {
+    const grouped = await this.prisma.productVariant.groupBy({
+      by: ["productId"],
+      _sum: { stock: true }
     });
+    return grouped.filter((row) => matches(row._sum.stock ?? 0)).map((row) => row.productId);
+  }
+  findAllByIds(ids) {
+    if (ids.length === 0)
+      return Promise.resolve([]);
+    return this.findAll({ where: { id: { in: ids } } });
   }
   /**
    * Update variant stock
@@ -14197,7 +14791,7 @@ var ProductService = class {
         };
       }
       if (query.category) {
-        options.where = { ...options.where, category: query.category };
+        options.where = { ...options.where, categoryId: query.category };
       }
       if (query.storeId) {
         options.where = { ...options.where, storeId: query.storeId };
@@ -20106,8 +20700,8 @@ async function nextReceiptNumber(prisma2) {
     orderBy: { createdAt: "desc" },
     select: { receiptNumber: true }
   });
-  const num = last?.receiptNumber ? parseInt(last.receiptNumber.replace("IN-", ""), 10) : 0;
-  return `IN-${String((Number.isFinite(num) ? num : 0) + 1).padStart(6, "0")}`;
+  const num2 = last?.receiptNumber ? parseInt(last.receiptNumber.replace("IN-", ""), 10) : 0;
+  return `IN-${String((Number.isFinite(num2) ? num2 : 0) + 1).padStart(6, "0")}`;
 }
 function registerIncomingReceiptHandlers(prisma2) {
   ipcMain.handle("coffee:incomingReceipts:getAll", async (_e, opts) => {
@@ -20449,8 +21043,8 @@ async function nextTransitNumber(prisma2) {
     orderBy: { createdAt: "desc" },
     select: { receiptNumber: true }
   });
-  const num = last?.receiptNumber ? parseInt(last.receiptNumber.replace("TR-", ""), 10) : 0;
-  return `TR-${String((Number.isFinite(num) ? num : 0) + 1).padStart(6, "0")}`;
+  const num2 = last?.receiptNumber ? parseInt(last.receiptNumber.replace("TR-", ""), 10) : 0;
+  return `TR-${String((Number.isFinite(num2) ? num2 : 0) + 1).padStart(6, "0")}`;
 }
 function registerTransitReceiptHandlers(prisma2) {
   ipcMain.handle("coffee:transitReceipts:getAll", async (_e, opts) => {
@@ -20633,36 +21227,9 @@ init_electron_node();
 // src/plugins/restaurant/handlers/orders.ts
 init_electron_node();
 
-// src/plugins/restaurant/utils/mathEngine.ts
+// src/shared/restaurantUnits.ts
 function roundMoney(val) {
   return Math.round((Number(val || 0) + Number.EPSILON) * 100) / 100;
-}
-function computeOrderTotals(params) {
-  const activeItems = params.items.filter((i) => i.status !== "voided");
-  const subtotal = roundMoney(
-    activeItems.reduce(
-      (sum, item) => sum + (item.totalPrice !== void 0 ? item.totalPrice : item.unitPrice * item.quantity),
-      0
-    )
-  );
-  let discountValue = 0;
-  if (params.discountType === "percentage") {
-    discountValue = roundMoney(subtotal * Number(params.discountAmount || 0) / 100);
-  } else if (params.discountType === "fixed") {
-    discountValue = roundMoney(Math.min(subtotal, Number(params.discountAmount || 0)));
-  }
-  const discountedSubtotal = Math.max(0, roundMoney(subtotal - discountValue));
-  const tax = roundMoney(discountedSubtotal * Number(params.taxRate || 0));
-  const serviceCharge = roundMoney(discountedSubtotal * Number(params.serviceCharge || 0));
-  const total = roundMoney(discountedSubtotal + tax + serviceCharge);
-  return {
-    subtotal,
-    discountValue,
-    discountedSubtotal,
-    tax,
-    serviceCharge,
-    total
-  };
 }
 var UOM_CONVERSIONS = {
   // Mass
@@ -20691,6 +21258,68 @@ function convertToBaseUnit(qty, unit) {
   return {
     normalizedQty: qty * config.multiplier,
     baseUnit: config.baseUnit
+  };
+}
+function convertBetweenUnits(qty, fromUnit, toUnit) {
+  const value = Number(qty) || 0;
+  const from = convertToBaseUnit(value, fromUnit);
+  const to = convertToBaseUnit(1, toUnit);
+  if (from.baseUnit !== to.baseUnit || !to.normalizedQty)
+    return value;
+  return from.normalizedQty / to.normalizedQty;
+}
+function sameUnitFamily(a, b) {
+  return convertToBaseUnit(1, a).baseUnit === convertToBaseUnit(1, b).baseUnit;
+}
+function computeRecipeLineCost(quantity, lineUnit, ingredientUnit, costPerUnit) {
+  return roundMoney(
+    convertBetweenUnits(quantity, lineUnit, ingredientUnit) * (Number(costPerUnit) || 0)
+  );
+}
+function computeRecipeBatchCost(lines) {
+  return roundMoney(
+    lines.reduce(
+      (sum, line) => sum + computeRecipeLineCost(
+        line.quantity,
+        line.unit,
+        line.ingredient?.unit || line.unit,
+        line.ingredient?.costPerUnit || 0
+      ),
+      0
+    )
+  );
+}
+function computePortionCost(batchCost, yieldCount) {
+  const yield_ = Number(yieldCount) > 0 ? Number(yieldCount) : 1;
+  return roundMoney((Number(batchCost) || 0) / yield_);
+}
+
+// src/plugins/restaurant/utils/mathEngine.ts
+function computeOrderTotals(params) {
+  const activeItems = params.items.filter((i) => i.status !== "voided");
+  const subtotal = roundMoney(
+    activeItems.reduce(
+      (sum, item) => sum + (item.totalPrice !== void 0 ? item.totalPrice : item.unitPrice * item.quantity),
+      0
+    )
+  );
+  let discountValue = 0;
+  if (params.discountType === "percentage") {
+    discountValue = roundMoney(subtotal * Number(params.discountAmount || 0) / 100);
+  } else if (params.discountType === "fixed") {
+    discountValue = roundMoney(Math.min(subtotal, Number(params.discountAmount || 0)));
+  }
+  const discountedSubtotal = Math.max(0, roundMoney(subtotal - discountValue));
+  const tax = roundMoney(discountedSubtotal * Number(params.taxRate || 0));
+  const serviceCharge = roundMoney(discountedSubtotal * Number(params.serviceCharge || 0));
+  const total = roundMoney(discountedSubtotal + tax + serviceCharge);
+  return {
+    subtotal,
+    discountValue,
+    discountedSubtotal,
+    tax,
+    serviceCharge,
+    total
   };
 }
 
@@ -20762,35 +21391,39 @@ async function deductOrderIngredientsInTx(tx, orderId) {
     if (!recipe || !recipe.ingredients?.length)
       continue;
     for (const recipeIng of recipe.ingredients) {
-      const { normalizedQty: deductPerYield } = convertToBaseUnit(recipeIng.quantity, recipeIng.unit);
-      const totalDeduct = roundMoney(deductPerYield / (recipe.yieldCount || 1) * item.quantity);
       const ingredient = await tx.restaurantIngredient.findUnique({
         where: { id: recipeIng.ingredientId }
       });
-      if (ingredient) {
-        const newStock = roundMoney(Math.max(0, ingredient.currentStock - totalDeduct));
-        await tx.restaurantIngredient.update({
-          where: { id: ingredient.id },
-          data: { currentStock: newStock }
-        });
-        await tx.ingredientStockMovement.create({
-          data: {
-            ingredientId: ingredient.id,
-            type: "order_deduction",
-            quantity: -totalDeduct,
-            unitCost: ingredient.costPerUnit,
-            referenceId: order.id,
-            notes: `Order #${order.orderNumber || order.id.slice(0, 5)} - ${item.itemName} x${item.quantity}`
-          }
-        });
-        if (newStock <= ingredient.minStockAlert) {
-          broadcastRestaurantEvent("inventory:low_stock", {
-            ingredientId: ingredient.id,
-            name: ingredient.name,
-            currentStock: newStock,
-            minStockAlert: ingredient.minStockAlert
-          });
+      if (!ingredient)
+        continue;
+      const deductPerYield = convertBetweenUnits(
+        recipeIng.quantity,
+        recipeIng.unit,
+        ingredient.unit
+      );
+      const totalDeduct = roundMoney(deductPerYield / (recipe.yieldCount || 1) * item.quantity);
+      const newStock = roundMoney(Math.max(0, ingredient.currentStock - totalDeduct));
+      await tx.restaurantIngredient.update({
+        where: { id: ingredient.id },
+        data: { currentStock: newStock }
+      });
+      await tx.ingredientStockMovement.create({
+        data: {
+          ingredientId: ingredient.id,
+          type: "order_deduction",
+          quantity: -totalDeduct,
+          unitCost: ingredient.costPerUnit,
+          referenceId: order.id,
+          notes: `Order #${order.orderNumber || order.id.slice(0, 5)} - ${item.itemName} x${item.quantity}`
         }
+      });
+      if (newStock <= ingredient.minStockAlert) {
+        broadcastRestaurantEvent("inventory:low_stock", {
+          ingredientId: ingredient.id,
+          name: ingredient.name,
+          currentStock: newStock,
+          minStockAlert: ingredient.minStockAlert
+        });
       }
     }
   }
@@ -20800,41 +21433,44 @@ async function deductOrderIngredientsInTx(tx, orderId) {
   });
 }
 function registerOrderHandlers2(prisma2) {
-  ipcMain.handle("restaurant:getOrders", async (_e, options) => {
-    try {
-      const where = {};
-      if (options?.status)
-        where.status = options.status;
-      if (options?.tableId)
-        where.tableId = options.tableId;
-      if (options?.orderType)
-        where.orderType = options.orderType;
-      if (options?.shiftId)
-        where.shiftId = options.shiftId;
-      if (options?.startDate || options?.endDate) {
-        where.openedAt = {};
-        if (options.startDate)
-          where.openedAt.gte = new Date(options.startDate);
-        if (options.endDate)
-          where.openedAt.lte = new Date(options.endDate);
-      }
-      return await prisma2.dineInOrder.findMany({
-        where,
-        include: {
-          table: true,
-          items: {
-            include: { menuItem: true },
-            orderBy: [{ seatNumber: "asc" }, { createdAt: "asc" }]
+  ipcMain.handle(
+    "restaurant:getOrders",
+    async (_e, options) => {
+      try {
+        const where = {};
+        if (options?.status)
+          where.status = options.status;
+        if (options?.tableId)
+          where.tableId = options.tableId;
+        if (options?.orderType)
+          where.orderType = options.orderType;
+        if (options?.shiftId)
+          where.shiftId = options.shiftId;
+        if (options?.startDate || options?.endDate) {
+          where.openedAt = {};
+          if (options.startDate)
+            where.openedAt.gte = new Date(options.startDate);
+          if (options.endDate)
+            where.openedAt.lte = new Date(options.endDate);
+        }
+        return await prisma2.dineInOrder.findMany({
+          where,
+          include: {
+            table: true,
+            items: {
+              include: { menuItem: true },
+              orderBy: [{ seatNumber: "asc" }, { createdAt: "asc" }]
+            },
+            payments: true
           },
-          payments: true
-        },
-        orderBy: { openedAt: "desc" }
-      });
-    } catch (err) {
-      log72.error("getOrders error", err);
-      throw err;
+          orderBy: { openedAt: "desc" }
+        });
+      } catch (err) {
+        log72.error("getOrders error", err);
+        throw err;
+      }
     }
-  });
+  );
   ipcMain.handle("restaurant:getOrder", async (_e, id) => {
     try {
       return await prisma2.dineInOrder.findUnique({
@@ -20857,110 +21493,155 @@ function registerOrderHandlers2(prisma2) {
       throw err;
     }
   });
-  ipcMain.handle("restaurant:openOrder", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      if (data.tableId) {
-        const existing = await tx.dineInOrder.findFirst({
-          where: { tableId: data.tableId, status: { in: ["open", "billing"] } }
+  ipcMain.handle(
+    "restaurant:openOrder",
+    async (_e, data) => {
+      const ORDER_TYPES = ["dine_in", "takeout", "delivery", "bar_tab"];
+      return await prisma2.$transaction(async (tx) => {
+        if (data.orderType && !ORDER_TYPES.includes(data.orderType)) {
+          throw new Error(`Unknown order type "${data.orderType}"`);
+        }
+        if (data.tableId) {
+          const existing = await tx.dineInOrder.findFirst({
+            where: { tableId: data.tableId, status: { in: ["open", "billing"] } }
+          });
+          if (existing) {
+            throw new Error("Table already has an active order in progress");
+          }
+          await tx.restaurantTable.update({
+            where: { id: data.tableId },
+            data: { status: "occupied" }
+          });
+        }
+        const todayStart = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
+        const countToday = await tx.dineInOrder.count({
+          where: { createdAt: { gte: todayStart } }
         });
-        if (existing) {
-          throw new Error("Table already has an active order in progress");
-        }
-        await tx.restaurantTable.update({
-          where: { id: data.tableId },
-          data: { status: "occupied" }
+        const newOrder = await tx.dineInOrder.create({
+          data: {
+            tableId: data.tableId || null,
+            orderNumber: countToday + 1,
+            serverName: data.serverName || "Staff",
+            serverId: data.serverId || null,
+            shiftId: data.shiftId || null,
+            guestCount: Math.max(1, Number(data.guestCount || 1)),
+            notes: data.notes || "",
+            orderType: data.orderType || (data.tableId ? "dine_in" : "takeout"),
+            // Rates are fractions (0.08 = 8%), so anything outside 0..1 is a bug.
+            taxRate: Math.min(1, Math.max(0, Number(data.taxRate || 0))),
+            serviceCharge: Math.min(1, Math.max(0, Number(data.serviceCharge || 0))),
+            status: "open"
+          },
+          include: { table: true, items: true, payments: true }
         });
-      }
-      const todayStart = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
-      const countToday = await tx.dineInOrder.count({
-        where: { createdAt: { gte: todayStart } }
-      });
-      const newOrder = await tx.dineInOrder.create({
-        data: {
-          tableId: data.tableId || null,
-          orderNumber: countToday + 1,
-          serverName: data.serverName || "Staff",
-          serverId: data.serverId || null,
-          shiftId: data.shiftId || null,
-          guestCount: Math.max(1, Number(data.guestCount || 1)),
-          notes: data.notes || "",
-          orderType: data.orderType || (data.tableId ? "dine_in" : "takeout"),
-          taxRate: Number(data.taxRate || 0),
-          serviceCharge: Number(data.serviceCharge || 0),
-          status: "open"
-        },
-        include: { table: true, items: true, payments: true }
-      });
-      if (data.tableId) {
-        broadcastRestaurantEvent("table:updated", { id: data.tableId, status: "occupied" });
-      }
-      broadcastRestaurantEvent("order:created", newOrder);
-      return newOrder;
-    });
-  });
-  ipcMain.handle("restaurant:addOrderItem", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const quantity = Math.max(1, Number(data.quantity || 1));
-      const unitPrice = roundMoney(Number(data.unitPrice || 0));
-      const totalPrice = roundMoney(unitPrice * quantity);
-      await tx.dineInOrderItem.create({
-        data: {
-          orderId: data.orderId,
-          menuItemId: data.menuItemId || null,
-          itemName: data.itemName,
-          quantity,
-          unitPrice,
-          totalPrice,
-          course: data.course || "main",
-          seatNumber: Number(data.seatNumber || 1),
-          station: data.station || "Kitchen",
-          notes: data.notes || null,
-          modifiers: data.modifiers || null,
-          status: "pending"
+        if (data.tableId) {
+          broadcastRestaurantEvent("table:updated", { id: data.tableId, status: "occupied" });
         }
+        broadcastRestaurantEvent("order:created", newOrder);
+        return newOrder;
       });
-      return await recalcOrderTotalsInTx(tx, data.orderId);
-    });
-  });
-  ipcMain.handle("restaurant:updateOrderItem", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const current = await tx.dineInOrderItem.findUnique({ where: { id: data.id } });
-      if (!current)
-        throw new Error("Item not found");
-      const qty = data.quantity !== void 0 ? Math.max(1, Number(data.quantity)) : current.quantity;
-      const price = data.unitPrice !== void 0 ? roundMoney(data.unitPrice) : current.unitPrice;
-      const total = roundMoney(price * qty);
-      await tx.dineInOrderItem.update({
-        where: { id: data.id },
-        data: {
-          quantity: qty,
-          unitPrice: price,
-          totalPrice: total,
-          ...data.notes !== void 0 ? { notes: data.notes } : {},
-          ...data.course !== void 0 ? { course: data.course } : {},
-          ...data.seatNumber !== void 0 ? { seatNumber: Number(data.seatNumber) } : {},
-          ...data.modifiers !== void 0 ? { modifiers: data.modifiers } : {}
+    }
+  );
+  ipcMain.handle(
+    "restaurant:addOrderItem",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        if (!data?.orderId)
+          throw new Error("Order id is required");
+        const order = await tx.dineInOrder.findUnique({ where: { id: data.orderId } });
+        if (!order)
+          throw new Error("Order not found");
+        if (order.status === "paid" || order.status === "voided") {
+          throw new Error(`Cannot add items to a ${order.status} check`);
         }
+        if (data.menuItemId) {
+          const menuItem = await tx.menuItem.findUnique({ where: { id: data.menuItemId } });
+          if (!menuItem)
+            throw new Error("Menu item not found");
+          if (!menuItem.isAvailable)
+            throw new Error(`${menuItem.name} is currently out of stock (86'd)`);
+          if (data.station === void 0)
+            data.station = menuItem.station;
+        }
+        const quantity = Math.max(1, Number(data.quantity || 1));
+        const unitPrice = roundMoney(Number(data.unitPrice || 0));
+        const totalPrice = roundMoney(unitPrice * quantity);
+        await tx.dineInOrderItem.create({
+          data: {
+            orderId: data.orderId,
+            menuItemId: data.menuItemId || null,
+            itemName: data.itemName,
+            quantity,
+            unitPrice,
+            totalPrice,
+            course: data.course || "main",
+            seatNumber: Number(data.seatNumber || 1),
+            station: data.station || "Kitchen",
+            notes: data.notes || null,
+            modifiers: data.modifiers || null,
+            status: "pending"
+          }
+        });
+        return await recalcOrderTotalsInTx(tx, data.orderId);
       });
-      return await recalcOrderTotalsInTx(tx, current.orderId);
-    });
-  });
-  ipcMain.handle("restaurant:removeOrderItem", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const current = await tx.dineInOrderItem.findUnique({ where: { id: data.itemId } });
-      if (!current)
-        throw new Error("Item not found");
-      if (current.status === "pending") {
-        await tx.dineInOrderItem.delete({ where: { id: data.itemId } });
-      } else {
+    }
+  );
+  ipcMain.handle(
+    "restaurant:updateOrderItem",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        const current = await tx.dineInOrderItem.findUnique({ where: { id: data.id } });
+        if (!current)
+          throw new Error("Item not found");
+        const qty = data.quantity !== void 0 ? Math.max(1, Number(data.quantity)) : current.quantity;
+        const price = data.unitPrice !== void 0 ? roundMoney(data.unitPrice) : current.unitPrice;
+        const total = roundMoney(price * qty);
         await tx.dineInOrderItem.update({
-          where: { id: data.itemId },
-          data: { status: "voided", voidReason: data.voidReason || "Cashier void" }
+          where: { id: data.id },
+          data: {
+            quantity: qty,
+            unitPrice: price,
+            totalPrice: total,
+            ...data.notes !== void 0 ? { notes: data.notes } : {},
+            ...data.course !== void 0 ? { course: data.course } : {},
+            ...data.seatNumber !== void 0 ? { seatNumber: Number(data.seatNumber) } : {},
+            ...data.modifiers !== void 0 ? { modifiers: data.modifiers } : {}
+          }
         });
-      }
-      return await recalcOrderTotalsInTx(tx, current.orderId);
-    });
-  });
+        return await recalcOrderTotalsInTx(tx, current.orderId);
+      });
+    }
+  );
+  ipcMain.handle(
+    "restaurant:removeOrderItem",
+    async (_e, payload) => {
+      const itemId = typeof payload === "string" ? payload : payload?.itemId;
+      const voidReason = typeof payload === "string" ? void 0 : payload?.voidReason;
+      return await prisma2.$transaction(async (tx) => {
+        if (!itemId)
+          throw new Error("Order item id is required");
+        const current = await tx.dineInOrderItem.findUnique({ where: { id: itemId } });
+        if (!current)
+          throw new Error("Item not found");
+        const parent = await tx.dineInOrder.findUnique({ where: { id: current.orderId } });
+        if (parent && (parent.status === "paid" || parent.status === "voided")) {
+          throw new Error(`Cannot void an item on a ${parent.status} check`);
+        }
+        if (current.status === "pending") {
+          await tx.dineInOrderItem.delete({ where: { id: itemId } });
+        } else {
+          await tx.dineInOrderItem.update({
+            where: { id: itemId },
+            data: {
+              status: "voided",
+              voidReason: voidReason || "Cashier void"
+            }
+          });
+        }
+        return await recalcOrderTotalsInTx(tx, current.orderId);
+      });
+    }
+  );
   ipcMain.handle("restaurant:fireCourse", async (_e, data) => {
     return await prisma2.$transaction(async (tx) => {
       await tx.dineInOrderItem.updateMany({
@@ -20972,140 +21653,252 @@ function registerOrderHandlers2(prisma2) {
       return updated;
     });
   });
-  ipcMain.handle("restaurant:splitCheckBySeat", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const source = await tx.dineInOrder.findUnique({
-        where: { id: data.sourceOrderId },
-        include: { items: true }
-      });
-      if (!source)
-        throw new Error("Source order not found");
-      const todayStart = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
-      const countToday = await tx.dineInOrder.count({ where: { createdAt: { gte: todayStart } } });
-      const target = await tx.dineInOrder.create({
-        data: {
-          tableId: source.tableId,
-          orderNumber: countToday + 1,
-          serverName: source.serverName,
-          serverId: source.serverId,
-          shiftId: source.shiftId,
-          orderType: source.orderType,
-          taxRate: source.taxRate,
-          serviceCharge: source.serviceCharge,
-          status: "open",
-          notes: `Split from Bill #${source.orderNumber || source.id.slice(0, 5)}`
+  ipcMain.handle(
+    "restaurant:splitCheckBySeat",
+    async (_e, payload) => {
+      const sourceOrderId = payload?.sourceOrderId || payload?.orderId;
+      const seatNumbers = (payload?.seatNumbers || []).map((n) => Number(n)).filter((n) => Number.isFinite(n));
+      return await prisma2.$transaction(async (tx) => {
+        if (!sourceOrderId)
+          throw new Error("Source order id is required");
+        if (seatNumbers.length === 0)
+          throw new Error("Select at least one seat to move");
+        const source = await tx.dineInOrder.findUnique({
+          where: { id: sourceOrderId },
+          include: { items: true }
+        });
+        if (!source)
+          throw new Error("Source order not found");
+        if (source.status === "paid" || source.status === "voided") {
+          throw new Error(`Cannot split a ${source.status} check`);
         }
-      });
-      await tx.dineInOrderItem.updateMany({
-        where: {
-          orderId: source.id,
-          seatNumber: { in: data.seatNumbers }
-        },
-        data: { orderId: target.id }
-      });
-      await recalcOrderTotalsInTx(tx, source.id);
-      return await recalcOrderTotalsInTx(tx, target.id);
-    });
-  });
-  ipcMain.handle("restaurant:applyDiscount", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      await tx.dineInOrder.update({
-        where: { id: data.orderId },
-        data: {
-          discountType: data.discountType,
-          discountAmount: roundMoney(Number(data.discountAmount || 0))
+        const movable = source.items.filter(
+          (i) => i.status !== "voided" && seatNumbers.includes(i.seatNumber)
+        );
+        if (movable.length === 0) {
+          throw new Error("Those seats have no open items to move");
         }
-      });
-      return await recalcOrderTotalsInTx(tx, data.orderId);
-    });
-  });
-  ipcMain.handle("restaurant:processPayment", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const order = await tx.dineInOrder.findUnique({
-        where: { id: data.orderId },
-        include: { payments: true }
-      });
-      if (!order)
-        throw new Error("Order not found");
-      if (order.status === "paid")
-        throw new Error("Order is already fully settled");
-      const payAmount = roundMoney(Number(data.amount));
-      const tip = roundMoney(Number(data.tipAmount || 0));
-      const payment = await tx.orderPayment.create({
-        data: {
-          orderId: data.orderId,
-          amount: payAmount,
-          tipAmount: tip,
-          paymentMethod: data.paymentMethod || "cash",
-          reference: data.reference || null
+        if (movable.length === source.items.filter((i) => i.status !== "voided").length) {
+          throw new Error("Cannot move every item off the check \u2014 leave at least one line behind");
         }
-      });
-      const allPayments = await tx.orderPayment.findMany({ where: { orderId: data.orderId } });
-      const paidTotal = roundMoney(allPayments.reduce((s, p) => s + p.amount, 0));
-      const totalTips = roundMoney(allPayments.reduce((s, p) => s + (p.tipAmount || 0), 0));
-      if (paidTotal >= order.total) {
-        await tx.dineInOrder.update({
-          where: { id: data.orderId },
+        const todayStart = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
+        const countToday = await tx.dineInOrder.count({ where: { createdAt: { gte: todayStart } } });
+        const target = await tx.dineInOrder.create({
           data: {
-            status: "paid",
-            tipAmount: totalTips,
-            paymentMethod: data.paymentMethod,
-            closedAt: /* @__PURE__ */ new Date()
+            tableId: source.tableId,
+            orderNumber: countToday + 1,
+            serverName: source.serverName,
+            serverId: source.serverId,
+            shiftId: source.shiftId,
+            orderType: source.orderType,
+            taxRate: source.taxRate,
+            serviceCharge: source.serviceCharge,
+            status: "open",
+            notes: `Split from Bill #${source.orderNumber || source.id.slice(0, 5)}`
           }
         });
-        if (order.tableId) {
-          await tx.restaurantTable.update({
-            where: { id: order.tableId },
-            data: { status: "cleaning" }
-          });
-          broadcastRestaurantEvent("table:updated", { id: order.tableId, status: "cleaning" });
+        await tx.dineInOrderItem.updateMany({
+          where: {
+            orderId: source.id,
+            seatNumber: { in: seatNumbers },
+            status: { not: "voided" }
+          },
+          data: { orderId: target.id }
+        });
+        const sourceTotals = await recalcOrderTotalsInTx(tx, source.id);
+        const targetTotals = await recalcOrderTotalsInTx(tx, target.id);
+        return {
+          sourceOrderId: source.id,
+          targetOrderId: target.id,
+          targetOrderNumber: target.orderNumber,
+          movedItemCount: movable.length,
+          sourceTotals,
+          targetTotals
+        };
+      });
+    }
+  );
+  ipcMain.handle(
+    "restaurant:applyDiscount",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        if (!data?.orderId)
+          throw new Error("Order id is required");
+        const order = await tx.dineInOrder.findUnique({ where: { id: data.orderId } });
+        if (!order)
+          throw new Error("Order not found");
+        if (order.status === "paid")
+          throw new Error("Order is already settled \u2014 discount cannot be applied");
+        if (order.status === "voided")
+          throw new Error("Order was voided");
+        const clearing = !data.discountType || Number(data.discountAmount || 0) <= 0;
+        let discountType = null;
+        let discountAmount = 0;
+        if (!clearing) {
+          discountAmount = roundMoney(Number(data.discountAmount));
+          discountType = data.discountType;
+          if (data.discountType === "percentage" && discountAmount > 100) {
+            throw new Error("Discount percentage cannot exceed 100%");
+          }
+          if (data.discountType === "fixed" && discountAmount > (order.subtotal || 0)) {
+            throw new Error("Fixed discount cannot exceed the subtotal");
+          }
         }
-        await deductOrderIngredientsInTx(tx, order.id);
-        broadcastRestaurantEvent("order:settled", { orderId: order.id, total: order.total });
-      } else {
         await tx.dineInOrder.update({
           where: { id: data.orderId },
-          data: { status: "billing" }
+          data: { discountType, discountAmount }
         });
+        return await recalcOrderTotalsInTx(tx, data.orderId);
+      });
+    }
+  );
+  ipcMain.handle(
+    "restaurant:processPayment",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        if (!data?.orderId)
+          throw new Error("Order id is required");
+        const order = await tx.dineInOrder.findUnique({
+          where: { id: data.orderId },
+          include: { payments: true }
+        });
+        if (!order)
+          throw new Error("Order not found");
+        if (order.status === "paid")
+          throw new Error("Order is already fully settled");
+        if (order.status === "voided")
+          throw new Error("Order was voided \u2014 reopen it before taking payment");
+        const payAmount = roundMoney(Number(data.amount));
+        if (!Number.isFinite(payAmount) || payAmount <= 0) {
+          throw new Error("Payment amount must be greater than zero");
+        }
+        const alreadyPaid = roundMoney(
+          (order.payments || []).reduce((s, p) => s + p.amount, 0)
+        );
+        const outstanding = roundMoney(order.total - alreadyPaid);
+        if (payAmount > outstanding) {
+          throw new Error(
+            `Payment of ${payAmount.toFixed(2)} exceeds the ${outstanding.toFixed(2)} still due on this check`
+          );
+        }
+        const tip = roundMoney(Number(data.tipAmount || 0));
+        if (tip < 0)
+          throw new Error("Tip cannot be negative");
+        const payment = await tx.orderPayment.create({
+          data: {
+            orderId: data.orderId,
+            amount: payAmount,
+            tipAmount: tip,
+            paymentMethod: data.paymentMethod || "cash",
+            reference: data.reference || null
+          }
+        });
+        const allPayments = await tx.orderPayment.findMany({ where: { orderId: data.orderId } });
+        const paidTotal = roundMoney(allPayments.reduce((s, p) => s + p.amount, 0));
+        const totalTips = roundMoney(
+          allPayments.reduce((s, p) => s + (p.tipAmount || 0), 0)
+        );
+        if (paidTotal >= order.total) {
+          await tx.dineInOrder.update({
+            where: { id: data.orderId },
+            data: {
+              status: "paid",
+              tipAmount: totalTips,
+              paymentMethod: data.paymentMethod,
+              closedAt: /* @__PURE__ */ new Date()
+            }
+          });
+          if (order.tableId) {
+            await tx.restaurantTable.update({
+              where: { id: order.tableId },
+              data: { status: "cleaning" }
+            });
+            broadcastRestaurantEvent("table:updated", { id: order.tableId, status: "cleaning" });
+          }
+          await deductOrderIngredientsInTx(tx, order.id);
+          broadcastRestaurantEvent("order:settled", {
+            orderId: order.id,
+            total: order.total,
+            tipAmount: totalTips
+          });
+        } else {
+          await tx.dineInOrder.update({
+            where: { id: data.orderId },
+            data: { status: "billing" }
+          });
+          if (order.tableId) {
+            await tx.restaurantTable.update({
+              where: { id: order.tableId },
+              data: { status: "billing" }
+            });
+            broadcastRestaurantEvent("table:updated", { id: order.tableId, status: "billing" });
+          }
+          broadcastRestaurantEvent("order:updated", {
+            orderId: data.orderId,
+            status: "billing",
+            paidTotal,
+            remaining: roundMoney(order.total - paidTotal)
+          });
+        }
+        return {
+          payment,
+          paidTotal,
+          total: order.total,
+          remaining: Math.max(0, roundMoney(order.total - paidTotal))
+        };
+      });
+    }
+  );
+  ipcMain.handle(
+    "restaurant:closeOrder",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        if (!data?.orderId)
+          throw new Error("Order id is required");
+        if (data.status !== "paid" && data.status !== "voided") {
+          throw new Error("Order can only be closed as paid or voided");
+        }
+        const existing = await tx.dineInOrder.findUnique({ where: { id: data.orderId } });
+        if (!existing)
+          throw new Error("Order not found");
+        if (existing.status === "paid")
+          throw new Error("Order is already settled");
+        if (existing.status === "voided")
+          throw new Error("Order is already voided");
+        const order = await tx.dineInOrder.update({
+          where: { id: data.orderId },
+          data: {
+            status: data.status,
+            closedAt: /* @__PURE__ */ new Date(),
+            ...data.notes ? { notes: data.notes } : {}
+          }
+        });
+        if (data.status === "voided") {
+          await tx.dineInOrderItem.updateMany({
+            where: { orderId: order.id, status: { not: "voided" } },
+            data: { status: "voided", voidReason: data.voidReason || data.notes || "Check voided" }
+          });
+          broadcastRestaurantEvent("kds:ticket_bumped", { orderId: order.id });
+        }
         if (order.tableId) {
           await tx.restaurantTable.update({
             where: { id: order.tableId },
-            data: { status: "billing" }
+            data: { status: "available" }
           });
-          broadcastRestaurantEvent("table:updated", { id: order.tableId, status: "billing" });
+          broadcastRestaurantEvent("table:updated", { id: order.tableId, status: "available" });
         }
-      }
-      return {
-        payment,
-        paidTotal,
-        remaining: Math.max(0, roundMoney(order.total - paidTotal))
-      };
-    });
-  });
-  ipcMain.handle("restaurant:closeOrder", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const order = await tx.dineInOrder.update({
-        where: { id: data.orderId },
-        data: {
-          status: data.status,
-          closedAt: /* @__PURE__ */ new Date(),
-          ...data.notes ? { notes: data.notes } : {}
+        if (data.status === "paid" && !order.isStockDeducted) {
+          await deductOrderIngredientsInTx(tx, order.id);
         }
-      });
-      if (order.tableId) {
-        await tx.restaurantTable.update({
-          where: { id: order.tableId },
-          data: { status: "available" }
+        const refreshed = await tx.dineInOrder.findUnique({
+          where: { id: order.id },
+          include: { table: true, items: true, payments: true }
         });
-        broadcastRestaurantEvent("table:updated", { id: order.tableId, status: "available" });
-      }
-      if (data.status === "paid" && !order.isStockDeducted) {
-        await deductOrderIngredientsInTx(tx, order.id);
-      }
-      broadcastRestaurantEvent("order:updated", order);
-      return order;
-    });
-  });
+        broadcastRestaurantEvent("order:updated", refreshed ?? order);
+        return refreshed ?? order;
+      });
+    }
+  );
 }
 
 // src/plugins/restaurant/handlers/tables.ts
@@ -21291,104 +22084,41 @@ function registerMenuHandlers(prisma2) {
       throw err;
     }
   });
-  ipcMain.handle("restaurant:createMenuItem", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const { modifierGroups, recipeIngredients, yieldCount, ...rest } = data;
-      const item = await tx.menuItem.create({
-        data: {
-          name: rest.name,
-          category: rest.category || "Main Dishes",
-          description: rest.description || null,
-          price: roundMoney(Number(rest.price)),
-          preparationTime: Number(rest.preparationTime || 15),
-          station: rest.station || "Kitchen",
-          colorTag: rest.colorTag || null,
-          barcode: rest.barcode || null,
-          notes: rest.notes || null,
-          modifierGroups: modifierGroups?.length ? {
-            create: modifierGroups.map((g) => ({
-              title: g.title,
-              minSelect: Number(g.minSelect || 0),
-              maxSelect: Number(g.maxSelect || 1),
-              options: {
-                create: g.options.map((o) => ({
-                  name: o.name,
-                  priceDelta: roundMoney(Number(o.priceDelta || 0))
-                }))
-              }
-            }))
-          } : void 0
-        }
-      });
-      if (recipeIngredients && recipeIngredients.length > 0) {
-        await tx.menuItemRecipe.create({
+  ipcMain.handle(
+    "restaurant:createMenuItem",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        const { modifierGroups, recipeIngredients, yieldCount, ...rest } = data;
+        const item = await tx.menuItem.create({
           data: {
-            menuItemId: item.id,
-            yieldCount: Math.max(1, Number(yieldCount || 1)),
-            ingredients: {
-              create: recipeIngredients.map((ing) => ({
-                ingredientId: ing.ingredientId,
-                quantity: Number(ing.quantity),
-                unit: ing.unit
+            name: rest.name,
+            category: rest.category || "Main Dishes",
+            description: rest.description || null,
+            price: roundMoney(Number(rest.price)),
+            preparationTime: Number(rest.preparationTime || 15),
+            station: rest.station || "Kitchen",
+            colorTag: rest.colorTag || null,
+            barcode: rest.barcode || null,
+            notes: rest.notes || null,
+            modifierGroups: modifierGroups?.length ? {
+              create: modifierGroups.map((g) => ({
+                title: g.title,
+                minSelect: Number(g.minSelect || 0),
+                maxSelect: Number(g.maxSelect || 1),
+                options: {
+                  create: g.options.map((o) => ({
+                    name: o.name,
+                    priceDelta: roundMoney(Number(o.priceDelta || 0))
+                  }))
+                }
               }))
-            }
+            } : void 0
           }
         });
-        const recipe = await tx.menuItemRecipe.findUnique({
-          where: { menuItemId: item.id },
-          include: { ingredients: { include: { ingredient: true } } }
-        });
-        if (recipe) {
-          const totalCost = recipe.ingredients.reduce((sum, ri) => {
-            const { normalizedQty } = convertToBaseUnit(ri.quantity, ri.unit);
-            return sum + normalizedQty * (ri.ingredient?.costPerUnit || 0);
-          }, 0);
-          const dishCost = roundMoney(totalCost / (recipe.yieldCount || 1));
-          await tx.menuItem.update({
-            where: { id: item.id },
-            data: { cost: dishCost }
-          });
-        }
-      }
-      return await tx.menuItem.findUnique({
-        where: { id: item.id },
-        include: {
-          modifierGroups: { include: { options: true } },
-          recipe: { include: { ingredients: { include: { ingredient: true } } } }
-        }
-      });
-    });
-  });
-  ipcMain.handle("restaurant:updateMenuItem", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const { id, modifierGroups, recipeIngredients, yieldCount, ...rest } = data;
-      if (rest.price !== void 0)
-        rest.price = roundMoney(Number(rest.price));
-      if (rest.cost !== void 0)
-        rest.cost = roundMoney(Number(rest.cost));
-      if (recipeIngredients) {
-        await tx.RecipeIngredientRestaurant.deleteMany({
-          where: { recipe: { menuItemId: id } }
-        });
-        const existingRecipe = await tx.menuItemRecipe.findUnique({ where: { menuItemId: id } });
-        if (existingRecipe) {
-          await tx.menuItemRecipe.update({
-            where: { id: existingRecipe.id },
-            data: {
-              yieldCount: Math.max(1, Number(yieldCount || 1)),
-              ingredients: {
-                create: recipeIngredients.map((ing) => ({
-                  ingredientId: ing.ingredientId,
-                  quantity: Number(ing.quantity),
-                  unit: ing.unit
-                }))
-              }
-            }
-          });
-        } else if (recipeIngredients.length > 0) {
+        if (recipeIngredients && recipeIngredients.length > 0) {
           await tx.menuItemRecipe.create({
             data: {
-              menuItemId: id,
+              menuItemId: item.id,
               yieldCount: Math.max(1, Number(yieldCount || 1)),
               ingredients: {
                 create: recipeIngredients.map((ing) => ({
@@ -21399,31 +22129,202 @@ function registerMenuHandlers(prisma2) {
               }
             }
           });
-        }
-        const freshRecipe = await tx.menuItemRecipe.findUnique({
-          where: { menuItemId: id },
-          include: { ingredients: { include: { ingredient: true } } }
-        });
-        if (freshRecipe) {
-          const totalCost = freshRecipe.ingredients.reduce((sum, ri) => {
-            const { normalizedQty } = convertToBaseUnit(ri.quantity, ri.unit);
-            return sum + normalizedQty * (ri.ingredient?.costPerUnit || 0);
-          }, 0);
-          const dishCost = roundMoney(totalCost / (freshRecipe.yieldCount || 1));
-          await tx.menuItem.update({
-            where: { id },
-            data: { cost: dishCost }
+          const recipe = await tx.menuItemRecipe.findUnique({
+            where: { menuItemId: item.id },
+            include: { ingredients: { include: { ingredient: true } } }
           });
+          if (recipe) {
+            const batchCost = computeRecipeBatchCost(recipe.ingredients);
+            const dishCost = computePortionCost(batchCost, recipe.yieldCount);
+            await tx.menuItem.update({
+              where: { id: item.id },
+              data: { cost: dishCost }
+            });
+          }
         }
-      }
-      return await tx.menuItem.findUnique({
-        where: { id },
-        include: {
-          modifierGroups: { include: { options: true } },
-          recipe: { include: { ingredients: { include: { ingredient: true } } } }
-        }
+        return await tx.menuItem.findUnique({
+          where: { id: item.id },
+          include: {
+            modifierGroups: { include: { options: true } },
+            recipe: { include: { ingredients: { include: { ingredient: true } } } }
+          }
+        });
       });
-    });
+    }
+  );
+  ipcMain.handle(
+    "restaurant:updateMenuItem",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        const { id, modifierGroups, recipeIngredients, yieldCount, ...rest } = data;
+        if (!id)
+          throw new Error("Menu item id is required");
+        if (rest.price !== void 0)
+          rest.price = roundMoney(Number(rest.price));
+        if (rest.cost !== void 0)
+          rest.cost = roundMoney(Number(rest.cost));
+        if (rest.preparationTime !== void 0)
+          rest.preparationTime = Number(rest.preparationTime);
+        if (rest.displayOrder !== void 0)
+          rest.displayOrder = Number(rest.displayOrder);
+        const ALLOWED = [
+          "name",
+          "category",
+          "description",
+          "price",
+          "cost",
+          "taxRate",
+          "preparationTime",
+          "station",
+          "isAvailable",
+          "displayOrder",
+          "colorTag",
+          "barcode",
+          "notes"
+        ];
+        const scalarFields = {};
+        for (const key of ALLOWED) {
+          if (rest[key] !== void 0)
+            scalarFields[key] = rest[key];
+        }
+        if (Object.keys(scalarFields).length > 0) {
+          await tx.menuItem.update({ where: { id }, data: scalarFields });
+        }
+        if (modifierGroups !== void 0) {
+          await tx.modifierGroup.deleteMany({ where: { menuItemId: id } });
+          for (const g of modifierGroups) {
+            const group = await tx.modifierGroup.create({
+              data: {
+                menuItemId: id,
+                title: g.title,
+                minSelect: Number(g.minSelect || 0),
+                maxSelect: Number(g.maxSelect || 1)
+              }
+            });
+            for (const o of g.options || []) {
+              await tx.modifierOption.create({
+                data: {
+                  groupId: group.id,
+                  name: o.name,
+                  priceDelta: roundMoney(Number(o.priceDelta || 0)),
+                  costDelta: roundMoney(Number(o.costDelta || 0))
+                }
+              });
+            }
+          }
+        }
+        if (recipeIngredients) {
+          await tx.RecipeIngredientRestaurant.deleteMany({
+            where: { recipe: { menuItemId: id } }
+          });
+          const existingRecipe = await tx.menuItemRecipe.findUnique({ where: { menuItemId: id } });
+          if (existingRecipe) {
+            await tx.menuItemRecipe.update({
+              where: { id: existingRecipe.id },
+              data: {
+                yieldCount: Math.max(1, Number(yieldCount || 1)),
+                ingredients: {
+                  create: recipeIngredients.map((ing) => ({
+                    ingredientId: ing.ingredientId,
+                    quantity: Number(ing.quantity),
+                    unit: ing.unit
+                  }))
+                }
+              }
+            });
+          } else if (recipeIngredients.length > 0) {
+            await tx.menuItemRecipe.create({
+              data: {
+                menuItemId: id,
+                yieldCount: Math.max(1, Number(yieldCount || 1)),
+                ingredients: {
+                  create: recipeIngredients.map((ing) => ({
+                    ingredientId: ing.ingredientId,
+                    quantity: Number(ing.quantity),
+                    unit: ing.unit
+                  }))
+                }
+              }
+            });
+          }
+          const freshRecipe = await tx.menuItemRecipe.findUnique({
+            where: { menuItemId: id },
+            include: { ingredients: { include: { ingredient: true } } }
+          });
+          if (freshRecipe) {
+            const batchCost = computeRecipeBatchCost(freshRecipe.ingredients);
+            const dishCost = computePortionCost(batchCost, freshRecipe.yieldCount);
+            await tx.menuItem.update({
+              where: { id },
+              data: { cost: dishCost }
+            });
+          }
+        }
+        return await tx.menuItem.findUnique({
+          where: { id },
+          include: {
+            modifierGroups: { include: { options: true } },
+            recipe: { include: { ingredients: { include: { ingredient: true } } } }
+          }
+        });
+      });
+    }
+  );
+  ipcMain.handle(
+    "restaurant:saveModifierGroup",
+    async (_e, data) => {
+      try {
+        if (!data?.menuItemId)
+          throw new Error("menuItemId is required");
+        if (!data?.title?.trim())
+          throw new Error("Modifier group title is required");
+        return await prisma2.$transaction(async (tx) => {
+          const minSelect = Math.max(0, Number(data.minSelect || 0));
+          const maxSelect = Math.max(1, Number(data.maxSelect || 1));
+          if (maxSelect < minSelect) {
+            throw new Error("Maximum selections cannot be lower than the minimum");
+          }
+          if (data.id) {
+            const existing = await tx.modifierGroup.findUnique({ where: { id: data.id } });
+            if (!existing)
+              throw new Error("Modifier group not found");
+            if (existing.menuItemId !== data.menuItemId) {
+              throw new Error("Modifier group does not belong to this menu item");
+            }
+            await tx.modifierGroup.delete({ where: { id: data.id } });
+          }
+          return await tx.modifierGroup.create({
+            data: {
+              menuItemId: data.menuItemId,
+              title: data.title.trim(),
+              minSelect,
+              maxSelect,
+              options: {
+                create: (data.options || []).map((o) => ({
+                  name: o.name,
+                  priceDelta: roundMoney(Number(o.priceDelta || 0)),
+                  costDelta: roundMoney(Number(o.costDelta || 0))
+                }))
+              }
+            },
+            include: { options: true }
+          });
+        });
+      } catch (err) {
+        log74.error("saveModifierGroup error", err);
+        throw err;
+      }
+    }
+  );
+  ipcMain.handle("restaurant:deleteModifierGroup", async (_e, id) => {
+    try {
+      if (!id)
+        throw new Error("Modifier group id is required");
+      return await prisma2.modifierGroup.delete({ where: { id } });
+    } catch (err) {
+      log74.error("deleteModifierGroup error", err);
+      throw err;
+    }
   });
   ipcMain.handle("restaurant:toggleItem86", async (_e, id) => {
     try {
@@ -21533,103 +22434,133 @@ function registerKdsHandlers(prisma2) {
 init_electron_node();
 var log76 = createLogger("Restaurant:Reservations");
 function registerReservationHandlers(prisma2) {
-  ipcMain.handle("restaurant:getReservations", async (_e, options) => {
-    try {
-      const where = {};
-      if (options?.tableId)
-        where.tableId = options.tableId;
-      if (options?.status)
-        where.status = options.status;
-      if (options?.date) {
-        const d = new Date(options.date);
-        const from = new Date(d);
-        from.setHours(0, 0, 0, 0);
-        const to = new Date(d);
-        to.setHours(23, 59, 59, 999);
-        where.date = { gte: from, lte: to };
+  ipcMain.handle(
+    "restaurant:getReservations",
+    async (_e, options) => {
+      try {
+        const where = {};
+        if (options?.tableId)
+          where.tableId = options.tableId;
+        if (options?.status)
+          where.status = options.status;
+        if (options?.date) {
+          const d = new Date(options.date);
+          const from = new Date(d);
+          from.setHours(0, 0, 0, 0);
+          const to = new Date(d);
+          to.setHours(23, 59, 59, 999);
+          where.date = { gte: from, lte: to };
+        }
+        return await prisma2.tableReservation.findMany({
+          where,
+          include: { table: true },
+          orderBy: { date: "asc" }
+        });
+      } catch (err) {
+        log76.error("getReservations error", err);
+        throw err;
       }
-      return await prisma2.tableReservation.findMany({
-        where,
-        include: { table: true },
-        orderBy: { date: "asc" }
-      });
-    } catch (err) {
-      log76.error("getReservations error", err);
-      throw err;
     }
-  });
-  ipcMain.handle("restaurant:createReservation", async (_e, data) => {
-    try {
-      return await prisma2.tableReservation.create({
-        data: {
-          tableId: data.tableId || null,
-          customerName: data.customerName,
-          customerPhone: data.customerPhone || null,
-          partySize: Number(data.partySize || 1),
-          date: new Date(data.date),
-          durationMins: Number(data.durationMins || 90),
-          notes: data.notes || null,
-          guestTags: data.guestTags || null,
-          status: "confirmed"
-        },
-        include: { table: true }
-      });
-    } catch (err) {
-      log76.error("createReservation error", err);
-      throw err;
+  );
+  ipcMain.handle(
+    "restaurant:createReservation",
+    async (_e, data) => {
+      try {
+        return await prisma2.tableReservation.create({
+          data: {
+            tableId: data.tableId || null,
+            customerName: data.customerName,
+            customerPhone: data.customerPhone || null,
+            partySize: Number(data.partySize || 1),
+            date: new Date(data.date),
+            durationMins: Number(data.durationMins || 90),
+            notes: data.notes || null,
+            guestTags: data.guestTags || null,
+            status: "confirmed"
+          },
+          include: { table: true }
+        });
+      } catch (err) {
+        log76.error("createReservation error", err);
+        throw err;
+      }
     }
-  });
-  ipcMain.handle("restaurant:updateReservation", async (_e, data) => {
-    try {
-      const { id, date, partySize, durationMins, ...rest } = data;
-      const updateData = { ...rest };
-      if (date)
-        updateData.date = new Date(date);
-      if (partySize !== void 0)
-        updateData.partySize = Number(partySize);
-      if (durationMins !== void 0)
-        updateData.durationMins = Number(durationMins);
-      return await prisma2.tableReservation.update({
-        where: { id },
-        data: updateData,
-        include: { table: true }
-      });
-    } catch (err) {
-      log76.error("updateReservation error", err);
-      throw err;
+  );
+  ipcMain.handle(
+    "restaurant:updateReservation",
+    async (_e, data) => {
+      try {
+        const { id, date, partySize, durationMins, ...rest } = data;
+        const updateData = { ...rest };
+        if (date)
+          updateData.date = new Date(date);
+        if (partySize !== void 0)
+          updateData.partySize = Number(partySize);
+        if (durationMins !== void 0)
+          updateData.durationMins = Number(durationMins);
+        return await prisma2.tableReservation.update({
+          where: { id },
+          data: updateData,
+          include: { table: true }
+        });
+      } catch (err) {
+        log76.error("updateReservation error", err);
+        throw err;
+      }
     }
-  });
-  ipcMain.handle("restaurant:seatReservation", async (_e, data) => {
-    try {
-      const res = await prisma2.tableReservation.findUnique({ where: { id: data.id } });
-      if (!res)
-        throw new Error("Reservation not found");
-      const targetTableId = data.tableId || res.tableId;
-      if (!targetTableId)
-        throw new Error("No table selected to seat guest");
-      await prisma2.restaurantTable.update({
-        where: { id: targetTableId },
-        data: { status: "occupied" }
-      });
-      await prisma2.tableReservation.update({
-        where: { id: data.id },
-        data: { status: "seated", tableId: targetTableId }
-      });
-      return await prisma2.dineInOrder.create({
-        data: {
-          tableId: targetTableId,
-          serverName: data.serverName || "Host",
-          guestCount: res.partySize,
-          notes: res.notes ? `Reservation: ${res.notes}` : void 0,
-          status: "open"
-        },
-        include: { table: true, items: true }
-      });
-    } catch (err) {
-      log76.error("seatReservation error", err);
-      throw err;
+  );
+  ipcMain.handle(
+    "restaurant:seatReservation",
+    async (_e, payload) => {
+      try {
+        const reservationId = payload?.id || payload?.reservationId;
+        if (!reservationId)
+          throw new Error("Reservation id is required");
+        const res = await prisma2.tableReservation.findUnique({ where: { id: reservationId } });
+        if (!res)
+          throw new Error("Reservation not found");
+        const targetTableId = payload.tableId || res.tableId;
+        if (!targetTableId)
+          throw new Error("No table selected to seat guest");
+        const existingCheck = await prisma2.dineInOrder.findFirst({
+          where: { tableId: targetTableId, status: { in: ["open", "billing"] } }
+        });
+        if (existingCheck) {
+          throw new Error("That table already has an open check \u2014 close or move it first");
+        }
+        const todayStart = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
+        const countToday = await prisma2.dineInOrder.count({
+          where: { createdAt: { gte: todayStart } }
+        });
+        await prisma2.restaurantTable.update({
+          where: { id: targetTableId },
+          data: { status: "occupied" }
+        });
+        await prisma2.tableReservation.update({
+          where: { id: reservationId },
+          data: { status: "seated", tableId: targetTableId }
+        });
+        const order = await prisma2.dineInOrder.create({
+          data: {
+            tableId: targetTableId,
+            orderNumber: countToday + 1,
+            orderType: "dine_in",
+            serverName: payload.serverName || "Host",
+            guestCount: res.partySize,
+            notes: res.notes ? `Reservation: ${res.notes}` : void 0,
+            status: "open"
+          },
+          include: { table: true, items: true }
+        });
+        broadcastRestaurantEvent("table:updated", { id: targetTableId, status: "occupied" });
+        broadcastRestaurantEvent("order:created", { orderId: order.id, tableId: targetTableId });
+        return order;
+      } catch (err) {
+        log76.error("seatReservation error", err);
+        throw err;
+      }
     }
-  });
+  );
   ipcMain.handle("restaurant:deleteReservation", async (_e, id) => {
     try {
       return await prisma2.tableReservation.delete({ where: { id } });
@@ -21658,141 +22589,189 @@ function registerShiftHandlers2(prisma2) {
       throw err;
     }
   });
-  ipcMain.handle("restaurant:getShiftHistory", async (_e, options) => {
-    try {
-      const where = {};
-      if (options?.status)
-        where.status = options.status;
-      if (options?.serverId)
-        where.serverId = options.serverId;
-      if (options?.startDate || options?.endDate) {
-        where.openedAt = {};
-        if (options.startDate)
-          where.openedAt.gte = new Date(options.startDate);
-        if (options.endDate)
-          where.openedAt.lte = new Date(options.endDate);
-      }
-      return await prisma2.restaurantShift.findMany({
-        where,
-        orderBy: { openedAt: "desc" },
-        take: options?.limit || 50
-      });
-    } catch (err) {
-      log77.error("getShiftHistory error", err);
-      throw err;
-    }
-  });
-  ipcMain.handle("restaurant:openShift", async (_e, data) => {
-    try {
-      const existing = await prisma2.restaurantShift.findFirst({
-        where: { serverId: data.serverId, status: "active" }
-      });
-      if (existing) {
-        throw new Error(`Server ${data.serverName} already has an active open drawer session.`);
-      }
-      const shift = await prisma2.restaurantShift.create({
-        data: {
-          serverId: data.serverId,
-          serverName: data.serverName,
-          startCash: roundMoney(Number(data.startCash || 0)),
-          status: "active"
+  ipcMain.handle(
+    "restaurant:getShiftHistory",
+    async (_e, options) => {
+      try {
+        const where = {};
+        if (options?.status)
+          where.status = options.status;
+        if (options?.serverId)
+          where.serverId = options.serverId;
+        if (options?.startDate || options?.endDate) {
+          where.openedAt = {};
+          if (options.startDate)
+            where.openedAt.gte = new Date(options.startDate);
+          if (options.endDate)
+            where.openedAt.lte = new Date(options.endDate);
         }
-      });
-      broadcastRestaurantEvent("shift:changed", shift);
-      return shift;
-    } catch (err) {
-      log77.error("openShift error", err);
-      throw err;
+        return await prisma2.restaurantShift.findMany({
+          where,
+          orderBy: { openedAt: "desc" },
+          take: options?.limit || 50
+        });
+      } catch (err) {
+        log77.error("getShiftHistory error", err);
+        throw err;
+      }
     }
-  });
-  ipcMain.handle("restaurant:closeShift", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const shift = await tx.restaurantShift.findUnique({ where: { id: data.id } });
-      if (!shift)
-        throw new Error("Shift not found");
-      const orders = await tx.dineInOrder.findMany({
-        where: {
-          serverId: shift.serverId,
-          status: "paid",
-          closedAt: { gte: shift.openedAt }
-        },
-        include: { payments: true }
-      });
-      const totalSales = roundMoney(orders.reduce((s, o) => s + (o.total || 0), 0));
-      const totalTips = roundMoney(orders.reduce((s, o) => s + (o.tipAmount || 0), 0));
-      const closed = await tx.restaurantShift.update({
-        where: { id: data.id },
-        data: {
-          endCash: roundMoney(Number(data.endCash || 0)),
-          totalSales,
-          totalTips,
-          notes: data.notes || null,
-          status: "closed",
-          closedAt: /* @__PURE__ */ new Date()
+  );
+  ipcMain.handle(
+    "restaurant:openShift",
+    async (_e, data) => {
+      try {
+        const existing = await prisma2.restaurantShift.findFirst({
+          where: { serverId: data.serverId, status: "active" }
+        });
+        if (existing) {
+          throw new Error(`Server ${data.serverName} already has an active open drawer session.`);
         }
+        const shift = await prisma2.restaurantShift.create({
+          data: {
+            serverId: data.serverId,
+            serverName: data.serverName,
+            startCash: roundMoney(Number(data.startCash || 0)),
+            status: "active"
+          }
+        });
+        broadcastRestaurantEvent("shift:changed", shift);
+        return shift;
+      } catch (err) {
+        log77.error("openShift error", err);
+        throw err;
+      }
+    }
+  );
+  ipcMain.handle(
+    "restaurant:closeShift",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        if (!data?.id)
+          throw new Error("Shift id is required");
+        const shift = await tx.restaurantShift.findUnique({ where: { id: data.id } });
+        if (!shift)
+          throw new Error("Shift not found");
+        if (shift.status === "closed")
+          throw new Error("Shift is already closed");
+        const closedAt = /* @__PURE__ */ new Date();
+        const orders = await tx.dineInOrder.findMany({
+          where: {
+            serverId: shift.serverId,
+            status: "paid",
+            closedAt: { gte: shift.openedAt, lte: closedAt }
+          },
+          include: { payments: true }
+        });
+        const totalSales = roundMoney(orders.reduce((s, o) => s + (o.total || 0), 0));
+        const totalTips = roundMoney(
+          orders.reduce((s, o) => s + (o.tipAmount || 0), 0)
+        );
+        const closed = await tx.restaurantShift.update({
+          where: { id: data.id },
+          data: {
+            endCash: roundMoney(Number(data.endCash || 0)),
+            totalSales,
+            totalTips,
+            notes: data.notes || null,
+            status: "closed",
+            closedAt
+          }
+        });
+        broadcastRestaurantEvent("shift:changed", closed);
+        return closed;
       });
-      broadcastRestaurantEvent("shift:changed", closed);
-      return closed;
-    });
-  });
+    }
+  );
   ipcMain.handle("restaurant:getZReportData", async (_e, shiftId) => {
     try {
       const shift = await prisma2.restaurantShift.findUnique({ where: { id: shiftId } });
       if (!shift)
         throw new Error("Shift not found");
+      const windowEnd = shift.closedAt ?? /* @__PURE__ */ new Date();
       const orders = await prisma2.dineInOrder.findMany({
         where: {
           serverId: shift.serverId,
-          openedAt: { gte: shift.openedAt },
-          ...shift.closedAt ? { closedAt: { lte: shift.closedAt } } : {}
+          OR: [
+            { status: "paid", closedAt: { gte: shift.openedAt, lte: windowEnd } },
+            { openedAt: { gte: shift.openedAt, lte: windowEnd } }
+          ]
         },
         include: { payments: true, items: { include: { menuItem: true } } }
       });
+      const settled = orders.filter(
+        (o) => o.status === "paid" && o.closedAt && o.closedAt >= shift.openedAt && o.closedAt <= windowEnd
+      );
+      const openChecks = orders.filter((o) => o.status === "open" || o.status === "billing");
+      const voidedOrders = orders.filter((o) => o.status === "voided");
       const paymentBreakdown = {};
       const categoryRevenue = {};
       let totalDiscounts = 0;
-      let totalVoids = 0;
       let grossSales = 0;
+      let netSales = 0;
       let cashSales = 0;
       let cardSales = 0;
-      orders.forEach((o) => {
-        if (o.status === "voided") {
-          totalVoids += o.total || 0;
-          return;
-        }
+      let cashTips = 0;
+      let cardTips = 0;
+      settled.forEach((o) => {
         grossSales += o.total || 0;
+        netSales += (o.total || 0) - (o.tipAmount || 0);
         totalDiscounts += o.discountAmount || 0;
         o.payments.forEach((p) => {
           paymentBreakdown[p.paymentMethod] = roundMoney(
             (paymentBreakdown[p.paymentMethod] || 0) + p.amount
           );
-          if (p.paymentMethod === "cash")
+          const tip = roundMoney(p.tipAmount || 0);
+          if (p.paymentMethod === "cash") {
             cashSales += p.amount;
-          else
+            cashTips += tip;
+          } else {
             cardSales += p.amount;
+            cardTips += tip;
+          }
         });
         o.items.forEach((item) => {
+          if (item.status === "voided")
+            return;
           const cat = item.menuItem?.category || "General";
           categoryRevenue[cat] = roundMoney(
             (categoryRevenue[cat] || 0) + (item.totalPrice || item.unitPrice * item.quantity)
           );
         });
       });
-      const expectedCash = roundMoney(shift.startCash + cashSales);
+      const voidedOrdersTotal = roundMoney(
+        voidedOrders.reduce((s, o) => s + (o.total || 0), 0)
+      );
+      const voidedLineCount = orders.reduce(
+        (s, o) => s + o.items.filter((i) => i.status === "voided").length,
+        0
+      );
+      const totalVoids = voidedOrders.length + voidedLineCount;
+      const totalTips = roundMoney(cashTips + cardTips);
+      const expectedCash = roundMoney(shift.startCash + cashSales + cashTips);
       const variance = shift.endCash !== null ? roundMoney(shift.endCash - expectedCash) : 0;
       return {
         shift,
-        ordersCount: orders.filter((o) => o.status !== "voided").length,
+        ordersCount: settled.length,
+        openChecksCount: openChecks.length,
+        openChecksTotal: roundMoney(
+          openChecks.reduce((s, o) => s + (o.total || 0), 0)
+        ),
         grossSales: roundMoney(grossSales),
+        netSales: roundMoney(netSales),
         cashSales: roundMoney(cashSales),
         cardSales: roundMoney(cardSales),
-        totalTips: roundMoney(shift.totalTips),
+        cashTips: roundMoney(cashTips),
+        cardTips: roundMoney(cardTips),
+        totalTips,
         startCash: roundMoney(shift.startCash),
         endCash: shift.endCash !== null ? roundMoney(shift.endCash) : null,
         expectedCash,
         variance,
         totalDiscounts: roundMoney(totalDiscounts),
-        totalVoids: roundMoney(totalVoids),
+        totalVoids,
+        voidedOrdersCount: voidedOrders.length,
+        voidedLineCount,
+        voidedOrdersTotal: roundMoney(voidedOrdersTotal),
         paymentBreakdown,
         categoryRevenue
       };
@@ -21809,7 +22788,7 @@ var log78 = createLogger("Restaurant:Overview");
 function registerOverviewHandlers2(prisma2) {
   ipcMain.handle("restaurant:getOverview", async () => {
     try {
-      const startOfDay = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
+      const startOfDay2 = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
       const endOfDay = new Date((/* @__PURE__ */ new Date()).setHours(23, 59, 59, 999));
       const [tables, openOrders, todayOrders, todayReservations, availableMenuItems, activeKdsTickets] = await Promise.all([
         prisma2.restaurantTable.findMany({ where: { isActive: true }, select: { status: true } }),
@@ -21818,11 +22797,11 @@ function registerOverviewHandlers2(prisma2) {
           select: { total: true, openedAt: true, guestCount: true }
         }),
         prisma2.dineInOrder.findMany({
-          where: { closedAt: { gte: startOfDay, lte: endOfDay }, status: "paid" },
+          where: { closedAt: { gte: startOfDay2, lte: endOfDay }, status: "paid" },
           select: { total: true, tipAmount: true, guestCount: true }
         }),
         prisma2.tableReservation.count({
-          where: { date: { gte: startOfDay, lte: endOfDay }, status: { in: ["confirmed", "pending", "seated"] } }
+          where: { date: { gte: startOfDay2, lte: endOfDay }, status: { in: ["confirmed", "pending", "seated"] } }
         }),
         prisma2.menuItem.count({ where: { isAvailable: true } }),
         prisma2.dineInOrderItem.count({ where: { status: { in: ["pending", "preparing"] } } })
@@ -21898,70 +22877,178 @@ function registerOverviewHandlers2(prisma2) {
 
 // src/plugins/restaurant/handlers/inventory.ts
 init_electron_node();
+
+// src/plugins/restaurant/utils/costing.ts
+async function refreshMenuItemsUsingIngredient(tx, ingredientId) {
+  const usages = await tx.recipeIngredientRestaurant.findMany({
+    where: { ingredientId },
+    select: { recipeId: true }
+  });
+  const recipeIds = Array.from(
+    new Set(usages.map((u) => u.recipeId))
+  );
+  const touched = [];
+  for (const recipeId of recipeIds) {
+    const recipe = await tx.menuItemRecipe.findUnique({
+      where: { id: recipeId },
+      include: { ingredients: { include: { ingredient: true } } }
+    });
+    if (!recipe)
+      continue;
+    const portionCost = computePortionCost(
+      computeRecipeBatchCost(recipe.ingredients),
+      recipe.yieldCount
+    );
+    await tx.menuItem.update({
+      where: { id: recipe.menuItemId },
+      data: { cost: portionCost }
+    });
+    touched.push(recipe.menuItemId);
+  }
+  return touched;
+}
+
+// src/plugins/restaurant/handlers/inventory.ts
 var log79 = createLogger("Restaurant:Inventory");
+function resolveUnit(unit, fallback = "g") {
+  const value = (unit || "").trim();
+  return value || fallback;
+}
 function registerInventoryHandlers2(prisma2) {
-  ipcMain.handle("restaurant:createIngredient", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const { normalizedQty: baseStock } = convertToBaseUnit(Number(data.currentStock || 0), data.unit || "g");
-      const { normalizedQty: baseAlert } = convertToBaseUnit(Number(data.minStockAlert || 500), data.unit || "g");
-      const ingredient = await tx.restaurantIngredient.create({
-        data: {
-          name: data.name,
-          category: data.category || "General",
-          unit: data.unit || "g",
-          currentStock: roundMoney(baseStock),
-          minStockAlert: roundMoney(baseAlert),
-          costPerUnit: roundMoney(Number(data.costPerUnit || 0)),
-          supplierName: data.supplierName || null,
-          notes: data.notes || null
-        }
-      });
-      if (baseStock > 0) {
-        await tx.ingredientStockMovement.create({
+  ipcMain.handle(
+    "restaurant:createIngredient",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        const unit = resolveUnit(data.unit);
+        const stock = roundMoney(Math.max(0, Number(data.currentStock || 0)));
+        const alert = roundMoney(Math.max(0, Number(data.minStockAlert || 0)));
+        const ingredient = await tx.restaurantIngredient.create({
           data: {
-            ingredientId: ingredient.id,
-            type: "restock",
-            quantity: roundMoney(baseStock),
-            unitCost: ingredient.costPerUnit,
-            notes: "Initial inventory entry"
+            name: data.name,
+            category: data.category || "General",
+            unit,
+            currentStock: stock,
+            minStockAlert: alert,
+            costPerUnit: roundMoney(Number(data.costPerUnit || 0)),
+            supplierName: data.supplierName || null,
+            notes: data.notes || null
           }
         });
-      }
-      return ingredient;
-    });
-  });
-  ipcMain.handle("restaurant:adjustStock", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const ingredient = await tx.restaurantIngredient.findUnique({ where: { id: data.ingredientId } });
-      if (!ingredient)
-        throw new Error("Ingredient not found");
-      const qtyDelta = roundMoney(Number(data.quantity));
-      const newStock = roundMoney(
-        data.type === "manual_adjustment" ? Math.max(0, qtyDelta) : Math.max(0, ingredient.currentStock + qtyDelta)
-      );
-      const movementQty = data.type === "manual_adjustment" ? roundMoney(newStock - ingredient.currentStock) : qtyDelta;
-      const updated = await tx.restaurantIngredient.update({
-        where: { id: data.ingredientId },
-        data: {
-          currentStock: newStock,
-          ...data.unitCost !== void 0 ? { costPerUnit: roundMoney(Number(data.unitCost)) } : {}
+        if (stock > 0) {
+          await tx.ingredientStockMovement.create({
+            data: {
+              ingredientId: ingredient.id,
+              type: "restock",
+              quantity: stock,
+              unitCost: ingredient.costPerUnit,
+              referenceId: ingredient.id,
+              notes: "Initial inventory entry"
+            }
+          });
         }
+        return ingredient;
       });
-      await tx.ingredientStockMovement.create({
-        data: {
-          ingredientId: data.ingredientId,
-          type: data.type,
-          quantity: movementQty,
-          unitCost: data.unitCost !== void 0 ? roundMoney(Number(data.unitCost)) : ingredient.costPerUnit,
-          notes: data.notes || null
+    }
+  );
+  ipcMain.handle(
+    "restaurant:adjustStock",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        const ingredient = await tx.restaurantIngredient.findUnique({
+          where: { id: data.ingredientId }
+        });
+        if (!ingredient)
+          throw new Error("Ingredient not found");
+        const priceChanged = data.unitCost !== void 0 && roundMoney(Number(data.unitCost)) !== ingredient.costPerUnit;
+        const movementUnit = data.unit ? resolveUnit(data.unit) : ingredient.unit;
+        if (data.unit && !sameUnitFamily(movementUnit, ingredient.unit)) {
+          throw new Error(
+            `Cannot adjust ${ingredient.name} in ${movementUnit}: stock is tracked in ${ingredient.unit}`
+          );
         }
+        const qtyDelta = roundMoney(
+          convertBetweenUnits(Number(data.quantity), movementUnit, ingredient.unit)
+        );
+        const newStock = data.type === "manual_adjustment" ? roundMoney(Math.max(0, qtyDelta)) : roundMoney(Math.max(0, ingredient.currentStock + qtyDelta));
+        const movementQty = data.type === "manual_adjustment" ? roundMoney(newStock - ingredient.currentStock) : qtyDelta;
+        const updated = await tx.restaurantIngredient.update({
+          where: { id: data.ingredientId },
+          data: {
+            currentStock: newStock,
+            ...data.unitCost !== void 0 ? { costPerUnit: roundMoney(Number(data.unitCost)) } : {}
+          }
+        });
+        await tx.ingredientStockMovement.create({
+          data: {
+            ingredientId: data.ingredientId,
+            type: data.type,
+            quantity: movementQty,
+            unitCost: data.unitCost !== void 0 ? roundMoney(Number(data.unitCost)) : ingredient.costPerUnit,
+            referenceId: data.referenceId || null,
+            notes: data.notes || null
+          }
+        });
+        if (priceChanged) {
+          const menuItemIds = await refreshMenuItemsUsingIngredient(tx, data.ingredientId);
+          for (const menuItemId of menuItemIds) {
+            broadcastRestaurantEvent("menu:updated", { id: menuItemId });
+          }
+        }
+        if (newStock <= ingredient.minStockAlert) {
+          broadcastRestaurantEvent("inventory:low_stock", updated);
+        }
+        broadcastRestaurantEvent("inventory:updated", updated);
+        return updated;
       });
-      if (newStock <= ingredient.minStockAlert) {
-        broadcastRestaurantEvent("inventory:low_stock", updated);
-      }
-      return updated;
-    });
-  });
+    }
+  );
+  ipcMain.handle(
+    "restaurant:updateIngredient",
+    async (_e, data) => {
+      return await prisma2.$transaction(async (tx) => {
+        if (!data?.id)
+          throw new Error("Ingredient id is required");
+        const current = await tx.restaurantIngredient.findUnique({ where: { id: data.id } });
+        if (!current)
+          throw new Error("Ingredient not found");
+        const nextUnit = data.unit !== void 0 ? resolveUnit(data.unit, current.unit) : current.unit;
+        const unitChanged = nextUnit !== current.unit;
+        if (unitChanged && !sameUnitFamily(nextUnit, current.unit)) {
+          throw new Error(
+            `Cannot switch ${current.name} from ${current.unit} to ${nextUnit}: these measure different things`
+          );
+        }
+        const priceChanged = data.costPerUnit !== void 0 && roundMoney(Number(data.costPerUnit)) !== current.costPerUnit;
+        const restatedStock = unitChanged ? roundMoney(convertBetweenUnits(current.currentStock, current.unit, nextUnit)) : null;
+        const restatedAlert = unitChanged ? roundMoney(convertBetweenUnits(current.minStockAlert, current.unit, nextUnit)) : null;
+        const nextAlert = data.minStockAlert !== void 0 ? unitChanged && roundMoney(Number(data.minStockAlert)) === current.minStockAlert ? restatedAlert : roundMoney(Math.max(0, Number(data.minStockAlert))) : restatedAlert;
+        const updated = await tx.restaurantIngredient.update({
+          where: { id: data.id },
+          data: {
+            ...data.name !== void 0 ? { name: data.name.trim() } : {},
+            ...data.category !== void 0 ? { category: data.category } : {},
+            ...unitChanged ? { unit: nextUnit } : {},
+            ...restatedStock !== null ? { currentStock: restatedStock } : {},
+            ...nextAlert !== null ? { minStockAlert: nextAlert } : {},
+            ...data.costPerUnit !== void 0 ? { costPerUnit: roundMoney(Number(data.costPerUnit)) } : {},
+            ...data.supplierName !== void 0 ? { supplierName: data.supplierName || null } : {},
+            ...data.notes !== void 0 ? { notes: data.notes || null } : {}
+          }
+        });
+        if (priceChanged) {
+          const menuItemIds = await refreshMenuItemsUsingIngredient(tx, data.id);
+          for (const menuItemId of menuItemIds) {
+            broadcastRestaurantEvent("menu:updated", { id: menuItemId });
+          }
+        }
+        if (updated.currentStock <= updated.minStockAlert) {
+          broadcastRestaurantEvent("inventory:low_stock", updated);
+        }
+        broadcastRestaurantEvent("inventory:updated", updated);
+        return updated;
+      });
+    }
+  );
   ipcMain.handle("restaurant:getStockMovements", async (_e, ingredientId) => {
     try {
       const where = {};
@@ -21998,12 +23085,44 @@ function registerInventoryHandlers2(prisma2) {
       throw err;
     }
   });
+  ipcMain.handle("restaurant:getIngredientUsage", async (_e, ingredientId) => {
+    try {
+      const usages = await prisma2.recipeIngredientRestaurant.findMany({
+        where: { ingredientId },
+        include: { recipe: { include: { menuItem: true } } }
+      });
+      return usages.map((u) => ({
+        recipeId: u.recipeId,
+        menuItemId: u.recipe?.menuItemId,
+        menuItemName: u.recipe?.menuItem?.name || "Unnamed dish",
+        quantity: u.quantity,
+        unit: u.unit
+      }));
+    } catch (err) {
+      log79.error("getIngredientUsage error", err);
+      throw err;
+    }
+  });
   ipcMain.handle("restaurant:deleteIngredient", async (_e, id) => {
     try {
-      return await prisma2.restaurantIngredient.update({
+      const usages = await prisma2.recipeIngredientRestaurant.findMany({
+        where: { ingredientId: id },
+        include: { recipe: { include: { menuItem: true } } }
+      });
+      if (usages.length > 0) {
+        const dishNames = Array.from(
+          new Set(usages.map((u) => u.recipe?.menuItem?.name || "Unnamed dish"))
+        );
+        throw new Error(
+          `This ingredient is used by ${dishNames.length} recipe(s): ${dishNames.join(", ")}. Remove it from those recipes first.`
+        );
+      }
+      const deleted = await prisma2.restaurantIngredient.update({
         where: { id },
         data: { isActive: false }
       });
+      broadcastRestaurantEvent("inventory:updated", deleted);
+      return deleted;
     } catch (err) {
       log79.error("deleteIngredient error", err);
       throw err;
@@ -22029,65 +23148,113 @@ function registerRecipeHandlers2(prisma2) {
       throw err;
     }
   });
-  ipcMain.handle("restaurant:saveRecipe", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      const existing = await tx.menuItemRecipe.findUnique({ where: { menuItemId: data.menuItemId } });
-      if (existing) {
-        await tx.RecipeIngredientRestaurant.deleteMany({ where: { recipeId: existing.id } });
-        await tx.menuItemRecipe.update({
-          where: { id: existing.id },
-          data: {
-            yieldCount: Math.max(1, Number(data.yieldCount || 1)),
-            prepNotes: data.prepNotes || null,
-            ingredients: {
-              create: data.ingredients.map((ing) => ({
-                ingredientId: ing.ingredientId,
-                quantity: Number(ing.quantity),
-                unit: ing.unit,
-                notes: ing.notes || null
-              }))
-            }
+  ipcMain.handle(
+    "restaurant:saveRecipe",
+    async (_e, data) => {
+      if (!data?.menuItemId)
+        throw new Error("A menu item is required to save a recipe");
+      const lines = Array.isArray(data.ingredients) ? data.ingredients : null;
+      if (lines === null)
+        throw new Error("The recipe ingredient list is missing");
+      const usableLines = lines.filter(
+        (line) => line && line.ingredientId && Number(line.quantity) > 0
+      );
+      return await prisma2.$transaction(async (tx) => {
+        const menuItem = await tx.menuItem.findUnique({ where: { id: data.menuItemId } });
+        if (!menuItem)
+          throw new Error("Menu item not found");
+        const ingredientIds = Array.from(
+          new Set(usableLines.map((line) => line.ingredientId))
+        );
+        if (ingredientIds.length > 0) {
+          const found = await tx.restaurantIngredient.findMany({
+            where: { id: { in: ingredientIds }, isActive: true },
+            select: { id: true, name: true, unit: true }
+          });
+          const byId = new Map(
+            found.map((i) => [i.id, i])
+          );
+          const missing = ingredientIds.filter((id) => !byId.has(id));
+          if (missing.length > 0) {
+            throw new Error(
+              `${missing.length} ingredient(s) in this recipe no longer exist. Remove them and try again.`
+            );
           }
-        });
-      } else {
-        await tx.menuItemRecipe.create({
-          data: {
-            menuItemId: data.menuItemId,
-            yieldCount: Math.max(1, Number(data.yieldCount || 1)),
-            prepNotes: data.prepNotes || null,
-            ingredients: {
-              create: data.ingredients.map((ing) => ({
-                ingredientId: ing.ingredientId,
-                quantity: Number(ing.quantity),
-                unit: ing.unit,
-                notes: ing.notes || null
-              }))
-            }
+          const crossFamily = usableLines.filter((line) => {
+            const ing = byId.get(line.ingredientId);
+            return !sameUnitFamily(line.unit || ing.unit, ing.unit);
+          });
+          if (crossFamily.length > 0) {
+            const names = crossFamily.map((line) => byId.get(line.ingredientId).name).join(", ");
+            throw new Error(
+              `These lines use a unit that cannot be measured against the ingredient's own unit: ${names}`
+            );
           }
+        }
+        const existing = await tx.menuItemRecipe.findUnique({
+          where: { menuItemId: data.menuItemId }
         });
-      }
-      const recipe = await tx.menuItemRecipe.findUnique({
-        where: { menuItemId: data.menuItemId },
-        include: { ingredients: { include: { ingredient: true } } }
-      });
-      if (recipe) {
-        const totalBatchCost = recipe.ingredients.reduce((sum, item) => {
-          const { normalizedQty } = convertToBaseUnit(item.quantity, item.unit);
-          const unitCost = item.ingredient?.costPerUnit || 0;
-          return sum + normalizedQty * unitCost;
-        }, 0);
-        const portionCost = roundMoney(totalBatchCost / (recipe.yieldCount || 1));
+        let activeRecipeId;
+        if (existing) {
+          await tx.recipeIngredientRestaurant.deleteMany({ where: { recipeId: existing.id } });
+          const updated = await tx.menuItemRecipe.update({
+            where: { id: existing.id },
+            data: {
+              yieldCount: Math.max(1, Number(data.yieldCount || 1)),
+              prepNotes: data.prepNotes || null
+            }
+          });
+          activeRecipeId = updated.id;
+        } else {
+          const created = await tx.menuItemRecipe.create({
+            data: {
+              menuItemId: data.menuItemId,
+              yieldCount: Math.max(1, Number(data.yieldCount || 1)),
+              prepNotes: data.prepNotes || null
+            }
+          });
+          activeRecipeId = created.id;
+        }
+        if (usableLines.length > 0) {
+          await tx.recipeIngredientRestaurant.createMany({
+            data: usableLines.map((ing) => ({
+              recipeId: activeRecipeId,
+              ingredientId: ing.ingredientId,
+              quantity: Number(ing.quantity),
+              unit: ing.unit,
+              notes: ing.notes || null
+            }))
+          });
+        }
+        const recipe = await tx.menuItemRecipe.findUnique({
+          where: { menuItemId: data.menuItemId },
+          include: { ingredients: { include: { ingredient: true } } }
+        });
+        const batchCost = recipe ? computeRecipeBatchCost(recipe.ingredients) : 0;
+        const portionCost = computePortionCost(batchCost, recipe?.yieldCount || 1);
         await tx.menuItem.update({
           where: { id: data.menuItemId },
           data: { cost: portionCost }
         });
-      }
-      return recipe;
-    });
-  });
+        broadcastRestaurantEvent("menu:updated", { id: data.menuItemId, cost: portionCost });
+        return recipe;
+      });
+    }
+  );
   ipcMain.handle("restaurant:deleteRecipe", async (_e, recipeId) => {
     try {
-      return await prisma2.menuItemRecipe.delete({ where: { id: recipeId } });
+      return await prisma2.$transaction(async (tx) => {
+        const recipe = await tx.menuItemRecipe.findUnique({ where: { id: recipeId } });
+        if (!recipe)
+          throw new Error("Recipe not found");
+        await tx.menuItemRecipe.delete({ where: { id: recipeId } });
+        const updated = await tx.menuItem.update({
+          where: { id: recipe.menuItemId },
+          data: { cost: 0 }
+        });
+        broadcastRestaurantEvent("menu:updated", { id: recipe.menuItemId, cost: 0 });
+        return updated;
+      });
     } catch (err) {
       log80.error("deleteRecipe error", err);
       throw err;
@@ -22099,116 +23266,199 @@ function registerRecipeHandlers2(prisma2) {
 init_electron_node();
 var log81 = createLogger("Restaurant:Waste");
 function registerWasteHandlers2(prisma2) {
-  ipcMain.handle("restaurant:getWasteLogs", async (_e, options) => {
-    try {
-      const where = {};
-      if (options?.reason && options.reason !== "ALL")
-        where.reason = options.reason;
-      if (options?.startDate || options?.endDate) {
-        where.createdAt = {};
-        if (options.startDate)
-          where.createdAt.gte = new Date(options.startDate);
-        if (options.endDate)
-          where.createdAt.lte = new Date(options.endDate);
-      }
-      return await prisma2.restaurantWasteLog.findMany({
-        where,
-        include: { ingredient: true },
-        orderBy: { createdAt: "desc" }
-      });
-    } catch (err) {
-      log81.error("getWasteLogs error", err);
-      throw err;
-    }
-  });
-  ipcMain.handle("restaurant:getWasteAnalytics", async (_e, options) => {
-    try {
-      const where = {};
-      if (options?.startDate || options?.endDate) {
-        where.createdAt = {};
-        if (options.startDate)
-          where.createdAt.gte = new Date(options.startDate);
-        if (options.endDate)
-          where.createdAt.lte = new Date(options.endDate);
-      }
-      const logs = await prisma2.restaurantWasteLog.findMany({
-        where,
-        include: { ingredient: true }
-      });
-      let totalLoss = 0;
-      const reasonBreakdown = {};
-      const itemBreakdown = {};
-      logs.forEach((log133) => {
-        totalLoss += log133.costLoss;
-        if (!reasonBreakdown[log133.reason]) {
-          reasonBreakdown[log133.reason] = { count: 0, totalCost: 0 };
+  ipcMain.handle(
+    "restaurant:getWasteLogs",
+    async (_e, options) => {
+      try {
+        const where = {};
+        if (options?.reason && options.reason !== "ALL")
+          where.reason = options.reason;
+        if (options?.startDate || options?.endDate) {
+          where.createdAt = {};
+          if (options.startDate)
+            where.createdAt.gte = new Date(options.startDate);
+          if (options.endDate)
+            where.createdAt.lte = new Date(options.endDate);
         }
-        reasonBreakdown[log133.reason].count += 1;
-        reasonBreakdown[log133.reason].totalCost = roundMoney(reasonBreakdown[log133.reason].totalCost + log133.costLoss);
-        const key = log133.itemName;
-        if (!itemBreakdown[key]) {
-          itemBreakdown[key] = { name: key, quantity: 0, unit: log133.unit, totalCost: 0 };
-        }
-        itemBreakdown[key].quantity += log133.quantity;
-        itemBreakdown[key].totalCost = roundMoney(itemBreakdown[key].totalCost + log133.costLoss);
-      });
-      const topLossItems = Object.values(itemBreakdown).sort((a, b) => b.totalCost - a.totalCost).slice(0, 5);
-      return {
-        totalEntries: logs.length,
-        totalLoss: roundMoney(totalLoss),
-        reasonBreakdown,
-        topLossItems
-      };
-    } catch (err) {
-      log81.error("getWasteAnalytics error", err);
-      throw err;
+        return await prisma2.restaurantWasteLog.findMany({
+          where,
+          include: { ingredient: true },
+          orderBy: { createdAt: "desc" }
+        });
+      } catch (err) {
+        log81.error("getWasteLogs error", err);
+        throw err;
+      }
     }
-  });
-  ipcMain.handle("restaurant:logWaste", async (_e, data) => {
-    return await prisma2.$transaction(async (tx) => {
-      let costLoss = roundMoney(Number(data.costLoss || 0));
-      if (data.ingredientId) {
-        const ing = await tx.restaurantIngredient.findUnique({ where: { id: data.ingredientId } });
-        if (ing) {
-          const { normalizedQty: deductQty } = convertToBaseUnit(Number(data.quantity), data.unit);
+  );
+  ipcMain.handle(
+    "restaurant:getWasteAnalytics",
+    async (_e, options) => {
+      try {
+        const where = {};
+        if (options?.startDate || options?.endDate) {
+          where.createdAt = {};
+          if (options.startDate)
+            where.createdAt.gte = new Date(options.startDate);
+          if (options.endDate)
+            where.createdAt.lte = new Date(options.endDate);
+        }
+        const logs = await prisma2.restaurantWasteLog.findMany({
+          where,
+          include: { ingredient: true }
+        });
+        let totalLoss = 0;
+        const reasonBreakdown = {};
+        const itemBreakdown = {};
+        logs.forEach((log145) => {
+          totalLoss += log145.costLoss;
+          if (!reasonBreakdown[log145.reason]) {
+            reasonBreakdown[log145.reason] = { count: 0, totalCost: 0 };
+          }
+          reasonBreakdown[log145.reason].count += 1;
+          reasonBreakdown[log145.reason].totalCost = roundMoney(
+            reasonBreakdown[log145.reason].totalCost + log145.costLoss
+          );
+          const key = `${log145.itemName}::${log145.unit}`;
+          if (!itemBreakdown[key]) {
+            itemBreakdown[key] = { name: log145.itemName, quantity: 0, unit: log145.unit, totalCost: 0 };
+          }
+          itemBreakdown[key].quantity = roundMoney(itemBreakdown[key].quantity + log145.quantity);
+          itemBreakdown[key].totalCost = roundMoney(itemBreakdown[key].totalCost + log145.costLoss);
+        });
+        const topLossItems = Object.values(itemBreakdown).sort((a, b) => b.totalCost - a.totalCost).slice(0, 5);
+        return {
+          totalEntries: logs.length,
+          totalLoss: roundMoney(totalLoss),
+          reasonBreakdown,
+          topLossItems
+        };
+      } catch (err) {
+        log81.error("getWasteAnalytics error", err);
+        throw err;
+      }
+    }
+  );
+  ipcMain.handle(
+    "restaurant:logWaste",
+    async (_e, data) => {
+      const result = await prisma2.$transaction(async (tx) => {
+        let costLoss = roundMoney(Number(data.costLoss || 0));
+        let stockShortfall = false;
+        let deductedIngredient = null;
+        if (data.ingredientId) {
+          const ing = await tx.restaurantIngredient.findUnique({ where: { id: data.ingredientId } });
+          if (!ing)
+            throw new Error("Ingredient not found");
+          const wasteUnit = (data.unit || ing.unit).trim() || ing.unit;
+          if (!sameUnitFamily(wasteUnit, ing.unit)) {
+            throw new Error(
+              `Cannot log ${ing.name} waste in ${wasteUnit}: stock is tracked in ${ing.unit}`
+            );
+          }
+          const deductQty = roundMoney(
+            convertBetweenUnits(Number(data.quantity), wasteUnit, ing.unit)
+          );
           costLoss = roundMoney(deductQty * ing.costPerUnit);
           const newStock = roundMoney(Math.max(0, ing.currentStock - deductQty));
+          stockShortfall = newStock <= ing.minStockAlert;
+          deductedIngredient = ing;
           await tx.restaurantIngredient.update({
             where: { id: data.ingredientId },
             data: { currentStock: newStock }
           });
+        }
+        const wasteLog = await tx.restaurantWasteLog.create({
+          data: {
+            ingredientId: data.ingredientId || null,
+            itemName: data.itemName,
+            quantity: Number(data.quantity),
+            unit: data.unit || "g",
+            costLoss,
+            reason: data.reason || "expired",
+            loggedBy: data.loggedBy || "Staff",
+            notes: data.notes || null
+          },
+          include: { ingredient: true }
+        });
+        if (data.ingredientId && deductedIngredient) {
+          const deductQty = roundMoney(
+            convertBetweenUnits(
+              Number(data.quantity),
+              (data.unit || deductedIngredient.unit).trim() || deductedIngredient.unit,
+              deductedIngredient.unit
+            )
+          );
           await tx.ingredientStockMovement.create({
             data: {
               ingredientId: data.ingredientId,
               type: "waste",
-              quantity: -deductQty,
-              unitCost: ing.costPerUnit,
+              quantity: roundMoney(-Math.abs(deductQty)),
+              unitCost: deductedIngredient.costPerUnit,
+              referenceId: wasteLog.id,
               notes: `Waste: ${data.reason} (${data.notes || "No notes"})`
             }
           });
-          if (newStock <= ing.minStockAlert) {
-            broadcastRestaurantEvent("inventory:low_stock", ing);
+          if (stockShortfall) {
+            broadcastRestaurantEvent("inventory:low_stock", {
+              ...deductedIngredient,
+              currentStock: roundMoney(Math.max(0, deductedIngredient.currentStock - deductQty))
+            });
           }
         }
-      }
-      return await tx.restaurantWasteLog.create({
-        data: {
-          ingredientId: data.ingredientId || null,
-          itemName: data.itemName,
-          quantity: Number(data.quantity),
-          unit: data.unit || "g",
-          costLoss,
-          reason: data.reason || "expired",
-          loggedBy: data.loggedBy || "Staff",
-          notes: data.notes || null
-        },
-        include: { ingredient: true }
+        return wasteLog;
       });
-    });
-  });
+      broadcastRestaurantEvent("waste:logged", result);
+      broadcastRestaurantEvent(
+        "inventory:updated",
+        result.ingredient || { id: result.ingredientId }
+      );
+      return result;
+    }
+  );
   ipcMain.handle("restaurant:deleteWasteLog", async (_e, id) => {
     try {
-      return await prisma2.restaurantWasteLog.delete({ where: { id } });
+      return await prisma2.$transaction(async (tx) => {
+        const entry = await tx.restaurantWasteLog.findUnique({ where: { id } });
+        if (!entry)
+          throw new Error("Waste entry not found");
+        if (entry.ingredientId) {
+          const ing = await tx.restaurantIngredient.findUnique({
+            where: { id: entry.ingredientId }
+          });
+          const movement = await tx.ingredientStockMovement.findFirst({
+            where: { ingredientId: entry.ingredientId, type: "waste", referenceId: entry.id },
+            orderBy: { createdAt: "desc" }
+          });
+          if (ing) {
+            const restoreQty = roundMoney(
+              Math.abs(
+                movement ? Number(movement.quantity) : convertBetweenUnits(entry.quantity, entry.unit, ing.unit)
+              )
+            );
+            if (restoreQty > 0) {
+              await tx.restaurantIngredient.update({
+                where: { id: ing.id },
+                data: { currentStock: roundMoney(ing.currentStock + restoreQty) }
+              });
+              await tx.ingredientStockMovement.create({
+                data: {
+                  ingredientId: ing.id,
+                  type: "void_reversal",
+                  quantity: restoreQty,
+                  unitCost: movement?.unitCost ?? ing.costPerUnit,
+                  referenceId: entry.id,
+                  notes: `Reversed waste entry (${entry.reason})`
+                }
+              });
+            }
+          }
+        }
+        const deleted = await tx.restaurantWasteLog.delete({ where: { id } });
+        broadcastRestaurantEvent("waste:deleted", { id });
+        broadcastRestaurantEvent("inventory:updated", { id: entry.ingredientId });
+        return deleted;
+      });
     } catch (err) {
       log81.error("deleteWasteLog error", err);
       throw err;
@@ -23884,8 +25134,8 @@ function registerAppointmentHandlers(prisma2) {
         });
         const wh = parseWorkingHours(doc?.workingHours);
         if (wh) {
-          const dayKey = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][start.getDay()];
-          if (wh[dayKey]?.off) {
+          const dayKey2 = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"][start.getDay()];
+          if (wh[dayKey2]?.off) {
             throw new Error(`${doc?.name ?? "This doctor"} is not available on that day`);
           }
         }
@@ -24569,8 +25819,8 @@ function computeLiveStatus(staff, currentAppt, now) {
     return "on_leave";
   const wh = parseWorkingHours2(staff.workingHours);
   if (wh) {
-    const dayKey = DAY_KEYS[now.getDay()];
-    const today = wh[dayKey];
+    const dayKey2 = DAY_KEYS[now.getDay()];
+    const today = wh[dayKey2];
     if (today?.off)
       return "off";
   }
@@ -27616,8 +28866,8 @@ function registerVetMedicineQueryHandlers(prisma2) {
       if (!medicineId)
         throw new Error("medicineId is required");
       const fromDate = params?.from ? new Date(params.from) : null;
-      const toDate2 = params?.to ? new Date(new Date(params.to).getTime() + 86399999) : null;
-      const inRange = (d) => (!fromDate || d >= fromDate) && (!toDate2 || d <= toDate2);
+      const toDate3 = params?.to ? new Date(new Date(params.to).getTime() + 86399999) : null;
+      const inRange = (d) => (!fromDate || d >= fromDate) && (!toDate3 || d <= toDate3);
       const medicine = await prisma2.vetMedicine.findUnique({
         where: { id: medicineId },
         select: { id: true, name: true, unit: true, subUnit: true, category: true, minimumStock: true }
@@ -28112,7 +29362,7 @@ function buildHtml2(p) {
   });
   const kpisHtml = (p.kpis ?? []).length ? `<div class="kpis">${p.kpis.map((k) => `
         <div class="kpi"><div class="kv">${esc2(k.value)}</div><div class="kl">${esc2(k.label)}</div></div>`).join("")}</div>` : "";
-  const metaHtml = (p.meta ?? []).length ? `<div class="meta">${p.meta.map((m) => `<span><b>${esc2(m.label)}:</b> ${esc2(m.value)}</span>`).join("")}</div>` : "";
+  const metaHtml2 = (p.meta ?? []).length ? `<div class="meta">${p.meta.map((m) => `<span><b>${esc2(m.label)}:</b> ${esc2(m.value)}</span>`).join("")}</div>` : "";
   const sectionsHtml = p.sections.map((sec) => {
     const head = sec.columns.map((c) => `<th class="${c.isMoney || c.align === "right" ? "r" : c.align === "center" ? "c" : ""}">${esc2(c.label)}</th>`).join("");
     const body = sec.rows.length ? sec.rows.map((row) => `<tr>${sec.columns.map((c) => `<td class="${c.isMoney || c.align === "right" ? "r" : c.align === "center" ? "c" : ""}">${cellText(c, row[c.key], cur)}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${sec.columns.length}" class="empty">\u2014</td></tr>`;
@@ -28150,7 +29400,7 @@ tr.totals td{font-weight:800;background:#faf5ff;border-top:2px solid #ddd6fe;col
 </style></head>
 <body>
 <div class="header"><h1>${esc2(p.title)}</h1>${p.subtitle ? `<div class="sub">${esc2(p.subtitle)}</div>` : ""}</div>
-${metaHtml}
+${metaHtml2}
 ${kpisHtml}
 ${sectionsHtml}
 <div class="footer"><span>BizFlow${p.lang === "ar" ? " \u2014 \u0627\u0644\u0639\u064A\u0627\u062F\u0629 \u0627\u0644\u0628\u064A\u0637\u0631\u064A\u0629" : " \u2014 Vet Clinic"}</span><span>${esc2(generatedAt)}</span></div>
@@ -31032,18 +32282,5988 @@ function registerPharmacyHandlers(prisma2) {
   registerPharmacyCustomerHandlers(prisma2);
 }
 
+// src/plugins/personal/handlers/clients.ts
+init_electron_node();
+
+// src/plugins/personal/handlers/utils.ts
+function startOfDay(input = /* @__PURE__ */ new Date()) {
+  const d = new Date(input);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+function dayKey(input = /* @__PURE__ */ new Date()) {
+  const d = new Date(input);
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+function dayKeysBetween(from, to) {
+  const start = startOfDay(from);
+  const end = startOfDay(to);
+  const out = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    out.push(dayKey(d));
+  }
+  return out;
+}
+function addDays(input, days) {
+  const d = new Date(input);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+function daysBetween(from, to) {
+  const ms = startOfDay(to).getTime() - startOfDay(from).getTime();
+  return Math.max(0, Math.round(ms / 864e5));
+}
+function round22(n) {
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
+function num(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+function parseJsonArray(raw) {
+  if (Array.isArray(raw))
+    return raw;
+  if (typeof raw !== "string" || raw.trim() === "")
+    return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+function toDate2(value) {
+  if (!value)
+    return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+function monthBounds(input = /* @__PURE__ */ new Date()) {
+  const d = new Date(input);
+  const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+  return { start, end };
+}
+function weekBounds(input = /* @__PURE__ */ new Date()) {
+  const d = startOfDay(input);
+  const dow = d.getDay();
+  const start = new Date(d);
+  start.setDate(d.getDate() - dow);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+function paginate(items, total, page = 1, pageSize = 50) {
+  return {
+    data: items,
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize))
+  };
+}
+function nextInvoiceNumber(seq, prefix = "INV") {
+  const year = (/* @__PURE__ */ new Date()).getFullYear();
+  return `${prefix}-${year}-${String(seq).padStart(4, "0")}`;
+}
+
+// src/plugins/personal/handlers/clients.ts
+var log132 = createLogger("Personal:Clients");
+function registerClientHandlers(prisma2) {
+  ipcMain.handle("personal:clients:getAll", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 50;
+      const where = {};
+      if (!opts?.includeArchived)
+        where.isArchived = false;
+      if (opts?.search) {
+        where.OR = [
+          { name: { contains: opts.search } },
+          { company: { contains: opts.search } },
+          { email: { contains: opts.search } },
+          { phone: { contains: opts.search } }
+        ];
+      }
+      const [total, items] = await Promise.all([
+        prisma2.personalClient.count({ where }),
+        prisma2.personalClient.findMany({
+          where,
+          orderBy: [{ isArchived: "asc" }, { name: "asc" }],
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          include: {
+            _count: { select: { projects: true, invoices: true, retainers: true } }
+          }
+        })
+      ]);
+      return paginate(items, total, page, pageSize);
+    } catch (err) {
+      log132.error("clients:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:clients:getById", async (_e, id) => {
+    try {
+      const client = await prisma2.personalClient.findUnique({
+        where: { id },
+        include: {
+          projects: {
+            orderBy: { updatedAt: "desc" },
+            select: {
+              id: true,
+              code: true,
+              title: true,
+              status: true,
+              stage: true,
+              currency: true,
+              agreedAmount: true,
+              dueDate: true,
+              adjustedDueDate: true
+            }
+          },
+          invoices: {
+            orderBy: { issuedAt: "desc" },
+            take: 50,
+            include: { payments: true }
+          },
+          retainers: { orderBy: { createdAt: "desc" } },
+          notes: { orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }] }
+        }
+      });
+      if (!client)
+        return null;
+      return { ...client, health: await clientHealth(prisma2, id) };
+    } catch (err) {
+      log132.error("clients:getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:clients:create", async (_e, data) => {
+    try {
+      return await prisma2.personalClient.create({
+        data: {
+          name: String(data?.name ?? "").trim(),
+          company: data?.company || null,
+          email: data?.email || null,
+          phone: data?.phone || null,
+          timezone: data?.timezone || null,
+          currency: data?.currency || "USD",
+          defaultHourlyRate: data?.defaultHourlyRate === "" || data?.defaultHourlyRate == null ? null : num(data.defaultHourlyRate),
+          defaultDepositPercent: num(data?.defaultDepositPercent, 50),
+          paymentTermsDays: Math.round(num(data?.paymentTermsDays, 14)),
+          workingStyleNotes: data?.workingStyleNotes || null,
+          redFlags: data?.redFlags || null
+        }
+      });
+    } catch (err) {
+      log132.error("clients:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:clients:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("defaultHourlyRate" in patch) {
+        patch.defaultHourlyRate = patch.defaultHourlyRate === "" || patch.defaultHourlyRate == null ? null : num(patch.defaultHourlyRate);
+      }
+      if ("defaultDepositPercent" in patch)
+        patch.defaultDepositPercent = num(patch.defaultDepositPercent, 50);
+      if ("paymentTermsDays" in patch)
+        patch.paymentTermsDays = Math.round(num(patch.paymentTermsDays, 14));
+      return await prisma2.personalClient.update({ where: { id }, data: patch });
+    } catch (err) {
+      log132.error("clients:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:clients:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalClient.update({ where: { id }, data: { isArchived: true } });
+    } catch (err) {
+      log132.error("clients:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:clients:restore", async (_e, id) => {
+    try {
+      return await prisma2.personalClient.update({ where: { id }, data: { isArchived: false } });
+    } catch (err) {
+      log132.error("clients:restore", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:clients:getHealth", async (_e, id) => {
+    try {
+      return await clientHealth(prisma2, id);
+    } catch (err) {
+      log132.error("clients:getHealth", err);
+      throw err;
+    }
+  });
+}
+async function clientHealth(prisma2, clientId) {
+  const [invoices, projects] = await Promise.all([
+    prisma2.personalInvoice.findMany({
+      where: { clientId },
+      include: { payments: true }
+    }),
+    prisma2.personalProject.findMany({
+      where: { clientId },
+      select: { id: true, status: true, stage: true, agreedAmount: true, dueDate: true, adjustedDueDate: true }
+    })
+  ]);
+  const projectIds = projects.map((p) => p.id);
+  const waits = projectIds.length ? await prisma2.personalWaitLog.findMany({ where: { projectId: { in: projectIds } } }) : [];
+  const now = Date.now();
+  let billed = 0;
+  let collected = 0;
+  let overdue = 0;
+  const settlementDelays = [];
+  for (const inv of invoices) {
+    billed += num(inv.amount);
+    const paid = inv.payments.filter((p) => !p.refundedAt).reduce((sum, p) => sum + num(p.amount), 0);
+    collected += paid;
+    if (inv.status === "void")
+      continue;
+    if (inv.dueAt && new Date(inv.dueAt).getTime() < now && paid + 0.01 < num(inv.amount)) {
+      overdue += num(inv.amount) - paid;
+    }
+    const lastPayment = inv.payments.filter((p) => !p.refundedAt).sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())[0];
+    if (lastPayment && inv.issuedAt && paid + 0.01 >= num(inv.amount)) {
+      settlementDelays.push(daysBetween(inv.issuedAt, lastPayment.paidAt));
+    }
+  }
+  const waitingDays = waits.reduce((sum, w) => sum + num(w.days), 0);
+  const openWaits = waits.filter((w) => !w.endedAt).length;
+  const avgPaymentDays = settlementDelays.length ? round22(settlementDelays.reduce((a, b) => a + b, 0) / settlementDelays.length) : 0;
+  return {
+    billed: round22(billed),
+    collected: round22(collected),
+    outstanding: round22(billed - collected),
+    overdue: round22(overdue),
+    avgPaymentDays,
+    waitingDays,
+    openWaits,
+    activeProjects: projects.filter((p) => p.status === "active").length,
+    deliveredProjects: projects.filter((p) => p.status === "delivered" || p.status === "closed").length,
+    isSlowPayer: avgPaymentDays > 14,
+    hasOpenWait: openWaits > 0
+  };
+}
+
+// src/plugins/personal/handlers/projects.ts
+init_electron_node();
+
+// src/plugins/personal/handlers/domain.ts
+var PIPELINE_STAGES = [
+  { id: "brief_approved", label: "Brief Approved", requires: "none" },
+  {
+    id: "deposit_received",
+    label: "Deposit Received",
+    requires: "deposit",
+    gateHint: "Log the deposit payment before production starts."
+  },
+  {
+    id: "draft_staging",
+    label: "Draft Staging",
+    requires: "deposit",
+    gateHint: "Production needs the deposit to be paid first."
+  },
+  {
+    id: "feedback_locked",
+    label: "Feedback Locked",
+    requires: "deposit",
+    gateHint: "Lock the feedback round so the scope cannot drift."
+  },
+  {
+    id: "final_payment_received",
+    label: "Final Payment Received",
+    requires: "final_payment",
+    gateHint: "Final payment must clear before the delivery stage."
+  },
+  {
+    id: "assets_handed_over",
+    label: "Assets Handed Over",
+    requires: "final_payment",
+    gateHint: "Files stay locked until the balance is settled."
+  }
+];
+var STAGE_IDS = PIPELINE_STAGES.map((s) => s.id);
+function stageIndex(stage) {
+  const idx = STAGE_IDS.indexOf(stage);
+  return idx === -1 ? 0 : idx;
+}
+function stageMeta(stage) {
+  return PIPELINE_STAGES[stageIndex(stage)];
+}
+function paymentContext(invoiceAmounts, payments) {
+  const depositPaid = payments.filter((p) => p.isDeposit).reduce((sum, p) => sum + num(p.amount), 0);
+  return {
+    totalDue: round22(invoiceAmounts.reduce((sum, a) => sum + num(a), 0)),
+    paid: round22(payments.reduce((sum, p) => sum + num(p.amount), 0)),
+    depositPaid: round22(depositPaid)
+  };
+}
+function evaluateStageGate(targetStage, ctx) {
+  const stage = stageMeta(targetStage);
+  const outstanding = round22(Math.max(0, ctx.totalDue - ctx.paid));
+  if (stage.requires === "deposit") {
+    if (ctx.depositPaid <= 0) {
+      return { blocked: true, requires: stage.requires, reason: stage.gateHint, outstanding };
+    }
+    return { blocked: false, requires: stage.requires, outstanding };
+  }
+  if (stage.requires === "final_payment") {
+    if (outstanding > 9e-3) {
+      return {
+        blocked: true,
+        requires: stage.requires,
+        reason: stage.gateHint ?? "Outstanding balance must be settled first.",
+        outstanding
+      };
+    }
+    return { blocked: false, requires: stage.requires, outstanding };
+  }
+  return { blocked: false, requires: "none", outstanding };
+}
+function priceChangeRequest(input) {
+  const hours = Math.max(0, num(input.estimatedHours));
+  const rate = Math.max(0, num(input.hourlyRate));
+  const hoursPerDay = Math.max(1, num(input.hoursPerDay, 6));
+  const derivedDays = Math.ceil(hours / hoursPerDay);
+  return {
+    extraCost: round22(hours * rate),
+    extraDays: input.extraDays === void 0 ? derivedDays : Math.max(0, Math.round(num(input.extraDays))),
+    effectiveHourlyRate: round22(rate)
+  };
+}
+function buildChangeRequestQuote(input) {
+  const currency = input.currency || "USD";
+  const money2 = (n) => `${currency} ${round22(n).toLocaleString("en-US")}`;
+  const lines = [
+    `Hi ${input.clientName},`,
+    "",
+    `Thanks for the extra request on \u201C${input.projectTitle}\u201D \u2014 happy to take it on.`,
+    "",
+    "It sits outside the agreed baseline scope, so here is the impact before we start:",
+    `\u2022 Request: ${input.title}`,
+    input.description ? `\u2022 Details: ${input.description}` : null,
+    `\u2022 Extra effort: ${round22(input.estimatedHours)} h @ ${money2(input.hourlyRate)}/h`,
+    `\u2022 Extra cost: ${money2(input.extraCost)}`,
+    `\u2022 Timeline impact: +${input.extraDays} working day(s)`,
+    "",
+    "If you approve, reply \u201Capproved\u201D and I will schedule it right away.",
+    "Work on this item only starts once the change is approved.",
+    "",
+    "Thanks!"
+  ].filter((line) => line !== null);
+  return lines.join("\n");
+}
+function computeRateEngine(profile) {
+  const monthlyOperating = num(profile.monthlyLivingCost) + num(profile.monthlyTaxes) + num(profile.monthlySoftware) + num(profile.monthlySavings) + num(profile.monthlyOther);
+  const monthlySurvival = num(profile.monthlyLivingCost) + num(profile.monthlyTaxes) + num(profile.monthlySoftware) + num(profile.monthlyOther);
+  const weeks = Math.min(52, Math.max(1, Math.round(num(profile.workingWeeksPerYear, 46))));
+  const targetWeekly = Math.min(80, Math.max(1, num(profile.targetBillableHoursPerWeek, 25)));
+  const billableHoursPerYear = targetWeekly * weeks;
+  const annualOperatingCost = monthlyOperating * 12;
+  const annualSurvivalCost = monthlySurvival * 12;
+  const capacityHours = Math.max(1, num(profile.weeklyCapacityHours, 40)) * weeks;
+  const utilisation = Math.min(1, Math.max(0.1, num(profile.billableUtilisation, 0.7)));
+  const baselineHourlyRate = billableHoursPerYear > 0 ? annualOperatingCost / billableHoursPerYear : 0;
+  return {
+    annualOperatingCost: round22(annualOperatingCost),
+    annualSurvivalCost: round22(annualSurvivalCost),
+    monthlyTarget: round22(monthlyOperating),
+    billableHoursPerYear: round22(billableHoursPerYear),
+    baselineHourlyRate: round22(baselineHourlyRate),
+    floorHourlyRate: billableHoursPerYear > 0 ? round22(annualSurvivalCost / billableHoursPerYear) : 0,
+    utilisationHourlyRate: round22(annualOperatingCost / (capacityHours * utilisation)),
+    dailyHoursTarget: round22(targetWeekly / 5),
+    monthlyHoursTarget: round22(billableHoursPerYear / 12),
+    minimumProjectPrice: round22(Math.max(num(profile.minimumProjectPrice), baselineHourlyRate * 4)),
+    weeklyCapacityHours: num(profile.weeklyCapacityHours, 40),
+    maxClientHoursPerWeek: num(profile.maxClientHoursPerWeek, 30),
+    currency: profile.currency || "USD"
+  };
+}
+function priceQuote(engine, hours, quotedPrice) {
+  const h = Math.max(0, num(hours));
+  const atFloor = round22(engine.floorHourlyRate * h);
+  const atBaseline = round22(engine.baselineHourlyRate * h);
+  const recommended = round22(Math.max(atBaseline, engine.minimumProjectPrice, num(quotedPrice)));
+  return {
+    hours: h,
+    atFloor,
+    atBaseline,
+    marginAtBaseline: round22(recommended - atFloor),
+    recommended,
+    currency: engine.currency
+  };
+}
+function realHourlyRate(moneyReceived, realMinutes, baselineHourlyRate = 0) {
+  const hours = num(realMinutes) / 60;
+  const rate = hours > 0 ? num(moneyReceived) / hours : 0;
+  const ratio = baselineHourlyRate > 0 ? rate / baselineHourlyRate : 1;
+  let verdict = "healthy";
+  if (ratio >= 1.25)
+    verdict = "excellent";
+  else if (ratio >= 1)
+    verdict = "healthy";
+  else if (ratio >= 0.7)
+    verdict = "thin";
+  else
+    verdict = "loss";
+  return {
+    moneyReceived: round22(num(moneyReceived)),
+    realHours: round22(hours),
+    realHourlyRate: round22(rate),
+    effectiveHourlyRateVsBaseline: round22(ratio * 100),
+    verdict
+  };
+}
+function subscriptionMonthlyCost(amount, billingCycle) {
+  const a = num(amount);
+  switch ((billingCycle || "monthly").toLowerCase()) {
+    case "weekly":
+      return round22(a * 4.33);
+    case "quarterly":
+      return round22(a / 3);
+    case "yearly":
+    case "annual":
+      return round22(a / 12);
+    default:
+      return round22(a);
+  }
+}
+function auditSubscriptions(subs) {
+  const lines = subs.filter((s) => s.isActive).map((s) => {
+    const monthlyCost = subscriptionMonthlyCost(s.amount, s.billingCycle);
+    const unused = s.usageLevel === "rarely" || s.usageLevel === "monthly";
+    const verdict = !s.isEssential ? unused ? "cancel" : "review" : unused ? "review" : "keep";
+    return { id: s.id, name: s.name, monthlyCost, annualCost: round22(monthlyCost * 12), verdict };
+  });
+  const monthlyBurn = round22(lines.reduce((sum, l) => sum + l.monthlyCost, 0));
+  return {
+    lines,
+    monthlyBurn,
+    annualBurn: round22(monthlyBurn * 12),
+    cancelCandidates: lines.filter((l) => l.verdict !== "keep")
+  };
+}
+function retainerState(retainer) {
+  const rollover = retainer.rolloverEnabled ? num(retainer.rolloverHours) : 0;
+  const hoursIncluded = num(retainer.hoursIncluded);
+  const hoursUsed = num(retainer.hoursUsed);
+  const available = round22(hoursIncluded + rollover - hoursUsed);
+  return {
+    hoursIncluded,
+    hoursUsed,
+    hoursAvailable: available,
+    rolloverHours: rollover,
+    usedPercent: hoursIncluded + rollover > 0 ? round22(hoursUsed / (hoursIncluded + rollover) * 100) : 0,
+    isOverspent: available < 0
+  };
+}
+function retainerResetDate(from = /* @__PURE__ */ new Date()) {
+  const d = new Date(from);
+  return new Date(d.getFullYear(), d.getMonth() + 1, 1, 0, 0, 0, 0);
+}
+function splitEscrow(invoices, payments) {
+  const lines = invoices.map((inv) => {
+    const paid = round22(
+      payments.filter((p) => p.invoiceId === inv.id).reduce((sum, p) => sum + num(p.amount), 0)
+    );
+    const delivered = inv.projectStage ? stageIndex(inv.projectStage) >= stageIndex("assets_handed_over") : false;
+    const isDeposit = inv.kind === "deposit";
+    const unearned = isDeposit && !delivered ? paid : 0;
+    return {
+      invoiceId: inv.id,
+      number: inv.number,
+      kind: inv.kind,
+      amount: round22(inv.amount),
+      paid,
+      isDeposit,
+      earned: round22(paid - unearned),
+      unearned
+    };
+  });
+  const cashReceived = round22(lines.reduce((sum, l) => sum + l.paid, 0));
+  const unearnedRetainedCash = round22(lines.reduce((sum, l) => sum + l.unearned, 0));
+  return { lines, realizedIncome: round22(cashReceived - unearnedRetainedCash), unearnedRetainedCash, cashReceived };
+}
+function capacityReading(plannedMinutes, availableMinutes) {
+  const planned = Math.max(0, num(plannedMinutes));
+  const available = Math.max(0, num(availableMinutes));
+  const usedPercent = available > 0 ? round22(planned / available * 100) : planned > 0 ? 999 : 0;
+  let level = "clear";
+  if (usedPercent > 100)
+    level = "red";
+  else if (usedPercent >= 85)
+    level = "amber";
+  return {
+    plannedMinutes: planned,
+    availableMinutes: available,
+    usedPercent,
+    level,
+    overbookedMinutes: Math.max(0, round22(planned - available))
+  };
+}
+function isBlackoutDay(day, blackouts) {
+  const d = new Date(day).setHours(12, 0, 0, 0);
+  return blackouts.some((b) => {
+    const start = new Date(b.startDate).setHours(0, 0, 0, 0);
+    const end = new Date(b.endDate).setHours(23, 59, 59, 999);
+    return d >= start && d <= end;
+  });
+}
+function suggestStartDate(from, blackouts, bookedByDay, dailyCapacityMinutes, neededMinutes) {
+  const cursor = new Date(from);
+  for (let i = 0; i < 180; i += 1) {
+    const day = new Date(cursor);
+    day.setDate(cursor.getDate() + i);
+    const dow = day.getDay();
+    const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+    if (dow === 0 || dow === 6)
+      continue;
+    if (isBlackoutDay(day, blackouts))
+      continue;
+    const booked = num(bookedByDay[key]);
+    if (booked + neededMinutes <= dailyCapacityMinutes)
+      return key;
+  }
+  return "";
+}
+function buildStandupSummary(input) {
+  const hours = (minutes) => `${round22(minutes / 60)}h`;
+  const completed = input.completed.length ? input.completed.join("; ") : "no closed tasks logged";
+  const next = input.next.length ? input.next.join("; ") : "planning the next milestone";
+  return [
+    `${input.day} \u2014 completed: ${completed}.`,
+    `Tracked ${hours(input.focusMinutes)} of focus time (${hours(input.billableMinutes)} billable).`,
+    `Next up: ${next}.`
+  ].join(" ");
+}
+function invoiceTotals(input) {
+  const amount = Math.max(0, num(input.amount));
+  const discount = Math.min(Math.max(0, num(input.discount)), amount);
+  const net = round22(amount - discount);
+  const tax = round22(net * (num(input.taxRate) / 100));
+  const total = round22(net + tax);
+  return { net, tax, total, balance: round22(Math.max(0, total - num(input.paid))) };
+}
+function computeDiscount(input) {
+  const gross = round22(Math.max(0, num(input.amount)));
+  const percent = Math.min(100, Math.max(0, num(input.percentOff)));
+  const percentOffAmount = round22(gross * (percent / 100));
+  const afterPercent = round22(gross - percentOffAmount);
+  const earlyPercent = Math.max(0, num(input.earlyPaymentPercent));
+  const window2 = num(input.earlyPaymentDays);
+  const daysToPay = num(input.daysToPay);
+  const earlyPaymentApplied = earlyPercent > 0 && window2 > 0 && daysToPay > 0 && daysToPay <= window2;
+  const earlyPaymentAmount = earlyPaymentApplied ? round22(afterPercent * (earlyPercent / 100)) : 0;
+  const afterEarly = round22(afterPercent - earlyPaymentAmount);
+  const amountOffAmount = round22(Math.min(Math.max(0, num(input.amountOff)), afterEarly));
+  return {
+    gross,
+    percentOffAmount,
+    percentApplied: percent > 0,
+    earlyPaymentAmount,
+    earlyPaymentApplied,
+    amountOffAmount,
+    totalDiscount: round22(percentOffAmount + earlyPaymentAmount + amountOffAmount),
+    net: round22(afterEarly - amountOffAmount)
+  };
+}
+var DEFAULT_LATE_FEE_POLICY = {
+  graceDays: 3,
+  ratePercent: 2,
+  periodDays: 30,
+  flatFee: 0,
+  maxPercent: 15,
+  compounding: "simple"
+};
+function computeLateFee(input) {
+  const policy = { ...DEFAULT_LATE_FEE_POLICY, ...input.policy ?? {} };
+  const balance = round22(Math.max(0, num(input.balance)));
+  const graceDays = Math.max(0, num(policy.graceDays));
+  const periodDays = Math.max(1, num(policy.periodDays));
+  const ratePercent = Math.max(0, num(policy.ratePercent));
+  const maxPercent = Math.max(0, num(policy.maxPercent));
+  const flatFee = round22(Math.max(0, num(policy.flatFee)));
+  const compounding = policy.compounding === "compound" ? "compound" : "simple";
+  const due = input.dueAt ? new Date(input.dueAt) : null;
+  const asOf = input.asOf ? new Date(input.asOf) : /* @__PURE__ */ new Date();
+  const dated = due !== null && !Number.isNaN(due.getTime()) && !Number.isNaN(asOf.getTime());
+  const daysLate = dated ? daysBetween(due, asOf) : 0;
+  const idle = {
+    isLate: false,
+    withinGrace: dated && daysLate > 0 && daysLate <= graceDays,
+    daysLate,
+    graceDays,
+    chargeableDays: 0,
+    periods: 0,
+    ratePercent,
+    periodDays,
+    compounding,
+    rawPercentFee: 0,
+    percentFee: 0,
+    flatFee: 0,
+    fee: 0,
+    cap: 0,
+    capped: false,
+    balance,
+    newBalance: balance
+  };
+  if (!dated || balance <= 0 || daysLate <= graceDays || ratePercent <= 0 && flatFee <= 0)
+    return idle;
+  const chargeableDays = daysLate - graceDays;
+  const rawPeriods = chargeableDays / periodDays;
+  const rawPercentFee = compounding === "compound" ? round22(balance * (Math.pow(1 + ratePercent / 100, rawPeriods) - 1)) : round22(balance * (ratePercent / 100) * rawPeriods);
+  const cap = maxPercent > 0 ? round22(balance * (maxPercent / 100)) : 0;
+  const percentFee = cap > 0 ? round22(Math.min(rawPercentFee, cap)) : rawPercentFee;
+  const fee = round22(percentFee + flatFee);
+  return {
+    ...idle,
+    isLate: fee > 0,
+    withinGrace: false,
+    chargeableDays,
+    periods: round22(rawPeriods),
+    rawPercentFee,
+    percentFee,
+    flatFee,
+    fee,
+    cap,
+    capped: cap > 0 && rawPercentFee > cap,
+    newBalance: round22(balance + fee)
+  };
+}
+function buildPriceCard(engine, services, options = {}) {
+  const retainerMultiplier = round22(1 - Math.min(90, Math.max(0, num(options.retainerDiscountPercent, 10))) / 100);
+  const rushMultiplier = round22(1 + Math.max(0, num(options.rushSurchargePercent, 25)) / 100);
+  const usable = (services ?? []).filter((s) => s && typeof s.name === "string" && s.name.trim() !== "");
+  const tierDefs = [
+    { id: "standard", multiplier: 1 },
+    { id: "retainer", multiplier: retainerMultiplier },
+    { id: "rush", multiplier: rushMultiplier }
+  ];
+  return {
+    baselineHourlyRate: engine.baselineHourlyRate,
+    floorHourlyRate: engine.floorHourlyRate,
+    minimumProjectPrice: engine.minimumProjectPrice,
+    currency: engine.currency,
+    tiers: tierDefs.map((tier) => {
+      const lines = usable.map((service) => {
+        const hours = round22(Math.max(0, num(service.hours)));
+        const fixed = num(service.price);
+        const base = round22(fixed > 0 ? fixed : hours * engine.baselineHourlyRate);
+        return { name: service.name.trim(), hours, base, price: round22(base * tier.multiplier) };
+      });
+      const subtotal = round22(lines.reduce((sum, line) => sum + line.price, 0));
+      const total = round22(Math.max(subtotal, engine.minimumProjectPrice));
+      return { id: tier.id, multiplier: tier.multiplier, lines, subtotal, total, floorApplied: total > subtotal };
+    })
+  };
+}
+function escapeHtml(value) {
+  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function inline(value) {
+  return String(value ?? "").replace(/\s+/g, " ").trim();
+}
+function documentMoney(value, currency = "USD") {
+  const n = num(value);
+  const sign = n < 0 ? "-" : "";
+  const magnitude = Math.abs(n).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+  return `${sign}${inline(currency).toUpperCase() || "USD"} ${magnitude}`;
+}
+function documentPercent(value) {
+  return `${String(num(value).toFixed(2)).replace(/\.?0+$/, "")}%`;
+}
+function documentDate(value) {
+  if (!value)
+    return "\u2014";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime()))
+    return "\u2014";
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+function documentFileName(label, extension = "html") {
+  const stem = inline(label).replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|[-.]+$/g, "");
+  return `${stem || "document"}.${extension}`;
+}
+var DOCUMENT_CSS = `
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px;
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #0f172a; background: #fff;
+  }
+  .sheet { max-width: 800px; margin: 0 auto; }
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; border-bottom: 2px solid #6366f1; padding-bottom: 16px; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; }
+  .kicker { margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6366f1; }
+  .meta { text-align: end; font-size: 13px; }
+  .meta p { margin: 0; }
+  .meta dt { display: inline; color: #64748b; }
+  .meta dd { display: inline; margin: 0 0 0 6px; }
+  .parties { display: flex; flex-wrap: wrap; gap: 40px; margin: 24px 0; }
+  .party { min-width: 200px; }
+  .party h2 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
+  .party p { margin: 0; }
+  .muted { color: #64748b; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: start; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; border-bottom: 1px solid #e2e8f0; padding: 8px 6px; }
+  td { padding: 10px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  th.num, td.num { text-align: end; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .totals { margin: 20px 0 0 auto; max-width: 340px; }
+  .totals div { display: flex; justify-content: space-between; gap: 16px; padding: 4px 0; }
+  .totals .grand { border-top: 2px solid #0f172a; margin-top: 6px; padding-top: 8px; font-size: 15px; font-weight: 700; }
+  .totals .balance { color: #6366f1; font-weight: 700; }
+  .notes { margin-top: 28px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; white-space: pre-wrap; }
+  footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; }
+  [dir="rtl"] .totals { margin: 20px auto 0 0; }
+  @media print { body { padding: 0 } .sheet { max-width: none } @page { margin: 14mm } }
+`;
+function documentShell(input) {
+  return `<!doctype html>
+<html lang="en" dir="${input.direction}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(input.title)}</title>
+<style>${DOCUMENT_CSS}</style>
+</head>
+<body>
+<div class="sheet">
+${input.bodyHtml}
+</div>
+</body>
+</html>
+`;
+}
+function partyHtml(heading, party) {
+  const lines = [party.name, party.detail, party.email].map((line) => inline(line)).filter((line) => line !== "");
+  return `<div class="party">
+<h2>${escapeHtml(heading)}</h2>
+${lines.map((line) => `<p>${escapeHtml(line)}</p>`).join("\n")}
+</div>`;
+}
+function metaHtml(rows) {
+  const present = rows.filter(([, value]) => inline(value) !== "");
+  if (present.length === 0)
+    return "";
+  return `<dl class="meta">
+${present.map(([label, value]) => `<p><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></p>`).join("\n")}
+</dl>`;
+}
+function totalRows(input) {
+  const money2 = (value) => documentMoney(value, input.currency);
+  const rows = [
+    { label: input.labels.subtotal, value: money2(round22(input.net + input.discount)), kind: "plain" }
+  ];
+  if (input.discount > 0) {
+    rows.push({ label: input.labels.discount, value: `-${money2(input.discount)}`, kind: "plain" });
+  }
+  if (input.tax > 0) {
+    rows.push({
+      label: input.taxRate > 0 ? `${input.labels.tax} (${documentPercent(input.taxRate)})` : input.labels.tax,
+      value: money2(input.tax),
+      kind: "plain"
+    });
+  }
+  rows.push({ label: input.labels.total, value: money2(input.total), kind: "grand" });
+  if (input.paid > 0)
+    rows.push({ label: input.labels.paid, value: money2(input.paid), kind: "plain" });
+  rows.push({ label: input.labels.balance, value: money2(input.balance), kind: "balance" });
+  return rows;
+}
+function notesBlock(labels, notes) {
+  const body = String(notes ?? "").trim();
+  if (body === "")
+    return "";
+  return `<div class="notes"><strong>${escapeHtml(labels.notes)}</strong><br>${escapeHtml(body)}</div>`;
+}
+function footerBlock(labels, parts) {
+  const text = [labels.footer, ...parts].map((part) => inline(part)).filter((part) => part !== "");
+  return `<footer>${escapeHtml(text.join(" \xB7 "))}</footer>`;
+}
+function renderInvoiceDocument(input, options) {
+  const labels = options.labels;
+  const currency = inline(input.currency).toUpperCase() || "USD";
+  const number = inline(input.number);
+  const money2 = (value) => documentMoney(value, currency);
+  const lines = (input.lines ?? []).filter((line) => line && inline(line.label) !== "");
+  const discount = round22(Math.max(0, num(input.discount)));
+  const taxRate = num(input.taxRate);
+  const tax = round22(num(input.tax));
+  const net = round22(num(input.net));
+  const total = round22(num(input.total));
+  const paid = round22(num(input.paid));
+  const balance = round22(num(input.balance, round22(total - paid)));
+  const title = `${inline(labels.invoice)} ${number}`.trim();
+  const rows = totalRows({ net, discount, taxRate, tax, total, paid, balance, currency, labels });
+  const linesHtml = lines.length ? lines.map(
+    (line) => `<tr>
+<td>${escapeHtml(inline(line.label))}${line.detail ? `<span class="muted"> \u2014 ${escapeHtml(inline(line.detail))}</span>` : ""}</td>
+<td class="num">${line.quantity === void 0 ? "\u2014" : escapeHtml(String(line.quantity))}</td>
+<td class="num">${line.unitPrice === void 0 ? "\u2014" : escapeHtml(money2(line.unitPrice))}</td>
+<td class="num">${escapeHtml(money2(line.amount))}</td>
+</tr>`
+  ).join("\n") : `<tr><td colspan="4" class="muted">${escapeHtml(labels.emptyLines)}</td></tr>`;
+  const bodyHtml = `<header>
+<div>
+<p class="kicker">${escapeHtml(labels.invoice)}</p>
+<h1>${escapeHtml(number)}</h1>
+${input.kindLabel ? `<p class="muted">${escapeHtml(inline(input.kindLabel))}</p>` : ""}
+</div>
+${metaHtml([
+    [labels.issued, documentDate(input.issuedAt)],
+    [labels.due, input.dueAt ? documentDate(input.dueAt) : ""],
+    [labels.project, inline(input.projectLabel)],
+    [labels.status, inline(input.statusLabel)]
+  ])}
+</header>
+<div class="parties">
+${partyHtml(labels.from, input.issuedBy)}
+${partyHtml(labels.billTo, input.billedTo)}
+</div>
+<table>
+<thead>
+<tr>
+<th>${escapeHtml(labels.description)}</th>
+<th class="num">${escapeHtml(labels.quantity)}</th>
+<th class="num">${escapeHtml(labels.unitPrice)}</th>
+<th class="num">${escapeHtml(labels.amount)}</th>
+</tr>
+</thead>
+<tbody>
+${linesHtml}
+</tbody>
+</table>
+<div class="totals">
+${rows.map((row) => `<div class="${row.kind}"><span>${escapeHtml(row.label)}</span><span>${escapeHtml(row.value)}</span></div>`).join("\n")}
+</div>
+${notesBlock(labels, input.notes)}
+${footerBlock(labels, [documentDate(input.issuedAt), currency])}`;
+  const markdown = [
+    `# ${title}`,
+    "",
+    ...partyMarkdown(labels.from, input.issuedBy),
+    ...partyMarkdown(labels.billTo, input.billedTo),
+    ...inlineMetaMarkdown([
+      [labels.issued, documentDate(input.issuedAt)],
+      [labels.due, input.dueAt ? documentDate(input.dueAt) : ""],
+      [labels.project, inline(input.projectLabel)],
+      [labels.status, inline(input.statusLabel)]
+    ]),
+    "",
+    lines.length ? `| ${labels.description} | ${labels.quantity} | ${labels.unitPrice} | ${labels.amount} |
+| --- | ---: | ---: | ---: |
+${lines.map(
+      (line) => `| ${cell(line.label + (line.detail ? ` \u2014 ${line.detail}` : ""))} | ${line.quantity === void 0 ? "\u2014" : cell(String(line.quantity))} | ${line.unitPrice === void 0 ? "\u2014" : cell(money2(line.unitPrice))} | ${cell(
+        money2(line.amount)
+      )} |`
+    ).join("\n")}` : `_${inline(labels.emptyLines)}_`,
+    "",
+    `| | |
+| --- | ---: |
+${rows.map((row) => `| ${cell(row.label)} | ${cell(row.value)} |`).join("\n")}`,
+    input.notes && String(input.notes).trim() !== "" ? `
+**${inline(labels.notes)}**
+
+${String(input.notes).trim()}` : "",
+    "",
+    `_${[labels.footer, documentDate(input.issuedAt), currency].filter((p) => inline(p) !== "").join(" \xB7 ")}_`
+  ].filter((line) => line !== void 0).join("\n");
+  const text = [
+    title.toUpperCase(),
+    "=".repeat(Math.max(title.length, 8)),
+    "",
+    ...partyText(labels.from, input.issuedBy),
+    ...partyText(labels.billTo, input.billedTo),
+    "",
+    joinLabelValue(labels.issued, documentDate(input.issuedAt)),
+    input.dueAt ? joinLabelValue(labels.due, documentDate(input.dueAt)) : "",
+    input.projectLabel ? joinLabelValue(labels.project, inline(input.projectLabel)) : "",
+    input.statusLabel ? joinLabelValue(labels.status, inline(input.statusLabel)) : "",
+    "",
+    ...lines.length ? lines.flatMap((line) => [
+      `- ${inline(line.label)}${line.detail ? ` (${inline(line.detail)})` : ""}${line.quantity !== void 0 ? ` x${line.quantity}` : ""} \u2026 ${money2(line.amount)}`
+    ]) : [labels.emptyLines],
+    "",
+    ...rows.map((row) => joinLabelValue(row.label, row.value)),
+    input.notes && String(input.notes).trim() !== "" ? `
+${labels.notes}
+${String(input.notes).trim()}` : "",
+    "",
+    [labels.footer, documentDate(input.issuedAt), currency].filter((p) => inline(p) !== "").join(" \xB7 ")
+  ].filter((line) => line !== "").join("\n");
+  return {
+    fileName: documentFileName(number),
+    title,
+    html: documentShell({ title, direction: options.direction ?? "ltr", bodyHtml }),
+    markdown,
+    text
+  };
+}
+function cell(value) {
+  return inline(value).replace(/\|/g, "\\|");
+}
+function joinLabelValue(label, value) {
+  return `${label}: ${value}`;
+}
+function partyMarkdown(heading, party) {
+  const lines = [party.name, party.detail, party.email].map((line) => inline(line)).filter((line) => line !== "");
+  if (lines.length === 0)
+    return [];
+  return [`**${inline(heading)}**  `, ...lines.map((line) => `${line}  `), ""];
+}
+function partyText(heading, party) {
+  const lines = [party.name, party.detail, party.email].map((line) => inline(line)).filter((line) => line !== "");
+  if (lines.length === 0)
+    return [];
+  return [`${inline(heading)}: ${lines.join(", ")}`];
+}
+function inlineMetaMarkdown(rows) {
+  const present = rows.filter(([, value]) => inline(value) !== "");
+  if (present.length === 0)
+    return [];
+  return ["", present.map(([label, value]) => `**${inline(label)}:** ${cell(value)}`).join(" \xB7 ")];
+}
+function renderStatementDocument(input, options) {
+  const labels = options.labels;
+  const currency = inline(input.currency).toUpperCase() || "USD";
+  const money2 = (value) => documentMoney(value, currency);
+  const reference = inline(input.reference);
+  const rows = (input.rows ?? []).filter((row) => row && inline(row.number) !== "");
+  const total = round22(num(input.totals?.total));
+  const paid = round22(num(input.totals?.paid));
+  const balance = round22(num(input.totals?.balance));
+  const title = `${inline(labels.statement)} ${reference}`.trim();
+  const period = input.periodFrom || input.periodTo ? `${documentDate(input.periodFrom)} \u2014 ${documentDate(input.periodTo)}` : "";
+  const bodyHtml = `<header>
+<div>
+<p class="kicker">${escapeHtml(labels.statement)}</p>
+<h1>${escapeHtml(reference)}</h1>
+</div>
+${metaHtml([
+    [labels.issued, documentDate(input.issuedAt)],
+    [labels.period, period]
+  ])}
+</header>
+<div class="parties">
+${partyHtml(labels.from, input.issuedBy)}
+${partyHtml(labels.billTo, input.billedTo)}
+</div>
+<table>
+<thead>
+<tr>
+<th>${escapeHtml(labels.reference)}</th>
+<th>${escapeHtml(labels.issued)}</th>
+<th>${escapeHtml(labels.due)}</th>
+<th>${escapeHtml(labels.status)}</th>
+<th class="num">${escapeHtml(labels.total)}</th>
+<th class="num">${escapeHtml(labels.paid)}</th>
+<th class="num">${escapeHtml(labels.balance)}</th>
+</tr>
+</thead>
+<tbody>
+${rows.length ? rows.map(
+    (row) => `<tr>
+<td>${escapeHtml(inline(row.number))}</td>
+<td>${escapeHtml(documentDate(row.issuedAt))}</td>
+<td>${escapeHtml(row.dueAt ? documentDate(row.dueAt) : "\u2014")}</td>
+<td>${escapeHtml(inline(row.statusLabel))}</td>
+<td class="num">${escapeHtml(money2(row.total))}</td>
+<td class="num">${escapeHtml(money2(row.paid))}</td>
+<td class="num">${escapeHtml(money2(row.balance))}</td>
+</tr>`
+  ).join("\n") : `<tr><td colspan="7" class="muted">${escapeHtml(labels.emptyStatement)}</td></tr>`}
+</tbody>
+</table>
+<div class="totals">
+<div><span>${escapeHtml(labels.total)}</span><span>${escapeHtml(money2(total))}</span></div>
+<div><span>${escapeHtml(labels.paid)}</span><span>${escapeHtml(money2(paid))}</span></div>
+<div class="balance"><span>${escapeHtml(labels.balance)}</span><span>${escapeHtml(money2(balance))}</span></div>
+</div>
+${notesBlock(labels, input.notes)}
+${footerBlock(labels, [documentDate(input.issuedAt)])}`;
+  const markdown = [
+    `# ${title}`,
+    "",
+    ...partyMarkdown(labels.from, input.issuedBy),
+    ...partyMarkdown(labels.billTo, input.billedTo),
+    ...inlineMetaMarkdown([
+      [labels.issued, documentDate(input.issuedAt)],
+      [labels.period, period]
+    ]),
+    "",
+    rows.length ? `| ${labels.reference} | ${labels.issued} | ${labels.due} | ${labels.status} | ${labels.total} | ${labels.paid} | ${labels.balance} |
+| --- | --- | --- | --- | ---: | ---: | ---: |
+${rows.map(
+      (row) => `| ${cell(row.number)} | ${cell(documentDate(row.issuedAt))} | ${cell(
+        row.dueAt ? documentDate(row.dueAt) : "\u2014"
+      )} | ${cell(row.statusLabel)} | ${cell(money2(row.total))} | ${cell(money2(row.paid))} | ${cell(
+        money2(row.balance)
+      )} |`
+    ).join("\n")}` : `_${inline(labels.emptyStatement)}_`,
+    "",
+    `| | |
+| --- | ---: |
+| ${cell(labels.total)} | ${cell(money2(total))} |
+| ${cell(
+      labels.paid
+    )} | ${cell(money2(paid))} |
+| **${cell(labels.balance)}** | **${cell(money2(balance))}** |`,
+    input.notes && String(input.notes).trim() !== "" ? `
+**${inline(labels.notes)}**
+
+${String(input.notes).trim()}` : "",
+    "",
+    `_${[labels.footer, documentDate(input.issuedAt)].filter((p) => inline(p) !== "").join(" \xB7 ")}_`
+  ].join("\n");
+  const text = [
+    title.toUpperCase(),
+    "=".repeat(Math.max(title.length, 8)),
+    "",
+    ...partyText(labels.from, input.issuedBy),
+    ...partyText(labels.billTo, input.billedTo),
+    "",
+    joinLabelValue(labels.issued, documentDate(input.issuedAt)),
+    period ? joinLabelValue(labels.period, period) : "",
+    "",
+    ...rows.length ? rows.map(
+      (row) => `- ${inline(row.number)} \xB7 ${documentDate(row.issuedAt)} \xB7 ${inline(row.statusLabel)} \xB7 ${money2(
+        row.total
+      )} \u2192 ${money2(row.balance)}`
+    ) : [labels.emptyStatement],
+    "",
+    joinLabelValue(labels.total, money2(total)),
+    joinLabelValue(labels.paid, money2(paid)),
+    joinLabelValue(labels.balance, money2(balance)),
+    input.notes && String(input.notes).trim() !== "" ? `
+${labels.notes}
+${String(input.notes).trim()}` : "",
+    "",
+    [labels.footer, documentDate(input.issuedAt)].filter((p) => inline(p) !== "").join(" \xB7 ")
+  ].filter((line) => line !== "").join("\n");
+  return {
+    fileName: documentFileName(`${inline(labels.statement)}-${reference}`),
+    title,
+    html: documentShell({ title, direction: options.direction ?? "ltr", bodyHtml }),
+    markdown,
+    text
+  };
+}
+function addMonths(input, months) {
+  const date = new Date(input);
+  const day = date.getDate();
+  const target = new Date(date.getFullYear(), date.getMonth() + Math.round(num(months)), 1);
+  const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  target.setDate(Math.min(day, lastDay));
+  target.setHours(date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds());
+  return target;
+}
+function wholeMonthsBetween(from, to) {
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate())
+    months -= 1;
+  return Math.max(0, months);
+}
+function retainerRenewalWindow(input, asOf = /* @__PURE__ */ new Date()) {
+  const now = new Date(asOf);
+  const periodStart = new Date(input.periodStart);
+  const declared = input.nextResetAt ? new Date(input.nextResetAt) : null;
+  const periodEnd = declared && !Number.isNaN(declared.getTime()) ? declared : retainerResetDate(periodStart);
+  const isDue = now.getTime() >= periodEnd.getTime();
+  return {
+    periodStart,
+    periodEnd,
+    isDue,
+    daysUntilReset: Math.round(
+      (startOfDay(periodEnd).getTime() - startOfDay(now).getTime()) / 864e5
+    ),
+    periodsDue: isDue ? wholeMonthsBetween(periodEnd, now) + 1 : 0
+  };
+}
+function planRetainerRenewal(input, asOf = /* @__PURE__ */ new Date()) {
+  const window2 = retainerRenewalWindow(input, asOf);
+  const periodsDue = window2.periodsDue;
+  const allowance = num(input.hoursIncluded);
+  const hoursUsed = round22(Math.max(0, num(input.hoursUsed)));
+  const opening = round22(Math.max(0, num(input.rolloverHours)));
+  const unused = round22(Math.max(0, allowance + opening - hoursUsed));
+  const carried = input.rolloverEnabled && allowance > 0 ? round22(Math.min(unused, allowance)) : 0;
+  const periodAmount = round22(Math.max(0, num(input.monthlyAmount)));
+  return {
+    window: window2,
+    nextPeriodStart: addMonths(window2.periodEnd, periodsDue - 1),
+    nextResetAt: addMonths(window2.periodEnd, periodsDue),
+    hoursUsed,
+    carriedHours: carried,
+    forfeitedHours: round22(unused - carried),
+    rolloverHours: carried,
+    periodAmount,
+    invoiceAmount: round22(periodAmount * periodsDue),
+    shouldInvoice: periodsDue > 0 && periodAmount > 0,
+    noteMarker: retainerRenewalMarker(input.name ?? "", addMonths(window2.periodEnd, periodsDue - 1))
+  };
+}
+function retainerRenewalMarker(name, periodStart) {
+  return `RETAINER-RENEWAL ${inline(name)} ${dayKey(periodStart)}`.trim();
+}
+
+// src/plugins/personal/handlers/projects.ts
+var log133 = createLogger("Personal:Projects");
+var PROJECT_INCLUDE = {
+  client: { select: { id: true, name: true, company: true, currency: true, defaultHourlyRate: true } },
+  deliverables: { orderBy: { createdAt: "asc" } },
+  _count: { select: { changeRequests: true, tasks: true, checklistItems: true, waits: true } }
+};
+function registerProjectHandlers(prisma2) {
+  ipcMain.handle("personal:projects:getAll", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 50;
+      const where = {};
+      if (opts?.status)
+        where.status = opts.status;
+      if (opts?.stage)
+        where.stage = opts.stage;
+      if (opts?.clientId)
+        where.clientId = opts.clientId;
+      if (opts?.search) {
+        where.OR = [
+          { title: { contains: opts.search } },
+          { code: { contains: opts.search } },
+          { summary: { contains: opts.search } }
+        ];
+      }
+      const [total, items] = await Promise.all([
+        prisma2.personalProject.count({ where }),
+        prisma2.personalProject.findMany({
+          where,
+          include: PROJECT_INCLUDE,
+          orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ]);
+      return paginate(items, total, page, pageSize);
+    } catch (err) {
+      log133.error("projects:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:getById", async (_e, id) => {
+    try {
+      const project = await prisma2.personalProject.findUnique({
+        where: { id },
+        include: {
+          client: true,
+          deliverables: { orderBy: { createdAt: "asc" } },
+          changeRequests: { orderBy: { createdAt: "desc" } },
+          waits: { orderBy: { startedAt: "desc" } },
+          stageEvents: { orderBy: { enteredAt: "asc" } },
+          checklistItems: { orderBy: { displayOrder: "asc" } },
+          invoices: { include: { payments: true }, orderBy: { issuedAt: "desc" } },
+          tasks: { orderBy: [{ isDailyThree: "desc" }, { dueDate: "asc" }], take: 100 },
+          workloads: { orderBy: { day: "asc" } }
+        }
+      });
+      if (!project)
+        return null;
+      const sessions2 = await prisma2.personalFocusSession.findMany({
+        where: { projectId: id, endedAt: { not: null } },
+        select: { actualMinutes: true, billable: true }
+      });
+      const focusMinutes = sessions2.reduce((sum, s) => sum + num(s.actualMinutes), 0);
+      const billableMinutes = sessions2.filter((s) => s.billable).reduce((sum, s) => sum + num(s.actualMinutes), 0);
+      const payments = project.invoices.flatMap((inv) => inv.payments);
+      const ctx = paymentContext(project.invoices.map((inv) => inv.amount), payments);
+      const nextStage = PIPELINE_STAGES[Math.min(PIPELINE_STAGES.length - 1, stageIndex(project.stage) + 1)];
+      const gate = evaluateStageGate(nextStage.id, ctx);
+      const waitingDays = project.waits.reduce((sum, w) => sum + num(w.days), 0);
+      const estimated = num(project.estimatedHours);
+      return {
+        ...project,
+        metrics: {
+          focusMinutes,
+          billableMinutes,
+          realHourlyRate: focusMinutes > 0 ? round22(ctx.paid / (focusMinutes / 60)) : 0,
+          estimatedHours: estimated,
+          hoursBurnPercent: estimated > 0 ? round22(focusMinutes / 60 / estimated * 100) : 0,
+          waitingDays,
+          openWait: project.waits.some((w) => !w.endedAt),
+          scopeCreepValue: round22(
+            project.changeRequests.filter((c) => c.status === "approved" || c.status === "invoiced").reduce((sum, c) => sum + num(c.extraCost), 0)
+          ),
+          checklistDone: project.checklistItems.filter((c) => c.isDone).length,
+          checklistTotal: project.checklistItems.length,
+          canHandOver: project.checklistItems.filter((c) => c.isBlocking).every((c) => c.isDone)
+        },
+        payments: ctx,
+        nextStage,
+        gate
+      };
+    } catch (err) {
+      log133.error("projects:getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:create", async (_e, data) => {
+    try {
+      const code = (data?.code || "").trim() || await nextProjectCode(prisma2);
+      const client = data?.clientId ? await prisma2.personalClient.findUnique({ where: { id: data.clientId } }) : null;
+      const project = await prisma2.personalProject.create({
+        data: {
+          code,
+          clientId: data?.clientId || null,
+          title: String(data?.title ?? "").trim(),
+          summary: data?.summary || null,
+          status: data?.status || "lead",
+          stage: data?.stage || "brief_approved",
+          pricingType: data?.pricingType || "fixed",
+          currency: data?.currency || client?.currency || "USD",
+          agreedAmount: num(data?.agreedAmount),
+          hourlyRate: data?.hourlyRate === "" || data?.hourlyRate == null ? client?.defaultHourlyRate ?? null : num(data.hourlyRate),
+          depositPercent: num(data?.depositPercent, client?.defaultDepositPercent ?? 50),
+          startDate: toDate2(data?.startDate),
+          dueDate: toDate2(data?.dueDate),
+          adjustedDueDate: toDate2(data?.dueDate),
+          estimatedHours: num(data?.estimatedHours),
+          maxHoursPerWeek: data?.maxHoursPerWeek === "" || data?.maxHoursPerWeek == null ? null : num(data.maxHoursPerWeek),
+          notes: data?.notes || null
+        },
+        include: PROJECT_INCLUDE
+      });
+      await prisma2.personalStageEvent.create({
+        data: { projectId: project.id, stage: project.stage, note: "Project created" }
+      });
+      return project;
+    } catch (err) {
+      log133.error("projects:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      for (const key of ["startDate", "dueDate"]) {
+        if (key in patch)
+          patch[key] = toDate2(patch[key]);
+      }
+      if ("agreedAmount" in patch)
+        patch.agreedAmount = num(patch.agreedAmount);
+      if ("depositPercent" in patch)
+        patch.depositPercent = num(patch.depositPercent, 50);
+      if ("estimatedHours" in patch)
+        patch.estimatedHours = num(patch.estimatedHours);
+      if ("hourlyRate" in patch) {
+        patch.hourlyRate = patch.hourlyRate === "" || patch.hourlyRate == null ? null : num(patch.hourlyRate);
+      }
+      if ("maxHoursPerWeek" in patch) {
+        patch.maxHoursPerWeek = patch.maxHoursPerWeek === "" || patch.maxHoursPerWeek == null ? null : num(patch.maxHoursPerWeek);
+      }
+      if ("dueDate" in patch) {
+        patch.adjustedDueDate = patch.dueDate;
+        const waits = await prisma2.personalWaitLog.findMany({
+          where: { projectId: id, shiftDeadline: true, endedAt: { not: null } }
+        });
+        const totalDays = waits.reduce((sum, w) => sum + num(w.appliedDays || w.days), 0);
+        if (patch.dueDate && totalDays > 0) {
+          const shifted = new Date(patch.dueDate);
+          shifted.setDate(shifted.getDate() + totalDays);
+          patch.adjustedDueDate = shifted;
+        }
+      }
+      return await prisma2.personalProject.update({ where: { id }, data: patch, include: PROJECT_INCLUDE });
+    } catch (err) {
+      log133.error("projects:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalProject.delete({ where: { id } });
+    } catch (err) {
+      log133.error("projects:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:advanceStage", async (_e, data) => {
+    try {
+      const project = await prisma2.personalProject.findUnique({
+        where: { id: data.id },
+        include: { invoices: { include: { payments: true } } }
+      });
+      if (!project)
+        throw new Error("Project not found");
+      const payments = project.invoices.flatMap((inv) => inv.payments);
+      const ctx = paymentContext(project.invoices.map((inv) => inv.amount), payments);
+      const gate = evaluateStageGate(data.stage, ctx);
+      if (gate.blocked) {
+        return { ok: false, blocked: true, requires: gate.requires, reason: gate.reason, payments: ctx };
+      }
+      const patch = { stage: data.stage };
+      if (data.stage === "assets_handed_over") {
+        patch.deliveredAt = /* @__PURE__ */ new Date();
+        patch.status = "delivered";
+      } else if (stageIndex(data.stage) >= stageIndex("draft_staging")) {
+        if (project.status === "lead")
+          patch.status = "active";
+      }
+      const updated = await prisma2.personalProject.update({ where: { id: data.id }, data: patch, include: PROJECT_INCLUDE });
+      await prisma2.personalStageEvent.create({
+        data: { projectId: data.id, stage: data.stage, note: data.note || null }
+      });
+      return { ok: true, blocked: false, project: updated };
+    } catch (err) {
+      log133.error("projects:advanceStage", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:getBoard", async () => {
+    try {
+      const projects = await prisma2.personalProject.findMany({
+        where: { status: { in: ["lead", "active", "paused"] } },
+        include: PROJECT_INCLUDE,
+        orderBy: { dueDate: "asc" }
+      });
+      const columns = PIPELINE_STAGES.map((stage) => ({
+        stage: stage.id,
+        label: stage.label,
+        requires: stage.requires,
+        projects: projects.filter((p) => p.stage === stage.id)
+      }));
+      return { columns, total: projects.length };
+    } catch (err) {
+      log133.error("projects:getBoard", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:getDeadlines", async (_e, opts) => {
+    try {
+      const horizon = opts?.days ?? 21;
+      const now = /* @__PURE__ */ new Date();
+      const projects = await prisma2.personalProject.findMany({
+        where: { status: { in: ["lead", "active", "paused"] } },
+        include: { client: { select: { id: true, name: true } } }
+      });
+      const rows = projects.map((p) => {
+        const deadline = p.adjustedDueDate ?? p.dueDate;
+        const overdue = deadline ? new Date(deadline).getTime() < now.getTime() : false;
+        const daysLeft = deadline ? Math.round((new Date(deadline).getTime() - now.getTime()) / 864e5) : null;
+        return {
+          id: p.id,
+          code: p.code,
+          title: p.title,
+          clientName: p.client?.name ?? null,
+          stage: p.stage,
+          status: p.status,
+          deadline,
+          daysLeft,
+          overdue,
+          hasOpenWait: false
+        };
+      });
+      const waits = await prisma2.personalWaitLog.findMany({ where: { endedAt: null }, select: { projectId: true } });
+      const waiting = new Set(waits.map((w) => w.projectId));
+      const rowsWithWait = rows.map((r) => ({ ...r, hasOpenWait: waiting.has(r.id) })).sort((a, b) => (a.daysLeft ?? 9999) - (b.daysLeft ?? 9999));
+      return {
+        upcoming: rowsWithWait.filter((r) => r.deadline && !r.overdue && (r.daysLeft ?? 0) <= horizon),
+        overdue: rowsWithWait.filter((r) => r.overdue),
+        noDeadline: rowsWithWait.filter((r) => !r.deadline),
+        waitingOnClient: rowsWithWait.filter((r) => r.hasOpenWait)
+      };
+    } catch (err) {
+      log133.error("projects:getDeadlines", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:deliverables:getAll", async (_e, projectId) => {
+    try {
+      return await prisma2.personalDeliverable.findMany({
+        where: { projectId },
+        orderBy: { createdAt: "asc" }
+      });
+    } catch (err) {
+      log133.error("deliverables:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:deliverables:create", async (_e, data) => {
+    try {
+      return await prisma2.personalDeliverable.create({
+        data: {
+          projectId: data.projectId,
+          title: String(data?.title ?? "").trim(),
+          quantity: num(data?.quantity, 1),
+          unit: data?.unit || "item",
+          isIncluded: data?.isIncluded ?? true,
+          notes: data?.notes || null
+        }
+      });
+    } catch (err) {
+      log133.error("deliverables:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:deliverables:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("quantity" in patch)
+        patch.quantity = num(patch.quantity, 1);
+      return await prisma2.personalDeliverable.update({ where: { id }, data: patch });
+    } catch (err) {
+      log133.error("deliverables:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:deliverables:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalDeliverable.delete({ where: { id } });
+    } catch (err) {
+      log133.error("deliverables:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:checklist:getAll", async (_e, projectId) => {
+    try {
+      return await prisma2.personalChecklistItem.findMany({
+        where: { projectId },
+        orderBy: { displayOrder: "asc" }
+      });
+    } catch (err) {
+      log133.error("checklist:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:checklist:create", async (_e, data) => {
+    try {
+      return await prisma2.personalChecklistItem.create({
+        data: {
+          projectId: data.projectId,
+          label: String(data?.label ?? "").trim(),
+          category: data?.category || "general",
+          isBlocking: data?.isBlocking ?? true,
+          displayOrder: Math.round(num(data?.displayOrder, 0)),
+          notes: data?.notes || null
+        }
+      });
+    } catch (err) {
+      log133.error("checklist:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:checklist:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("isDone" in patch)
+        patch.doneAt = patch.isDone ? /* @__PURE__ */ new Date() : null;
+      return await prisma2.personalChecklistItem.update({ where: { id }, data: patch });
+    } catch (err) {
+      log133.error("checklist:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:checklist:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalChecklistItem.delete({ where: { id } });
+    } catch (err) {
+      log133.error("checklist:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:checklist:applyTemplate", async (_e, data) => {
+    try {
+      const template = await prisma2.personalChecklistTemplate.findUnique({ where: { id: data.templateId } });
+      if (!template)
+        throw new Error("Checklist template not found");
+      const labels = parseJsonArray(template.itemsJson).filter((l) => typeof l === "string" && l.trim());
+      const existing = await prisma2.personalChecklistItem.findMany({
+        where: { projectId: data.projectId },
+        select: { label: true, displayOrder: true }
+      });
+      const known = new Set(existing.map((i) => i.label.toLowerCase()));
+      let order = existing.reduce((max, i) => Math.max(max, num(i.displayOrder)), 0);
+      const created = [];
+      for (const label of labels) {
+        if (known.has(label.toLowerCase()))
+          continue;
+        order += 1;
+        created.push(await prisma2.personalChecklistItem.create({
+          data: { projectId: data.projectId, label, category: template.profession, displayOrder: order }
+        }));
+      }
+      return { template: template.name, created: created.length, skipped: labels.length - created.length };
+    } catch (err) {
+      log133.error("checklist:applyTemplate", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:templates:getAll", async () => {
+    try {
+      return await prisma2.personalChecklistTemplate.findMany({ orderBy: [{ isDefault: "desc" }, { name: "asc" }] });
+    } catch (err) {
+      log133.error("templates:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:templates:create", async (_e, data) => {
+    try {
+      const items = Array.isArray(data?.items) ? data.items : String(data?.itemsText ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
+      return await prisma2.personalChecklistTemplate.create({
+        data: {
+          name: String(data?.name ?? "").trim(),
+          profession: data?.profession || "general",
+          isDefault: Boolean(data?.isDefault),
+          itemsJson: JSON.stringify(items)
+        }
+      });
+    } catch (err) {
+      log133.error("templates:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:templates:update", async (_e, data) => {
+    try {
+      const { id, items, itemsText, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if (items || itemsText !== void 0) {
+        const list = Array.isArray(items) ? items : String(itemsText ?? "").split("\n").map((line) => line.trim()).filter(Boolean);
+        patch.itemsJson = JSON.stringify(list);
+      }
+      return await prisma2.personalChecklistTemplate.update({ where: { id }, data: patch });
+    } catch (err) {
+      log133.error("templates:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:projects:templates:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalChecklistTemplate.delete({ where: { id } });
+    } catch (err) {
+      log133.error("templates:delete", err);
+      throw err;
+    }
+  });
+}
+async function nextProjectCode(prisma2) {
+  const year = (/* @__PURE__ */ new Date()).getFullYear();
+  const count = await prisma2.personalProject.count();
+  return `PW-${year}-${String(count + 1).padStart(3, "0")}`;
+}
+
+// src/plugins/personal/handlers/requests.ts
+init_electron_node();
+var log134 = createLogger("Personal:Requests");
+var REQUEST_INCLUDE = {
+  project: {
+    select: {
+      id: true,
+      code: true,
+      title: true,
+      currency: true,
+      hourlyRate: true,
+      agreedAmount: true,
+      client: { select: { id: true, name: true, company: true } }
+    }
+  }
+};
+function registerRequestHandlers(prisma2) {
+  ipcMain.handle("personal:requests:getAll", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 50;
+      const where = {};
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.status)
+        where.status = opts.status;
+      const [total, items] = await Promise.all([
+        prisma2.personalChangeRequest.count({ where }),
+        prisma2.personalChangeRequest.findMany({
+          where,
+          include: REQUEST_INCLUDE,
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ]);
+      return paginate(items, total, page, pageSize);
+    } catch (err) {
+      log134.error("requests:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:requests:getById", async (_e, id) => {
+    try {
+      return await prisma2.personalChangeRequest.findUnique({ where: { id }, include: REQUEST_INCLUDE });
+    } catch (err) {
+      log134.error("requests:getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:requests:create", async (_e, data) => {
+    try {
+      const project = await prisma2.personalProject.findUnique({
+        where: { id: data?.projectId },
+        include: { client: { select: { defaultHourlyRate: true } } }
+      });
+      if (!project)
+        throw new Error("Project not found");
+      const hourlyRate = data?.hourlyRate === "" || data?.hourlyRate == null ? num(project.hourlyRate ?? project.client?.defaultHourlyRate, 0) : num(data.hourlyRate);
+      const pricing = priceChangeRequest({
+        estimatedHours: num(data?.estimatedHours),
+        hourlyRate,
+        extraDays: data?.extraDays === "" || data?.extraDays == null ? void 0 : num(data.extraDays),
+        hoursPerDay: num(data?.hoursPerDay, 6)
+      });
+      return await prisma2.personalChangeRequest.create({
+        data: {
+          projectId: project.id,
+          title: String(data?.title ?? "").trim(),
+          description: data?.description || null,
+          estimatedHours: num(data?.estimatedHours),
+          hourlyRate,
+          extraCost: pricing.extraCost,
+          extraDays: pricing.extraDays,
+          status: "draft"
+        },
+        include: REQUEST_INCLUDE
+      });
+    } catch (err) {
+      log134.error("requests:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:requests:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const existing = await prisma2.personalChangeRequest.findUnique({ where: { id } });
+      if (!existing)
+        throw new Error("Change request not found");
+      const patch = { ...rest };
+      if ("estimatedHours" in patch || "hourlyRate" in patch || "extraDays" in patch) {
+        const pricing = priceChangeRequest({
+          estimatedHours: "estimatedHours" in patch ? num(patch.estimatedHours) : existing.estimatedHours,
+          hourlyRate: "hourlyRate" in patch ? num(patch.hourlyRate) : existing.hourlyRate,
+          extraDays: "extraDays" in patch ? num(patch.extraDays) : existing.extraDays
+        });
+        patch.estimatedHours = "estimatedHours" in patch ? num(patch.estimatedHours) : existing.estimatedHours;
+        patch.hourlyRate = "hourlyRate" in patch ? num(patch.hourlyRate) : existing.hourlyRate;
+        patch.extraCost = pricing.extraCost;
+        patch.extraDays = pricing.extraDays;
+      }
+      return await prisma2.personalChangeRequest.update({ where: { id }, data: patch, include: REQUEST_INCLUDE });
+    } catch (err) {
+      log134.error("requests:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:requests:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalChangeRequest.delete({ where: { id } });
+    } catch (err) {
+      log134.error("requests:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:requests:quote", async (_e, id) => {
+    try {
+      const request = await prisma2.personalChangeRequest.findUnique({ where: { id }, include: REQUEST_INCLUDE });
+      if (!request)
+        throw new Error("Change request not found");
+      const quoteText = buildChangeRequestQuote({
+        clientName: request.project?.client?.name ?? "there",
+        projectTitle: request.project?.title ?? "the project",
+        title: request.title,
+        description: request.description,
+        estimatedHours: request.estimatedHours,
+        hourlyRate: request.hourlyRate,
+        extraCost: request.extraCost,
+        extraDays: request.extraDays,
+        currency: request.project?.currency ?? "USD"
+      });
+      return await prisma2.personalChangeRequest.update({
+        where: { id },
+        data: { quoteText, quotedAt: /* @__PURE__ */ new Date(), status: request.status === "draft" ? "quoted" : request.status },
+        include: REQUEST_INCLUDE
+      });
+    } catch (err) {
+      log134.error("requests:quote", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:requests:decide", async (_e, data) => {
+    try {
+      const request = await prisma2.personalChangeRequest.findUnique({ where: { id: data.id } });
+      if (!request)
+        throw new Error("Change request not found");
+      const updated = await prisma2.personalChangeRequest.update({
+        where: { id: data.id },
+        data: {
+          status: data.status,
+          decisionNote: data.note || null,
+          decidedAt: /* @__PURE__ */ new Date()
+        },
+        include: REQUEST_INCLUDE
+      });
+      if (data.status === "approved" && data.shiftDeadline !== false && request.extraDays > 0) {
+        const project = await prisma2.personalProject.findUnique({ where: { id: request.projectId } });
+        if (project) {
+          const base = project.adjustedDueDate ?? project.dueDate;
+          if (base) {
+            const shifted = new Date(base);
+            shifted.setDate(shifted.getDate() + request.extraDays);
+            await prisma2.personalProject.update({
+              where: { id: request.projectId },
+              data: { adjustedDueDate: shifted }
+            });
+          }
+        }
+      }
+      return updated;
+    } catch (err) {
+      log134.error("requests:decide", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:requests:markInvoiced", async (_e, data) => {
+    try {
+      return await prisma2.personalChangeRequest.update({
+        where: { id: data.id },
+        data: { status: "invoiced" },
+        include: REQUEST_INCLUDE
+      });
+    } catch (err) {
+      log134.error("requests:markInvoiced", err);
+      throw err;
+    }
+  });
+}
+
+// src/plugins/personal/handlers/waits.ts
+init_electron_node();
+var log135 = createLogger("Personal:Waits");
+var WAIT_INCLUDE = {
+  project: {
+    select: {
+      id: true,
+      code: true,
+      title: true,
+      currency: true,
+      dueDate: true,
+      adjustedDueDate: true,
+      client: { select: { id: true, name: true } }
+    }
+  }
+};
+function registerWaitHandlers(prisma2) {
+  ipcMain.handle("personal:waits:getAll", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 50;
+      const where = {};
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.reason)
+        where.reason = opts.reason;
+      if (opts?.open === true)
+        where.endedAt = null;
+      if (opts?.open === false)
+        where.endedAt = { not: null };
+      const [total, items] = await Promise.all([
+        prisma2.personalWaitLog.count({ where }),
+        prisma2.personalWaitLog.findMany({
+          where,
+          include: WAIT_INCLUDE,
+          orderBy: [{ endedAt: "asc" }, { startedAt: "desc" }],
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ]);
+      const now = /* @__PURE__ */ new Date();
+      const enriched = items.map((w) => ({
+        ...w,
+        liveDays: w.endedAt ? w.days : daysBetween(w.startedAt, now)
+      }));
+      return paginate(enriched, total, page, pageSize);
+    } catch (err) {
+      log135.error("waits:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:waits:start", async (_e, data) => {
+    try {
+      const project = await prisma2.personalProject.findUnique({ where: { id: data?.projectId } });
+      if (!project)
+        throw new Error("Project not found");
+      const open = await prisma2.personalWaitLog.findFirst({ where: { projectId: data.projectId, endedAt: null } });
+      if (open)
+        throw new Error("This project already has an open wait");
+      return await prisma2.personalWaitLog.create({
+        data: {
+          projectId: data.projectId,
+          reason: data?.reason || "assets",
+          startedAt: data?.startedAt ? new Date(data.startedAt) : /* @__PURE__ */ new Date(),
+          shiftDeadline: data?.shiftDeadline ?? true,
+          note: data?.note || null
+        },
+        include: WAIT_INCLUDE
+      });
+    } catch (err) {
+      log135.error("waits:start", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:waits:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("startedAt" in patch)
+        patch.startedAt = new Date(patch.startedAt);
+      return await prisma2.personalWaitLog.update({ where: { id }, data: patch, include: WAIT_INCLUDE });
+    } catch (err) {
+      log135.error("waits:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:waits:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalWaitLog.delete({ where: { id } });
+    } catch (err) {
+      log135.error("waits:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:waits:getSummary", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.from || opts?.to) {
+        where.startedAt = {};
+        if (opts?.from)
+          where.startedAt.gte = new Date(opts.from);
+        if (opts?.to)
+          where.startedAt.lte = new Date(opts.to);
+      }
+      const logs = await prisma2.personalWaitLog.findMany({ where, include: WAIT_INCLUDE });
+      const now = /* @__PURE__ */ new Date();
+      const byReason = {};
+      let totalDays = 0;
+      let openDays = 0;
+      let shiftsApplied = 0;
+      for (const w of logs) {
+        const days = w.endedAt ? num(w.days) : daysBetween(w.startedAt, now);
+        totalDays += days;
+        if (!w.endedAt)
+          openDays += days;
+        shiftsApplied += num(w.appliedDays);
+        byReason[w.reason] = round22((byReason[w.reason] ?? 0) + days);
+      }
+      const top = Object.entries(byReason).sort((a, b) => b[1] - a[1])[0] ?? null;
+      return {
+        entries: logs.length,
+        openWaits: logs.filter((w) => !w.endedAt).length,
+        totalDays: round22(totalDays),
+        openDays: round22(openDays),
+        closedDays: round22(totalDays - openDays),
+        shiftsApplied,
+        byReason,
+        worstReason: top ? { reason: top[0], days: round22(top[1]) } : null
+      };
+    } catch (err) {
+      log135.error("waits:getSummary", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:waits:getClientImpact", async () => {
+    try {
+      const logs = await prisma2.personalWaitLog.findMany({
+        where: { endedAt: { not: null } },
+        include: { project: { select: { clientId: true, client: { select: { id: true, name: true } } } } }
+      });
+      const map = /* @__PURE__ */ new Map();
+      for (const w of logs) {
+        const client = w.project?.client;
+        const key = client?.id ?? "unassigned";
+        const row = map.get(key) ?? { clientId: key, clientName: client?.name ?? "\u2014", days: 0, entries: 0 };
+        row.days = round22(row.days + num(w.days));
+        row.entries += 1;
+        map.set(key, row);
+      }
+      return Array.from(map.values()).sort((a, b) => b.days - a.days);
+    } catch (err) {
+      log135.error("waits:getClientImpact", err);
+      throw err;
+    }
+  });
+  registerCloseWaitHandler(prisma2);
+}
+function registerCloseWaitHandler(prisma2) {
+  ipcMain.handle("personal:waits:end", async (_e, data) => {
+    try {
+      const wait = await prisma2.personalWaitLog.findUnique({ where: { id: data.id } });
+      if (!wait)
+        throw new Error("Wait log not found");
+      if (wait.endedAt)
+        return { ok: true, alreadyClosed: true, wait };
+      const endedAt = /* @__PURE__ */ new Date();
+      const rawDays = daysBetween(wait.startedAt, endedAt);
+      const days = Math.max(wait.shiftDeadline ? 1 : 0, rawDays);
+      const shouldShift = data.shiftDeadline ?? wait.shiftDeadline;
+      await prisma2.personalWaitLog.update({
+        where: { id: data.id },
+        data: {
+          endedAt,
+          days: rawDays,
+          appliedDays: shouldShift ? days : 0,
+          note: data.note ?? wait.note
+        }
+      });
+      let shiftedDueDate = null;
+      if (shouldShift && rawDays > 0) {
+        const project = await prisma2.personalProject.findUnique({ where: { id: wait.projectId } });
+        const base = project?.adjustedDueDate ?? project?.dueDate;
+        if (base && project) {
+          shiftedDueDate = new Date(base);
+          shiftedDueDate.setDate(shiftedDueDate.getDate() + rawDays);
+          await prisma2.personalProject.update({
+            where: { id: project.id },
+            data: { adjustedDueDate: shiftedDueDate }
+          });
+        }
+      }
+      const updated = await prisma2.personalWaitLog.findUnique({ where: { id: data.id }, include: WAIT_INCLUDE });
+      return { ok: true, days: rawDays, appliedDays: shouldShift ? days : 0, shiftedDueDate, wait: updated };
+    } catch (err) {
+      log135.error("waits:end", err);
+      throw err;
+    }
+  });
+}
+
+// src/plugins/personal/handlers/tasks.ts
+init_electron_node();
+var log136 = createLogger("Personal:Tasks");
+var DAILY_THREE_LIMIT = 3;
+var CLOSED_STATUSES = ["done", "cancelled"];
+var TASK_INCLUDE = {
+  project: { select: { id: true, code: true, title: true, currency: true } },
+  client: { select: { id: true, name: true } }
+};
+function registerTaskHandlers(prisma2) {
+  ipcMain.handle("personal:tasks:getAll", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 100;
+      const where = {};
+      if (opts?.status)
+        where.status = opts.status;
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.clientId)
+        where.clientId = opts.clientId;
+      if (opts?.isDailyThree !== void 0)
+        where.isDailyThree = opts.isDailyThree;
+      if (opts?.openOnly)
+        where.status = { notIn: CLOSED_STATUSES };
+      if (opts?.search)
+        where.title = { contains: opts.search };
+      if (opts?.from || opts?.to) {
+        where.dueDate = {};
+        if (opts?.from)
+          where.dueDate.gte = startOfDay(opts.from);
+        if (opts?.to)
+          where.dueDate.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      const [total, items] = await Promise.all([
+        prisma2.personalTask.count({ where }),
+        prisma2.personalTask.findMany({
+          where,
+          include: TASK_INCLUDE,
+          orderBy: [
+            { isDailyThree: "desc" },
+            { priority: "asc" },
+            { dueDate: "asc" },
+            { createdAt: "desc" }
+          ],
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ]);
+      return paginate(items, total, page, pageSize);
+    } catch (err) {
+      log136.error("tasks:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:getDailyThree", async () => {
+    try {
+      const pinned = await prisma2.personalTask.findMany({
+        where: { isDailyThree: true, status: { notIn: CLOSED_STATUSES } },
+        include: TASK_INCLUDE,
+        orderBy: [{ priority: "asc" }, { dueDate: "asc" }]
+      });
+      const slots = Math.max(0, DAILY_THREE_LIMIT - pinned.length);
+      const suggestions = slots > 0 ? await prisma2.personalTask.findMany({
+        where: { isDailyThree: false, status: { notIn: CLOSED_STATUSES } },
+        include: TASK_INCLUDE,
+        orderBy: [{ priority: "asc" }, { dueDate: "asc" }],
+        take: slots
+      }) : [];
+      const today = startOfDay();
+      const candidates = [...pinned, ...suggestions];
+      const enrich = async (task) => {
+        const minutes = await prisma2.personalFocusSession.aggregate({
+          where: { taskId: task.id, endedAt: { not: null } },
+          _sum: { actualMinutes: true }
+        });
+        return { ...task, trackedMinutes: num(minutes._sum.actualMinutes) };
+      };
+      return {
+        limit: DAILY_THREE_LIMIT,
+        date: today,
+        items: await Promise.all(candidates.map(enrich)),
+        filled: pinned.length,
+        slotsLeft: slots
+      };
+    } catch (err) {
+      log136.error("tasks:getDailyThree", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:getCounts", async () => {
+    try {
+      const [byStatus, overdue, dueToday, dailyThree] = await Promise.all([
+        prisma2.personalTask.groupBy({ by: ["status"], _count: { _all: true } }),
+        prisma2.personalTask.count({
+          where: { status: { notIn: CLOSED_STATUSES }, dueDate: { lt: startOfDay() } }
+        }),
+        prisma2.personalTask.count({
+          where: {
+            status: { notIn: CLOSED_STATUSES },
+            dueDate: { gte: startOfDay(), lte: new Date((/* @__PURE__ */ new Date()).setHours(23, 59, 59, 999)) }
+          }
+        }),
+        prisma2.personalTask.count({ where: { isDailyThree: true, status: { notIn: CLOSED_STATUSES } } })
+      ]);
+      const counts = {};
+      for (const row of byStatus)
+        counts[row.status] = num(row._count?._all);
+      return { byStatus: counts, overdue, dueToday, dailyThree };
+    } catch (err) {
+      log136.error("tasks:getCounts", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:create", async (_e, data) => {
+    try {
+      const task = await prisma2.personalTask.create({
+        data: {
+          projectId: data?.projectId || null,
+          clientId: data?.clientId || null,
+          title: String(data?.title ?? "").trim(),
+          notes: data?.notes || null,
+          status: data?.status || "backlog",
+          type: data?.type || "deliverable",
+          priority: Math.round(num(data?.priority, 3)),
+          estimateMinutes: Math.round(num(data?.estimateMinutes)),
+          dueDate: toDate2(data?.dueDate),
+          isBillable: data?.isBillable ?? true
+        },
+        include: TASK_INCLUDE
+      });
+      if (data?.isDailyThree) {
+        try {
+          await pinDailyThree(prisma2, task.id, true);
+        } catch (err) {
+          log136.warn("tasks:create daily-three slot full, kept in backlog", err);
+        }
+      }
+      return await prisma2.personalTask.findUnique({ where: { id: task.id }, include: TASK_INCLUDE });
+    } catch (err) {
+      log136.error("tasks:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("dueDate" in patch)
+        patch.dueDate = toDate2(patch.dueDate);
+      if ("priority" in patch)
+        patch.priority = Math.round(num(patch.priority, 3));
+      if ("estimateMinutes" in patch)
+        patch.estimateMinutes = Math.round(num(patch.estimateMinutes));
+      return await prisma2.personalTask.update({ where: { id }, data: patch, include: TASK_INCLUDE });
+    } catch (err) {
+      log136.error("tasks:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalTask.delete({ where: { id } });
+    } catch (err) {
+      log136.error("tasks:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:setDailyThree", async (_e, data) => {
+    try {
+      return await pinDailyThree(prisma2, data.id, data.value);
+    } catch (err) {
+      log136.error("tasks:setDailyThree", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:complete", async (_e, data) => {
+    try {
+      return await prisma2.personalTask.update({
+        where: { id: data.id },
+        data: {
+          status: "done",
+          completedAt: /* @__PURE__ */ new Date(),
+          isDailyThree: false,
+          notes: data.note ?? void 0
+        },
+        include: TASK_INCLUDE
+      });
+    } catch (err) {
+      log136.error("tasks:complete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:reopen", async (_e, id) => {
+    try {
+      return await prisma2.personalTask.update({
+        where: { id },
+        data: { status: "in_progress", completedAt: null },
+        include: TASK_INCLUDE
+      });
+    } catch (err) {
+      log136.error("tasks:reopen", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:rollDay", async () => {
+    try {
+      const open = await prisma2.personalTask.findMany({
+        where: { status: { in: ["today", "in_progress", "blocked"] } },
+        select: { id: true }
+      });
+      if (open.length) {
+        await prisma2.personalTask.updateMany({
+          where: { id: { in: open.map((t) => t.id) } },
+          data: { status: "backlog" }
+        });
+      }
+      await prisma2.personalTask.updateMany({
+        where: { isDailyThree: true, status: { notIn: CLOSED_STATUSES } },
+        data: { isDailyThree: false }
+      });
+      return { rolled: open.length };
+    } catch (err) {
+      log136.error("tasks:rollDay", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:tasks:bulk", async (_e, data) => {
+    try {
+      const ids = Array.from(
+        new Set(
+          (Array.isArray(data?.ids) ? data.ids : []).filter((id) => typeof id === "string").map((id) => id.trim()).filter((id) => id.length > 0)
+        )
+      );
+      const action = String(data?.action ?? "");
+      if (!ids.length)
+        return { affected: 0, skipped: 0 };
+      switch (action) {
+        case "complete": {
+          const result = await prisma2.personalTask.updateMany({
+            where: { id: { in: ids } },
+            data: { status: "done", completedAt: /* @__PURE__ */ new Date(), isDailyThree: false }
+          });
+          return { affected: result.count, skipped: ids.length - result.count };
+        }
+        case "reopen": {
+          const result = await prisma2.personalTask.updateMany({
+            where: { id: { in: ids } },
+            data: { status: "in_progress", completedAt: null }
+          });
+          return { affected: result.count, skipped: ids.length - result.count };
+        }
+        case "pin": {
+          const pinned = await prisma2.personalTask.count({
+            where: { isDailyThree: true, status: { notIn: CLOSED_STATUSES } }
+          });
+          let slots = Math.max(0, DAILY_THREE_LIMIT - pinned);
+          const candidates = await prisma2.personalTask.findMany({
+            where: { id: { in: ids }, isDailyThree: false, status: { notIn: CLOSED_STATUSES } },
+            orderBy: [{ priority: "asc" }, { dueDate: "asc" }],
+            select: { id: true, status: true }
+          });
+          let affected = 0;
+          for (const task of candidates) {
+            if (slots <= 0)
+              break;
+            await prisma2.personalTask.update({
+              where: { id: task.id },
+              data: { isDailyThree: true, status: task.status === "backlog" ? "today" : task.status }
+            });
+            slots -= 1;
+            affected += 1;
+          }
+          return { affected, skipped: ids.length - affected };
+        }
+        case "unpin": {
+          const result = await prisma2.personalTask.updateMany({
+            where: { id: { in: ids }, isDailyThree: true },
+            data: { isDailyThree: false }
+          });
+          return { affected: result.count, skipped: ids.length - result.count };
+        }
+        case "delete": {
+          const result = await prisma2.personalTask.deleteMany({ where: { id: { in: ids } } });
+          return { affected: result.count, skipped: ids.length - result.count };
+        }
+        default:
+          throw new Error(`Unsupported bulk action: ${action}`);
+      }
+    } catch (err) {
+      log136.error("tasks:bulk", err);
+      throw err;
+    }
+  });
+}
+async function pinDailyThree(prisma2, id, value) {
+  if (value) {
+    const task = await prisma2.personalTask.findUnique({ where: { id } });
+    if (!task)
+      throw new Error("Task not found");
+    if (!task.isDailyThree) {
+      const pinned = await prisma2.personalTask.count({
+        where: { isDailyThree: true, status: { notIn: CLOSED_STATUSES } }
+      });
+      if (pinned >= DAILY_THREE_LIMIT) {
+        throw new Error(`Daily 3 is full \u2014 finish or unpin one of the ${DAILY_THREE_LIMIT} tasks first`);
+      }
+    }
+    return await prisma2.personalTask.update({
+      where: { id },
+      data: { isDailyThree: true, status: task.status === "backlog" ? "today" : task.status },
+      include: TASK_INCLUDE
+    });
+  }
+  return await prisma2.personalTask.update({
+    where: { id },
+    data: { isDailyThree: false },
+    include: TASK_INCLUDE
+  });
+}
+
+// src/plugins/personal/handlers/focus.ts
+init_electron_node();
+var log137 = createLogger("Personal:Focus");
+var SESSION_INCLUDE = {
+  project: { select: { id: true, code: true, title: true, currency: true, clientId: true } }
+};
+function registerFocusHandlers(prisma2) {
+  ipcMain.handle("personal:focus:getActive", async () => {
+    try {
+      const session2 = await prisma2.personalFocusSession.findFirst({
+        where: { endedAt: null },
+        include: SESSION_INCLUDE,
+        orderBy: { startedAt: "desc" }
+      });
+      if (!session2)
+        return null;
+      const elapsedMinutes = Math.max(0, Math.round((Date.now() - new Date(session2.startedAt).getTime()) / 6e4));
+      return {
+        ...session2,
+        elapsedMinutes,
+        remainingMinutes: Math.max(0, num(session2.plannedMinutes) - elapsedMinutes),
+        overrunMinutes: Math.max(0, elapsedMinutes - num(session2.plannedMinutes))
+      };
+    } catch (err) {
+      log137.error("focus:getActive", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:start", async (_e, data) => {
+    try {
+      const running = await prisma2.personalFocusSession.findFirst({ where: { endedAt: null } });
+      if (running)
+        throw new Error("A focus session is already running");
+      return await prisma2.personalFocusSession.create({
+        data: {
+          projectId: data?.projectId || null,
+          clientId: data?.clientId || null,
+          taskId: data?.taskId || null,
+          kind: data?.kind || "flow",
+          startedAt: /* @__PURE__ */ new Date(),
+          plannedMinutes: Math.round(num(data?.plannedMinutes, 50)),
+          billable: data?.billable ?? true,
+          note: data?.note || null
+        },
+        include: SESSION_INCLUDE
+      });
+    } catch (err) {
+      log137.error("focus:start", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:stop", async (_e, data) => {
+    try {
+      const session2 = data?.id ? await prisma2.personalFocusSession.findUnique({ where: { id: data.id } }) : await prisma2.personalFocusSession.findFirst({ where: { endedAt: null }, orderBy: { startedAt: "desc" } });
+      if (!session2)
+        throw new Error("No running focus session");
+      if (session2.endedAt)
+        return { ok: true, alreadyStopped: true, session: session2 };
+      const endedAt = /* @__PURE__ */ new Date();
+      const elapsed = Math.max(1, Math.round((endedAt.getTime() - new Date(session2.startedAt).getTime()) / 6e4));
+      const actualMinutes = data?.actualMinutes === void 0 ? elapsed : Math.max(0, Math.round(num(data.actualMinutes)));
+      const updated = await prisma2.personalFocusSession.update({
+        where: { id: session2.id },
+        data: {
+          endedAt,
+          actualMinutes,
+          interruptions: data?.interruptions === void 0 ? session2.interruptions : Math.round(num(data.interruptions)),
+          billable: data?.billable ?? session2.billable,
+          note: data?.note ?? session2.note
+        },
+        include: SESSION_INCLUDE
+      });
+      if (session2.projectId) {
+        await upsertWorkload(prisma2, session2.projectId, endedAt, actualMinutes);
+      }
+      return { ok: true, session: updated, actualMinutes };
+    } catch (err) {
+      log137.error("focus:stop", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:cancel", async (_e, id) => {
+    try {
+      const session2 = id ? await prisma2.personalFocusSession.findUnique({ where: { id } }) : await prisma2.personalFocusSession.findFirst({ where: { endedAt: null } });
+      if (!session2)
+        return { ok: true, deleted: 0 };
+      await prisma2.personalFocusSession.delete({ where: { id: session2.id } });
+      return { ok: true, deleted: 1 };
+    } catch (err) {
+      log137.error("focus:cancel", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:getSessions", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 100;
+      const where = {};
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.taskId)
+        where.taskId = opts.taskId;
+      if (opts?.billable !== void 0)
+        where.billable = opts.billable;
+      if (opts?.from || opts?.to) {
+        where.startedAt = {};
+        if (opts?.from)
+          where.startedAt.gte = startOfDay(opts.from);
+        if (opts?.to)
+          where.startedAt.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      const [total, items] = await Promise.all([
+        prisma2.personalFocusSession.count({ where }),
+        prisma2.personalFocusSession.findMany({
+          where,
+          include: SESSION_INCLUDE,
+          orderBy: { startedAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ]);
+      return paginate(items, total, page, pageSize);
+    } catch (err) {
+      log137.error("focus:getSessions", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:addManual", async (_e, data) => {
+    try {
+      const minutes = Math.max(0, Math.round(num(data?.minutes)));
+      const startedAt = toDate2(data?.startedAt) ?? /* @__PURE__ */ new Date();
+      const endedAt = new Date(startedAt.getTime() + minutes * 6e4);
+      const session2 = await prisma2.personalFocusSession.create({
+        data: {
+          projectId: data?.projectId || null,
+          clientId: data?.clientId || null,
+          taskId: data?.taskId || null,
+          kind: data?.kind || "manual",
+          startedAt,
+          endedAt,
+          plannedMinutes: minutes,
+          actualMinutes: minutes,
+          billable: data?.billable ?? true,
+          note: data?.note || null
+        },
+        include: SESSION_INCLUDE
+      });
+      if (session2.projectId)
+        await upsertWorkload(prisma2, session2.projectId, endedAt, minutes);
+      return session2;
+    } catch (err) {
+      log137.error("focus:addManual", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("startedAt" in patch)
+        patch.startedAt = toDate2(patch.startedAt);
+      if ("endedAt" in patch)
+        patch.endedAt = toDate2(patch.endedAt);
+      if ("actualMinutes" in patch)
+        patch.actualMinutes = Math.max(0, Math.round(num(patch.actualMinutes)));
+      if ("plannedMinutes" in patch)
+        patch.plannedMinutes = Math.max(0, Math.round(num(patch.plannedMinutes)));
+      return await prisma2.personalFocusSession.update({ where: { id }, data: patch, include: SESSION_INCLUDE });
+    } catch (err) {
+      log137.error("focus:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:delete", async (_e, id) => {
+    try {
+      const session2 = await prisma2.personalFocusSession.findUnique({ where: { id } });
+      if (session2?.projectId && session2.actualMinutes) {
+        await upsertWorkload(prisma2, session2.projectId, session2.startedAt, -num(session2.actualMinutes));
+      }
+      return await prisma2.personalFocusSession.delete({ where: { id } });
+    } catch (err) {
+      log137.error("focus:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:getStats", async (_e, opts) => {
+    try {
+      const from = startOfDay(opts?.from ?? new Date(Date.now() - 29 * 864e5));
+      const to = new Date(new Date(opts?.to ?? /* @__PURE__ */ new Date()).setHours(23, 59, 59, 999));
+      const sessions2 = await prisma2.personalFocusSession.findMany({
+        where: { startedAt: { gte: from, lte: to }, endedAt: { not: null } },
+        include: SESSION_INCLUDE,
+        orderBy: { startedAt: "asc" }
+      });
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const byDay = {};
+      const byProject = {};
+      let totalMinutes = 0;
+      let billableMinutes = 0;
+      let interruptions = 0;
+      let longest = 0;
+      for (const s of sessions2) {
+        const minutes = num(s.actualMinutes);
+        totalMinutes += minutes;
+        if (s.billable)
+          billableMinutes += minutes;
+        interruptions += num(s.interruptions);
+        longest = Math.max(longest, minutes);
+        const key = dayKey(s.startedAt);
+        const dayRow = byDay[key] ?? { day: key, minutes: 0, billableMinutes: 0, sessions: 0 };
+        dayRow.minutes += minutes;
+        if (s.billable)
+          dayRow.billableMinutes += minutes;
+        dayRow.sessions += 1;
+        byDay[key] = dayRow;
+        const projectKey = s.projectId ?? "unassigned";
+        const projectRow = byProject[projectKey] ?? {
+          projectId: projectKey,
+          projectCode: s.project?.code ?? null,
+          projectTitle: s.project?.title ?? "Unassigned",
+          minutes: 0,
+          billableMinutes: 0,
+          sessions: 0
+        };
+        projectRow.minutes += minutes;
+        if (s.billable)
+          projectRow.billableMinutes += minutes;
+        projectRow.sessions += 1;
+        byProject[projectKey] = projectRow;
+      }
+      const spanDays = Math.max(1, daysBetween(from, to) + 1);
+      const weeks = Math.max(1, spanDays / 7);
+      const weeklyAverageHours = round22(totalMinutes / 60 / weeks);
+      const capacityHours = num(profile?.weeklyCapacityHours, 40);
+      return {
+        range: { from, to, days: spanDays },
+        totalMinutes,
+        totalHours: round22(totalMinutes / 60),
+        billableMinutes,
+        billableHours: round22(billableMinutes / 60),
+        billablePercent: totalMinutes > 0 ? round22(billableMinutes / totalMinutes * 100) : 0,
+        sessionCount: sessions2.length,
+        averageSessionMinutes: sessions2.length ? round22(totalMinutes / sessions2.length) : 0,
+        longestSessionMinutes: longest,
+        interruptions,
+        weeklyAverageHours,
+        capacityHours,
+        capacityUsedPercent: capacityHours > 0 ? round22(weeklyAverageHours / capacityHours * 100) : 0,
+        days: Object.values(byDay).sort((a, b) => a.day.localeCompare(b.day)),
+        projects: Object.values(byProject).sort((a, b) => b.minutes - a.minutes)
+      };
+    } catch (err) {
+      log137.error("focus:getStats", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:worklog:getAll", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.from || opts?.to) {
+        where.day = {};
+        if (opts?.from)
+          where.day.gte = startOfDay(opts.from);
+        if (opts?.to)
+          where.day.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      return await prisma2.personalWorkLog.findMany({
+        where,
+        orderBy: { day: "desc" },
+        take: opts?.limit ?? 60
+      });
+    } catch (err) {
+      log137.error("worklog:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:worklog:getByDay", async (_e, day) => {
+    try {
+      const bucket = startOfDay(day ?? /* @__PURE__ */ new Date());
+      return await prisma2.personalWorkLog.findUnique({ where: { day: bucket } });
+    } catch (err) {
+      log137.error("worklog:getByDay", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:worklog:save", async (_e, data) => {
+    try {
+      const bucket = startOfDay(data?.day ?? /* @__PURE__ */ new Date());
+      const payload = {
+        completedJson: JSON.stringify(Array.isArray(data?.completed) ? data.completed : []),
+        nextJson: JSON.stringify(Array.isArray(data?.next) ? data.next : []),
+        summary: data?.summary || null,
+        notes: data?.notes || null,
+        mood: data?.mood || null
+      };
+      return await prisma2.personalWorkLog.upsert({
+        where: { day: bucket },
+        create: { day: bucket, ...payload },
+        update: payload
+      });
+    } catch (err) {
+      log137.error("worklog:save", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:worklog:generate", async (_e, day) => {
+    try {
+      const generated = await generateStandup(prisma2, day);
+      const saved = await prisma2.personalWorkLog.upsert({
+        where: { day: startOfDay(generated.day) },
+        create: {
+          day: startOfDay(generated.day),
+          completedJson: JSON.stringify(generated.completed),
+          nextJson: JSON.stringify(generated.next),
+          summary: generated.summary,
+          focusMinutes: generated.focusMinutes,
+          billableMinutes: generated.billableMinutes
+        },
+        update: {
+          completedJson: JSON.stringify(generated.completed),
+          nextJson: JSON.stringify(generated.next),
+          summary: generated.summary,
+          focusMinutes: generated.focusMinutes,
+          billableMinutes: generated.billableMinutes
+        }
+      });
+      return { ...generated, log: saved };
+    } catch (err) {
+      log137.error("worklog:generate", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:worklog:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalWorkLog.delete({ where: { id } });
+    } catch (err) {
+      log137.error("worklog:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:standup:preview", async (_e, day) => {
+    try {
+      const generated = await generateStandup(prisma2, day);
+      return generated;
+    } catch (err) {
+      log137.error("standup:preview", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:focus:getProjectProfitability", async (_e, opts) => {
+    try {
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const sessionWhere = { endedAt: { not: null } };
+      if (opts?.from || opts?.to) {
+        sessionWhere.startedAt = {};
+        if (opts?.from)
+          sessionWhere.startedAt.gte = startOfDay(opts.from);
+        if (opts?.to)
+          sessionWhere.startedAt.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      const sessions2 = await prisma2.personalFocusSession.findMany({
+        where: sessionWhere,
+        include: { project: { select: { id: true, code: true, title: true } } }
+      });
+      const minutesByProject = /* @__PURE__ */ new Map();
+      for (const s of sessions2) {
+        if (!s.projectId)
+          continue;
+        minutesByProject.set(s.projectId, (minutesByProject.get(s.projectId) ?? 0) + num(s.actualMinutes));
+      }
+      const projects = await prisma2.personalProject.findMany({
+        include: {
+          client: { select: { id: true, name: true } },
+          invoices: { include: { payments: true } }
+        }
+      });
+      const rows = projects.map((project) => {
+        const paid = project.invoices.flatMap((inv) => inv.payments).filter((p) => !p.refundedAt).reduce((sum, p) => sum + num(p.amount), 0);
+        const minutes = minutesByProject.get(project.id) ?? 0;
+        const result = realHourlyRate(paid, minutes, num(profile?.baselineHourlyRate));
+        return {
+          projectId: project.id,
+          code: project.code,
+          title: project.title,
+          clientName: project.client?.name ?? "\u2014",
+          currency: project.currency,
+          moneyReceived: result.moneyReceived,
+          realHours: result.realHours,
+          realHourlyRate: result.realHourlyRate,
+          vsBaselinePercent: result.effectiveHourlyRateVsBaseline,
+          verdict: result.verdict
+        };
+      });
+      return rows.filter((r) => r.moneyReceived > 0 || r.realHours > 0).sort((a, b) => a.realHourlyRate - b.realHourlyRate);
+    } catch (err) {
+      log137.error("focus:getProjectProfitability", err);
+      throw err;
+    }
+  });
+}
+var TASK_INCLUDE_LITE = {
+  project: { select: { id: true, code: true, title: true } }
+};
+async function upsertWorkload(prisma2, projectId, day, deltaMinutes) {
+  const bucket = startOfDay(day);
+  const existing = await prisma2.personalWorkload.findFirst({ where: { projectId, day: bucket } });
+  if (existing) {
+    return await prisma2.personalWorkload.update({
+      where: { id: existing.id },
+      data: { actualMinutes: Math.max(0, num(existing.actualMinutes) + deltaMinutes) }
+    });
+  }
+  return await prisma2.personalWorkload.create({
+    data: { projectId, day: bucket, plannedMinutes: 0, actualMinutes: Math.max(0, deltaMinutes) }
+  });
+}
+async function generateStandup(prisma2, day) {
+  const bucket = startOfDay(day ?? /* @__PURE__ */ new Date());
+  const endOfDay = new Date(bucket);
+  endOfDay.setHours(23, 59, 59, 999);
+  const [completedTasks, nextTasks, sessions2] = await Promise.all([
+    prisma2.personalTask.findMany({
+      where: { completedAt: { gte: bucket, lte: endOfDay } },
+      include: TASK_INCLUDE_LITE,
+      orderBy: { completedAt: "asc" }
+    }),
+    prisma2.personalTask.findMany({
+      where: { isDailyThree: true, status: { notIn: ["done", "cancelled"] } },
+      orderBy: { priority: "asc" }
+    }),
+    prisma2.personalFocusSession.findMany({
+      where: { startedAt: { gte: bucket, lte: endOfDay }, endedAt: { not: null } },
+      include: SESSION_INCLUDE
+    })
+  ]);
+  const focusMinutes = sessions2.reduce((sum, s) => sum + num(s.actualMinutes), 0);
+  const billableMinutes = sessions2.filter((s) => s.billable).reduce((sum, s) => sum + num(s.actualMinutes), 0);
+  const completed = completedTasks.map((t) => t.project?.code ? `${t.title} (${t.project.code})` : t.title);
+  const next = nextTasks.map((t) => t.title);
+  const projectMinutes = /* @__PURE__ */ new Map();
+  for (const s of sessions2) {
+    const key = s.project?.title ?? "Other work";
+    projectMinutes.set(key, (projectMinutes.get(key) ?? 0) + num(s.actualMinutes));
+  }
+  return {
+    day: dayKey(bucket),
+    summary: buildStandupSummary({ day: dayKey(bucket), completed, next, focusMinutes, billableMinutes }),
+    completed,
+    next,
+    focusMinutes,
+    billableMinutes,
+    projects: Array.from(projectMinutes.entries()).map(([title, minutes]) => ({
+      title,
+      minutes,
+      hours: round22(minutes / 60)
+    }))
+  };
+}
+
+// src/plugins/personal/handlers/billing.ts
+init_electron_node();
+var log138 = createLogger("Personal:Billing");
+var INVOICE_INCLUDE = {
+  client: { select: { id: true, name: true, company: true, paymentTermsDays: true } },
+  project: { select: { id: true, code: true, title: true, stage: true, currency: true } },
+  payments: { orderBy: { paidAt: "asc" } }
+};
+var INVOICE_UPDATABLE_FIELDS = [
+  "clientId",
+  "projectId",
+  "kind",
+  "currency",
+  "amount",
+  "taxRate",
+  "issuedAt",
+  "dueAt",
+  "notes"
+];
+var INVOICE_GUARDED_FIELDS = {
+  discount: "personal:billing:applyDiscount",
+  status: "personal:billing:markStatus",
+  paidAt: "personal:billing:voidInvoice"
+};
+var INVOICE_STATUSES = ["draft", "sent", "partial", "paid", "overdue", "void"];
+function registerBillingHandlers(prisma2) {
+  ipcMain.handle("personal:billing:getInvoices", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 50;
+      const where = {};
+      if (opts?.status)
+        where.status = opts.status;
+      if (opts?.kind)
+        where.kind = opts.kind;
+      if (opts?.clientId)
+        where.clientId = opts.clientId;
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.from || opts?.to) {
+        where.issuedAt = {};
+        if (opts?.from)
+          where.issuedAt.gte = startOfDay(opts.from);
+        if (opts?.to)
+          where.issuedAt.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      const [total, items] = await Promise.all([
+        prisma2.personalInvoice.count({ where }),
+        prisma2.personalInvoice.findMany({
+          where,
+          include: INVOICE_INCLUDE,
+          orderBy: [{ issuedAt: "desc" }],
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ]);
+      return paginate(items.map(decorateInvoice), total, page, pageSize);
+    } catch (err) {
+      log138.error("billing:getInvoices", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:getInvoiceById", async (_e, id) => {
+    try {
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id }, include: INVOICE_INCLUDE });
+      if (!invoice)
+        return null;
+      const vault = await prisma2.personalTaxVaultEntry.findMany({ where: { invoiceId: id } });
+      return { ...decorateInvoice(invoice), taxVault: vault };
+    } catch (err) {
+      log138.error("billing:getInvoiceById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:createInvoice", async (_e, data) => {
+    try {
+      const kind = data?.kind || "milestone";
+      const client = data?.clientId ? await prisma2.personalClient.findUnique({ where: { id: data.clientId } }) : null;
+      const project = data?.projectId ? await prisma2.personalProject.findUnique({ where: { id: data.projectId } }) : null;
+      let amount = num(data?.amount);
+      if (!amount && project && kind === "deposit") {
+        amount = round22(num(project.agreedAmount) * (num(project.depositPercent, 50) / 100));
+      } else if (!amount && project && kind === "final") {
+        const paid = await prisma2.personalPayment.aggregate({
+          where: { invoice: { projectId: project.id } },
+          _sum: { amount: true }
+        });
+        amount = round22(Math.max(0, num(project.agreedAmount) - num(paid._sum.amount)));
+      }
+      const issuedAt = toDate2(data?.issuedAt) ?? /* @__PURE__ */ new Date();
+      const terms = Math.round(num(client?.paymentTermsDays, 14));
+      const dueAt = toDate2(data?.dueAt) ?? new Date(issuedAt.getTime() + terms * 864e5);
+      const invoice = await prisma2.personalInvoice.create({
+        data: {
+          number: (data?.number || "").trim() || nextInvoiceNumber(await nextSeq(prisma2), data?.numberPrefix || "INV"),
+          clientId: data?.clientId || null,
+          projectId: data?.projectId || null,
+          kind,
+          status: data?.status || "draft",
+          currency: data?.currency || project?.currency || client?.currency || "USD",
+          amount,
+          taxRate: num(data?.taxRate),
+          discount: 0,
+          issuedAt,
+          dueAt,
+          notes: data?.notes || null
+        },
+        include: INVOICE_INCLUDE
+      });
+      if (data?.changeRequestId) {
+        await prisma2.personalChangeRequest.update({
+          where: { id: data.changeRequestId },
+          data: { status: "invoiced" }
+        });
+      }
+      return decorateInvoice(invoice);
+    } catch (err) {
+      log138.error("billing:createInvoice", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:updateInvoice", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      if (!id)
+        throw new Error("An invoice id is required");
+      for (const field of Object.keys(INVOICE_GUARDED_FIELDS)) {
+        if (field in rest) {
+          throw new Error(`"${field}" cannot be changed here \u2014 use ${INVOICE_GUARDED_FIELDS[field]}`);
+        }
+      }
+      const patch = {};
+      for (const field of INVOICE_UPDATABLE_FIELDS) {
+        if (field in rest)
+          patch[field] = rest[field];
+      }
+      if ("amount" in patch)
+        patch.amount = num(patch.amount);
+      if ("taxRate" in patch)
+        patch.taxRate = num(patch.taxRate);
+      if ("issuedAt" in patch)
+        patch.issuedAt = toDate2(patch.issuedAt);
+      if ("dueAt" in patch)
+        patch.dueAt = toDate2(patch.dueAt);
+      const invoice = await prisma2.personalInvoice.update({ where: { id }, data: patch, include: INVOICE_INCLUDE });
+      return decorateInvoice(await syncStatus(prisma2, invoice));
+    } catch (err) {
+      log138.error("billing:updateInvoice", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:deleteInvoice", async (_e, id) => {
+    try {
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id }, include: { payments: true } });
+      if (!invoice)
+        return { ok: true };
+      if (invoice.payments.length > 0)
+        throw new Error("Cannot delete an invoice that has payments \u2014 void it instead");
+      return await prisma2.personalInvoice.delete({ where: { id } });
+    } catch (err) {
+      log138.error("billing:deleteInvoice", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:markStatus", async (_e, data) => {
+    try {
+      const status = String(data?.status ?? "");
+      if (!INVOICE_STATUSES.includes(status))
+        throw new Error(`Unknown invoice status "${status}"`);
+      if (status === "void")
+        requireCap("personal_void_sale");
+      const patch = { status };
+      if (status === "sent")
+        patch.issuedAt = /* @__PURE__ */ new Date();
+      const invoice = await prisma2.personalInvoice.update({ where: { id: data.id }, data: patch, include: INVOICE_INCLUDE });
+      return decorateInvoice(invoice);
+    } catch (err) {
+      log138.error("billing:markStatus", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:applyDiscount", async (_e, data) => {
+    try {
+      requireCap("personal_discount");
+      const discount = Math.max(0, num(data?.discount));
+      const invoice = await prisma2.personalInvoice.update({
+        where: { id: data.id },
+        data: { discount, notes: data.reason ?? void 0 },
+        include: INVOICE_INCLUDE
+      });
+      return decorateInvoice(invoice);
+    } catch (err) {
+      log138.error("billing:applyDiscount", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:discountPreview", async (_e, data) => {
+    try {
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id: data?.id }, include: INVOICE_INCLUDE });
+      if (!invoice)
+        throw new Error("Invoice not found");
+      const input = data?.input ?? {};
+      const amount = num(input.amount, num(invoice.amount));
+      const breakdown = computeDiscount({
+        amount,
+        percentOff: input.percentOff,
+        earlyPaymentPercent: input.earlyPaymentPercent,
+        amountOff: input.amountOff,
+        daysToPay: input.daysToPay,
+        earlyPaymentDays: input.earlyPaymentDays
+      });
+      const paid = (invoice.payments ?? []).filter((p) => !p.refundedAt).reduce((sum, p) => sum + num(p.amount), 0);
+      const paidRounded = round22(paid);
+      const totalsBefore = invoiceTotals({
+        amount: invoice.amount,
+        discount: invoice.discount,
+        taxRate: invoice.taxRate,
+        paid: paidRounded
+      });
+      const totalsAfter = invoiceTotals({
+        amount,
+        discount: breakdown.totalDiscount,
+        taxRate: invoice.taxRate,
+        paid: paidRounded
+      });
+      return {
+        invoiceNumber: invoice.number,
+        currency: invoice.currency,
+        amount: round22(num(invoice.amount)),
+        taxRate: num(invoice.taxRate),
+        currentDiscount: round22(num(invoice.discount)),
+        paid: paidRounded,
+        breakdown,
+        totalsBefore,
+        totalsAfter,
+        overpaid: totalsAfter.total + 0.01 < paidRounded
+      };
+    } catch (err) {
+      log138.error("billing:discountPreview", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:lateFeeScan", async (_e, opts) => {
+    try {
+      const asOf = opts?.asOf ? new Date(opts.asOf) : /* @__PURE__ */ new Date();
+      const invoices = await prisma2.personalInvoice.findMany({
+        where: { status: { notIn: ["void", "draft"] } },
+        include: INVOICE_INCLUDE,
+        orderBy: { dueAt: "asc" }
+      });
+      const rows = (invoices ?? []).map((raw) => {
+        const invoice = decorateInvoice(raw);
+        const breakdown = computeLateFee({
+          balance: invoice.balance,
+          dueAt: invoice.dueAt,
+          asOf,
+          policy: opts?.policy
+        });
+        return {
+          invoiceId: invoice.id,
+          number: invoice.number,
+          clientId: invoice.clientId ?? null,
+          clientName: invoice.client?.company || invoice.client?.name || "",
+          projectCode: invoice.project?.code ?? null,
+          currency: invoice.currency,
+          dueAt: invoice.dueAt,
+          balance: invoice.balance,
+          paymentTermsDays: num(invoice.client?.paymentTermsDays, 0),
+          breakdown
+        };
+      });
+      const late = rows.filter((row) => row.breakdown.daysLate > 0);
+      return {
+        asOf,
+        policy: { ...DEFAULT_LATE_FEE_POLICY, ...opts?.policy ?? {} },
+        rows: late.sort((a, b) => b.breakdown.daysLate - a.breakdown.daysLate),
+        totalBalance: round22(late.reduce((sum, r) => sum + r.balance, 0)),
+        totalFee: round22(late.reduce((sum, r) => sum + r.breakdown.fee, 0)),
+        chargeableCount: late.filter((r) => r.breakdown.isLate).length
+      };
+    } catch (err) {
+      log138.error("billing:lateFeeScan", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:recordPayment", async (_e, data) => {
+    try {
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id: data?.invoiceId } });
+      if (!invoice)
+        throw new Error("Invoice not found");
+      if (invoice.status === "void")
+        throw new Error("Cannot record a payment on a void invoice");
+      const amount = num(data?.amount);
+      if (!(amount > 0))
+        throw new Error("Payment amount must be greater than zero");
+      const paidAt = toDate2(data?.paidAt) ?? /* @__PURE__ */ new Date();
+      const isDeposit = data?.isDeposit ?? invoice.kind === "deposit";
+      const payment = await prisma2.personalPayment.create({
+        data: {
+          invoiceId: invoice.id,
+          amount,
+          paidAt,
+          method: data?.method || "bank",
+          reference: data?.reference || null,
+          isDeposit,
+          note: data?.note || null
+        }
+      });
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const taxPercent = num(profile?.taxReservePercent, 25);
+      if (taxPercent > 0) {
+        await prisma2.personalTaxVaultEntry.create({
+          data: {
+            sourceType: "invoice",
+            invoiceId: invoice.id,
+            paymentId: payment.id,
+            amount: round22(amount * (taxPercent / 100)),
+            rate: taxPercent,
+            reservedAt: paidAt,
+            note: `Auto-reserved ${taxPercent}% of ${invoice.number}`
+          }
+        });
+      }
+      const refreshed = await syncStatus(prisma2, invoice);
+      await rollRetainerIfNeeded(prisma2, invoice);
+      return { payment, invoice: decorateInvoice(await prisma2.personalInvoice.findUnique({ where: { id: refreshed.id }, include: INVOICE_INCLUDE })) };
+    } catch (err) {
+      log138.error("billing:recordPayment", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:deletePayment", async (_e, id) => {
+    try {
+      const payment = await prisma2.personalPayment.findUnique({ where: { id } });
+      if (!payment)
+        return { ok: true };
+      await prisma2.personalTaxVaultEntry.deleteMany({ where: { paymentId: id } });
+      await prisma2.personalPayment.delete({ where: { id } });
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id: payment.invoiceId } });
+      if (invoice)
+        await syncStatus(prisma2, invoice);
+      return { ok: true };
+    } catch (err) {
+      log138.error("billing:deletePayment", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:refundPayment", async (_e, data) => {
+    try {
+      requireCap("personal_refund");
+      const payment = await prisma2.personalPayment.findUnique({ where: { id: data?.id } });
+      if (!payment)
+        throw new Error("Payment not found");
+      if (payment.refundedAt)
+        throw new Error("This payment was already refunded");
+      const amount = data?.amount === void 0 ? num(payment.amount) : Math.max(0, num(data.amount));
+      if (amount > num(payment.amount) + 0.01)
+        throw new Error("Refund cannot exceed the payment amount");
+      const refunded = await prisma2.personalPayment.update({
+        where: { id: payment.id },
+        data: { refundedAt: /* @__PURE__ */ new Date(), refundAmount: amount, note: data?.note ?? payment.note }
+      });
+      const reserve = await prisma2.personalTaxVaultEntry.findFirst({
+        where: { paymentId: payment.id, releasedAt: null }
+      });
+      if (reserve && num(payment.amount) > 0) {
+        const ratio = amount / num(payment.amount);
+        const remaining = round22(Math.max(0, num(reserve.amount) * (1 - ratio)));
+        if (remaining > 0) {
+          await prisma2.personalTaxVaultEntry.update({
+            where: { id: reserve.id },
+            data: { amount: remaining, note: `${reserve.note ?? ""} (refund adjusted)`.trim() }
+          });
+        } else {
+          await prisma2.personalTaxVaultEntry.delete({ where: { id: reserve.id } });
+        }
+      }
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id: payment.invoiceId } });
+      if (invoice)
+        await syncStatus(prisma2, invoice);
+      const refreshed = await prisma2.personalInvoice.findUnique({ where: { id: payment.invoiceId }, include: INVOICE_INCLUDE });
+      return { payment: refunded, invoice: refreshed ? decorateInvoice(refreshed) : null };
+    } catch (err) {
+      log138.error("billing:refundPayment", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:voidInvoice", async (_e, data) => {
+    try {
+      requireCap("personal_void_sale");
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id: data?.id } });
+      if (!invoice)
+        throw new Error("Invoice not found");
+      const voided = await prisma2.personalInvoice.update({
+        where: { id: invoice.id },
+        data: {
+          status: "void",
+          paidAt: null,
+          notes: data?.reason ? `Voided \u2014 ${data.reason}` : invoice.notes
+        },
+        include: INVOICE_INCLUDE
+      });
+      return decorateInvoice(voided);
+    } catch (err) {
+      log138.error("billing:voidInvoice", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:writeOff", async (_e, data) => {
+    try {
+      requireCap("personal_write_off");
+      const invoice = await prisma2.personalInvoice.findUnique({ where: { id: data.id } });
+      if (!invoice)
+        throw new Error("Invoice not found");
+      const updated = await prisma2.personalInvoice.update({
+        where: { id: data.id },
+        data: { status: "void", notes: data.note ? `Written off \u2014 ${data.note}` : "Written off", paidAt: null },
+        include: INVOICE_INCLUDE
+      });
+      return decorateInvoice(updated);
+    } catch (err) {
+      log138.error("billing:writeOff", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:getEscrow", async () => {
+    try {
+      const invoices = await prisma2.personalInvoice.findMany({
+        where: { status: { not: "void" } },
+        include: { payments: true, project: { select: { stage: true, title: true, code: true } } }
+      });
+      const payments = invoices.flatMap(
+        (inv) => inv.payments.filter((p) => !p.refundedAt).map((p) => ({ invoiceId: inv.id, amount: num(p.amount), isDeposit: p.isDeposit }))
+      );
+      const escrow = splitEscrow(
+        invoices.map((inv) => ({
+          id: inv.id,
+          number: inv.number,
+          kind: inv.kind,
+          amount: num(inv.amount),
+          status: inv.status,
+          projectStage: inv.project?.stage
+        })),
+        payments
+      );
+      const byProject = /* @__PURE__ */ new Map();
+      for (const inv of invoices) {
+        const line = escrow.lines.find((l) => l.invoiceId === inv.id);
+        if (!line || line.paid <= 0)
+          continue;
+        const key = inv.projectId ?? "unassigned";
+        const row = byProject.get(key) ?? {
+          projectId: key,
+          title: inv.project?.title ?? "Unassigned",
+          code: inv.project?.code ?? null,
+          cash: 0,
+          unearned: 0
+        };
+        row.cash = round22(row.cash + line.paid);
+        row.unearned = round22(row.unearned + line.unearned);
+        byProject.set(key, row);
+      }
+      return {
+        ...escrow,
+        depositLines: escrow.lines.filter((l) => l.unearned > 0),
+        byProject: Array.from(byProject.values()).sort((a, b) => b.unearned - a.unearned)
+      };
+    } catch (err) {
+      log138.error("billing:getEscrow", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:getSummary", async (_e, opts) => {
+    try {
+      const from = startOfDay(opts?.from ?? monthBounds().start);
+      const to = new Date(new Date(opts?.to ?? /* @__PURE__ */ new Date()).setHours(23, 59, 59, 999));
+      const now = /* @__PURE__ */ new Date();
+      const [invoices, expenses, vault, profile] = await Promise.all([
+        prisma2.personalInvoice.findMany({
+          where: { issuedAt: { gte: from, lte: to } },
+          include: { payments: true }
+        }),
+        prisma2.personalExpense.findMany({ where: { spentAt: { gte: from, lte: to } } }),
+        prisma2.personalTaxVaultEntry.findMany({ where: { releasedAt: null } }),
+        prisma2.personalRateProfile.findUnique({ where: { id: "default" } })
+      ]);
+      const live = invoices.filter((i) => i.status !== "void");
+      const billed = live.reduce((sum, i) => sum + num(i.amount), 0);
+      const collected = live.reduce(
+        (sum, i) => sum + i.payments.filter((p) => !p.refundedAt).reduce((s, p) => s + num(p.amount), 0),
+        0
+      );
+      let overdue = 0;
+      let overdueCount = 0;
+      for (const inv of live) {
+        const paid = inv.payments.filter((p) => !p.refundedAt).reduce((s, p) => s + num(p.amount), 0);
+        if (inv.dueAt && new Date(inv.dueAt).getTime() < now.getTime() && paid + 0.01 < num(inv.amount)) {
+          overdue += num(inv.amount) - paid;
+          overdueCount += 1;
+        }
+      }
+      const expenseTotal = expenses.reduce((sum, e) => sum + num(e.amount), 0);
+      const billableExpenses = expenses.filter((e) => e.isBillable).reduce((sum, e) => sum + num(e.amount), 0);
+      return {
+        range: { from, to },
+        currency: profile?.currency ?? "USD",
+        billed: round22(billed),
+        collected: round22(collected),
+        outstanding: round22(billed - collected),
+        overdue: round22(overdue),
+        overdueCount,
+        invoiceCount: live.length,
+        draftCount: live.filter((i) => i.status === "draft").length,
+        expenses: round22(expenseTotal),
+        billableExpenses: round22(billableExpenses),
+        net: round22(collected - expenseTotal),
+        taxVaultBalance: round22(vault.reduce((sum, v) => sum + num(v.amount), 0)),
+        taxReservePercent: num(profile?.taxReservePercent, 25)
+      };
+    } catch (err) {
+      log138.error("billing:getSummary", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:recomputeOverdue", async () => {
+    try {
+      const invoices = await prisma2.personalInvoice.findMany({
+        where: { status: { in: ["sent", "partial"] }, dueAt: { lt: /* @__PURE__ */ new Date() } },
+        include: { payments: true }
+      });
+      let updated = 0;
+      for (const inv of invoices) {
+        await syncStatus(prisma2, inv);
+        updated += 1;
+      }
+      return { updated };
+    } catch (err) {
+      log138.error("billing:recomputeOverdue", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:exportInvoice", async (_e, data) => {
+    try {
+      const invoice = await prisma2.personalInvoice.findUnique({
+        where: { id: data?.id },
+        include: INVOICE_INCLUDE
+      });
+      if (!invoice)
+        throw new Error("Invoice not found");
+      const decorated = decorateInvoice(invoice);
+      const labels = data.labels;
+      const kindLabel = resolveLabel(data.kindLabels, invoice.kind);
+      const project = invoice.project;
+      const projectLabel = project ? `${project.code} \xB7 ${project.title}` : void 0;
+      return renderInvoiceDocument(
+        {
+          number: invoice.number,
+          statusLabel: resolveLabel(data.statusLabels, invoice.status),
+          kindLabel,
+          issuedAt: invoice.issuedAt,
+          dueAt: invoice.dueAt,
+          currency: invoice.currency,
+          issuedBy: issuerParty(data.issuer, labels.from),
+          billedTo: clientParty(invoice.client),
+          projectLabel,
+          // The schema bills a project as one amount, so the line carries the
+          // gross and the totals block shows what discount and tax did to it.
+          lines: [
+            {
+              label: project?.title || kindLabel || invoice.number,
+              detail: project && kindLabel ? kindLabel : void 0,
+              amount: num(invoice.amount)
+            }
+          ],
+          net: decorated.netAmount,
+          discount: num(invoice.discount),
+          taxRate: num(invoice.taxRate),
+          tax: decorated.taxAmount,
+          total: decorated.totalDue,
+          paid: decorated.paid,
+          balance: decorated.balance,
+          notes: invoice.notes ?? void 0
+        },
+        { labels, direction: data.direction }
+      );
+    } catch (err) {
+      log138.error("billing:exportInvoice", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:exportStatement", async (_e, data) => {
+    try {
+      const client = await prisma2.personalClient.findUnique({ where: { id: data?.clientId } });
+      if (!client)
+        throw new Error("Client not found");
+      const where = { clientId: client.id, status: { not: "void" } };
+      if (data.from)
+        where.issuedAt = { gte: startOfDay(data.from) };
+      if (data.to) {
+        where.issuedAt = {
+          ...where.issuedAt ?? {},
+          lte: new Date(new Date(data.to).setHours(23, 59, 59, 999))
+        };
+      }
+      const invoices = await prisma2.personalInvoice.findMany({
+        where,
+        include: INVOICE_INCLUDE,
+        orderBy: [{ issuedAt: "asc" }]
+      });
+      const rows = invoices.map((inv) => {
+        const decorated = decorateInvoice(inv);
+        return {
+          number: inv.number,
+          kind: inv.kind,
+          statusLabel: resolveLabel(data.statusLabels, inv.status),
+          issuedAt: inv.issuedAt,
+          dueAt: inv.dueAt,
+          total: decorated.totalDue,
+          paid: decorated.paid,
+          balance: decorated.balance
+        };
+      });
+      const periodFrom = data.from ? startOfDay(data.from) : invoices[0]?.issuedAt ?? null;
+      const periodTo = data.to ? new Date(new Date(data.to).setHours(23, 59, 59, 999)) : periodFrom ? /* @__PURE__ */ new Date() : null;
+      return renderStatementDocument(
+        {
+          reference: nextInvoiceNumber(await nextSeq(prisma2), "ST"),
+          issuedAt: /* @__PURE__ */ new Date(),
+          periodFrom,
+          periodTo,
+          currency: client.currency,
+          issuedBy: issuerParty(data.issuer, data.labels.from),
+          billedTo: clientParty(client),
+          rows,
+          totals: {
+            total: round22(rows.reduce((sum, r) => sum + num(r.total), 0)),
+            paid: round22(rows.reduce((sum, r) => sum + num(r.paid), 0)),
+            balance: round22(rows.reduce((sum, r) => sum + num(r.balance), 0))
+          }
+        },
+        { labels: data.labels, direction: data.direction }
+      );
+    } catch (err) {
+      log138.error("billing:exportStatement", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:taxVault:getAll", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.from || opts?.to) {
+        where.reservedAt = {};
+        if (opts?.from)
+          where.reservedAt.gte = startOfDay(opts.from);
+        if (opts?.to)
+          where.reservedAt.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      return await prisma2.personalTaxVaultEntry.findMany({ where, orderBy: { reservedAt: "desc" } });
+    } catch (err) {
+      log138.error("taxVault:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:taxVault:getSummary", async () => {
+    try {
+      const entries = await prisma2.personalTaxVaultEntry.findMany({ orderBy: { reservedAt: "desc" } });
+      const balance = entries.filter((e) => !e.releasedAt).reduce((sum, e) => sum + num(e.amount), 0);
+      const reserved = entries.reduce((sum, e) => sum + num(e.amount), 0);
+      const released = entries.filter((e) => e.releasedAt).reduce((sum, e) => sum + num(e.amount), 0);
+      const bucket = {};
+      for (const e of entries) {
+        if (e.releasedAt)
+          continue;
+        const key = dayKey(e.reservedAt).slice(0, 7);
+        bucket[key] = round22((bucket[key] ?? 0) + num(e.amount));
+      }
+      return {
+        balance: round22(balance),
+        reservedTotal: round22(reserved),
+        releasedTotal: round22(released),
+        entries: entries.length,
+        byMonth: Object.entries(bucket).sort((a, b) => b[0].localeCompare(a[0])).map(([month, amount]) => ({ month, amount }))
+      };
+    } catch (err) {
+      log138.error("taxVault:getSummary", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:taxVault:reserve", async (_e, data) => {
+    try {
+      return await prisma2.personalTaxVaultEntry.create({
+        data: {
+          sourceType: data?.sourceType || "manual",
+          invoiceId: data?.invoiceId || null,
+          paymentId: data?.paymentId || null,
+          amount: num(data?.amount),
+          rate: num(data?.rate),
+          reservedAt: toDate2(data?.reservedAt) ?? /* @__PURE__ */ new Date(),
+          note: data?.note || null
+        }
+      });
+    } catch (err) {
+      log138.error("taxVault:reserve", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:taxVault:release", async (_e, data) => {
+    try {
+      return await prisma2.personalTaxVaultEntry.update({
+        where: { id: data.id },
+        data: { releasedAt: /* @__PURE__ */ new Date(), note: data.note ?? void 0 }
+      });
+    } catch (err) {
+      log138.error("taxVault:release", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:billing:taxVault:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalTaxVaultEntry.delete({ where: { id } });
+    } catch (err) {
+      log138.error("taxVault:delete", err);
+      throw err;
+    }
+  });
+}
+function resolveLabel(map, key) {
+  const raw = String(key ?? "").trim();
+  if (!raw)
+    return void 0;
+  return map?.[raw] ?? raw;
+}
+function issuerParty(source, fallbackName) {
+  return {
+    name: String(source?.name ?? "").trim() || fallbackName,
+    detail: source?.detail ? String(source.detail) : void 0,
+    email: source?.email ? String(source.email) : void 0
+  };
+}
+function clientParty(source) {
+  const company = String(source?.company ?? "").trim();
+  const name = String(source?.name ?? "").trim();
+  return {
+    name: company || name,
+    detail: company && name ? name : void 0,
+    email: source?.email ? String(source.email) : void 0
+  };
+}
+function decorateInvoice(invoice) {
+  const payments = (invoice.payments ?? []).filter((p) => !p.refundedAt);
+  const refunded = (invoice.payments ?? []).filter((p) => p.refundedAt);
+  const paid = round22(payments.reduce((sum, p) => sum + num(p.amount), 0));
+  const refundedTotal = round22(refunded.reduce((sum, p) => sum + num(p.refundAmount ?? p.amount), 0));
+  const totals = invoiceTotals({ amount: invoice.amount, discount: invoice.discount, taxRate: invoice.taxRate, paid });
+  return {
+    ...invoice,
+    paid,
+    refundedTotal,
+    balance: totals.balance,
+    netAmount: totals.net,
+    taxAmount: totals.tax,
+    totalDue: totals.total,
+    isOverdue: Boolean(
+      invoice.status !== "void" && invoice.dueAt && new Date(invoice.dueAt).getTime() < Date.now() && paid + 0.01 < totals.total
+    )
+  };
+}
+async function syncStatus(prisma2, invoice) {
+  if (invoice.status === "void")
+    return invoice;
+  const payments = await prisma2.personalPayment.findMany({ where: { invoiceId: invoice.id } });
+  const paid = payments.filter((p) => !p.refundedAt).reduce((sum, p) => sum + num(p.amount), 0);
+  const { total } = invoiceTotals({
+    amount: invoice.amount,
+    discount: invoice.discount,
+    taxRate: invoice.taxRate
+  });
+  let status = invoice.status;
+  let paidAt = invoice.paidAt;
+  if (paid >= total - 0.01) {
+    status = "paid";
+    paidAt = paidAt ?? /* @__PURE__ */ new Date();
+  } else if (paid > 0) {
+    status = "partial";
+    paidAt = null;
+  } else if (invoice.dueAt && new Date(invoice.dueAt).getTime() < Date.now()) {
+    status = invoice.status === "draft" ? "draft" : "overdue";
+    paidAt = null;
+  } else {
+    status = invoice.status === "partial" || invoice.status === "paid" || invoice.status === "overdue" ? "sent" : invoice.status;
+    paidAt = null;
+  }
+  if (status === invoice.status && paidAt === invoice.paidAt)
+    return invoice;
+  return await prisma2.personalInvoice.update({ where: { id: invoice.id }, data: { status, paidAt } });
+}
+async function rollRetainerIfNeeded(prisma2, invoice) {
+  if (invoice.kind !== "retainer" || !invoice.clientId)
+    return;
+  const retainers = await prisma2.personalRetainer.findMany({
+    where: { clientId: invoice.clientId, isActive: true }
+  });
+  for (const retainer of retainers) {
+    const nextReset = retainer.nextResetAt ? new Date(retainer.nextResetAt) : null;
+    if (nextReset && nextReset.getTime() > Date.now())
+      continue;
+    const rollover = retainer.rolloverEnabled ? Math.max(0, round22(num(retainer.hoursIncluded) - num(retainer.hoursUsed))) : 0;
+    const now = /* @__PURE__ */ new Date();
+    await prisma2.personalRetainer.update({
+      where: { id: retainer.id },
+      data: {
+        hoursUsed: 0,
+        rolloverHours: rollover,
+        periodStart: new Date(now.getFullYear(), now.getMonth(), 1),
+        nextResetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+      }
+    });
+  }
+}
+async function nextSeq(prisma2) {
+  const count = await prisma2.personalInvoice.count();
+  return count + 1;
+}
+
+// src/plugins/personal/handlers/finance.ts
+init_electron_node();
+var log139 = createLogger("Personal:Finance");
+function registerFinanceHandlers3(prisma2) {
+  ipcMain.handle("personal:finance:getRateProfile", async () => {
+    try {
+      const existing = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      if (existing)
+        return existing;
+      return await prisma2.personalRateProfile.create({ data: { id: "default" } });
+    } catch (err) {
+      log139.error("finance:getRateProfile", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:saveRateProfile", async (_e, data) => {
+    try {
+      const payload = {
+        currency: data?.currency || "USD",
+        monthlyLivingCost: num(data?.monthlyLivingCost),
+        monthlyTaxes: num(data?.monthlyTaxes),
+        monthlySoftware: num(data?.monthlySoftware),
+        monthlySavings: num(data?.monthlySavings),
+        monthlyOther: num(data?.monthlyOther),
+        targetBillableHoursPerWeek: num(data?.targetBillableHoursPerWeek, 25),
+        workingWeeksPerYear: Math.round(num(data?.workingWeeksPerYear, 46)),
+        billableUtilisation: num(data?.billableUtilisation, 0.7),
+        taxReservePercent: num(data?.taxReservePercent, 25),
+        weeklyCapacityHours: num(data?.weeklyCapacityHours, 40),
+        maxClientHoursPerWeek: num(data?.maxClientHoursPerWeek, 30),
+        minimumProjectPrice: num(data?.minimumProjectPrice)
+      };
+      return await prisma2.personalRateProfile.upsert({
+        where: { id: "default" },
+        create: { id: "default", ...payload },
+        update: payload
+      });
+    } catch (err) {
+      log139.error("finance:saveRateProfile", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:getRateEngine", async () => {
+    try {
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const engine = computeRateEngine(profile ?? {});
+      return { profile: profile ?? null, engine };
+    } catch (err) {
+      log139.error("finance:getRateEngine", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:priceQuote", async (_e, data) => {
+    try {
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const engine = computeRateEngine(profile ?? {});
+      const breakdown = priceQuote(engine, num(data?.hours), data?.price);
+      const belowFloor = breakdown.recommended < engine.floorHourlyRate * Math.max(0, num(data?.hours));
+      return { ...breakdown, floorHourlyRate: engine.floorHourlyRate, baselineHourlyRate: engine.baselineHourlyRate, belowFloor };
+    } catch (err) {
+      log139.error("finance:priceQuote", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:priceCard", async (_e, data) => {
+    try {
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const engine = computeRateEngine(profile ?? {});
+      const services = Array.isArray(data?.services) ? data.services : [];
+      const card = buildPriceCard(engine, services, {
+        retainerDiscountPercent: data?.retainerDiscountPercent,
+        rushSurchargePercent: data?.rushSurchargePercent
+      });
+      return { profile: profile ?? null, engine, card };
+    } catch (err) {
+      log139.error("finance:priceCard", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:expenses:getAll", async (_e, opts) => {
+    try {
+      const page = opts?.page ?? 1;
+      const pageSize = opts?.pageSize ?? 50;
+      const where = {};
+      if (opts?.category)
+        where.category = opts.category;
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.billable !== void 0)
+        where.isBillable = opts.billable;
+      if (opts?.from || opts?.to) {
+        where.spentAt = {};
+        if (opts?.from)
+          where.spentAt.gte = startOfDay(opts.from);
+        if (opts?.to)
+          where.spentAt.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      const [total, items] = await Promise.all([
+        prisma2.personalExpense.count({ where }),
+        prisma2.personalExpense.findMany({
+          where,
+          include: { project: { select: { id: true, code: true, title: true } } },
+          orderBy: { spentAt: "desc" },
+          skip: (page - 1) * pageSize,
+          take: pageSize
+        })
+      ]);
+      return paginate(items, total, page, pageSize);
+    } catch (err) {
+      log139.error("expenses:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:expenses:create", async (_e, data) => {
+    try {
+      return await prisma2.personalExpense.create({
+        data: {
+          projectId: data?.projectId || null,
+          description: String(data?.description ?? "").trim(),
+          category: data?.category || "software",
+          vendor: data?.vendor || null,
+          amount: num(data?.amount),
+          currency: data?.currency || "USD",
+          spentAt: toDate2(data?.spentAt) ?? /* @__PURE__ */ new Date(),
+          isBillable: data?.isBillable ?? false,
+          paymentMethod: data?.paymentMethod || "card",
+          note: data?.note || null
+        },
+        include: { project: { select: { id: true, code: true, title: true } } }
+      });
+    } catch (err) {
+      log139.error("expenses:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:expenses:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("amount" in patch)
+        patch.amount = num(patch.amount);
+      if ("spentAt" in patch)
+        patch.spentAt = toDate2(patch.spentAt);
+      return await prisma2.personalExpense.update({
+        where: { id },
+        data: patch,
+        include: { project: { select: { id: true, code: true, title: true } } }
+      });
+    } catch (err) {
+      log139.error("expenses:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:expenses:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalExpense.delete({ where: { id } });
+    } catch (err) {
+      log139.error("expenses:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:expenses:getSummary", async (_e, opts) => {
+    try {
+      const from = startOfDay(opts?.from ?? monthBounds().start);
+      const to = new Date(new Date(opts?.to ?? /* @__PURE__ */ new Date()).setHours(23, 59, 59, 999));
+      const expenses = await prisma2.personalExpense.findMany({ where: { spentAt: { gte: from, lte: to } } });
+      const byCategory = {};
+      const byMonth = {};
+      let total = 0;
+      let billable = 0;
+      for (const e of expenses) {
+        const amount = num(e.amount);
+        total += amount;
+        if (e.isBillable)
+          billable += amount;
+        byCategory[e.category] = round22((byCategory[e.category] ?? 0) + amount);
+        const month = dayKey(e.spentAt).slice(0, 7);
+        byMonth[month] = round22((byMonth[month] ?? 0) + amount);
+      }
+      return {
+        range: { from, to },
+        total: round22(total),
+        billable: round22(billable),
+        count: expenses.length,
+        byCategory: Object.entries(byCategory).map(([category, amount]) => ({ category, amount })).sort((a, b) => b.amount - a.amount),
+        byMonth: Object.entries(byMonth).map(([month, amount]) => ({ month, amount })).sort((a, b) => a.month.localeCompare(b.month))
+      };
+    } catch (err) {
+      log139.error("expenses:getSummary", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:subscriptions:getAll", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.activeOnly)
+        where.isActive = true;
+      if (opts?.category)
+        where.category = opts.category;
+      const items = await prisma2.personalSubscription.findMany({
+        where,
+        orderBy: [{ isActive: "desc" }, { amount: "desc" }]
+      });
+      return items.map((s) => ({ ...s, monthlyCost: subscriptionMonthlyCost(s.amount, s.billingCycle) }));
+    } catch (err) {
+      log139.error("subscriptions:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:subscriptions:create", async (_e, data) => {
+    try {
+      return await prisma2.personalSubscription.create({
+        data: {
+          name: String(data?.name ?? "").trim(),
+          vendor: data?.vendor || null,
+          amount: num(data?.amount),
+          currency: data?.currency || "USD",
+          billingCycle: data?.billingCycle || "monthly",
+          category: data?.category || "software",
+          nextRenewalAt: toDate2(data?.nextRenewalAt),
+          autoRenew: data?.autoRenew ?? true,
+          isActive: data?.isActive ?? true,
+          isEssential: data?.isEssential ?? true,
+          lastUsedAt: toDate2(data?.lastUsedAt),
+          usageLevel: data?.usageLevel || "weekly",
+          notes: data?.notes || null
+        }
+      });
+    } catch (err) {
+      log139.error("subscriptions:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:subscriptions:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("amount" in patch)
+        patch.amount = num(patch.amount);
+      if ("nextRenewalAt" in patch)
+        patch.nextRenewalAt = toDate2(patch.nextRenewalAt);
+      if ("lastUsedAt" in patch)
+        patch.lastUsedAt = toDate2(patch.lastUsedAt);
+      return await prisma2.personalSubscription.update({ where: { id }, data: patch });
+    } catch (err) {
+      log139.error("subscriptions:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:subscriptions:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalSubscription.delete({ where: { id } });
+    } catch (err) {
+      log139.error("subscriptions:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:subscriptions:getAudit", async () => {
+    try {
+      const subs = await prisma2.personalSubscription.findMany();
+      const audit = auditSubscriptions(subs);
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const engine = computeRateEngine(profile ?? {});
+      const hoursPerMonth = Math.max(1, engine.billableHoursPerYear / 12);
+      return {
+        ...audit,
+        toolCostPerHour: round22(audit.monthlyBurn / hoursPerMonth),
+        totalCount: subs.length,
+        activeCount: subs.filter((s) => s.isActive).length,
+        essentialCount: subs.filter((s) => s.isActive && s.isEssential).length,
+        candidates: audit.cancelCandidates.map((line) => ({
+          ...line,
+          subscription: subs.find((s) => s.id === line.id) ?? null
+        })),
+        potentialMonthlySaving: round22(
+          audit.cancelCandidates.filter((l) => l.verdict === "cancel").reduce((sum, l) => sum + l.monthlyCost, 0)
+        )
+      };
+    } catch (err) {
+      log139.error("subscriptions:getAudit", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:subscriptions:getRenewals", async (_e, opts) => {
+    try {
+      const horizon = opts?.days ?? 30;
+      const until = new Date(Date.now() + horizon * 864e5);
+      const subs = await prisma2.personalSubscription.findMany({
+        where: { isActive: true, nextRenewalAt: { not: null, lte: until } },
+        orderBy: { nextRenewalAt: "asc" }
+      });
+      const now = Date.now();
+      return subs.map((s) => ({
+        ...s,
+        monthlyCost: subscriptionMonthlyCost(s.amount, s.billingCycle),
+        daysUntil: Math.max(0, Math.round((new Date(s.nextRenewalAt).getTime() - now) / 864e5))
+      }));
+    } catch (err) {
+      log139.error("subscriptions:getRenewals", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:getAll", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.activeOnly)
+        where.isActive = true;
+      if (opts?.clientId)
+        where.clientId = opts.clientId;
+      const items = await prisma2.personalRetainer.findMany({
+        where,
+        include: {
+          client: { select: { id: true, name: true, company: true } },
+          usages: { orderBy: { usedAt: "desc" }, take: 20 }
+        },
+        orderBy: [{ isActive: "desc" }, { name: "asc" }]
+      });
+      return items.map((r) => ({
+        ...r,
+        state: retainerState(r),
+        renewalPlan: planRetainerRenewal(r),
+        effectiveHourlyRate: num(r.hoursIncluded) > 0 ? round22(num(r.monthlyAmount) / num(r.hoursIncluded)) : 0
+      }));
+    } catch (err) {
+      log139.error("retainers:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:create", async (_e, data) => {
+    try {
+      return await prisma2.personalRetainer.create({
+        data: {
+          clientId: data?.clientId,
+          name: String(data?.name ?? "").trim(),
+          monthlyAmount: num(data?.monthlyAmount),
+          currency: data?.currency || "USD",
+          hoursIncluded: num(data?.hoursIncluded),
+          hoursUsed: 0,
+          rolloverEnabled: data?.rolloverEnabled ?? false,
+          rolloverHours: 0,
+          periodStart: /* @__PURE__ */ new Date(),
+          nextResetAt: retainerResetDate(),
+          isActive: data?.isActive ?? true,
+          notes: data?.notes || null
+        },
+        include: { client: { select: { id: true, name: true } } }
+      });
+    } catch (err) {
+      log139.error("retainers:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      for (const key of ["monthlyAmount", "hoursIncluded", "hoursUsed", "rolloverHours"]) {
+        if (key in patch)
+          patch[key] = num(patch[key]);
+      }
+      if ("nextResetAt" in patch)
+        patch.nextResetAt = toDate2(patch.nextResetAt);
+      return await prisma2.personalRetainer.update({
+        where: { id },
+        data: patch,
+        include: { client: { select: { id: true, name: true } } }
+      });
+    } catch (err) {
+      log139.error("retainers:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalRetainer.delete({ where: { id } });
+    } catch (err) {
+      log139.error("retainers:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:logUsage", async (_e, data) => {
+    try {
+      const retainer = await prisma2.personalRetainer.findUnique({ where: { id: data?.retainerId } });
+      if (!retainer)
+        throw new Error("Retainer not found");
+      const minutes = Math.max(0, Math.round(num(data?.minutes)));
+      const hours = round22(minutes / 60);
+      await prisma2.personalRetainerUsage.create({
+        data: { retainerId: retainer.id, minutes, note: data?.note || null }
+      });
+      const updated = await prisma2.personalRetainer.update({
+        where: { id: retainer.id },
+        data: { hoursUsed: round22(num(retainer.hoursUsed) + hours) },
+        include: { client: { select: { id: true, name: true } } }
+      });
+      return { ...updated, state: retainerState(updated) };
+    } catch (err) {
+      log139.error("retainers:logUsage", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:resetUsage", async (_e, data) => {
+    try {
+      const retainer = await prisma2.personalRetainer.findUnique({ where: { id: data?.id } });
+      if (!retainer)
+        throw new Error("Retainer not found");
+      const unused = round22(Math.max(0, num(retainer.hoursIncluded) + num(retainer.rolloverHours) - num(retainer.hoursUsed)));
+      const carry = data?.carryOver ?? retainer.rolloverEnabled;
+      const updated = await prisma2.personalRetainer.update({
+        where: { id: retainer.id },
+        data: {
+          hoursUsed: 0,
+          rolloverHours: carry ? unused : 0,
+          periodStart: /* @__PURE__ */ new Date(),
+          nextResetAt: retainerResetDate()
+        },
+        include: { client: { select: { id: true, name: true } } }
+      });
+      return { ...updated, carriedOver: carry ? unused : 0, state: retainerState(updated) };
+    } catch (err) {
+      log139.error("retainers:resetUsage", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:renewalScan", async (_e, opts) => {
+    try {
+      const asOf = toDate2(opts?.asOf) ?? /* @__PURE__ */ new Date();
+      const retainers = await prisma2.personalRetainer.findMany({
+        where: { isActive: true },
+        include: { client: { select: { id: true, name: true, company: true } } },
+        orderBy: [{ name: "asc" }]
+      });
+      const rows = retainers.map((retainer) => ({
+        retainerId: retainer.id,
+        name: retainer.name,
+        clientName: retainer.client?.company || retainer.client?.name || "",
+        currency: retainer.currency,
+        plan: planRetainerRenewal(retainer, asOf)
+      }));
+      const due = rows.filter((row) => row.plan.window.isDue);
+      return {
+        asOf,
+        rows,
+        dueCount: due.length,
+        totalInvoiceAmount: round22(due.reduce((sum, row) => sum + row.plan.invoiceAmount, 0))
+      };
+    } catch (err) {
+      log139.error("retainers:renewalScan", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:retainers:rollRenewals", async (_e, opts) => {
+    try {
+      const asOf = toDate2(opts?.asOf) ?? /* @__PURE__ */ new Date();
+      const dryRun = opts?.dryRun ?? false;
+      const wantsInvoice = opts?.invoice ?? false;
+      const where = { isActive: true };
+      if (opts?.retainerIds?.length)
+        where.id = { in: opts.retainerIds };
+      const retainers = await prisma2.personalRetainer.findMany({
+        where,
+        include: {
+          client: { select: { id: true, name: true, company: true, paymentTermsDays: true } }
+        },
+        orderBy: [{ name: "asc" }]
+      });
+      const rows = [];
+      let rolled = 0;
+      let invoicesCreated = 0;
+      let totalInvoiceAmount = 0;
+      for (const retainer of retainers) {
+        const plan = planRetainerRenewal(retainer, asOf);
+        const base = {
+          retainerId: retainer.id,
+          name: retainer.name,
+          clientName: retainer.client?.company || retainer.client?.name || "",
+          plan
+        };
+        if (!plan.window.isDue) {
+          rows.push({ ...base, action: "skipped", reason: "not_due", invoiceId: null });
+          continue;
+        }
+        const alreadyInvoiced = await findRenewalInvoice(prisma2, retainer.clientId, plan.noteMarker);
+        const shouldRaise = wantsInvoice && plan.shouldInvoice && !alreadyInvoiced;
+        if (!dryRun) {
+          await prisma2.personalRetainer.update({
+            where: { id: retainer.id },
+            data: {
+              hoursUsed: 0,
+              rolloverHours: plan.rolloverHours,
+              periodStart: plan.nextPeriodStart,
+              nextResetAt: plan.nextResetAt
+            }
+          });
+        }
+        let invoiceId = null;
+        if (shouldRaise) {
+          totalInvoiceAmount = round22(totalInvoiceAmount + plan.invoiceAmount);
+          if (!dryRun) {
+            const terms = Math.round(num(retainer.client?.paymentTermsDays, 14));
+            const invoice = await prisma2.personalInvoice.create({
+              data: {
+                number: nextInvoiceNumber(await nextSeq2(prisma2), "INV"),
+                clientId: retainer.clientId,
+                projectId: null,
+                kind: "retainer",
+                status: "draft",
+                currency: retainer.currency || "USD",
+                amount: plan.invoiceAmount,
+                taxRate: 0,
+                discount: 0,
+                issuedAt: asOf,
+                dueAt: new Date(asOf.getTime() + terms * 864e5),
+                notes: renewalNote(plan)
+              }
+            });
+            invoiceId = invoice.id;
+            invoicesCreated += 1;
+          }
+        }
+        rolled += 1;
+        rows.push({
+          ...base,
+          action: "rolled",
+          reason: alreadyInvoiced ? "already_invoiced" : shouldRaise ? "invoiced" : "rolled",
+          invoiceId,
+          invoiced: shouldRaise && !dryRun,
+          wouldInvoice: shouldRaise
+        });
+      }
+      return { asOf, dryRun, rows, rolled, invoicesCreated, totalInvoiceAmount };
+    } catch (err) {
+      log139.error("retainers:rollRenewals", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:finance:getOverview", async (_e, opts) => {
+    try {
+      const from = startOfDay(opts?.from ?? monthBounds().start);
+      const to = new Date(new Date(opts?.to ?? /* @__PURE__ */ new Date()).setHours(23, 59, 59, 999));
+      const now = /* @__PURE__ */ new Date();
+      const [profile, subs, retainers, expenses, invoices, vault, sessions2] = await Promise.all([
+        prisma2.personalRateProfile.findUnique({ where: { id: "default" } }),
+        prisma2.personalSubscription.findMany({ where: { isActive: true } }),
+        prisma2.personalRetainer.findMany({ where: { isActive: true }, include: { client: { select: { name: true } } } }),
+        prisma2.personalExpense.findMany({ where: { spentAt: { gte: from, lte: to } } }),
+        prisma2.personalInvoice.findMany({
+          where: { status: { not: "void" } },
+          include: { payments: true }
+        }),
+        prisma2.personalTaxVaultEntry.findMany({ where: { releasedAt: null } }),
+        prisma2.personalFocusSession.findMany({
+          where: { startedAt: { gte: from, lte: to }, endedAt: { not: null } }
+        })
+      ]);
+      const engine = computeRateEngine(profile ?? {});
+      const audit = auditSubscriptions(subs);
+      const mrr = round22(retainers.reduce((sum, r) => sum + num(r.monthlyAmount), 0));
+      const expenseTotal = round22(expenses.reduce((sum, e) => sum + num(e.amount), 0));
+      let collected = 0;
+      let billed = 0;
+      let overdue = 0;
+      for (const inv of invoices) {
+        const paid = inv.payments.filter((p) => !p.refundedAt).reduce((s, p) => s + num(p.amount), 0);
+        billed += num(inv.amount);
+        collected += paid;
+        if (inv.dueAt && new Date(inv.dueAt).getTime() < now.getTime() && paid + 0.01 < num(inv.amount)) {
+          overdue += num(inv.amount) - paid;
+        }
+      }
+      const realMinutes = sessions2.reduce((sum, s) => sum + num(s.actualMinutes), 0);
+      const paidThisPeriod = invoices.flatMap((inv) => inv.payments).filter((p) => !p.refundedAt && new Date(p.paidAt) >= from && new Date(p.paidAt) <= to).reduce((sum, p) => sum + num(p.amount), 0);
+      const rate = realHourlyRate(paidThisPeriod, realMinutes, engine.baselineHourlyRate);
+      return {
+        range: { from, to },
+        engine,
+        subscriptionBurn: audit.monthlyBurn,
+        subscriptionAnnualBurn: audit.annualBurn,
+        cancelCandidates: audit.cancelCandidates.length,
+        potentialSaving: round22(
+          audit.cancelCandidates.filter((l) => l.verdict === "cancel").reduce((sum, l) => sum + l.monthlyCost, 0)
+        ),
+        mrr,
+        retainerClients: retainers.length,
+        retainerHoursCommitted: round22(retainers.reduce((sum, r) => sum + num(r.hoursIncluded), 0)),
+        retainerHoursRemaining: round22(
+          retainers.reduce((sum, r) => {
+            const state = retainerState(r);
+            return sum + Math.max(0, state.hoursAvailable);
+          }, 0)
+        ),
+        expenses: expenseTotal,
+        billed: round22(billed),
+        collected: round22(collected),
+        outstanding: round22(billed - collected),
+        overdue: round22(overdue),
+        net: round22(collected - expenseTotal - audit.monthlyBurn),
+        taxVaultBalance: round22(vault.reduce((sum, v) => sum + num(v.amount), 0)),
+        realRate: rate,
+        trackedHours: round22(realMinutes / 60)
+      };
+    } catch (err) {
+      log139.error("finance:getOverview", err);
+      throw err;
+    }
+  });
+}
+async function findRenewalInvoice(prisma2, clientId, marker) {
+  if (!clientId || !marker)
+    return false;
+  const count = await prisma2.personalInvoice.count({
+    where: { clientId, kind: "retainer", notes: { contains: marker } }
+  });
+  return count > 0;
+}
+function renewalNote(plan) {
+  return [
+    plan.noteMarker,
+    `period ${dayKey(plan.window.periodStart)} -> ${dayKey(plan.window.periodEnd)}`,
+    `periods ${plan.window.periodsDue} x ${round22(num(plan.periodAmount))}`
+  ].join("\n");
+}
+async function nextSeq2(prisma2) {
+  const count = await prisma2.personalInvoice.count();
+  return count + 1;
+}
+
+// src/plugins/personal/handlers/capacity.ts
+init_electron_node();
+var log140 = createLogger("Personal:Capacity");
+function registerCapacityHandlers(prisma2) {
+  const dailyCapacityMinutes = async () => {
+    const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+    const weeklyHours = num(profile?.weeklyCapacityHours, 40);
+    return Math.max(0, round22(weeklyHours / 5 * 60));
+  };
+  ipcMain.handle("personal:capacity:getHeatmap", async (_e, opts) => {
+    try {
+      const from = startOfDay(opts?.from ?? addDays(/* @__PURE__ */ new Date(), -7));
+      const to = new Date(new Date(opts?.to ?? addDays(/* @__PURE__ */ new Date(), 21)).setHours(23, 59, 59, 999));
+      const perDay = await dailyCapacityMinutes();
+      const [workloads, blackouts, profile] = await Promise.all([
+        prisma2.personalWorkload.findMany({
+          where: { day: { gte: from, lte: to } },
+          include: { project: { select: { id: true, code: true, title: true } } }
+        }),
+        prisma2.personalBlackout.findMany({ where: { endDate: { gte: from }, startDate: { lte: to } } }),
+        prisma2.personalRateProfile.findUnique({ where: { id: "default" } })
+      ]);
+      const byDay = /* @__PURE__ */ new Map();
+      for (const w of workloads) {
+        const key = dayKey(w.day);
+        const row = byDay.get(key) ?? {
+          day: key,
+          plannedMinutes: 0,
+          actualMinutes: 0,
+          projects: []
+        };
+        row.plannedMinutes += num(w.plannedMinutes);
+        row.actualMinutes += num(w.actualMinutes);
+        row.projects.push({
+          id: w.project?.id ?? "unassigned",
+          code: w.project?.code ?? null,
+          title: w.project?.title ?? "Unassigned",
+          plannedMinutes: num(w.plannedMinutes),
+          actualMinutes: num(w.actualMinutes)
+        });
+        byDay.set(key, row);
+      }
+      const days = dayKeysBetween(from, to).map((key) => {
+        const row = byDay.get(key) ?? { day: key, plannedMinutes: 0, actualMinutes: 0, projects: [] };
+        const date = /* @__PURE__ */ new Date(`${key}T12:00:00`);
+        const blackout = blackouts.find(
+          (b) => new Date(key) >= startOfDay(b.startDate) && new Date(key) <= new Date(new Date(b.endDate).setHours(23, 59, 59, 999))
+        );
+        const weekend = date.getDay() === 0 || date.getDay() === 6;
+        const available = blackout || weekend ? 0 : perDay;
+        const reading = capacityReading(row.plannedMinutes, available);
+        return {
+          ...row,
+          date,
+          isWeekend: weekend,
+          blackout: blackout ? { id: blackout.id, title: blackout.title, kind: blackout.kind, blocksDelivery: blackout.blocksDelivery } : null,
+          availableMinutes: available,
+          usedPercent: blackout || weekend ? 0 : reading.usedPercent,
+          level: blackout ? "blocked" : weekend ? "off" : reading.level,
+          overbookedMinutes: reading.overbookedMinutes
+        };
+      });
+      const working = days.filter((d) => d.availableMinutes > 0);
+      const overloaded = working.filter((d) => d.level === "red");
+      return {
+        range: { from, to },
+        dailyCapacityMinutes: perDay,
+        weeklyCapacityHours: num(profile?.weeklyCapacityHours, 40),
+        maxClientHoursPerWeek: num(profile?.maxClientHoursPerWeek, 30),
+        days,
+        totals: {
+          workingDays: working.length,
+          plannedMinutes: working.reduce((sum, d) => sum + d.plannedMinutes, 0),
+          actualMinutes: working.reduce((sum, d) => sum + d.actualMinutes, 0),
+          amberDays: working.filter((d) => d.level === "amber").length,
+          redDays: overloaded.length,
+          blackoutDays: days.filter((d) => d.blackout).length,
+          averageUsedPercent: working.length ? round22(working.reduce((sum, d) => sum + d.usedPercent, 0) / working.length) : 0
+        },
+        overloadedDays: overloaded.map((d) => ({
+          day: d.day,
+          usedPercent: d.usedPercent,
+          overbookedMinutes: d.overbookedMinutes
+        }))
+      };
+    } catch (err) {
+      log140.error("capacity:getHeatmap", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:getWorkloads", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.from || opts?.to) {
+        where.day = {};
+        if (opts?.from)
+          where.day.gte = startOfDay(opts.from);
+        if (opts?.to)
+          where.day.lte = new Date(new Date(opts.to).setHours(23, 59, 59, 999));
+      }
+      return await prisma2.personalWorkload.findMany({
+        where,
+        include: { project: { select: { id: true, code: true, title: true } } },
+        orderBy: { day: "asc" }
+      });
+    } catch (err) {
+      log140.error("capacity:getWorkloads", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:setWorkload", async (_e, data) => {
+    try {
+      const bucket = startOfDay(data?.day ?? /* @__PURE__ */ new Date());
+      const plannedMinutes = Math.max(0, Math.round(num(data?.plannedMinutes)));
+      const projectId = data?.projectId || null;
+      const existing = await prisma2.personalWorkload.findFirst({ where: { projectId, day: bucket } });
+      const saved = existing ? await prisma2.personalWorkload.update({
+        where: { id: existing.id },
+        data: { plannedMinutes, isCommitted: data?.isCommitted ?? existing.isCommitted, note: data?.note ?? existing.note }
+      }) : await prisma2.personalWorkload.create({
+        data: {
+          projectId,
+          day: bucket,
+          plannedMinutes,
+          isCommitted: data?.isCommitted ?? true,
+          note: data?.note || null
+        }
+      });
+      const perDay = await dailyCapacityMinutes();
+      const dayTotals = await prisma2.personalWorkload.aggregate({
+        where: { day: bucket },
+        _sum: { plannedMinutes: true }
+      });
+      const reading = capacityReading(num(dayTotals._sum.plannedMinutes), perDay);
+      return {
+        workload: saved,
+        day: dayKey(bucket),
+        plannedMinutes: reading.plannedMinutes,
+        availableMinutes: perDay,
+        level: reading.level,
+        overbookedMinutes: reading.overbookedMinutes
+      };
+    } catch (err) {
+      log140.error("capacity:setWorkload", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:deleteWorkload", async (_e, id) => {
+    try {
+      return await prisma2.personalWorkload.delete({ where: { id } });
+    } catch (err) {
+      log140.error("capacity:deleteWorkload", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:getBlackouts", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.from || opts?.to) {
+        where.endDate = { gte: startOfDay(opts.from ?? /* @__PURE__ */ new Date(0)) };
+        if (opts?.to)
+          where.startDate = { lte: new Date(new Date(opts.to).setHours(23, 59, 59, 999)) };
+      }
+      return await prisma2.personalBlackout.findMany({ where, orderBy: { startDate: "asc" } });
+    } catch (err) {
+      log140.error("capacity:getBlackouts", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:createBlackout", async (_e, data) => {
+    try {
+      const startDate = toDate2(data?.startDate) ?? /* @__PURE__ */ new Date();
+      const endDate = toDate2(data?.endDate) ?? startDate;
+      return await prisma2.personalBlackout.create({
+        data: {
+          title: String(data?.title ?? "").trim(),
+          kind: data?.kind || "vacation",
+          startDate,
+          endDate: endDate < startDate ? startDate : endDate,
+          blocksDelivery: data?.blocksDelivery ?? true,
+          note: data?.note || null
+        }
+      });
+    } catch (err) {
+      log140.error("capacity:createBlackout", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:updateBlackout", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("startDate" in patch)
+        patch.startDate = toDate2(patch.startDate);
+      if ("endDate" in patch)
+        patch.endDate = toDate2(patch.endDate);
+      return await prisma2.personalBlackout.update({ where: { id }, data: patch });
+    } catch (err) {
+      log140.error("capacity:updateBlackout", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:deleteBlackout", async (_e, id) => {
+    try {
+      return await prisma2.personalBlackout.delete({ where: { id } });
+    } catch (err) {
+      log140.error("capacity:deleteBlackout", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:checkConflict", async (_e, data) => {
+    try {
+      const from = startOfDay(data?.from ?? /* @__PURE__ */ new Date());
+      const minutesPerDay = Math.max(0, num(data?.minutesPerDay, 240));
+      const perDay = await dailyCapacityMinutes();
+      const totalMinutes = Math.max(0, num(data?.totalMinutes, minutesPerDay * 5));
+      const daysNeeded = minutesPerDay > 0 ? Math.ceil(totalMinutes / minutesPerDay) : 0;
+      const to = new Date(new Date(data?.to ?? addDays(from, Math.max(7, daysNeeded * 2))).setHours(23, 59, 59, 999));
+      const [workloads, blackouts] = await Promise.all([
+        prisma2.personalWorkload.findMany({ where: { day: { gte: from, lte: to } } }),
+        prisma2.personalBlackout.findMany({ where: { endDate: { gte: from }, startDate: { lte: to } } })
+      ]);
+      const bookedByDay = {};
+      for (const w of workloads) {
+        const key = dayKey(w.day);
+        bookedByDay[key] = num(bookedByDay[key]) + num(w.plannedMinutes);
+      }
+      const conflicts = [];
+      for (const key of dayKeysBetween(from, to)) {
+        const date = /* @__PURE__ */ new Date(`${key}T12:00:00`);
+        if (date.getDay() === 0 || date.getDay() === 6)
+          continue;
+        const blackout = blackouts.find(
+          (b) => new Date(key) >= startOfDay(b.startDate) && new Date(key) <= new Date(new Date(b.endDate).setHours(23, 59, 59, 999))
+        );
+        if (blackout) {
+          conflicts.push({
+            day: key,
+            level: "blocked",
+            plannedMinutes: num(bookedByDay[key]),
+            availableMinutes: 0,
+            reason: blackout.title || blackout.kind
+          });
+          continue;
+        }
+        const projected = num(bookedByDay[key]) + (daysNeeded > 0 ? minutesPerDay : 0);
+        const reading = capacityReading(projected, perDay);
+        if (reading.level !== "clear") {
+          conflicts.push({
+            day: key,
+            level: reading.level,
+            plannedMinutes: projected,
+            availableMinutes: perDay,
+            reason: reading.level === "red" ? "Over capacity" : "Near capacity"
+          });
+        }
+      }
+      const suggestion = suggestStartDate(from, blackouts, bookedByDay, perDay, minutesPerDay);
+      return {
+        from,
+        to,
+        dailyCapacityMinutes: perDay,
+        minutesPerDay,
+        totalMinutes,
+        daysNeeded,
+        conflictingDays: conflicts.length,
+        conflicts,
+        blockedDays: conflicts.filter((c) => c.level === "blocked").length,
+        redDays: conflicts.filter((c) => c.level === "red").length,
+        suggestedStartDate: suggestion || null,
+        fits: conflicts.length === 0
+      };
+    } catch (err) {
+      log140.error("capacity:checkConflict", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:suggestStart", async (_e, data) => {
+    try {
+      const from = startOfDay(data?.from ?? /* @__PURE__ */ new Date());
+      const neededMinutes = Math.max(0, num(data?.neededMinutes, 240));
+      const perDay = await dailyCapacityMinutes();
+      const horizon = addDays(from, 120);
+      const [workloads, blackouts] = await Promise.all([
+        prisma2.personalWorkload.findMany({ where: { day: { gte: from, lte: horizon } } }),
+        prisma2.personalBlackout.findMany({ where: { endDate: { gte: from } } })
+      ]);
+      const bookedByDay = {};
+      for (const w of workloads) {
+        const key = dayKey(w.day);
+        bookedByDay[key] = num(bookedByDay[key]) + num(w.plannedMinutes);
+      }
+      const suggestion = suggestStartDate(from, blackouts, bookedByDay, perDay, neededMinutes);
+      const firstBlackout = blackouts.filter((b) => new Date(b.startDate) >= from).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())[0];
+      return {
+        suggestedStartDate: suggestion || null,
+        dailyCapacityMinutes: perDay,
+        nextBlackout: firstBlackout ? {
+          id: firstBlackout.id,
+          title: firstBlackout.title,
+          kind: firstBlackout.kind,
+          startDate: firstBlackout.startDate,
+          endDate: firstBlackout.endDate,
+          daysUntil: Math.max(0, Math.round((startOfDay(firstBlackout.startDate).getTime() - Date.now()) / 864e5))
+        } : null,
+        isBlackoutToday: isBlackoutDay(from, blackouts)
+      };
+    } catch (err) {
+      log140.error("capacity:suggestStart", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:capacity:getStatus", async () => {
+    try {
+      const profile = await prisma2.personalRateProfile.findUnique({ where: { id: "default" } });
+      const maxClientHours = num(profile?.maxClientHoursPerWeek, 30);
+      const monday = startOfDay(/* @__PURE__ */ new Date());
+      monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      const [workloads, projects, blackouts] = await Promise.all([
+        prisma2.personalWorkload.findMany({ where: { day: { gte: monday, lte: sunday } } }),
+        prisma2.personalProject.findMany({
+          where: { status: "active" },
+          select: { id: true, code: true, title: true, maxHoursPerWeek: true }
+        }),
+        prisma2.personalBlackout.findMany({ where: { endDate: { gte: monday }, startDate: { lte: sunday } } })
+      ]);
+      const plannedMinutes = workloads.reduce((sum, w) => sum + num(w.plannedMinutes), 0);
+      const actualMinutes = workloads.reduce((sum, w) => sum + num(w.actualMinutes), 0);
+      const bookedHours = round22(plannedMinutes / 60);
+      const readonly = capacityReading(plannedMinutes, maxClientHours * 60);
+      return {
+        weekStart: monday,
+        weekEnd: sunday,
+        maxClientHoursPerWeek: maxClientHours,
+        bookedHours,
+        trackedHours: round22(actualMinutes / 60),
+        usedPercent: readonly.usedPercent,
+        level: readonly.level,
+        overbookedHours: round22(readonly.overbookedMinutes / 60),
+        activeProjects: projects.length,
+        projectsOverOwnLimit: projects.filter((p) => num(p.maxHoursPerWeek) > 0).map((p) => ({
+          id: p.id,
+          code: p.code,
+          title: p.title,
+          maxHoursPerWeek: num(p.maxHoursPerWeek),
+          bookedHours: round22(
+            workloads.filter((w) => w.projectId === p.id).reduce((sum, w) => sum + num(w.plannedMinutes), 0) / 60
+          )
+        })).filter((p) => p.bookedHours > p.maxHoursPerWeek),
+        blackoutDaysThisWeek: blackouts.length
+      };
+    } catch (err) {
+      log140.error("capacity:getStatus", err);
+      throw err;
+    }
+  });
+}
+
+// src/plugins/personal/handlers/playbook.ts
+init_electron_node();
+
+// src/plugins/personal/handlers/templates.ts
+var TASK_STATUSES = [
+  { id: "backlog", label: "Backlog", labelAr: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631" },
+  { id: "today", label: "Today", labelAr: "\u0627\u0644\u064A\u0648\u0645" },
+  { id: "in_progress", label: "In progress", labelAr: "\u0642\u064A\u062F \u0627\u0644\u062A\u0646\u0641\u064A\u0630" },
+  { id: "blocked", label: "Blocked", labelAr: "\u0645\u062A\u0648\u0642\u0641" },
+  { id: "done", label: "Done", labelAr: "\u0645\u0646\u062C\u0632" },
+  { id: "cancelled", label: "Cancelled", labelAr: "\u0645\u0644\u063A\u0649" }
+];
+var TASK_TYPES = [
+  { id: "deliverable", label: "Deliverable", labelAr: "\u0645\u064F\u062E\u0631\u064E\u062C \u062A\u0633\u0644\u064A\u0645" },
+  { id: "admin", label: "Admin", labelAr: "\u0625\u062F\u0627\u0631\u064A" },
+  { id: "sales", label: "Sales", labelAr: "\u0628\u064A\u0639 \u0648\u0639\u0631\u0648\u0636" },
+  { id: "learning", label: "Learning", labelAr: "\u062A\u0639\u0644\u0651\u0645" }
+];
+var WAIT_REASONS = [
+  { id: "assets", label: "Waiting for assets", labelAr: "\u0628\u0627\u0646\u062A\u0638\u0627\u0631 \u0627\u0644\u0645\u0644\u0641\u0627\u062A" },
+  { id: "copy", label: "Waiting for copy/content", labelAr: "\u0628\u0627\u0646\u062A\u0638\u0627\u0631 \u0627\u0644\u0645\u062D\u062A\u0648\u0649" },
+  { id: "credentials", label: "Waiting for access/credentials", labelAr: "\u0628\u0627\u0646\u062A\u0638\u0627\u0631 \u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u062F\u062E\u0648\u0644" },
+  { id: "review", label: "Waiting for review/feedback", labelAr: "\u0628\u0627\u0646\u062A\u0638\u0627\u0631 \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629" },
+  { id: "payment", label: "Waiting for payment", labelAr: "\u0628\u0627\u0646\u062A\u0638\u0627\u0631 \u0627\u0644\u062F\u0641\u0639" },
+  { id: "other", label: "Other", labelAr: "\u0623\u062E\u0631\u0649" }
+];
+var PROJECT_STATUSES = [
+  { id: "lead", label: "Lead", labelAr: "\u0639\u0631\u0636" },
+  { id: "active", label: "Active", labelAr: "\u0646\u0634\u0637" },
+  { id: "paused", label: "Paused", labelAr: "\u0645\u062A\u0648\u0642\u0641 \u0645\u0624\u0642\u062A\u0627\u064B" },
+  { id: "delivered", label: "Delivered", labelAr: "\u062A\u0645 \u0627\u0644\u062A\u0633\u0644\u064A\u0645" },
+  { id: "closed", label: "Closed", labelAr: "\u0645\u063A\u0644\u0642" }
+];
+var PRICING_TYPES = [
+  { id: "fixed", label: "Fixed price", labelAr: "\u0633\u0639\u0631 \u062B\u0627\u0628\u062A" },
+  { id: "hourly", label: "Hourly", labelAr: "\u0628\u0627\u0644\u0633\u0627\u0639\u0629" },
+  { id: "retainer", label: "Retainer", labelAr: "\u0627\u0634\u062A\u0631\u0627\u0643 \u0634\u0647\u0631\u064A" }
+];
+var INVOICE_KINDS = [
+  { id: "deposit", label: "Deposit", labelAr: "\u062F\u0641\u0639\u0629 \u0645\u0642\u062F\u0645\u0629" },
+  { id: "milestone", label: "Milestone", labelAr: "\u0645\u0631\u062D\u0644\u0629" },
+  { id: "final", label: "Final payment", labelAr: "\u0627\u0644\u062F\u0641\u0639\u0629 \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629" },
+  { id: "retainer", label: "Retainer", labelAr: "\u0627\u0634\u062A\u0631\u0627\u0643 \u0634\u0647\u0631\u064A" },
+  { id: "change_request", label: "Change request", labelAr: "\u0637\u0644\u0628 \u0625\u0636\u0627\u0641\u064A" }
+];
+var INVOICE_STATUSES2 = [
+  { id: "draft", label: "Draft", labelAr: "\u0645\u0633\u0648\u062F\u0629" },
+  { id: "sent", label: "Sent", labelAr: "\u0645\u064F\u0631\u0633\u0644\u0629" },
+  { id: "partial", label: "Partially paid", labelAr: "\u0645\u062F\u0641\u0648\u0639\u0629 \u062C\u0632\u0626\u064A\u0627\u064B" },
+  { id: "paid", label: "Paid", labelAr: "\u0645\u062F\u0641\u0648\u0639\u0629" },
+  { id: "overdue", label: "Overdue", labelAr: "\u0645\u062A\u0623\u062E\u0631\u0629" },
+  { id: "void", label: "Void", labelAr: "\u0645\u0644\u063A\u0627\u0629" }
+];
+var CHANGE_REQUEST_STATUSES = [
+  { id: "draft", label: "Draft", labelAr: "\u0645\u0633\u0648\u062F\u0629" },
+  { id: "quoted", label: "Quote sent", labelAr: "\u062A\u0645 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0639\u0631\u0636" },
+  { id: "approved", label: "Approved", labelAr: "\u0645\u0648\u0627\u0641\u0642 \u0639\u0644\u064A\u0647" },
+  { id: "declined", label: "Declined", labelAr: "\u0645\u0631\u0641\u0648\u0636" },
+  { id: "invoiced", label: "Invoiced", labelAr: "\u062A\u0645\u062A \u0627\u0644\u0641\u0627\u062A\u0648\u0631\u0629" }
+];
+var EXPENSE_CATEGORIES = [
+  { id: "software", label: "Software", labelAr: "\u0628\u0631\u0645\u062C\u064A\u0627\u062A" },
+  { id: "equipment", label: "Equipment", labelAr: "\u0645\u0639\u062F\u0627\u062A" },
+  { id: "hosting", label: "Hosting & domains", labelAr: "\u0627\u0633\u062A\u0636\u0627\u0641\u0629 \u0648\u0646\u0637\u0627\u0642\u0627\u062A" },
+  { id: "marketing", label: "Marketing", labelAr: "\u062A\u0633\u0648\u064A\u0642" },
+  { id: "education", label: "Education", labelAr: "\u062A\u0639\u0644\u064A\u0645" },
+  { id: "travel", label: "Travel", labelAr: "\u0633\u0641\u0631" },
+  { id: "fees", label: "Bank & platform fees", labelAr: "\u0631\u0633\u0648\u0645 \u0628\u0646\u0643\u064A\u0629 \u0648\u0645\u0646\u0635\u0627\u062A" },
+  { id: "taxes", label: "Taxes", labelAr: "\u0636\u0631\u0627\u0626\u0628" },
+  { id: "other", label: "Other", labelAr: "\u0623\u062E\u0631\u0649" }
+];
+var SUBSCRIPTION_CATEGORIES = [
+  { id: "software", label: "Design & dev tools", labelAr: "\u0623\u062F\u0648\u0627\u062A \u0627\u0644\u062A\u0635\u0645\u064A\u0645 \u0648\u0627\u0644\u0628\u0631\u0645\u062C\u0629" },
+  { id: "ai", label: "AI tools", labelAr: "\u0623\u062F\u0648\u0627\u062A \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A" },
+  { id: "storage", label: "Storage & backup", labelAr: "\u062A\u062E\u0632\u064A\u0646 \u0648\u0646\u0633\u062E \u0627\u062D\u062A\u064A\u0627\u0637\u064A" },
+  { id: "marketing", label: "Marketing", labelAr: "\u062A\u0633\u0648\u064A\u0642" },
+  { id: "learning", label: "Learning", labelAr: "\u062A\u0639\u0644\u0651\u0645" },
+  { id: "other", label: "Other", labelAr: "\u0623\u062E\u0631\u0649" }
+];
+var BILLING_CYCLES = [
+  { id: "weekly", label: "Weekly", labelAr: "\u0623\u0633\u0628\u0648\u0639\u064A" },
+  { id: "monthly", label: "Monthly", labelAr: "\u0634\u0647\u0631\u064A" },
+  { id: "quarterly", label: "Quarterly", labelAr: "\u0631\u0628\u0639 \u0633\u0646\u0648\u064A" },
+  { id: "yearly", label: "Yearly", labelAr: "\u0633\u0646\u0648\u064A" }
+];
+var USAGE_LEVELS = [
+  { id: "daily", label: "Daily", labelAr: "\u064A\u0648\u0645\u064A\u0627\u064B" },
+  { id: "weekly", label: "Weekly", labelAr: "\u0623\u0633\u0628\u0648\u0639\u064A\u0627\u064B" },
+  { id: "monthly", label: "Monthly", labelAr: "\u0634\u0647\u0631\u064A\u0627\u064B" },
+  { id: "rarely", label: "Rarely / never", labelAr: "\u0646\u0627\u062F\u0631\u0627\u064B \u0623\u0648 \u0644\u0627 \u0623\u0633\u062A\u062E\u062F\u0645\u0647" }
+];
+var BLACKOUT_KINDS = [
+  { id: "vacation", label: "Vacation", labelAr: "\u0625\u062C\u0627\u0632\u0629" },
+  { id: "personal", label: "Personal day", labelAr: "\u064A\u0648\u0645 \u0634\u062E\u0635\u064A" },
+  { id: "study", label: "Study day", labelAr: "\u064A\u0648\u0645 \u062F\u0631\u0627\u0633\u0629" },
+  { id: "holiday", label: "Public holiday", labelAr: "\u0639\u0637\u0644\u0629 \u0631\u0633\u0645\u064A\u0629" },
+  { id: "sick", label: "Sick leave", labelAr: "\u0625\u062C\u0627\u0632\u0629 \u0645\u0631\u0636\u064A\u0629" }
+];
+var FOCUS_KINDS = [
+  { id: "flow", label: "Deep work (flow)", labelAr: "\u0639\u0645\u0644 \u0639\u0645\u064A\u0642" },
+  { id: "pomodoro", label: "Pomodoro", labelAr: "\u0628\u0648\u0645\u0648\u062F\u0648\u0631\u0648" },
+  { id: "break", label: "Break", labelAr: "\u0627\u0633\u062A\u0631\u0627\u062D\u0629" },
+  { id: "manual", label: "Manual entry", labelAr: "\u0625\u062F\u062E\u0627\u0644 \u064A\u062F\u0648\u064A" }
+];
+var NOTE_KINDS = [
+  { id: "note", label: "Note", labelAr: "\u0645\u0644\u0627\u062D\u0638\u0629" },
+  { id: "credential", label: "Credentials", labelAr: "\u0628\u064A\u0627\u0646\u0627\u062A \u062F\u062E\u0648\u0644" },
+  { id: "brand", label: "Brand assets", labelAr: "\u0647\u0648\u064A\u0629 \u0627\u0644\u0639\u0644\u0627\u0645\u0629" },
+  { id: "link", label: "Links & drives", labelAr: "\u0631\u0648\u0627\u0628\u0637 \u0648\u0645\u062C\u0644\u062F\u0627\u062A" }
+];
+var SCRIPT_CATEGORIES = [
+  { id: "deposit_request", label: "Deposit request", labelAr: "\u0637\u0644\u0628 \u0627\u0644\u062F\u0641\u0639\u0629 \u0627\u0644\u0645\u0642\u062F\u0645\u0629" },
+  { id: "scope_creep", label: "Scope creep pushback", labelAr: "\u0627\u0644\u0631\u062F \u0639\u0644\u0649 \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0627\u0644\u0625\u0636\u0627\u0641\u064A\u0629" },
+  { id: "late_feedback", label: "Late feedback notice", labelAr: "\u0625\u0634\u0639\u0627\u0631 \u062A\u0623\u062E\u0631 \u0627\u0644\u0645\u0644\u0627\u062D\u0638\u0627\u062A" },
+  { id: "overdue_1", label: "Overdue \xB7 Level 1 (gentle)", labelAr: "\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u062A\u0623\u062E\u0631\u0629 \xB7 \u0645\u0633\u062A\u0648\u0649 \u0661 (\u0648\u062F\u0651\u064A)" },
+  { id: "overdue_2", label: "Overdue \xB7 Level 2 (formal)", labelAr: "\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u062A\u0623\u062E\u0631\u0629 \xB7 \u0645\u0633\u062A\u0648\u0649 \u0662 (\u0631\u0633\u0645\u064A)" },
+  { id: "overdue_3", label: "Overdue \xB7 Level 3 (work stopped)", labelAr: "\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u062A\u0623\u062E\u0631\u0629 \xB7 \u0645\u0633\u062A\u0648\u0649 \u0663 (\u0625\u064A\u0642\u0627\u0641 \u0627\u0644\u0639\u0645\u0644)" },
+  { id: "kickoff", label: "Project kickoff", labelAr: "\u0628\u062F\u0621 \u0627\u0644\u0645\u0634\u0631\u0648\u0639" },
+  { id: "delivery", label: "Delivery & hand-over", labelAr: "\u0627\u0644\u062A\u0633\u0644\u064A\u0645" },
+  { id: "handover", label: "Final hand-over & testimonial", labelAr: "\u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0646\u0647\u0627\u0626\u064A \u0648\u0627\u0644\u062A\u0648\u0635\u064A\u0629" },
+  { id: "general", label: "General", labelAr: "\u0639\u0627\u0645" }
+];
+var PROFESSIONS = [
+  { id: "general", label: "General", labelAr: "\u0639\u0627\u0645" },
+  { id: "developer", label: "Developer", labelAr: "\u0645\u0637\u0648\u0651\u0631" },
+  { id: "designer", label: "Designer", labelAr: "\u0645\u0635\u0645\u0645" },
+  { id: "photographer", label: "Photographer / video", labelAr: "\u0645\u0635\u0648\u0631 / \u0641\u064A\u062F\u064A\u0648" },
+  { id: "writer", label: "Writer / content", labelAr: "\u0643\u0627\u062A\u0628 / \u0645\u062D\u062A\u0648\u0649" },
+  { id: "consultant", label: "Consultant", labelAr: "\u0645\u0633\u062A\u0634\u0627\u0631" },
+  { id: "marketer", label: "Marketer", labelAr: "\u0645\u0633\u0648\u0651\u0642" }
+];
+var DEFAULT_CHECKLIST_TEMPLATES = [
+  {
+    name: "Developer \u2014 pre-flight release",
+    profession: "developer",
+    isDefault: true,
+    items: [
+      "Environment variables removed or documented, no secrets committed",
+      "README updated with setup, run and deploy steps",
+      "Staging deployed and smoke-tested end to end",
+      "License file attached and third-party notices listed",
+      "Build artefacts tagged and changelog written",
+      "Database migrations tested on a copy of production data",
+      ".gitignore reviewed for local config and credentials",
+      "Hand-over call booked or walkthrough recorded"
+    ]
+  },
+  {
+    name: "Designer \u2014 pre-flight hand-over",
+    profession: "designer",
+    isDefault: true,
+    items: [
+      "Fonts outlined or licences handed over with the files",
+      "Export assets organised by folder (@2x, .svg, .pdf)",
+      "Colour tokens and brand hex codes documented",
+      "Source files cleaned of stray layers and hidden text",
+      "Every screen the client approved is included",
+      "Print-ready PDF checked for bleed, CMYK and flattening",
+      "Naming convention applied to all files",
+      "Delivery note with dimensions and usage rights attached"
+    ]
+  },
+  {
+    name: "Photographer / video \u2014 pre-flight delivery",
+    profession: "photographer",
+    isDefault: true,
+    items: [
+      "Raw files backed up to two locations",
+      "EXIF/metadata stripped or tagged as contract requires",
+      "sRGB export profile verified on a calibrated screen",
+      "Delivery gallery/download link created and permission-tested",
+      "Watermark removed from paid deliveries only",
+      "Usage licence and model releases attached",
+      "Selected frames match the approved shot list count",
+      "Compressed preview set exported for social use"
+    ]
+  },
+  {
+    name: "Writer / content \u2014 pre-flight delivery",
+    profession: "writer",
+    isDefault: true,
+    items: [
+      "Word count and brief requirements verified",
+      "Plagiarism and AI-detection check run",
+      "References and citations formatted to the agreed style",
+      "Headings and SEO metadata supplied if in scope",
+      "Round count vs. agreed revision rounds confirmed",
+      "Editable source file plus exported PDF/DOCX provided",
+      "Brand tone and terminology guide followed",
+      "Quotes and statistics dated and sourced"
+    ]
+  },
+  {
+    name: "Consultant \u2014 pre-flight engagement close",
+    profession: "consultant",
+    isDefault: true,
+    items: [
+      "Final deliverable reviewed against the signed scope",
+      "Recommendations separated from optional extras",
+      "All client data deleted from personal storage",
+      "Action log with owners and dates handed over",
+      "Follow-up and support window defined in writing",
+      "Final invoice issued with the payment terms stated",
+      "Case-study permission asked for",
+      "Testimonial and referral request sent"
+    ]
+  },
+  {
+    name: "General \u2014 before you send anything",
+    profession: "general",
+    isDefault: true,
+    items: [
+      "Deliverables match the agreed baseline scope",
+      "Outstanding balance settled or invoiced",
+      "Client visible to-do list cleared",
+      "Files named consistently and zipped if multiple",
+      "Cover message written with what changed and next steps",
+      "Backup copy archived locally"
+    ]
+  }
+];
+var DEFAULT_SCRIPTS = [
+  {
+    title: "Deposit request before kickoff",
+    category: "deposit_request",
+    tone: "polite",
+    level: 1,
+    language: "en",
+    body: [
+      "Hi {clientName},",
+      "",
+      "Thanks for approving the brief for {projectName}.",
+      "",
+      `To lock the schedule and start on {startDate}, I need the agreed {depositPercent}% deposit of {depositAmount}.`,
+      `Payment details: {paymentDetails}`,
+      "",
+      "As soon as it lands I will confirm the slot and begin with {firstStep}.",
+      "",
+      "Thanks!"
+    ].join("\n")
+  },
+  {
+    title: "Scope creep pushback",
+    category: "scope_creep",
+    tone: "professional",
+    level: 1,
+    language: "en",
+    body: [
+      "Hi {clientName},",
+      "",
+      `Happy to take on {extraRequest}.`,
+      "",
+      `That request sits outside the agreed scope for {projectName}, so I have logged it as a change request:`,
+      "\u2022 Extra effort: {extraHours} hours",
+      "\u2022 Extra cost: {extraCost}",
+      "\u2022 Timeline impact: {extraDays} working days",
+      "",
+      "If you approve the change I will schedule it immediately. Existing milestones stay on track either way.",
+      "",
+      "Thanks!"
+    ].join("\n")
+  },
+  {
+    title: "Late feedback notice",
+    category: "late_feedback",
+    tone: "polite",
+    level: 1,
+    language: "en",
+    body: [
+      "Hi {clientName},",
+      "",
+      `Quick status note on {projectName}: I have been waiting on {waitingFor} since {waitStartDate} \u2014 that is {waitDays} working days.`,
+      "",
+      "My delivery date moves day-for-day with client-side delays, so the current deadline shifts to {newDeadline}.",
+      "",
+      "If you can share {waitingFor} by {targetDate} we can hold the original date.",
+      "",
+      "Thanks!"
+    ].join("\n")
+  },
+  {
+    title: "Overdue invoice \xB7 Level 1 (gentle)",
+    category: "overdue_1",
+    tone: "friendly",
+    level: 1,
+    language: "en",
+    body: [
+      "Hi {clientName},",
+      "",
+      `Just a friendly nudge \u2014 invoice {invoiceNumber} for {amount} was due on {dueDate}.`,
+      "",
+      "If it has already been paid, please ignore this note. Otherwise, could you let me know the expected payment date?",
+      "",
+      "Happy to re-send the invoice if that helps.",
+      "",
+      "Thanks!"
+    ].join("\n")
+  },
+  {
+    title: "Overdue invoice \xB7 Level 2 (formal)",
+    category: "overdue_2",
+    tone: "formal",
+    level: 2,
+    language: "en",
+    body: [
+      "Dear {clientName},",
+      "",
+      `Invoice {invoiceNumber} for {amount}, issued on {issueDate}, remains unpaid and is now {daysOverdue} days overdue.`,
+      "",
+      `Please arrange payment by {newDueDate}. If there is an issue with the invoice or your internal process, tell me today and I will help resolve it.`,
+      "",
+      "Regards,",
+      "{yourName}"
+    ].join("\n")
+  },
+  {
+    title: "Overdue invoice \xB7 Level 3 (work stopped)",
+    category: "overdue_3",
+    tone: "formal",
+    level: 3,
+    language: "en",
+    body: [
+      "Dear {clientName},",
+      "",
+      `Despite previous reminders, invoice {invoiceNumber} for {amount} is now {daysOverdue} days overdue.`,
+      "",
+      "As stated in our agreement, all work on your account is paused from today and {projectName} deadlines are suspended until the balance is settled.",
+      `The outstanding amount is {amount}, payable to {paymentDetails}.`,
+      "",
+      "I am keen to complete the remaining scope as soon as this is resolved.",
+      "",
+      "Regards,",
+      "{yourName}"
+    ].join("\n")
+  },
+  {
+    title: "Project kickoff confirmation",
+    category: "kickoff",
+    tone: "polite",
+    level: 1,
+    language: "en",
+    body: [
+      "Hi {clientName},",
+      "",
+      `Great news \u2014 {projectName} is confirmed and starts on {startDate}.`,
+      "",
+      "What is included:",
+      "{deliverableList}",
+      "",
+      `Rounds of edits: {rounds}`,
+      `Final delivery: {deliveryDate}`,
+      `Total investment: {agreedAmount}`,
+      "",
+      `To keep us on schedule I will need {requiredInputs} by {inputDate}.`,
+      "",
+      "Thanks!"
+    ].join("\n")
+  },
+  {
+    title: "Draft delivery & feedback request",
+    category: "delivery",
+    tone: "polite",
+    level: 1,
+    language: "en",
+    body: [
+      "Hi {clientName},",
+      "",
+      `Here is the draft for {projectName}: {deliveryLink}`,
+      "",
+      `Please send all consolidated feedback in one message by {feedbackDeadline} so the schedule holds.`,
+      `This is round {roundNumber} of {rounds}.`,
+      "",
+      "Once you confirm, I move to {nextStage}.",
+      "",
+      "Thanks!"
+    ].join("\n")
+  },
+  {
+    title: "Final hand-over & testimonial request",
+    category: "handover",
+    tone: "warm",
+    level: 1,
+    language: "en",
+    body: [
+      "Hi {clientName},",
+      "",
+      `All final files for {projectName} are attached and access is live: {handoverLink}`,
+      "",
+      "Everything on the pre-flight checklist has been completed and the balance is settled \u2014 thank you.",
+      "",
+      "If you have two minutes, a short testimonial would mean a lot, and I would be glad to help with {nextPhase} whenever you are ready.",
+      "",
+      "Thanks again for a great project!"
+    ].join("\n")
+  },
+  {
+    title: "\u0637\u0644\u0628 \u0627\u0644\u062F\u0641\u0639\u0629 \u0627\u0644\u0645\u0642\u062F\u0645\u0629",
+    category: "deposit_request",
+    tone: "polite",
+    level: 1,
+    language: "ar",
+    body: [
+      "\u0645\u0631\u062D\u0628\u0627\u064B {clientName}\u060C",
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u0644\u0645\u0648\u0627\u0641\u0642\u062A\u0643 \u0639\u0644\u0649 \u0645\u062A\u0637\u0644\u0628\u0627\u062A \u0645\u0634\u0631\u0648\u0639 {projectName}.",
+      "",
+      `\u0644\u062A\u062B\u0628\u064A\u062A \u0627\u0644\u0645\u0648\u0639\u062F \u0648\u0627\u0644\u0628\u062F\u0621 \u0641\u064A {startDate}\u060C \u0623\u062D\u062A\u0627\u062C \u0627\u0644\u062F\u0641\u0639\u0629 \u0627\u0644\u0645\u0642\u062F\u0645\u0629 \u0627\u0644\u0645\u062A\u0641\u0642 \u0639\u0644\u064A\u0647\u0627 {depositPercent}% \u0648\u0642\u064A\u0645\u062A\u0647\u0627 {depositAmount}.`,
+      `\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u062F\u0641\u0639: {paymentDetails}`,
+      "",
+      "\u0628\u0645\u062C\u0631\u062F \u0648\u0635\u0648\u0644 \u0627\u0644\u062F\u0641\u0639\u0629 \u0633\u0623\u0624\u0643\u062F \u0627\u0644\u0645\u0648\u0639\u062F \u0648\u0623\u0628\u062F\u0623 \u0628\u0640 {firstStep}.",
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u0644\u0643!"
+    ].join("\n")
+  },
+  {
+    title: "\u0627\u0644\u0631\u062F \u0639\u0644\u0649 \u0627\u0644\u0637\u0644\u0628\u0627\u062A \u0627\u0644\u0625\u0636\u0627\u0641\u064A\u0629",
+    category: "scope_creep",
+    tone: "professional",
+    level: 1,
+    language: "ar",
+    body: [
+      "\u0645\u0631\u062D\u0628\u0627\u064B {clientName}\u060C",
+      "",
+      `\u064A\u0633\u0639\u062F\u0646\u064A \u062A\u0646\u0641\u064A\u0630 {extraRequest}.`,
+      "",
+      `\u0647\u0630\u0627 \u0627\u0644\u0637\u0644\u0628 \u062E\u0627\u0631\u062C \u0627\u0644\u0646\u0637\u0627\u0642 \u0627\u0644\u0645\u062A\u0641\u0642 \u0639\u0644\u064A\u0647 \u0641\u064A \u0645\u0634\u0631\u0648\u0639 {projectName}\u060C \u0644\u0630\u0644\u0643 \u0633\u062C\u0651\u0644\u062A\u0647 \u0643\u0637\u0644\u0628 \u062A\u063A\u064A\u064A\u0631:`,
+      "\u2022 \u0627\u0644\u062C\u0647\u062F \u0627\u0644\u0625\u0636\u0627\u0641\u064A: {extraHours} \u0633\u0627\u0639\u0629",
+      "\u2022 \u0627\u0644\u062A\u0643\u0644\u0641\u0629 \u0627\u0644\u0625\u0636\u0627\u0641\u064A\u0629: {extraCost}",
+      "\u2022 \u062A\u0623\u062B\u064A\u0631 \u0627\u0644\u0645\u062F\u0629: {extraDays} \u0623\u064A\u0627\u0645 \u0639\u0645\u0644",
+      "",
+      "\u0628\u0645\u062C\u0631\u062F \u0627\u0644\u0645\u0648\u0627\u0641\u0642\u0629 \u0633\u0623\u062C\u062F\u0648\u0644\u0647 \u0641\u0648\u0631\u0627\u064B\u060C \u0648\u062A\u0628\u0642\u0649 \u0627\u0644\u0645\u0631\u0627\u062D\u0644 \u0627\u0644\u062D\u0627\u0644\u064A\u0629 \u0643\u0645\u0627 \u0647\u064A.",
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u0644\u0643!"
+    ].join("\n")
+  },
+  {
+    title: "\u0625\u0634\u0639\u0627\u0631 \u062A\u0623\u062E\u0631 \u0627\u0644\u0645\u0644\u0627\u062D\u0638\u0627\u062A",
+    category: "late_feedback",
+    tone: "polite",
+    level: 1,
+    language: "ar",
+    body: [
+      "\u0645\u0631\u062D\u0628\u0627\u064B {clientName}\u060C",
+      "",
+      `\u0645\u0644\u0627\u062D\u0638\u0629 \u0633\u0631\u064A\u0639\u0629 \u0639\u0646 {projectName}: \u0623\u0646\u062A\u0638\u0631 {waitingFor} \u0645\u0646\u0630 {waitStartDate} \u0623\u064A {waitDays} \u0623\u064A\u0627\u0645 \u0639\u0645\u0644.`,
+      "",
+      "\u0645\u0648\u0639\u062F \u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u064A\u062A\u0623\u062E\u0631 \u064A\u0648\u0645\u0627\u064B \u0645\u0642\u0627\u0628\u0644 \u0643\u0644 \u064A\u0648\u0645 \u062A\u0623\u062E\u064A\u0631 \u0645\u0646 \u062C\u0647\u0629 \u0627\u0644\u0639\u0645\u064A\u0644\u060C \u0644\u0630\u0644\u0643 \u0627\u0644\u0645\u0648\u0639\u062F \u0627\u0644\u062D\u0627\u0644\u064A \u0623\u0635\u0628\u062D {newDeadline}.",
+      "",
+      `\u0625\u0630\u0627 \u0648\u0635\u0644\u0646\u064A {waitingFor} \u0642\u0628\u0644 {targetDate} \u0633\u0646\u062D\u0627\u0641\u0638 \u0639\u0644\u0649 \u0627\u0644\u0645\u0648\u0639\u062F \u0627\u0644\u0623\u0635\u0644\u064A.`,
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u0644\u0643!"
+    ].join("\n")
+  },
+  {
+    title: "\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u062A\u0623\u062E\u0631\u0629 \xB7 \u0627\u0644\u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u0623\u0648\u0644 (\u0648\u062F\u0651\u064A)",
+    category: "overdue_1",
+    tone: "friendly",
+    level: 1,
+    language: "ar",
+    body: [
+      "\u0645\u0631\u062D\u0628\u0627\u064B {clientName}\u060C",
+      "",
+      `\u062A\u0630\u0643\u064A\u0631 \u0648\u062F\u0651\u064A \u2014 \u0627\u0644\u0641\u0627\u062A\u0648\u0631\u0629 {invoiceNumber} \u0628\u0645\u0628\u0644\u063A {amount} \u0643\u0627\u0646 \u0645\u0648\u0639\u062F\u0647\u0627 {dueDate}.`,
+      "",
+      "\u0625\u0630\u0627 \u062A\u0645 \u0627\u0644\u062F\u0641\u0639 \u0628\u0627\u0644\u0641\u0639\u0644 \u0641\u062A\u062C\u0627\u0647\u0644 \u0647\u0630\u0647 \u0627\u0644\u0631\u0633\u0627\u0644\u0629\u060C \u0648\u0625\u0644\u0627 \u0641\u0623\u062E\u0628\u0631\u0646\u064A \u0628\u0627\u0644\u0645\u0648\u0639\u062F \u0627\u0644\u0645\u062A\u0648\u0642\u0639 \u0644\u0644\u062F\u0641\u0639 \u0645\u0646 \u0641\u0636\u0644\u0643.",
+      "",
+      "\u064A\u0645\u0643\u0646\u0646\u064A \u0625\u0639\u0627\u062F\u0629 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0641\u0627\u062A\u0648\u0631\u0629 \u0625\u0646 \u0643\u0627\u0646 \u0630\u0644\u0643 \u0645\u0641\u064A\u062F\u0627\u064B.",
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u0644\u0643!"
+    ].join("\n")
+  },
+  {
+    title: "\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u062A\u0623\u062E\u0631\u0629 \xB7 \u0627\u0644\u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u062B\u0627\u0646\u064A (\u0631\u0633\u0645\u064A)",
+    category: "overdue_2",
+    tone: "formal",
+    level: 2,
+    language: "ar",
+    body: [
+      "\u0639\u0632\u064A\u0632\u064A {clientName}\u060C",
+      "",
+      `\u0627\u0644\u0641\u0627\u062A\u0648\u0631\u0629 {invoiceNumber} \u0628\u0645\u0628\u0644\u063A {amount} \u0627\u0644\u0635\u0627\u062F\u0631\u0629 \u0628\u062A\u0627\u0631\u064A\u062E {issueDate} \u0644\u0645 \u062A\u064F\u0633\u062F\u064E\u0651\u062F \u0628\u0639\u062F\u060C \u0648\u0645\u062A\u0623\u062E\u0631\u0629 \u0627\u0644\u0622\u0646 {daysOverdue} \u064A\u0648\u0645\u0627\u064B.`,
+      "",
+      `\u0623\u0631\u062C\u0648 \u062A\u0631\u062A\u064A\u0628 \u0627\u0644\u062F\u0641\u0639 \u0642\u0628\u0644 {newDueDate}. \u0648\u0625\u0646 \u0643\u0627\u0646 \u0647\u0646\u0627\u0643 \u0623\u064A \u0625\u0634\u0643\u0627\u0644 \u0641\u064A \u0627\u0644\u0641\u0627\u062A\u0648\u0631\u0629 \u0623\u0648 \u0641\u064A \u0625\u062C\u0631\u0627\u0621\u0627\u062A\u0643\u0645 \u0627\u0644\u062F\u0627\u062E\u0644\u064A\u0629 \u0641\u0623\u062E\u0628\u0631\u0646\u064A \u0627\u0644\u064A\u0648\u0645 \u0648\u0633\u0623\u0633\u0627\u0639\u062F \u0641\u064A \u062D\u0644\u0647.`,
+      "",
+      "\u0645\u0639 \u0627\u0644\u062A\u0642\u062F\u064A\u0631\u060C",
+      "{yourName}"
+    ].join("\n")
+  },
+  {
+    title: "\u0641\u0627\u062A\u0648\u0631\u0629 \u0645\u062A\u0623\u062E\u0631\u0629 \xB7 \u0627\u0644\u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u062B\u0627\u0644\u062B (\u0625\u064A\u0642\u0627\u0641 \u0627\u0644\u0639\u0645\u0644)",
+    category: "overdue_3",
+    tone: "formal",
+    level: 3,
+    language: "ar",
+    body: [
+      "\u0639\u0632\u064A\u0632\u064A {clientName}\u060C",
+      "",
+      `\u0631\u063A\u0645 \u0627\u0644\u062A\u0630\u0643\u064A\u0631\u0627\u062A \u0627\u0644\u0633\u0627\u0628\u0642\u0629\u060C \u0627\u0644\u0641\u0627\u062A\u0648\u0631\u0629 {invoiceNumber} \u0628\u0645\u0628\u0644\u063A {amount} \u0645\u062A\u0623\u062E\u0631\u0629 \u0627\u0644\u0622\u0646 {daysOverdue} \u064A\u0648\u0645\u0627\u064B.`,
+      "",
+      `\u0648\u0641\u0642\u0627\u064B \u0644\u0627\u062A\u0641\u0627\u0642\u0646\u0627\u060C \u062A\u0645 \u0625\u064A\u0642\u0627\u0641 \u062C\u0645\u064A\u0639 \u0627\u0644\u0623\u0639\u0645\u0627\u0644 \u0639\u0644\u0649 \u062D\u0633\u0627\u0628\u0643\u0645 \u0627\u0639\u062A\u0628\u0627\u0631\u0627\u064B \u0645\u0646 \u0627\u0644\u064A\u0648\u0645 \u0648\u062A\u0645 \u062A\u0639\u0644\u064A\u0642 \u0645\u0648\u0627\u0639\u064A\u062F {projectName} \u062D\u062A\u0649 \u062A\u0633\u0648\u064A\u0629 \u0627\u0644\u0631\u0635\u064A\u062F.`,
+      `\u0627\u0644\u0645\u0628\u0644\u063A \u0627\u0644\u0645\u0633\u062A\u062D\u0642 {amount} \u0648\u064A\u0645\u0643\u0646 \u062F\u0641\u0639\u0647 \u0639\u0628\u0631 {paymentDetails}.`,
+      "",
+      "\u0623\u062A\u0645\u0646\u0649 \u0625\u0643\u0645\u0627\u0644 \u0645\u0627 \u062A\u0628\u0642\u0649 \u0645\u0646 \u0627\u0644\u0639\u0645\u0644 \u0641\u0648\u0631 \u062A\u0633\u0648\u064A\u0629 \u0627\u0644\u0623\u0645\u0631.",
+      "",
+      "\u0645\u0639 \u0627\u0644\u062A\u0642\u062F\u064A\u0631\u060C",
+      "{yourName}"
+    ].join("\n")
+  },
+  {
+    title: "\u062A\u0623\u0643\u064A\u062F \u0628\u062F\u0621 \u0627\u0644\u0645\u0634\u0631\u0648\u0639",
+    category: "kickoff",
+    tone: "polite",
+    level: 1,
+    language: "ar",
+    body: [
+      "\u0645\u0631\u062D\u0628\u0627\u064B {clientName}\u060C",
+      "",
+      `\u062E\u0628\u0631 \u062C\u064A\u062F \u2014 \u062A\u0645 \u062A\u0623\u0643\u064A\u062F \u0645\u0634\u0631\u0648\u0639 {projectName} \u0648\u064A\u0628\u062F\u0623 \u0641\u064A {startDate}.`,
+      "",
+      "\u0645\u0627 \u064A\u0634\u0645\u0644\u0647 \u0627\u0644\u0645\u0634\u0631\u0648\u0639:",
+      "{deliverableList}",
+      "",
+      `\u062C\u0648\u0644\u0627\u062A \u0627\u0644\u062A\u0639\u062F\u064A\u0644: {rounds}`,
+      `\u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0646\u0647\u0627\u0626\u064A: {deliveryDate}`,
+      `\u0627\u0644\u0642\u064A\u0645\u0629 \u0627\u0644\u0625\u062C\u0645\u0627\u0644\u064A\u0629: {agreedAmount}`,
+      "",
+      `\u0648\u0644\u0644\u062D\u0641\u0627\u0638 \u0639\u0644\u0649 \u0627\u0644\u062C\u062F\u0648\u0644 \u0623\u062D\u062A\u0627\u062C {requiredInputs} \u0642\u0628\u0644 {inputDate}.`,
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u0644\u0643!"
+    ].join("\n")
+  },
+  {
+    title: "\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0645\u0633\u0648\u062F\u0629 \u0648\u0637\u0644\u0628 \u0627\u0644\u0645\u0644\u0627\u062D\u0638\u0627\u062A",
+    category: "delivery",
+    tone: "polite",
+    level: 1,
+    language: "ar",
+    body: [
+      "\u0645\u0631\u062D\u0628\u0627\u064B {clientName}\u060C",
+      "",
+      `\u0647\u0630\u0647 \u0645\u0633\u0648\u062F\u0629 {projectName}: {deliveryLink}`,
+      "",
+      `\u0623\u0631\u062C\u0648 \u0625\u0631\u0633\u0627\u0644 \u0643\u0644 \u0627\u0644\u0645\u0644\u0627\u062D\u0638\u0627\u062A \u0641\u064A \u0631\u0633\u0627\u0644\u0629 \u0648\u0627\u062D\u062F\u0629 \u0642\u0628\u0644 {feedbackDeadline} \u0644\u0644\u062D\u0641\u0627\u0638 \u0639\u0644\u0649 \u0627\u0644\u062C\u062F\u0648\u0644.`,
+      `\u0647\u0630\u0647 \u0627\u0644\u062C\u0648\u0644\u0629 {roundNumber} \u0645\u0646 {rounds}.`,
+      "",
+      "\u0628\u0639\u062F \u0645\u0648\u0627\u0641\u0642\u062A\u0643 \u0623\u0646\u062A\u0642\u0644 \u0625\u0644\u0649 {nextStage}.",
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u0644\u0643!"
+    ].join("\n")
+  },
+  {
+    title: "\u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0627\u0644\u0646\u0647\u0627\u0626\u064A \u0648\u0637\u0644\u0628 \u0627\u0644\u062A\u0648\u0635\u064A\u0629",
+    category: "handover",
+    tone: "warm",
+    level: 1,
+    language: "ar",
+    body: [
+      "\u0645\u0631\u062D\u0628\u0627\u064B {clientName}\u060C",
+      "",
+      `\u062C\u0645\u064A\u0639 \u0627\u0644\u0645\u0644\u0641\u0627\u062A \u0627\u0644\u0646\u0647\u0627\u0626\u064A\u0629 \u0644\u0645\u0634\u0631\u0648\u0639 {projectName} \u0645\u0631\u0641\u0642\u0629 \u0648\u0627\u0644\u0648\u0635\u0648\u0644 \u0645\u062A\u0627\u062D: {handoverLink}`,
+      "",
+      "\u062A\u0645 \u0625\u0646\u062C\u0627\u0632 \u0643\u0644 \u0628\u0646\u0648\u062F \u0642\u0627\u0626\u0645\u0629 \u0645\u0627 \u0642\u0628\u0644 \u0627\u0644\u062A\u0633\u0644\u064A\u0645 \u0648\u062A\u0645\u062A \u062A\u0633\u0648\u064A\u0629 \u0627\u0644\u0631\u0635\u064A\u062F \u2014 \u0634\u0643\u0631\u0627\u064B \u0644\u0643.",
+      "",
+      "\u0625\u0646 \u0633\u0645\u062D \u0648\u0642\u062A\u0643\u060C \u0633\u0623\u0642\u062F\u0651\u0631 \u0643\u0644\u0645\u0629 \u062A\u0648\u0635\u064A\u0629 \u0642\u0635\u064A\u0631\u0629\u060C \u0648\u064A\u0633\u0639\u062F\u0646\u064A \u0627\u0644\u0645\u0633\u0627\u0639\u062F\u0629 \u0641\u064A {nextPhase} \u0645\u062A\u0649 \u0623\u0631\u062F\u062A.",
+      "",
+      "\u0634\u0643\u0631\u0627\u064B \u062C\u0632\u064A\u0644\u0627\u064B \u0639\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0645\u0634\u0631\u0648\u0639 \u0627\u0644\u0631\u0627\u0626\u0639!"
+    ].join("\n")
+  }
+];
+
+// src/plugins/personal/handlers/playbook.ts
+var log141 = createLogger("Personal:Playbook");
+function registerPlaybookHandlers(prisma2) {
+  ipcMain.handle("personal:playbook:getScripts", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.category)
+        where.category = opts.category;
+      if (opts?.language)
+        where.language = opts.language;
+      if (opts?.search) {
+        where.OR = [{ title: { contains: opts.search } }, { body: { contains: opts.search } }];
+      }
+      const scripts = await prisma2.personalScript.findMany({
+        where,
+        orderBy: [{ category: "asc" }, { level: "asc" }, { title: "asc" }]
+      });
+      return scripts.map((s) => ({
+        ...s,
+        placeholderKeys: parseJsonArray(s.placeholderKeys)
+      }));
+    } catch (err) {
+      log141.error("playbook:getScripts", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:playbook:getById", async (_e, id) => {
+    try {
+      const script = await prisma2.personalScript.findUnique({ where: { id } });
+      if (!script)
+        return null;
+      return { ...script, placeholderKeys: parseJsonArray(script.placeholderKeys) };
+    } catch (err) {
+      log141.error("playbook:getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:playbook:create", async (_e, data) => {
+    try {
+      const body = String(data?.body ?? "");
+      return await prisma2.personalScript.create({
+        data: {
+          title: String(data?.title ?? "").trim(),
+          category: data?.category || "general",
+          tone: data?.tone || "polite",
+          level: Math.round(num(data?.level, 1)),
+          body,
+          placeholderKeys: JSON.stringify(extractPlaceholders(body)),
+          language: data?.language || "en",
+          isBuiltIn: false
+        }
+      });
+    } catch (err) {
+      log141.error("playbook:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:playbook:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      const patch = { ...rest };
+      if ("body" in patch)
+        patch.placeholderKeys = JSON.stringify(extractPlaceholders(String(patch.body ?? "")));
+      if ("level" in patch)
+        patch.level = Math.round(num(patch.level, 1));
+      return await prisma2.personalScript.update({ where: { id }, data: patch });
+    } catch (err) {
+      log141.error("playbook:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:playbook:delete", async (_e, id) => {
+    try {
+      const script = await prisma2.personalScript.findUnique({ where: { id } });
+      if (script?.isBuiltIn)
+        throw new Error("Built-in scripts cannot be deleted \u2014 edit or duplicate them instead");
+      return await prisma2.personalScript.delete({ where: { id } });
+    } catch (err) {
+      log141.error("playbook:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:playbook:render", async (_e, data) => {
+    try {
+      const script = await prisma2.personalScript.findUnique({ where: { id: data?.id } });
+      if (!script)
+        throw new Error("Script not found");
+      const values = data?.values ?? {};
+      let text = script.body;
+      const missing = [];
+      for (const key of parseJsonArray(script.placeholderKeys)) {
+        const replacement = values[key];
+        if (replacement === void 0 || replacement === "") {
+          if (!missing.includes(key))
+            missing.push(key);
+          continue;
+        }
+        text = text.split(`{${key}}`).join(replacement);
+      }
+      await prisma2.personalScript.update({
+        where: { id: script.id },
+        data: { usageCount: num(script.usageCount) + 1, lastUsedAt: /* @__PURE__ */ new Date() }
+      });
+      return { text, missing, title: script.title, category: script.category };
+    } catch (err) {
+      log141.error("playbook:render", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:playbook:getCategories", async () => {
+    try {
+      const scripts = await prisma2.personalScript.findMany({ select: { category: true, language: true, usageCount: true } });
+      return SCRIPT_CATEGORIES.map((category) => ({
+        ...category,
+        count: scripts.filter((s) => s.category === category.id).length,
+        usageCount: scripts.filter((s) => s.category === category.id).reduce((sum, s) => sum + num(s.usageCount), 0)
+      }));
+    } catch (err) {
+      log141.error("playbook:getCategories", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:playbook:seedDefaults", async (_e, opts) => {
+    try {
+      const existing = await prisma2.personalScript.findMany({ select: { title: true, language: true } });
+      const known = new Set(existing.map((s) => `${s.title}::${s.language}`));
+      let created = 0;
+      for (const script of DEFAULT_SCRIPTS) {
+        if (!opts?.force && known.has(`${script.title}::${script.language}`))
+          continue;
+        await prisma2.personalScript.create({
+          data: {
+            title: script.title,
+            category: script.category,
+            tone: script.tone,
+            level: script.level,
+            body: script.body,
+            placeholderKeys: JSON.stringify(extractPlaceholders(script.body)),
+            language: script.language,
+            isBuiltIn: true
+          }
+        });
+        created += 1;
+      }
+      return { created, total: DEFAULT_SCRIPTS.length };
+    } catch (err) {
+      log141.error("playbook:seedDefaults", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:notes:getAll", async (_e, opts) => {
+    try {
+      const where = {};
+      if (opts?.projectId)
+        where.projectId = opts.projectId;
+      if (opts?.clientId)
+        where.clientId = opts.clientId;
+      if (opts?.kind)
+        where.kind = opts.kind;
+      if (opts?.pinnedOnly)
+        where.isPinned = true;
+      if (opts?.search) {
+        where.OR = [{ title: { contains: opts.search } }, { content: { contains: opts.search } }, { tags: { contains: opts.search } }];
+      }
+      return await prisma2.personalNote.findMany({
+        where,
+        include: {
+          project: { select: { id: true, code: true, title: true } },
+          client: { select: { id: true, name: true } }
+        },
+        orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }]
+      });
+    } catch (err) {
+      log141.error("notes:getAll", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:notes:getById", async (_e, id) => {
+    try {
+      return await prisma2.personalNote.findUnique({
+        where: { id },
+        include: {
+          project: { select: { id: true, code: true, title: true } },
+          client: { select: { id: true, name: true } }
+        }
+      });
+    } catch (err) {
+      log141.error("notes:getById", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:notes:create", async (_e, data) => {
+    try {
+      return await prisma2.personalNote.create({
+        data: {
+          projectId: data?.projectId || null,
+          clientId: data?.clientId || null,
+          title: String(data?.title ?? "").trim(),
+          content: data?.content ?? "",
+          kind: data?.kind || "note",
+          isPinned: data?.isPinned ?? false,
+          tags: data?.tags || null
+        },
+        include: {
+          project: { select: { id: true, code: true, title: true } },
+          client: { select: { id: true, name: true } }
+        }
+      });
+    } catch (err) {
+      log141.error("notes:create", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:notes:update", async (_e, data) => {
+    try {
+      const { id, ...rest } = data ?? {};
+      return await prisma2.personalNote.update({
+        where: { id },
+        data: rest,
+        include: {
+          project: { select: { id: true, code: true, title: true } },
+          client: { select: { id: true, name: true } }
+        }
+      });
+    } catch (err) {
+      log141.error("notes:update", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:notes:delete", async (_e, id) => {
+    try {
+      return await prisma2.personalNote.delete({ where: { id } });
+    } catch (err) {
+      log141.error("notes:delete", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:notes:togglePin", async (_e, id) => {
+    try {
+      const note = await prisma2.personalNote.findUnique({ where: { id } });
+      if (!note)
+        throw new Error("Note not found");
+      return await prisma2.personalNote.update({ where: { id }, data: { isPinned: !note.isPinned } });
+    } catch (err) {
+      log141.error("notes:togglePin", err);
+      throw err;
+    }
+  });
+}
+function extractPlaceholders(body) {
+  const found = /* @__PURE__ */ new Set();
+  const regex = /\{([a-zA-Z0-9_]+)\}/g;
+  let match;
+  while ((match = regex.exec(body)) !== null)
+    found.add(match[1]);
+  return Array.from(found);
+}
+
+// src/plugins/personal/handlers/meta.ts
+init_electron_node();
+var log142 = createLogger("Personal:Meta");
+function registerMetaHandlers(prisma2) {
+  ipcMain.handle("personal:meta:getConfig", async () => {
+    try {
+      const [templates, clientCount, projectCount] = await Promise.all([
+        prisma2.personalChecklistTemplate.findMany({ orderBy: [{ isDefault: "desc" }, { name: "asc" }] }),
+        prisma2.personalClient.count({ where: { isArchived: false } }),
+        prisma2.personalProject.count()
+      ]);
+      return {
+        stages: PIPELINE_STAGES,
+        statuses: PROJECT_STATUSES,
+        pricingTypes: PRICING_TYPES,
+        taskStatuses: TASK_STATUSES,
+        taskTypes: TASK_TYPES,
+        waitReasons: WAIT_REASONS,
+        changeRequestStatuses: CHANGE_REQUEST_STATUSES,
+        invoiceKinds: INVOICE_KINDS,
+        invoiceStatuses: INVOICE_STATUSES2,
+        expenseCategories: EXPENSE_CATEGORIES,
+        subscriptionCategories: SUBSCRIPTION_CATEGORIES,
+        billingCycles: BILLING_CYCLES,
+        usageLevels: USAGE_LEVELS,
+        blackoutKinds: BLACKOUT_KINDS,
+        focusKinds: FOCUS_KINDS,
+        noteKinds: NOTE_KINDS,
+        scriptCategories: SCRIPT_CATEGORIES,
+        professions: PROFESSIONS,
+        checklistTemplates: templates.map((t) => ({
+          ...t,
+          items: parseJsonArray(t.itemsJson)
+        })),
+        counts: { clients: clientCount, projects: projectCount }
+      };
+    } catch (err) {
+      log142.error("meta:getConfig", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:meta:seedChecklists", async (_e, opts) => {
+    try {
+      const existing = await prisma2.personalChecklistTemplate.findMany({ select: { name: true } });
+      const known = new Set(existing.map((t) => t.name));
+      let created = 0;
+      for (const template of DEFAULT_CHECKLIST_TEMPLATES) {
+        if (!opts?.force && known.has(template.name))
+          continue;
+        await prisma2.personalChecklistTemplate.create({
+          data: {
+            name: template.name,
+            profession: template.profession,
+            isDefault: template.isDefault,
+            itemsJson: JSON.stringify(template.items)
+          }
+        });
+        created += 1;
+      }
+      const total = await prisma2.personalChecklistTemplate.count();
+      return { created, total };
+    } catch (err) {
+      log142.error("meta:seedChecklists", err);
+      throw err;
+    }
+  });
+  ipcMain.handle("personal:meta:getCounts", async () => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const todayStart = new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0));
+      const todayEnd = new Date((/* @__PURE__ */ new Date()).setHours(23, 59, 59, 999));
+      const inSevenDays = new Date(Date.now() + 7 * 864e5);
+      const [
+        openTasks,
+        dueTodayTasks,
+        overdueTasks,
+        dailyThree,
+        activeProjects,
+        overdueInvoices,
+        openWaits,
+        pendingRequests,
+        runningSession,
+        upcomingRenewals,
+        blackoutsUpcoming
+      ] = await Promise.all([
+        prisma2.personalTask.count({ where: { status: { notIn: ["done", "cancelled"] } } }),
+        prisma2.personalTask.count({
+          where: { status: { notIn: ["done", "cancelled"] }, dueDate: { gte: todayStart, lte: todayEnd } }
+        }),
+        prisma2.personalTask.count({
+          where: { status: { notIn: ["done", "cancelled"] }, dueDate: { lt: todayStart } }
+        }),
+        prisma2.personalTask.count({ where: { isDailyThree: true, status: { notIn: ["done", "cancelled"] } } }),
+        prisma2.personalProject.count({ where: { status: "active" } }),
+        prisma2.personalInvoice.count({
+          where: { status: { in: ["sent", "partial", "overdue"] }, dueAt: { lt: now } }
+        }),
+        prisma2.personalWaitLog.count({ where: { endedAt: null } }),
+        prisma2.personalChangeRequest.count({ where: { status: { in: ["draft", "quoted"] } } }),
+        prisma2.personalFocusSession.findFirst({ where: { endedAt: null } }),
+        prisma2.personalSubscription.count({ where: { isActive: true, nextRenewalAt: { lte: inSevenDays } } }),
+        prisma2.personalBlackout.count({ where: { endDate: { gte: now } } })
+      ]);
+      const pendingPayments = await prisma2.personalInvoice.findMany({
+        where: { status: { in: ["sent", "partial", "overdue"] } },
+        include: { payments: true }
+      });
+      const collectable = pendingPayments.reduce((sum, inv) => {
+        const paid = inv.payments.filter((p) => !p.refundedAt).reduce((s, p) => s + num(p.amount), 0);
+        return sum + Math.max(0, num(inv.amount) - paid);
+      }, 0);
+      return {
+        tasks: { open: openTasks, dueToday: dueTodayTasks, overdue: overdueTasks, dailyThree },
+        projects: { active: activeProjects },
+        invoices: { overdue: overdueInvoices, collectable: Math.round(collectable * 100) / 100 },
+        waits: { open: openWaits },
+        changeRequests: { pending: pendingRequests },
+        focus: { running: Boolean(runningSession), runningSince: runningSession?.startedAt ?? null },
+        subscriptions: { renewingThisWeek: upcomingRenewals },
+        blackouts: { upcoming: blackoutsUpcoming }
+      };
+    } catch (err) {
+      log142.error("meta:getCounts", err);
+      throw err;
+    }
+  });
+}
+
+// src/plugins/personal/handlers/overview.ts
+init_electron_node();
+var log143 = createLogger("Personal:Overview");
+var DAILY_THREE_LIMIT2 = 3;
+function registerOverviewHandlers3(prisma2) {
+  ipcMain.handle("personal:overview:getDashboard", async () => {
+    try {
+      const now = /* @__PURE__ */ new Date();
+      const today = startOfDay(now);
+      const week = weekBounds(now);
+      const month = monthBounds(now);
+      const [
+        rateProfile,
+        clientCount,
+        activeProjects,
+        dailyThree,
+        boardTasks,
+        activeSession,
+        todaySessions,
+        weekSessions,
+        projectDeadlines,
+        openWaits,
+        pendingRequests,
+        invoices,
+        subs,
+        upcomingRenewalRows,
+        blackouts,
+        weekWorkloads,
+        todayWorkLog,
+        monthSessions,
+        checklistPendingRows
+      ] = await Promise.all([
+        prisma2.personalRateProfile.findUnique({ where: { id: "default" } }),
+        prisma2.personalClient.count({ where: { isArchived: false } }),
+        prisma2.personalProject.findMany({ where: { status: "active" } }),
+        prisma2.personalTask.findMany({
+          where: { isDailyThree: true, status: { notIn: ["done", "cancelled"] } },
+          orderBy: [{ priority: "asc" }, { createdAt: "asc" }]
+        }),
+        prisma2.personalTask.findMany({
+          where: { status: { in: ["today", "in_progress", "blocked"] } },
+          orderBy: [{ priority: "asc" }, { dueDate: "asc" }],
+          take: 40
+        }),
+        prisma2.personalFocusSession.findFirst({ where: { endedAt: null }, orderBy: { startedAt: "desc" } }),
+        prisma2.personalFocusSession.findMany({ where: { startedAt: { gte: today } } }),
+        prisma2.personalFocusSession.findMany({ where: { startedAt: { gte: week.start, lte: week.end } } }),
+        prisma2.personalProject.findMany({
+          where: { status: "active", adjustedDueDate: { not: null } },
+          include: { client: { select: { id: true, name: true } } },
+          orderBy: { adjustedDueDate: "asc" },
+          take: 8
+        }),
+        prisma2.personalWaitLog.findMany({
+          where: { endedAt: null },
+          include: { project: { select: { id: true, code: true, title: true, clientId: true } } },
+          orderBy: { startedAt: "asc" }
+        }),
+        prisma2.personalChangeRequest.findMany({
+          where: { status: { in: ["draft", "quoted", "approved"] } },
+          include: { project: { select: { id: true, code: true, title: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 10
+        }),
+        prisma2.personalInvoice.findMany({
+          where: { status: { not: "void" } },
+          include: { payments: true, project: { select: { stage: true } } },
+          orderBy: { issuedAt: "desc" }
+        }),
+        prisma2.personalSubscription.findMany({ where: { isActive: true } }),
+        prisma2.personalSubscription.findMany({
+          where: { isActive: true, nextRenewalAt: { gte: now, lte: addDays(now, 14) } },
+          orderBy: { nextRenewalAt: "asc" }
+        }),
+        prisma2.personalBlackout.findMany({ where: { endDate: { gte: now } }, orderBy: { startDate: "asc" } }),
+        prisma2.personalWorkload.findMany({ where: { day: { gte: week.start, lte: week.end } } }),
+        prisma2.personalWorkLog.findUnique({ where: { day: today } }),
+        prisma2.personalFocusSession.findMany({
+          where: { startedAt: { gte: month.start, lte: month.end }, endedAt: { not: null }, billable: true }
+        }),
+        prisma2.personalChecklistItem.findMany({
+          where: { isDone: false, isBlocking: true },
+          select: { projectId: true }
+        })
+      ]);
+      const escrow = splitEscrow(
+        invoices.map((inv) => ({
+          id: inv.id,
+          number: inv.number,
+          kind: inv.kind,
+          amount: num(inv.amount),
+          status: inv.status,
+          projectStage: inv.project?.stage
+        })),
+        invoices.flatMap(
+          (inv) => inv.payments.filter((p) => !p.refundedAt).map((p) => ({ invoiceId: inv.id, amount: num(p.amount), isDeposit: p.isDeposit }))
+        )
+      );
+      const monthCollected = invoices.flatMap((inv) => inv.payments).filter((p) => !p.refundedAt && new Date(p.paidAt) >= month.start && new Date(p.paidAt) <= month.end).reduce((sum, p) => sum + num(p.amount), 0);
+      const overdueInvoices = invoices.filter((inv) => ["sent", "partial"].includes(inv.status) && inv.dueAt && new Date(inv.dueAt) < now).map((inv) => ({
+        id: inv.id,
+        number: inv.number,
+        clientId: inv.clientId,
+        dueAt: inv.dueAt,
+        daysOverdue: Math.floor((now.getTime() - new Date(inv.dueAt).getTime()) / 864e5),
+        outstanding: round22(
+          num(inv.amount) - inv.payments.filter((p) => !p.refundedAt).reduce((s, p) => s + num(p.amount), 0)
+        )
+      })).sort((a, b) => b.daysOverdue - a.daysOverdue);
+      const outstanding = invoices.filter((inv) => ["sent", "partial", "overdue"].includes(inv.status)).reduce((sum, inv) => {
+        const paid = inv.payments.filter((p) => !p.refundedAt).reduce((s, p) => s + num(p.amount), 0);
+        return sum + Math.max(0, num(inv.amount) - paid);
+      }, 0);
+      const taxVault = await prisma2.personalTaxVaultEntry.findMany({ where: { releasedAt: null } });
+      const taxReserved = taxVault.reduce((sum, e) => sum + num(e.amount), 0);
+      const taxReservePercent = num(rateProfile?.taxReservePercent, 25);
+      const engine = computeRateEngine(rateProfile ?? {});
+      const dailyCapacityMinutes = num(rateProfile?.weeklyCapacityHours, 40) / 5 * 60;
+      const weekPlanned = weekWorkloads.reduce((sum, w) => sum + num(w.plannedMinutes), 0);
+      const weekActual = weekWorkloads.reduce((sum, w) => sum + num(w.actualMinutes), 0);
+      const weekCapacityMinutes = num(rateProfile?.weeklyCapacityHours, 40) * 60;
+      const weekReading = capacityReading(weekPlanned, weekCapacityMinutes);
+      const workloadByDay = {};
+      for (const w of weekWorkloads) {
+        const key = dayKey(w.day);
+        workloadByDay[key] = (workloadByDay[key] ?? 0) + num(w.plannedMinutes);
+      }
+      const capacityDays = [];
+      for (let i = 0; i < 7; i += 1) {
+        const day = addDays(week.start, i);
+        const key = dayKey(day);
+        const blackout = blackouts.find(
+          (b) => day >= startOfDay(b.startDate) && day <= new Date(new Date(b.endDate).setHours(23, 59, 59, 999))
+        );
+        const available = blackout ? 0 : dailyCapacityMinutes;
+        const reading = capacityReading(workloadByDay[key] ?? 0, available);
+        capacityDays.push({
+          day: key,
+          plannedMinutes: reading.plannedMinutes,
+          availableMinutes: reading.availableMinutes,
+          level: reading.level,
+          usedPercent: reading.usedPercent,
+          isBlackout: Boolean(blackout)
+        });
+      }
+      const todayMinutes = todaySessions.reduce(
+        (sum, s) => sum + (s.endedAt ? num(s.actualMinutes) : Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 6e4)),
+        0
+      );
+      const todayBillableMinutes = todaySessions.filter((s) => s.billable).reduce(
+        (sum, s) => sum + (s.endedAt ? num(s.actualMinutes) : Math.floor((now.getTime() - new Date(s.startedAt).getTime()) / 6e4)),
+        0
+      );
+      const weekMinutes = weekSessions.filter((s) => s.endedAt && s.kind !== "break").reduce((sum, s) => sum + num(s.actualMinutes), 0);
+      const dailyTargetMinutes = num(rateProfile?.targetBillableHoursPerWeek, 25) / 5 * 60;
+      let runningTimer = null;
+      if (activeSession) {
+        const elapsed = Math.max(0, Math.floor((now.getTime() - new Date(activeSession.startedAt).getTime()) / 6e4));
+        runningTimer = {
+          id: activeSession.id,
+          kind: activeSession.kind,
+          projectId: activeSession.projectId ?? null,
+          taskId: activeSession.taskId ?? null,
+          startedAt: activeSession.startedAt,
+          plannedMinutes: num(activeSession.plannedMinutes),
+          elapsedMinutes: elapsed,
+          remainingMinutes: Math.max(0, num(activeSession.plannedMinutes) - elapsed)
+        };
+      }
+      const subAudit = auditSubscriptions(
+        subs.map((s) => ({
+          id: s.id,
+          name: s.name,
+          amount: num(s.amount),
+          billingCycle: s.billingCycle,
+          isActive: s.isActive,
+          isEssential: s.isEssential,
+          usageLevel: s.usageLevel
+        }))
+      );
+      const monthMinutes = monthSessions.reduce((sum, s) => sum + num(s.actualMinutes), 0);
+      const realRate = realHourlyRate(monthCollected, monthMinutes, engine.baselineHourlyRate);
+      const deadlines = projectDeadlines.map((p) => {
+        const due = new Date(p.adjustedDueDate);
+        const daysLeft = Math.ceil((due.getTime() - today.getTime()) / 864e5);
+        return {
+          id: p.id,
+          code: p.code,
+          title: p.title,
+          clientName: p.client?.name ?? null,
+          stage: p.stage,
+          dueAt: p.adjustedDueDate,
+          originalDueAt: p.dueDate,
+          daysLeft,
+          isOverdue: daysLeft < 0,
+          checklistPending: 0
+        };
+      });
+      const pendingByProject = /* @__PURE__ */ new Map();
+      for (const row of checklistPendingRows) {
+        pendingByProject.set(row.projectId, (pendingByProject.get(row.projectId) ?? 0) + 1);
+      }
+      for (const d of deadlines)
+        d.checklistPending = pendingByProject.get(d.id) ?? 0;
+      const waits = openWaits.map((w) => ({
+        id: w.id,
+        projectId: w.projectId,
+        projectCode: w.project?.code ?? null,
+        projectTitle: w.project?.title ?? null,
+        reason: w.reason,
+        startedAt: w.startedAt,
+        days: Math.max(0, Math.floor((now.getTime() - new Date(w.startedAt).getTime()) / 864e5)),
+        shiftDeadline: w.shiftDeadline
+      }));
+      const totalWaitingDays = waits.reduce((sum, w) => sum + w.days, 0);
+      const alerts = [];
+      if (weekReading.level !== "clear") {
+        alerts.push({
+          level: weekReading.level === "red" ? "danger" : "warn",
+          area: "capacity",
+          message: weekReading.level === "red" ? `Week overbooked by ${round22(weekReading.overbookedMinutes / 60)}h \u2014 move or decline work.` : `Week at ${weekReading.usedPercent}% of capacity.`,
+          count: 1
+        });
+      }
+      if (overdueInvoices.length) {
+        alerts.push({
+          level: "danger",
+          area: "money",
+          message: `${overdueInvoices.length} overdue invoice(s) worth ${round22(overdueInvoices.reduce((s, i) => s + i.outstanding, 0))}.`,
+          count: overdueInvoices.length
+        });
+      }
+      if (waits.length) {
+        alerts.push({
+          level: totalWaitingDays >= 7 ? "danger" : "warn",
+          area: "client",
+          message: `${waits.length} client wait(s) open \u2014 ${totalWaitingDays} day(s) of blocked time to bill back.`,
+          count: waits.length
+        });
+      }
+      const dueSoon = deadlines.filter((d) => !d.isOverdue && d.daysLeft <= 3).length;
+      if (dueSoon) {
+        alerts.push({ level: "warn", area: "delivery", message: `${dueSoon} project(s) due within 3 days.`, count: dueSoon });
+      }
+      const overdueDeadlines = deadlines.filter((d) => d.isOverdue).length;
+      if (overdueDeadlines) {
+        alerts.push({ level: "danger", area: "delivery", message: `${overdueDeadlines} project(s) past the delivery date.`, count: overdueDeadlines });
+      }
+      if (pendingRequests.length) {
+        alerts.push({
+          level: "info",
+          area: "scope",
+          message: `${pendingRequests.length} change request(s) awaiting a client decision.`,
+          count: pendingRequests.length
+        });
+      }
+      if (subAudit.cancelCandidates.length) {
+        alerts.push({
+          level: "info",
+          area: "money",
+          message: `${subAudit.cancelCandidates.length} subscription(s) flagged review/cancel.`,
+          count: subAudit.cancelCandidates.length
+        });
+      }
+      const recordedToday = todayMinutes > 0;
+      const focusRemaining = recordedToday ? Math.max(0, Math.floor(dailyTargetMinutes - todayMinutes)) : Math.floor(dailyTargetMinutes);
+      return {
+        generatedAt: now,
+        today: dayKey(now),
+        limits: { dailyThree: DAILY_THREE_LIMIT2 },
+        clients: { active: clientCount },
+        projects: {
+          active: activeProjects.length,
+          byStage: activeProjects.reduce((acc, p) => {
+            acc[p.stage] = (acc[p.stage] ?? 0) + 1;
+            return acc;
+          }, {}),
+          totalAgreed: round22(activeProjects.reduce((sum, p) => sum + num(p.agreedAmount), 0)),
+          totalEstimatedHours: round22(activeProjects.reduce((sum, p) => sum + num(p.estimatedHours), 0))
+        },
+        dailyThree: {
+          items: dailyThree.map((t) => ({
+            id: t.id,
+            title: t.title,
+            status: t.status,
+            type: t.type,
+            priority: t.priority,
+            estimateMinutes: num(t.estimateMinutes),
+            dueDate: t.dueDate,
+            projectId: t.projectId,
+            clientId: t.clientId
+          })),
+          slotsFree: DAILY_THREE_LIMIT2 - dailyThree.length,
+          suggestions: boardTasks.filter((t) => !t.isDailyThree).slice(0, DAILY_THREE_LIMIT2).map((t) => ({ id: t.id, title: t.title, priority: t.priority, dueDate: t.dueDate }))
+        },
+        focus: {
+          timer: runningTimer,
+          todayMinutes,
+          todayBillableMinutes,
+          weekMinutes,
+          dailyTargetMinutes,
+          dailyTargetRemaining: focusRemaining,
+          workLog: todayWorkLog ? {
+            id: todayWorkLog.id,
+            summary: todayWorkLog.summary,
+            focusMinutes: num(todayWorkLog.focusMinutes),
+            billableMinutes: num(todayWorkLog.billableMinutes),
+            mood: todayWorkLog.mood
+          } : null
+        },
+        capacity: {
+          week: {
+            start: week.start,
+            end: week.end,
+            plannedMinutes: weekReading.plannedMinutes,
+            availableMinutes: weekReading.availableMinutes,
+            usedPercent: weekReading.usedPercent,
+            level: weekReading.level
+          },
+          minutesByDay: workloadByDay,
+          days: capacityDays,
+          actualMinutes: weekActual,
+          upcomingBlackouts: blackouts.map((b) => ({
+            id: b.id,
+            title: b.title,
+            kind: b.kind,
+            startDate: b.startDate,
+            endDate: b.endDate,
+            blocksDelivery: b.blocksDelivery
+          }))
+        },
+        deadlines,
+        waiting: { open: waits, totalWaitingDays },
+        changeRequests: {
+          pending: pendingRequests.map((r) => ({
+            id: r.id,
+            title: r.title,
+            status: r.status,
+            extraCost: num(r.extraCost),
+            extraDays: num(r.extraDays),
+            projectCode: r.project?.code ?? null,
+            projectTitle: r.project?.title ?? null
+          })),
+          pipelineValue: round22(pendingRequests.reduce((sum, r) => sum + num(r.extraCost), 0))
+        },
+        money: {
+          currency: rateProfile?.currency ?? "USD",
+          outstanding: round22(outstanding),
+          overdue: overdueInvoices,
+          monthCollected: round22(monthCollected),
+          cashReceived: escrow.cashReceived,
+          realizedIncome: escrow.realizedIncome,
+          unearnedRetainedCash: escrow.unearnedRetainedCash,
+          taxReserved: round22(taxReserved),
+          taxReservePercent,
+          taxToReserveThisMonth: round22(monthCollected * (taxReservePercent / 100)),
+          subscriptions: {
+            monthlyBurn: subAudit.monthlyBurn,
+            annualBurn: subAudit.annualBurn,
+            cancelCandidates: subAudit.cancelCandidates,
+            upcomingRenewals: upcomingRenewalRows.map((s) => ({
+              id: s.id,
+              name: s.name,
+              amount: num(s.amount),
+              currency: s.currency,
+              billingCycle: s.billingCycle,
+              nextRenewalAt: s.nextRenewalAt,
+              autoRenew: s.autoRenew
+            }))
+          },
+          realHourlyRate: realRate
+        },
+        alerts
+      };
+    } catch (err) {
+      log143.error("overview:getDashboard", err);
+      throw err;
+    }
+  });
+}
+
+// src/plugins/personal/handlers/index.ts
+function registerPersonalHandlers(prisma2) {
+  registerClientHandlers(prisma2);
+  registerProjectHandlers(prisma2);
+  registerRequestHandlers(prisma2);
+  registerWaitHandlers(prisma2);
+  registerTaskHandlers(prisma2);
+  registerFocusHandlers(prisma2);
+  registerBillingHandlers(prisma2);
+  registerFinanceHandlers3(prisma2);
+  registerCapacityHandlers(prisma2);
+  registerPlaybookHandlers(prisma2);
+  registerMetaHandlers(prisma2);
+  registerOverviewHandlers3(prisma2);
+}
+
+// src/main/ipc/handlers/permissionsGuard.ts
+init_electron_node();
+function capIfDeclared(candidate) {
+  return ALL_CAPABILITIES.includes(candidate) ? candidate : void 0;
+}
+function buildRules() {
+  const rules = [
+    { test: /^users:/i, cap: "manage_users" },
+    { test: /^auth:create$/i, cap: "manage_users" },
+    // Reading roles is needed to assign them in user management; only the
+    // mutating channels require settings access.
+    { test: /^roles:(create|update|delete|reset)$/i, cap: "manage_settings" }
+  ];
+  for (const plugin of PLUGIN_REGISTRY) {
+    const scoped = (suffix) => capIfDeclared(`${plugin.id}_${suffix}`);
+    const refund = scoped("refund");
+    const voided = scoped("void_sale") ?? scoped("void_order");
+    if (refund)
+      rules.push({ test: new RegExp(`^${plugin.id}:.*(refund|return)`, "i"), cap: refund });
+    if (voided)
+      rules.push({ test: new RegExp(`^${plugin.id}:.*(void|cancelsale|cancelorder)`, "i"), cap: voided });
+    rules.push({ test: new RegExp(`^${plugin.id}:`, "i"), cap: PLUGIN_ACCESS_CAPABILITIES[plugin.id] });
+  }
+  rules.push(
+    { test: /refund|return/i, cap: "commerce_refund" },
+    { test: /void|cancelsale|cancelorder/i, cap: "commerce_void_sale" }
+  );
+  return rules;
+}
+var RULES = buildRules();
+var installed = false;
+function installPermissionGuard() {
+  if (installed)
+    return;
+  installed = true;
+  const original = ipcMain.handle.bind(ipcMain);
+  ipcMain.handle = (channel, listener) => {
+    const rule = typeof channel === "string" ? RULES.find((r) => r.test.test(channel)) : void 0;
+    if (!rule)
+      return original(channel, listener);
+    const guarded = async (...args) => {
+      requireCap(rule.cap);
+      return listener(...args);
+    };
+    return original(channel, guarded);
+  };
+}
+
 // src/main/database/seed-production.ts
 var import_bcryptjs2 = __toESM(require_bcryptjs());
-var log132 = createLogger("DBSeed");
+var log144 = createLogger("DBSeed");
 async function seedProductionDatabase(prisma2) {
-  log132.info("[DB Seed] \u{1F331} Starting first-run database seeding (minimal)...");
+  log144.info("[DB Seed] \u{1F331} Starting first-run database seeding (minimal)...");
   try {
     const userCount = await prisma2.user.count();
     if (userCount > 0) {
-      log132.info("[DB Seed] \u2139\uFE0F Database already seeded, skipping...");
+      log144.info("[DB Seed] \u2139\uFE0F Database already seeded, skipping...");
       return;
     }
-    log132.info("[DB Seed] Creating default setup admin user (minimal seed)...");
+    log144.info("[DB Seed] Creating default setup admin user (minimal seed)...");
     const adminUser = await prisma2.user.create({
       data: {
         username: "setup",
@@ -31054,14 +38274,28 @@ async function seedProductionDatabase(prisma2) {
         isActive: true
       }
     });
-    log132.info("[DB Seed] \u2705 Created default setup admin user:", adminUser.username);
-    log132.info("[DB Seed] \u{1F389} Minimal first-run seeding completed!");
-    log132.info('[DB Seed] \u{1F4DD} Login with username: "setup", password: "setup123"');
-    log132.info("[DB Seed] \u26A0\uFE0F  IMPORTANT: Use this account ONLY to create your permanent admin, then delete it!");
+    log144.info("[DB Seed] \u2705 Created default setup admin user:", adminUser.username);
+    log144.info("[DB Seed] \u{1F389} Minimal first-run seeding completed!");
+    log144.info('[DB Seed] \u{1F4DD} Login with username: "setup", password: "setup123"');
+    log144.info("[DB Seed] \u26A0\uFE0F  IMPORTANT: Use this account ONLY to create your permanent admin, then delete it!");
   } catch (error) {
-    log132.error("[DB Seed] \u274C Error seeding database:", error);
+    log144.error("[DB Seed] \u274C Error seeding database:", error);
     throw error;
   }
+}
+
+// web/bridge-auth.ts
+var BRIDGE_REQUIRES_AUTH = /^personal:billing:(refundPayment|voidInvoice|writeOff|deleteInvoice|deletePayment|applyDiscount|taxVault:delete)$/i;
+var VOID_VIA_MARK_STATUS = /^personal:billing:markStatus$/i;
+function bridgeRequiresAuth(channel, args) {
+  if (typeof channel !== "string")
+    return false;
+  if (BRIDGE_REQUIRES_AUTH.test(channel))
+    return true;
+  if (!VOID_VIA_MARK_STATUS.test(channel))
+    return false;
+  const first = Array.isArray(args) ? args[0] : void 0;
+  return String(first?.status ?? "") === "void";
 }
 
 // web/server.ts
@@ -31110,6 +38344,7 @@ async function main() {
   configureSessionDb({ PrismaClient, templateDbPath: templateDbPath2, sessionsDir: sessionsDir2 });
   const prisma2 = createPrismaProxy();
   console.log("[bridge] registering handlers\u2026");
+  installPermissionGuard();
   registerAuthHandlers(prisma2);
   registerDashboardHandlers(prisma2);
   registerFinanceHandlers(prisma2);
@@ -31131,6 +38366,7 @@ async function main() {
   registerGymHandlers(prisma2);
   registerPharmacyHandlers(prisma2);
   registerCoffeeHandlers(prisma2);
+  registerPersonalHandlers(prisma2);
   console.log(`[bridge] ${__handlers.size} channels registered`);
   const ALL_MODULES = [
     "commerce",
@@ -31141,7 +38377,8 @@ async function main() {
     "vet",
     "gym",
     "pharmacy",
-    "coffee"
+    "coffee",
+    "personal"
   ];
   ipcMain.handle("module:getEnabled", (event) => {
     const only = event?.only;
@@ -31172,6 +38409,11 @@ async function main() {
           const handler = __handlers.get(channel);
           if (!handler) {
             return json(false, { error: `No handler for channel: ${channel}` });
+          }
+          if (bridgeRequiresAuth(channel, args) && !getCurrentUser()) {
+            return json(false, {
+              error: "Authentication required \u2014 sign in before using this action."
+            });
           }
           const client = getSessionClient(
             typeof session2 === "string" ? session2 : ""

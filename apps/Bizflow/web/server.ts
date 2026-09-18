@@ -46,7 +46,13 @@ import { registerClinicHandlers } from "../src/plugins/clinic/handlers/index";
 import { registerVetHandlers } from "../src/plugins/vet/handlers/index";
 import { registerGymHandlers } from "../src/plugins/gym/handlers/index";
 import { registerPharmacyHandlers } from "../src/plugins/pharmacy/handlers/index";
+import { registerPersonalHandlers } from "../src/plugins/personal/handlers/index";
+import { installPermissionGuard } from "../src/main/ipc/handlers/permissionsGuard";
+import { getCurrentUser } from "../src/main/ipc/handlers/session";
 import { seedProductionDatabase } from "../src/main/database/seed-production";
+// Personal channels the desktop protects with a dedicated action capability must
+// not be reachable on the public bridge before anyone has logged in.
+import { bridgeRequiresAuth } from "./bridge-auth";
 
 const PORT = Number(process.env.BRIDGE_PORT) || 8787;
 
@@ -117,6 +123,10 @@ async function main() {
   const prisma = createPrismaProxy();
 
   console.log("[bridge] registering handlers…");
+  // Same guard the desktop app installs, so a channel that is capability-gated
+  // there is capability-gated here too (see web/bridge-auth.ts for the check
+  // that matters while nobody is bound).
+  installPermissionGuard();
   registerAuthHandlers(prisma);
   registerDashboardHandlers(prisma);
   registerFinanceHandlers(prisma);
@@ -139,6 +149,7 @@ async function main() {
   registerGymHandlers(prisma);
   registerPharmacyHandlers(prisma);
   registerCoffeeHandlers(prisma);
+  registerPersonalHandlers(prisma);
   console.log(`[bridge] ${__handlers.size} channels registered`);
 
   // ── Single-module isolation ──────────────────────────────────────────────
@@ -157,6 +168,7 @@ async function main() {
     "gym",
     "pharmacy",
     'coffee',
+    'personal',
   ];
   ipcMain.handle("module:getEnabled", (event: unknown) => {
     const only = (event as { only?: string } | undefined)?.only;
@@ -190,6 +202,12 @@ async function main() {
           const handler = __handlers.get(channel);
           if (!handler) {
             return json(false, { error: `No handler for channel: ${channel}` });
+          }
+          if (bridgeRequiresAuth(channel, args) && !getCurrentUser()) {
+            return json(false, {
+              error:
+                "Authentication required — sign in before using this action.",
+            });
           }
           // Route this call to the caller's own isolated sandbox database.
           const client = getSessionClient(
