@@ -17,7 +17,8 @@ import {
   Archive,
   Mail,
   Puzzle,
-  CheckCircle2
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -85,7 +86,7 @@ const PLUGIN_TAB_CONFIG: Record<PluginId, SettingsTab[]> = {
   clinic: ['general', 'users', 'backup'],
   vet: ['general', 'users', 'backup'],
   gym: ['general', 'users', 'backup'],
-  bakery: ['general', 'user', 'backup'],
+  bakery: ['general', 'users', 'backup'],
 
   restaurant: ['general', 'users', 'tax', 'backup'],
   warehouse: ['general', 'users', 'backup'],
@@ -93,6 +94,13 @@ const PLUGIN_TAB_CONFIG: Record<PluginId, SettingsTab[]> = {
   coffee: ['general', 'users', 'tax', 'backup'],
   personal: ['general', 'users', 'tax', 'backup']
 }
+
+/**
+ * Tabs that exist whatever plugin is active. Receipt and printer settings are
+ * app-wide — every sale-capable plugin prints through them — so they must not
+ * disappear just because no plugin context has been resolved yet.
+ */
+const ALWAYS_VISIBLE_TABS: SettingsTab[] = ['tax']
 
 function resolveBundledSinglePlugin(): PluginId | null {
   const flags: [unknown, PluginId][] = [
@@ -135,7 +143,8 @@ export default function Settings() {
     setBackupSettings,
     displaySettings,
     setDisplaySettings,
-    saveSettings
+    saveSettings,
+    hasUnsavedChanges
   } = useSettings()
 
   // Sync display settings with DisplaySettingsContext
@@ -179,21 +188,23 @@ export default function Settings() {
 
   // Filter available tabs according to active plugin or module states
   const tabs = useMemo(() => {
+    const visibleFor = (allowed: SettingsTab[]) =>
+      allTabs.filter((tab) => allowed.includes(tab.id) || ALWAYS_VISIBLE_TABS.includes(tab.id))
+
     if (pluginContext && PLUGIN_TAB_CONFIG[pluginContext]) {
-      const allowed = PLUGIN_TAB_CONFIG[pluginContext]
-      return allTabs.filter((tab) => allowed.includes(tab.id))
+      return visibleFor(PLUGIN_TAB_CONFIG[pluginContext])
     }
 
     if (clinicEnabled) {
-      return allTabs.filter((tab) => PLUGIN_TAB_CONFIG.clinic.includes(tab.id))
+      return visibleFor(PLUGIN_TAB_CONFIG.clinic)
     }
 
     if (vetEnabled) {
-      return allTabs.filter((tab) => PLUGIN_TAB_CONFIG.vet.includes(tab.id))
+      return visibleFor(PLUGIN_TAB_CONFIG.vet)
     }
 
     if (bakeryEnabled) {
-      return allTabs.filter((tab) => PLUGIN_TAB_CONFIG.bakery.includes(tab.id))
+      return visibleFor(PLUGIN_TAB_CONFIG.bakery)
     }
 
     return allTabs
@@ -234,12 +245,24 @@ export default function Settings() {
         <button
           type="button"
           onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-sm active:scale-95"
+          className={`flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-sm active:scale-95 ${
+            hasUnsavedChanges ? 'ring-2 ring-amber-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900' : ''
+          }`}
         >
           <Save className="w-5 h-5" />
           {t('saveChanges')}
         </button>
       </div>
+
+      {/* Nothing reaches the plugins' print paths until Save Changes is pressed */}
+      {hasUnsavedChanges && (
+        <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-px" />
+          <p className="text-amber-700 dark:text-amber-300 text-sm">
+            {t('settingsUnsavedWarning')}
+          </p>
+        </div>
+      )}
 
       {/* Save Success Alert */}
       {saveSuccess && (

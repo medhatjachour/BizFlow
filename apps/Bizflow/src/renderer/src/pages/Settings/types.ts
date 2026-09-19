@@ -40,10 +40,35 @@ export interface TaxReceiptSettings {
   paperWidth: '58mm' | '80mm'
   receiptBottomSpacing: number // Number of blank lines at bottom of receipt (for tearing)
   printLogo: boolean
+  /** Uploaded logo as a data URL. Empty when no logo has been chosen. */
+  receiptLogo: string
   printQRCode: boolean
   printBarcode: boolean
   openCashDrawer: boolean
   receiptLanguage: 'en' | 'ar'
+  /**
+   * `bitmap` rasterises the receipt, which is the only way Arabic can print on
+   * printers without an Arabic font ROM. `codepage` uses the printer's own font.
+   */
+  receiptArabicMode: 'bitmap' | 'codepage'
+  /**
+   * Code page for `codepage` mode: `cp864` (shaped forms), `win1256` (base
+   * letters), or `auto` to let the app pick the page with the fewest gaps.
+   */
+  receiptArabicEncoding: 'cp864' | 'win1256' | 'auto'
+  // Receipt design
+  /** Overall receipt look: `classic`, `compact` (tighter, more lines) or `modern`. */
+  receiptTemplate: 'classic' | 'compact' | 'modern'
+  /** Line drawn between sections. */
+  receiptDivider: 'dashed' | 'solid' | 'double' | 'none'
+  /** Text size multiplier for the whole receipt (0.8 – 1.4). */
+  receiptFontScale: number
+  /** Logo width as a percentage of the paper width. */
+  receiptLogoSize: number
+  /** Print the logo as black and white instead of greyscale. */
+  receiptLogoMono: boolean
+  /** Print the address, phone, email and tax numbers under the store name. */
+  receiptShowStoreDetails: boolean
 }
 
 export interface NotificationSettings {

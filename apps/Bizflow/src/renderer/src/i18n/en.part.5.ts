@@ -104,6 +104,8 @@ export const enPart5 = {
     manageAppPreferences: 'Manage your application preferences and configuration',
     saveChanges: 'Save Changes',
     settingsSavedSuccess: 'Settings saved successfully!',
+    settingsUnsavedWarning:
+      'You have unsaved changes. Plugins (sales, restaurant, coffee) only read these settings from storage after you press Save Changes, so printer, paper width and receipt language edits do not apply yet.',
     general: 'General',
     display: 'Display',
     userManagement: 'User Management',

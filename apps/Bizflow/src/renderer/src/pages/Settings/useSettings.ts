@@ -3,7 +3,7 @@
  * Manages settings state with localStorage persistence
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import type { 
   StoreSettings, 
   TaxReceiptSettings, 
@@ -37,7 +37,7 @@ export function useSettings() {
       taxRate: parseFloat(localStorage.getItem('taxRate') || '10'),
       receiptHeader: localStorage.getItem('receiptHeader') || '',
       receiptFooter: localStorage.getItem('receiptFooter') || 'Thank you for your business!',
-      autoPrint: localStorage.getItem('autoPrint') === 'true',
+      autoPrint: localStorage.getItem('autoPrint') !== 'false',
       includeLogo: localStorage.getItem('includeLogo') === 'true',
       refundPeriodDays: parseInt(localStorage.getItem('refundPeriodDays') || '30'),
       allowDiscounts: localStorage.getItem('allowDiscounts') === 'true',
@@ -59,10 +59,25 @@ export function useSettings() {
       paperWidth: (localStorage.getItem('paperWidth') as '58mm' | '80mm') || '80mm',
       receiptBottomSpacing: parseInt(localStorage.getItem('receiptBottomSpacing') || '4'),
       printLogo: localStorage.getItem('printLogo') === 'true',
+      receiptLogo: localStorage.getItem('receiptLogo') || '',
       printQRCode: localStorage.getItem('printQRCode') === 'true',
       printBarcode: localStorage.getItem('printBarcode') === 'true',
       openCashDrawer: localStorage.getItem('openCashDrawer') === 'true',
-      receiptLanguage: (localStorage.getItem('receiptLanguage') as 'en' | 'ar') || 'en'
+      receiptLanguage: (localStorage.getItem('receiptLanguage') as 'en' | 'ar') || 'en',
+      receiptArabicMode:
+        (localStorage.getItem('receiptArabicMode') as 'bitmap' | 'codepage') || 'bitmap',
+      receiptArabicEncoding:
+        (localStorage.getItem('receiptArabicEncoding') as 'cp864' | 'win1256' | 'auto') || 'auto',
+      // Receipt design
+      receiptTemplate:
+        (localStorage.getItem('receiptTemplate') as 'classic' | 'compact' | 'modern') || 'classic',
+      receiptDivider:
+        (localStorage.getItem('receiptDivider') as 'dashed' | 'solid' | 'double' | 'none') ||
+        'dashed',
+      receiptFontScale: parseFloat(localStorage.getItem('receiptFontScale') || '1'),
+      receiptLogoSize: parseInt(localStorage.getItem('receiptLogoSize') || '70'),
+      receiptLogoMono: localStorage.getItem('receiptLogoMono') === 'true',
+      receiptShowStoreDetails: localStorage.getItem('receiptShowStoreDetails') !== 'false',
     }
   })
 
@@ -112,6 +127,36 @@ export function useSettings() {
     showImagesInInventory: localStorage.getItem('showImagesInInventory') !== 'false'
   }))
 
+  /**
+   * Snapshot of the form as it currently stands, compared against the one taken
+   * at the last save. Only `saveSettings` writes to localStorage, and that is
+   * what every plugin reads back, so an edit that has not been saved has no
+   * effect anywhere yet — the Settings page has to say so.
+   */
+  const snapshot = useMemo(
+    () =>
+      JSON.stringify([
+        storeSettings,
+        taxReceiptSettings,
+        notificationSettings,
+        paymentMethods,
+        userProfile,
+        backupSettings,
+        displaySettings
+      ]),
+    [
+      storeSettings,
+      taxReceiptSettings,
+      notificationSettings,
+      paymentMethods,
+      userProfile,
+      backupSettings,
+      displaySettings
+    ]
+  )
+  const [savedSnapshot, setSavedSnapshot] = useState(snapshot)
+  const hasUnsavedChanges = snapshot !== savedSnapshot
+
   // Save all settings to localStorage
   const saveSettings = useCallback(() => {
     // Store settings
@@ -154,8 +199,9 @@ export function useSettings() {
     // time; localStorage alone would leave already-mounted screens stale.
     notifyCurrencyChanged()
 
+    setSavedSnapshot(snapshot)
     return true
-  }, [storeSettings, taxReceiptSettings, notificationSettings, paymentMethods, userProfile, backupSettings, displaySettings])
+  }, [storeSettings, taxReceiptSettings, notificationSettings, paymentMethods, userProfile, backupSettings, displaySettings, snapshot])
 
   return {
     storeSettings,
@@ -172,6 +218,7 @@ export function useSettings() {
     setBackupSettings,
     displaySettings,
     setDisplaySettings,
-    saveSettings
+    saveSettings,
+    hasUnsavedChanges
   }
 }
