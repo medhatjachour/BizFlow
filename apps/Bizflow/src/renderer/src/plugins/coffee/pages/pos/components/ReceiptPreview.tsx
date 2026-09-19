@@ -115,6 +115,15 @@ export function ReceiptPreview({ open, data, onClose, onPrint, printing }: Props
               </div>
             )}
 
+            {/* Header — free text above the store name, matching the printer */}
+            {data.receiptHeader
+              ? data.receiptHeader.split('\n').filter(Boolean).map((line, i) => (
+                  <div key={i} className="text-center text-[10px]">
+                    {line}
+                  </div>
+                ))
+              : null}
+
             {/* Store name */}
             <div className="text-center font-bold text-sm uppercase tracking-wide">
               {data.storeName}

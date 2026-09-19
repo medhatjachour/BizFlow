@@ -15,10 +15,11 @@ import {
   Eye
 } from 'lucide-react'
 import { sounds } from '../utils/sound'
-import { ThermalPrinter } from '../utils/printer'
 import { formatCurrency } from '../menu/utils'
 import { KpiSection } from '@renderer/components/ui/KpiVisibility'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useToast } from '@renderer/contexts/ToastContext'
+import { printOrderReceipt } from '../utils/printOrderReceipt'
 
 const DATE_RANGES = ['today', 'yesterday', 'week', 'month'] as const
 
@@ -28,6 +29,7 @@ const STATUS_VALUES = ['paid', 'open', 'billing', 'voided'] as const
 
 export default function SalesAndOrdersHistoryPage() {
   const { t } = useLanguage()
+  const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast()
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -133,11 +135,19 @@ export default function SalesAndOrdersHistoryPage() {
     }
   }, [orders])
 
-  const handlePrintReceipt = (order: any) => {
+  const handlePrintReceipt = async (order: any) => {
     sounds.playSuccess()
-    const text = ThermalPrinter.buildGuestReceipt(order)
-    console.log('[ESC/POS Thermal Output]\n', text)
-    window.print()
+    const result = await printOrderReceipt(order, t('restStoreFallback'))
+    if (result.success) {
+      toastSuccess(t('restReceiptPrinted'))
+      return
+    }
+    if (result.browserPrint) {
+      toastWarning(t('restReceiptNoPrinter'))
+      window.print()
+      return
+    }
+    toastError(result.message || t('restReceiptPreviewFailed'))
   }
 
   /** A check is identified by its human number when it has one, otherwise by its id. */
@@ -376,7 +386,7 @@ export default function SalesAndOrdersHistoryPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handlePrintReceipt(ord)}
+                    onClick={() => void handlePrintReceipt(ord)}
                     aria-label={t('restSalesReprint')}
                     title={t('restSalesReprint')}
                     className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-white text-slate-700 dark:text-slate-200 transition-colors"
@@ -463,7 +473,7 @@ export default function SalesAndOrdersHistoryPage() {
 
                         <button
                           type="button"
-                          onClick={() => handlePrintReceipt(ord)}
+                          onClick={() => void handlePrintReceipt(ord)}
                           aria-label={t('restSalesReprint')}
                           title={t('restSalesReprint')}
                           className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-amber-500 hover:text-white text-slate-700 dark:text-slate-300 inline-flex items-center transition-colors"
@@ -557,7 +567,7 @@ export default function SalesAndOrdersHistoryPage() {
 
               <button
                 type="button"
-                onClick={() => handlePrintReceipt(inspectingOrder)}
+                onClick={() => void handlePrintReceipt(inspectingOrder)}
                 className="w-full py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-amber-500/20"
               >
                 <Printer className="w-4 h-4" />

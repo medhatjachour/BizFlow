@@ -217,11 +217,6 @@ export const commercePreload = {
     generateInstallment: (installmentId: string) => ipcRenderer.invoke('receipts:generateInstallment', installmentId),
     generateThermal: (receipt: any) => ipcRenderer.invoke('receipts:generateThermal', receipt),
   },
-  thermalReceipts: {
-    print: (data: { receiptData: any; settings: any }) => ipcRenderer.invoke('receipt:print', data),
-    detectPrinters: () => ipcRenderer.invoke('receipt:detectPrinters'),
-    testPrint: (settings: any) => ipcRenderer.invoke('receipt:testPrint', settings),
-  },
 
   // ─── Purchase Orders & Reorder ─────────────────────────────────────────
   purchaseOrders: {

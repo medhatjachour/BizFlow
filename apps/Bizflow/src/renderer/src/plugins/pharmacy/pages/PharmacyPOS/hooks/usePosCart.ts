@@ -105,7 +105,7 @@ export function usePosCart(toast: any, t: (k: string, params?: Record<string, an
 
   const changeDue = useMemo(() => Math.max(0, parsedAmountPaid - total), [parsedAmountPaid, total])
 
-  const executeCheckout = useCallback(async (autoPrint: boolean): Promise<SaleTransactionResult | null> => {
+  const executeCheckout = useCallback(async (): Promise<SaleTransactionResult | null> => {
     if (cart.length === 0) return null
     setBusy(true)
     try {

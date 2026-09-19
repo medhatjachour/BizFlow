@@ -7,6 +7,7 @@ import { money, inputCls } from '../components/_shared'
 import { unitLabelKey } from '../components/units'
 
 import { useThermalReceipt } from './hooks/useThermalReceipt'
+import { getAutoPrintSale, setAutoPrintSale } from '@renderer/lib/thermalPrint'
 import { PosCart } from './components/PosCart'
 import { PosReceiptModal } from './components/PosReceiptModal'
 import { usePosProducts } from './hooks/usePosProducts'
@@ -20,7 +21,14 @@ export default function PharmacyPOS() {
   const canDiscount = can('pharmacy_discount')
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  const [autoThermalPrint, setAutoThermalPrint] = useState(true)
+  // Mirrors the "Print receipt automatically after each sale" switch in
+  // Settings → Tax & Receipt, so both screens always agree.
+  const [autoThermalPrint, setAutoThermalPrint] = useState(() => getAutoPrintSale())
+
+  const handleToggleAutoPrint = useCallback((enabled: boolean) => {
+    setAutoThermalPrint(enabled)
+    setAutoPrintSale(enabled)
+  }, [])
 
   // Products & Search Hook
   const {
@@ -104,7 +112,7 @@ export default function PharmacyPOS() {
   }, [focusSearch, parkCurrentSale, setPaymentMethod])
 
   const handleCheckoutProcess = async () => {
-    const saleResult = await executeCheckout(autoThermalPrint)
+    const saleResult = await executeCheckout()
     if (saleResult) {
       if (autoThermalPrint) {
         printReceipt(saleResult)
@@ -232,7 +240,7 @@ export default function PharmacyPOS() {
           heldSales={heldSales}
           canDiscount={canDiscount}
           autoThermalPrint={autoThermalPrint}
-          onToggleThermalPrint={setAutoThermalPrint}
+          onToggleThermalPrint={handleToggleAutoPrint}
           onSetCustomer={setCustomer}
           onSetDiscount={setDiscount}
           onSetPaymentMethod={setPaymentMethod}

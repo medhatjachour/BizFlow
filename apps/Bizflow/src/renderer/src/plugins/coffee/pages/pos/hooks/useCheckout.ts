@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import type { CartItem, OrderType, PaymentMethod, CheckoutForm } from '../types'
 import { buildReceiptData, readReceiptSettings, getAutoPrintSale, type ReceiptData } from '../utils'
+import { printReceipt as printThermalReceipt } from '../../../../../lib/thermalPrint'
 
 interface CheckoutParams {
   cart: CartItem[]
@@ -65,14 +66,11 @@ export function useCheckout() {
         const settings = readReceiptSettings()
         const shouldForceThermal =
           settings.printerType === 'none' || settings.printerType === 'html'
-        const effectiveSettings = shouldForceThermal
-          ? { ...settings, printerType: 'usb' as const }
-          : settings
 
-        const result = await window.api.thermalReceipts.print({
+        const result = await printThermalReceipt(
           receiptData,
-          settings: effectiveSettings
-        })
+          shouldForceThermal ? { printerType: 'usb' } : {}
+        )
 
         if (result.success) {
           if (result.detectedPrinter) {
@@ -96,14 +94,11 @@ export function useCheckout() {
         const settings = readReceiptSettings()
         const shouldForceThermal =
           settings.printerType === 'none' || settings.printerType === 'html'
-        const effectiveSettings = shouldForceThermal
-          ? { ...settings, printerType: 'usb' as const }
-          : settings
 
-        const result = await window.api.thermalReceipts.print({
-          receiptData: lastReceipt,
-          settings: effectiveSettings
-        })
+        const result = await printThermalReceipt(
+          lastReceipt,
+          shouldForceThermal ? { printerType: 'usb' } : {}
+        )
 
         if (result.success) {
           toast.success('Receipt reprinted')

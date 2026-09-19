@@ -58,9 +58,15 @@ export interface ReceiptSettings {
   paperWidth: '58mm' | '80mm'
   receiptBottomSpacing?: number
   printLogo?: boolean
+  includeLogo?: boolean
+  /** Uploaded logo as a data URL; overrides `storeLogo` when present. */
+  receiptLogo?: string
   printQRCode?: boolean
   printBarcode?: boolean
   receiptLanguage?: 'en' | 'ar'
+  receiptArabicMode?: 'bitmap' | 'codepage'
+  receiptHeader?: string
+  receiptFooter?: string
   openCashDrawer?: boolean
 }
 

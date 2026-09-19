@@ -295,6 +295,17 @@ export const enRestaurant = {
   restSalesPrintReceipt: 'Print Receipt',
   restSalesClose: 'Close check audit',
 
+  restStoreFallback: 'BizFlow Restaurant',
+
+  restReceiptPreviewTitle: 'Guest Receipt Preview',
+  restReceiptPreviewHelp: 'This is exactly what the thermal printer will print.',
+  restReceiptPreviewFailed: 'Could not prepare the receipt preview.',
+  restReceiptRendering: 'Rendering receipt…',
+  restReceiptPrinting: 'Printing…',
+  restReceiptPrinted: 'Receipt sent to the printer.',
+  restReceiptNoPrinter: 'No thermal printer is set up — using browser printing.',
+  restReceiptNoStore: 'No store name set — add it in Settings → Tax & Receipt.',
+
   restFloorCanvasHint:
     'Tap a table to inspect it. Drag to move it on the map — arrow keys nudge the selected table.',
   restFloorNoTables: 'No tables match the current filters.',

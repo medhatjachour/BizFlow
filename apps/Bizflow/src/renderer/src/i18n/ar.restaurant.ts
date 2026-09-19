@@ -290,6 +290,17 @@ export const arRestaurant = {
   restSalesPrintReceipt: 'طباعة الإيصال',
   restSalesClose: 'إغلاق تدقيق الفاتورة',
 
+  restStoreFallback: 'مطعم BizFlow',
+
+  restReceiptPreviewTitle: 'معاينة إيصال الضيف',
+  restReceiptPreviewHelp: 'هذه الصورة مطابقة تمامًا لما ستطبعه الطابعة الحرارية.',
+  restReceiptPreviewFailed: 'تعذّر تحضير معاينة الإيصال.',
+  restReceiptRendering: 'جارٍ تحضير الإيصال…',
+  restReceiptPrinting: 'جارٍ الطباعة…',
+  restReceiptPrinted: 'تم إرسال الإيصال إلى الطابعة.',
+  restReceiptNoPrinter: 'لا توجد طابعة حرارية مُعدّة — سيتم استخدام طباعة المتصفح.',
+  restReceiptNoStore: 'لم يُضبط اسم المتجر — أضفه من الإعدادات ← الضريبة والإيصال.',
+
   restFloorCanvasHint:
     'اضغط على الطاولة لعرض تفاصيلها. اسحبها لتغيير مكانها على المخطط — ومفاتيح الأسهم تحرّك الطاولة المحددة.',
   restFloorNoTables: 'لا توجد طاولات تطابق عوامل التصفية الحالية.',

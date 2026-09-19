@@ -1,5 +1,5 @@
 // src/pages/POS/index.tsx
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMenuCatalog } from './hooks/useMenuCatalog'
 import { CategoryChips } from './components/CategoryChips'
 import { MenuItemCard } from './components/MenuItemCard'
@@ -12,11 +12,15 @@ import { ReceiptThermalPreview } from './components/ReceiptThermalPreview'
 import { useRestaurant } from '../../context/RestaurantContext'
 import { PosMenuItem } from './types'
 import { sounds } from '../utils/sound'
+import { printOrderReceipt } from '../utils/printOrderReceipt'
+import { getAutoPrintSale, readPrinterSettings } from '@renderer/lib/thermalPrint'
 import { useLanguage } from '@renderer/contexts/LanguageContext'
+import { useToast } from '@renderer/contexts/ToastContext'
 import { CheckCircle2, Printer, ArrowLeft } from 'lucide-react'
 
 export default function PosOrderPadPage() {
   const { t } = useLanguage()
+  const { success: toastSuccess, error: toastError } = useToast()
   const {
     activeOrderData,
     activeSeat,
@@ -53,6 +57,25 @@ export default function PosOrderPadPage() {
   const handleSettlementCompleted = (change: number) => {
     setSettledChangeDue(change)
   }
+
+  // Auto-print mirrors the switch in Settings → Tax & Receipt, but only when a
+  // receipt printer is configured; otherwise the settlement screen keeps its
+  // "Print Check" button so the cashier still gets a browser-printable check.
+  const autoPrintedOrderRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (settledChangeDue === null || !activeOrderData) return
+    const orderId: string = activeOrderData.id
+    if (autoPrintedOrderRef.current === orderId) return
+    if (!getAutoPrintSale()) return
+    const { printerType } = readPrinterSettings()
+    if (printerType === 'none' || printerType === 'html') return
+
+    autoPrintedOrderRef.current = orderId
+    void printOrderReceipt(activeOrderData, t('restStoreFallback')).then((result) => {
+      if (result.success) toastSuccess(t('restReceiptPrinted'))
+      else if (!result.browserPrint) toastError(result.message || t('restReceiptPreviewFailed'))
+    })
+  }, [settledChangeDue, activeOrderData, t, toastSuccess, toastError])
 
   const handleFinishSettlement = () => {
     setSettledChangeDue(null)

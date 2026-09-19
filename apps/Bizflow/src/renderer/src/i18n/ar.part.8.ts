@@ -563,6 +563,7 @@ export const arPart8 = {
     phPosInvoice: "الفاتورة: #{number}",
     phPosCustomerLine: "العميل: {name}",
     phPosPaidLabel: "المدفوع ({method}):",
+    phPosStoreFallback: "صيدلية BizFlow",
     phSubmodulesAria: "وحدات الصيدلية الفرعية",
     phRestoreView: "استعادة العرض القياسي",
     phGuideFefo: "ترتيب الصرف حسب الأقرب انتهاءً (FEFO)",

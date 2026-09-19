@@ -1,4 +1,13 @@
 import type { ReceiptSettings } from './types'
+import {
+  readPrinterSettings,
+  getStoreLogo,
+  getReceiptFooter,
+  getAutoPrintSale,
+  setAutoPrintSale,
+} from '../../../../lib/thermalPrint'
+
+export { getStoreLogo, getReceiptFooter, getAutoPrintSale, setAutoPrintSale }
 
 // ── Color helpers ───────────────────────────────────────────────────────────
 export function hexToRgba(hex: string, alpha = 0.15): string {
@@ -22,6 +31,7 @@ export function paymentLabel(pm: string): string {
 
 // ── Receipt settings ────────────────────────────────────────────────────────
 export function readReceiptSettings(): ReceiptSettings {
+  const shared = readPrinterSettings()
   return {
     storeName:           localStorage.getItem('storeName')           || 'BizFlow Coffee',
     storeAddress:        localStorage.getItem('storeAddress')        || '',
@@ -29,39 +39,28 @@ export function readReceiptSettings(): ReceiptSettings {
     storeEmail:          localStorage.getItem('storeEmail')          || '',
     taxNumber:           localStorage.getItem('taxNumber')           || '',
     commercialRegister:  localStorage.getItem('commercialRegister')  || '',
-    printerType:         (localStorage.getItem('printerType') as ReceiptSettings['printerType']) || 'html',
-    printerName:         localStorage.getItem('printerName')         || '',
-    printerIP:           localStorage.getItem('printerIP')           || '',
-    paperWidth:          (localStorage.getItem('paperWidth') as ReceiptSettings['paperWidth']) || '80mm',
-    receiptBottomSpacing: parseInt(localStorage.getItem('receiptBottomSpacing') || '4', 10),
-    printLogo:           localStorage.getItem('printLogo')           === 'true',
-    printQRCode:         localStorage.getItem('printQRCode')         === 'true',
-    printBarcode:        localStorage.getItem('printBarcode')        === 'true',
-    receiptLanguage:     (localStorage.getItem('receiptLanguage') as ReceiptSettings['receiptLanguage']) || 'en',
-    openCashDrawer:      localStorage.getItem('openCashDrawer')      === 'true',
+    printerType:         shared.printerType,
+    printerName:         shared.printerName,
+    printerIP:           shared.printerIP,
+    paperWidth:          shared.paperWidth,
+    receiptBottomSpacing: shared.receiptBottomSpacing,
+    printLogo:           shared.printLogo,
+    includeLogo:         shared.printLogo,
+    receiptLogo:         getStoreLogo() || undefined,
+    printQRCode:         shared.printQRCode,
+    printBarcode:        shared.printBarcode,
+    receiptLanguage:     shared.receiptLanguage === 'both' ? 'ar' : shared.receiptLanguage,
+    receiptArabicMode:   shared.receiptArabicMode,
+    receiptHeader:       shared.receiptHeader,
+    receiptFooter:       shared.receiptFooter,
+    openCashDrawer:      shared.openCashDrawer,
   }
 }
 
 // ── Store logo / footer ─────────────────────────────────────────────────────
-export function getStoreLogo(): string | null {
-  return localStorage.getItem('storeLogo') || null
-}
-
-export function getReceiptFooter(): string {
-  return localStorage.getItem('receiptFooter') || 'Thank you for your visit!'
-}
-
+/** Arabic footer for the receipt preview; the print path uses `ReceiptLabels`. */
 export function getReceiptFooterAr(): string {
   return localStorage.getItem('receiptFooterAr') || 'شكراً لزيارتكم!'
-}
-
-// ── Auto-print setting ──────────────────────────────────────────────────────
-export function getAutoPrintSale(): boolean {
-  return localStorage.getItem('autoPrintAfterSale') !== 'false'
-}
-
-export function setAutoPrintAfterSale(enabled: boolean): void {
-  localStorage.setItem('autoPrintAfterSale', String(enabled))
 }
 
 // ── Paper width config ──────────────────────────────────────────────────────
@@ -268,6 +267,7 @@ export interface ReceiptData {
   notes?:      string
   footer?:     string
   footerAr?:   string
+  receiptHeader?: string
 
   printLogo:       boolean
   printQRCode:     boolean
@@ -336,7 +336,8 @@ export function buildReceiptData(params: {
     notes:      params.notes,
     footer:     getReceiptFooter(),
     footerAr:   getReceiptFooterAr(),
-   printLogo:           settings.printLogo       ?? false,
+    receiptHeader:       settings.receiptHeader,
+    printLogo:           settings.printLogo       ?? false,
     printQRCode:         settings.printQRCode     ?? false,
     printBarcode:        settings.printBarcode    ?? false,
     receiptLanguage:     settings.receiptLanguage || 'en',

@@ -563,6 +563,7 @@ export const enPart8 = {
     phPosInvoice: "Invoice: #{number}",
     phPosCustomerLine: "Customer: {name}",
     phPosPaidLabel: "Paid ({method}):",
+    phPosStoreFallback: "BizFlow Pharmacy",
     phSubmodulesAria: "Pharmacy Sub-modules",
     phRestoreView: "Restore Standard View",
     phGuideFefo: "FEFO Dispense Algorithm",

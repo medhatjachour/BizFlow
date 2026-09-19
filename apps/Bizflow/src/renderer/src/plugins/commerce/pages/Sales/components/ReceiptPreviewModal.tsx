@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { X, Printer } from 'lucide-react'
 import { useToast } from '@renderer/contexts/ToastContext'
 import logger from '@/shared/utils/logger'
+import { printReceipt as printThermalReceipt, getAutoPrintSale } from '@renderer/lib/thermalPrint'
 
 interface ReceiptPreviewModalProps {
   transaction: any
@@ -111,7 +112,7 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
     const printLogo = localStorage.getItem('printLogo') === 'true'
     const printQRCode = localStorage.getItem('printQRCode') === 'true'
     const printBarcode = localStorage.getItem('printBarcode') === 'true'
-    const autoPrint = localStorage.getItem('autoPrint') === 'true'
+    const autoPrint = getAutoPrintSale()
     const taxRate = parseFloat(localStorage.getItem('taxRate') || '10')
 
     const loadedSettings = {
@@ -200,15 +201,12 @@ export function ReceiptPreviewModal({ transaction, onClose }: ReceiptPreviewModa
         depositAmount: transaction.deposits?.[0]?.amount
       }
 
+      // No printer configured: the shared helper auto-detects a USB thermal printer.
       const shouldForceThermal = settings.printerType === 'none' || settings.printerType === 'html'
-      const effectiveSettings = shouldForceThermal
-        ? { ...settings, printerType: 'usb', receiptLanguage: receiptLang }
-        : { ...settings, receiptLanguage: receiptLang }
-
-      // Print via IPC (auto-detect thermal on first print or fallback)
-      const result = await window.api.thermalReceipts.print({
-        receiptData,
-        settings: effectiveSettings
+      const result = await printThermalReceipt(receiptData, {
+        ...settings,
+        printerType: shouldForceThermal ? 'usb' : settings.printerType,
+        receiptLanguage: receiptLang,
       })
 
       if (result.success) {
