@@ -759,13 +759,19 @@ export class ThermalPrinterService {
     return text
   }
 
-  private static createPrinter(settings: PrinterSettings): ThermalPrinter {
+  private static createPrinter(settings: PrinterSettings, bufferOnly = false): ThermalPrinter {
     let printerInterface: string
 
-    if (process.platform === 'win32') {
+    if (bufferOnly || process.platform === 'win32') {
       // On Windows we build the ESC/POS buffer via node-thermal-printer's file interface,
       // then send it to the Windows spooler via winspool.drv P/Invoke.
       // The file path is a dummy — we call getBuffer() and never execute() on Windows.
+      //
+      // Buffer-only rendering (previews, tests, the code-page diagnostic) needs the
+      // same treatment on every platform: it never reaches a device, but the library
+      // resolves the interface when the printer is constructed, and a named printer
+      // resolves to `printer:<name>`, which throws "No driver set!" wherever the
+      // native spooler driver is absent — Linux/macOS, and CI.
       printerInterface = path.join(os.tmpdir(), `escpos-buf-${process.pid}`)
     } else if (settings.printerType === 'network' && settings.printerIP) {
       const safeIP = this.sanitizeIP(settings.printerIP)
@@ -1141,7 +1147,7 @@ export class ThermalPrinterService {
     data: ReceiptData,
     settings: PrinterSettings,
   ): Promise<Buffer> {
-    const printer = this.createPrinter(settings)
+    const printer = this.createPrinter(settings, true)
     await this.buildReceipt(printer, data, settings)
     return printer.getBuffer()
   }

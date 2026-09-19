@@ -218,4 +218,21 @@ describe('the emitted bytes agree with the routing decision', () => {
     )
     expect(isRaster(buffer)).toBe(false)
   })
+
+  it('renders a named printer into a buffer on a non-Windows platform', async () => {
+    // A named printer becomes the `printer:<name>` interface, whose native driver
+    // only exists on Windows. Composing a buffer reaches no device, so requiring a
+    // driver here made the same render throw "No driver set!" on Linux and in CI.
+    const platform = Object.getOwnPropertyDescriptor(process, 'platform')
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true })
+    try {
+      const buffer = await ThermalPrinterService.renderReceiptBuffer(
+        data,
+        settings({ receiptArabicMode: 'codepage' }),
+      )
+      expect(buffer.length).toBeGreaterThan(0)
+    } finally {
+      if (platform) Object.defineProperty(process, 'platform', platform)
+    }
+  })
 })
