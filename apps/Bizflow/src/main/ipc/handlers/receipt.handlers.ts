@@ -1,5 +1,11 @@
 import { ipcMain } from 'electron'
-import { ThermalPrinterService, ReceiptData, PrinterSettings } from '../../services/ThermalPrinterService'
+import {
+  ThermalPrinterService,
+  ReceiptData,
+  PrinterSettings,
+  DetectedPrinter,
+  pickBestPrinter,
+} from '../../services/ThermalPrinterService'
 import { createLogger } from '../../utils/logger'
 
 const log = createLogger('Receipt')
@@ -7,6 +13,16 @@ const log = createLogger('Receipt')
 /**
  * Receipt printing IPC handlers
  */
+
+/** Do not send a job to a printer Windows has disabled or that has no device behind it. */
+function isUsable(printer: DetectedPrinter): boolean {
+  return !printer.isOffline && printer.portLive !== false
+}
+
+/** Best guess at the receipt printer, without touching a queue that cannot work. */
+function pickPrinter(printers: DetectedPrinter[], preferred?: string): DetectedPrinter | undefined {
+  return pickBestPrinter(printers, preferred) ?? printers.find(isUsable) ?? printers[0]
+}
 
 export function registerReceiptHandlers(): void {
   // Print receipt
@@ -35,25 +51,25 @@ export function registerReceiptHandlers(): void {
       if (settings.printerType === 'usb' && (!settings.printerName || settings.printerName === '/dev/usb/lp0')) {
         log.info('🔍 Auto-detecting USB printer...')
         const printers = await ThermalPrinterService.detectUSBPrinters()
-        
-        if (printers.length > 0) {
-          const detectedPrinter = printers[0]
+        const detectedPrinter = pickPrinter(printers)
+
+        if (detectedPrinter) {
           log.info('✅ Auto-detected:', detectedPrinter.name, '→', detectedPrinter.path)
           settings.printerName = detectedPrinter.path
-          
+
           // Return detected printer info to save in UI
           await ThermalPrinterService.printReceipt(receiptData, settings)
-          
-          return { 
-            success: true, 
+
+          return {
+            success: true,
             detectedPrinter: detectedPrinter.path,
             message: `Printer auto-detected: ${detectedPrinter.name}`
           }
-        } else {
-          return {
-            success: false,
-            error: 'No USB thermal printers found. Please connect your printer and try again.'
-          }
+        }
+
+        return {
+          success: false,
+          error: 'No USB thermal printers found. Please connect your printer and try again.'
         }
       }
       
@@ -70,16 +86,17 @@ export function registerReceiptHandlers(): void {
         log.info('🔄 Print failed, attempting auto-detection...')
         try {
           const printers = await ThermalPrinterService.detectUSBPrinters()
-          
-          if (printers.length > 0) {
-            const detectedPrinter = printers[0]
+          const detectedPrinter = pickPrinter(printers)
+
+          // Only worth retrying against a different, usable queue.
+          if (detectedPrinter && detectedPrinter.path !== data.settings.printerName && isUsable(detectedPrinter)) {
             log.info('✅ Auto-detected:', detectedPrinter.name)
             data.settings.printerName = detectedPrinter.path
-            
+
             // Retry print with detected printer
             await ThermalPrinterService.printReceipt(data.receiptData, data.settings)
-            
-            return { 
+
+            return {
               success: true,
               detectedPrinter: detectedPrinter.path,
               message: `Printer auto-detected and recovered: ${detectedPrinter.name}`
@@ -98,10 +115,18 @@ export function registerReceiptHandlers(): void {
   })
 
   // Get available printers with auto-detection
-  ipcMain.handle('receipt:detectPrinters', async () => {
+  ipcMain.handle('receipt:detectPrinters', async (_event, options?: {
+    printerIP?: string
+    preferred?: string
+  }) => {
     try {
-      const printers = await ThermalPrinterService.detectUSBPrinters()
-      return { success: true, printers }
+      const hosts = options?.printerIP ? [options.printerIP] : []
+      const printers = await ThermalPrinterService.detectPrinters(hosts)
+      return {
+        success: true,
+        printers,
+        recommended: pickPrinter(printers, options?.preferred)?.path,
+      }
     } catch (error: any) {
       log.error('Detect printers error:', error)
       return { 
@@ -123,6 +148,82 @@ export function registerReceiptHandlers(): void {
         success: false, 
         message: error.message || 'Test print failed'
       }
+    }
+  })
+
+  // Explain why a configured printer is not printing
+  ipcMain.handle('receipt:diagnosePrinter', async (_event, settings: PrinterSettings) => {
+    try {
+      const diagnosis = await ThermalPrinterService.diagnosePrinter(settings)
+      return { success: true, diagnosis }
+    } catch (error: any) {
+      log.error('Diagnose printer error:', error)
+      return { success: false, error: error.message || 'Diagnosis failed' }
+    }
+  })
+
+  // Clear the usual Windows causes of a stuck receipt printer
+  ipcMain.handle('receipt:repairPrinter', async (_event, settings: PrinterSettings) => {
+    try {
+      const result = await ThermalPrinterService.repairPrinter(settings)
+      return result
+    } catch (error: any) {
+      log.error('Repair printer error:', error)
+      return {
+        success: false,
+        message: error.message || 'Repair failed',
+        changes: [],
+      }
+    }
+  })
+
+  // Find and prepare whichever receipt printer this machine has
+  ipcMain.handle('receipt:autoConnect', async (_event, settings?: Partial<PrinterSettings>) => {
+    try {
+      log.info('🔌 Auto-connecting to a receipt printer...')
+      const result = await ThermalPrinterService.autoConnect(settings ?? {})
+      log.info('🔌 Auto-connect:', result.message)
+      return result
+    } catch (error: any) {
+      log.error('Auto-connect error:', error)
+      return {
+        success: false,
+        message: error.message || 'Could not look for a printer.',
+        confidence: 0,
+        repaired: [],
+        candidates: [],
+      }
+    }
+  })
+
+  // Create a raw pass-through queue when Windows has a USB printer without a driver
+  ipcMain.handle('receipt:createQueue', async (_event, data: { printerName: string; port: string }) => {
+    try {
+      if (!data?.printerName || typeof data.printerName !== 'string') {
+        throw new Error('A printer name is required')
+      }
+      if (!data.port || typeof data.port !== 'string') {
+        throw new Error('A port is required')
+      }
+      log.info('🛠️ Creating printer queue:', data.printerName, 'on', data.port)
+      return await ThermalPrinterService.createPrinterQueue(data.printerName, data.port)
+    } catch (error: any) {
+      log.error('Create queue error:', error)
+      return { success: false, message: error.message || 'Could not create the printer.', printerName: data?.printerName ?? '' }
+    }
+  })
+
+  // Render a receipt for the Settings live preview
+  ipcMain.handle('receipt:renderPreview', async (_event, data: {
+    receiptData: ReceiptData
+    settings: PrinterSettings
+  }) => {
+    try {
+      const preview = await ThermalPrinterService.renderReceiptPreview(data.receiptData, data.settings)
+      return { success: true, preview }
+    } catch (error: any) {
+      log.error('Render preview error:', error)
+      return { success: false, error: error.message || 'Could not render the preview.' }
     }
   })
 }

@@ -487,8 +487,44 @@ interface API {
       detectedPrinter?: string
       message?: string
     }>
-    detectPrinters: () => Promise<{ success: boolean; printers: any[]; error?: string }>
+    detectPrinters: (options?: { printerIP?: string; preferred?: string }) =>
+      Promise<{ success: boolean; printers: any[]; recommended?: string; error?: string }>
     testPrint: (settings: any) => Promise<{ success: boolean; message: string }>
+    diagnosePrinter: (settings: any) => Promise<{ success: boolean; diagnosis?: any; error?: string }>
+    repairPrinter: (settings: any) => Promise<{
+      success: boolean
+      message: string
+      changes: string[]
+      diagnosis?: any
+    }>
+    autoConnect: (settings?: any) => Promise<{
+      success: boolean
+      message: string
+      printer?: any
+      paperWidth?: any
+      confidence: number
+      repaired: string[]
+      diagnosis?: any
+      needsQueue?: { port: string; device?: string }
+      candidates: any[]
+    }>
+    createQueue: (data: { printerName: string; port: string }) => Promise<{
+      success: boolean
+      message: string
+      printerName: string
+    }>
+    renderPreview: (data: { receiptData: any; settings: any }) => Promise<{
+      success: boolean
+      preview?: {
+        width: number
+        totalHeight: number
+        encoding: string | null
+        raster: boolean
+        missingGlyphs: string[]
+        slices: Array<{ dataUrl: string; offset: number; height: number }>
+      }
+      error?: string
+    }>
   }
   migration: {
     onStarting: (callback: () => void) => () => void

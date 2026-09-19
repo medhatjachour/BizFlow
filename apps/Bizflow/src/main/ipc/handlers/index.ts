@@ -20,6 +20,7 @@ import { registerLogHandlers } from './log.handlers'
 import { registerFinanceHandlers } from './finance.handlers'
 import { registerModuleHandlers } from './module.handlers'
 import { registerLicenseHandlers } from './license.handlers'
+import { registerReceiptHandlers as registerThermalReceiptHandlers } from './receipt.handlers'
 import { registerPermissionsHandlers } from './permissions.handlers'
 import { installPermissionGuard } from './permissionsGuard'
 import type { IPlugin } from '../../../shared/interfaces/IPlugin'
@@ -201,6 +202,9 @@ export function registerAllHandlers() {
   registerModuleHandlers()
   registerLicenseHandlers()
   registerPermissionsHandlers(prisma)
+  // Thermal receipt printing is used by every sales module, not just commerce,
+  // so it is registered at kernel level (receipt.handlers.ts needs no prisma).
+  registerThermalReceiptHandlers()
 
   // ── Plugin Handlers ──────────────────────────────────────────────────────
   // Only plugins compiled into this build (via ENABLED_MODULES) are in

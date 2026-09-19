@@ -407,6 +407,21 @@ const api = {
     getStats: () =>
       ipcRenderer.invoke('finance:getStats'),
   },
+  // ─── Thermal receipt printing ────────────────────────────────────────────
+  // Kernel-level: every sales module (coffee, restaurant, pharmacy, …) prints
+  // receipts, so this must not depend on the commerce plugin being compiled in.
+  thermalReceipts: {
+    print: (data: { receiptData: any; settings: any }) => ipcRenderer.invoke('receipt:print', data),
+    detectPrinters: (options?: { printerIP?: string; preferred?: string }) =>
+      ipcRenderer.invoke('receipt:detectPrinters', options),
+    testPrint: (settings: any) => ipcRenderer.invoke('receipt:testPrint', settings),
+    diagnosePrinter: (settings: any) => ipcRenderer.invoke('receipt:diagnosePrinter', settings),
+    repairPrinter: (settings: any) => ipcRenderer.invoke('receipt:repairPrinter', settings),
+    autoConnect: (settings?: any) => ipcRenderer.invoke('receipt:autoConnect', settings),
+    createQueue: (data: { printerName: string; port: string }) => ipcRenderer.invoke('receipt:createQueue', data),
+    renderPreview: (data: { receiptData: any; settings: any }) => ipcRenderer.invoke('receipt:renderPreview', data),
+  },
+
   // ─── Plugin APIs ──────────────────────────────────────────────────────────
   // Each plugin exposes its IPC bindings under its own namespace.
   // Adding a plugin: import its preload and add it here.
